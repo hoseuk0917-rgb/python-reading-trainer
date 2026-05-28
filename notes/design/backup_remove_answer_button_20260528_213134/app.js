@@ -298,19 +298,24 @@ function prevCard() {
 
 function jumpToConfusedOrNext() {
   const card = getCurrentCard();
+  markConfused(card.id);
+  nextCard();
+}
+
+function markKnowAndNext() {
+  const card = getCurrentCard();
   const resultBox = document.getElementById("resultBox");
 
   markConfused(card.id);
 
   resultBox.className = "result-box bad";
-  resultBox.textContent = "모르겠음 처리. 정답: " + normalizeAnswer(card.answer) + " / " + (card.explanation || "");
+  resultBox.textContent = "정답 보기: " + normalizeAnswer(card.answer) + " / " + (card.explanation || "");
 
   const allBtns = document.querySelectorAll(".choice-btn");
   allBtns.forEach(function(b) {
     b.disabled = true;
   });
 }
-
 
 function resetProgress() {
   const ok = confirm("진도만 초기화합니다. 메모는 유지됩니다. 계속할까요?");
@@ -646,7 +651,7 @@ async function init() {
   document.getElementById("nextBtn").onclick = nextCard;
   document.getElementById("prevBtn").onclick = prevCard;
   document.getElementById("againBtn").onclick = jumpToConfusedOrNext;
-
+  document.getElementById("knowBtn").onclick = markKnowAndNext;
   document.getElementById("resetBtn").onclick = resetProgress;
   document.getElementById("saveCardMemoBtn").onclick = saveCardMemo;
   document.getElementById("saveConceptMemoBtn").onclick = saveConceptMemo;
@@ -666,7 +671,4 @@ init().catch(function(err) {
   document.getElementById("cardTitle").textContent = "데이터 로딩 실패";
   document.getElementById("readingGoal").textContent = String(err);
 });
-
-
-
 
