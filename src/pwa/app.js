@@ -184,7 +184,7 @@ function getBonusSideCards(card, alreadyIds) {
       return concepts.includes(concept);
     });
 
-    const isGeneral = ["language", "cs_basic"].includes(sc.type);
+    const isGeneral = ["language", "cs_basic", "ai_basic", "platform_basic", "web_app_basic", "ai_architecture", "data_system", "dev_environment"].includes(sc.type);
     const seenCount = seen[sc.id] || 0;
 
     return seenCount < 3 && (hasOverlap || isGeneral);
@@ -720,7 +720,13 @@ async function init() {
   const sideFiles = [
     "../../data/side_cards/side_cards_seed_v1.json",
     "../../data/side_cards/language_cards_v1.json",
-    "../../data/side_cards/cs_fundamentals_v1.json"
+    "../../data/side_cards/cs_fundamentals_v1.json",
+    "../../data/side_cards/ai_cards_v1.json",
+    "../../data/side_cards/platform_cards_v1.json",
+    "../../data/side_cards/web_app_cards_v1.json",
+    "../../data/side_cards/ai_architecture_cards_v1.json",
+    "../../data/side_cards/data_system_cards_v1.json",
+    "../../data/side_cards/dev_environment_cards_v1.json"
   ];
 
   const sideResults = await Promise.all(sideFiles.map(function(path) {
@@ -766,6 +772,9 @@ init().catch(function(err) {
   document.getElementById("cardTitle").textContent = "데이터 로딩 실패";
   document.getElementById("readingGoal").textContent = String(err);
 });
+
+
+
 
 
 
