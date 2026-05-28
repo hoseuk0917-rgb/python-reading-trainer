@@ -727,7 +727,8 @@ async function init() {
     "../../data/lessons/python_realworld_expansion_v8.json",
     "../../data/lessons/python_daily_review_expansion_v9.json",
     "../../data/lessons/python_foundation_expansion_v10.json",
-    "../../data/lessons/python_libraries_missing_topics_v11.json"
+    "../../data/lessons/python_libraries_missing_topics_v11.json",
+    "../../data/lessons/python_ai_toolchain_expansion_v12.json"
   ];
 
   const lessonResults = await Promise.all(lessonFiles.map(function(path) {
@@ -2023,6 +2024,7 @@ init().catch(function(err) {
   }, 300);
 })();
 // === STUDY TOOLS V7 END ===
+
 
 
 
