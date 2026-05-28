@@ -1,4 +1,12 @@
-﻿let curriculum = null;
+﻿// === CACHE BUST START ===
+const APP_DATA_VERSION = "20260529_v12_1";
+function withDataVersion(path) {
+  if (typeof path !== "string") return path;
+  if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
+  return path + "?v=" + APP_DATA_VERSION;
+}
+// === CACHE BUST END ===
+let curriculum = null;
 let cards = [];
 let sideCards = [];
 let currentIndex = 0;
@@ -715,7 +723,7 @@ function renderProgress() {
 }
 
 async function init() {
-  const curriculumRes = await fetch("../../data/curriculum/curriculum_v1.json");
+  const curriculumRes = await fetch(withDataVersion("../../data/curriculum/curriculum_v1.json"));
   const lessonFiles = [
     "../../data/lessons/cards_seed_v1.json",
     "../../data/lessons/python_core_expansion_v1.json",
@@ -728,11 +736,13 @@ async function init() {
     "../../data/lessons/python_daily_review_expansion_v9.json",
     "../../data/lessons/python_foundation_expansion_v10.json",
     "../../data/lessons/python_libraries_missing_topics_v11.json",
-    "../../data/lessons/python_ai_toolchain_expansion_v12.json"
+    "../../data/lessons/python_ai_toolchain_expansion_v12.json",
+    "../../data/lessons/python_compute_concepts_v13.json",
+    "../../data/lessons/python_ai_learning_methods_v14.json"
   ];
 
   const lessonResults = await Promise.all(lessonFiles.map(function(path) {
-    return fetch(path).then(function(res) {
+    return fetch(withDataVersion(path)).then(function(res) {
       if (!res.ok) {
         return [];
       }
@@ -752,7 +762,7 @@ async function init() {
   ];
 
   const sideResults = await Promise.all(sideFiles.map(function(path) {
-    return fetch(path).then(function(res) {
+    return fetch(withDataVersion(path)).then(function(res) {
       if (!res.ok) {
         return [];
       }
@@ -2025,8 +2035,42 @@ init().catch(function(err) {
 })();
 // === STUDY TOOLS V7 END ===
 
+// === MOBILE COLLAPSE START ===
+function setupAutoCollapseBlocks() {
+  function enhance() {
+    var blocks = document.querySelectorAll("pre, .code-block, .card-code, code");
+    blocks.forEach(function(block) {
+      if (block.dataset && block.dataset.collapseReady === "1") return;
+      var text = block.innerText || block.textContent || "";
+      var lineCount = text.split("\n").length;
+      if (text.length < 500 && lineCount < 10) return;
+      if (!block.dataset) return;
+      block.dataset.collapseReady = "1";
+      block.classList.add("collapsible-code-block");
+      block.classList.add("is-collapsed");
 
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "collapse-code-toggle";
+      button.textContent = "긴 코드 펼치기";
+      button.addEventListener("click", function() {
+        var collapsed = block.classList.toggle("is-collapsed");
+        button.textContent = collapsed ? "긴 코드 펼치기" : "긴 코드 접기";
+      });
+      block.parentNode.insertBefore(button, block);
+    });
+  }
 
+  enhance();
+  var observer = new MutationObserver(function() { enhance(); });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
 
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", setupAutoCollapseBlocks);
+} else {
+  setupAutoCollapseBlocks();
+}
+// === MOBILE COLLAPSE END ===
 
 
