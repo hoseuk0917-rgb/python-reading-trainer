@@ -716,7 +716,19 @@ function renderProgress() {
 
 async function init() {
   const curriculumRes = await fetch("../../data/curriculum/curriculum_v1.json");
-  const cardsRes = await fetch("../../data/lessons/cards_seed_v1.json");
+  const lessonFiles = [
+    "../../data/lessons/cards_seed_v1.json",
+    "../../data/lessons/python_core_expansion_v1.json"
+  ];
+
+  const lessonResults = await Promise.all(lessonFiles.map(function(path) {
+    return fetch(path).then(function(res) {
+      if (!res.ok) {
+        return [];
+      }
+      return res.json();
+    });
+  }));
   const sideFiles = [
     "../../data/side_cards/side_cards_seed_v1.json",
     "../../data/side_cards/language_cards_v1.json",
@@ -739,7 +751,7 @@ async function init() {
   }));
 
   curriculum = await curriculumRes.json();
-  cards = await cardsRes.json();
+  cards = lessonResults.flat();
   sideCards = sideResults.flat();
 
   cards.sort(function(a, b) {
@@ -772,6 +784,8 @@ init().catch(function(err) {
   document.getElementById("cardTitle").textContent = "데이터 로딩 실패";
   document.getElementById("readingGoal").textContent = String(err);
 });
+
+
 
 
 
