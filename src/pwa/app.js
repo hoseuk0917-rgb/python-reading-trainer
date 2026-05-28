@@ -1,5 +1,5 @@
 ﻿// === CACHE BUST START ===
-const APP_DATA_VERSION = "20260529_v15_restore";
+const APP_DATA_VERSION = "20260529_v15_2_side_render";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -280,31 +280,180 @@ function renderSideCards(card) {
   const directIds = card.side_card_ids || [];
   const directCards = directIds.map(getSideCardById).filter(Boolean);
   const bonusCards = getBonusSideCards(card, directIds);
-  const displayCards = directCards.concat(bonusCards);
 
-  displayCards.forEach(function(sc) {
+  function getSideText(sc) {
+    return sc.body || sc.summary || sc.description || "";
+  }
+
+  function getSideDetail(sc) {
+    const parts = [];
+    if (sc.detail) {
+      parts.push(sc.detail);
+    }
+    if (Array.isArray(sc.examples) && sc.examples.length > 0) {
+      parts.push("예시: " + sc.examples.slice(0, 4).join(" / "));
+    }
+    if (Array.isArray(sc.related_concepts) && sc.related_concepts.length > 0) {
+      parts.push("연관 개념: " + sc.related_concepts.slice(0, 6).join(", "));
+    }
+    return parts.join("\n\n");
+  }
+
+  function makeSectionTitle(text, note) {
+    const wrap = document.createElement("div");
+    wrap.className = "side-section-head";
+
+    const title = document.createElement("div");
+    title.className = "side-section-title";
+    title.textContent = text;
+    wrap.appendChild(title);
+
+    if (note) {
+      const desc = document.createElement("div");
+      desc.className = "side-section-note";
+      desc.textContent = note;
+      wrap.appendChild(desc);
+    }
+
+    sideEl.appendChild(wrap);
+  }
+
+  function makeSideCard(sc, label) {
     const box = document.createElement("div");
     box.className = "side-card";
 
     const type = document.createElement("div");
     type.className = "side-card-type";
-    type.textContent = sc.type;
+    type.textContent = label || sc.type || "개념";
 
     const title = document.createElement("div");
     title.className = "side-card-title";
-    title.textContent = sc.title;
+    title.textContent = sc.title || sc.id || "개념 카드";
 
     const body = document.createElement("div");
     body.className = "side-card-body";
-    body.textContent = sc.body;
+    body.textContent = getSideText(sc) || "요약 설명이 아직 없는 카드입니다.";
 
     box.appendChild(type);
     box.appendChild(title);
     box.appendChild(body);
-    sideEl.appendChild(box);
 
+    const detailText = getSideDetail(sc);
+    if (detailText) {
+      const detailBtn = document.createElement("button");
+      detailBtn.type = "button";
+      detailBtn.className = "side-detail-toggle";
+      detailBtn.textContent = "자세히 보기";
+
+      const detail = document.createElement("div");
+      detail.className = "side-card-detail hidden";
+      detail.textContent = detailText;
+
+      detailBtn.addEventListener("click", function() {
+        const isHidden = detail.classList.contains("hidden");
+        if (isHidden) {
+          detail.classList.remove("hidden");
+          detailBtn.textContent = "접기";
+        } else {
+          detail.classList.add("hidden");
+          detailBtn.textContent = "자세히 보기";
+        }
+      });
+
+      box.appendChild(detailBtn);
+      box.appendChild(detail);
+    }
+
+    sideEl.appendChild(box);
     markSideSeen(sc.id);
+  }
+
+  function pickRandomBackgroundCard(excludeIds) {
+    const broadWords = [
+      "rag", "retrieval", "vector", "embedding", "kg", "knowledge", "graph",
+      "ontology", "semantic", "security", "auth", "jwt", "oauth", "secret",
+      "prompt", "injection", "gpu", "cuda", "npu", "tpu", "ocr", "pdf",
+      "lora", "quant", "sensor", "fusion", "state", "estimation", "kalman",
+      "database", "api", "docker", "fastapi"
+    ];
+
+    const pool = sideCards.filter(function(sc) {
+      if (!sc || !sc.id || excludeIds.includes(sc.id)) {
+        return false;
+      }
+
+      const text = [
+        sc.id,
+        sc.title,
+        sc.type,
+        sc.body,
+        sc.summary,
+        sc.detail,
+        (sc.related_concepts || []).join(" ")
+      ].filter(Boolean).join(" ").toLowerCase();
+
+      return broadWords.some(function(word) {
+        return text.includes(word);
+      });
+    });
+
+    if (pool.length === 0) {
+      return null;
+    }
+
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  makeSectionTitle(
+    "연결된 개념",
+    "현재 문제와 직접 연결된 보조 개념입니다."
+  );
+
+  if (directCards.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "side-empty-note";
+    empty.textContent = "이 문제에는 직접 연결된 보조 개념이 없습니다.";
+    sideEl.appendChild(empty);
+  } else {
+    directCards.forEach(function(sc) {
+      makeSideCard(sc, "직접 연결");
+    });
+  }
+
+  if (bonusCards.length > 0) {
+    makeSectionTitle(
+      "가까운 개념 둘러보기",
+      "현재 카드의 concepts와 느슨하게 겹치는 개념입니다."
+    );
+
+    bonusCards.forEach(function(sc) {
+      makeSideCard(sc, "연관 추천");
+    });
+  }
+
+  const excludeIds = directCards.concat(bonusCards).map(function(sc) {
+    return sc.id;
   });
+
+  const randomCard = pickRandomBackgroundCard(excludeIds);
+
+  if (randomCard) {
+    makeSectionTitle(
+      "랜덤 배경지식",
+      "퀴즈와 1:1로 연결되지 않아도 알아두면 좋은 AI/개발 상식입니다."
+    );
+
+    makeSideCard(randomCard, "랜덤 상식");
+
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "side-random-next";
+    nextBtn.textContent = "다른 배경지식";
+    nextBtn.addEventListener("click", function() {
+      renderSideCards(card);
+    });
+    sideEl.appendChild(nextBtn);
+  }
 }
 
 function markSeen(cardId) {
@@ -2073,5 +2222,6 @@ if (document.readyState === "loading") {
   setupAutoCollapseBlocks();
 }
 // === MOBILE COLLAPSE END ===
+
 
 
