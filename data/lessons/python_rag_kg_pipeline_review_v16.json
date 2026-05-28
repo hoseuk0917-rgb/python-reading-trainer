@@ -1,0 +1,487 @@
+[
+    {
+        "id":  "PY16_L08_manifest_load_001",
+        "level":  8,
+        "title":  "문서 manifest 로딩 흐름 읽기",
+        "concepts":  [
+                         "manifest",
+                         "jsonl",
+                         "file",
+                         "pipeline"
+                     ],
+        "reading_goal":  "JSONL manifest를 한 줄씩 읽어 문서 목록으로 만드는 코드를 읽는다.",
+        "code":  "import json\nfrom pathlib import Path\n\nrows = []\nfor line in Path(\"manifest.jsonl\").read_text(encoding=\"utf-8\").splitlines():\n    if not line.strip():\n        continue\n    rows.append(json.loads(line))\n\nprint(len(rows))",
+        "question_type":  "meaning_choice",
+        "question":  "이 코드의 목적에 가장 가까운 것은?",
+        "choices":  [
+                        "manifest.jsonl의 각 줄을 JSON 객체로 읽어 rows에 모은다",
+                        "JSON 파일을 삭제한다",
+                        "웹서버를 실행한다",
+                        "임베딩 모델을 학습한다"
+                    ],
+        "answer":  "manifest.jsonl의 각 줄을 JSON 객체로 읽어 rows에 모은다",
+        "explanation":  "JSONL은 한 줄에 JSON 객체 하나가 들어가는 형식이다. splitlines로 줄을 나누고 json.loads로 각 줄을 dict로 바꾼다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "수집 문서 목록, chunk manifest, node/edge 후보 목록을 읽는 기본 패턴이다."
+    },
+    {
+        "id":  "PY16_L08_metadata_normalize_001",
+        "level":  8,
+        "title":  "메타데이터 정규화 함수 읽기",
+        "concepts":  [
+                         "metadata",
+                         "normalization",
+                         "dict",
+                         "get"
+                     ],
+        "reading_goal":  "문서마다 다른 메타 필드를 하나의 공통 스키마로 맞추는 코드를 읽는다.",
+        "code":  "def normalize_doc(row):\n    return {\n        \"doc_id\": str(row.get(\"doc_id\") or row.get(\"id\")),\n        \"title\": (row.get(\"title\") or \"\").strip(),\n        \"source_url\": row.get(\"url\") or row.get(\"source_url\"),\n        \"lane\": row.get(\"lane\", \"B\"),\n    }",
+        "question_type":  "meaning_choice",
+        "question":  "row.get(\u0027doc_id\u0027) or row.get(\u0027id\u0027)의 의미는?",
+        "choices":  [
+                        "doc_id가 있으면 쓰고 없으면 id를 대신 쓴다",
+                        "doc_id와 id를 둘 다 삭제한다",
+                        "항상 None을 반환한다",
+                        "URL을 다운로드한다"
+                    ],
+        "answer":  "doc_id가 있으면 쓰고 없으면 id를 대신 쓴다",
+        "explanation":  "or는 앞 값이 비어 있으면 뒤 값을 사용한다. 서로 다른 소스의 필드명을 통일할 때 자주 쓴다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "A/B lane 문서, 수집 소스, PDF 추출본을 하나의 처리 흐름에 태울 때 필요한 코드다."
+    },
+    {
+        "id":  "PY16_L09_sentence_chunking_001",
+        "level":  9,
+        "title":  "문장 단위 chunking 흐름 읽기",
+        "concepts":  [
+                         "chunking",
+                         "sentence",
+                         "overlap",
+                         "rag"
+                     ],
+        "reading_goal":  "문장 경계를 유지하면서 chunk를 만드는 흐름을 읽는다.",
+        "code":  "def make_chunks(sentences, max_chars=900):\n    chunks = []\n    current = []\n    size = 0\n\n    for sent in sentences:\n        if size + len(sent) \u003e max_chars and current:\n            chunks.append(\" \".join(current))\n            current = current[-2:]\n            size = sum(len(x) for x in current)\n        current.append(sent)\n        size += len(sent)\n\n    if current:\n        chunks.append(\" \".join(current))\n    return chunks",
+        "question_type":  "meaning_choice",
+        "question":  "current = current[-2:]의 역할은?",
+        "choices":  [
+                        "이전 chunk의 마지막 두 문장을 다음 chunk에도 겹치게 한다",
+                        "모든 문장을 삭제한다",
+                        "항상 첫 문장만 남긴다",
+                        "문장을 랜덤으로 섞는다"
+                    ],
+        "answer":  "이전 chunk의 마지막 두 문장을 다음 chunk에도 겹치게 한다",
+        "explanation":  "문장 단위 overlap을 넣어 검색 시 문맥이 끊기는 문제를 줄인다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "네가 고친 chunking 원칙인 문장 중간/단어 중간 split 금지와 직접 연결된다."
+    },
+    {
+        "id":  "PY16_L09_chunk_id_001",
+        "level":  9,
+        "title":  "chunk_id 생성 규칙 읽기",
+        "concepts":  [
+                         "chunk_id",
+                         "stable_id",
+                         "provenance"
+                     ],
+        "reading_goal":  "문서 ID와 순번으로 재현 가능한 chunk_id를 만드는 코드를 읽는다.",
+        "code":  "def make_chunk_id(doc_id, index):\n    return f\"{doc_id}::chunk::{index:04d}\"\n\nprint(make_chunk_id(\"doc_17\", 3))",
+        "question_type":  "output_prediction",
+        "question":  "출력은?",
+        "choices":  [
+                        "doc_17::chunk::0003",
+                        "doc_17::chunk::3",
+                        "chunk::doc_17",
+                        "0003::doc_17"
+                    ],
+        "answer":  "doc_17::chunk::0003",
+        "explanation":  "{index:04d}는 숫자를 4자리로 맞추고 앞을 0으로 채운다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "chunk_id가 흔들리면 임베딩, evidence, node/edge 후보 연결이 모두 꼬인다."
+    },
+    {
+        "id":  "PY16_L09_embedding_batch_001",
+        "level":  9,
+        "title":  "임베딩 배치 처리 읽기",
+        "concepts":  [
+                         "embedding",
+                         "batch",
+                         "vector",
+                         "gpu"
+                     ],
+        "reading_goal":  "텍스트를 일정 크기 배치로 나눠 임베딩하는 코드를 읽는다.",
+        "code":  "def embed_in_batches(texts, model, batch_size=32):\n    vectors = []\n    for start in range(0, len(texts), batch_size):\n        batch = texts[start:start + batch_size]\n        vectors.extend(model.encode(batch))\n    return vectors",
+        "question_type":  "meaning_choice",
+        "question":  "range(0, len(texts), batch_size)의 의미는?",
+        "choices":  [
+                        "0부터 batch_size 간격으로 시작 위치를 만든다",
+                        "항상 0만 반복한다",
+                        "텍스트를 정렬한다",
+                        "GPU를 끈다"
+                    ],
+        "answer":  "0부터 batch_size 간격으로 시작 위치를 만든다",
+        "explanation":  "start는 각 배치의 시작 인덱스가 된다. texts[start:start+batch_size]로 작은 묶음을 만든다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "70k+ chunk를 한 번에 처리하지 않고 배치로 나눠 메모리와 속도를 조절하는 패턴이다."
+    },
+    {
+        "id":  "PY16_L09_vector_topk_001",
+        "level":  9,
+        "title":  "벡터 검색 top-k 결과 읽기",
+        "concepts":  [
+                         "vector_search",
+                         "top_k",
+                         "similarity",
+                         "rag"
+                     ],
+        "reading_goal":  "질문 벡터와 가장 가까운 chunk 후보를 가져오는 코드를 읽는다.",
+        "code":  "def retrieve(question, embedder, index, top_k=5):\n    qvec = embedder.encode(question)\n    hits = index.search(qvec, top_k=top_k)\n    return [hit[\"chunk_id\"] for hit in hits]",
+        "question_type":  "meaning_choice",
+        "question":  "return [hit[\u0027chunk_id\u0027] for hit in hits]는 무엇을 반환하는가?",
+        "choices":  [
+                        "검색된 chunk_id 목록",
+                        "질문 원문",
+                        "모델 파라미터",
+                        "파일 전체 내용"
+                    ],
+        "answer":  "검색된 chunk_id 목록",
+        "explanation":  "hits의 각 항목에서 chunk_id만 뽑아 새 리스트를 만든다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "RAG 검색 결과가 answer 생성으로 넘어가기 전 어떤 후보를 잡았는지 확인하는 코드다."
+    },
+    {
+        "id":  "PY16_L09_rerank_001",
+        "level":  9,
+        "title":  "rerank 후보 재정렬 읽기",
+        "concepts":  [
+                         "rerank",
+                         "score",
+                         "retrieval",
+                         "ranking"
+                     ],
+        "reading_goal":  "1차 검색 후보를 다른 점수로 다시 정렬하는 코드를 읽는다.",
+        "code":  "def rerank(question, candidates, scorer):\n    scored = []\n    for chunk in candidates:\n        score = scorer(question, chunk[\"text\"])\n        scored.append({\"chunk\": chunk, \"score\": score})\n    return sorted(scored, key=lambda x: x[\"score\"], reverse=True)",
+        "question_type":  "meaning_choice",
+        "question":  "reverse=True의 의미는?",
+        "choices":  [
+                        "score가 큰 후보가 앞에 오게 한다",
+                        "score가 작은 후보가 앞에 오게 한다",
+                        "후보를 삭제한다",
+                        "질문을 바꾼다"
+                    ],
+        "answer":  "score가 큰 후보가 앞에 오게 한다",
+        "explanation":  "내림차순 정렬이므로 높은 점수 후보가 먼저 온다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "벡터 검색 결과를 그대로 쓰지 않고, 더 정밀한 기준으로 재정렬하는 RAG 고급 흐름이다."
+    },
+    {
+        "id":  "PY16_L10_evidence_pack_001",
+        "level":  10,
+        "title":  "evidence pack 조립 읽기",
+        "concepts":  [
+                         "evidence",
+                         "citation",
+                         "chunk",
+                         "grounding"
+                     ],
+        "reading_goal":  "검색된 chunk를 답변 근거 묶음으로 바꾸는 코드를 읽는다.",
+        "code":  "def build_evidence_pack(hits):\n    pack = []\n    for hit in hits:\n        pack.append({\n            \"doc_id\": hit[\"doc_id\"],\n            \"chunk_id\": hit[\"chunk_id\"],\n            \"quote\": hit[\"text\"][:300],\n            \"score\": hit.get(\"score\", 0),\n        })\n    return pack",
+        "question_type":  "meaning_choice",
+        "question":  "hit[\u0027text\u0027][:300]의 의미는?",
+        "choices":  [
+                        "근거 텍스트 앞 300자만 quote로 저장한다",
+                        "300개 파일을 읽는다",
+                        "점수를 300으로 바꾼다",
+                        "문서를 삭제한다"
+                    ],
+        "answer":  "근거 텍스트 앞 300자만 quote로 저장한다",
+        "explanation":  "슬라이싱으로 긴 chunk의 앞부분만 quote 필드에 담는다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "근거 중심 RAG에서 답변보다 먼저 evidence 구조를 안정적으로 만드는 부분이다."
+    },
+    {
+        "id":  "PY16_L10_prompt_with_citations_001",
+        "level":  10,
+        "title":  "근거 포함 프롬프트 만들기",
+        "concepts":  [
+                         "prompt",
+                         "citation",
+                         "rag",
+                         "grounding"
+                     ],
+        "reading_goal":  "근거 목록을 LLM 프롬프트 문자열로 조립하는 코드를 읽는다.",
+        "code":  "def make_prompt(question, evidence):\n    lines = [\"Answer using only the evidence below.\"]\n    for i, ev in enumerate(evidence, start=1):\n        lines.append(f\"[{i}] {ev[\u0027quote\u0027]}\")\n    lines.append(\"Question: \" + question)\n    return \"\\n\".join(lines)",
+        "question_type":  "meaning_choice",
+        "question":  "enumerate(evidence, start=1)의 역할은?",
+        "choices":  [
+                        "근거에 1번부터 번호를 붙인다",
+                        "근거를 삭제한다",
+                        "질문을 번역한다",
+                        "파일명을 만든다"
+                    ],
+        "answer":  "근거에 1번부터 번호를 붙인다",
+        "explanation":  "enumerate는 순번과 값을 함께 꺼낸다. start=1이라 번호가 1부터 시작한다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "답변이 어떤 근거를 보고 생성됐는지 추적하기 위한 핵심 패턴이다."
+    },
+    {
+        "id":  "PY16_L10_llm_retry_timeout_001",
+        "level":  10,
+        "title":  "LLM 호출 재시도 흐름 읽기",
+        "concepts":  [
+                         "retry",
+                         "timeout",
+                         "llm",
+                         "api"
+                     ],
+        "reading_goal":  "실패할 수 있는 LLM 호출을 재시도하는 코드를 읽는다.",
+        "code":  "def call_with_retry(client, prompt, max_attempts=3):\n    last_error = None\n    for attempt in range(max_attempts):\n        try:\n            return client.generate(prompt, timeout=60)\n        except TimeoutError as e:\n            last_error = e\n    raise last_error",
+        "question_type":  "meaning_choice",
+        "question":  "이 함수가 TimeoutError를 만나면 바로 종료하지 않는 이유는?",
+        "choices":  [
+                        "최대 max_attempts번까지 다시 시도하기 위해",
+                        "항상 성공했기 때문에",
+                        "프롬프트를 삭제하기 위해",
+                        "GPU를 초기화하기 위해"
+                    ],
+        "answer":  "최대 max_attempts번까지 다시 시도하기 위해",
+        "explanation":  "try/except가 반복문 안에 있어서 timeout이 나도 다음 attempt로 넘어갈 수 있다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "Bedrock/로컬 LLM/외부 API 호출 자동화에서 실패 복구를 읽는 훈련이다."
+    },
+    {
+        "id":  "PY16_L10_grounding_guard_001",
+        "level":  10,
+        "title":  "근거 부족 가드 읽기",
+        "concepts":  [
+                         "grounding",
+                         "evidence",
+                         "guardrail",
+                         "rag"
+                     ],
+        "reading_goal":  "근거가 부족하면 답변 생성을 막는 조건문을 읽는다.",
+        "code":  "def answer_question(question, evidence, llm):\n    if len(evidence) \u003c 2:\n        return {\n            \"answer\": \"근거가 부족해 확답할 수 없습니다.\",\n            \"confidence\": \"low\"\n        }\n    prompt = make_prompt(question, evidence)\n    return {\"answer\": llm(prompt), \"confidence\": \"normal\"}",
+        "question_type":  "meaning_choice",
+        "question":  "len(evidence) \u003c 2 조건의 목적은?",
+        "choices":  [
+                        "근거가 너무 적으면 저신뢰 답변을 반환한다",
+                        "항상 LLM을 호출한다",
+                        "근거를 두 배로 늘린다",
+                        "질문을 저장하지 않는다"
+                    ],
+        "answer":  "근거가 너무 적으면 저신뢰 답변을 반환한다",
+        "explanation":  "근거가 부족할 때 hallucination을 줄이기 위해 답변 생성을 제한한다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "Evidence-first verification pipeline의 소프트 가드와 연결되는 코드 독해다."
+    },
+    {
+        "id":  "PY16_L10_node_pass_001",
+        "level":  10,
+        "title":  "Node pass 입력 만들기",
+        "concepts":  [
+                         "node_pass",
+                         "candidate",
+                         "chunk",
+                         "kg"
+                     ],
+        "reading_goal":  "chunk에서 노드 후보 추출용 입력을 만드는 코드를 읽는다.",
+        "code":  "def make_node_pass_input(chunk, node_catalog):\n    return {\n        \"chunk_id\": chunk[\"chunk_id\"],\n        \"text\": chunk[\"text\"],\n        \"known_nodes\": node_catalog,\n        \"task\": \"extract candidate nodes\"\n    }",
+        "question_type":  "meaning_choice",
+        "question":  "known_nodes에 node_catalog를 넣는 이유는?",
+        "choices":  [
+                        "기존 노드 목록을 참고해 후보 추출 recall을 높이기 위해",
+                        "텍스트를 삭제하기 위해",
+                        "JSON을 CSV로 바꾸기 위해",
+                        "서버 포트를 바꾸기 위해"
+                    ],
+        "answer":  "기존 노드 목록을 참고해 후보 추출 recall을 높이기 위해",
+        "explanation":  "노드 패스는 넓게 후보를 잡는 단계이므로 기존 catalog를 참고할 수 있다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "네가 확정한 Node pass와 Edge pass 분리 원칙 중 Node pass 쪽에 해당한다."
+    },
+    {
+        "id":  "PY16_L10_edge_pass_001",
+        "level":  10,
+        "title":  "Edge pass 입력 만들기",
+        "concepts":  [
+                         "edge_pass",
+                         "relation",
+                         "promoted_node",
+                         "kg"
+                     ],
+        "reading_goal":  "승격된 노드만 사용해 관계 추출 입력을 만드는 코드를 읽는다.",
+        "code":  "def make_edge_pass_input(chunk, promoted_nodes):\n    return {\n        \"chunk_id\": chunk[\"chunk_id\"],\n        \"text\": chunk[\"text\"],\n        \"allowed_nodes\": promoted_nodes,\n        \"task\": \"extract relations only between allowed nodes\"\n    }",
+        "question_type":  "meaning_choice",
+        "question":  "allowed_nodes에 promoted_nodes만 넣는 이유는?",
+        "choices":  [
+                        "관계 추출의 정밀도를 높이기 위해",
+                        "모든 단어를 노드로 만들기 위해",
+                        "문서를 압축하기 위해",
+                        "임베딩을 삭제하기 위해"
+                    ],
+        "answer":  "관계 추출의 정밀도를 높이기 위해",
+        "explanation":  "Edge pass는 precision이 중요하므로 승격된 노드 사이의 관계만 추출하도록 제한한다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "네 고정 워크플로우인 Node pass와 Edge pass 엄격 분리에 직접 연결된다."
+    },
+    {
+        "id":  "PY16_L10_provenance_lineage_001",
+        "level":  10,
+        "title":  "provenance/lineage 기록 읽기",
+        "concepts":  [
+                         "provenance",
+                         "lineage",
+                         "evidence",
+                         "audit"
+                     ],
+        "reading_goal":  "결과가 어떤 입력과 모델에서 나왔는지 기록하는 코드를 읽는다.",
+        "code":  "def attach_lineage(result, run_id, model_name, input_ids):\n    result[\"lineage\"] = {\n        \"run_id\": run_id,\n        \"model\": model_name,\n        \"input_ids\": input_ids,\n    }\n    return result",
+        "question_type":  "meaning_choice",
+        "question":  "lineage 필드의 주된 목적은?",
+        "choices":  [
+                        "결과의 출처와 생성 과정을 추적한다",
+                        "결과를 랜덤하게 바꾼다",
+                        "모델을 학습시킨다",
+                        "파일을 숨긴다"
+                    ],
+        "answer":  "결과의 출처와 생성 과정을 추적한다",
+        "explanation":  "run_id, model, input_ids를 남기면 나중에 감사와 재현이 쉬워진다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "KG/LoRA 데이터셋 생성에서 어떤 결과가 어떤 샤드와 모델에서 나왔는지 추적하는 데 필요하다."
+    },
+    {
+        "id":  "PY16_L10_rag_test_harness_001",
+        "level":  10,
+        "title":  "RAG 테스트 하네스 읽기",
+        "concepts":  [
+                         "test_harness",
+                         "rag",
+                         "evaluation",
+                         "assert"
+                     ],
+        "reading_goal":  "질문 세트를 돌려 RAG 출력이 최소 조건을 만족하는지 검사하는 코드를 읽는다.",
+        "code":  "def run_eval(cases, rag):\n    failures = []\n    for case in cases:\n        result = rag(case[\"question\"])\n        if case[\"must_cite\"] and not result.get(\"citations\"):\n            failures.append(case[\"id\"])\n    return failures",
+        "question_type":  "meaning_choice",
+        "question":  "failures에 case id가 들어가는 경우는?",
+        "choices":  [
+                        "인용이 필요한 case인데 citations가 없을 때",
+                        "모든 답변이 성공했을 때",
+                        "질문이 너무 짧을 때",
+                        "항상 첫 case일 때"
+                    ],
+        "answer":  "인용이 필요한 case인데 citations가 없을 때",
+        "explanation":  "must_cite가 True인데 result에 citations가 없으면 실패 목록에 추가한다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "RAG 품질을 감으로 보지 않고 테스트 케이스로 확인하는 기본 구조다."
+    },
+    {
+        "id":  "PY16_L09_cache_ttl_001",
+        "level":  9,
+        "title":  "cache와 TTL 조건 읽기",
+        "concepts":  [
+                         "cache",
+                         "ttl",
+                         "time",
+                         "api"
+                     ],
+        "reading_goal":  "캐시가 아직 유효하면 API 호출을 건너뛰는 코드를 읽는다.",
+        "code":  "import time\n\ndef get_or_fetch(key, cache, fetch, ttl=3600):\n    item = cache.get(key)\n    if item and time.time() - item[\"saved_at\"] \u003c ttl:\n        return item[\"value\"]\n    value = fetch(key)\n    cache[key] = {\"value\": value, \"saved_at\": time.time()}\n    return value",
+        "question_type":  "meaning_choice",
+        "question":  "time.time() - item[\u0027saved_at\u0027] \u003c ttl의 의미는?",
+        "choices":  [
+                        "저장 후 지난 시간이 ttl보다 작으면 캐시가 유효하다",
+                        "캐시를 항상 삭제한다",
+                        "fetch를 무조건 호출한다",
+                        "시간을 문자열로 바꾼다"
+                    ],
+        "answer":  "저장 후 지난 시간이 ttl보다 작으면 캐시가 유효하다",
+        "explanation":  "현재 시간과 저장 시간을 비교해 캐시 만료 여부를 판단한다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "API 비용과 지연을 줄이는 운영 코드에서 자주 보이는 패턴이다."
+    },
+    {
+        "id":  "PY16_L09_dedup_hash_001",
+        "level":  9,
+        "title":  "claim/hash dedup 흐름 읽기",
+        "concepts":  [
+                         "dedup",
+                         "hash",
+                         "claim",
+                         "canonicalization"
+                     ],
+        "reading_goal":  "정규화한 텍스트로 해시를 만들어 중복을 판단하는 코드를 읽는다.",
+        "code":  "import hashlib\n\ndef claim_hash(text):\n    norm = \" \".join(text.lower().split())\n    return hashlib.sha256(norm.encode(\"utf-8\")).hexdigest()",
+        "question_type":  "meaning_choice",
+        "question":  "\u0027 \u0027.join(text.lower().split())의 역할은?",
+        "choices":  [
+                        "대소문자와 공백 차이를 줄여 정규화한다",
+                        "텍스트를 암호화한다",
+                        "문장을 번역한다",
+                        "해시를 삭제한다"
+                    ],
+        "answer":  "대소문자와 공백 차이를 줄여 정규화한다",
+        "explanation":  "lower로 소문자화하고 split/join으로 중복 공백을 정리한다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "claim 기반 dedup, 중복 기사 제거, 동일 주장 묶기에 쓰이는 기본 아이디어다."
+    },
+    {
+        "id":  "PY16_L10_pipeline_status_001",
+        "level":  10,
+        "title":  "pipeline status 기록 읽기",
+        "concepts":  [
+                         "pipeline",
+                         "status",
+                         "logging",
+                         "run_id"
+                     ],
+        "reading_goal":  "실행 성공/실패 상태를 run_id와 함께 기록하는 코드를 읽는다.",
+        "code":  "def finalize_run(db, run_id, ok, stats, error=None):\n    status = \"ok\" if ok else \"error\"\n    db.update(\"runs\", run_id, {\n        \"status\": status,\n        \"stats\": stats,\n        \"error_message\": str(error) if error else None,\n    })",
+        "question_type":  "meaning_choice",
+        "question":  "ok가 False이면 status는 무엇이 되는가?",
+        "choices":  [
+                        "error",
+                        "ok",
+                        "running",
+                        "None"
+                    ],
+        "answer":  "error",
+        "explanation":  "삼항 표현식에서 ok가 False이면 else 쪽인 \u0027error\u0027가 선택된다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "home-curator/D1 runs 테이블 정합성, 배치 작업 감사로그와 연결되는 코드다."
+    }
+]
