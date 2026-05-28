@@ -1,5 +1,5 @@
 ﻿// === CACHE BUST START ===
-const APP_DATA_VERSION = "20260529_v12_1";
+const APP_DATA_VERSION = "20260529_v15_restore";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -2073,6 +2073,5 @@ if (document.readyState === "loading") {
   setupAutoCollapseBlocks();
 }
 // === MOBILE COLLAPSE END ===
-
 
 
