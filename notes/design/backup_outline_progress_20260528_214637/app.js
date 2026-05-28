@@ -376,7 +376,6 @@ function getAllConcepts() {
 
 function renderOutline() {
   const concepts = getAllConcepts();
-  const progress = loadProgress();
   document.getElementById("outlineSummary").textContent = concepts.length + "개 개념";
 
   const list = document.getElementById("outlineList");
@@ -390,37 +389,12 @@ function renderOutline() {
     title.className = "outline-title";
     title.textContent = item.concept;
 
-    const seen = item.cards.filter(function(card) {
-      return progress.seen[card.id];
-    }).length;
-
-    const correct = item.cards.filter(function(card) {
-      return progress.correct[card.id];
-    }).length;
-
-    const confused = item.cards.filter(function(card) {
-      return progress.confused[card.id];
-    }).length;
-
-    const total = item.cards.length;
-    const percent = total === 0 ? 0 : Math.round((seen / total) * 100);
-
     const meta = document.createElement("div");
     meta.className = "outline-meta";
-    meta.textContent = "Level " + item.levels.join(", ") + " · 관련 카드 " + total + "개 · 본 " + seen + " · 맞힘 " + correct + " · 헷갈림 " + confused;
-
-    const bar = document.createElement("div");
-    bar.className = "outline-mini-progress";
-
-    const fill = document.createElement("div");
-    fill.className = "outline-mini-fill";
-    fill.style.width = percent + "%";
-
-    bar.appendChild(fill);
+    meta.textContent = "Level " + item.levels.join(", ") + " · 관련 카드 " + item.cards.length + "개";
 
     btn.appendChild(title);
     btn.appendChild(meta);
-    btn.appendChild(bar);
 
     btn.onclick = function() {
       renderConceptDetail(item.concept);
@@ -696,8 +670,6 @@ init().catch(function(err) {
   document.getElementById("cardTitle").textContent = "데이터 로딩 실패";
   document.getElementById("readingGoal").textContent = String(err);
 });
-
-
 
 
 
