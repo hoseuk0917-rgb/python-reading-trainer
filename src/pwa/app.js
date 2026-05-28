@@ -146,6 +146,62 @@ function getSideCardById(id) {
   });
 }
 
+const sideSeenKey = "python-reading-trainer-side-seen-v1";
+
+function loadSideSeen() {
+  const raw = localStorage.getItem(sideSeenKey);
+  if (!raw) {
+    return {};
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+function saveSideSeen(seen) {
+  localStorage.setItem(sideSeenKey, JSON.stringify(seen));
+}
+
+function markSideSeen(cardId) {
+  const seen = loadSideSeen();
+  seen[cardId] = (seen[cardId] || 0) + 1;
+  saveSideSeen(seen);
+}
+
+function getBonusSideCards(card, alreadyIds) {
+  const seen = loadSideSeen();
+  const concepts = card.concepts || [];
+
+  const pool = sideCards.filter(function(sc) {
+    if (alreadyIds.includes(sc.id)) {
+      return false;
+    }
+
+    const related = sc.related_concepts || [];
+    const hasOverlap = related.some(function(concept) {
+      return concepts.includes(concept);
+    });
+
+    const isGeneral = ["language", "cs_basic"].includes(sc.type);
+    const seenCount = seen[sc.id] || 0;
+
+    return seenCount < 3 && (hasOverlap || isGeneral);
+  });
+
+  pool.sort(function(a, b) {
+    const ac = seen[a.id] || 0;
+    const bc = seen[b.id] || 0;
+    if (ac !== bc) {
+      return ac - bc;
+    }
+    return a.id.localeCompare(b.id);
+  });
+
+  return pool.slice(0, 2);
+}
+
 function getCurrentCard() {
   return cards[currentIndex];
 }
@@ -213,13 +269,12 @@ function renderSideCards(card) {
   const sideEl = document.getElementById("sideCards");
   sideEl.innerHTML = "";
 
-  const ids = card.side_card_ids || [];
-  ids.forEach(function(id) {
-    const sc = getSideCardById(id);
-    if (!sc) {
-      return;
-    }
+  const directIds = card.side_card_ids || [];
+  const directCards = directIds.map(getSideCardById).filter(Boolean);
+  const bonusCards = getBonusSideCards(card, directIds);
+  const displayCards = directCards.concat(bonusCards);
 
+  displayCards.forEach(function(sc) {
     const box = document.createElement("div");
     box.className = "side-card";
 
@@ -239,6 +294,8 @@ function renderSideCards(card) {
     box.appendChild(title);
     box.appendChild(body);
     sideEl.appendChild(box);
+
+    markSideSeen(sc.id);
   });
 }
 
@@ -660,11 +717,24 @@ function renderProgress() {
 async function init() {
   const curriculumRes = await fetch("../../data/curriculum/curriculum_v1.json");
   const cardsRes = await fetch("../../data/lessons/cards_seed_v1.json");
-  const sideRes = await fetch("../../data/side_cards/side_cards_seed_v1.json");
+  const sideFiles = [
+    "../../data/side_cards/side_cards_seed_v1.json",
+    "../../data/side_cards/language_cards_v1.json",
+    "../../data/side_cards/cs_fundamentals_v1.json"
+  ];
+
+  const sideResults = await Promise.all(sideFiles.map(function(path) {
+    return fetch(path).then(function(res) {
+      if (!res.ok) {
+        return [];
+      }
+      return res.json();
+    });
+  }));
 
   curriculum = await curriculumRes.json();
   cards = await cardsRes.json();
-  sideCards = await sideRes.json();
+  sideCards = sideResults.flat();
 
   cards.sort(function(a, b) {
     if (a.level !== b.level) {
@@ -696,6 +766,10 @@ init().catch(function(err) {
   document.getElementById("cardTitle").textContent = "데이터 로딩 실패";
   document.getElementById("readingGoal").textContent = String(err);
 });
+
+
+
+
 
 
 
