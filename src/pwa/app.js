@@ -738,7 +738,8 @@ async function init() {
     "../../data/lessons/python_libraries_missing_topics_v11.json",
     "../../data/lessons/python_ai_toolchain_expansion_v12.json",
     "../../data/lessons/python_compute_concepts_v13.json",
-    "../../data/lessons/python_ai_learning_methods_v14.json"
+    "../../data/lessons/python_ai_learning_methods_v14.json",
+    "../../data/lessons/python_grouped_concepts_v15.json"
   ];
 
   const lessonResults = await Promise.all(lessonFiles.map(function(path) {
@@ -2072,5 +2073,6 @@ if (document.readyState === "loading") {
   setupAutoCollapseBlocks();
 }
 // === MOBILE COLLAPSE END ===
+
 
 
