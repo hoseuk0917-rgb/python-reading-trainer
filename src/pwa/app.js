@@ -1625,3 +1625,334 @@ init().catch(function(err) {
   }, 300);
 })();
 // === STUDY TOOLS V7.2 QUEUE END ===
+
+// === STUDY TOOLS V7.3 FLOW START ===
+(function() {
+  const toolsStateKey = "python-reading-trainer-study-tools-v7";
+  const queueProgressKey = "python-reading-trainer-study-queue-progress-v7-2";
+
+  function loadToolsStateSafe() {
+    const raw = localStorage.getItem(toolsStateKey);
+    if (!raw) {
+      return { query: "", level: "all", mode: "all", queueIds: [] };
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      return {
+        query: parsed.query || "",
+        level: parsed.level || "all",
+        mode: parsed.mode || "all",
+        queueIds: Array.isArray(parsed.queueIds) ? parsed.queueIds : []
+      };
+    } catch {
+      return { query: "", level: "all", mode: "all", queueIds: [] };
+    }
+  }
+
+  function loadQueueProgress() {
+    const raw = localStorage.getItem(queueProgressKey);
+    if (!raw) {
+      return { doneIds: [] };
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      return { doneIds: Array.isArray(parsed.doneIds) ? parsed.doneIds : [] };
+    } catch {
+      return { doneIds: [] };
+    }
+  }
+
+  function saveQueueProgress(progress) {
+    localStorage.setItem(queueProgressKey, JSON.stringify(progress));
+  }
+
+  function getProgressSafe() {
+    try {
+      if (typeof loadProgress === "function") {
+        return loadProgress();
+      }
+    } catch {}
+    return { seen: {}, correct: {}, confused: {}, lastSeenAt: {} };
+  }
+
+  function getCurrentCardSafe() {
+    try {
+      if (Array.isArray(cards) && cards[currentIndex]) {
+        return cards[currentIndex];
+      }
+    } catch {}
+    return null;
+  }
+
+  function getQueueCards() {
+    const state = loadToolsStateSafe();
+    const ids = state.queueIds || [];
+    return ids.map(function(id) {
+      return cards.find(function(card) { return card.id === id; });
+    }).filter(Boolean);
+  }
+
+  function queueIndexOf(cardId) {
+    const queueCards = getQueueCards();
+    return queueCards.findIndex(function(card) { return card.id === cardId; });
+  }
+
+  function isInQueue(cardId) {
+    return queueIndexOf(cardId) >= 0;
+  }
+
+  function markQueueDone(cardId) {
+    if (!cardId || !isInQueue(cardId)) {
+      return false;
+    }
+    const progress = loadQueueProgress();
+    if (!progress.doneIds.includes(cardId)) {
+      progress.doneIds.push(cardId);
+      saveQueueProgress(progress);
+    }
+    refreshFlowUi();
+    return true;
+  }
+
+  function setCurrentCardById(cardId) {
+    const index = cards.findIndex(function(card) { return card.id === cardId; });
+    if (index < 0) {
+      return false;
+    }
+    currentIndex = index;
+    renderCard();
+    renderProgress();
+    if (typeof setView === "function") {
+      setView("learn");
+    }
+    window.setTimeout(refreshFlowUi, 60);
+    return true;
+  }
+
+  function jumpNextUndoneQueueCard() {
+    const queueCards = getQueueCards();
+    if (queueCards.length === 0) {
+      alert("오늘 큐가 비어 있습니다.");
+      return;
+    }
+    const done = new Set(loadQueueProgress().doneIds || []);
+    const current = getCurrentCardSafe();
+    if (current && isInQueue(current.id)) {
+      markQueueDone(current.id);
+    }
+    const next = queueCards.find(function(card) { return !done.has(card.id) && (!current || card.id !== current.id); }) || queueCards.find(function(card) { return !done.has(card.id); });
+    if (next) {
+      setCurrentCardById(next.id);
+    } else {
+      alert("오늘 큐를 모두 완료했습니다.");
+      refreshFlowUi();
+    }
+  }
+
+  function ensureFlowStyle() {
+    if (document.getElementById("studyToolsV73Style")) {
+      return;
+    }
+    const style = document.createElement("style");
+    style.id = "studyToolsV73Style";
+    style.textContent = `
+      .study-flow-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: 8px;
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: #dbeafe;
+        color: #1d4ed8;
+        font-size: 12px;
+        font-weight: 900;
+        vertical-align: middle;
+      }
+      .study-flow-badge.done {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .study-flow-bottom {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px dashed rgba(148, 163, 184, 0.45);
+      }
+      .study-flow-bottom button {
+        border: 0;
+        border-radius: 999px;
+        padding: 9px 13px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+      .study-flow-bottom .primary {
+        background: #2563eb;
+        color: white;
+      }
+      .study-flow-bottom .secondary {
+        background: #e5e7eb;
+        color: #111827;
+      }
+      .study-flow-bottom span {
+        font-size: 13px;
+        color: #475569;
+        font-weight: 700;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function findCardContainer() {
+    const current = getCurrentCardSafe();
+    if (!current) {
+      return null;
+    }
+    const titleCandidates = Array.from(document.querySelectorAll("h1, h2, h3, .card-title, strong"));
+    const titleEl = titleCandidates.find(function(el) {
+      return (el.textContent || "").trim() === current.title;
+    });
+    if (titleEl) {
+      return titleEl.closest(".card") || titleEl.closest("section") || titleEl.parentElement;
+    }
+    return document.querySelector(".card") || document.querySelector("main") || document.body;
+  }
+
+  function injectCardFlowControls() {
+    ensureFlowStyle();
+    const container = findCardContainer();
+    if (!container) {
+      return;
+    }
+
+    let bottom = document.getElementById("studyFlowBottomV73");
+    if (!bottom) {
+      bottom = document.createElement("div");
+      bottom.id = "studyFlowBottomV73";
+      bottom.className = "study-flow-bottom";
+      bottom.innerHTML = `
+        <button type="button" id="studyFlowDoneV73" class="secondary">큐 완료 처리</button>
+        <button type="button" id="studyFlowNextV73" class="primary">완료하고 큐 다음</button>
+        <span id="studyFlowStatusV73"></span>
+      `;
+      container.appendChild(bottom);
+      document.getElementById("studyFlowDoneV73").onclick = function() {
+        const card = getCurrentCardSafe();
+        if (!card || !isInQueue(card.id)) {
+          alert("현재 카드는 오늘 큐 안의 카드가 아닙니다.");
+          return;
+        }
+        markQueueDone(card.id);
+      };
+      document.getElementById("studyFlowNextV73").onclick = jumpNextUndoneQueueCard;
+    } else if (!container.contains(bottom)) {
+      container.appendChild(bottom);
+    }
+  }
+
+  function refreshCardBadge() {
+    const current = getCurrentCardSafe();
+    if (!current) {
+      return;
+    }
+    document.querySelectorAll(".study-flow-badge").forEach(function(el) { el.remove(); });
+
+    const idx = queueIndexOf(current.id);
+    if (idx < 0) {
+      return;
+    }
+    const queueCards = getQueueCards();
+    const done = new Set(loadQueueProgress().doneIds || []);
+    const isDone = done.has(current.id);
+    const titleCandidates = Array.from(document.querySelectorAll("h1, h2, h3, .card-title, strong"));
+    const titleEl = titleCandidates.find(function(el) {
+      return (el.textContent || "").trim() === current.title;
+    });
+    if (!titleEl) {
+      return;
+    }
+    const badge = document.createElement("span");
+    badge.className = "study-flow-badge" + (isDone ? " done" : "");
+    badge.textContent = "오늘 큐 " + (idx + 1) + " / " + queueCards.length + (isDone ? " 완료" : "");
+    titleEl.appendChild(badge);
+  }
+
+  function refreshBottomStatus() {
+    const status = document.getElementById("studyFlowStatusV73");
+    const doneBtn = document.getElementById("studyFlowDoneV73");
+    const nextBtn = document.getElementById("studyFlowNextV73");
+    if (!status || !doneBtn || !nextBtn) {
+      return;
+    }
+    const current = getCurrentCardSafe();
+    const queueCards = getQueueCards();
+    const done = new Set(loadQueueProgress().doneIds || []);
+    const doneCount = queueCards.filter(function(card) { return done.has(card.id); }).length;
+    const idx = current ? queueIndexOf(current.id) : -1;
+    if (idx < 0) {
+      status.textContent = "현재 카드는 오늘 큐 밖입니다.";
+      doneBtn.disabled = true;
+      nextBtn.disabled = queueCards.length === 0;
+    } else {
+      status.textContent = "오늘 큐 " + doneCount + " / " + queueCards.length + " 완료 · 현재 " + (idx + 1) + "번째";
+      doneBtn.disabled = false;
+      nextBtn.disabled = false;
+    }
+  }
+
+  function refreshFlowUi() {
+    injectCardFlowControls();
+    refreshCardBadge();
+    refreshBottomStatus();
+  }
+
+  function autoCompleteIfCorrect(cardId) {
+    window.setTimeout(function() {
+      const progress = getProgressSafe();
+      if (progress.correct && progress.correct[cardId]) {
+        markQueueDone(cardId);
+      }
+      refreshFlowUi();
+    }, 120);
+  }
+
+  document.addEventListener("click", function(event) {
+    const current = getCurrentCardSafe();
+    if (!current || !isInQueue(current.id)) {
+      return;
+    }
+    const target = event.target;
+    const text = target && target.textContent ? target.textContent.trim() : "";
+    if (target && (target.tagName === "BUTTON" || target.closest("button"))) {
+      if (text.includes("모르겠음")) {
+        window.setTimeout(refreshFlowUi, 120);
+        return;
+      }
+      autoCompleteIfCorrect(current.id);
+    }
+  }, true);
+
+  const oldRenderCard = typeof renderCard === "function" ? renderCard : null;
+  if (oldRenderCard && !window.__studyToolsV73RenderPatched) {
+    window.__studyToolsV73RenderPatched = true;
+    renderCard = function() {
+      oldRenderCard.apply(this, arguments);
+      window.setTimeout(refreshFlowUi, 60);
+    };
+  }
+
+  const timer = setInterval(function() {
+    try {
+      if (Array.isArray(cards) && cards.length > 0 && document.body) {
+        refreshFlowUi();
+        clearInterval(timer);
+      }
+    } catch (error) {
+      console.warn("study flow tools failed", error);
+    }
+  }, 300);
+})();
+// === STUDY TOOLS V7.3 FLOW END ===
