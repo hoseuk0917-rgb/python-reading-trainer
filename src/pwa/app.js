@@ -718,7 +718,8 @@ async function init() {
   const curriculumRes = await fetch("../../data/curriculum/curriculum_v1.json");
   const lessonFiles = [
     "../../data/lessons/cards_seed_v1.json",
-    "../../data/lessons/python_core_expansion_v1.json"
+    "../../data/lessons/python_core_expansion_v1.json",
+    "../../data/lessons/python_practical_expansion_v2.json"
   ];
 
   const lessonResults = await Promise.all(lessonFiles.map(function(path) {
@@ -784,6 +785,10 @@ init().catch(function(err) {
   document.getElementById("cardTitle").textContent = "데이터 로딩 실패";
   document.getElementById("readingGoal").textContent = String(err);
 });
+
+
+
+
 
 
 
