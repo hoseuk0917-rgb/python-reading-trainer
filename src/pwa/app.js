@@ -724,7 +724,8 @@ async function init() {
     "../../data/lessons/python_deep_expansion_v4.json",
     "../../data/lessons/python_advanced_expansion_v5.json",
     "../../data/lessons/python_project_expansion_v6.json",
-    "../../data/lessons/python_realworld_expansion_v8.json"
+    "../../data/lessons/python_realworld_expansion_v8.json",
+    "../../data/lessons/python_daily_review_expansion_v9.json"
   ];
 
   const lessonResults = await Promise.all(lessonFiles.map(function(path) {
@@ -1627,12 +1628,26 @@ init().catch(function(err) {
 })();
 // === STUDY TOOLS V7.2 QUEUE END ===
 
-// === STUDY TOOLS V7.3 FLOW START ===
+// === STUDY TOOLS V7 START ===
 (function() {
   const toolsStateKey = "python-reading-trainer-study-tools-v7";
-  const queueProgressKey = "python-reading-trainer-study-queue-progress-v7-2";
 
-  function loadToolsStateSafe() {
+  function getProgressSafe() {
+    try {
+      if (typeof loadProgress === "function") {
+        return loadProgress();
+      }
+    } catch (error) {
+      console.warn("progress load failed", error);
+    }
+    return { seen: {}, correct: {}, confused: {}, lastSeenAt: {} };
+  }
+
+  function saveToolsState(state) {
+    localStorage.setItem(toolsStateKey, JSON.stringify(state));
+  }
+
+  function loadToolsState() {
     const raw = localStorage.getItem(toolsStateKey);
     if (!raw) {
       return { query: "", level: "all", mode: "all", queueIds: [] };
@@ -1650,75 +1665,54 @@ init().catch(function(err) {
     }
   }
 
-  function loadQueueProgress() {
-    const raw = localStorage.getItem(queueProgressKey);
-    if (!raw) {
-      return { doneIds: [] };
-    }
-    try {
-      const parsed = JSON.parse(raw);
-      return { doneIds: Array.isArray(parsed.doneIds) ? parsed.doneIds : [] };
-    } catch {
-      return { doneIds: [] };
-    }
+  function cardText(card) {
+    return [
+      card.id,
+      card.title,
+      card.reading_goal,
+      card.question,
+      card.explanation,
+      card.project_context,
+      card.code,
+      (card.concepts || []).join(" ")
+    ].filter(Boolean).join(" ").toLowerCase();
   }
 
-  function saveQueueProgress(progress) {
-    localStorage.setItem(queueProgressKey, JSON.stringify(progress));
+  function getLevelOptions() {
+    const levels = Array.from(new Set(cards.map(function(card) { return card.level; }))).sort(function(a, b) { return a - b; });
+    return levels;
   }
 
-  function getProgressSafe() {
-    try {
-      if (typeof loadProgress === "function") {
-        return loadProgress();
+  function filterCards(state) {
+    const progress = getProgressSafe();
+    const query = (state.query || "").trim().toLowerCase();
+    const level = state.level || "all";
+    const mode = state.mode || "all";
+
+    return cards.filter(function(card) {
+      if (level !== "all" && String(card.level) !== String(level)) {
+        return false;
       }
-    } catch {}
-    return { seen: {}, correct: {}, confused: {}, lastSeenAt: {} };
-  }
-
-  function getCurrentCardSafe() {
-    try {
-      if (Array.isArray(cards) && cards[currentIndex]) {
-        return cards[currentIndex];
+      if (query && !cardText(card).includes(query)) {
+        return false;
       }
-    } catch {}
-    return null;
-  }
-
-  function getQueueCards() {
-    const state = loadToolsStateSafe();
-    const ids = state.queueIds || [];
-    return ids.map(function(id) {
-      return cards.find(function(card) { return card.id === id; });
-    }).filter(Boolean);
-  }
-
-  function queueIndexOf(cardId) {
-    const queueCards = getQueueCards();
-    return queueCards.findIndex(function(card) { return card.id === cardId; });
-  }
-
-  function isInQueue(cardId) {
-    return queueIndexOf(cardId) >= 0;
-  }
-
-  function markQueueDone(cardId) {
-    if (!cardId || !isInQueue(cardId)) {
-      return false;
-    }
-    const progress = loadQueueProgress();
-    if (!progress.doneIds.includes(cardId)) {
-      progress.doneIds.push(cardId);
-      saveQueueProgress(progress);
-    }
-    refreshFlowUi();
-    return true;
+      if (mode === "unseen" && progress.seen[card.id]) {
+        return false;
+      }
+      if (mode === "confused" && !progress.confused[card.id]) {
+        return false;
+      }
+      if (mode === "wrong_or_unseen" && progress.correct[card.id] && !progress.confused[card.id]) {
+        return false;
+      }
+      return true;
+    });
   }
 
   function setCurrentCardById(cardId) {
     const index = cards.findIndex(function(card) { return card.id === cardId; });
     if (index < 0) {
-      return false;
+      return;
     }
     currentIndex = index;
     renderCard();
@@ -1726,236 +1720,307 @@ init().catch(function(err) {
     if (typeof setView === "function") {
       setView("learn");
     }
-    window.setTimeout(refreshFlowUi, 60);
-    return true;
   }
 
-  function jumpNextUndoneQueueCard() {
-    const queueCards = getQueueCards();
+  function makeTodayQueue(state) {
+    const progress = getProgressSafe();
+    const candidates = filterCards({
+      query: state.query,
+      level: state.level,
+      mode: "wrong_or_unseen",
+      queueIds: []
+    });
+
+    candidates.sort(function(a, b) {
+      const ac = progress.confused[a.id] ? 0 : progress.seen[a.id] ? 2 : 1;
+      const bc = progress.confused[b.id] ? 0 : progress.seen[b.id] ? 2 : 1;
+      if (ac !== bc) {
+        return ac - bc;
+      }
+      if (a.level !== b.level) {
+        return a.level - b.level;
+      }
+      return a.id.localeCompare(b.id);
+    });
+
+    return candidates.slice(0, 10).map(function(card) { return card.id; });
+  }
+
+  function renderQueueList(box, state) {
+    const ids = state.queueIds || [];
+    const queueCards = ids.map(function(id) {
+      return cards.find(function(card) { return card.id === id; });
+    }).filter(Boolean);
+
     if (queueCards.length === 0) {
-      alert("오늘 큐가 비어 있습니다.");
+      box.innerHTML = '<div class="study-tools-empty">오늘 큐가 비어 있습니다. 조건을 바꾸거나 오늘 10장 만들기를 눌러보세요.</div>';
       return;
     }
-    const done = new Set(loadQueueProgress().doneIds || []);
-    const current = getCurrentCardSafe();
-    if (current && isInQueue(current.id)) {
-      markQueueDone(current.id);
-    }
-    const next = queueCards.find(function(card) { return !done.has(card.id) && (!current || card.id !== current.id); }) || queueCards.find(function(card) { return !done.has(card.id); });
-    if (next) {
-      setCurrentCardById(next.id);
-    } else {
-      alert("오늘 큐를 모두 완료했습니다.");
-      refreshFlowUi();
-    }
+
+    box.innerHTML = "";
+    queueCards.forEach(function(card, index) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "study-tools-card-btn";
+      btn.innerHTML = '<span class="study-tools-num">' + (index + 1) + '</span><span>' + card.title + '</span><small>Lv.' + card.level + '</small>';
+      btn.onclick = function() {
+        setCurrentCardById(card.id);
+      };
+      box.appendChild(btn);
+    });
   }
 
-  function ensureFlowStyle() {
-    if (document.getElementById("studyToolsV73Style")) {
+  function injectStudyToolsStyle() {
+    if (document.getElementById("studyToolsV7Style")) {
       return;
     }
     const style = document.createElement("style");
-    style.id = "studyToolsV73Style";
+    style.id = "studyToolsV7Style";
     style.textContent = `
-      .study-flow-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        margin-left: 8px;
-        padding: 4px 9px;
-        border-radius: 999px;
-        background: #dbeafe;
-        color: #1d4ed8;
-        font-size: 12px;
-        font-weight: 900;
-        vertical-align: middle;
+      .study-tools-panel {
+        margin: 14px 0 18px;
+        padding: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        border-radius: 18px;
+        background: rgba(15, 23, 42, 0.035);
       }
-      .study-flow-badge.done {
-        background: #dcfce7;
-        color: #166534;
+      .study-tools-title {
+        font-weight: 800;
+        margin-bottom: 10px;
       }
-      .study-flow-bottom {
+      .study-tools-controls {
+        display: grid;
+        grid-template-columns: 1fr 110px 150px;
+        gap: 8px;
+      }
+      .study-tools-controls input,
+      .study-tools-controls select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid rgba(148, 163, 184, 0.5);
+        border-radius: 12px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+      .study-tools-actions {
         display: flex;
         flex-wrap: wrap;
-        align-items: center;
         gap: 8px;
         margin-top: 10px;
-        padding-top: 10px;
-        border-top: 1px dashed rgba(148, 163, 184, 0.45);
       }
-      .study-flow-bottom button {
+      .study-tools-actions button,
+      .study-tools-card-btn {
         border: 0;
         border-radius: 999px;
-        padding: 9px 13px;
-        font-weight: 900;
+        padding: 9px 12px;
+        background: #111827;
+        color: white;
+        font-weight: 700;
         cursor: pointer;
       }
-      .study-flow-bottom .primary {
-        background: #2563eb;
-        color: white;
-      }
-      .study-flow-bottom .secondary {
+      .study-tools-actions button.secondary {
         background: #e5e7eb;
         color: #111827;
       }
-      .study-flow-bottom span {
+      .study-tools-status {
+        margin-top: 10px;
         font-size: 13px;
         color: #475569;
-        font-weight: 700;
+      }
+      .study-tools-queue {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .study-tools-card-btn {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        border-radius: 14px;
+        background: #f8fafc;
+        color: #0f172a;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        text-align: left;
+      }
+      .study-tools-card-btn small {
+        margin-left: auto;
+        color: #64748b;
+      }
+      .study-tools-num {
+        min-width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: #111827;
+        color: white;
+        font-size: 12px;
+      }
+      .study-tools-empty {
+        padding: 10px 0;
+        color: #64748b;
+        font-size: 13px;
+      }
+      @media (max-width: 720px) {
+        .study-tools-controls {
+          grid-template-columns: 1fr;
+        }
       }
     `;
     document.head.appendChild(style);
   }
 
-  function findCardContainer() {
-    const current = getCurrentCardSafe();
-    if (!current) {
-      return null;
+  function injectStudyToolsPanel() {
+    if (!Array.isArray(cards) || cards.length === 0) {
+      return false;
     }
-    const titleCandidates = Array.from(document.querySelectorAll("h1, h2, h3, .card-title, strong"));
-    const titleEl = titleCandidates.find(function(el) {
-      return (el.textContent || "").trim() === current.title;
-    });
-    if (titleEl) {
-      return titleEl.closest(".card") || titleEl.closest("section") || titleEl.parentElement;
-    }
-    return document.querySelector(".card") || document.querySelector("main") || document.body;
-  }
-
-  function injectCardFlowControls() {
-    ensureFlowStyle();
-    const container = findCardContainer();
-    if (!container) {
-      return;
+    if (document.getElementById("studyToolsV7")) {
+      refreshStudyToolsPanel();
+      return true;
     }
 
-    let bottom = document.getElementById("studyFlowBottomV73");
-    if (!bottom) {
-      bottom = document.createElement("div");
-      bottom.id = "studyFlowBottomV73";
-      bottom.className = "study-flow-bottom";
-      bottom.innerHTML = `
-        <button type="button" id="studyFlowDoneV73" class="secondary">큐 완료 처리</button>
-        <button type="button" id="studyFlowNextV73" class="primary">완료하고 큐 다음</button>
-        <span id="studyFlowStatusV73"></span>
-      `;
-      container.appendChild(bottom);
-      document.getElementById("studyFlowDoneV73").onclick = function() {
-        const card = getCurrentCardSafe();
-        if (!card || !isInQueue(card.id)) {
-          alert("현재 카드는 오늘 큐 안의 카드가 아닙니다.");
-          return;
-        }
-        markQueueDone(card.id);
-      };
-      document.getElementById("studyFlowNextV73").onclick = jumpNextUndoneQueueCard;
-    } else if (!container.contains(bottom)) {
-      container.appendChild(bottom);
-    }
-  }
+    injectStudyToolsStyle();
 
-  function refreshCardBadge() {
-    const current = getCurrentCardSafe();
-    if (!current) {
-      return;
-    }
-    document.querySelectorAll(".study-flow-badge").forEach(function(el) { el.remove(); });
+    const learnView = document.getElementById("learnView") || document.querySelector(".active-view") || document.body;
+    const panel = document.createElement("section");
+    panel.id = "studyToolsV7";
+    panel.className = "study-tools-panel";
 
-    const idx = queueIndexOf(current.id);
-    if (idx < 0) {
-      return;
-    }
-    const queueCards = getQueueCards();
-    const done = new Set(loadQueueProgress().doneIds || []);
-    const isDone = done.has(current.id);
-    const titleCandidates = Array.from(document.querySelectorAll("h1, h2, h3, .card-title, strong"));
-    const titleEl = titleCandidates.find(function(el) {
-      return (el.textContent || "").trim() === current.title;
-    });
-    if (!titleEl) {
-      return;
-    }
-    const badge = document.createElement("span");
-    badge.className = "study-flow-badge" + (isDone ? " done" : "");
-    badge.textContent = "오늘 큐 " + (idx + 1) + " / " + queueCards.length + (isDone ? " 완료" : "");
-    titleEl.appendChild(badge);
-  }
+    const levels = getLevelOptions();
+    const levelOptions = ['<option value="all">전체 레벨</option>'].concat(levels.map(function(level) {
+      return '<option value="' + level + '">Lv.' + level + '</option>';
+    })).join("");
 
-  function refreshBottomStatus() {
-    const status = document.getElementById("studyFlowStatusV73");
-    const doneBtn = document.getElementById("studyFlowDoneV73");
-    const nextBtn = document.getElementById("studyFlowNextV73");
-    if (!status || !doneBtn || !nextBtn) {
-      return;
-    }
-    const current = getCurrentCardSafe();
-    const queueCards = getQueueCards();
-    const done = new Set(loadQueueProgress().doneIds || []);
-    const doneCount = queueCards.filter(function(card) { return done.has(card.id); }).length;
-    const idx = current ? queueIndexOf(current.id) : -1;
-    if (idx < 0) {
-      status.textContent = "현재 카드는 오늘 큐 밖입니다.";
-      doneBtn.disabled = true;
-      nextBtn.disabled = queueCards.length === 0;
+    panel.innerHTML = `
+      <div class="study-tools-title">학습 도구</div>
+      <div class="study-tools-controls">
+        <input id="studyToolsQuery" type="search" placeholder="카드 검색: 예) FastAPI, RAG, JSONL, 에러" />
+        <select id="studyToolsLevel">${levelOptions}</select>
+        <select id="studyToolsMode">
+          <option value="all">전체</option>
+          <option value="unseen">안 본 카드</option>
+          <option value="confused">모르겠음 카드</option>
+          <option value="wrong_or_unseen">복습 우선</option>
+        </select>
+      </div>
+      <div class="study-tools-actions">
+        <button type="button" id="studyToolsApply">조건 적용</button>
+        <button type="button" id="studyToolsToday">오늘 10장 만들기</button>
+        <button type="button" id="studyToolsRandom" class="secondary">랜덤 1장</button>
+        <button type="button" id="studyToolsClear" class="secondary">조건 초기화</button>
+      </div>
+      <div id="studyToolsStatus" class="study-tools-status"></div>
+      <div id="studyToolsQueue" class="study-tools-queue"></div>
+    `;
+
+    const firstCard = document.querySelector(".card") || learnView.firstElementChild;
+    if (firstCard && firstCard.parentElement) {
+      firstCard.parentElement.insertBefore(panel, firstCard);
     } else {
-      status.textContent = "오늘 큐 " + doneCount + " / " + queueCards.length + " 완료 · 현재 " + (idx + 1) + "번째";
-      doneBtn.disabled = false;
-      nextBtn.disabled = false;
+      learnView.prepend(panel);
     }
-  }
 
-  function refreshFlowUi() {
-    injectCardFlowControls();
-    refreshCardBadge();
-    refreshBottomStatus();
-  }
+    const state = loadToolsState();
+    document.getElementById("studyToolsQuery").value = state.query || "";
+    document.getElementById("studyToolsLevel").value = state.level || "all";
+    document.getElementById("studyToolsMode").value = state.mode || "all";
 
-  function autoCompleteIfCorrect(cardId) {
-    window.setTimeout(function() {
-      const progress = getProgressSafe();
-      if (progress.correct && progress.correct[cardId]) {
-        markQueueDone(cardId);
+    document.getElementById("studyToolsApply").onclick = applyStudyToolsFilter;
+    document.getElementById("studyToolsToday").onclick = createTodayStudyQueue;
+    document.getElementById("studyToolsRandom").onclick = jumpRandomStudyCard;
+    document.getElementById("studyToolsClear").onclick = clearStudyToolsFilter;
+    document.getElementById("studyToolsQuery").addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        applyStudyToolsFilter();
       }
-      refreshFlowUi();
-    }, 120);
+    });
+
+    refreshStudyToolsPanel();
+    return true;
   }
 
-  document.addEventListener("click", function(event) {
-    const current = getCurrentCardSafe();
-    if (!current || !isInQueue(current.id)) {
+  function readPanelState() {
+    return {
+      query: document.getElementById("studyToolsQuery") ? document.getElementById("studyToolsQuery").value : "",
+      level: document.getElementById("studyToolsLevel") ? document.getElementById("studyToolsLevel").value : "all",
+      mode: document.getElementById("studyToolsMode") ? document.getElementById("studyToolsMode").value : "all",
+      queueIds: loadToolsState().queueIds || []
+    };
+  }
+
+  function refreshStudyToolsPanel() {
+    const status = document.getElementById("studyToolsStatus");
+    const queue = document.getElementById("studyToolsQueue");
+    if (!status || !queue) {
       return;
     }
-    const target = event.target;
-    const text = target && target.textContent ? target.textContent.trim() : "";
-    if (target && (target.tagName === "BUTTON" || target.closest("button"))) {
-      if (text.includes("모르겠음")) {
-        window.setTimeout(refreshFlowUi, 120);
-        return;
-      }
-      autoCompleteIfCorrect(current.id);
-    }
-  }, true);
+    const state = readPanelState();
+    const matches = filterCards(state);
+    const progress = getProgressSafe();
+    const seenCount = cards.filter(function(card) { return progress.seen[card.id]; }).length;
+    const confusedCount = cards.filter(function(card) { return progress.confused[card.id]; }).length;
+    status.textContent = "조건 일치 " + matches.length + "장 / 전체 " + cards.length + "장 · 본 카드 " + seenCount + "장 · 모르겠음 " + confusedCount + "장";
+    renderQueueList(queue, state);
+  }
 
-  const oldRenderCard = typeof renderCard === "function" ? renderCard : null;
-  if (oldRenderCard && !window.__studyToolsV73RenderPatched) {
-    window.__studyToolsV73RenderPatched = true;
-    renderCard = function() {
-      oldRenderCard.apply(this, arguments);
-      window.setTimeout(refreshFlowUi, 60);
-    };
+  function applyStudyToolsFilter() {
+    const state = readPanelState();
+    const matches = filterCards(state);
+    saveToolsState(state);
+    refreshStudyToolsPanel();
+    if (matches.length > 0) {
+      setCurrentCardById(matches[0].id);
+    } else {
+      alert("조건에 맞는 카드가 없습니다.");
+    }
+  }
+
+  function createTodayStudyQueue() {
+    const state = readPanelState();
+    state.queueIds = makeTodayQueue(state);
+    saveToolsState(state);
+    refreshStudyToolsPanel();
+    if (state.queueIds.length > 0) {
+      setCurrentCardById(state.queueIds[0]);
+    }
+  }
+
+  function jumpRandomStudyCard() {
+    const state = readPanelState();
+    const matches = filterCards(state);
+    if (matches.length === 0) {
+      alert("조건에 맞는 카드가 없습니다.");
+      return;
+    }
+    const card = matches[Math.floor(Math.random() * matches.length)];
+    saveToolsState(state);
+    setCurrentCardById(card.id);
+    refreshStudyToolsPanel();
+  }
+
+  function clearStudyToolsFilter() {
+    const state = { query: "", level: "all", mode: "all", queueIds: [] };
+    saveToolsState(state);
+    document.getElementById("studyToolsQuery").value = "";
+    document.getElementById("studyToolsLevel").value = "all";
+    document.getElementById("studyToolsMode").value = "all";
+    refreshStudyToolsPanel();
   }
 
   const timer = setInterval(function() {
     try {
-      if (Array.isArray(cards) && cards.length > 0 && document.body) {
-        refreshFlowUi();
+      if (injectStudyToolsPanel()) {
         clearInterval(timer);
       }
     } catch (error) {
-      console.warn("study flow tools failed", error);
+      console.warn("study tools init failed", error);
     }
   }, 300);
 })();
-// === STUDY TOOLS V7.3 FLOW END ===
+// === STUDY TOOLS V7 END ===
+
 
 
