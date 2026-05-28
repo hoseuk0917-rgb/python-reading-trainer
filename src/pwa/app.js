@@ -790,30 +790,547 @@ init().catch(function(err) {
   document.getElementById("readingGoal").textContent = String(err);
 });
 
+// === STUDY TOOLS V7 START ===
+(function() {
+  const toolsStateKey = "python-reading-trainer-study-tools-v7";
 
+  function getProgressSafe() {
+    try {
+      if (typeof loadProgress === "function") {
+        return loadProgress();
+      }
+    } catch (error) {
+      console.warn("progress load failed", error);
+    }
+    return { seen: {}, correct: {}, confused: {}, lastSeenAt: {} };
+  }
 
+  function saveToolsState(state) {
+    localStorage.setItem(toolsStateKey, JSON.stringify(state));
+  }
 
+  function loadToolsState() {
+    const raw = localStorage.getItem(toolsStateKey);
+    if (!raw) {
+      return { query: "", level: "all", mode: "all", queueIds: [] };
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      return {
+        query: parsed.query || "",
+        level: parsed.level || "all",
+        mode: parsed.mode || "all",
+        queueIds: Array.isArray(parsed.queueIds) ? parsed.queueIds : []
+      };
+    } catch {
+      return { query: "", level: "all", mode: "all", queueIds: [] };
+    }
+  }
 
+  function cardText(card) {
+    return [
+      card.id,
+      card.title,
+      card.reading_goal,
+      card.question,
+      card.explanation,
+      card.project_context,
+      card.code,
+      (card.concepts || []).join(" ")
+    ].filter(Boolean).join(" ").toLowerCase();
+  }
 
+  function getLevelOptions() {
+    const levels = Array.from(new Set(cards.map(function(card) { return card.level; }))).sort(function(a, b) { return a - b; });
+    return levels;
+  }
 
+  function filterCards(state) {
+    const progress = getProgressSafe();
+    const query = (state.query || "").trim().toLowerCase();
+    const level = state.level || "all";
+    const mode = state.mode || "all";
 
+    return cards.filter(function(card) {
+      if (level !== "all" && String(card.level) !== String(level)) {
+        return false;
+      }
+      if (query && !cardText(card).includes(query)) {
+        return false;
+      }
+      if (mode === "unseen" && progress.seen[card.id]) {
+        return false;
+      }
+      if (mode === "confused" && !progress.confused[card.id]) {
+        return false;
+      }
+      if (mode === "wrong_or_unseen" && progress.correct[card.id] && !progress.confused[card.id]) {
+        return false;
+      }
+      return true;
+    });
+  }
 
+  function setCurrentCardById(cardId) {
+    const index = cards.findIndex(function(card) { return card.id === cardId; });
+    if (index < 0) {
+      return;
+    }
+    currentIndex = index;
+    renderCard();
+    renderProgress();
+    if (typeof setView === "function") {
+      setView("learn");
+    }
+  }
 
+  function makeTodayQueue(state) {
+    const progress = getProgressSafe();
+    const candidates = filterCards({
+      query: state.query,
+      level: state.level,
+      mode: "wrong_or_unseen",
+      queueIds: []
+    });
 
+    candidates.sort(function(a, b) {
+      const ac = progress.confused[a.id] ? 0 : progress.seen[a.id] ? 2 : 1;
+      const bc = progress.confused[b.id] ? 0 : progress.seen[b.id] ? 2 : 1;
+      if (ac !== bc) {
+        return ac - bc;
+      }
+      if (a.level !== b.level) {
+        return a.level - b.level;
+      }
+      return a.id.localeCompare(b.id);
+    });
 
+    return candidates.slice(0, 10).map(function(card) { return card.id; });
+  }
 
+  function renderQueueList(box, state) {
+    const ids = state.queueIds || [];
+    const queueCards = ids.map(function(id) {
+      return cards.find(function(card) { return card.id === id; });
+    }).filter(Boolean);
 
+    if (queueCards.length === 0) {
+      box.innerHTML = '<div class="study-tools-empty">오늘 큐가 비어 있습니다. 조건을 바꾸거나 오늘 10장 만들기를 눌러보세요.</div>';
+      return;
+    }
 
+    box.innerHTML = "";
+    queueCards.forEach(function(card, index) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "study-tools-card-btn";
+      btn.innerHTML = '<span class="study-tools-num">' + (index + 1) + '</span><span>' + card.title + '</span><small>Lv.' + card.level + '</small>';
+      btn.onclick = function() {
+        setCurrentCardById(card.id);
+      };
+      box.appendChild(btn);
+    });
+  }
 
+  function injectStudyToolsStyle() {
+    if (document.getElementById("studyToolsV7Style")) {
+      return;
+    }
+    const style = document.createElement("style");
+    style.id = "studyToolsV7Style";
+    style.textContent = `
+      .study-tools-panel {
+        margin: 14px 0 18px;
+        padding: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        border-radius: 18px;
+        background: rgba(15, 23, 42, 0.035);
+      }
+      .study-tools-title {
+        font-weight: 800;
+        margin-bottom: 10px;
+      }
+      .study-tools-controls {
+        display: grid;
+        grid-template-columns: 1fr 110px 150px;
+        gap: 8px;
+      }
+      .study-tools-controls input,
+      .study-tools-controls select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid rgba(148, 163, 184, 0.5);
+        border-radius: 12px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+      .study-tools-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .study-tools-actions button,
+      .study-tools-card-btn {
+        border: 0;
+        border-radius: 999px;
+        padding: 9px 12px;
+        background: #111827;
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .study-tools-actions button.secondary {
+        background: #e5e7eb;
+        color: #111827;
+      }
+      .study-tools-status {
+        margin-top: 10px;
+        font-size: 13px;
+        color: #475569;
+      }
+      .study-tools-queue {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .study-tools-card-btn {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        border-radius: 14px;
+        background: #f8fafc;
+        color: #0f172a;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        text-align: left;
+      }
+      .study-tools-card-btn small {
+        margin-left: auto;
+        color: #64748b;
+      }
+      .study-tools-num {
+        min-width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: #111827;
+        color: white;
+        font-size: 12px;
+      }
+      .study-tools-empty {
+        padding: 10px 0;
+        color: #64748b;
+        font-size: 13px;
+      }
+      @media (max-width: 720px) {
+        .study-tools-controls {
+          grid-template-columns: 1fr;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
 
+  function injectStudyToolsPanel() {
+    if (!Array.isArray(cards) || cards.length === 0) {
+      return false;
+    }
+    if (document.getElementById("studyToolsV7")) {
+      refreshStudyToolsPanel();
+      return true;
+    }
 
+    injectStudyToolsStyle();
 
+    const learnView = document.getElementById("learnView") || document.querySelector(".active-view") || document.body;
+    const panel = document.createElement("section");
+    panel.id = "studyToolsV7";
+    panel.className = "study-tools-panel";
 
+    const levels = getLevelOptions();
+    const levelOptions = ['<option value="all">전체 레벨</option>'].concat(levels.map(function(level) {
+      return '<option value="' + level + '">Lv.' + level + '</option>';
+    })).join("");
 
+    panel.innerHTML = `
+      <div class="study-tools-title">학습 도구</div>
+      <div class="study-tools-controls">
+        <input id="studyToolsQuery" type="search" placeholder="카드 검색: 예) FastAPI, RAG, JSONL, 에러" />
+        <select id="studyToolsLevel">${levelOptions}</select>
+        <select id="studyToolsMode">
+          <option value="all">전체</option>
+          <option value="unseen">안 본 카드</option>
+          <option value="confused">모르겠음 카드</option>
+          <option value="wrong_or_unseen">복습 우선</option>
+        </select>
+      </div>
+      <div class="study-tools-actions">
+        <button type="button" id="studyToolsApply">조건 적용</button>
+        <button type="button" id="studyToolsToday">오늘 10장 만들기</button>
+        <button type="button" id="studyToolsRandom" class="secondary">랜덤 1장</button>
+        <button type="button" id="studyToolsClear" class="secondary">조건 초기화</button>
+      </div>
+      <div id="studyToolsStatus" class="study-tools-status"></div>
+      <div id="studyToolsQueue" class="study-tools-queue"></div>
+    `;
 
+    const firstCard = document.querySelector(".card") || learnView.firstElementChild;
+    if (firstCard && firstCard.parentElement) {
+      firstCard.parentElement.insertBefore(panel, firstCard);
+    } else {
+      learnView.prepend(panel);
+    }
 
+    const state = loadToolsState();
+    document.getElementById("studyToolsQuery").value = state.query || "";
+    document.getElementById("studyToolsLevel").value = state.level || "all";
+    document.getElementById("studyToolsMode").value = state.mode || "all";
 
+    document.getElementById("studyToolsApply").onclick = applyStudyToolsFilter;
+    document.getElementById("studyToolsToday").onclick = createTodayStudyQueue;
+    document.getElementById("studyToolsRandom").onclick = jumpRandomStudyCard;
+    document.getElementById("studyToolsClear").onclick = clearStudyToolsFilter;
+    document.getElementById("studyToolsQuery").addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        applyStudyToolsFilter();
+      }
+    });
 
+    refreshStudyToolsPanel();
+    return true;
+  }
 
+  function readPanelState() {
+    return {
+      query: document.getElementById("studyToolsQuery") ? document.getElementById("studyToolsQuery").value : "",
+      level: document.getElementById("studyToolsLevel") ? document.getElementById("studyToolsLevel").value : "all",
+      mode: document.getElementById("studyToolsMode") ? document.getElementById("studyToolsMode").value : "all",
+      queueIds: loadToolsState().queueIds || []
+    };
+  }
 
+  function refreshStudyToolsPanel() {
+    const status = document.getElementById("studyToolsStatus");
+    const queue = document.getElementById("studyToolsQueue");
+    if (!status || !queue) {
+      return;
+    }
+    const state = readPanelState();
+    const matches = filterCards(state);
+    const progress = getProgressSafe();
+    const seenCount = cards.filter(function(card) { return progress.seen[card.id]; }).length;
+    const confusedCount = cards.filter(function(card) { return progress.confused[card.id]; }).length;
+    status.textContent = "조건 일치 " + matches.length + "장 / 전체 " + cards.length + "장 · 본 카드 " + seenCount + "장 · 모르겠음 " + confusedCount + "장";
+    renderQueueList(queue, state);
+  }
 
+  function applyStudyToolsFilter() {
+    const state = readPanelState();
+    const matches = filterCards(state);
+    saveToolsState(state);
+    refreshStudyToolsPanel();
+    if (matches.length > 0) {
+      setCurrentCardById(matches[0].id);
+    } else {
+      alert("조건에 맞는 카드가 없습니다.");
+    }
+  }
+
+  function createTodayStudyQueue() {
+    const state = readPanelState();
+    state.queueIds = makeTodayQueue(state);
+    saveToolsState(state);
+    refreshStudyToolsPanel();
+    if (state.queueIds.length > 0) {
+      setCurrentCardById(state.queueIds[0]);
+    }
+  }
+
+  function jumpRandomStudyCard() {
+    const state = readPanelState();
+    const matches = filterCards(state);
+    if (matches.length === 0) {
+      alert("조건에 맞는 카드가 없습니다.");
+      return;
+    }
+    const card = matches[Math.floor(Math.random() * matches.length)];
+    saveToolsState(state);
+    setCurrentCardById(card.id);
+    refreshStudyToolsPanel();
+  }
+
+  function clearStudyToolsFilter() {
+    const state = { query: "", level: "all", mode: "all", queueIds: [] };
+    saveToolsState(state);
+    document.getElementById("studyToolsQuery").value = "";
+    document.getElementById("studyToolsLevel").value = "all";
+    document.getElementById("studyToolsMode").value = "all";
+    refreshStudyToolsPanel();
+  }
+
+  const timer = setInterval(function() {
+    try {
+      if (injectStudyToolsPanel()) {
+        clearInterval(timer);
+      }
+    } catch (error) {
+      console.warn("study tools init failed", error);
+    }
+  }, 300);
+})();
+// === STUDY TOOLS V7 END ===
+
+// === STUDY TOOLS V7.1 UX START ===
+(function() {
+  function injectStudyToolsUxPatchStyle() {
+    if (document.getElementById("studyToolsV71Style")) {
+      return;
+    }
+    const style = document.createElement("style");
+    style.id = "studyToolsV71Style";
+    style.textContent = `
+      #studyToolsV7 {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: auto !important;
+        box-sizing: border-box !important;
+      }
+      #studyToolsV7 .study-tools-title::after {
+        content: " · 현재 필터 기준으로 검색/오늘 큐 생성";
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+      }
+      #studyToolsV7 .study-tools-status.warning {
+        color: #b45309;
+        font-weight: 700;
+      }
+      #studyToolsV7 .study-tools-filter-badge {
+        display: inline-flex;
+        align-items: center;
+        margin-left: 6px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #fef3c7;
+        color: #92400e;
+        font-size: 12px;
+        font-weight: 800;
+      }
+      #studyToolsV7 .study-tools-help {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.5;
+      }
+      @media (min-width: 900px) {
+        #studyToolsV7 .study-tools-queue {
+          grid-template-columns: repeat(5, minmax(160px, 1fr)) !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function getSelectedText(select) {
+    if (!select || select.selectedIndex < 0) {
+      return "";
+    }
+    return select.options[select.selectedIndex].textContent || "";
+  }
+
+  function enhanceStudyToolsPanel() {
+    const panel = document.getElementById("studyToolsV7");
+    if (!panel) {
+      return false;
+    }
+
+    injectStudyToolsUxPatchStyle();
+
+    const title = panel.querySelector(".study-tools-title");
+    const level = document.getElementById("studyToolsLevel");
+    const mode = document.getElementById("studyToolsMode");
+    const todayBtn = document.getElementById("studyToolsToday");
+    const status = document.getElementById("studyToolsStatus");
+    const queue = document.getElementById("studyToolsQueue");
+
+    if (!title || !level || !mode || !todayBtn || !status || !queue) {
+      return true;
+    }
+
+    todayBtn.textContent = "현재 조건으로 오늘 최대 10장";
+
+    let help = document.getElementById("studyToolsHelpV71");
+    if (!help) {
+      help = document.createElement("div");
+      help.id = "studyToolsHelpV71";
+      help.className = "study-tools-help";
+      status.insertAdjacentElement("afterend", help);
+    }
+
+    function refreshHelp() {
+      const levelText = getSelectedText(level);
+      const modeText = getSelectedText(mode);
+      const queueCount = queue.querySelectorAll(".study-tools-card-btn").length;
+      const statusText = status.textContent || "";
+      const match = statusText.match(/조건 일치\s+(\d+)장/);
+      const matchCount = match ? Number(match[1]) : null;
+
+      let warning = "";
+      if (matchCount !== null && matchCount < 10) {
+        warning = " 조건에 맞는 카드가 10장 미만이라 " + matchCount + "장까지만 만들 수 있습니다.";
+        status.classList.add("warning");
+      } else {
+        status.classList.remove("warning");
+      }
+
+      help.innerHTML = "현재 조건: <b>" + levelText + "</b> · <b>" + modeText + "</b> · 오늘 큐 <b>" + queueCount + "장</b>." + warning + " 10장을 원하면 레벨을 <b>전체 레벨</b>로 바꾸세요.";
+    }
+
+    level.addEventListener("change", function() {
+      window.setTimeout(refreshHelp, 50);
+    });
+    mode.addEventListener("change", function() {
+      window.setTimeout(refreshHelp, 50);
+    });
+    todayBtn.addEventListener("click", function() {
+      window.setTimeout(refreshHelp, 80);
+    });
+    const applyBtn = document.getElementById("studyToolsApply");
+    if (applyBtn) {
+      applyBtn.addEventListener("click", function() {
+        window.setTimeout(refreshHelp, 80);
+      });
+    }
+    const clearBtn = document.getElementById("studyToolsClear");
+    if (clearBtn) {
+      clearBtn.addEventListener("click", function() {
+        window.setTimeout(refreshHelp, 80);
+      });
+    }
+
+    const observer = new MutationObserver(function() {
+      refreshHelp();
+    });
+    observer.observe(status, { childList: true, characterData: true, subtree: true });
+    observer.observe(queue, { childList: true, subtree: true });
+
+    refreshHelp();
+    return true;
+  }
+
+  const timer = setInterval(function() {
+    try {
+      if (enhanceStudyToolsPanel()) {
+        clearInterval(timer);
+      }
+    } catch (error) {
+      console.warn("study tools ux patch failed", error);
+    }
+  }, 300);
+})();
+// === STUDY TOOLS V7.1 UX END ===
