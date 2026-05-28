@@ -1334,3 +1334,294 @@ init().catch(function(err) {
   }, 300);
 })();
 // === STUDY TOOLS V7.1 UX END ===
+
+// === STUDY TOOLS V7.2 QUEUE START ===
+(function() {
+  const toolsStateKey = "python-reading-trainer-study-tools-v7";
+  const queueProgressKey = "python-reading-trainer-study-queue-progress-v7-2";
+
+  function loadToolsStateSafe() {
+    const raw = localStorage.getItem(toolsStateKey);
+    if (!raw) {
+      return { query: "", level: "all", mode: "all", queueIds: [] };
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      return {
+        query: parsed.query || "",
+        level: parsed.level || "all",
+        mode: parsed.mode || "all",
+        queueIds: Array.isArray(parsed.queueIds) ? parsed.queueIds : []
+      };
+    } catch {
+      return { query: "", level: "all", mode: "all", queueIds: [] };
+    }
+  }
+
+  function saveToolsStateSafe(state) {
+    localStorage.setItem(toolsStateKey, JSON.stringify(state));
+  }
+
+  function loadQueueProgress() {
+    const raw = localStorage.getItem(queueProgressKey);
+    if (!raw) {
+      return { doneIds: [] };
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      return { doneIds: Array.isArray(parsed.doneIds) ? parsed.doneIds : [] };
+    } catch {
+      return { doneIds: [] };
+    }
+  }
+
+  function saveQueueProgress(progress) {
+    localStorage.setItem(queueProgressKey, JSON.stringify(progress));
+  }
+
+  function getCurrentCardIdSafe() {
+    try {
+      if (Array.isArray(cards) && cards[currentIndex]) {
+        return cards[currentIndex].id;
+      }
+    } catch {}
+    return null;
+  }
+
+  function setCurrentCardByIdSafe(cardId) {
+    const index = cards.findIndex(function(card) { return card.id === cardId; });
+    if (index < 0) {
+      return false;
+    }
+    currentIndex = index;
+    renderCard();
+    renderProgress();
+    if (typeof setView === "function") {
+      setView("learn");
+    }
+    window.setTimeout(refreshQueueTools, 50);
+    return true;
+  }
+
+  function ensureQueueToolsStyle() {
+    if (document.getElementById("studyToolsV72Style")) {
+      return;
+    }
+    const style = document.createElement("style");
+    style.id = "studyToolsV72Style";
+    style.textContent = `
+      #studyToolsQueueNavV72 {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px dashed rgba(148, 163, 184, 0.55);
+      }
+      #studyToolsQueueNavV72 button {
+        border: 0;
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: #2563eb;
+        color: white;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      #studyToolsQueueNavV72 button.secondary {
+        background: #e5e7eb;
+        color: #111827;
+      }
+      #studyToolsQueueNavV72 button.danger {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      #studyToolsQueueStatusV72 {
+        font-size: 13px;
+        color: #475569;
+        font-weight: 700;
+      }
+      #studyToolsV7 .study-tools-card-btn.queue-current {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+      }
+      #studyToolsV7 .study-tools-card-btn.queue-done {
+        opacity: 0.58;
+      }
+      #studyToolsV7 .study-tools-card-btn.queue-done::after {
+        content: "완료";
+        margin-left: 6px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: #dcfce7;
+        color: #166534;
+        font-size: 11px;
+        font-weight: 900;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function getQueueCards() {
+    const state = loadToolsStateSafe();
+    const ids = state.queueIds || [];
+    return ids.map(function(id) {
+      return cards.find(function(card) { return card.id === id; });
+    }).filter(Boolean);
+  }
+
+  function currentQueueIndex(queueCards, currentId) {
+    return queueCards.findIndex(function(card) { return card.id === currentId; });
+  }
+
+  function markCurrentQueueDone() {
+    const currentId = getCurrentCardIdSafe();
+    const queueCards = getQueueCards();
+    if (!currentId || !queueCards.some(function(card) { return card.id === currentId; })) {
+      alert("현재 카드는 오늘 큐 안의 카드가 아닙니다.");
+      return;
+    }
+    const progress = loadQueueProgress();
+    if (!progress.doneIds.includes(currentId)) {
+      progress.doneIds.push(currentId);
+      saveQueueProgress(progress);
+    }
+    refreshQueueTools();
+  }
+
+  function jumpQueueFirst() {
+    const queueCards = getQueueCards();
+    if (queueCards.length === 0) {
+      alert("오늘 큐가 비어 있습니다.");
+      return;
+    }
+    setCurrentCardByIdSafe(queueCards[0].id);
+  }
+
+  function jumpQueueNext() {
+    const queueCards = getQueueCards();
+    if (queueCards.length === 0) {
+      alert("오늘 큐가 비어 있습니다.");
+      return;
+    }
+
+    const currentId = getCurrentCardIdSafe();
+    const progress = loadQueueProgress();
+    if (currentId && queueCards.some(function(card) { return card.id === currentId; }) && !progress.doneIds.includes(currentId)) {
+      progress.doneIds.push(currentId);
+      saveQueueProgress(progress);
+    }
+
+    const done = new Set(progress.doneIds || []);
+    const next = queueCards.find(function(card) { return !done.has(card.id); });
+    if (next) {
+      setCurrentCardByIdSafe(next.id);
+    } else {
+      alert("오늘 큐를 모두 완료했습니다.");
+    }
+    refreshQueueTools();
+  }
+
+  function clearQueueProgressOnly() {
+    saveQueueProgress({ doneIds: [] });
+    refreshQueueTools();
+  }
+
+  function clearQueueAll() {
+    const state = loadToolsStateSafe();
+    state.queueIds = [];
+    saveToolsStateSafe(state);
+    saveQueueProgress({ doneIds: [] });
+    refreshQueueTools();
+  }
+
+  function injectQueueNav() {
+    const panel = document.getElementById("studyToolsV7");
+    if (!panel) {
+      return false;
+    }
+    ensureQueueToolsStyle();
+
+    let nav = document.getElementById("studyToolsQueueNavV72");
+    if (!nav) {
+      nav = document.createElement("div");
+      nav.id = "studyToolsQueueNavV72";
+      nav.innerHTML = `
+        <button type="button" id="studyQueueFirstV72" class="secondary">큐 첫 장</button>
+        <button type="button" id="studyQueueDoneV72" class="secondary">현재 카드 완료 표시</button>
+        <button type="button" id="studyQueueNextV72">큐 다음</button>
+        <button type="button" id="studyQueueResetV72" class="secondary">큐 완료표시 초기화</button>
+        <button type="button" id="studyQueueClearV72" class="danger">큐 비우기</button>
+        <span id="studyToolsQueueStatusV72"></span>
+      `;
+      const queue = document.getElementById("studyToolsQueue");
+      if (queue) {
+        queue.insertAdjacentElement("beforebegin", nav);
+      } else {
+        panel.appendChild(nav);
+      }
+
+      document.getElementById("studyQueueFirstV72").onclick = jumpQueueFirst;
+      document.getElementById("studyQueueDoneV72").onclick = markCurrentQueueDone;
+      document.getElementById("studyQueueNextV72").onclick = jumpQueueNext;
+      document.getElementById("studyQueueResetV72").onclick = clearQueueProgressOnly;
+      document.getElementById("studyQueueClearV72").onclick = clearQueueAll;
+    }
+
+    refreshQueueTools();
+    return true;
+  }
+
+  function refreshQueueTools() {
+    const status = document.getElementById("studyToolsQueueStatusV72");
+    const queue = document.getElementById("studyToolsQueue");
+    if (!status || !queue) {
+      return;
+    }
+
+    const queueCards = getQueueCards();
+    const currentId = getCurrentCardIdSafe();
+    const progress = loadQueueProgress();
+    const done = new Set(progress.doneIds || []);
+    const doneCount = queueCards.filter(function(card) { return done.has(card.id); }).length;
+    const idx = currentQueueIndex(queueCards, currentId);
+
+    status.textContent = "오늘 큐 " + doneCount + " / " + queueCards.length + " 완료" + (idx >= 0 ? " · 현재 " + (idx + 1) + "번째" : "");
+
+    Array.from(queue.querySelectorAll(".study-tools-card-btn")).forEach(function(btn) {
+      btn.classList.remove("queue-current", "queue-done");
+      const titleEl = btn.querySelector("span:nth-child(2)");
+      const title = titleEl ? titleEl.textContent : "";
+      const card = queueCards.find(function(item) { return item.title === title; });
+      if (!card) {
+        return;
+      }
+      if (card.id === currentId) {
+        btn.classList.add("queue-current");
+      }
+      if (done.has(card.id)) {
+        btn.classList.add("queue-done");
+      }
+    });
+  }
+
+  const originalRenderCard = typeof renderCard === "function" ? renderCard : null;
+  if (originalRenderCard && !window.__studyToolsV72RenderPatched) {
+    window.__studyToolsV72RenderPatched = true;
+    renderCard = function() {
+      originalRenderCard.apply(this, arguments);
+      window.setTimeout(refreshQueueTools, 30);
+    };
+  }
+
+  const timer = setInterval(function() {
+    try {
+      if (injectQueueNav()) {
+        clearInterval(timer);
+      }
+    } catch (error) {
+      console.warn("study queue tools failed", error);
+    }
+  }, 300);
+})();
+// === STUDY TOOLS V7.2 QUEUE END ===
