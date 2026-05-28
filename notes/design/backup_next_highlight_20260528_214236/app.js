@@ -176,7 +176,6 @@ function setView(viewName) {
 function renderCard() {
   const card = getCurrentCard();
   selectedChoice = null;
-  document.getElementById("nextBtn").classList.remove("primary-next");
 
   document.getElementById("levelBadge").textContent = "Level " + card.level;
   document.getElementById("progressText").textContent = (currentIndex + 1) + " / " + cards.length;
@@ -285,8 +284,6 @@ function checkAnswer(choice, btn) {
     resultBox.textContent = "오답. 정답: " + expected + " / " + (card.explanation || "");
     markConfused(card.id);
   }
-
-  document.getElementById("nextBtn").classList.add("primary-next");
 }
 
 function nextCard() {
@@ -307,7 +304,6 @@ function jumpToConfusedOrNext() {
 
   resultBox.className = "result-box bad";
   resultBox.textContent = "모르겠음 처리. 정답: " + normalizeAnswer(card.answer) + " / " + (card.explanation || "");
-  document.getElementById("nextBtn").classList.add("primary-next");
 
   const allBtns = document.querySelectorAll(".choice-btn");
   allBtns.forEach(function(b) {
@@ -670,9 +666,6 @@ init().catch(function(err) {
   document.getElementById("cardTitle").textContent = "데이터 로딩 실패";
   document.getElementById("readingGoal").textContent = String(err);
 });
-
-
-
 
 
 
