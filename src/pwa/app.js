@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260529_v27_mobile1";
+const APP_DATA_VERSION = "20260529_v27_mobile2";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -2313,4 +2313,267 @@ if (document.readyState === "loading") {
 // === MOBILE COLLAPSE END ===
 
 
+// === MOBILE STUDY TOOLS COMPACT V27.2 START ===
+(function() {
+  const toolsStateKey = "python-reading-trainer-study-tools-v7";
+  const compactKey = "python-reading-trainer-study-tools-compact-v27-2";
 
+  function getProgressForRecommend() {
+    try {
+      if (typeof loadProgress === "function") {
+        return loadProgress();
+      }
+    } catch (error) {
+      console.warn("recommend progress load failed", error);
+    }
+    return { seen: {}, correct: {}, confused: {}, lastSeenAt: {} };
+  }
+
+  function loadToolsStateForRecommend() {
+    try {
+      const raw = localStorage.getItem(toolsStateKey);
+      if (!raw) {
+        return { query: "", level: "all", mode: "wrong_or_unseen", queueIds: [] };
+      }
+      const parsed = JSON.parse(raw);
+      parsed.query = parsed.query || "";
+      parsed.level = parsed.level || "all";
+      parsed.mode = parsed.mode || "wrong_or_unseen";
+      parsed.queueIds = Array.isArray(parsed.queueIds) ? parsed.queueIds : [];
+      return parsed;
+    } catch (error) {
+      return { query: "", level: "all", mode: "wrong_or_unseen", queueIds: [] };
+    }
+  }
+
+  function saveToolsStateForRecommend(state) {
+    localStorage.setItem(toolsStateKey, JSON.stringify(state));
+  }
+
+  function getRecommendedLevel() {
+    const progress = getProgressForRecommend();
+    if (!Array.isArray(cards) || cards.length === 0) {
+      return "all";
+    }
+
+    const byLevel = new Map();
+    cards.forEach(function(card) {
+      if (!byLevel.has(card.level)) {
+        byLevel.set(card.level, { total: 0, seen: 0, correct: 0, confused: 0, unseen: 0 });
+      }
+      const row = byLevel.get(card.level);
+      row.total += 1;
+      if (progress.seen[card.id]) row.seen += 1;
+      if (progress.correct[card.id]) row.correct += 1;
+      if (progress.confused[card.id]) row.confused += 1;
+    });
+
+    Array.from(byLevel.keys()).forEach(function(level) {
+      const row = byLevel.get(level);
+      row.unseen = Math.max(row.total - row.seen, 0);
+    });
+
+    const levels = Array.from(byLevel.keys()).sort(function(a, b) { return a - b; });
+
+    const confusedLevel = levels.find(function(level) {
+      return byLevel.get(level).confused > 0;
+    });
+    if (confusedLevel !== undefined) {
+      return String(confusedLevel);
+    }
+
+    const activeLevel = levels.find(function(level) {
+      const row = byLevel.get(level);
+      const seenRatio = row.total === 0 ? 1 : row.seen / row.total;
+      const correctRatio = row.total === 0 ? 1 : row.correct / row.total;
+      return row.unseen > 0 && (seenRatio < 0.85 || correctRatio < 0.6);
+    });
+    if (activeLevel !== undefined) {
+      return String(activeLevel);
+    }
+
+    const nextUnseen = levels.find(function(level) {
+      return byLevel.get(level).unseen > 0;
+    });
+    if (nextUnseen !== undefined) {
+      return String(nextUnseen);
+    }
+
+    return "all";
+  }
+
+  function getRecommendSummary(level) {
+    const progress = getProgressForRecommend();
+    const targetCards = String(level) === "all"
+      ? cards
+      : cards.filter(function(card) { return String(card.level) === String(level); });
+
+    const total = targetCards.length;
+    const unseen = targetCards.filter(function(card) { return !progress.seen[card.id]; }).length;
+    const confused = targetCards.filter(function(card) { return progress.confused[card.id]; }).length;
+    const correct = targetCards.filter(function(card) { return progress.correct[card.id]; }).length;
+
+    return "추천 L" + level + " · 안 본 " + unseen + " · 모르겠음 " + confused + " · 맞힘 " + correct + " / " + total;
+  }
+
+  function applyRecommendedProgress(startQueue) {
+    const level = getRecommendedLevel();
+    const state = loadToolsStateForRecommend();
+    state.level = level;
+    state.mode = "wrong_or_unseen";
+
+    const levelEl = document.getElementById("studyToolsLevel");
+    const modeEl = document.getElementById("studyToolsMode");
+    if (levelEl) levelEl.value = level;
+    if (modeEl) modeEl.value = "wrong_or_unseen";
+
+    saveToolsStateForRecommend(state);
+
+    const applyBtn = document.getElementById("studyToolsApply");
+    const todayBtn = document.getElementById("studyToolsToday");
+
+    if (startQueue && todayBtn) {
+      todayBtn.click();
+    } else if (applyBtn) {
+      applyBtn.click();
+    }
+
+    window.setTimeout(updateCompactSummary, 80);
+  }
+
+  function isSmallScreen() {
+    return window.matchMedia && window.matchMedia("(max-width: 820px)").matches;
+  }
+
+  function getCollapsedDefault() {
+    const saved = localStorage.getItem(compactKey);
+    if (saved === "open") return false;
+    if (saved === "closed") return true;
+    return isSmallScreen();
+  }
+
+  function setCollapsed(panel, collapsed) {
+    if (!panel) return;
+    panel.classList.toggle("study-tools-collapsed-v272", collapsed);
+    localStorage.setItem(compactKey, collapsed ? "closed" : "open");
+
+    const toggle = document.getElementById("studyToolsToggleV272");
+    if (toggle) {
+      toggle.textContent = collapsed ? "설정 펼치기" : "설정 접기";
+      toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    }
+  }
+
+  function updateCompactSummary() {
+    const summary = document.getElementById("studyToolsRecommendSummaryV272");
+    if (!summary || !Array.isArray(cards)) {
+      return;
+    }
+
+    const levelEl = document.getElementById("studyToolsLevel");
+    const currentLevel = levelEl ? levelEl.value : getRecommendedLevel();
+    const recommended = getRecommendedLevel();
+
+    summary.textContent =
+      "현재 " + (currentLevel === "all" ? "전체 레벨" : "L" + currentLevel) +
+      " · 추천 " + (recommended === "all" ? "전체" : "L" + recommended) +
+      " · " + getRecommendSummary(recommended);
+  }
+
+  function enhanceStudyToolsPanel() {
+    const panel = document.getElementById("studyToolsV7");
+    if (!panel) {
+      return false;
+    }
+
+    const title = panel.querySelector(".study-tools-title");
+    const levelEl = document.getElementById("studyToolsLevel");
+    const modeEl = document.getElementById("studyToolsMode");
+
+    if (!title || !levelEl || !modeEl) {
+      return false;
+    }
+
+    if (!document.getElementById("studyToolsQuickV272")) {
+      const quick = document.createElement("div");
+      quick.id = "studyToolsQuickV272";
+      quick.className = "study-tools-quick-v272";
+      quick.innerHTML = `
+        <div class="study-tools-quick-main-v272">
+          <button type="button" id="studyToolsRecommendStartV272">추천 진도로 오늘 10장</button>
+          <button type="button" id="studyToolsRecommendApplyV272" class="secondary">추천만 적용</button>
+          <button type="button" id="studyToolsToggleV272" class="secondary">설정 펼치기</button>
+        </div>
+        <div id="studyToolsRecommendSummaryV272" class="study-tools-recommend-summary-v272"></div>
+      `;
+
+      title.insertAdjacentElement("afterend", quick);
+
+      document.getElementById("studyToolsRecommendStartV272").onclick = function() {
+        applyRecommendedProgress(true);
+        setCollapsed(panel, true);
+      };
+      document.getElementById("studyToolsRecommendApplyV272").onclick = function() {
+        applyRecommendedProgress(false);
+      };
+      document.getElementById("studyToolsToggleV272").onclick = function() {
+        setCollapsed(panel, !panel.classList.contains("study-tools-collapsed-v272"));
+      };
+    }
+
+    const state = loadToolsStateForRecommend();
+    const hasSavedManualLevel = state.level && state.level !== "all";
+    const hasSavedManualMode = state.mode && state.mode !== "all" && state.mode !== "wrong_or_unseen";
+    const noQueue = !state.queueIds || state.queueIds.length === 0;
+
+    if (!hasSavedManualLevel && !hasSavedManualMode && noQueue) {
+      const recommended = getRecommendedLevel();
+      levelEl.value = recommended;
+      modeEl.value = "wrong_or_unseen";
+      state.level = recommended;
+      state.mode = "wrong_or_unseen";
+      saveToolsStateForRecommend(state);
+    }
+
+    if (!panel.dataset.compactV272Ready) {
+      panel.dataset.compactV272Ready = "1";
+      setCollapsed(panel, getCollapsedDefault());
+    }
+
+    updateCompactSummary();
+
+    levelEl.addEventListener("change", updateCompactSummary);
+    modeEl.addEventListener("change", updateCompactSummary);
+
+    return true;
+  }
+
+  const timer = setInterval(function() {
+    try {
+      if (enhanceStudyToolsPanel()) {
+        clearInterval(timer);
+      }
+    } catch (error) {
+      console.warn("study tools compact patch failed", error);
+      clearInterval(timer);
+    }
+  }, 200);
+
+  window.addEventListener("resize", function() {
+    const panel = document.getElementById("studyToolsV7");
+    if (!panel) return;
+
+    const saved = localStorage.getItem(compactKey);
+    if (!saved) {
+      setCollapsed(panel, isSmallScreen());
+    }
+  });
+
+  document.addEventListener("click", function(event) {
+    const id = event.target && event.target.id;
+    if (id === "studyToolsApply" || id === "studyToolsToday" || id === "studyToolsRandom" || id === "studyToolsClear") {
+      window.setTimeout(updateCompactSummary, 80);
+    }
+  });
+})();
+// === MOBILE STUDY TOOLS COMPACT V27.2 END ===
