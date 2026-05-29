@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260529_v39";
+const APP_DATA_VERSION = "20260529_v40";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -989,7 +989,8 @@ async function init() {
     "../../data/lessons/python_async_queue_batch_jobs_v36.json",
     "../../data/lessons/python_database_storage_crud_v37.json",
     "../../data/lessons/python_auth_security_tokens_permissions_v38.json",
-    "../../data/lessons/python_frontend_state_storage_cache_v39.json"
+    "../../data/lessons/python_frontend_state_storage_cache_v39.json",
+    "../../data/lessons/python_refactoring_maintainability_v40.json"
   ];
 
   const lessonResults = await Promise.all(lessonFiles.map(function(path) {
