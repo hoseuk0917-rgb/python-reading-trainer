@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260529_v27_mobile3";
+const APP_DATA_VERSION = "20260529_v27_mobile4";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -2635,3 +2635,166 @@ if (document.readyState === "loading") {
   });
 })();
 // === MOBILE STUDY TOOLS DEFAULT COLLAPSED V27.3 END ===
+
+
+// === MOBILE STUDY TOOLS MICRO SUMMARY V27.4 START ===
+(function() {
+  const toolsStateKey = "python-reading-trainer-study-tools-v7";
+  const compactKey = "python-reading-trainer-study-tools-compact-v27-2";
+
+  function isSmallScreen() {
+    return window.matchMedia && window.matchMedia("(max-width: 820px)").matches;
+  }
+
+  function getProgressSafeV274() {
+    try {
+      if (typeof loadProgress === "function") {
+        return loadProgress();
+      }
+    } catch (error) {
+      console.warn("v27.4 progress load failed", error);
+    }
+    return { seen: {}, correct: {}, confused: {}, lastSeenAt: {} };
+  }
+
+  function loadToolsStateSafeV274() {
+    try {
+      const raw = localStorage.getItem(toolsStateKey);
+      if (!raw) {
+        return { query: "", level: "all", mode: "wrong_or_unseen", queueIds: [] };
+      }
+      const parsed = JSON.parse(raw);
+      parsed.query = parsed.query || "";
+      parsed.level = parsed.level || "all";
+      parsed.mode = parsed.mode || "wrong_or_unseen";
+      parsed.queueIds = Array.isArray(parsed.queueIds) ? parsed.queueIds : [];
+      return parsed;
+    } catch (error) {
+      return { query: "", level: "all", mode: "wrong_or_unseen", queueIds: [] };
+    }
+  }
+
+  function recommendLevelV274() {
+    const progress = getProgressSafeV274();
+    if (!Array.isArray(cards) || cards.length === 0) {
+      return "all";
+    }
+
+    const levels = Array.from(new Set(cards.map(function(card) { return card.level; })))
+      .sort(function(a, b) { return a - b; });
+
+    const confusedLevel = levels.find(function(level) {
+      return cards.some(function(card) {
+        return String(card.level) === String(level) && progress.confused[card.id];
+      });
+    });
+    if (confusedLevel !== undefined) {
+      return String(confusedLevel);
+    }
+
+    const unfinishedLevel = levels.find(function(level) {
+      const same = cards.filter(function(card) { return String(card.level) === String(level); });
+      const seen = same.filter(function(card) { return progress.seen[card.id]; }).length;
+      const correct = same.filter(function(card) { return progress.correct[card.id]; }).length;
+      const seenRatio = same.length === 0 ? 1 : seen / same.length;
+      const correctRatio = same.length === 0 ? 1 : correct / same.length;
+      return same.length > 0 && (seenRatio < 0.85 || correctRatio < 0.6);
+    });
+    if (unfinishedLevel !== undefined) {
+      return String(unfinishedLevel);
+    }
+
+    return "all";
+  }
+
+  function makeMicroSummary() {
+    const progress = getProgressSafeV274();
+    const state = loadToolsStateSafeV274();
+    const recommended = recommendLevelV274();
+
+    const target = recommended === "all"
+      ? cards
+      : cards.filter(function(card) { return String(card.level) === String(recommended); });
+
+    const unseen = target.filter(function(card) { return !progress.seen[card.id]; }).length;
+    const confused = target.filter(function(card) { return progress.confused[card.id]; }).length;
+    const remaining = unseen + confused;
+    const queueLen = Array.isArray(state.queueIds) ? state.queueIds.length : 0;
+
+    const levelText = recommended === "all" ? "전체" : "L" + recommended;
+    return "추천 " + levelText + " · 남은 " + remaining + " · 큐 " + queueLen + "/10";
+  }
+
+  function applyMicroUi() {
+    const panel = document.getElementById("studyToolsV7");
+    if (!panel) {
+      return false;
+    }
+
+    if (isSmallScreen() && localStorage.getItem(compactKey) !== "open") {
+      localStorage.setItem(compactKey, "closed");
+      panel.classList.add("study-tools-collapsed-v272");
+    }
+
+    const summary = document.getElementById("studyToolsRecommendSummaryV272");
+    if (summary) {
+      summary.textContent = makeMicroSummary();
+      summary.classList.add("micro-summary-v274");
+    }
+
+    const startBtn = document.getElementById("studyToolsRecommendStartV272");
+    if (startBtn && isSmallScreen()) {
+      startBtn.textContent = "추천 10장";
+    }
+
+    const applyBtn = document.getElementById("studyToolsRecommendApplyV272");
+    if (applyBtn && isSmallScreen()) {
+      applyBtn.textContent = "추천 적용";
+    }
+
+    const toggleBtn = document.getElementById("studyToolsToggleV272");
+    if (toggleBtn && isSmallScreen()) {
+      const collapsed = panel.classList.contains("study-tools-collapsed-v272");
+      toggleBtn.textContent = collapsed ? "설정" : "접기";
+    }
+
+    const status = document.getElementById("studyToolsStatus");
+    if (status && isSmallScreen()) {
+      status.classList.add("micro-status-v274");
+    }
+
+    return true;
+  }
+
+  const timer = setInterval(function() {
+    if (applyMicroUi()) {
+      clearInterval(timer);
+    }
+  }, 150);
+
+  const refreshEvents = ["click", "change", "keyup"];
+  refreshEvents.forEach(function(eventName) {
+    document.addEventListener(eventName, function(event) {
+      const target = event.target;
+      if (!target) return;
+      if (
+        target.id === "studyToolsRecommendStartV272" ||
+        target.id === "studyToolsRecommendApplyV272" ||
+        target.id === "studyToolsToggleV272" ||
+        target.id === "studyToolsApply" ||
+        target.id === "studyToolsToday" ||
+        target.id === "studyToolsClear" ||
+        target.id === "studyToolsLevel" ||
+        target.id === "studyToolsMode" ||
+        target.id === "studyToolsQuery"
+      ) {
+        window.setTimeout(applyMicroUi, 80);
+      }
+    });
+  });
+
+  window.addEventListener("resize", function() {
+    window.setTimeout(applyMicroUi, 80);
+  });
+})();
+// === MOBILE STUDY TOOLS MICRO SUMMARY V27.4 END ===
