@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260529_v27";
+const APP_DATA_VERSION = "20260529_v27_mobile1";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -273,6 +273,82 @@ function renderCard() {
   markSeen(card.id);
 }
 
+function renderMobileSideTeaser(card, directCards, bonusCards) {
+  let teaser = document.getElementById("mobileSideTeaser");
+
+  if (!teaser) {
+    teaser = document.createElement("div");
+    teaser.id = "mobileSideTeaser";
+    teaser.className = "mobile-side-teaser hidden";
+
+    const choicesEl = document.getElementById("choices");
+    if (choicesEl && choicesEl.parentNode) {
+      choicesEl.parentNode.insertBefore(teaser, choicesEl.nextSibling);
+    }
+  }
+
+  if (!teaser) {
+    return;
+  }
+
+  const cardsForTeaser = directCards.concat(bonusCards).filter(Boolean).slice(0, 3);
+  teaser.innerHTML = "";
+
+  if (cardsForTeaser.length === 0) {
+    teaser.className = "mobile-side-teaser hidden";
+    return;
+  }
+
+  teaser.className = "mobile-side-teaser";
+
+  const head = document.createElement("div");
+  head.className = "mobile-side-teaser-head";
+  head.textContent = "보너스 개념 미리보기";
+
+  const note = document.createElement("div");
+  note.className = "mobile-side-teaser-note";
+  note.textContent = "아래 보조카드 영역으로 내려가기 전에 핵심 연결 개념을 먼저 보여줍니다.";
+
+  const list = document.createElement("div");
+  list.className = "mobile-side-teaser-list";
+
+  cardsForTeaser.forEach(function(sc, idx) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "mobile-side-teaser-item";
+
+    const label = document.createElement("span");
+    label.className = "mobile-side-teaser-label";
+    label.textContent = idx === 0 ? "관련" : "보너스";
+
+    const title = document.createElement("span");
+    title.className = "mobile-side-teaser-title";
+    title.textContent = sc.title || sc.id || "개념 카드";
+
+    const body = document.createElement("span");
+    body.className = "mobile-side-teaser-body";
+    body.textContent = sc.summary || sc.body || sc.description || "";
+
+    item.appendChild(label);
+    item.appendChild(title);
+    if (body.textContent) {
+      item.appendChild(body);
+    }
+
+    item.addEventListener("click", function() {
+      const sideEl = document.getElementById("sideCards");
+      if (sideEl) {
+        sideEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+
+    list.appendChild(item);
+  });
+
+  teaser.appendChild(head);
+  teaser.appendChild(note);
+  teaser.appendChild(list);
+}
 function renderSideCards(card) {
   const sideEl = document.getElementById("sideCards");
   sideEl.innerHTML = "";
@@ -280,6 +356,7 @@ function renderSideCards(card) {
   const directIds = card.side_card_ids || [];
   const directCards = directIds.map(getSideCardById).filter(Boolean);
   const bonusCards = getBonusSideCards(card, directIds);
+  renderMobileSideTeaser(card, directCards, bonusCards);
 
   function getSideText(sc) {
     return sc.body || sc.summary || sc.description || "";
