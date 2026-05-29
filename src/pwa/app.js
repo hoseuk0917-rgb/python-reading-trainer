@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260529_v27_mobile2";
+const APP_DATA_VERSION = "20260529_v27_mobile3";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -2577,3 +2577,61 @@ if (document.readyState === "loading") {
   });
 })();
 // === MOBILE STUDY TOOLS COMPACT V27.2 END ===
+
+
+// === MOBILE STUDY TOOLS DEFAULT COLLAPSED V27.3 START ===
+(function() {
+  const compactKey = "python-reading-trainer-study-tools-compact-v27-2";
+  const appliedKey = "python-reading-trainer-study-tools-default-collapsed-v27-3-session";
+
+  function isSmallScreen() {
+    return window.matchMedia && window.matchMedia("(max-width: 820px)").matches;
+  }
+
+  function forceCollapsedOnMobileDefault() {
+    const panel = document.getElementById("studyToolsV7");
+    if (!panel) {
+      return false;
+    }
+
+    if (isSmallScreen() && !sessionStorage.getItem(appliedKey)) {
+      localStorage.setItem(compactKey, "closed");
+      sessionStorage.setItem(appliedKey, "1");
+    }
+
+    if (isSmallScreen() && localStorage.getItem(compactKey) !== "open") {
+      panel.classList.add("study-tools-collapsed-v272");
+      const toggle = document.getElementById("studyToolsToggleV272");
+      if (toggle) {
+        toggle.textContent = "설정 펼치기";
+        toggle.setAttribute("aria-expanded", "false");
+      }
+    }
+
+    const summary = document.getElementById("studyToolsRecommendSummaryV272");
+    if (summary) {
+      summary.classList.add("compact-summary-v273");
+    }
+
+    const title = panel.querySelector(".study-tools-title");
+    if (title) {
+      title.classList.add("compact-title-v273");
+      if (title.textContent.length > 8 && isSmallScreen()) {
+        title.textContent = "학습 설정";
+      }
+    }
+
+    return true;
+  }
+
+  const timer = setInterval(function() {
+    if (forceCollapsedOnMobileDefault()) {
+      clearInterval(timer);
+    }
+  }, 150);
+
+  window.addEventListener("resize", function() {
+    window.setTimeout(forceCollapsedOnMobileDefault, 60);
+  });
+})();
+// === MOBILE STUDY TOOLS DEFAULT COLLAPSED V27.3 END ===
