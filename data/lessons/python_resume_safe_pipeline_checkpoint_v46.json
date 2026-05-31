@@ -1,0 +1,386 @@
+[
+  {
+    "id": "PY46_L06_resume_safe_pipeline_001",
+    "level": 6,
+    "title": "resume-safe pipeline 읽기",
+    "concepts": [
+      "resume_safe",
+      "pipeline",
+      "restart"
+    ],
+    "reading_goal": "중간에 멈춰도 이어서 다시 실행할 수 있는 파이프라인 구조를 이해한다.",
+    "code": "for shard in shards:\n    if is_done(shard):\n        continue\n    run_shard(shard)",
+    "question_type": "meaning_choice",
+    "question": "resume-safe pipeline의 핵심은?",
+    "choices": [
+      "이미 끝난 작업은 건너뛰고 남은 작업만 이어서 실행하는 것",
+      "항상 처음부터 다시 실행하는 것",
+      "완료 파일을 무조건 삭제하는 것",
+      "검증 없이 완료 처리하는 것"
+    ],
+    "answer": "이미 끝난 작업은 건너뛰고 남은 작업만 이어서 실행하는 것",
+    "explanation": "긴 작업은 중간에 끊길 수 있으므로 완료 여부를 기록하고 이어서 실행할 수 있어야 한다.",
+    "side_card_ids": [],
+    "project_context": "KG node_pass shard나 대용량 카드 생성 작업처럼 오래 걸리는 작업에 필요하다."
+  },
+  {
+    "id": "PY46_L06_checkpoint_file_001",
+    "level": 6,
+    "title": "checkpoint file 읽기",
+    "concepts": [
+      "checkpoint",
+      "state_file",
+      "progress"
+    ],
+    "reading_goal": "작업 진행 상태를 파일로 남기는 checkpoint 개념을 이해한다.",
+    "code": "checkpoint.json\n{\n  \"last_done\": \"shard_0042\",\n  \"updated_at\": \"2026-05-31\"\n}",
+    "question_type": "meaning_choice",
+    "question": "checkpoint file의 역할은?",
+    "choices": [
+      "어디까지 작업했는지 기록한다",
+      "모든 결과를 삭제한다",
+      "GitHub 계정을 만든다",
+      "브라우저 캐시를 비운다"
+    ],
+    "answer": "어디까지 작업했는지 기록한다",
+    "explanation": "checkpoint가 있으면 재실행 시 처음부터가 아니라 중간 지점부터 이어갈 수 있다.",
+    "side_card_ids": [],
+    "project_context": "shard 범위, 완료 개수, 마지막 처리 id를 남기면 장애 후 복구가 쉬워진다."
+  },
+  {
+    "id": "PY46_L07_done_marker_001",
+    "level": 7,
+    "title": "done marker 읽기",
+    "concepts": [
+      "done_marker",
+      "completion_flag",
+      "job_status"
+    ],
+    "reading_goal": "작업 완료를 별도 marker로 표시하는 이유를 이해한다.",
+    "code": "output.jsonl\noutput.done",
+    "question_type": "meaning_choice",
+    "question": "output.done 같은 done marker를 따로 두는 이유는?",
+    "choices": [
+      "출력 파일이 존재하는 것과 정상 완료를 구분하기 위해",
+      "출력 파일을 항상 숨기기 위해",
+      "작업을 무조건 실패 처리하기 위해",
+      "Git 로그를 줄이기 위해"
+    ],
+    "answer": "출력 파일이 존재하는 것과 정상 완료를 구분하기 위해",
+    "explanation": "파일이 있어도 중간에 끊겨 일부만 써졌을 수 있으므로 완료 marker가 있으면 더 안전하다.",
+    "side_card_ids": [],
+    "project_context": "node_pass output이 존재한다고 바로 완료로 보면 partial output 위험이 생긴다."
+  },
+  {
+    "id": "PY46_L07_partial_output_001",
+    "level": 7,
+    "title": "partial output 읽기",
+    "concepts": [
+      "partial_output",
+      "incomplete_file",
+      "crash"
+    ],
+    "reading_goal": "중간에 끊긴 출력 파일이 정상 결과처럼 보일 수 있음을 이해한다.",
+    "code": "result.jsonl exists\nbut only 57 / 200 rows written",
+    "question_type": "meaning_choice",
+    "question": "partial output이 위험한 이유는?",
+    "choices": [
+      "파일은 있어도 결과가 끝까지 쓰이지 않았을 수 있기 때문",
+      "파일이 항상 너무 크기 때문",
+      "JSONL은 절대 검증할 수 없기 때문",
+      "PowerShell에서 읽을 수 없기 때문"
+    ],
+    "answer": "파일은 있어도 결과가 끝까지 쓰이지 않았을 수 있기 때문",
+    "explanation": "존재 여부만 확인하면 끊긴 파일을 완료 파일로 오해할 수 있다.",
+    "side_card_ids": [],
+    "project_context": "AWS/로컬 shard가 중간에 멈췄을 때 output exists skip만 쓰면 누락이 생길 수 있다."
+  },
+  {
+    "id": "PY46_L07_output_exists_skip_risk_001",
+    "level": 7,
+    "title": "output exists skip 위험 읽기",
+    "concepts": [
+      "output_exists",
+      "skip_risk",
+      "validation"
+    ],
+    "reading_goal": "파일 존재만으로 skip하는 방식의 위험을 이해한다.",
+    "code": "if output_path.exists():\n    skip_job()  # risky",
+    "question_type": "meaning_choice",
+    "question": "이 skip 방식이 위험한 이유는?",
+    "choices": [
+      "깨진 출력이나 일부 출력도 완료로 착각할 수 있기 때문",
+      "파일이 없을 때만 실행되기 때문",
+      "Python 문법이 틀렸기 때문",
+      "Git push가 자동으로 되기 때문"
+    ],
+    "answer": "깨진 출력이나 일부 출력도 완료로 착각할 수 있기 때문",
+    "explanation": "skip 조건은 파일 존재가 아니라 검증 통과나 done marker 기준이어야 안전하다.",
+    "side_card_ids": [],
+    "project_context": "이전에 '이미 아웃풋 있다고 스킵하면 안 됨'이라고 점검한 문제와 연결된다."
+  },
+  {
+    "id": "PY46_L08_validate_before_done_001",
+    "level": 8,
+    "title": "validate before mark done 읽기",
+    "concepts": [
+      "validation",
+      "done_marker",
+      "quality_gate"
+    ],
+    "reading_goal": "완료 표시 전에 결과를 검증해야 하는 이유를 이해한다.",
+    "code": "run_job()\nvalidate_output()\nwrite_done_marker()",
+    "question_type": "meaning_choice",
+    "question": "done marker를 언제 써야 가장 안전한가?",
+    "choices": [
+      "출력 검증이 통과한 뒤",
+      "작업을 시작하기 전",
+      "입력 파일을 보기 전",
+      "항상 실패했을 때"
+    ],
+    "answer": "출력 검증이 통과한 뒤",
+    "explanation": "완료 표시는 작업 실행이 아니라 결과 검증까지 끝난 뒤 남겨야 한다.",
+    "side_card_ids": [],
+    "project_context": "lesson 카드 확장에서도 JSON 생성 후 중복 ID, answer, side_card 참조를 검증한 뒤 커밋했다."
+  },
+  {
+    "id": "PY46_L08_atomic_write_001",
+    "level": 8,
+    "title": "atomic write 읽기",
+    "concepts": [
+      "atomic_write",
+      "temp_file",
+      "rename"
+    ],
+    "reading_goal": "임시 파일에 먼저 쓰고 성공 후 최종 파일명으로 바꾸는 패턴을 이해한다.",
+    "code": "tmp = output.with_suffix('.tmp')\nwrite_result(tmp)\ntmp.replace(output)",
+    "question_type": "meaning_choice",
+    "question": "temp file then rename 패턴의 장점은?",
+    "choices": [
+      "중간에 끊긴 파일이 최종 output 이름으로 남는 위험을 줄인다",
+      "파일을 무조건 숨긴다",
+      "검증을 불가능하게 만든다",
+      "항상 Git 충돌을 만든다"
+    ],
+    "answer": "중간에 끊긴 파일이 최종 output 이름으로 남는 위험을 줄인다",
+    "explanation": "작업이 성공하기 전에는 최종 파일명을 만들지 않으면 partial output 착각을 줄일 수 있다.",
+    "side_card_ids": [],
+    "project_context": "대용량 JSONL, manifest, audit TSV를 쓸 때 안전한 출력 패턴이다."
+  },
+  {
+    "id": "PY46_L08_idempotent_job_001",
+    "level": 8,
+    "title": "idempotent job 읽기",
+    "concepts": [
+      "idempotent",
+      "rerun_safe",
+      "automation"
+    ],
+    "reading_goal": "같은 작업을 다시 실행해도 결과가 꼬이지 않는 idempotent 개념을 이해한다.",
+    "code": "upsert(item)\n# run once or twice -> final state is same",
+    "question_type": "meaning_choice",
+    "question": "idempotent job의 의미는?",
+    "choices": [
+      "여러 번 실행해도 최종 상태가 불필요하게 중복되지 않는다",
+      "한 번만 실행 가능하다는 뜻",
+      "항상 결과가 랜덤이라는 뜻",
+      "검증을 하면 안 된다는 뜻"
+    ],
+    "answer": "여러 번 실행해도 최종 상태가 불필요하게 중복되지 않는다",
+    "explanation": "자동화는 재실행될 수 있으므로 중복 생성, 중복 링크, 중복 저장을 막아야 한다.",
+    "side_card_ids": [],
+    "project_context": "v41~v45 스크립트의 already exists, already linked guard가 idempotent 안전장치다."
+  },
+  {
+    "id": "PY46_L08_retry_queue_001",
+    "level": 8,
+    "title": "retry queue 읽기",
+    "concepts": [
+      "retry_queue",
+      "failed_items",
+      "rerun"
+    ],
+    "reading_goal": "실패한 항목만 따로 모아 다시 처리하는 retry queue를 이해한다.",
+    "code": "if job_failed(item):\n    retry_queue.append(item_id)",
+    "question_type": "meaning_choice",
+    "question": "retry queue의 목적은?",
+    "choices": [
+      "실패한 항목만 다시 실행하기 위해",
+      "성공한 항목을 삭제하기 위해",
+      "모든 항목을 무조건 처음부터 다시 하기 위해",
+      "Git commit을 자동 취소하기 위해"
+    ],
+    "answer": "실패한 항목만 다시 실행하기 위해",
+    "explanation": "긴 파이프라인에서는 전체 재실행보다 실패 항목만 재시도하는 편이 비용과 시간이 적게 든다.",
+    "side_card_ids": [],
+    "project_context": "node extraction, edge promotion, lesson validation에서 실패 목록만 재처리할 수 있다."
+  },
+  {
+    "id": "PY46_L09_failed_only_rerun_001",
+    "level": 9,
+    "title": "failed items only rerun 읽기",
+    "concepts": [
+      "failed_only_rerun",
+      "selective_retry",
+      "cost_saving"
+    ],
+    "reading_goal": "실패한 항목만 선별 재실행하는 방식의 장점을 이해한다.",
+    "code": "failed_ids = load_failed_ids('audit.tsv')\nfor item_id in failed_ids:\n    rerun(item_id)",
+    "question_type": "meaning_choice",
+    "question": "failed only rerun의 장점은?",
+    "choices": [
+      "성공한 작업을 반복하지 않아 시간과 비용을 줄인다",
+      "실패 원인을 숨긴다",
+      "검증 로그를 삭제한다",
+      "항상 더 많은 중복을 만든다"
+    ],
+    "answer": "성공한 작업을 반복하지 않아 시간과 비용을 줄인다",
+    "explanation": "audit.tsv나 validation report가 있으면 실패한 id만 뽑아 재실행할 수 있다.",
+    "side_card_ids": [],
+    "project_context": "AWS GPU 비용이나 LLM 호출 비용을 아끼려면 실패분만 다시 돌리는 구조가 중요하다."
+  },
+  {
+    "id": "PY46_L09_shard_status_001",
+    "level": 9,
+    "title": "shard status 읽기",
+    "concepts": [
+      "shard",
+      "status",
+      "batch_job"
+    ],
+    "reading_goal": "여러 shard의 진행 상태를 표로 관리하는 방식을 이해한다.",
+    "code": "shard_id | total | done | status\n0031     | 200   | 200  | DONE\n0067     | 200   | 154  | RUNNING",
+    "question_type": "meaning_choice",
+    "question": "shard status 표가 필요한 이유는?",
+    "choices": [
+      "어느 조각이 완료/진행/실패 상태인지 한눈에 보기 위해",
+      "모든 shard를 삭제하기 위해",
+      "GPU 사용을 금지하기 위해",
+      "파일 인코딩을 바꾸기 위해"
+    ],
+    "answer": "어느 조각이 완료/진행/실패 상태인지 한눈에 보기 위해",
+    "explanation": "shard 단위 작업은 전체 진행률과 병목을 보려면 상태표가 필요하다.",
+    "side_card_ids": [],
+    "project_context": "AWS node_pass에서 0031~0100 shard 진행률을 관리했던 방식과 연결된다."
+  },
+  {
+    "id": "PY46_L09_progress_log_001",
+    "level": 9,
+    "title": "progress log 읽기",
+    "concepts": [
+      "progress_log",
+      "observability",
+      "long_running_job"
+    ],
+    "reading_goal": "오래 걸리는 작업에서 진행 로그를 남기는 이유를 이해한다.",
+    "code": "print(f'DONE {done}/{total} shard={shard_id}')",
+    "question_type": "meaning_choice",
+    "question": "progress log가 중요한 이유는?",
+    "choices": [
+      "작업이 멈춘 것인지 진행 중인지 판단할 수 있기 때문",
+      "결과 검증을 생략할 수 있기 때문",
+      "항상 속도가 빨라지기 때문",
+      "GitHub 저장소가 자동 생성되기 때문"
+    ],
+    "answer": "작업이 멈춘 것인지 진행 중인지 판단할 수 있기 때문",
+    "explanation": "긴 작업은 조용히 있으면 멈춘 것처럼 보이므로 주기적인 진행 로그가 필요하다.",
+    "side_card_ids": [],
+    "project_context": "node_pass status 메시지의 done, running_processes, GPU util 같은 로그가 이에 해당한다."
+  },
+  {
+    "id": "PY46_L09_heartbeat_001",
+    "level": 9,
+    "title": "heartbeat 읽기",
+    "concepts": [
+      "heartbeat",
+      "liveness",
+      "watchdog"
+    ],
+    "reading_goal": "프로세스가 살아 있음을 주기적으로 표시하는 heartbeat를 이해한다.",
+    "code": "while running:\n    write_heartbeat(now())\n    sleep(60)",
+    "question_type": "meaning_choice",
+    "question": "heartbeat가 알려주는 것은?",
+    "choices": [
+      "작업 프로세스가 아직 살아 있는지",
+      "정답이 항상 맞는지",
+      "파일이 압축됐는지",
+      "Git 원격 주소가 바뀌었는지"
+    ],
+    "answer": "작업 프로세스가 아직 살아 있는지",
+    "explanation": "heartbeat가 오래 갱신되지 않으면 작업이 죽었거나 멈췄을 가능성을 의심할 수 있다.",
+    "side_card_ids": [],
+    "project_context": "서버에서 장시간 LoRA/node_pass를 돌릴 때 상태 감시용으로 쓸 수 있다."
+  },
+  {
+    "id": "PY46_L10_crash_recovery_001",
+    "level": 10,
+    "title": "crash recovery 읽기",
+    "concepts": [
+      "crash_recovery",
+      "restart",
+      "checkpoint"
+    ],
+    "reading_goal": "프로그램이 죽은 뒤 checkpoint와 output 검증으로 복구하는 흐름을 이해한다.",
+    "code": "on_start:\n  load checkpoint\n  scan outputs\n  validate done markers\n  resume pending jobs",
+    "question_type": "meaning_choice",
+    "question": "crash recovery에서 먼저 해야 할 일은?",
+    "choices": [
+      "checkpoint와 기존 output 상태를 다시 확인한다",
+      "무조건 모든 결과를 삭제한다",
+      "검증 없이 완료 처리한다",
+      "Git push부터 한다"
+    ],
+    "answer": "checkpoint와 기존 output 상태를 다시 확인한다",
+    "explanation": "복구는 남은 작업을 찾기 전에 기존 산출물이 정상인지 확인하는 것부터 시작한다.",
+    "side_card_ids": [],
+    "project_context": "중간에 끊긴 shard, partial JSONL, 누락된 done marker를 점검하는 루틴이다."
+  },
+  {
+    "id": "PY46_L10_final_manifest_001",
+    "level": 10,
+    "title": "final manifest 읽기",
+    "concepts": [
+      "final_manifest",
+      "audit",
+      "reproducibility"
+    ],
+    "reading_goal": "최종 산출물 목록과 검증 결과를 manifest로 남기는 이유를 이해한다.",
+    "code": "final_manifest.tsv\noutput_path\trows\tsha256\tstatus\tvalidated_at",
+    "question_type": "meaning_choice",
+    "question": "final manifest가 있으면 좋은 점은?",
+    "choices": [
+      "최종 산출물의 경로, 크기, 검증 상태를 재확인할 수 있다",
+      "모든 중간 파일을 무조건 지운다",
+      "모델 성능을 자동으로 보장한다",
+      "검증 없이 제출할 수 있다"
+    ],
+    "answer": "최종 산출물의 경로, 크기, 검증 상태를 재확인할 수 있다",
+    "explanation": "manifest는 나중에 같은 결과를 재현하거나 누락 파일을 찾는 기준표가 된다.",
+    "side_card_ids": [],
+    "project_context": "KG pack, clean text, lesson files, shard outputs를 묶을 때 final manifest가 필요하다."
+  },
+  {
+    "id": "PY46_L10_resume_safe_nodepass_001",
+    "level": 10,
+    "title": "resume-safe node_pass 읽기",
+    "concepts": [
+      "node_pass",
+      "resume_safe",
+      "shard_pipeline"
+    ],
+    "reading_goal": "KG node_pass 같은 실제 장시간 작업에 resume-safe 원칙을 적용한다.",
+    "code": "for shard in pending_shards:\n    run_node_pass(shard)\n    validate_jsonl(shard.output)\n    mark_done(shard)",
+    "question_type": "meaning_choice",
+    "question": "resume-safe node_pass에서 mark_done은 언제 해야 하나?",
+    "choices": [
+      "jsonl 출력 검증이 통과한 뒤",
+      "shard 실행 전에",
+      "출력 파일 이름만 만든 직후",
+      "GPU 사용률을 보기 전"
+    ],
+    "answer": "jsonl 출력 검증이 통과한 뒤",
+    "explanation": "장시간 모델 실행은 비용이 크므로 완료 판단을 엄격하게 해야 누락과 중복을 줄일 수 있다.",
+    "side_card_ids": [],
+    "project_context": "노드 추출, 노드 승격, 엣지 승격 파이프라인을 안정화하는 핵심 습관이다."
+  }
+]
