@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260531_v95_a2";
+const APP_DATA_VERSION = "20260531_v95_a3";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -1019,7 +1019,8 @@ async function init() {
     "../../data/lessons/python_foundation_level2_v94_a2_part1.json",
     "../../data/lessons/python_foundation_level2_v94_a2_part2.json",
     "../../data/lessons/python_foundation_level3_v95_a1_functions.json",
-    "../../data/lessons/python_foundation_level3_v95_a2_dict_tuple_set.json"
+    "../../data/lessons/python_foundation_level3_v95_a2_dict_tuple_set.json",
+    "../../data/lessons/python_foundation_level3_v95_a3_loop_tools.json"
   ];
 
   const lessonResults = await Promise.all(lessonFiles.map(function(path) {
@@ -1045,7 +1046,8 @@ async function init() {
     "../../data/side_cards/python_foundation_level2_side_cards_v94_a2_part1.json",
     "../../data/side_cards/python_foundation_level2_side_cards_v94_a2_part2.json",
     "../../data/side_cards/python_foundation_level3_side_cards_v95_a1_functions.json",
-    "../../data/side_cards/python_foundation_level3_side_cards_v95_a2_dict_tuple_set.json"
+    "../../data/side_cards/python_foundation_level3_side_cards_v95_a2_dict_tuple_set.json",
+    "../../data/side_cards/python_foundation_level3_side_cards_v95_a3_loop_tools.json"
   ];
 
   const sideResults = await Promise.all(sideFiles.map(function(path) {
