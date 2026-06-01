@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260601_v97_a1";
+const APP_DATA_VERSION = "20260601_v97_a3";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -9,6 +9,7 @@ function withDataVersion(path) {
 let curriculum = null;
 let cards = [];
 let sideCards = [];
+let resourceCards = [];
 let currentIndex = 0;
 let selectedChoice = null;
 let activeConcept = null;
@@ -208,6 +209,144 @@ function getBonusSideCards(card, alreadyIds) {
   });
 
   return pool.slice(0, 2);
+}
+
+function normalizeResourceText(value) {
+  return String(value || "").toLowerCase();
+}
+
+function getExternalResourceMatches(card, visibleSideCards) {
+  if (!Array.isArray(resourceCards) || resourceCards.length === 0) {
+    return [];
+  }
+
+  const conceptSet = new Set();
+  (card.concepts || []).forEach(function(concept) {
+    conceptSet.add(normalizeResourceText(concept));
+  });
+
+  (visibleSideCards || []).forEach(function(sc) {
+    (sc.related_concepts || sc.concepts || []).forEach(function(concept) {
+      conceptSet.add(normalizeResourceText(concept));
+    });
+  });
+
+  const concepts = Array.from(conceptSet).filter(Boolean);
+
+  const scored = resourceCards
+    .filter(function(resource) {
+      return resource && resource.url && resource.tier !== "RSS" && resource.difficulty !== "maintainer";
+    })
+    .map(function(resource) {
+      const blob = [
+        resource.id,
+        resource.title,
+        resource.source_name,
+        resource.source_type,
+        resource.tier,
+        resource.language,
+        resource.difficulty,
+        resource.why_useful,
+        (resource.related_concepts || []).join(" "),
+        (resource.recommended_for || []).join(" ")
+      ].map(normalizeResourceText).join(" ");
+
+      let score = 0;
+      concepts.forEach(function(concept) {
+        if (concept && blob.indexOf(concept) >= 0) {
+          score += 3;
+        }
+      });
+
+      if (resource.tier === "A") score += 2;
+      if (resource.language === "ko") score += 1;
+      if ((resource.source_type || "").indexOf("tutorial") >= 0) score += 1;
+      if ((resource.source_type || "").indexOf("quiz") >= 0) score += 1;
+
+      return { resource: resource, score: score };
+    })
+    .filter(function(item) {
+      return item.score > 0;
+    })
+    .sort(function(a, b) {
+      if (b.score !== a.score) return b.score - a.score;
+      return String(a.resource.id).localeCompare(String(b.resource.id));
+    });
+
+  const picked = scored.slice(0, 3).map(function(item) {
+    return item.resource;
+  });
+
+  if (picked.length > 0) {
+    return picked;
+  }
+
+  return resourceCards
+    .filter(function(resource) {
+      return resource && resource.url && resource.tier !== "RSS" && resource.difficulty !== "maintainer";
+    })
+    .slice(0, 3);
+}
+
+function renderExternalResources(card, visibleSideCards) {
+  const sideEl = document.getElementById("sideCards");
+  if (!sideEl) {
+    return;
+  }
+
+  const matches = getExternalResourceMatches(card, visibleSideCards);
+  if (matches.length === 0) {
+    return;
+  }
+
+  const wrap = document.createElement("div");
+  wrap.className = "side-section-head";
+
+  const title = document.createElement("div");
+  title.className = "side-section-title";
+  title.textContent = "더 읽어보기";
+
+  const note = document.createElement("div");
+  note.className = "side-section-note";
+  note.textContent = "외부 자료는 본문 복사 없이 링크와 출처만 연결합니다.";
+
+  wrap.appendChild(title);
+  wrap.appendChild(note);
+  sideEl.appendChild(wrap);
+
+  matches.forEach(function(resource) {
+    const box = document.createElement("div");
+    box.className = "side-card external-resource-card";
+
+    const type = document.createElement("div");
+    type.className = "side-card-type";
+    type.textContent = "외부 자료 · " + (resource.tier || "link") + " · " + (resource.language || "");
+
+    const link = document.createElement("a");
+    link.className = "side-card-title";
+    link.href = resource.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = resource.title || resource.url;
+
+    const body = document.createElement("div");
+    body.className = "side-card-body";
+    body.textContent = resource.why_useful || "관련 학습 자료입니다.";
+
+    const meta = document.createElement("div");
+    meta.className = "side-card-detail";
+    meta.textContent = [
+      resource.source_name || "",
+      resource.difficulty || "",
+      resource.use_policy || ""
+    ].filter(Boolean).join(" · ");
+
+    box.appendChild(type);
+    box.appendChild(link);
+    box.appendChild(body);
+    box.appendChild(meta);
+    sideEl.appendChild(box);
+  });
 }
 
 function getCurrentCard() {
@@ -531,6 +670,8 @@ function renderSideCards(card) {
     });
     sideEl.appendChild(nextBtn);
   }
+
+  renderExternalResources(card, directCards.concat(bonusCards).concat(randomCard ? [randomCard] : []));
 }
 
 function markSeen(cardId) {
@@ -1070,9 +1211,23 @@ async function init() {
     });
   }));
 
+  const resourceFiles = [
+    "../../data/resources/python_external_resource_cards_v97_a2.json"
+  ];
+
+  const resourceResults = await Promise.all(resourceFiles.map(function(path) {
+    return fetch(withDataVersion(path)).then(function(res) {
+      if (!res.ok) {
+        return [];
+      }
+      return res.json();
+    });
+  }));
+
   curriculum = await curriculumRes.json();
   cards = lessonResults.flat();
   sideCards = sideResults.flat();
+  resourceCards = resourceResults.flat();
 
   cards.sort(function(a, b) {
     if (a.level !== b.level) {
