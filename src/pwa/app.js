@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260531_v94";
+const APP_DATA_VERSION = "20260531_v94_a2p1";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -1015,7 +1015,8 @@ async function init() {
     "../../data/lessons/python_i18n_locale_language_toggle_v62.json",
     "../../data/lessons/python_learning_streak_goal_habit_v63.json",
     "../../data/lessons/python_foundation_beginner_v94_a1_part1.json",
-    "../../data/lessons/python_foundation_beginner_v94_a1_part2.json"
+    "../../data/lessons/python_foundation_beginner_v94_a1_part2.json",
+    "../../data/lessons/python_foundation_level2_v94_a2_part1.json"
   ];
 
   const lessonResults = await Promise.all(lessonFiles.map(function(path) {
@@ -1037,7 +1038,8 @@ async function init() {
     "../../data/side_cards/data_system_cards_v1.json",
     "../../data/side_cards/dev_environment_cards_v1.json",
     "../../data/side_cards/python_foundation_side_cards_v94_a1_part1.json",
-    "../../data/side_cards/python_foundation_side_cards_v94_a1_part2.json"
+    "../../data/side_cards/python_foundation_side_cards_v94_a1_part2.json",
+    "../../data/side_cards/python_foundation_level2_side_cards_v94_a2_part1.json"
   ];
 
   const sideResults = await Promise.all(sideFiles.map(function(path) {
