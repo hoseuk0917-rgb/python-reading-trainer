@@ -1,4 +1,4 @@
-﻿// === CACHE BUST START ===
+// === CACHE BUST START ===
 const APP_DATA_VERSION = "20260601_v98_a1";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
