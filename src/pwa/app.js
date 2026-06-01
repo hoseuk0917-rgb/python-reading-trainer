@@ -1,5 +1,5 @@
-// === CACHE BUST START ===
-const APP_DATA_VERSION = "20260601_v97_a3";
+﻿// === CACHE BUST START ===
+const APP_DATA_VERSION = "20260601_v98_a1";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -1212,7 +1212,8 @@ async function init() {
   }));
 
   const resourceFiles = [
-    "../../data/resources/python_external_resource_cards_v97_a2.json"
+    "../../data/resources/python_external_resource_cards_v97_a2.json",
+    "../../data/resources/ai_tool_learning_resource_cards_v98_a1.json"
   ];
 
   const resourceResults = await Promise.all(resourceFiles.map(function(path) {
