@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260601_v98_a1";
+const APP_DATA_VERSION = "20260601_v99_a1";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -1166,7 +1166,8 @@ async function init() {
     "../../data/lessons/python_foundation_level4_v95_a5_oop_basics.json",
     "../../data/lessons/python_beginner_mixed_review_v96_a1.json",
     "../../data/lessons/python_beginner_reading_notes_v96_a2.json",
-    "../../data/lessons/python_function_scope_reading_notes_v96_a3.json"
+    "../../data/lessons/python_function_scope_reading_notes_v96_a3.json",
+    "../../data/lessons/python_core_gaps_v99_a1.json"
   ];
 
   const lessonResults = await Promise.all(lessonFiles.map(function(path) {
@@ -1199,7 +1200,8 @@ async function init() {
     "../../data/side_cards/python_beginner_mixed_review_side_cards_v96_a1.json",
     "../../data/side_cards/python_beginner_reading_notes_side_cards_v96_a2.json",
     "../../data/side_cards/python_function_scope_reading_notes_side_cards_v96_a3.json",
-    "../../data/side_cards/python_side_density_reading_pack_v97_a1.json"
+    "../../data/side_cards/python_side_density_reading_pack_v97_a1.json",
+    "../../data/side_cards/python_core_gaps_side_cards_v99_a1.json"
   ];
 
   const sideResults = await Promise.all(sideFiles.map(function(path) {
