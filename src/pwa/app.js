@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260603_v112_a2";
+const APP_DATA_VERSION = "20260603_v112_a4";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -438,7 +438,29 @@ function renderMobileSideTeaser(card, directCards, bonusCards) {
     return;
   }
 
-  teaser.className = "mobile-side-teaser";
+  teaser.className = "mobile-side-teaser mobile-side-accordion";
+
+  function getSideText(sc) {
+    return sc.body || sc.summary || sc.description || "";
+  }
+
+  function getSideDetail(sc) {
+    const parts = [];
+    if (sc.detail) {
+      parts.push(sc.detail);
+    }
+    if (Array.isArray(sc.examples) && sc.examples.length > 0) {
+      parts.push("예시: " + sc.examples.slice(0, 4).join(" / "));
+    }
+    if (Array.isArray(sc.related_concepts) && sc.related_concepts.length > 0) {
+      parts.push("연결 개념: " + sc.related_concepts.slice(0, 6).join(", "));
+    }
+    return parts.join("\n\n");
+  }
+
+  function getFullText(sc) {
+    return [getSideText(sc), getSideDetail(sc)].filter(Boolean).join("\n\n");
+  }
 
   const head = document.createElement("div");
   head.className = "mobile-side-teaser-head";
@@ -446,15 +468,40 @@ function renderMobileSideTeaser(card, directCards, bonusCards) {
 
   const note = document.createElement("div");
   note.className = "mobile-side-teaser-note";
-  note.textContent = "아래 보조카드 영역으로 내려가기 전에 핵심 연결 개념을 먼저 보여줍니다.";
+  note.textContent = "카드를 누르면 해당 개념만 펼쳐서 봅니다.";
 
   const list = document.createElement("div");
   list.className = "mobile-side-teaser-list";
+
+  function closeOtherItems(exceptItem) {
+    list.querySelectorAll(".mobile-side-teaser-item.is-open").forEach(function(openItem) {
+      if (openItem === exceptItem) {
+        return;
+      }
+
+      openItem.classList.remove("is-open");
+      openItem.setAttribute("aria-expanded", "false");
+
+      const toggle = openItem.querySelector(".mobile-side-teaser-toggle");
+      if (toggle) {
+        toggle.textContent = "펼치기";
+      }
+
+      const detail = openItem.querySelector(".mobile-side-teaser-detail");
+      if (detail) {
+        detail.hidden = true;
+      }
+    });
+  }
 
   cardsForTeaser.forEach(function(sc, idx) {
     const item = document.createElement("button");
     item.type = "button";
     item.className = "mobile-side-teaser-item";
+    item.setAttribute("aria-expanded", "false");
+
+    const top = document.createElement("span");
+    top.className = "mobile-side-teaser-topline";
 
     const label = document.createElement("span");
     label.className = "mobile-side-teaser-label";
@@ -462,22 +509,41 @@ function renderMobileSideTeaser(card, directCards, bonusCards) {
 
     const title = document.createElement("span");
     title.className = "mobile-side-teaser-title";
-    title.textContent = sc.title || sc.id || "개념 카드";
+    title.textContent = sc.title || sc.id || "사이드 카드";
 
-    const body = document.createElement("span");
-    body.className = "mobile-side-teaser-body";
-    body.textContent = sc.summary || sc.body || sc.description || "";
+    const toggle = document.createElement("span");
+    toggle.className = "mobile-side-teaser-toggle";
+    toggle.textContent = "펼치기";
 
-    item.appendChild(label);
-    item.appendChild(title);
-    if (body.textContent) {
-      item.appendChild(body);
-    }
+    top.appendChild(label);
+    top.appendChild(title);
+    top.appendChild(toggle);
+
+    const summary = document.createElement("span");
+    summary.className = "mobile-side-teaser-summary";
+    summary.textContent = getSideText(sc);
+
+    const detail = document.createElement("span");
+    detail.className = "mobile-side-teaser-detail";
+    detail.textContent = getFullText(sc) || "추가 설명이 없습니다.";
+    detail.hidden = true;
+
+    item.appendChild(top);
+    item.appendChild(summary);
+    item.appendChild(detail);
 
     item.addEventListener("click", function() {
-      const sideEl = document.getElementById("sideCards");
-      if (sideEl) {
-        sideEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      const willOpen = !item.classList.contains("is-open");
+
+      closeOtherItems(item);
+
+      item.classList.toggle("is-open", willOpen);
+      item.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      toggle.textContent = willOpen ? "접기" : "펼치기";
+      detail.hidden = !willOpen;
+
+      if (willOpen && sc.id) {
+        markSideSeen(sc.id);
       }
     });
 
@@ -488,6 +554,7 @@ function renderMobileSideTeaser(card, directCards, bonusCards) {
   teaser.appendChild(note);
   teaser.appendChild(list);
 }
+
 function renderSideCards(card) {
   const sideEl = document.getElementById("sideCards");
   sideEl.innerHTML = "";
@@ -496,6 +563,25 @@ function renderSideCards(card) {
   const directCards = directIds.map(getSideCardById).filter(Boolean);
   const bonusCards = getBonusSideCards(card, directIds);
   renderMobileSideTeaser(card, directCards, bonusCards);
+
+  const isMobileSideLayout = typeof window !== "undefined" &&
+    window.matchMedia &&
+    window.matchMedia("(max-width: 820px)").matches;
+
+  if (isMobileSideLayout) {
+    sideEl.innerHTML = "";
+    sideEl.classList.add("mobile-sidecards-suppressed");
+
+    const compactNote = document.createElement("div");
+    compactNote.className = "side-empty-note mobile-sidecards-note";
+    compactNote.textContent = "모바일에서는 위 보너스 개념 카드를 눌러 필요한 설명만 펼쳐 보세요.";
+    sideEl.appendChild(compactNote);
+
+    renderExternalResources(card, directCards.concat(bonusCards));
+    return;
+  }
+
+  sideEl.classList.remove("mobile-sidecards-suppressed");
 
   function getSideText(sc) {
     return sc.body || sc.summary || sc.description || "";
