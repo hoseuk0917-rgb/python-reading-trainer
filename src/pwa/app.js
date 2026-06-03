@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260603_v113_a2";
+const APP_DATA_VERSION = "20260603_v114_a1";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -1257,6 +1257,7 @@ async function init() {
     "../../data/lessons/python_core_gaps_v99_a1.json",
     "../../data/lessons/python_foundation_micro_gaps_v104_a1.json",
     "../../data/lessons/python_dev_environment_practical_v113_a1.json",
+    "../../data/lessons/python_import_debug_beginner_v114_a1.json",
   ];
 
   const lessonResults = await Promise.all(lessonFiles.map(function(path) {
@@ -1295,6 +1296,7 @@ async function init() {
     "../../data/side_cards/python_foundation_micro_gaps_side_cards_v104_a1.json",
     "../../data/side_cards/python_zero_visible_support_side_cards_v102_a7.json",
     "../../data/side_cards/python_dev_environment_practical_side_cards_v113_a1.json",
+    "../../data/side_cards/python_import_debug_beginner_side_cards_v114_a1.json",
   ];
 
   const sideResults = await Promise.all(sideFiles.map(function(path) {
