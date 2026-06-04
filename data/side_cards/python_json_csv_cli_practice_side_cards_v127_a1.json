@@ -1,0 +1,70 @@
+[
+  {
+    "id": "PYV127_A1_SUFFIX_DISPATCH",
+    "title": "확장자로 처리 함수 나누기",
+    "body": "Path.suffix를 확인하면 입력 파일이 .json인지 .csv인지 나눌 수 있다. 이 분기 덕분에 JSON은 json.loads로, CSV는 csv.DictReader로 읽는 흐름을 분명하게 만들 수 있다.",
+    "detail": "파일 처리 CLI에서 모든 입력을 같은 방식으로 읽을 수는 없다. JSON은 구조화된 문자열이고, CSV는 행과 열이 있는 표 형식이다. 그래서 input_path.suffix를 먼저 보고 .json이면 load_json(), .csv이면 load_csv()처럼 함수로 나누면 코드가 읽기 쉬워진다. 지원하지 않는 확장자는 SystemExit로 쉬운 오류 메시지를 보여 주면 사용자도 무엇이 문제인지 빨리 알 수 있다.",
+    "examples": [
+      "if input_path.suffix == '.json': data = load_json(input_path)",
+      "elif input_path.suffix == '.csv': data = load_csv(input_path)"
+    ],
+    "related_concepts": [
+      "Path.suffix",
+      "dispatch",
+      "JSON",
+      "CSV",
+      "SystemExit"
+    ]
+  },
+  {
+    "id": "PYV127_A1_JSON_READ_WRITE",
+    "title": "JSON 읽기와 쓰기",
+    "body": "JSON 파일은 read_text()로 문자열을 읽고 json.loads()로 Python 데이터로 바꿀 수 있다. 반대로 결과를 저장할 때는 json.dumps()로 Python 데이터를 JSON 문자열로 바꾼다.",
+    "detail": "JSON 처리 흐름은 문자열과 Python 데이터 사이를 오가는 과정으로 보면 쉽다. input_path.read_text(encoding='utf-8')은 파일 내용을 문자열로 읽고, json.loads(text)는 그 문자열을 dict나 list로 바꾼다. 처리 결과를 다시 저장하려면 json.dumps(data, ensure_ascii=False, indent=2)로 읽기 좋은 JSON 문자열을 만든 뒤 write_text()로 저장한다. 한글 데이터가 있다면 ensure_ascii=False를 쓰는 것이 읽기 좋다.",
+    "examples": [
+      "data = json.loads(input_path.read_text(encoding='utf-8'))",
+      "output_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')"
+    ],
+    "related_concepts": [
+      "json.loads",
+      "json.dumps",
+      "ensure_ascii",
+      "read_text",
+      "write_text"
+    ]
+  },
+  {
+    "id": "PYV127_A1_CSV_DICTREADER_WRITER",
+    "title": "CSV DictReader와 DictWriter",
+    "body": "csv.DictReader는 CSV 행을 컬럼명 기준 dict처럼 읽게 해 준다. csv.DictWriter는 dict 목록을 다시 CSV로 저장할 때 쓰며, fieldnames로 저장할 컬럼 이름과 순서를 정한다.",
+    "detail": "CSV는 첫 줄이 헤더라면 DictReader로 읽는 것이 초보자에게 이해하기 쉽다. 각 행을 row['name']처럼 컬럼명으로 접근할 수 있기 때문이다. 저장할 때는 DictWriter를 사용하고, fieldnames에 컬럼 이름을 지정한다. writeheader()는 헤더 줄을 쓰고 writerows(rows)는 여러 행을 저장한다. newline=''과 encoding='utf-8'도 CSV 파일을 안전하게 다루기 위해 함께 익혀 두면 좋다.",
+    "examples": [
+      "rows = list(csv.DictReader(f))",
+      "writer = csv.DictWriter(f, fieldnames=['name', 'score'])"
+    ],
+    "related_concepts": [
+      "csv.DictReader",
+      "csv.DictWriter",
+      "fieldnames",
+      "writeheader",
+      "writerows"
+    ]
+  },
+  {
+    "id": "PYV127_A1_SUMMARY_OUTPUT",
+    "title": "데이터 요약 결과 만들기",
+    "body": "파일 처리 CLI는 원본을 그대로 복사하기보다 행 개수, 컬럼 목록, 키 목록, 오류 개수 같은 요약 결과를 만드는 경우가 많다. 요약은 dict로 만들면 JSON 저장과 화면 출력에 모두 쓰기 쉽다.",
+    "detail": "예를 들어 CSV를 읽었다면 rows 개수와 columns 목록을 summary dict에 담을 수 있다. JSON이 list라면 항목 개수를 세고, dict라면 key 목록을 만들 수 있다. 이렇게 만든 summary는 json.dumps()로 저장하기 좋고, 나중에 로그나 리포트로 확장하기도 쉽다. 중요한 점은 읽기, 처리, 저장을 한 줄에 섞지 않고 make_summary() 같은 함수로 분리하는 것이다.",
+    "examples": [
+      "summary = {'rows': len(rows), 'columns': list(rows[0].keys())}",
+      "summary = {'type': type(data).__name__, 'count': len(data)}"
+    ],
+    "related_concepts": [
+      "summary",
+      "dict",
+      "len",
+      "columns",
+      "json.dumps"
+    ]
+  }
+]
