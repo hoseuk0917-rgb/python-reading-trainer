@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260604_v124_a1";
+const APP_DATA_VERSION = "20260604_v125_a1";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -1268,6 +1268,7 @@ async function init() {
     "../../data/lessons/python_pandas_beginner_v122_a1.json",
     "../../data/lessons/python_datetime_beginner_v123_a1.json",
     "../../data/lessons/python_regex_beginner_v124_a1.json",
+    "../../data/lessons/python_argparse_cli_beginner_v125_a1.json",
   ];
 
   const lessonResults = await Promise.all(lessonFiles.map(function(path) {
@@ -1317,6 +1318,7 @@ async function init() {
     "../../data/side_cards/python_pandas_beginner_side_cards_v122_a1.json",
     "../../data/side_cards/python_datetime_beginner_side_cards_v123_a1.json",
     "../../data/side_cards/python_regex_beginner_side_cards_v124_a1.json",
+    "../../data/side_cards/python_argparse_cli_beginner_side_cards_v125_a1.json",
   ];
 
   const sideResults = await Promise.all(sideFiles.map(function(path) {
