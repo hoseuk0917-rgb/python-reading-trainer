@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260605_v130_a1";
+const APP_DATA_VERSION = "20260605_v131_a1";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -1274,6 +1274,7 @@ async function init() {
     "../../data/lessons/python_file_cli_error_recovery_v128_a1.json",
     "../../data/lessons/python_logging_verbose_cli_beginner_v129_a1.json",
     "../../data/lessons/python_env_secret_config_beginner_v130_a1.json",
+    "../../data/lessons/python_requirements_dependency_repro_v131_a1.json",
   ];
 
   const lessonResults = await Promise.all(lessonFiles.map(function(path) {
@@ -1329,6 +1330,7 @@ async function init() {
     "../../data/side_cards/python_file_cli_error_recovery_side_cards_v128_a1.json",
     "../../data/side_cards/python_logging_verbose_cli_side_cards_v129_a1.json",
     "../../data/side_cards/python_env_secret_config_side_cards_v130_a1.json",
+    "../../data/side_cards/python_requirements_dependency_repro_side_cards_v131_a1.json",
   ];
 
   const sideResults = await Promise.all(sideFiles.map(function(path) {
