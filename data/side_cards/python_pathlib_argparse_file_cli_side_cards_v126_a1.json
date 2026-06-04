@@ -1,0 +1,70 @@
+[
+  {
+    "id": "PYV126_A1_ARGPARSE_PATH_OBJECT",
+    "title": "argparse 값과 Path 객체 연결하기",
+    "body": "argparse로 받은 파일 경로는 처음에는 문자열이다. 이 값을 Path(args.input)처럼 Path 객체로 바꾸면 파일 이름, 확장자, 부모 폴더, 존재 여부 같은 경로 정보를 더 읽기 쉽게 다룰 수 있다.",
+    "detail": "CLI 도구는 보통 python tool.py --input data.txt --output out/result.txt처럼 실행된다. 이때 args.input과 args.output은 문자열로 들어온다. 문자열 그대로도 쓸 수는 있지만, Path 객체로 바꾸면 input_path.exists(), input_path.suffix, output_path.parent 같은 기능을 자연스럽게 쓸 수 있다. 초보 단계에서는 경로를 단순 문자열로만 보지 말고, 파일 시스템을 다루는 객체로 바꾸는 습관을 익히면 좋다.",
+    "examples": [
+      "input_path = Path(args.input)",
+      "print(input_path.name, input_path.suffix)"
+    ],
+    "related_concepts": [
+      "argparse",
+      "Path",
+      "pathlib",
+      "file path",
+      "CLI"
+    ]
+  },
+  {
+    "id": "PYV126_A1_EXISTS_SUFFIX_CHECK",
+    "title": "exists와 suffix로 입력 확인하기",
+    "body": "Path.exists()는 파일이나 폴더가 실제로 있는지 확인한다. Path.suffix는 .csv, .json, .txt 같은 확장자를 읽는다. 둘을 함께 쓰면 입력 파일이 있고 어떤 형식인지 먼저 확인할 수 있다.",
+    "detail": "파일 처리 도구에서 가장 먼저 할 일은 입력이 유효한지 확인하는 것이다. 파일이 없는데 read_text()를 호출하면 오류가 나고, 사용자는 왜 실패했는지 이해하기 어렵다. exists()로 존재 여부를 확인하고, suffix로 확장자를 확인하면 CSV만 처리할지, JSON만 처리할지, 텍스트 파일만 받을지 판단할 수 있다. 이런 검사는 프로그램을 더 친절하고 안전하게 만든다.",
+    "examples": [
+      "if not input_path.exists(): raise SystemExit('파일 없음')",
+      "if input_path.suffix != '.txt': raise SystemExit('txt만 가능')"
+    ],
+    "related_concepts": [
+      "Path.exists",
+      "Path.suffix",
+      "validation",
+      "file type",
+      "SystemExit"
+    ]
+  },
+  {
+    "id": "PYV126_A1_READ_WRITE_TEXT",
+    "title": "read_text, write_text, mkdir 흐름",
+    "body": "read_text()는 텍스트 파일을 문자열로 읽고, write_text()는 문자열을 파일로 저장한다. 출력 경로의 부모 폴더가 없을 수 있으므로 저장 전에 parent.mkdir()로 폴더를 만들어 두면 안전하다.",
+    "detail": "작은 CLI 도구는 파일을 읽고 처리한 뒤 다시 저장하는 경우가 많다. input_path.read_text(encoding='utf-8')은 입력 파일을 문자열로 읽고, output_path.write_text(result, encoding='utf-8')은 결과 문자열을 저장한다. 그런데 out/result.txt처럼 하위 폴더에 저장하려면 out 폴더가 먼저 있어야 한다. output_path.parent.mkdir(parents=True, exist_ok=True)를 쓰면 중간 폴더가 없어도 만들고, 이미 있어도 오류를 내지 않는다.",
+    "examples": [
+      "text = input_path.read_text(encoding='utf-8')",
+      "output_path.parent.mkdir(parents=True, exist_ok=True)"
+    ],
+    "related_concepts": [
+      "read_text",
+      "write_text",
+      "mkdir",
+      "encoding",
+      "output path"
+    ]
+  },
+  {
+    "id": "PYV126_A1_FILE_TOOL_FLOW",
+    "title": "실제 파일 처리 CLI의 기본 흐름",
+    "body": "실제 파일 처리 CLI는 인자 파싱, Path 변환, 입력 확인, 파일 읽기, 처리, 출력 폴더 생성, 결과 저장 순서로 나누면 읽기 쉽다. 이전에 배운 argparse, pathlib, regex, CSV, JSON을 연결하는 단계다.",
+    "detail": "처음에는 한 파일에 모든 코드를 한 번에 쓰기 쉽다. 하지만 도구처럼 반복해서 쓰려면 흐름을 나누는 것이 좋다. parse_args()는 실행 인자를 읽고, Path(args.input)은 경로 객체를 만들며, exists()는 입력을 확인한다. 그다음 read_text()나 CSV/JSON 읽기로 데이터를 가져오고, 필요한 처리를 한 뒤 write_text()나 CSV 저장으로 결과를 남긴다. 이 구조를 익히면 작은 자동화 스크립트를 실제 도구처럼 만들 수 있다.",
+    "examples": [
+      "parse_args() -> Path 변환 -> exists() -> read_text() -> write_text()",
+      "python clean_text.py --input raw.txt --output out/clean.txt"
+    ],
+    "related_concepts": [
+      "CLI tool",
+      "parse_args",
+      "pathlib",
+      "file processing",
+      "automation"
+    ]
+  }
+]
