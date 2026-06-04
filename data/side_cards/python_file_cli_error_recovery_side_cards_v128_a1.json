@@ -1,0 +1,70 @@
+[
+  {
+    "id": "PYV128_A1_JSON_DECODE_ERROR",
+    "title": "JSONDecodeError 쉽게 읽기",
+    "body": "JSONDecodeError는 JSON 문자열의 문법이 깨졌을 때 나는 오류다. 쉽게 말해 중괄호, 따옴표, 쉼표 같은 JSON 규칙이 맞지 않아 Python 데이터로 바꿀 수 없다는 뜻이다.",
+    "detail": "JSON 파일을 read_text()로 읽으면 아직 문자열이다. 이 문자열을 json.loads()로 dict나 list로 바꾸는 과정에서 문법이 틀리면 json.JSONDecodeError가 난다. CLI 도구에서는 이 오류를 그대로 traceback으로 보여 주기보다 'JSON 형식을 확인하세요'처럼 쉬운 메시지로 바꾸는 것이 좋다. 특히 사용자가 직접 만든 JSON 파일을 입력으로 받을 때 자주 만날 수 있는 실패다.",
+    "examples": [
+      "except json.JSONDecodeError: raise SystemExit('JSON 형식 오류')",
+      "data = json.loads(input_path.read_text(encoding='utf-8'))"
+    ],
+    "related_concepts": [
+      "JSONDecodeError",
+      "json.loads",
+      "JSON syntax",
+      "SystemExit",
+      "CLI"
+    ]
+  },
+  {
+    "id": "PYV128_A1_FILE_NOT_FOUND_PATH_CHECK",
+    "title": "파일 없음과 exists 체크",
+    "body": "입력 파일이 없으면 read_text()나 open()에서 FileNotFoundError가 날 수 있다. 그래서 CLI에서는 읽기 전에 Path.exists()로 먼저 확인하거나, FileNotFoundError를 잡아 쉬운 메시지로 바꾼다.",
+    "detail": "초보자가 파일 처리 코드를 실행할 때 가장 많이 만나는 문제 중 하나가 경로 오류다. 파일명이 틀렸거나 현재 폴더가 다르거나 입력 파일을 아직 만들지 않았을 수 있다. 이때 긴 traceback만 보이면 원인을 찾기 어렵다. input_path.exists()로 먼저 확인하고 없으면 SystemExit로 안내하거나, read_text()에서 FileNotFoundError를 잡아 친절한 메시지를 보여 주면 CLI 도구가 훨씬 사용하기 쉬워진다.",
+    "examples": [
+      "if not input_path.exists(): raise SystemExit('입력 파일이 없습니다')",
+      "except FileNotFoundError: raise SystemExit('파일 경로를 확인하세요')"
+    ],
+    "related_concepts": [
+      "Path.exists",
+      "FileNotFoundError",
+      "input path",
+      "SystemExit",
+      "traceback"
+    ]
+  },
+  {
+    "id": "PYV128_A1_CSV_KEY_ERROR_COLUMNS",
+    "title": "CSV 컬럼 KeyError 처리",
+    "body": "csv.DictReader로 읽은 row는 컬럼명을 key로 쓰는 dict처럼 동작한다. CSV에 없는 컬럼 이름으로 row['score']처럼 접근하면 KeyError가 날 수 있다.",
+    "detail": "CSV 파일마다 컬럼명이 다를 수 있다. 코드에서는 score 컬럼을 기대했는데 실제 파일에는 Score, 점수, value 같은 다른 이름이 들어 있을 수 있다. 이때 row['score']를 바로 읽으면 KeyError가 난다. reader.fieldnames로 컬럼 목록을 확인하거나, 필요한 컬럼이 있는지 먼저 검사하면 오류 메시지를 더 쉽게 만들 수 있다. 데이터 처리 CLI에서는 컬럼 확인이 입력 검증의 중요한 부분이다.",
+    "examples": [
+      "if 'score' not in reader.fieldnames: raise SystemExit('score 컬럼 없음')",
+      "try: score = row['score']; except KeyError: ..."
+    ],
+    "related_concepts": [
+      "KeyError",
+      "DictReader",
+      "fieldnames",
+      "CSV column",
+      "validation"
+    ]
+  },
+  {
+    "id": "PYV128_A1_CLI_ERROR_RECOVERY_FLOW",
+    "title": "CLI 오류 복구 기본 흐름",
+    "body": "파일 처리 CLI의 오류 복구는 입력 확인, 구체적인 예외 처리, 쉬운 메시지 출력으로 나누면 좋다. 모든 오류를 숨기기보다 사용자가 고칠 수 있는 문제를 분명히 알려 주는 것이 핵심이다.",
+    "detail": "좋은 CLI 도구는 실패하지 않는 도구가 아니라, 실패했을 때 원인을 잘 알려 주는 도구다. 파일이 없으면 경로를 확인하라고 말하고, JSON 문법이 깨졌으면 JSON 형식을 확인하라고 말하며, CSV 컬럼이 없으면 필요한 컬럼 이름을 알려 주면 된다. 이때 bare except로 모든 오류를 뭉개기보다 FileNotFoundError, JSONDecodeError, KeyError처럼 구체적인 예외를 나누어 처리하는 것이 안전하다. 마지막에는 SystemExit로 사용자에게 짧고 쉬운 메시지를 보여 줄 수 있다.",
+    "examples": [
+      "except json.JSONDecodeError: raise SystemExit('JSON 형식 오류')",
+      "except KeyError as e: raise SystemExit(f'필요한 컬럼이 없습니다: {e}')"
+    ],
+    "related_concepts": [
+      "try except",
+      "specific exception",
+      "SystemExit",
+      "CLI UX",
+      "debugging"
+    ]
+  }
+]
