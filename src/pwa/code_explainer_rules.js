@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V174-A1 START ===
+// === CODE EXPLAINER RULES V175-A1 START ===
 (function() {
   "use strict";
 
@@ -462,6 +462,7 @@
     const title = String(step.title || "").toLowerCase();
     const explain = String(step.explain || "").toLowerCase();
     const text = [code, title, explain, language].join(" ");
+    const codeTitle = [code, title, language].join(" ");
 
     const tags = [];
     let category = "처리";
@@ -469,6 +470,11 @@
     if (/worker 진입 객체|export\s+default|프로그램 시작점|public\s+static\s+void\s+main/.test(text)) {
       category = "구조";
       pushUnique(tags, "함수/구조");
+    }
+
+    if (/localstorage|브라우저 저장소/.test(text)) {
+      category = "저장소";
+      pushUnique(tags, "저장소");
     }
 
     if (/ctx\.waituntil|백그라운드 작업|백그라운드/.test(text)) {
@@ -516,7 +522,7 @@
       category = "구조";
       pushUnique(tags, "함수/구조");
     }
-    if (/try|catch|except|finally|throw|raise|오류|exception/.test(text)) {
+    if (/try|catch|except|finally|throw|raise|오류 대비|오류 처리|exception/.test(codeTitle)) {
       category = "오류처리";
       pushUnique(tags, "오류처리");
     }
@@ -648,4 +654,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V174-A1 END ===
+// === CODE EXPLAINER RULES V175-A1 END ===

@@ -63,6 +63,7 @@ function normalizeReportKey(value) {
     "오류처리": "error_handling",
     "배포": "deploy",
     "백그라운드": "background",
+    "저장소": "storage",
     "구조": "structure",
     "네트워크/API": "network_api",
     "변수/값": "variable_value",
@@ -320,7 +321,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260606_v174_a1",
+  version: "20260606_v175_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,
