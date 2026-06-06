@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V167-A1 START ===
+// === CODE EXPLAINER RULES V168-A1 START ===
 (function() {
   "use strict";
 
@@ -48,6 +48,8 @@
       if (/move-item/i.test(t)) return "medium";
       if (/copy-item/i.test(t) && /-force\b/i.test(t)) return "medium";
       if (/set-content/i.test(t)) return "medium";
+      if (/invoke-webrequest|curl\b/i.test(t)) return "medium";
+      if (/wrangler\s+d1\s+execute/i.test(t) || /wrangler\s+deploy/i.test(t)) return "medium";
     }
     if (language === "python") {
       if (/shutil\.rmtree|os\.remove|os\.rmdir/.test(t)) return "high";
@@ -56,6 +58,7 @@
     if (language === "javascript" || language === "workers") {
       if (/eval\s*\(|new\s+Function/.test(t)) return "high";
       if (/delete\s+|\.delete\s*\(/.test(t)) return "medium";
+      if (/env\.DB.*\bDELETE\b|env\.DB.*\bDROP\b|env\.DB.*\bUPDATE\b/i.test(t)) return "medium";
     }
     if (language === "java") {
       if (/Runtime\.getRuntime|ProcessBuilder/.test(t)) return "medium";
@@ -74,6 +77,42 @@
     };
   }
 
+  function logicalLines(raw, language) {
+    const sourceLines = String(raw || "").split(/\r?\n/);
+    const output = [];
+    let buffer = "";
+    let startLine = 1;
+
+    sourceLines.forEach(function(line, idx) {
+      const lineNo = idx + 1;
+      const rightTrimmed = String(line || "").replace(/\s+$/, "");
+      const trimmed = rightTrimmed.trim();
+
+      if (language === "powershell" && (rightTrimmed.endsWith("`") || rightTrimmed.endsWith("|"))) {
+        if (!buffer) {
+          startLine = lineNo;
+        }
+        const withoutContinuation = rightTrimmed.endsWith("`") ? rightTrimmed.slice(0, -1).trim() : rightTrimmed.trim();
+        buffer += (buffer ? " " : "") + withoutContinuation;
+        return;
+      }
+
+      if (buffer) {
+        output.push({ lineNo: startLine, text: buffer + " " + trimmed });
+        buffer = "";
+        return;
+      }
+
+      output.push({ lineNo: lineNo, text: line });
+    });
+
+    if (buffer) {
+      output.push({ lineNo: startLine, text: buffer });
+    }
+
+    return output;
+  }
+
   function explainPowerShellLine(line, lineNo) {
     const t = cleanLine(line);
     const risk = riskOf(t, "powershell");
@@ -82,11 +121,30 @@
       return makeStep(lineNo, t, "작업 폴더 이동", "이후 명령들이 어느 폴더를 기준으로 실행될지 바꿉니다.", risk);
     }
     if (/^\$env:[A-Za-z_][\w-]*\s*=/.test(t)) {
-      return makeStep(lineNo, t, "환경변수 설정", "현재 PowerShell 세션에서 사용할 임시 설정값을 저장합니다. API 키 같은 값은 코드에 저장하지 않는 용도로 자주 씁니다.", risk);
+      return makeStep(lineNo, t, "환경변수 설정", "현재 PowerShell 세션에서 사용할 임시 설정값을 저장합니다. API 키 같은 민감값은 코드에 직접 쓰지 않고 환경변수로 넣는 방식이 안전합니다.", risk);
     }
-    if (/^\$[A-Za-z_][\w-]*\s*=/.test(t)) {
-      return makeStep(lineNo, t, "변수에 값 저장", "나중에 다시 쓰기 위해 값이나 경로를 변수 이름에 담습니다.", risk);
+
+    const varMatch = t.match(/^\$([A-Za-z_][\w-]*)\s*=\s*(.+)$/);
+    if (varMatch) {
+      const name = varMatch[1];
+      const value = varMatch[2];
+
+      if (/Get-Date/i.test(value)) {
+        return makeStep(lineNo, t, "시간값을 변수에 저장", "$" + name + " 변수에 현재 날짜/시간 문자열을 넣습니다. 백업 파일명이나 실행 기록 이름을 겹치지 않게 만들 때 씁니다.", risk);
+      }
+      if (/Test-Path/i.test(value)) {
+        return makeStep(lineNo, t, "경로 확인 결과 저장", "$" + name + " 변수에 파일이나 폴더가 존재하는지 검사한 결과를 저장합니다.", risk);
+      }
+      if (/Invoke-WebRequest|curl\b/i.test(value)) {
+        return makeStep(lineNo, t, "웹 요청 결과 저장", "$" + name + " 변수에 웹 요청 결과를 저장합니다. URL, 인증, 응답 상태를 확인해야 합니다.", risk);
+      }
+      if (/Join-Path/i.test(value)) {
+        return makeStep(lineNo, t, "경로 조합 결과 저장", "$" + name + " 변수에 여러 경로 조각을 합친 결과를 저장합니다.", risk);
+      }
+
+      return makeStep(lineNo, t, "변수에 값 저장", "$" + name + " 변수에 값을 넣습니다. 이후 줄에서 $" + name + "을 쓰면 이 값을 다시 사용합니다.", risk);
     }
+
     if (/Get-Date/i.test(t)) {
       return makeStep(lineNo, t, "현재 시간 만들기", "현재 날짜와 시간을 가져옵니다. 백업 파일명이나 실행 기록 이름을 만들 때 자주 씁니다.", risk);
     }
@@ -133,7 +191,22 @@
       return makeStep(lineNo, t, "원격 저장소로 업로드", "로컬 커밋이나 태그를 GitHub 같은 원격 저장소에 올립니다.", risk);
     }
     if (/^git\s+stash/i.test(t)) {
-      return makeStep(lineNo, t, "임시 보관", "아직 커밋하지 않은 변경사항을 잠시 치워두고 작업 폴더를 깨끗하게 만듭니다.", risk);
+      return makeStep(lineNo, t, "임시 보관", "아직 커밋하지 않은 변경사항을 잠시 치워두고 작업 폴더를 깨끗하게 만듭니다. 나중에 stash pop/apply로 되돌릴 수 있습니다.", risk);
+    }
+    if (/^git\s+diff\s+--stat/i.test(t)) {
+      return makeStep(lineNo, t, "변경량 요약 확인", "어떤 파일이 얼마나 바뀌었는지 줄 수 중심으로 요약해서 봅니다. 커밋 전 확인용으로 좋습니다.", risk);
+    }
+    if (/^git\s+diff\b/i.test(t)) {
+      return makeStep(lineNo, t, "변경 내용 확인", "커밋 전 실제 코드 변경 내용을 확인합니다.", risk);
+    }
+    if (/^git\s+log\b/i.test(t)) {
+      return makeStep(lineNo, t, "커밋 기록 확인", "최근 커밋 목록과 태그/브랜치 위치를 확인합니다.", risk);
+    }
+    if (/^git\s+reset\s+--hard/i.test(t)) {
+      return makeStep(lineNo, t, "변경사항 강제 되돌리기", "커밋하지 않은 변경사항을 강제로 버립니다. 실행하면 복구가 어려울 수 있으니 매우 주의해야 합니다.", risk);
+    }
+    if (/^git\s+clean\s+-/i.test(t)) {
+      return makeStep(lineNo, t, "추적되지 않는 파일 삭제", "Git이 추적하지 않는 새 파일을 삭제합니다. 생성한 파일이 사라질 수 있으니 실행 전 목록 확인이 필요합니다.", risk);
     }
     if (/^python\b/i.test(t)) {
       return makeStep(lineNo, t, "Python 실행", "Python 스크립트나 명령을 실행합니다.", risk);
@@ -157,7 +230,35 @@
       return makeStep(lineNo, t, "백그라운드 작업 중지", "실행 중인 백그라운드 작업을 멈춥니다.", risk);
     }
 
-    return makeStep(lineNo, t, "명령 실행", "이 줄은 PowerShell 명령입니다. 정확한 의미가 자동 규칙에 없으므로 원문을 확인하며 실행해야 합니다.", risk);
+    if (/^Start-Sleep\b/i.test(t)) {
+      return makeStep(lineNo, t, "잠시 대기", "다음 명령을 바로 실행하지 않고 지정한 시간만큼 기다립니다. 배포 반영이나 서버 준비를 기다릴 때 씁니다.", risk);
+    }
+    if (/^Write-Host\b/i.test(t)) {
+      return makeStep(lineNo, t, "콘솔에 메시지 출력", "진행 상태나 결과를 PowerShell 화면에 보여줍니다.", risk);
+    }
+    if (/^Unblock-File\b/i.test(t)) {
+      return makeStep(lineNo, t, "파일 차단 해제", "인터넷에서 받은 스크립트 파일의 실행 차단 표시를 해제합니다. 신뢰할 수 있는 파일인지 먼저 확인해야 합니다.", risk);
+    }
+    if (/^Set-ExecutionPolicy\b/i.test(t)) {
+      return makeStep(lineNo, t, "스크립트 실행 정책 변경", "PowerShell 스크립트 실행 제한을 바꿉니다. 보안에 영향을 줄 수 있어 범위와 정책값을 확인해야 합니다.", risk);
+    }
+    if (/^Invoke-WebRequest\b/i.test(t) || /^curl\b/i.test(t)) {
+      return makeStep(lineNo, t, "웹 요청 실행", "URL에 요청을 보내 파일이나 응답을 가져옵니다. 주소와 저장 위치, 인증값 포함 여부를 확인해야 합니다.", risk);
+    }
+    if (/^(npx\s+)?wrangler\b/i.test(t)) {
+      return makeStep(lineNo, t, "Cloudflare Wrangler 실행", "Cloudflare Workers, Pages, D1, R2 같은 리소스를 배포하거나 조회하는 명령입니다. 원격 리소스가 바뀔 수 있습니다.", risk);
+    }
+    if (/^try\s*\{/i.test(t)) {
+      return makeStep(lineNo, t, "오류 대비 시작", "이 안의 명령을 실행하다가 오류가 나면 catch 블록에서 처리할 수 있게 준비합니다.", risk);
+    }
+    if (/^catch\s*\{/i.test(t)) {
+      return makeStep(lineNo, t, "오류 처리", "try 안에서 실패한 경우 이 블록으로 넘어와 실패 메시지나 대체 동작을 처리합니다.", risk);
+    }
+    if (/\|\s*Out-Null/i.test(t)) {
+      return makeStep(lineNo, t, "출력 숨기기", "명령 결과를 화면에 표시하지 않고 버립니다. 실제 작업은 실행되지만 출력만 숨겨집니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "명령 실행", "이 줄은 PowerShell 명령입니다. 자동 규칙에 없는 명령이므로 원문, 경로, 옵션을 확인한 뒤 실행해야 합니다.", risk);
   }
 
   function explainPythonLine(line, lineNo) {
@@ -229,8 +330,23 @@
     if (/url\.pathname/.test(t)) {
       return makeStep(lineNo, t, "경로 조건 확인", "사용자가 어떤 주소로 들어왔는지 보고 분기합니다.", risk);
     }
+    if (/await\s+request\.json\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "요청 본문 JSON 읽기", "사용자가 보낸 요청 본문을 JSON으로 읽습니다. 잘못된 JSON이 들어올 수 있으므로 실제 서비스에서는 예외 처리가 필요합니다.", risk);
+    }
+    if (/request\.method/.test(t)) {
+      return makeStep(lineNo, t, "요청 방식 확인", "GET, POST 같은 HTTP 메서드를 보고 어떤 동작을 할지 나눕니다.", risk);
+    }
+    if (/env\.DB.*\.prepare\s*\(/.test(t) || /\.prepare\s*\(.*SELECT|\.prepare\s*\(.*INSERT|\.prepare\s*\(.*UPDATE|\.prepare\s*\(.*DELETE/i.test(t)) {
+      return makeStep(lineNo, t, "D1 SQL 준비", "Cloudflare D1에 보낼 SQL 문장을 준비합니다. SELECT는 조회, INSERT는 추가, UPDATE는 수정, DELETE는 삭제입니다.", risk);
+    }
+    if (/\.bind\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "SQL 값 안전하게 연결", "SQL 문장의 물음표 자리에 실제 값을 연결합니다. 문자열을 직접 붙이는 것보다 안전한 방식입니다.", risk);
+    }
+    if (/\.(all|first|run)\s*\(/.test(t) && /await|env\.DB|prepare/i.test(t)) {
+      return makeStep(lineNo, t, "D1 쿼리 실행", "준비한 SQL을 실제로 실행합니다. all은 여러 행 조회, first는 한 행 조회, run은 INSERT/UPDATE/DELETE 실행에 자주 씁니다.", risk);
+    }
     if (/env\.DB/.test(t)) {
-      return makeStep(lineNo, t, "D1 데이터베이스 사용", "Cloudflare env에 연결된 DB를 사용합니다. SQL 실행 부분을 확인해야 합니다.", risk);
+      return makeStep(lineNo, t, "D1 데이터베이스 사용", "Cloudflare env에 연결된 DB를 사용합니다. 어떤 SQL을 실행하는지 확인해야 합니다.", risk);
     }
     if (/env\.KV/.test(t)) {
       return makeStep(lineNo, t, "KV 저장소 사용", "Cloudflare KV에서 값을 읽거나 씁니다.", risk);
@@ -246,6 +362,15 @@
     }
     if (/new\s+Response/.test(t)) {
       return makeStep(lineNo, t, "응답 반환", "문자열, 상태 코드, 헤더 등을 담은 HTTP 응답을 돌려줍니다.", risk);
+    }
+    if (/ctx\.waitUntil\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "백그라운드 작업 예약", "응답을 먼저 돌려준 뒤에도 로그 저장이나 캐시 갱신 같은 작업을 이어서 실행하게 합니다.", risk);
+    }
+    if (/caches\.default/.test(t)) {
+      return makeStep(lineNo, t, "Cloudflare 캐시 사용", "Cloudflare 엣지 캐시에 응답을 저장하거나 읽습니다. 캐시 키와 만료 정책을 확인해야 합니다.", risk);
+    }
+    if (/Access-Control-Allow-Origin|CORS/i.test(t)) {
+      return makeStep(lineNo, t, "CORS 헤더 설정", "다른 도메인에서 이 API를 호출할 수 있는지 제어합니다. 공개 범위를 확인해야 합니다.", risk);
     }
     if (/^(const|let|var)\s+\w+\s*=/.test(t)) {
       return makeStep(lineNo, t, "변수에 값 저장", "값이나 객체를 이름에 담아서 이후 코드에서 다시 사용합니다.", risk);
@@ -350,12 +475,13 @@
   function analyze(code, requestedLanguage) {
     const raw = stripFence(code);
     const language = requestedLanguage && requestedLanguage !== "auto" ? requestedLanguage : detectLanguage(raw);
-    const lines = raw.split(/\r?\n/);
+    const lines = logicalLines(raw, language);
     const steps = [];
 
-    lines.forEach(function(line, idx) {
+    lines.forEach(function(item) {
+      const line = item.text;
       if (isBlankOrComment(line, language)) return;
-      const lineNo = idx + 1;
+      const lineNo = item.lineNo;
       if (language === "powershell") steps.push(explainPowerShellLine(line, lineNo));
       else if (language === "python") steps.push(explainPythonLine(line, lineNo));
       else if (language === "javascript" || language === "workers") steps.push(explainJavaScriptLine(line, lineNo, language));
@@ -377,4 +503,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V167-A1 END ===
+// === CODE EXPLAINER RULES V168-A1 END ===
