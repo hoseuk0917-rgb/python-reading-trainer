@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260605_v164_a1";
+const APP_DATA_VERSION = "20260606_v167_a1";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -373,6 +373,9 @@ function setView(viewName) {
   }
   if (viewName === "notes") {
     renderNotesList();
+  }
+  if (viewName === "code" && window.CodeExplainer && typeof window.CodeExplainer.refresh === "function") {
+    window.CodeExplainer.refresh();
   }
 }
 
