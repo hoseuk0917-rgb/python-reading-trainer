@@ -44,6 +44,99 @@ function hasAll(text, needles) {
   return needles.every((needle) => text.includes(needle));
 }
 
+function countValues(values) {
+  const counts = {};
+  values.forEach((value) => {
+    if (!value) return;
+    counts[value] = (counts[value] || 0) + 1;
+  });
+  return counts;
+}
+
+function normalizeReportKey(value) {
+  const map = {
+    "처리": "process",
+    "검증": "validation",
+    "버전관리": "version_control",
+    "파일/경로": "file_path",
+    "출력/응답": "output_response",
+    "오류처리": "error_handling",
+    "배포": "deploy",
+    "구조": "structure",
+    "네트워크/API": "network_api",
+    "변수/값": "variable_value",
+    "의존성": "dependency",
+    "조건": "condition",
+    "반복": "loop",
+    "DB": "database",
+
+    "파일": "file",
+    "Git": "git",
+    "출력": "output",
+    "API": "api",
+    "Cloudflare": "cloudflare",
+    "SQL": "sql",
+    "함수/구조": "function_structure",
+    "조건문": "condition",
+    "반복문": "loop",
+    "오류처리": "error_handling",
+    "보안": "security",
+    "변수": "variable",
+    "JavaScript": "javascript",
+    "Python": "python",
+    "PowerShell": "powershell",
+    "Workers": "workers",
+    "Java": "java"
+  };
+
+  if (map[value]) return map[value];
+
+  return String(value || "unknown")
+    .replace(/[^\w]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toLowerCase() || "unknown";
+}
+
+function countNormalizedValues(values) {
+  const counts = {};
+  values.forEach((value) => {
+    const key = normalizeReportKey(value);
+    if (!key) return;
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return counts;
+}
+
+function summarizeResult(sample, result, status, message) {
+  const steps = Array.isArray(result.steps) ? result.steps : [];
+  const categories = steps.map((step) => step.category || "처리");
+  const tags = [];
+  steps.forEach((step) => {
+    if (Array.isArray(step.tags)) {
+      step.tags.forEach((tag) => tags.push(tag));
+    }
+  });
+
+  return {
+    name: sample.name,
+    requestedLanguage: sample.requestedLanguage,
+    language: result.language,
+    status: status,
+    message: message || "",
+    stepCount: steps.length,
+    warningCount: Array.isArray(result.warnings) ? result.warnings.length : 0,
+    flowSummary: result.flowSummary || "",
+    categoryCounts: countValues(categories),
+    tagCounts: countValues(tags),
+    categoryKeyCounts: countNormalizedValues(categories),
+    tagKeyCounts: countNormalizedValues(tags),
+    titles: steps.map((step) => step.title),
+    warningTitles: steps
+      .filter((step) => step.risk === "high" || step.risk === "medium")
+      .map((step) => step.title)
+  };
+}
+
 const samples = [
   {
     name: "powershell_git_validate",
@@ -193,6 +286,10 @@ for row in df["name"]:
 ];
 
 let failed = 0;
+const sampleReports = [];
+const reportArgIndex = process.argv.indexOf("--report");
+const reportPath = reportArgIndex >= 0 ? process.argv[reportArgIndex + 1] : "";
+const printJson = process.argv.includes("--json");
 
 samples.forEach((sample) => {
   const result = analyzer.analyze(sample.code, sample.requestedLanguage);
@@ -208,9 +305,11 @@ samples.forEach((sample) => {
     assert(hasAll(summaryText, sample.mustContain), `${sample.name}: missing expected explanation text`);
     assert(hasAll(summaryText, sample.mustMetaContain), `${sample.name}: missing expected meta tags/categories`);
 
+    sampleReports.push(summarizeResult(sample, result, "ok", ""));
     console.log("SAMPLE_OK", sample.name, "LANG", result.language, "STEPS", result.steps.length);
   } catch (error) {
     failed += 1;
+    sampleReports.push(summarizeResult(sample, result, "fail", error.message));
     console.error("SAMPLE_FAIL", sample.name);
     console.error(error.message);
     console.error("SUMMARY", result.summary);
@@ -218,6 +317,25 @@ samples.forEach((sample) => {
     console.error("TEXT", text.slice(0, 2000));
   }
 });
+
+const report = {
+  version: "20260606_v173_a2",
+  generatedAt: new Date().toISOString(),
+  total: sampleReports.length,
+  failed: failed,
+  passed: sampleReports.length - failed,
+  samples: sampleReports
+};
+
+if (reportPath) {
+  fs.mkdirSync(path.dirname(path.resolve(reportPath)), { recursive: true });
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), "utf8");
+  console.log("REPORT_WRITTEN", reportPath);
+}
+
+if (printJson) {
+  console.log(JSON.stringify(report, null, 2));
+}
 
 if (failed > 0) {
   throw new Error("V171_CODE_EXPLAINER_SMOKE_FAIL " + failed);
