@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260606_v168_a1";
+const APP_DATA_VERSION = "20260606_v169_a6";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -1369,6 +1369,10 @@ async function init() {
   cards = lessonResults.flat();
   sideCards = sideResults.flat();
   resourceCards = resourceResults.flat();
+
+  if (window.CodeExplainer && typeof window.CodeExplainer.setLearningContent === "function") {
+    window.CodeExplainer.setLearningContent(cards, sideCards);
+  }
 
   cards.sort(function(a, b) {
     if (a.level !== b.level) {

@@ -1,4 +1,4 @@
-// === CODE EXPLAINER UI V168-A1 START ===
+// === CODE EXPLAINER UI V169-A6 START ===
 (function() {
   "use strict";
 
@@ -62,6 +62,8 @@ button.addEventListener("click", function() {
   };
 
   let lastMermaid = "";
+  let learningCards = [];
+  let learningSideCards = [];
 
   function el(id) {
     return document.getElementById(id);
@@ -109,6 +111,155 @@ button.addEventListener("click", function() {
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;");
+  }
+
+
+  function normalizeSearchText(value) {
+    return String(value || "").toLowerCase();
+  }
+
+  function extractRelatedKeywords(result) {
+    const text = [
+      result.language,
+      result.summary,
+      (result.steps || []).map(function(step) {
+        return [step.title, step.explain, step.code].join(" ");
+      }).join(" ")
+    ].join(" ").toLowerCase();
+
+    const rules = [
+      ["git", ["git", "commit", "stash", "diff", "push", "tag"]],
+      ["powershell", ["powershell", "set-location", "copy-item", "compress-archive", "remove-item", "invoke-webrequest", "wrangler"]],
+      ["backup", ["backup", "백업", "compress-archive", "copy-item", "zip"]],
+      ["json", ["json", "json.load", "json.loads", "response.json"]],
+      ["api", ["api", "fetch", "request", "response", "http"]],
+      ["cloudflare", ["cloudflare", "worker", "workers", "wrangler", "env.db", "env.kv", "env.r2", "env.ai"]],
+      ["database", ["database", "db", "d1", "sql", "select", "insert", "update", "delete", "prepare", "bind", "run"]],
+      ["javascript", ["javascript", "const", "let", "document", "localstorage", "addeventlistener"]],
+      ["python", ["python", "def", "import", "print", "for", "if", "open"]],
+      ["file", ["file", "path", "copy", "move", "remove", "파일", "폴더", "경로"]],
+      ["test", ["validate", "node --check", "pytest", "test", "regression", "검증"]],
+      ["security", ["token", "secret", "env", "auth", "key", "보안", "환경변수"]]
+    ];
+
+    const found = new Set();
+    rules.forEach(function(rule) {
+      const keyword = rule[0];
+      const aliases = rule[1];
+      if (aliases.some(function(alias) { return text.includes(alias); })) {
+        found.add(keyword);
+      }
+    });
+
+    return Array.from(found);
+  }
+
+  function scoreSideCardForKeywords(card, keywords) {
+    if (!card || !keywords.length) return 0;
+
+    const related = Array.isArray(card.related_concepts) ? card.related_concepts.join(" ") : "";
+    const text = normalizeSearchText([
+      card.id,
+      card.title,
+      card.type,
+      card.body,
+      card.summary,
+      card.description,
+      card.detail,
+      related
+    ].join(" "));
+
+    let score = 0;
+    keywords.forEach(function(keyword) {
+      if (text.includes(keyword)) score += 5;
+
+      if (keyword === "cloudflare" && /worker|workers|cloudflare|wrangler|d1|kv|r2/.test(text)) score += 8;
+      if (keyword === "database" && /database|db|sql|d1|query|table|repository/.test(text)) score += 7;
+      if (keyword === "git" && /git|commit|stash|branch|github|version/.test(text)) score += 7;
+      if (keyword === "powershell" && /powershell|terminal|script|command|cli/.test(text)) score += 7;
+      if (keyword === "json" && /json|encoding|decode|parse/.test(text)) score += 6;
+      if (keyword === "api" && /api|http|request|response|fetch|fastapi/.test(text)) score += 6;
+      if (keyword === "test" && /test|validation|regression|quality|검증/.test(text)) score += 6;
+      if (keyword === "security" && /secret|token|auth|env|security|보안/.test(text)) score += 6;
+    });
+
+    if (card.detail && card.detail.length > 120) score += 1;
+    if (card.body && card.body.length > 120) score += 1;
+
+    return score;
+  }
+
+  function findRelatedCards(result) {
+    const keywords = extractRelatedKeywords(result);
+
+    if (!learningSideCards.length || !keywords.length) {
+      return [];
+    }
+
+    return learningSideCards
+      .map(function(card) {
+        return {
+          card: card,
+          score: scoreSideCardForKeywords(card, keywords)
+        };
+      })
+      .filter(function(item) {
+        return item.score > 0;
+      })
+      .sort(function(a, b) {
+        if (b.score !== a.score) return b.score - a.score;
+        return String(a.card.title || "").localeCompare(String(b.card.title || ""));
+      })
+      .slice(0, 3)
+      .map(function(item) {
+        return item.card;
+      });
+  }
+
+  function renderRelatedCards(result) {
+    const box = el("codeRelatedCards");
+    if (!box) return;
+
+    const matches = findRelatedCards(result);
+    box.innerHTML = "";
+
+    if (!matches.length) {
+      box.className = "code-related-cards muted";
+      box.textContent = "해석 후 참고할 만한 보충 사이드카드를 찾지 못했습니다.";
+      return;
+    }
+
+    box.className = "code-related-cards";
+
+    matches.forEach(function(card) {
+      const item = document.createElement("div");
+      item.className = "code-related-card";
+
+      const title = document.createElement("div");
+      title.className = "code-related-title";
+      title.textContent = card.title || card.id || "사이드카드";
+
+      const body = document.createElement("div");
+      body.className = "code-related-body";
+      body.textContent = card.body || card.summary || card.description || "";
+
+      const detail = document.createElement("details");
+      detail.className = "code-related-detail";
+
+      const summary = document.createElement("summary");
+      summary.textContent = "자세히 보기";
+
+      const detailBody = document.createElement("p");
+      detailBody.textContent = card.detail || card.body || "";
+
+      detail.appendChild(summary);
+      detail.appendChild(detailBody);
+
+      item.appendChild(title);
+      item.appendChild(body);
+      item.appendChild(detail);
+      box.appendChild(item);
+    });
   }
 
   function renderSteps(steps) {
@@ -206,6 +357,7 @@ button.addEventListener("click", function() {
 
     renderWarnings(result.warnings || []);
     renderSteps(result.steps || []);
+    renderRelatedCards(result);
     renderMermaid(result.mermaid || "");
   }
 
@@ -261,6 +413,12 @@ button.addEventListener("click", function() {
     }
   }
 
+
+  function setLearningContent(cards, sideCards) {
+    learningCards = Array.isArray(cards) ? cards : [];
+    learningSideCards = Array.isArray(sideCards) ? sideCards : [];
+  }
+
   function refresh() {
     const input = el("codeInput");
     if (input && input.value.trim() && el("codeSteps") && el("codeSteps").children.length === 0) {
@@ -293,7 +451,8 @@ button.addEventListener("click", function() {
 
   window.CodeExplainer = {
     refresh: refresh,
-    analyze: analyzeCurrentCode
+    analyze: analyzeCurrentCode,
+    setLearningContent: setLearningContent
   };
 
   if (document.readyState === "loading") {
@@ -302,4 +461,4 @@ button.addEventListener("click", function() {
     init();
   }
 })();
-// === CODE EXPLAINER UI V168-A1 END ===
+// === CODE EXPLAINER UI V169-A6 END ===
