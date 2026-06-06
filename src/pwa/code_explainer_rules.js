@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V170-A3 START ===
+// === CODE EXPLAINER RULES V171-A2 START ===
 (function() {
   "use strict";
 
@@ -372,10 +372,22 @@
     if (/Access-Control-Allow-Origin|CORS/i.test(t)) {
       return makeStep(lineNo, t, "CORS 헤더 설정", "다른 도메인에서 이 API를 호출할 수 있는지 제어합니다. 공개 범위를 확인해야 합니다.", risk);
     }
+    if (/document\.getElementById|querySelector/.test(t)) {
+      return makeStep(lineNo, t, "화면 요소 찾기", "HTML 화면에서 특정 요소를 찾아 값을 읽거나 내용을 바꾸기 위해 준비합니다.", risk);
+    }
+    if (/addEventListener\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "이벤트 처리 함수 정의", "사용자가 클릭, 입력 같은 동작을 했을 때 실행할 함수 정의를 연결합니다.", risk);
+    }
+    if (/localStorage/.test(t)) {
+      return makeStep(lineNo, t, "브라우저 저장소 사용", "현재 브라우저에 작은 데이터를 저장하거나 다시 불러옵니다.", risk);
+    }
+    if (/alert\s*\(/.test(t) || /console\.log\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "화면/콘솔에 출력", "사용자에게 메시지를 보여주거나 개발자 콘솔에 값을 출력합니다.", risk);
+    }
     if (/^(const|let|var)\s+\w+\s*=/.test(t)) {
       return makeStep(lineNo, t, "변수에 값 저장", "값이나 객체를 이름에 담아서 이후 코드에서 다시 사용합니다.", risk);
     }
-    if (/function\s+\w+\s*\(/.test(t) || /=>/.test(t)) {
+    if (/function\s*\w*\s*\(/.test(t) || /=>/.test(t)) {
       return makeStep(lineNo, t, "함수 정의", "나중에 호출해서 실행할 코드 묶음을 만듭니다.", risk);
     }
     if (/^if\s*\(/.test(t)) {
@@ -389,12 +401,6 @@
     }
     if (/fetch\s*\(/.test(t)) {
       return makeStep(lineNo, t, "외부 요청", "다른 URL이나 API에 네트워크 요청을 보냅니다.", risk);
-    }
-    if (/document\.getElementById|querySelector/.test(t)) {
-      return makeStep(lineNo, t, "화면 요소 찾기", "HTML 화면에서 특정 요소를 찾아 값을 읽거나 내용을 바꾸기 위해 준비합니다.", risk);
-    }
-    if (/localStorage/.test(t)) {
-      return makeStep(lineNo, t, "브라우저 저장소 사용", "현재 브라우저에 작은 데이터를 저장하거나 다시 불러옵니다.", risk);
     }
 
     return makeStep(lineNo, t, language === "workers" ? "Worker/JavaScript 코드 실행" : "JavaScript 코드 실행", "이 줄은 위에서 아래로 실행되는 JavaScript 코드입니다.", risk);
@@ -616,4 +622,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V170-A3 END ===
+// === CODE EXPLAINER RULES V171-A2 END ===
