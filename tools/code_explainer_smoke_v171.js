@@ -54,7 +54,7 @@ const samples = [
 
 git diff --stat
 git stash push -u -m "wip-test"
-python tools/validate_lessons.py --expected-app-version 20260606_v171_a1 --expected-lesson-cards 1785
+python tools/validate_lessons.py --expected-app-version 20260606_v172_a2 --expected-lesson-cards 1785
 Write-Host "DONE"`,
     mustContain: ["변경량 요약 확인", "임시 보관", "Python 실행"],
     mustMetaContain: ["Git", "검증", "출력"]
@@ -114,6 +114,81 @@ button.addEventListener("click", function() {
 }`,
     mustContain: ["요청 처리 함수", "요청 주소 분석", "경로 조건 확인", "요청 본문 JSON 읽기", "D1 SQL 준비", "SQL 값 안전하게 연결", "JSON 응답 반환"],
     mustMetaContain: ["Cloudflare", "DB", "SQL", "API", "출력"]
+  },
+  {
+    name: "powershell_risky_web_wrangler",
+    requestedLanguage: "auto",
+    expectedLanguage: "powershell",
+    minSteps: 7,
+    code: `Set-Location "D:\\projects\\python-reading-trainer"
+try {
+  $r = Invoke-WebRequest -Uri "http://127.0.0.1:5173/src/pwa/app.js" -UseBasicParsing
+  npx wrangler deploy
+  Remove-Item ".\\.tmp_old" -Recurse -Force
+} catch {
+  Write-Host "failed"
+}`,
+    mustContain: ["작업 폴더 이동", "오류 대비 시작", "웹 요청 결과 저장", "Cloudflare Wrangler 실행", "파일/폴더 삭제", "오류 처리", "콘솔에 메시지 출력"],
+    mustMetaContain: ["API", "Cloudflare", "파일", "오류처리", "출력"]
+  },
+  {
+    name: "python_api_csv_loop",
+    requestedLanguage: "auto",
+    expectedLanguage: "python",
+    minSteps: 8,
+    code: `import requests
+import pandas as pd
+
+url = "https://example.com/data.csv"
+response = requests.get(url, timeout=10)
+df = pd.read_csv("data.csv")
+
+for row in df["name"]:
+    if row:
+        print(row)`,
+    mustContain: ["라이브러리 불러오기", "변수에 값 저장", "HTTP 요청", "CSV 표 읽기", "반복문", "조건 검사", "화면에 출력"],
+    mustMetaContain: ["의존성", "API", "반복문", "조건문", "출력"]
+  },
+  {
+    name: "workers_storage_cache_cors",
+    requestedLanguage: "auto",
+    expectedLanguage: "workers",
+    minSteps: 10,
+    code: `export default {
+  async fetch(request, env, ctx) {
+    const value = await env.KV.get("memo");
+    await env.R2.put("memo.txt", value || "");
+    const cache = caches.default;
+    ctx.waitUntil(env.KV.put("last_run", "ok"));
+
+    return new Response(value || "empty", {
+      headers: {
+        "Access-Control-Allow-Origin": "*"
+      }
+    });
+  }
+}`,
+    mustContain: ["Worker 진입 객체 정의", "요청 처리 함수", "KV 저장소 사용", "R2 저장소 사용", "Cloudflare 캐시 사용", "백그라운드 작업 예약", "응답 반환", "CORS 헤더 설정"],
+    mustMetaContain: ["Cloudflare", "출력"]
+  },
+  {
+    name: "java_basic_flow",
+    requestedLanguage: "auto",
+    expectedLanguage: "java",
+    minSteps: 7,
+    code: `public class Main {
+  public static void main(String[] args) {
+    int total = 0;
+
+    for (int i = 0; i < 3; i++) {
+      if (i > 1) {
+        System.out.println(i);
+      }
+    }
+  }
+}`,
+    mustContain: ["클래스 정의", "프로그램 시작점", "변수 선언과 값 저장", "반복 실행", "조건 검사", "화면에 출력"],
+    mustMetaContain: ["반복문", "조건문", "출력"]
   }
 ];
 

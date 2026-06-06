@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V171-A2 START ===
+// === CODE EXPLAINER RULES V172-A2 START ===
 (function() {
   "use strict";
 
@@ -251,7 +251,7 @@
     if (/^try\s*\{/i.test(t)) {
       return makeStep(lineNo, t, "오류 대비 시작", "이 안의 명령을 실행하다가 오류가 나면 catch 블록에서 처리할 수 있게 준비합니다.", risk);
     }
-    if (/^catch\s*\{/i.test(t)) {
+    if (/^\}?\s*catch\s*\{/i.test(t)) {
       return makeStep(lineNo, t, "오류 처리", "try 안에서 실패한 경우 이 블록으로 넘어와 실패 메시지나 대체 동작을 처리합니다.", risk);
     }
     if (/\|\s*Out-Null/i.test(t)) {
@@ -348,6 +348,9 @@
     if (/env\.DB/.test(t)) {
       return makeStep(lineNo, t, "D1 데이터베이스 사용", "Cloudflare env에 연결된 DB를 사용합니다. 어떤 SQL을 실행하는지 확인해야 합니다.", risk);
     }
+    if (/ctx\.waitUntil\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "백그라운드 작업 예약", "응답을 먼저 돌려준 뒤에도 로그 저장이나 캐시 갱신 같은 작업을 이어서 실행하게 합니다.", risk);
+    }
     if (/env\.KV/.test(t)) {
       return makeStep(lineNo, t, "KV 저장소 사용", "Cloudflare KV에서 값을 읽거나 씁니다.", risk);
     }
@@ -362,9 +365,6 @@
     }
     if (/new\s+Response/.test(t)) {
       return makeStep(lineNo, t, "응답 반환", "문자열, 상태 코드, 헤더 등을 담은 HTTP 응답을 돌려줍니다.", risk);
-    }
-    if (/ctx\.waitUntil\s*\(/.test(t)) {
-      return makeStep(lineNo, t, "백그라운드 작업 예약", "응답을 먼저 돌려준 뒤에도 로그 저장이나 캐시 갱신 같은 작업을 이어서 실행하게 합니다.", risk);
     }
     if (/caches\.default/.test(t)) {
       return makeStep(lineNo, t, "Cloudflare 캐시 사용", "Cloudflare 엣지 캐시에 응답을 저장하거나 읽습니다. 캐시 키와 만료 정책을 확인해야 합니다.", risk);
@@ -622,4 +622,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V171-A2 END ===
+// === CODE EXPLAINER RULES V172-A2 END ===
