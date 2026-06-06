@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V172-A2 START ===
+// === CODE EXPLAINER RULES V174-A1 START ===
 (function() {
   "use strict";
 
@@ -21,6 +21,21 @@
     if (language === "javascript" || language === "workers" || language === "java") {
       return t.startsWith("//") || t.startsWith("/*") || t.startsWith("*");
     }
+    return false;
+  }
+
+  function isStructuralOnlyLine(line, language) {
+    const t = cleanLine(line);
+    if (!t) return true;
+
+    // 닫는 중괄호/괄호만 있는 줄은 설명 step으로 만들지 않는다.
+    if (/^[}\])]+[;,]?$/.test(t)) return true;
+
+    // JS/Workers 객체 리터럴의 단순 키 시작 줄은 실제 동작이 아니라 구조 보조 줄이다.
+    if ((language === "javascript" || language === "workers") && /^[A-Za-z_$][\w$-]*\s*:\s*\{\s*,?$/.test(t)) {
+      return true;
+    }
+
     return false;
   }
 
@@ -451,6 +466,16 @@
     const tags = [];
     let category = "처리";
 
+    if (/worker 진입 객체|export\s+default|프로그램 시작점|public\s+static\s+void\s+main/.test(text)) {
+      category = "구조";
+      pushUnique(tags, "함수/구조");
+    }
+
+    if (/ctx\.waituntil|백그라운드 작업|백그라운드/.test(text)) {
+      category = "백그라운드";
+      pushUnique(tags, "Cloudflare");
+    }
+
     if (/git\b/.test(text)) {
       category = "버전관리";
       pushUnique(tags, "Git");
@@ -595,6 +620,7 @@
     lines.forEach(function(item) {
       const line = item.text;
       if (isBlankOrComment(line, language)) return;
+      if (isStructuralOnlyLine(line, language)) return;
       const lineNo = item.lineNo;
       if (language === "powershell") steps.push(explainPowerShellLine(line, lineNo));
       else if (language === "python") steps.push(explainPythonLine(line, lineNo));
@@ -622,4 +648,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V172-A2 END ===
+// === CODE EXPLAINER RULES V174-A1 END ===

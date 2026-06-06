@@ -62,6 +62,7 @@ function normalizeReportKey(value) {
     "출력/응답": "output_response",
     "오류처리": "error_handling",
     "배포": "deploy",
+    "백그라운드": "background",
     "구조": "structure",
     "네트워크/API": "network_api",
     "변수/값": "variable_value",
@@ -246,7 +247,7 @@ for row in df["name"]:
     name: "workers_storage_cache_cors",
     requestedLanguage: "auto",
     expectedLanguage: "workers",
-    minSteps: 10,
+    minSteps: 8,
     code: `export default {
   async fetch(request, env, ctx) {
     const value = await env.KV.get("memo");
@@ -268,7 +269,7 @@ for row in df["name"]:
     name: "java_basic_flow",
     requestedLanguage: "auto",
     expectedLanguage: "java",
-    minSteps: 7,
+    minSteps: 6,
     code: `public class Main {
   public static void main(String[] args) {
     int total = 0;
@@ -319,7 +320,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260606_v173_a2",
+  version: "20260606_v174_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,
