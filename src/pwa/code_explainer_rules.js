@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V168-A1 START ===
+// === CODE EXPLAINER RULES V170-A3 START ===
 (function() {
   "use strict";
 
@@ -432,6 +432,114 @@
     return makeStep(lineNo, t, "Java 코드 실행", "이 줄은 Java 코드입니다. 중괄호 구조에 따라 실행 흐름이 정해집니다.", risk);
   }
 
+  function pushUnique(list, value) {
+    if (value && !list.includes(value)) list.push(value);
+  }
+
+  function inferStepMeta(step, language) {
+    const code = String(step.code || "").toLowerCase();
+    const title = String(step.title || "").toLowerCase();
+    const explain = String(step.explain || "").toLowerCase();
+    const text = [code, title, explain, language].join(" ");
+
+    const tags = [];
+    let category = "처리";
+
+    if (/git\b/.test(text)) {
+      category = "버전관리";
+      pushUnique(tags, "Git");
+    }
+    if (/node --check|validate|pytest|test|검증|확인|status|diff/.test(text)) {
+      category = category === "처리" ? "검증" : category;
+      pushUnique(tags, "검증");
+    }
+    if (/set-location|cd\b|path|경로|폴더|file|copy-item|move-item|remove-item|new-item|compress-archive|expand-archive|open\(|read_text|write_text|fs\.|파일/.test(text)) {
+      category = category === "처리" ? "파일/경로" : category;
+      pushUnique(tags, "파일");
+    }
+    if (/request|response|fetch|invoke-webrequest|curl|api|http|url|requests\./.test(text)) {
+      category = category === "처리" ? "네트워크/API" : category;
+      pushUnique(tags, "API");
+    }
+    if (/env\.db|database|d1|sql|select|insert|update|delete|prepare|bind|run\(|all\(|first\(/.test(text)) {
+      category = "DB";
+      pushUnique(tags, "DB");
+      pushUnique(tags, "SQL");
+    }
+    if (/env\.kv|env\.r2|env\.ai|cloudflare|worker|wrangler/.test(text)) {
+      pushUnique(tags, "Cloudflare");
+      if (/wrangler|deploy/.test(text)) {
+        category = "배포";
+        pushUnique(tags, "배포");
+      }
+    }
+    if (/if\s*\(|^if\s|elif|else|switch|case|조건/.test(text)) {
+      category = "조건";
+      pushUnique(tags, "조건문");
+    }
+    if (/foreach|for\s*\(|for\s+.+\s+in|while|\.foreach|반복/.test(text)) {
+      category = "반복";
+      pushUnique(tags, "반복문");
+    }
+    if (/function|def\s+|class\s+|=>|함수|클래스|method/.test(text)) {
+      category = "구조";
+      pushUnique(tags, "함수/구조");
+    }
+    if (/try|catch|except|finally|throw|raise|오류|exception/.test(text)) {
+      category = "오류처리";
+      pushUnique(tags, "오류처리");
+    }
+    if (/print|write-host|console\.log|alert|return|response\.json|new response|출력|응답/.test(text)) {
+      category = category === "처리" ? "출력/응답" : category;
+      pushUnique(tags, "출력");
+    }
+    if (/token|secret|password|auth|authorization|api[_-]?key|\$env:|process\.env|환경변수|보안/.test(text)) {
+      pushUnique(tags, "보안");
+    }
+    if (/const |let |var |\$[a-z_][\w-]*\s*=|=/.test(code) && category === "처리") {
+      category = "변수/값";
+      pushUnique(tags, "변수");
+    }
+    if (/import |from .+ import|require\(|npm\b|pip\b|requirements|package/.test(text)) {
+      pushUnique(tags, "의존성");
+      if (category === "처리") category = "의존성";
+    }
+
+    if (!tags.length) {
+      pushUnique(tags, language === "powershell" ? "PowerShell" :
+        language === "python" ? "Python" :
+        language === "workers" ? "Workers" :
+        language === "javascript" ? "JavaScript" :
+        language === "java" ? "Java" : "코드");
+    }
+
+    return Object.assign({}, step, {
+      category: category,
+      tags: tags.slice(0, 4)
+    });
+  }
+
+  function summarizeFlow(steps) {
+    if (!steps.length) return "";
+    const counts = {};
+    steps.forEach(function(step) {
+      const key = step.category || "처리";
+      counts[key] = (counts[key] || 0) + 1;
+    });
+
+    const ordered = Object.keys(counts)
+      .sort(function(a, b) {
+        if (counts[b] !== counts[a]) return counts[b] - counts[a];
+        return a.localeCompare(b);
+      })
+      .slice(0, 5)
+      .map(function(key) {
+        return key + " " + counts[key] + "개";
+      });
+
+    return "주요 흐름: " + ordered.join(" · ");
+  }
+
   function summarize(language, steps) {
     if (!steps.length) return "분석할 코드가 없습니다.";
     const risky = steps.filter(function(step) { return step.risk === "high" || step.risk === "medium"; }).length;
@@ -489,12 +597,17 @@
       else steps.push(makeStep(lineNo, cleanLine(line), "코드 실행", "이 줄을 순서대로 실행합니다.", "low"));
     });
 
+    const enrichedSteps = steps.map(function(step) {
+      return inferStepMeta(step, language);
+    });
+
     return {
       language: language,
-      summary: summarize(language, steps),
-      steps: steps,
-      warnings: steps.filter(function(step) { return step.risk === "high" || step.risk === "medium"; }),
-      mermaid: buildMermaid(steps)
+      summary: summarize(language, enrichedSteps),
+      flowSummary: summarizeFlow(enrichedSteps),
+      steps: enrichedSteps,
+      warnings: enrichedSteps.filter(function(step) { return step.risk === "high" || step.risk === "medium"; }),
+      mermaid: buildMermaid(enrichedSteps)
     };
   }
 
@@ -503,4 +616,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V168-A1 END ===
+// === CODE EXPLAINER RULES V170-A3 END ===

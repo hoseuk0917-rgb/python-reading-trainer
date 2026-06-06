@@ -1,4 +1,4 @@
-// === CODE EXPLAINER UI V169-A6 START ===
+// === CODE EXPLAINER UI V170-A3 START ===
 (function() {
   "use strict";
 
@@ -262,6 +262,22 @@ button.addEventListener("click", function() {
     });
   }
 
+  function renderStepMeta(step) {
+    const tags = Array.isArray(step.tags) ? step.tags : [];
+    const category = step.category || "";
+
+    if (!category && !tags.length) return "";
+
+    const tagHtml = tags.slice(0, 4).map(function(tag) {
+      return '<span class="code-step-tag">' + escapeHtml(tag) + '</span>';
+    }).join("");
+
+    return '<div class="code-step-meta">' +
+      (category ? '<span class="code-step-category">' + escapeHtml(category) + '</span>' : "") +
+      tagHtml +
+      '</div>';
+  }
+
   function renderSteps(steps) {
     const box = el("codeSteps");
     if (!box) return;
@@ -282,6 +298,7 @@ button.addEventListener("click", function() {
           <span class="risk-badge">${riskLabel(step.risk)}</span>
         </div>
         <p>${escapeHtml(step.explain)}</p>
+        ${renderStepMeta(step)}
         <pre class="code-step-line">line ${step.lineNo}: ${escapeHtml(step.code)}</pre>
       `;
       box.appendChild(item);
@@ -352,7 +369,9 @@ button.addEventListener("click", function() {
 
     if (summary) {
       summary.className = "code-summary";
-      summary.innerHTML = '<strong>' + languageLabel(result.language) + '</strong><br>' + escapeHtml(result.summary);
+      summary.innerHTML = '<strong>' + languageLabel(result.language) + '</strong><br>' +
+        escapeHtml(result.summary) +
+        (result.flowSummary ? '<br><span class="code-flow-summary">' + escapeHtml(result.flowSummary) + '</span>' : "");
     }
 
     renderWarnings(result.warnings || []);
@@ -461,4 +480,4 @@ button.addEventListener("click", function() {
     init();
   }
 })();
-// === CODE EXPLAINER UI V169-A6 END ===
+// === CODE EXPLAINER UI V170-A3 END ===
