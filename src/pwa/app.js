@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260605_v160_a1";
+const APP_DATA_VERSION = "20260605_v161_a1";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -1336,6 +1336,7 @@ async function init() {
   "../../data/side_cards/python_unlinked_core_gap_side_cards_v158_a1.json",
   "../../data/side_cards/python_unlinked_secondary_gap_side_cards_v159_a1.json",
   "../../data/side_cards/python_unlinked_tertiary_gap_side_cards_v160_a1.json",
+  "../../data/side_cards/python_unlinked_quaternary_gap_side_cards_v161_a1.json",
   ];
 
   const sideResults = await Promise.all(sideFiles.map(function(path) {
