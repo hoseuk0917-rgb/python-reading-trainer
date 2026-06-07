@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V181-A3 START ===
+// === CODE EXPLAINER RULES V182-A2 START ===
 (function() {
   "use strict";
 
@@ -697,6 +697,96 @@
     const tags = [];
     let category = "처리";
 
+    // CONFIG_META_GUARD_V182_A2
+    // 설정 파일 계열은 설명문 안의 단어 때문에 Git/CI/API/DB 등으로 오염되기 쉬워서
+    // 파일 형식별 핵심 분류를 먼저 확정하고 여기서 반환한다.
+    if (language === "dockerfile") {
+      category = "컨테이너";
+      pushUnique(tags, "Docker");
+      if (/run\s+|pip\s+install|apt-get|requirements/i.test(code)) {
+        pushUnique(tags, "pip");
+        pushUnique(tags, "의존성");
+      }
+      if (/copy\s+|add\s+|workdir/i.test(code)) {
+        pushUnique(tags, "파일");
+      }
+      if (/^env\s+|^arg\s+/i.test(code)) {
+        pushUnique(tags, "환경변수");
+      }
+      if (/secret|token|password|api[_-]?key|private/i.test(code)) {
+        pushUnique(tags, "보안");
+      }
+      return Object.assign({}, step, {
+        category: category,
+        tags: tags.slice(0, 4)
+      });
+    }
+
+    if (language === "env_file") {
+      category = "환경설정";
+      pushUnique(tags, "환경변수");
+      if (/secret|token|password|api[_-]?key|private/i.test(code)) {
+        pushUnique(tags, "보안");
+      }
+      return Object.assign({}, step, {
+        category: category,
+        tags: tags.slice(0, 4)
+      });
+    }
+
+    if (language === "requirements_txt") {
+      category = "패키지설정";
+      pushUnique(tags, "pip");
+      pushUnique(tags, "의존성");
+      if (/^-r\s+/.test(code)) {
+        pushUnique(tags, "파일");
+      }
+      return Object.assign({}, step, {
+        category: category,
+        tags: tags.slice(0, 4)
+      });
+    }
+
+    if (language === "pyproject_toml") {
+      category = "프로젝트설정";
+      pushUnique(tags, "pyproject");
+      if (/dependencies|>=|==|<=|~=/.test(code)) {
+        pushUnique(tags, "의존성");
+      }
+      if (/pytest|ruff|black|mypy|testpaths/.test(code)) {
+        pushUnique(tags, "검증");
+      }
+      return Object.assign({}, step, {
+        category: category,
+        tags: tags.slice(0, 4)
+      });
+    }
+
+    if (language === "yaml") {
+      category = "YAML설정";
+      pushUnique(tags, "YAML");
+      if (/services:|image:|ports:|volumes:|environment:/.test(code)) {
+        pushUnique(tags, "설정");
+      }
+      return Object.assign({}, step, {
+        category: category,
+        tags: tags.slice(0, 4)
+      });
+    }
+
+    if (language === "package_json") {
+      category = "패키지설정";
+      pushUnique(tags, "npm");
+      pushUnique(tags, "의존성");
+      if (/test|node --check|vitest|jest/.test(code)) {
+        pushUnique(tags, "검증");
+      }
+      return Object.assign({}, step, {
+        category: category,
+        tags: tags.slice(0, 4)
+      });
+    }
+
     if (/worker 진입 객체|export\s+default|프로그램 시작점|public\s+static\s+void\s+main/.test(text)) {
       category = "구조";
       pushUnique(tags, "함수/구조");
@@ -960,4 +1050,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V181-A3 END ===
+// === CODE EXPLAINER RULES V182-A2 END ===
