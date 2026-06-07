@@ -136,7 +136,12 @@ function normalizeReportKey(value) {
     "로깅": "logging",
     "예외": "exception",
     "테스트": "test",
-    "데이터처리": "data_processing"
+    "데이터처리": "data_processing",
+    "파이프라인": "pipeline",
+    "데이터변환": "data_transform",
+    "JSON": "json",
+    "CSV": "csv",
+    "프로세스": "process_exec"
   };
 
   if (map[value]) return map[value];
@@ -197,7 +202,7 @@ const samples = [
 
 git diff --stat
 git stash push -u -m "wip-test"
-python tools/validate_lessons.py --expected-app-version 20260606_v187_a2 --expected-lesson-cards 1785
+python tools/validate_lessons.py --expected-app-version 20260606_v188_a2 --expected-lesson-cards 1785
 Write-Host "DONE"`,
     mustContain: ["변경량 요약 확인", "임시 보관", "Python 검증 실행"],
     mustMetaContain: ["Git", "검증", "출력"]
@@ -413,10 +418,48 @@ async def health():
 node --check .\\src\\pwa\\app.js
 npm install
 npm run build
-python tools/validate_lessons.py --expected-app-version 20260606_v187_a2
+python tools/validate_lessons.py --expected-app-version 20260606_v188_a2
 git status --short`,
     mustContain: ["작업 폴더 이동", "Node 문법 검사", "npm 의존성 설치", "npm 스크립트 실행", "Python 검증 실행", "Git 변경 상태 확인"],
     mustMetaContain: ["파일", "검증", "의존성", "Git"]
+  },
+  {
+    name: "powershell_pipeline_json_process",
+    requestedLanguage: "auto",
+    expectedLanguage: "powershell",
+    minSteps: 14,
+    code: `$ErrorActionPreference = "Stop"
+
+param(
+  [string]$Root = "."
+)
+
+$files = Get-ChildItem -Path $Root -Filter "*.json" -Recurse |
+  Where-Object { $_.Length -gt 0 } |
+  ForEach-Object { $_.FullName }
+
+$config = Get-Content .\config.json -Raw | ConvertFrom-Json
+$result = $files | ForEach-Object {
+  [pscustomobject]@{
+    path = $_
+    exists = Test-Path $_
+  }
+}
+
+$result | ConvertTo-Json -Depth 4 | Set-Content .\report.json -Encoding UTF8
+
+$server = Start-Process python -ArgumentList @("-m", "http.server", "5173") -PassThru
+try {
+  Invoke-RestMethod -Uri "http://127.0.0.1:5173"
+}
+catch {
+  Write-Host $_.Exception.Message
+}
+finally {
+  Stop-Process -Id $server.Id -Force
+}`,
+    mustContain: ["오류 시 즉시 중단 설정", "입력 파라미터 정의", "파이프라인 결과 저장", "JSON 처리 결과 저장", "객체를 JSON으로 변환", "프로세스 실행 결과 저장", "REST API 호출", "프로세스 종료"],
+    mustMetaContain: ["파이프라인", "JSON", "프로세스", "파일"]
   },
   {
     name: "package_json_npm_scripts",
@@ -642,7 +685,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260606_v187_a2",
+  version: "20260606_v188_a2",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,

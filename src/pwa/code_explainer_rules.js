@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V187-A2 START ===
+// === CODE EXPLAINER RULES V188-A2 START ===
 (function() {
   "use strict";
 
@@ -119,8 +119,13 @@
     const t = cleanLine(line);
     const low = t.toLowerCase();
     if (language === "powershell") {
+      // POWERSHELL_RISK_GUARD_V188_A2
       if (/remove-item/i.test(t) || /git\s+reset\s+--hard/i.test(t) || /git\s+clean\s+-/i.test(t)) return "high";
       if (/set-executionpolicy/i.test(t) || /invoke-expression|iex\b/i.test(t)) return "high";
+      if (/stop-process/i.test(t) && /-force\b/i.test(t)) return "medium";
+      if (/start-process/i.test(t) && /-verb\s+runas/i.test(t)) return "medium";
+      if (/invoke-restmethod|invoke-webrequest|curl\b|wget\b/i.test(t)) return "medium";
+      if (/out-file|add-content/i.test(t) && /-force\b|>>|>/.test(t)) return "medium";
       if (/move-item/i.test(t)) return "medium";
       if (/copy-item/i.test(t) && /-force\b/i.test(t)) return "medium";
       if (/set-content/i.test(t)) return "medium";
@@ -218,6 +223,11 @@
       return makeStep(lineNo, t, "환경변수 설정", "현재 PowerShell 세션에서 사용할 임시 설정값을 저장합니다. API 키 같은 민감값은 코드에 직접 쓰지 않고 환경변수로 넣는 방식이 안전합니다.", risk);
     }
 
+    // POWERSHELL_EARLY_PREF_RULE_V188_A2
+    if (/^\$ErrorActionPreference\s*=/.test(t)) {
+      return makeStep(lineNo, t, "오류 시 즉시 중단 설정", "PowerShell 명령 실패를 계속 무시하지 않고 Stop처럼 중단되게 만드는 설정입니다. 검증 스크립트에서 실패를 빨리 드러낼 때 유용합니다.", risk);
+    }
+
     const varMatch = t.match(/^\$([A-Za-z_][\w-]*)\s*=\s*(.+)$/);
     if (varMatch) {
       const name = varMatch[1];
@@ -236,12 +246,115 @@
         return makeStep(lineNo, t, "경로 조합 결과 저장", "$" + name + " 변수에 여러 경로 조각을 합친 결과를 저장합니다.", risk);
       }
 
+      // POWERSHELL_VAR_RULES_V188_A2
+      if (/ConvertFrom-Json|ConvertTo-Json/i.test(value)) {
+        return makeStep(lineNo, t, "JSON 처리 결과 저장", "$" + name + " 변수에 JSON을 PowerShell 객체로 바꾸거나 객체를 JSON 문자열로 바꾼 결과를 저장합니다.", risk);
+      }
+      if (/Get-Content/i.test(value)) {
+        return makeStep(lineNo, t, "파일 내용 읽기 결과 저장", "$" + name + " 변수에 파일 내용을 읽은 결과를 저장합니다. -Raw가 있으면 파일 전체를 하나의 문자열로 읽습니다.", risk);
+      }
+      if (/Get-ChildItem|Where-Object|ForEach-Object|Select-Object|Sort-Object|Group-Object|Measure-Object|\|/i.test(value)) {
+        return makeStep(lineNo, t, "파이프라인 결과 저장", "$" + name + " 변수에 여러 명령을 파이프(|)로 이어 처리한 결과를 저장합니다. 각 단계가 어떤 데이터를 넘기는지 순서대로 확인해야 합니다.", risk);
+      }
+      if (/Start-Process/i.test(value)) {
+        return makeStep(lineNo, t, "프로세스 실행 결과 저장", "$" + name + " 변수에 실행한 외부 프로그램의 프로세스 정보를 저장합니다. 나중에 종료하거나 상태를 확인할 때 씁니다.", risk);
+      }
+
       return makeStep(lineNo, t, "변수에 값 저장", "$" + name + " 변수에 값을 넣습니다. 이후 줄에서 $" + name + "을 쓰면 이 값을 다시 사용합니다.", risk);
     }
 
     if (/Get-Date/i.test(t)) {
       return makeStep(lineNo, t, "현재 시간 만들기", "현재 날짜와 시간을 가져옵니다. 백업 파일명이나 실행 기록 이름을 만들 때 자주 씁니다.", risk);
     }
+    // POWERSHELL_DEEP_RULES_V188_A2
+    if (/^param\s*\(/i.test(t)) {
+      return makeStep(lineNo, t, "입력 파라미터 정의", "스크립트를 실행할 때 받을 입력값을 정의합니다. 예: -Path, -Port 같은 옵션을 명확히 정할 수 있습니다.", risk);
+    }
+    if (/^\$ErrorActionPreference\s*=/.test(t)) {
+      return makeStep(lineNo, t, "오류 시 즉시 중단 설정", "PowerShell 명령 실패를 계속 무시하지 않고 Stop처럼 중단되게 만드는 설정입니다. 검증 스크립트에서 실패를 빨리 드러낼 때 유용합니다.", risk);
+    }
+    if (/^function\s+[A-Za-z_][\w-]*/i.test(t)) {
+      return makeStep(lineNo, t, "함수 정의", "반복해서 쓸 PowerShell 명령 묶음을 이름으로 정의합니다. 이 줄만으로 내부 명령이 바로 실행되지는 않습니다.", risk);
+    }
+    if (/^@['"]/.test(t) || /^['"]@/.test(t)) {
+      return makeStep(lineNo, t, "여러 줄 문자열 경계", "here-string의 시작 또는 끝입니다. 긴 스크립트, JSON, Markdown, Python 코드 조각을 여러 줄 문자열로 저장할 때 씁니다.", risk);
+    }
+    if (/\|\s*(Where-Object|ForEach-Object|Select-Object|Sort-Object|Group-Object|Measure-Object|Out-Null)\b/i.test(t)) {
+      return makeStep(lineNo, t, "파이프라인 처리", "앞 명령의 결과를 뒤 명령으로 넘기며 필터링, 반복, 선택, 정렬, 집계 같은 처리를 이어서 수행합니다.", risk);
+    }
+    if (/^Get-ChildItem\b/i.test(t) || /^dir\b/i.test(t) || /^ls\b/i.test(t)) {
+      return makeStep(lineNo, t, "파일 목록 가져오기", "폴더 안의 파일과 하위 폴더 목록을 가져옵니다. -Recurse가 있으면 하위 폴더까지 넓게 탐색합니다.", risk);
+    }
+    if (/^Get-Content\b/i.test(t)) {
+      return makeStep(lineNo, t, "파일 내용 읽기", "텍스트 파일 내용을 읽습니다. -Raw는 전체 파일을 한 문자열로 읽고, 없으면 줄 단위로 읽는 경우가 많습니다.", risk);
+    }
+    if (/^Out-File\b/i.test(t) || /\|\s*Out-File\b/i.test(t)) {
+      return makeStep(lineNo, t, "파일로 출력 저장", "화면에 나올 결과를 파일에 저장합니다. 기존 파일을 덮어쓸 수 있으니 경로를 확인해야 합니다.", risk);
+    }
+    if (/^Add-Content\b/i.test(t)) {
+      return makeStep(lineNo, t, "파일에 내용 추가", "기존 파일 끝에 새 내용을 덧붙입니다. 로그나 누적 기록을 남길 때 씁니다.", risk);
+    }
+    if (/\bWhere-Object\b/i.test(t)) {
+      return makeStep(lineNo, t, "조건으로 필터링", "파이프라인으로 넘어온 항목 중 조건에 맞는 것만 남깁니다. $_는 현재 항목을 뜻합니다.", risk);
+    }
+    if (/\bForEach-Object\b/i.test(t)) {
+      return makeStep(lineNo, t, "각 항목 반복 처리", "파이프라인으로 넘어온 항목을 하나씩 꺼내 같은 작업을 반복합니다. $_는 현재 처리 중인 항목입니다.", risk);
+    }
+    if (/\bSelect-Object\b/i.test(t)) {
+      return makeStep(lineNo, t, "필요한 속성 선택", "객체에서 필요한 컬럼/속성만 고르거나 처음/마지막 일부만 선택합니다.", risk);
+    }
+    if (/\bSort-Object\b/i.test(t)) {
+      return makeStep(lineNo, t, "정렬", "파이프라인 데이터의 순서를 특정 속성 기준으로 정렬합니다.", risk);
+    }
+    if (/\bGroup-Object\b/i.test(t)) {
+      return makeStep(lineNo, t, "그룹별 묶기", "같은 값을 가진 항목끼리 묶어서 개수나 그룹별 처리를 할 수 있게 합니다.", risk);
+    }
+    if (/\bMeasure-Object\b/i.test(t)) {
+      return makeStep(lineNo, t, "개수/합계 측정", "항목 개수, 합계, 평균 같은 간단한 통계를 계산합니다.", risk);
+    }
+    if (/\bConvertFrom-Json\b/i.test(t)) {
+      return makeStep(lineNo, t, "JSON을 객체로 변환", "JSON 문자열을 PowerShell 객체로 바꿔서 속성처럼 접근할 수 있게 합니다.", risk);
+    }
+    if (/\bConvertTo-Json\b/i.test(t)) {
+      return makeStep(lineNo, t, "객체를 JSON으로 변환", "PowerShell 객체를 JSON 문자열로 바꿉니다. -Depth가 낮으면 중첩 객체가 잘릴 수 있습니다.", risk);
+    }
+    if (/\bImport-Csv\b/i.test(t)) {
+      return makeStep(lineNo, t, "CSV 읽기", "CSV 파일을 행 단위 객체 목록으로 읽습니다. 첫 줄은 보통 컬럼명으로 사용됩니다.", risk);
+    }
+    if (/\bExport-Csv\b/i.test(t)) {
+      return makeStep(lineNo, t, "CSV 저장", "PowerShell 객체 목록을 CSV 파일로 저장합니다. -NoTypeInformation 여부와 인코딩을 확인합니다.", risk);
+    }
+    if (/\bConvertFrom-Csv\b/i.test(t)) {
+      return makeStep(lineNo, t, "CSV 문자열 변환", "CSV 형식 문자열을 PowerShell 객체 목록으로 바꿉니다.", risk);
+    }
+    if (/^Invoke-RestMethod\b/i.test(t)) {
+      return makeStep(lineNo, t, "REST API 호출", "웹 API에 요청을 보내고 JSON 응답을 PowerShell 객체로 바로 읽는 데 자주 씁니다. URL, 메서드, 인증값을 확인해야 합니다.", risk);
+    }
+    if (/^Start-Process\b/i.test(t)) {
+      return makeStep(lineNo, t, "외부 프로그램 실행", "별도 프로세스로 프로그램을 실행합니다. -PassThru가 있으면 프로세스 정보를 받아 나중에 종료/확인할 수 있습니다.", risk);
+    }
+    if (/^Get-Process\b/i.test(t)) {
+      return makeStep(lineNo, t, "프로세스 조회", "현재 실행 중인 프로그램 목록이나 특정 프로세스 상태를 확인합니다.", risk);
+    }
+    if (/^Stop-Process\b/i.test(t)) {
+      return makeStep(lineNo, t, "프로세스 종료", "실행 중인 프로세스를 종료합니다. -Force가 있으면 강제로 종료하므로 대상 ID를 반드시 확인해야 합니다.", risk);
+    }
+    if (/^Wait-Job\b/i.test(t)) {
+      return makeStep(lineNo, t, "작업 완료 대기", "백그라운드 작업이 끝날 때까지 기다립니다.", risk);
+    }
+    if (/^Receive-Job\b/i.test(t)) {
+      return makeStep(lineNo, t, "작업 결과 받기", "백그라운드 작업이 만든 결과를 현재 콘솔로 가져옵니다.", risk);
+    }
+    if (/^throw\b/i.test(t)) {
+      return makeStep(lineNo, t, "오류 발생시키기", "조건이 맞지 않거나 검증에 실패했을 때 의도적으로 오류를 발생시켜 실행을 중단합니다.", risk);
+    }
+    if (/^exit\b/i.test(t)) {
+      return makeStep(lineNo, t, "스크립트 종료", "현재 스크립트나 프로세스를 지정한 종료 코드와 함께 끝냅니다.", risk);
+    }
+    if (/^return\b/i.test(t)) {
+      return makeStep(lineNo, t, "값 반환", "함수나 스크립트 블록에서 결과를 돌려주고 이후 흐름을 끝냅니다.", risk);
+    }
+
     if (/^New-Item\b/i.test(t)) {
       return makeStep(lineNo, t, "새 항목 생성", "폴더나 파일을 만듭니다. -ItemType Directory가 있으면 폴더를 만드는 명령입니다.", risk);
     }
@@ -1203,6 +1316,31 @@
       pushUnique(tags, "YAML");
     }
 
+    // POWERSHELL_META_GUARD_V188_A2
+    if (language === "powershell") {
+      if (/pipeline|파이프라인|where-object|foreach-object|select-object|sort-object|group-object|measure-object/.test(text)) {
+        category = category === "처리" ? "파이프라인" : category;
+        pushUnique(tags, "파이프라인");
+      }
+      if (/convertfrom-json|convertto-json|json/.test(text)) {
+        category = category === "처리" ? "데이터변환" : category;
+        pushUnique(tags, "JSON");
+      }
+      if (/import-csv|export-csv|convertfrom-csv|csv/.test(text)) {
+        category = category === "처리" ? "파일/경로" : category;
+        pushUnique(tags, "CSV");
+        pushUnique(tags, "파일");
+      }
+      if (/start-process|get-process|stop-process|process|프로세스/.test(text)) {
+        category = category === "처리" ? "프로세스" : category;
+        pushUnique(tags, "프로세스");
+      }
+      if (/param\s*\(|입력 파라미터/.test(text)) {
+        category = "CLI";
+        pushUnique(tags, "CLI");
+      }
+    }
+
     if (/git\b/.test(text)) {
       category = "버전관리";
       pushUnique(tags, "Git");
@@ -1397,4 +1535,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V187-A2 END ===
+// === CODE EXPLAINER RULES V188-A2 END ===
