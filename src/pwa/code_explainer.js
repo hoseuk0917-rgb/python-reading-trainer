@@ -214,6 +214,7 @@ port = 5432`
 
   function languageLabel(language) {
     const map = {
+      auto: "자동 감지",
       powershell: "PowerShell",
       python: "Python",
       javascript: "JavaScript",
@@ -232,6 +233,130 @@ port = 5432`
       toml: "TOML 설정"
     };
     return map[language] || language || "자동";
+  }
+
+  // DETECTION_UX_V185_A2
+  function getDetectionReasons(result, requested, source) {
+    const language = result && result.language ? result.language : "";
+    const text = String(source || "");
+    const reasons = [];
+
+    function add(reason) {
+      if (reason && !reasons.includes(reason)) reasons.push(reason);
+    }
+
+    if (requested && requested !== "auto") {
+      add("사용자가 언어를 직접 선택했습니다.");
+    } else {
+      add("자동감지로 코드 모양을 판별했습니다.");
+    }
+
+    if (language === "powershell") {
+      if (/Set-Location|Copy-Item|Remove-Item|Test-Path|Invoke-WebRequest/i.test(text)) add("PowerShell 명령어 패턴이 보입니다.");
+      if (/\$[A-Za-z_][\w-]*\s*=/.test(text)) add("PowerShell 변수($이름) 사용이 보입니다.");
+      if (/\bgit\s+(status|add|commit|push|tag|stash|reset|clean)\b/i.test(text)) add("Git 작업 명령이 포함되어 있습니다.");
+    }
+
+    if (language === "python") {
+      if (/^\s*(import|from)\s+/m.test(text)) add("Python import 문이 보입니다.");
+      if (/^\s*(async\s+)?def\s+\w+\s*\(/m.test(text)) add("Python 함수 정의가 보입니다.");
+      if (/^\s*class\s+\w+[:(]/m.test(text)) add("Python 클래스 정의가 보입니다.");
+    }
+
+    if (language === "javascript") {
+      if (/\b(const|let|var)\s+\w+\s*=/.test(text)) add("JavaScript 변수 선언이 보입니다.");
+      if (/document\.getElementById|querySelector|addEventListener|localStorage/.test(text)) add("브라우저 DOM/이벤트 코드가 보입니다.");
+      if (/function\s+\w*\s*\(|=>/.test(text)) add("JavaScript 함수 패턴이 보입니다.");
+    }
+
+    if (language === "workers") {
+      if (/export\s+default/.test(text) || /fetch\s*\(\s*request\s*,\s*env/.test(text)) add("Cloudflare Worker fetch 진입점이 보입니다.");
+      if (/\benv\.(DB|KV|R2|AI)\b/.test(text)) add("Cloudflare env 바인딩 사용이 보입니다.");
+      if (/Response\.json|new\s+Response/.test(text)) add("Worker 응답 반환 코드가 보입니다.");
+    }
+
+    if (language === "java") {
+      if (/public\s+static\s+void\s+main/.test(text)) add("Java main 메서드가 보입니다.");
+      if (/System\.out\.println|public\s+class/.test(text)) add("Java 클래스/출력 문법이 보입니다.");
+    }
+
+    if (language === "package_json") {
+      if (/"scripts"\s*:\s*\{/.test(text)) add("package.json scripts 영역이 보입니다.");
+      if (/"dependencies"|"devDependencies"/.test(text)) add("npm 의존성 영역이 보입니다.");
+    }
+
+    if (language === "github_actions") {
+      if (/^\s*on\s*:/m.test(text) && /^\s*jobs\s*:/m.test(text)) add("GitHub Actions의 on/jobs 구조가 보입니다.");
+      if (/uses:\s*actions\//.test(text)) add("actions/checkout 같은 GitHub Action 사용이 보입니다.");
+    }
+
+    if (language === "dockerfile") {
+      if (/^\s*FROM\s+\S+/m.test(text)) add("Dockerfile FROM 베이스 이미지 줄이 보입니다.");
+      if (/^\s*(RUN|COPY|WORKDIR|CMD|ENTRYPOINT|EXPOSE|ENV|ARG)\s+/m.test(text)) add("Dockerfile 명령어 패턴이 보입니다.");
+    }
+
+    if (language === "env_file") {
+      if (/^\s*[A-Z][A-Z0-9_]*\s*=.+/m.test(text)) add("대문자 환경변수 KEY=VALUE 패턴이 보입니다.");
+      if (/SECRET|TOKEN|PASSWORD|API[_-]?KEY|PRIVATE/i.test(text)) add("비밀값으로 보이는 환경변수명이 포함되어 있습니다.");
+    }
+
+    if (language === "requirements_txt") {
+      if (/^\s*[-\w.]+(\[[^\]]+\])?\s*(==|>=|<=|~=|>|<).+/m.test(text)) add("Python 패키지 버전 조건이 보입니다.");
+      if (/^\s*-r\s+\S+/m.test(text)) add("다른 requirements 파일을 포함하는 줄이 보입니다.");
+    }
+
+    if (language === "pyproject_toml") {
+      if (/^\s*\[project\]\s*$/m.test(text)) add("pyproject.toml의 [project] 영역이 보입니다.");
+      if (/^\s*\[build-system\]\s*$/m.test(text)) add("Python build-system 설정이 보입니다.");
+    }
+
+    if (language === "yaml") {
+      if (/^\s*[A-Za-z0-9_-]+\s*:\s*/m.test(text)) add("YAML key: value 구조가 보입니다.");
+      if (/^\s+[-A-Za-z0-9_]+\s*:/m.test(text)) add("들여쓰기 기반 설정 구조가 보입니다.");
+    }
+
+    if (language === "markdown") {
+      if (/^\s*#\s+.+/m.test(text) || /^\s*#{2,6}\s+.+/m.test(text)) add("Markdown 제목(#)이 보입니다.");
+      if (/```/.test(text)) add("Markdown 코드블록이 포함되어 있습니다.");
+      if (/\[[^\]]+\]\([^)]+\)/.test(text)) add("Markdown 링크 문법이 보입니다.");
+    }
+
+    if (language === "gitignore") {
+      if (/^!/.test(text) || /^\*\./m.test(text) || /\/$/m.test(text)) add(".gitignore 무시/예외 패턴이 보입니다.");
+      if (/node_modules\/|dist\/|__pycache__\/|\.env/m.test(text)) add("Git에서 제외할 폴더/파일 패턴이 보입니다.");
+    }
+
+    if (language === "ini_file") {
+      if (/^\s*\[[A-Za-z0-9_. -]+\]\s*$/m.test(text)) add("INI 섹션([section])이 보입니다.");
+      if (/^\s*[A-Za-z0-9_.-]+\s*=\s*[^=]+/m.test(text)) add("INI key=value 설정이 보입니다.");
+    }
+
+    if (language === "toml") {
+      if (/^\s*\[[A-Za-z0-9_.-]+\]\s*$/m.test(text)) add("TOML 테이블([table])이 보입니다.");
+      if (/^\s*[A-Za-z0-9_.-]+\s*=\s*("|\[|true|false|\d)/m.test(text)) add("TOML 값 형식이 보입니다.");
+    }
+
+    add("감지가 애매하면 언어 드롭다운에서 직접 선택해 다시 분석하세요.");
+
+    return reasons.slice(0, 5);
+  }
+
+  function renderDetectionDetails(result, requested, source) {
+    const box = el("codeDetectionDetails");
+    if (!box) return;
+
+    const reasons = getDetectionReasons(result, requested, source);
+    const requestedLabel = requested === "auto" ? "자동 감지" : languageLabel(requested);
+    const detectedLabel = languageLabel(result.language);
+
+    box.className = "code-detection-details";
+    box.innerHTML = '<div class="code-detection-head">' +
+      '<span class="code-detection-chip">선택: ' + escapeHtml(requestedLabel) + '</span>' +
+      '<span class="code-detection-chip strong">감지: ' + escapeHtml(detectedLabel) + '</span>' +
+      '</div>' +
+      '<ul>' + reasons.map(function(reason) {
+        return '<li>' + escapeHtml(reason) + '</li>';
+      }).join("") + '</ul>';
   }
 
   function riskLabel(risk) {
@@ -508,6 +633,12 @@ port = 5432`
 
     lines.push("[코드 해석 리포트]");
     lines.push("언어: " + languageLabel(result.language));
+    if (result.requestedLanguage) {
+      lines.push("입력 선택: " + languageLabel(result.requestedLanguage));
+    }
+    if (Array.isArray(result.detectionReasons) && result.detectionReasons.length) {
+      lines.push("감지 근거: " + result.detectionReasons.join(" / "));
+    }
     lines.push("요약: " + (result.summary || ""));
     if (result.flowSummary) lines.push("흐름: " + result.flowSummary);
     lines.push("단계 수: " + steps.length);
@@ -629,6 +760,8 @@ port = 5432`
     const requested = select ? select.value : "auto";
     const result = window.CodeExplainerRules.analyze(input.value, requested);
     result.sourceCode = input.value;
+    result.requestedLanguage = requested;
+    result.detectionReasons = getDetectionReasons(result, requested, input.value);
     lastAnalysis = result;
     lastReport = buildPlainTextReport(result);
 
@@ -639,6 +772,7 @@ port = 5432`
         (result.flowSummary ? '<br><span class="code-flow-summary">' + escapeHtml(result.flowSummary) + '</span>' : "");
     }
 
+    renderDetectionDetails(result, requested, input.value);
     renderQuickReport(result);
     renderWarnings(result.warnings || []);
     renderSteps(result.steps || []);
@@ -672,6 +806,7 @@ port = 5432`
     const diagram = el("mermaidDiagram");
     const source = el("mermaidSource");
     const quick = el("codeQuickReport");
+    const detection = el("codeDetectionDetails");
     const riskOnly = el("showRiskOnlyToggle");
     if (summary) {
       summary.className = "code-summary muted";
@@ -688,6 +823,10 @@ port = 5432`
     if (quick) {
       quick.className = "code-quick-report muted";
       quick.textContent = "분석하면 단계 수, 위험 줄, 주요 분류가 요약됩니다.";
+    }
+    if (detection) {
+      detection.className = "code-detection-details muted";
+      detection.textContent = "분석하면 자동감지 결과와 판단 근거가 표시됩니다.";
     }
     lastMermaid = "";
     lastReport = "";
