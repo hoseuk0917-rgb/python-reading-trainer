@@ -58,10 +58,42 @@ button.addEventListener("click", function() {
 
     System.out.println(total);
   }
-}`
+}`,
+
+    package_json: `{
+  "name": "python-reading-trainer",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "vite build",
+    "test": "node --check src/pwa/app.js"
+  },
+  "dependencies": {
+    "@vitejs/plugin-legacy": "^5.0.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}`,
+
+    github_actions: `name: Build and test
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test`
   };
 
   let lastMermaid = "";
+  let lastReport = "";
+  let lastAnalysis = null;
   let learningCards = [];
   let learningSideCards = [];
 
@@ -82,7 +114,9 @@ button.addEventListener("click", function() {
       python: "Python은 변수, 조건문, 반복문, 함수, 파일/JSON/CSV/API 흐름을 중심으로 설명합니다.",
       javascript: "JavaScript는 웹페이지 동작, DOM, localStorage, fetch 흐름을 중심으로 설명합니다.",
       workers: "Workers는 request, env, DB/KV/R2/AI, Response 흐름을 중심으로 설명합니다.",
-      java: "Java는 class, main, 변수 선언, if/for, method, 출력 흐름을 중심으로 설명합니다."
+      java: "Java는 class, main, 변수 선언, if/for, method, 출력 흐름을 중심으로 설명합니다.",
+      package_json: "package.json은 npm scripts, dependencies, devDependencies를 중심으로 설명합니다.",
+      github_actions: "GitHub Actions YAML은 on, jobs, runs-on, steps, uses, run 흐름을 중심으로 설명합니다."
     };
 
     hint.textContent = messages[value] || messages.auto;
@@ -94,7 +128,9 @@ button.addEventListener("click", function() {
       python: "Python",
       javascript: "JavaScript",
       workers: "Cloudflare Workers",
-      java: "Java"
+      java: "Java",
+      package_json: "package.json",
+      github_actions: "GitHub Actions YAML"
     };
     return map[language] || language || "자동";
   }
@@ -325,6 +361,105 @@ button.addEventListener("click", function() {
     });
   }
 
+
+  function countByValue(items, picker) {
+    const counts = {};
+    (items || []).forEach(function(item) {
+      const key = picker(item);
+      if (!key) return;
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  }
+
+  function formatCountSummary(counts) {
+    return Object.keys(counts)
+      .sort(function(a, b) {
+        if (counts[b] !== counts[a]) return counts[b] - counts[a];
+        return a.localeCompare(b);
+      })
+      .slice(0, 6)
+      .map(function(key) {
+        return key + " " + counts[key] + "개";
+      })
+      .join(" · ");
+  }
+
+  function buildPlainTextReport(result) {
+    const steps = Array.isArray(result.steps) ? result.steps : [];
+    const warnings = Array.isArray(result.warnings) ? result.warnings : [];
+    const lines = [];
+
+    lines.push("[코드 해석 리포트]");
+    lines.push("언어: " + languageLabel(result.language));
+    lines.push("요약: " + (result.summary || ""));
+    if (result.flowSummary) lines.push("흐름: " + result.flowSummary);
+    lines.push("단계 수: " + steps.length);
+    lines.push("주의/위험 줄: " + warnings.length);
+
+    if (warnings.length) {
+      lines.push("");
+      lines.push("[주의/위험 명령]");
+      warnings.forEach(function(step) {
+        lines.push("- line " + step.lineNo + " · " + riskLabel(step.risk) + " · " + step.title + " · " + step.code);
+      });
+    }
+
+    lines.push("");
+    lines.push("[단계별 해설]");
+    steps.slice(0, 50).forEach(function(step, idx) {
+      const tags = Array.isArray(step.tags) && step.tags.length ? " #" + step.tags.join(" #") : "";
+      lines.push((idx + 1) + ". line " + step.lineNo + " · " + step.title + " · " + step.explain + tags);
+      lines.push("   코드: " + step.code);
+    });
+
+    if (steps.length > 50) {
+      lines.push("... 이후 " + (steps.length - 50) + "개 단계 생략");
+    }
+
+    if (lastMermaid) {
+      lines.push("");
+      lines.push("[Mermaid]");
+      lines.push(lastMermaid);
+    }
+
+    return lines.join("\n");
+  }
+
+  function renderQuickReport(result) {
+    const box = el("codeQuickReport");
+    if (!box) return;
+
+    const steps = Array.isArray(result.steps) ? result.steps : [];
+    const warnings = Array.isArray(result.warnings) ? result.warnings : [];
+    const categories = countByValue(steps, function(step) { return step.category || "처리"; });
+    const mediumOrHigh = steps.filter(function(step) {
+      return step.risk === "medium" || step.risk === "high";
+    }).length;
+
+    box.className = "code-quick-report";
+    box.innerHTML = '<div class="code-report-mini-grid">' +
+      '<span class="code-report-chip"><strong>' + steps.length + '</strong><small>단계</small></span>' +
+      '<span class="code-report-chip"><strong>' + warnings.length + '</strong><small>위험/주의</small></span>' +
+      '<span class="code-report-chip"><strong>' + mediumOrHigh + '</strong><small>확인필요</small></span>' +
+      '</div>' +
+      '<p class="code-report-categories">' + escapeHtml(formatCountSummary(categories) || "분류 없음") + '</p>';
+  }
+
+  async function copyCodeReport() {
+    if (!lastReport) {
+      alert("복사할 코드 해석 리포트가 없습니다. 먼저 분석하기를 눌러주세요.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(lastReport);
+      alert("코드 해석 리포트를 복사했습니다.");
+    } catch (error) {
+      alert("리포트 복사 실패: " + String(error));
+    }
+  }
+
   async function renderMermaid(source) {
     lastMermaid = source || "";
     const sourceBox = el("mermaidSource");
@@ -366,6 +501,8 @@ button.addEventListener("click", function() {
 
     const requested = select ? select.value : "auto";
     const result = window.CodeExplainerRules.analyze(input.value, requested);
+    lastAnalysis = result;
+    lastReport = buildPlainTextReport(result);
 
     if (summary) {
       summary.className = "code-summary";
@@ -374,6 +511,7 @@ button.addEventListener("click", function() {
         (result.flowSummary ? '<br><span class="code-flow-summary">' + escapeHtml(result.flowSummary) + '</span>' : "");
     }
 
+    renderQuickReport(result);
     renderWarnings(result.warnings || []);
     renderSteps(result.steps || []);
     renderRelatedCards(result);
@@ -405,6 +543,7 @@ button.addEventListener("click", function() {
     const steps = el("codeSteps");
     const diagram = el("mermaidDiagram");
     const source = el("mermaidSource");
+    const quick = el("codeQuickReport");
     if (summary) {
       summary.className = "code-summary muted";
       summary.textContent = "아직 분석한 코드가 없습니다.";
@@ -416,7 +555,13 @@ button.addEventListener("click", function() {
     if (steps) steps.innerHTML = "";
     if (diagram) diagram.innerHTML = "";
     if (source) source.textContent = "";
+    if (quick) {
+      quick.className = "code-quick-report muted";
+      quick.textContent = "분석하면 단계 수, 위험 줄, 주요 분류가 요약됩니다.";
+    }
     lastMermaid = "";
+    lastReport = "";
+    lastAnalysis = null;
   }
 
   async function copyMermaid() {
@@ -450,11 +595,13 @@ button.addEventListener("click", function() {
     const sampleBtn = el("loadCodeSampleBtn");
     const clearBtn = el("clearCodeBtn");
     const copyBtn = el("copyMermaidBtn");
+    const copyReportBtn = el("copyCodeReportBtn");
 
     if (analyzeBtn) analyzeBtn.onclick = analyzeCurrentCode;
     if (sampleBtn) sampleBtn.onclick = loadSample;
     if (clearBtn) clearBtn.onclick = clearInput;
     if (copyBtn) copyBtn.onclick = copyMermaid;
+    if (copyReportBtn) copyReportBtn.onclick = copyCodeReport;
 
     const select = el("codeLangSelect");
     if (select) {
