@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V182-A2 START ===
+// === CODE EXPLAINER RULES V183-A1 START ===
 (function() {
   "use strict";
 
@@ -697,7 +697,7 @@
     const tags = [];
     let category = "처리";
 
-    // CONFIG_META_GUARD_V182_A2
+    // CONFIG_META_GUARD_V183_A1
     // 설정 파일 계열은 설명문 안의 단어 때문에 Git/CI/API/DB 등으로 오염되기 쉬워서
     // 파일 형식별 핵심 분류를 먼저 확정하고 여기서 반환한다.
     if (language === "dockerfile") {
@@ -765,9 +765,30 @@
     if (language === "yaml") {
       category = "YAML설정";
       pushUnique(tags, "YAML");
-      if (/services:|image:|ports:|volumes:|environment:/.test(code)) {
+
+      // YAML_TAG_GUARD_V183_A1
+      if (/services\s*:/.test(code)) {
+        pushUnique(tags, "서비스");
+      }
+      if (/image\s*:/.test(code)) {
+        pushUnique(tags, "컨테이너");
+      }
+      if (/ports\s*:|^-\s*["']?\d+:\d+/.test(code)) {
+        pushUnique(tags, "포트");
+      }
+      if (/environment\s*:|^[A-Z][A-Z0-9_]*\s*:/.test(code)) {
+        pushUnique(tags, "환경변수");
+      }
+      if (/volumes\s*:|^-\s*\.:/.test(code)) {
+        pushUnique(tags, "볼륨");
+      }
+      if (/^-\s+/.test(code)) {
+        pushUnique(tags, "목록");
+      }
+      if (tags.length === 1) {
         pushUnique(tags, "설정");
       }
+
       return Object.assign({}, step, {
         category: category,
         tags: tags.slice(0, 4)
@@ -1050,4 +1071,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V182-A2 END ===
+// === CODE EXPLAINER RULES V183-A1 END ===

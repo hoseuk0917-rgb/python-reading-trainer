@@ -105,6 +105,13 @@ function normalizeReportKey(value) {
     "pip": "pip",
     "pyproject": "pyproject",
     "YAML": "yaml",
+    "설정": "setting",
+    "서비스": "service",
+    "컨테이너": "container",
+    "포트": "port",
+    "환경변수": "env_var",
+    "볼륨": "volume",
+    "목록": "list",
     "컨테이너": "container",
     "환경설정": "env_config",
     "프로젝트설정": "project_config",
@@ -169,7 +176,7 @@ const samples = [
 
 git diff --stat
 git stash push -u -m "wip-test"
-python tools/validate_lessons.py --expected-app-version 20260606_v182_a2 --expected-lesson-cards 1785
+python tools/validate_lessons.py --expected-app-version 20260606_v183_a1 --expected-lesson-cards 1785
 Write-Host "DONE"`,
     mustContain: ["변경량 요약 확인", "임시 보관", "Python 검증 실행"],
     mustMetaContain: ["Git", "검증", "출력"]
@@ -350,7 +357,7 @@ async def health():
 node --check .\\src\\pwa\\app.js
 npm install
 npm run build
-python tools/validate_lessons.py --expected-app-version 20260606_v182_a2
+python tools/validate_lessons.py --expected-app-version 20260606_v183_a1
 git status --short`,
     mustContain: ["작업 폴더 이동", "Node 문법 검사", "npm 의존성 설치", "npm 스크립트 실행", "Python 검증 실행", "Git 변경 상태 확인"],
     mustMetaContain: ["파일", "검증", "의존성", "Git"]
@@ -512,7 +519,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260606_v182_a2",
+  version: "20260606_v183_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,
