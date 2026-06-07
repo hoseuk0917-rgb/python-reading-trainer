@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V177-A1 START ===
+// === CODE EXPLAINER RULES V178-A1 START ===
 (function() {
   "use strict";
 
@@ -387,7 +387,7 @@
     if (/\.bind\s*\(/.test(t)) {
       return makeStep(lineNo, t, "SQL 값 안전하게 연결", "SQL 문장의 물음표 자리에 실제 값을 연결합니다. 문자열을 직접 붙이는 것보다 안전한 방식입니다.", risk);
     }
-    if (/\.(all|first|run)\s*\(/.test(t) && /await|env\.DB|prepare/i.test(t)) {
+    if (/^\.(all|first|run)\s*\(/.test(t) || (/\.(all|first|run)\s*\(/.test(t) && /await|env\.DB|prepare/i.test(t))) {
       return makeStep(lineNo, t, "D1 쿼리 실행", "준비한 SQL을 실제로 실행합니다. all은 여러 행 조회, first는 한 행 조회, run은 INSERT/UPDATE/DELETE 실행에 자주 씁니다.", risk);
     }
     if (/env\.DB/.test(t)) {
@@ -783,4 +783,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V177-A1 END ===
+// === CODE EXPLAINER RULES V178-A1 END ===
