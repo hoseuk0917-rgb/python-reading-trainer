@@ -1009,6 +1009,8 @@ port = 5432`
     const quick = el("codeQuickReport");
     const structure = el("codeStructureOverview");
     const detection = el("codeDetectionDetails");
+    const largeBody = el("diagramLargeBody");
+    const largeModal = el("diagramLargeModal");
     const riskOnly = el("showRiskOnlyToggle");
     if (summary) {
       summary.className = "code-summary muted";
@@ -1022,6 +1024,11 @@ port = 5432`
     if (riskOnly) riskOnly.checked = false;
     if (diagram) diagram.innerHTML = "";
     if (source) source.textContent = "";
+    if (largeBody) largeBody.innerHTML = "";
+    if (largeModal) {
+      largeModal.classList.add("hidden");
+      largeModal.setAttribute("aria-hidden", "true");
+    }
     if (quick) {
       quick.className = "code-quick-report muted";
       quick.textContent = "분석하면 단계 수, 위험 줄, 주요 분류가 요약됩니다.";
@@ -1052,6 +1059,83 @@ port = 5432`
     }
   }
 
+  // DIAGRAM_EXPORT_UX_V192_A1
+  function getCurrentDiagramSvg() {
+    const diagram = el("mermaidDiagram");
+    const svg = diagram ? diagram.querySelector("svg") : null;
+    return svg ? svg.outerHTML : "";
+  }
+
+  function setDiagramStatus(message) {
+    const status = el("diagramStatus");
+    if (status) status.textContent = message;
+  }
+
+  async function copyDiagramSvg() {
+    const svg = getCurrentDiagramSvg();
+    if (!svg) {
+      alert("복사할 SVG가 없습니다. 먼저 분석하기를 눌러 흐름도를 생성하세요.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(svg);
+      setDiagramStatus("SVG 원문 복사 완료");
+      alert("SVG 원문을 복사했습니다.");
+    } catch (error) {
+      alert("SVG 복사 실패: " + String(error));
+    }
+  }
+
+  function downloadDiagramSvg() {
+    const svg = getCurrentDiagramSvg();
+    if (!svg) {
+      alert("다운로드할 SVG가 없습니다. 먼저 분석하기를 눌러 흐름도를 생성하세요.");
+      return;
+    }
+
+    const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+
+    link.href = url;
+    link.download = "code-flow-diagram-" + stamp + ".svg";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setDiagramStatus("SVG 다운로드 완료");
+  }
+
+  function openLargeDiagram() {
+    const svg = getCurrentDiagramSvg();
+    const modal = el("diagramLargeModal");
+    const body = el("diagramLargeBody");
+
+    if (!svg) {
+      alert("크게 볼 흐름도가 없습니다. 먼저 분석하기를 눌러주세요.");
+      return;
+    }
+
+    if (!modal || !body) return;
+    body.innerHTML = svg;
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    setDiagramStatus("큰 보기 열림");
+  }
+
+  function closeLargeDiagram() {
+    const modal = el("diagramLargeModal");
+    const body = el("diagramLargeBody");
+
+    if (body) body.innerHTML = "";
+    if (modal) {
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+    }
+  }
+
 
   function setLearningContent(cards, sideCards) {
     learningCards = Array.isArray(cards) ? cards : [];
@@ -1071,6 +1155,11 @@ port = 5432`
     const clearBtn = el("clearCodeBtn");
     const copyBtn = el("copyMermaidBtn");
     const copyReportBtn = el("copyCodeReportBtn");
+    const downloadSvgBtn = el("downloadDiagramSvgBtn");
+    const copySvgBtn = el("copyDiagramSvgBtn");
+    const openLargeBtn = el("openLargeDiagramBtn");
+    const closeLargeBtn = el("closeLargeDiagramBtn");
+    const largeModal = el("diagramLargeModal");
     const riskOnlyToggle = el("showRiskOnlyToggle");
 
     if (analyzeBtn) analyzeBtn.onclick = analyzeCurrentCode;
@@ -1078,6 +1167,18 @@ port = 5432`
     if (clearBtn) clearBtn.onclick = clearInput;
     if (copyBtn) copyBtn.onclick = copyMermaid;
     if (copyReportBtn) copyReportBtn.onclick = copyCodeReport;
+    if (downloadSvgBtn) downloadSvgBtn.onclick = downloadDiagramSvg;
+    if (copySvgBtn) copySvgBtn.onclick = copyDiagramSvg;
+    if (openLargeBtn) openLargeBtn.onclick = openLargeDiagram;
+    if (closeLargeBtn) closeLargeBtn.onclick = closeLargeDiagram;
+    if (largeModal) {
+      largeModal.onclick = function(event) {
+        if (event.target === largeModal) closeLargeDiagram();
+      };
+    }
+    document.addEventListener("keydown", function(event) {
+      if (event.key === "Escape") closeLargeDiagram();
+    });
     if (riskOnlyToggle) {
       riskOnlyToggle.onchange = function() {
         if (lastAnalysis) renderSteps(lastAnalysis.steps || []);
