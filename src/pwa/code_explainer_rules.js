@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V189-A2 START ===
+// === CODE EXPLAINER RULES V190-A2 START ===
 (function() {
   "use strict";
 
@@ -63,6 +63,12 @@
 
     // JS_MODULE_DETECT_GUARD_V189_A2
     if (/^\s*import\s+.+\s+from\s+["'][^"']+["']/m.test(text) || /^\s*export\s+(async\s+)?(function|const|let|class)\b/m.test(text)) return "javascript";
+
+    // JAVA_DETECT_GUARD_V190_A2
+    if (/^\s*package\s+[A-Za-z_][\w.]*\s*;/m.test(text)) return "java";
+    if (/^\s*import\s+java[\w.*]*\s*;/m.test(text)) return "java";
+    if (/public\s+class|private\s+class|protected\s+class|class\s+\w+\s*\{/m.test(text)) return "java";
+    if (/public\s+static\s+void\s+main|System\.(out|err)\.println|\b(List|Map|Set|Queue)<[^>]+>/.test(text)) return "java";
 
     if (/^\s*def\s+\w+\s*\(/m.test(text) || /^\s*import\s+\w+/m.test(text) || /^\s*from\s+\w+/m.test(text)) return "python";
     if (/^\s*class\s+\w+\s*[:(]/m.test(text) && lower.includes("self")) return "python";
@@ -153,8 +159,12 @@
       if (/env\.DB.*\bDELETE\b|env\.DB.*\bDROP\b|env\.DB.*\bUPDATE\b/i.test(t)) return "medium";
     }
     if (language === "java") {
+      // JAVA_RISK_GUARD_V190_A2
       if (/Runtime\.getRuntime|ProcessBuilder/.test(t)) return "medium";
+      if (/System\.exit\s*\(/.test(t)) return "medium";
       if (/delete\s*\(/.test(t)) return "medium";
+      if (/Files\.delete|Files\.deleteIfExists/.test(t)) return "medium";
+      if (/DriverManager\.getConnection|PreparedStatement|Statement\s+/.test(t)) return "medium";
     }
     if (language === "dockerfile") {
       if (/\brm\s+-rf\s+\//i.test(t)) return "high";
@@ -1107,14 +1117,76 @@
     const t = cleanLine(line);
     const risk = riskOf(t, "java");
 
+    // JAVA_DEEP_RULES_V190_A2
+    if (/^package\s+[A-Za-z_][\w.]*\s*;/.test(t)) {
+      return makeStep(lineNo, t, "패키지 선언", "이 Java 파일이 어떤 패키지/폴더 논리 그룹에 속하는지 선언합니다.", risk);
+    }
+    if (/^import\s+/.test(t)) {
+      return makeStep(lineNo, t, "라이브러리 불러오기", "Java 표준 라이브러리나 외부 클래스 기능을 현재 파일에서 사용할 수 있게 가져옵니다.", risk);
+    }
+    if (/^@[A-Za-z_][\w.]*/.test(t)) {
+      return makeStep(lineNo, t, "어노테이션 설정", "클래스나 메서드에 추가 의미를 붙입니다. Spring, JUnit, Lombok 같은 프레임워크에서 자주 씁니다.", risk);
+    }
+    if (/\binterface\s+\w+/.test(t)) {
+      return makeStep(lineNo, t, "인터페이스 정의", "구현 클래스가 반드시 제공해야 하는 메서드 약속을 정의합니다.", risk);
+    }
     if (/class\s+\w+/.test(t)) {
       return makeStep(lineNo, t, "클래스 정의", "Java에서 관련 변수와 메서드를 묶는 설계도를 정의합니다.", risk);
     }
     if (/public\s+static\s+void\s+main/.test(t)) {
       return makeStep(lineNo, t, "프로그램 시작점", "Java 프로그램이 실행될 때 가장 먼저 들어오는 main 메서드입니다.", risk);
     }
-    if (/System\.out\.println/.test(t)) {
-      return makeStep(lineNo, t, "화면에 출력", "괄호 안 값을 콘솔 화면에 보여줍니다.", risk);
+    // JAVA_METHOD_STREAM_RULES_V190_A2
+    if (/\b(public|private|protected)\s+(static\s+)?[\w<>\[\], ?]+\s+\w+\s*\([^)]*\)\s*(throws\s+[\w, ]+)?\s*\{?/.test(t) && !/class\s+/.test(t)) {
+      return makeStep(lineNo, t, "메서드 정의", "나중에 객체나 클래스 이름으로 호출할 수 있는 Java 코드 묶음을 정의합니다. 매개변수와 반환 타입을 함께 확인해야 합니다.", risk);
+    }
+    if (/^try\s*\{/.test(t)) {
+      return makeStep(lineNo, t, "오류 대비 시작", "아래 코드를 실행하다가 예외가 생기면 catch/finally 구간에서 처리할 수 있게 준비합니다.", risk);
+    }
+    if (/^\}?\s*catch\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "오류 처리", "try 안에서 발생한 예외를 잡아 로그를 남기거나 대체 처리를 합니다.", risk);
+    }
+    if (/^\}?\s*finally\s*\{/.test(t)) {
+      return makeStep(lineNo, t, "마지막 정리", "성공/실패와 관계없이 마지막에 실행되는 정리 구간입니다.", risk);
+    }
+    if (/^throw\s+new\s+/.test(t) || /^throw\s+/.test(t)) {
+      return makeStep(lineNo, t, "예외 발생시키기", "조건이 맞지 않거나 계속 진행하면 위험할 때 의도적으로 예외를 발생시킵니다.", risk);
+    }
+    if (/\bnew\s+(ArrayList|HashMap|HashSet|LinkedList|TreeMap|TreeSet)\b|\b(List|Map|Set|Queue)<[^>]+>\s+\w+/.test(t)) {
+      return makeStep(lineNo, t, "컬렉션/맵 만들기", "여러 값을 담는 List, Map, Set 같은 자료구조를 준비합니다.", risk);
+    }
+    if (/\.add\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "컬렉션에 값 추가", "List나 Set 같은 컬렉션에 새 값을 추가합니다.", risk);
+    }
+    if (/\.put\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "맵에 값 저장", "Map 구조에 key와 value를 저장합니다. 같은 key가 있으면 값이 바뀔 수 있습니다.", risk);
+    }
+    if (/\.stream\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "스트림 처리 시작", "컬렉션 데이터를 filter/map/collect 같은 연속 처리 흐름으로 다루기 시작합니다.", risk);
+    }
+    if (/\.filter\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "스트림 필터링", "조건에 맞는 항목만 남깁니다. 조건식이 실제 의도와 맞는지 확인해야 합니다.", risk);
+    }
+    if (/\.map\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "스트림 변환", "각 항목을 다른 형태의 값으로 바꿉니다.", risk);
+    }
+    if (/\.collect\s*\(/.test(t) || /Collectors\./.test(t)) {
+      return makeStep(lineNo, t, "스트림 결과 모으기", "스트림 처리 결과를 List, Set, Map 같은 최종 자료구조로 모읍니다.", risk);
+    }
+    if (/\bnew\s+\w+\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "객체 생성", "클래스 설계도를 바탕으로 실제 사용할 객체를 만듭니다.", risk);
+    }
+    if (/Files\.(readString|writeString|readAllLines|write|copy|move|delete|deleteIfExists)|Paths\.get|Path\.of/.test(t)) {
+      return makeStep(lineNo, t, "파일/경로 처리", "Java NIO로 파일 경로를 만들거나 파일을 읽고 씁니다. 삭제/이동은 대상 경로를 확인해야 합니다.", risk);
+    }
+    if (/HttpClient|HttpRequest|HttpResponse|\.send\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "HTTP 요청 처리", "Java 코드에서 웹 API 요청을 만들거나 응답을 받습니다. 상태 코드와 예외 처리를 확인해야 합니다.", risk);
+    }
+    if (/DriverManager\.getConnection|PreparedStatement|ResultSet|executeQuery|executeUpdate/.test(t)) {
+      return makeStep(lineNo, t, "DB 접근", "Java에서 데이터베이스 연결, SQL 준비, 조회/수정 실행을 처리합니다.", risk);
+    }
+    if (/System\.(out|err)\.println/.test(t)) {
+      return makeStep(lineNo, t, "화면에 출력", "괄호 안 값을 콘솔 화면에 보여줍니다. err는 오류 메시지 출력에 자주 씁니다.", risk);
     }
     if (/^if\s*\(/.test(t)) {
       return makeStep(lineNo, t, "조건 검사", "조건이 맞으면 중괄호 안 코드가 실행됩니다.", risk);
@@ -1386,6 +1458,44 @@
       category = category === "처리" ? "패키지설정" : category;
       pushUnique(tags, "npm");
       pushUnique(tags, "의존성");
+    }
+
+    // JAVA_META_GUARD_V190_A2
+    if (language === "java") {
+      pushUnique(tags, "Java");
+      if (/패키지 선언|라이브러리 불러오기|^package\s+|^import\s+/.test(text)) {
+        category = category === "처리" ? "의존성" : category;
+        pushUnique(tags, "의존성");
+      }
+      if (/클래스 정의|메서드 정의|인터페이스 정의|프로그램 시작점|class\s+|interface\s+|main\s*\(/.test(text)) {
+        category = "구조";
+        pushUnique(tags, "함수/구조");
+      }
+      if (/try\s*\{|catch\s*\(|finally|throw|오류 대비|오류 처리|예외/.test(codeTitle)) {
+        category = "오류처리";
+        pushUnique(tags, "오류처리");
+      }
+      if (/arraylist|hashmap|hashset|list<|map<|set<|queue<|컬렉션|맵/.test(text)) {
+        category = category === "처리" ? "데이터처리" : category;
+        pushUnique(tags, "컬렉션");
+      }
+      if (/stream\s*\(|\.filter\s*\(|\.map\s*\(|collectors|스트림/.test(text)) {
+        category = category === "처리" ? "데이터처리" : category;
+        pushUnique(tags, "스트림");
+      }
+      if (/files\.|paths\.|path\.of|파일\/경로/.test(text)) {
+        category = category === "처리" ? "파일/경로" : category;
+        pushUnique(tags, "파일");
+      }
+      if (/httpclient|httprequest|httpresponse|http 요청/.test(text)) {
+        category = category === "처리" ? "네트워크/API" : category;
+        pushUnique(tags, "API");
+      }
+      if (/drivermanager|preparedstatement|resultset|executequery|executeupdate|db 접근/.test(text)) {
+        category = "DB";
+        pushUnique(tags, "DB");
+        pushUnique(tags, "SQL");
+      }
     }
 
     // JS_WORKERS_META_GUARD_V189_A2
@@ -1680,4 +1790,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V189-A2 END ===
+// === CODE EXPLAINER RULES V190-A2 END ===

@@ -151,7 +151,10 @@ function normalizeReportKey(value) {
     "R2": "r2",
     "Queue": "queue",
     "큐": "queue",
-    "캐시": "cache"
+    "캐시": "cache",
+    "컬렉션": "collection",
+    "스트림": "stream",
+    "메서드": "method"
   };
 
   if (map[value]) return map[value];
@@ -212,7 +215,7 @@ const samples = [
 
 git diff --stat
 git stash push -u -m "wip-test"
-python tools/validate_lessons.py --expected-app-version 20260606_v189_a2 --expected-lesson-cards 1785
+python tools/validate_lessons.py --expected-app-version 20260606_v190_a2 --expected-lesson-cards 1785
 Write-Host "DONE"`,
     mustContain: ["변경량 요약 확인", "임시 보관", "Python 검증 실행"],
     mustMetaContain: ["Git", "검증", "출력"]
@@ -402,6 +405,47 @@ for row in df["name"]:
     mustMetaContain: ["반복문", "조건문", "출력"]
   },
   {
+    name: "java_collection_stream_error_flow",
+    requestedLanguage: "auto",
+    expectedLanguage: "java",
+    minSteps: 15,
+    code: `package demo;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class UserService {
+  private final Map<String, Integer> scores = new HashMap<>();
+
+  public static void main(String[] args) {
+    UserService service = new UserService();
+
+    try {
+      service.addScore("kim", 90);
+      List<String> passed = service.namesOver(80);
+      System.out.println(passed);
+    } catch (Exception ex) {
+      System.err.println(ex.getMessage());
+    } finally {
+      System.out.println("done");
+    }
+  }
+
+  public void addScore(String name, int score) {
+    scores.put(name, score);
+  }
+
+  public List<String> namesOver(int min) {
+    return scores.entrySet().stream()
+      .filter(entry -> entry.getValue() >= min)
+      .map(Map.Entry::getKey)
+      .collect(Collectors.toList());
+  }
+}`,
+    mustContain: ["패키지 선언", "라이브러리 불러오기", "클래스 정의", "컬렉션/맵 만들기", "프로그램 시작점", "객체 생성", "오류 대비 시작", "메서드 정의", "맵에 값 저장", "스트림 처리 시작", "스트림 필터링", "스트림 변환", "스트림 결과 모으기", "오류 처리", "마지막 정리"],
+    mustMetaContain: ["Java", "컬렉션", "스트림", "오류처리"]
+  },
+  {
     name: "python_argparse_path_subprocess",
     requestedLanguage: "auto",
     expectedLanguage: "python",
@@ -481,7 +525,7 @@ async def health():
 node --check .\\src\\pwa\\app.js
 npm install
 npm run build
-python tools/validate_lessons.py --expected-app-version 20260606_v189_a2
+python tools/validate_lessons.py --expected-app-version 20260606_v190_a2
 git status --short`,
     mustContain: ["작업 폴더 이동", "Node 문법 검사", "npm 의존성 설치", "npm 스크립트 실행", "Python 검증 실행", "Git 변경 상태 확인"],
     mustMetaContain: ["파일", "검증", "의존성", "Git"]
@@ -748,7 +792,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260606_v189_a2",
+  version: "20260606_v190_a2",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,
