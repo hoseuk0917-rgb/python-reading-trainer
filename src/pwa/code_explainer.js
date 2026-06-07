@@ -772,6 +772,7 @@ port = 5432`
     const box = el("codeStructureOverview");
     if (!box) return;
 
+    // TEXT_REPORT_LONG_OVERVIEW_V187_A2
     const overview = buildLongCodeOverview(result);
     const stats = overview.stats;
     const outline = overview.outline;

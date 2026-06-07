@@ -130,7 +130,13 @@ function normalizeReportKey(value) {
     "예외": "exception",
     "섹션": "section",
     "INI": "ini",
-    "TOML": "toml"
+    "TOML": "toml",
+    "CSV": "csv",
+    "pandas": "pandas",
+    "로깅": "logging",
+    "예외": "exception",
+    "테스트": "test",
+    "데이터처리": "data_processing"
   };
 
   if (map[value]) return map[value];
@@ -191,7 +197,7 @@ const samples = [
 
 git diff --stat
 git stash push -u -m "wip-test"
-python tools/validate_lessons.py --expected-app-version 20260606_v186_a3 --expected-lesson-cards 1785
+python tools/validate_lessons.py --expected-app-version 20260606_v187_a2 --expected-lesson-cards 1785
 Write-Host "DONE"`,
     mustContain: ["변경량 요약 확인", "임시 보관", "Python 검증 실행"],
     mustMetaContain: ["Git", "검증", "출력"]
@@ -349,6 +355,41 @@ if input_path.exists():
     mustMetaContain: ["CLI", "파일", "프로세스", "조건문", "출력"]
   },
   {
+    name: "python_error_csv_env_logging",
+    requestedLanguage: "auto",
+    expectedLanguage: "python",
+    minSteps: 16,
+    code: `import csv
+import logging
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
+logging.basicConfig(level=logging.INFO)
+
+def load_rows(path):
+    rows = []
+    try:
+        with Path(path).open("r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                rows.append(row)
+    except FileNotFoundError as exc:
+        raise SystemExit(f"missing file: {path}") from exc
+    finally:
+        logging.info("load finished")
+    return rows
+
+if __name__ == "__main__":
+    api_key = os.environ.get("API_KEY")
+    if not api_key:
+        raise ValueError("API_KEY is required")
+    print(len(load_rows("input.csv")))`,
+    mustContain: ["환경변수 파일 로드", "로깅 설정", "예외 처리 시작", "CSV 딕셔너리 읽기", "목록에 항목 추가", "예외 잡기", "친절한 종료", "마지막 정리", "직접 실행 진입점", "환경변수 읽기"],
+    mustMetaContain: ["CSV", "파일", "오류처리", "환경변수", "로깅"]
+  },
+  {
     name: "python_fastapi_endpoint",
     requestedLanguage: "auto",
     expectedLanguage: "python",
@@ -372,7 +413,7 @@ async def health():
 node --check .\\src\\pwa\\app.js
 npm install
 npm run build
-python tools/validate_lessons.py --expected-app-version 20260606_v186_a3
+python tools/validate_lessons.py --expected-app-version 20260606_v187_a2
 git status --short`,
     mustContain: ["작업 폴더 이동", "Node 문법 검사", "npm 의존성 설치", "npm 스크립트 실행", "Python 검증 실행", "Git 변경 상태 확인"],
     mustMetaContain: ["파일", "검증", "의존성", "Git"]
@@ -601,7 +642,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260606_v186_a3",
+  version: "20260606_v187_a2",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,

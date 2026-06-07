@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V186-A3 START ===
+// === CODE EXPLAINER RULES V187-A2 START ===
 (function() {
   "use strict";
 
@@ -128,8 +128,12 @@
       if (/wrangler\s+d1\s+execute/i.test(t) || /wrangler\s+deploy/i.test(t)) return "medium";
     }
     if (language === "python") {
-      if (/shutil\.rmtree|os\.remove|os\.rmdir/.test(t)) return "high";
+      // PYTHON_RISK_GUARD_V187_A2
+      if (/eval\s*\(|exec\s*\(/.test(t)) return "high";
+      if (/shutil\.rmtree|os\.remove|os\.rmdir|\.unlink\s*\(|\.rmdir\s*\(/.test(t)) return "high";
       if (/subprocess\.|os\.system/.test(t)) return "medium";
+      if (/pickle\.load|yaml\.load\s*\(/.test(t)) return "medium";
+      if (/SECRET|TOKEN|PASSWORD|API[_-]?KEY|PRIVATE/i.test(t) && /os\.environ|os\.getenv|getenv\s*\(|load_dotenv/.test(t)) return "medium";
     }
     if (language === "javascript" || language === "workers") {
       if (/eval\s*\(|new\s+Function/.test(t)) return "high";
@@ -379,6 +383,29 @@
     if (/^class\s+\w+/.test(t)) {
       return makeStep(lineNo, t, "클래스 정의", "관련 데이터와 기능을 묶어 객체를 만들기 위한 설계도를 정의합니다.", risk);
     }
+
+    // PYTHON_ENTRY_ERROR_RULES_V187_A2
+    if (/^if\s+__name__\s*==\s*["']__main__["']\s*:\s*$/.test(t)) {
+      return makeStep(lineNo, t, "직접 실행 진입점", "이 파일을 직접 실행했을 때만 아래 들여쓰기 코드가 실행됩니다. 다른 파일에서 import할 때는 실행되지 않게 분리하는 패턴입니다.", risk);
+    }
+    if (/^try\s*:\s*$/.test(t)) {
+      return makeStep(lineNo, t, "예외 처리 시작", "아래 코드를 실행하다가 문제가 생기면 except/finally 구간에서 처리할 수 있게 준비합니다.", risk);
+    }
+    if (/^except\b.*:\s*$/.test(t)) {
+      return makeStep(lineNo, t, "예외 잡기", "try 안에서 발생한 오류를 잡아 사용자 친화적인 메시지나 대체 동작을 실행합니다. 너무 넓은 except는 실제 오류를 숨길 수 있습니다.", risk);
+    }
+    if (/^finally\s*:\s*$/.test(t)) {
+      return makeStep(lineNo, t, "마지막 정리", "성공/실패와 관계없이 마지막에 실행되는 정리 구간입니다. 파일 닫기, 로그 출력, 임시 상태 정리에 자주 씁니다.", risk);
+    }
+    if (/^raise\s+SystemExit\b/.test(t)) {
+      return makeStep(lineNo, t, "친절한 종료", "CLI 도구에서 오류 메시지를 보여주고 프로그램을 종료합니다. 사용자에게 무엇이 문제인지 알려줄 때 씁니다.", risk);
+    }
+    if (/^raise\b/.test(t)) {
+      return makeStep(lineNo, t, "예외 발생시키기", "조건이 맞지 않거나 계속 진행하면 위험할 때 의도적으로 오류를 발생시킵니다.", risk);
+    }
+    if (/^assert\s+/.test(t)) {
+      return makeStep(lineNo, t, "조건 검증", "반드시 참이어야 하는 조건을 검사합니다. 테스트나 내부 검증에는 유용하지만 사용자 입력 검증을 이것만으로 처리하면 부족할 수 있습니다.", risk);
+    }
     if (/^if\s+.+:\s*$/.test(t)) {
       return makeStep(lineNo, t, "조건 검사", "조건이 맞으면 바로 아래 들여쓰기된 코드가 실행됩니다.", risk);
     }
@@ -408,6 +435,74 @@
     }
     if (/argparse\.ArgumentParser|\.add_argument\s*\(|\.parse_args\s*\(/.test(t)) {
       return makeStep(lineNo, t, "명령행 인자 처리", "터미널에서 받은 --input 같은 옵션을 정의하거나 읽습니다.", risk);
+    }
+
+    // PYTHON_DEEP_RULES_V187_A2
+    if (/load_dotenv\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "환경변수 파일 로드", ".env 파일에 있는 설정값을 현재 Python 실행 환경으로 불러옵니다. 실제 비밀값은 저장소에 올리지 않아야 합니다.", risk);
+    }
+    if (/os\.environ|os\.getenv|getenv\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "환경변수 읽기", "API 키, DB 주소, 실행 옵션처럼 코드 밖에서 주입한 설정값을 읽습니다. 값이 없을 때의 처리도 확인해야 합니다.", risk);
+    }
+    if (/logging\.basicConfig|logging\.getLogger|logger\s*=/.test(t)) {
+      return makeStep(lineNo, t, "로깅 설정", "실행 중 상태, 오류, 처리 결과를 기록하기 위한 로그 설정을 준비합니다.", risk);
+    }
+    if (/logger\.(debug|info|warning|error|exception)|logging\.(debug|info|warning|error|exception)/.test(t)) {
+      return makeStep(lineNo, t, "로그 남기기", "진행 상태나 오류 정보를 로그로 남깁니다. print보다 운영 상황 추적에 적합합니다.", risk);
+    }
+    if (/csv\.DictReader\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "CSV 딕셔너리 읽기", "CSV의 첫 줄을 컬럼명으로 보고 각 행을 딕셔너리 형태로 읽습니다. 컬럼 이름 오타를 확인해야 합니다.", risk);
+    }
+    if (/csv\.DictWriter\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "CSV 딕셔너리 쓰기", "딕셔너리 데이터를 정해진 fieldnames 순서대로 CSV에 저장할 준비를 합니다.", risk);
+    }
+    if (/csv\.reader\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "CSV 행 읽기", "CSV 파일을 행 단위 목록으로 읽습니다. 컬럼명보다는 위치 번호로 접근하는 방식입니다.", risk);
+    }
+    if (/csv\.writer\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "CSV 행 쓰기", "목록 형태의 행 데이터를 CSV 파일에 저장할 준비를 합니다.", risk);
+    }
+    if (/\.writeheader\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "CSV 헤더 쓰기", "CSV 파일의 첫 줄에 컬럼명을 기록합니다.", risk);
+    }
+    if (/\.writerow\s*\(/.test(t) || /\.writerows\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "CSV 행 쓰기", "하나 이상의 데이터 행을 CSV 파일에 기록합니다.", risk);
+    }
+    if (/\.append\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "목록에 항목 추가", "리스트 끝에 새 값을 하나 추가합니다. 반복문 안에서 결과를 모을 때 자주 씁니다.", risk);
+    }
+    if (/\.extend\s*\(/.test(t) || /\.update\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "자료구조 확장/갱신", "리스트나 딕셔너리에 여러 값을 추가하거나 기존 값을 갱신합니다.", risk);
+    }
+    if (/\bPath\s*\([^)]*\)\.open\s*\(|\.open\s*\([^)]*encoding=/.test(t)) {
+      return makeStep(lineNo, t, "pathlib 파일 열기", "Path 객체를 통해 파일을 읽거나 쓰기 위해 엽니다. with와 함께 쓰면 자동으로 닫혀 안전합니다.", risk);
+    }
+    if (/\.glob\s*\(|\.rglob\s*\(|\.iterdir\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "파일 목록 검색", "폴더 안의 파일 목록을 패턴이나 반복으로 찾습니다. 처리 대상이 너무 넓지 않은지 확인해야 합니다.", risk);
+    }
+    if (/pd\.DataFrame|pandas\.DataFrame/.test(t)) {
+      return makeStep(lineNo, t, "표 데이터 만들기", "리스트나 딕셔너리 데이터를 pandas DataFrame 표 구조로 바꿉니다.", risk);
+    }
+    if (/\.to_csv\s*\(|\.to_json\s*\(|\.to_excel\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "표 데이터 저장", "DataFrame이나 표 데이터를 파일로 저장합니다. 저장 경로와 덮어쓰기 여부를 확인해야 합니다.", risk);
+    }
+    if (/\.groupby\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "그룹별 집계", "특정 컬럼 값을 기준으로 데이터를 묶어서 합계, 평균, 개수 같은 통계를 계산할 준비를 합니다.", risk);
+    }
+    if (/\.merge\s*\(|\.join\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "표 병합", "두 표를 공통 키나 인덱스 기준으로 합칩니다. 중복 키와 누락값을 확인해야 합니다.", risk);
+    }
+    if (/\.fillna\s*\(|\.dropna\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "결측값 처리", "비어 있는 값을 채우거나 제거합니다. 데이터가 사라지는지 확인해야 합니다.", risk);
+    }
+    if (/\.raise_for_status\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "HTTP 오류 확인", "API 응답이 실패 상태 코드이면 예외를 발생시켜 문제를 조기에 드러냅니다.", risk);
+    }
+    if (/\.json\s*\(/.test(t) && !/json\.load|json\.loads/.test(t)) {
+      return makeStep(lineNo, t, "응답 JSON 변환", "웹 API 응답 본문을 Python 딕셔너리나 리스트로 변환합니다.", risk);
+    }
+    if (/^await\s+|asyncio\.run|asyncio\.gather|asyncio\.create_task/.test(t)) {
+      return makeStep(lineNo, t, "비동기 실행", "네트워크 요청이나 오래 걸리는 작업을 기다리거나 동시에 실행합니다. await 위치와 예외 처리를 확인해야 합니다.", risk);
     }
     if (/\bPath\s*\(|pathlib|\.read_text\s*\(|\.write_text\s*\(|\.exists\s*\(|\.mkdir\s*\(/.test(t)) {
       return makeStep(lineNo, t, "파일/경로 처리", "pathlib 기반으로 파일 경로를 만들거나 파일을 읽고 씁니다.", risk);
@@ -1022,6 +1117,35 @@
       pushUnique(tags, "CLI");
     }
 
+    // PYTHON_META_GUARD_V187_A2
+    if (language === "python") {
+      if (/csv\.|csv |csv\b|dictreader|dictwriter|writerow|writeheader/.test(text)) {
+        category = category === "처리" ? "파일/경로" : category;
+        pushUnique(tags, "CSV");
+        pushUnique(tags, "파일");
+      }
+      if (/pandas|dataframe|groupby|merge|fillna|dropna|to_csv|read_csv/.test(text)) {
+        category = category === "처리" ? "데이터처리" : category;
+        pushUnique(tags, "pandas");
+      }
+      if (/try|except|finally|raise|assert|예외|조건 검증/.test(codeTitle)) {
+        category = "오류처리";
+        pushUnique(tags, "오류처리");
+      }
+      if (/logging|logger|로그/.test(text)) {
+        category = category === "처리" ? "출력/응답" : category;
+        pushUnique(tags, "로깅");
+      }
+      if (/os\.environ|os\.getenv|getenv|load_dotenv|환경변수/.test(text)) {
+        category = category === "처리" ? "환경설정" : category;
+        pushUnique(tags, "환경변수");
+      }
+      if (/__main__|직접 실행 진입점/.test(text)) {
+        category = "구조";
+        pushUnique(tags, "함수/구조");
+      }
+    }
+
     if (/subprocess|외부 프로그램/.test(text)) {
       category = "프로세스";
       pushUnique(tags, "프로세스");
@@ -1273,4 +1397,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V186-A3 END ===
+// === CODE EXPLAINER RULES V187-A2 END ===
