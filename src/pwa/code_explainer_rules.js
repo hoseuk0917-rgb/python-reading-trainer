@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V190-A2 START ===
+// === CODE EXPLAINER RULES V191-A1 START ===
 (function() {
   "use strict";
 
@@ -1725,20 +1725,75 @@
       .slice(0, 42);
   }
 
+  // MERMAID_FLOW_QUALITY_V191_A1
+  function mermaidClassForStep(step) {
+    const category = step.category || "";
+    if (step.risk === "high") return "highRisk";
+    if (step.risk === "medium") return "mediumRisk";
+    if (category === "조건") return "conditionStep";
+    if (category === "반복") return "loopStep";
+    if (category === "오류처리") return "errorStep";
+    if (category === "DB" || category === "파일/경로" || category === "저장소" || category === "데이터변환" || category === "데이터처리") return "dataStep";
+    if (category === "출력/응답" || category === "네트워크/API" || category === "배포") return "ioStep";
+    return "defaultStep";
+  }
+
+  function mermaidEdgeLabel(step) {
+    const category = step.category || "";
+    if (!category || category === "처리") return "다음";
+    return mermaidLabel(category);
+  }
+
+  function mermaidNodeLine(id, label, step) {
+    const category = step.category || "";
+    if (category === "조건") return id + '{"' + label + '"}';
+    if (category === "반복") return id + '[["' + label + '"]]';
+    if (category === "출력/응답" || category === "네트워크/API" || category === "배포") return id + '(["' + label + '"])';
+    return id + '["' + label + '"]';
+  }
+
   function buildMermaid(steps) {
-    if (!steps.length) return "flowchart TD\n  A[분석할 코드 없음]";
-    const lines = ["flowchart TD"];
-    steps.slice(0, 40).forEach(function(step, idx) {
+    if (!steps.length) return "flowchart TD\n  START_NODE([시작])\n  START_NODE --> EMPTY[분석할 코드 없음]\n  EMPTY --> END_NODE([끝])";
+
+    const lines = [
+      "flowchart TD",
+      "  classDef startEnd fill:#eef2ff,stroke:#4338ca,color:#111827;",
+      "  classDef highRisk fill:#fee2e2,stroke:#b91c1c,color:#111827;",
+      "  classDef mediumRisk fill:#fef3c7,stroke:#b45309,color:#111827;",
+      "  classDef conditionStep fill:#e0f2fe,stroke:#0369a1,color:#111827;",
+      "  classDef loopStep fill:#f3e8ff,stroke:#7e22ce,color:#111827;",
+      "  classDef errorStep fill:#ffe4e6,stroke:#be123c,color:#111827;",
+      "  classDef dataStep fill:#dcfce7,stroke:#15803d,color:#111827;",
+      "  classDef ioStep fill:#ccfbf1,stroke:#0f766e,color:#111827;",
+      "  classDef defaultStep fill:#f8fafc,stroke:#64748b,color:#111827;",
+      "  START_NODE([시작])",
+      "  END_NODE([끝])",
+      "  class START_NODE,END_NODE startEnd;"
+    ];
+
+    const limited = steps.slice(0, 40);
+
+    limited.forEach(function(step, idx) {
       const id = "N" + (idx + 1);
-      const label = (idx + 1) + ". " + mermaidLabel(step.title);
-      lines.push("  " + id + '["' + label + '"]');
-      if (idx > 0) {
-        lines.push("  N" + idx + " --> " + id);
-      }
+      const riskPrefix = step.risk === "high" ? "위험 · " : step.risk === "medium" ? "주의 · " : "";
+      const categoryPrefix = step.category && step.category !== "처리" ? step.category + " · " : "";
+      const label = mermaidLabel((idx + 1) + ". " + riskPrefix + categoryPrefix + step.title);
+      const from = idx === 0 ? "START_NODE" : "N" + idx;
+
+      lines.push("  " + mermaidNodeLine(id, label, step));
+      lines.push("  " + from + " -->|" + mermaidEdgeLabel(step) + "| " + id);
+      lines.push("  class " + id + " " + mermaidClassForStep(step) + ";");
     });
+
     if (steps.length > 40) {
-      lines.push('  N40 --> MORE["나머지 ' + (steps.length - 40) + '단계 생략"]');
+      lines.push('  MORE["나머지 ' + (steps.length - 40) + '단계 생략"]');
+      lines.push("  N40 -->|생략| MORE");
+      lines.push("  class MORE defaultStep;");
+      lines.push("  MORE --> END_NODE");
+    } else {
+      lines.push("  N" + limited.length + " --> END_NODE");
     }
+
     return lines.join("\n");
   }
 
@@ -1790,4 +1845,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V190-A2 END ===
+// === CODE EXPLAINER RULES V191-A1 END ===

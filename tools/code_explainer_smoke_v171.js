@@ -215,7 +215,7 @@ const samples = [
 
 git diff --stat
 git stash push -u -m "wip-test"
-python tools/validate_lessons.py --expected-app-version 20260606_v190_a2 --expected-lesson-cards 1785
+python tools/validate_lessons.py --expected-app-version 20260606_v191_a1 --expected-lesson-cards 1785
 Write-Host "DONE"`,
     mustContain: ["변경량 요약 확인", "임시 보관", "Python 검증 실행"],
     mustMetaContain: ["Git", "검증", "출력"]
@@ -267,7 +267,8 @@ button.addEventListener("click", function() {
   localStorage.setItem("state", JSON.stringify({ count: labels.length, saved }));
 });`,
     mustContain: ["DOM 준비 후 실행", "배열로 변환", "배열 필터링", "배열 변환", "CSS 클래스 변경", "JSON 문자열 변환", "JSON 문자열 만들기"],
-    mustMetaContain: ["DOM", "배열", "JSON"]
+    mustMetaContain: ["DOM", "배열", "JSON"],
+    mustMermaidContain: ["START_NODE([시작])", "END_NODE([끝])", "classDef conditionStep", "classDef loopStep", "-->|", "class N"]
   },
   {
     name: "workers_d1_api",
@@ -525,7 +526,7 @@ async def health():
 node --check .\\src\\pwa\\app.js
 npm install
 npm run build
-python tools/validate_lessons.py --expected-app-version 20260606_v190_a2
+python tools/validate_lessons.py --expected-app-version 20260606_v191_a1
 git status --short`,
     mustContain: ["작업 폴더 이동", "Node 문법 검사", "npm 의존성 설치", "npm 스크립트 실행", "Python 검증 실행", "Git 변경 상태 확인"],
     mustMetaContain: ["파일", "검증", "의존성", "Git"]
@@ -775,6 +776,10 @@ samples.forEach((sample) => {
     assert(result.steps.length >= sample.minSteps, `${sample.name}: expected at least ${sample.minSteps} steps, got ${result.steps.length}`);
     assert(result.flowSummary && result.flowSummary.includes("주요 흐름"), `${sample.name}: flowSummary missing`);
     assert(result.mermaid && result.mermaid.includes("flowchart TD"), `${sample.name}: mermaid missing`);
+    // MERMAID_FLOW_SMOKE_V191_A1
+    if (Array.isArray(sample.mustMermaidContain)) {
+      assert(hasAll(result.mermaid, sample.mustMermaidContain), `${sample.name}: missing expected mermaid text`);
+    }
     assert(hasAll(summaryText, sample.mustContain), `${sample.name}: missing expected explanation text`);
     assert(hasAll(summaryText, sample.mustMetaContain), `${sample.name}: missing expected meta tags/categories`);
 
@@ -792,7 +797,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260606_v190_a2",
+  version: "20260606_v191_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,
