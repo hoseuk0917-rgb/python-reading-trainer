@@ -99,7 +99,16 @@ function normalizeReportKey(value) {
     "프로세스": "process_exec",
     "npm": "npm",
     "GitHubActions": "github_actions",
-    "CI": "ci"
+    "CI": "ci",
+    "Docker": "docker",
+    "환경변수": "env_var",
+    "pip": "pip",
+    "pyproject": "pyproject",
+    "YAML": "yaml",
+    "컨테이너": "container",
+    "환경설정": "env_config",
+    "프로젝트설정": "project_config",
+    "YAML설정": "yaml_config"
   };
 
   if (map[value]) return map[value];
@@ -160,7 +169,7 @@ const samples = [
 
 git diff --stat
 git stash push -u -m "wip-test"
-python tools/validate_lessons.py --expected-app-version 20260606_v180_a4 --expected-lesson-cards 1785
+python tools/validate_lessons.py --expected-app-version 20260606_v181_a3 --expected-lesson-cards 1785
 Write-Host "DONE"`,
     mustContain: ["변경량 요약 확인", "임시 보관", "Python 검증 실행"],
     mustMetaContain: ["Git", "검증", "출력"]
@@ -341,7 +350,7 @@ async def health():
 node --check .\\src\\pwa\\app.js
 npm install
 npm run build
-python tools/validate_lessons.py --expected-app-version 20260606_v180_a4
+python tools/validate_lessons.py --expected-app-version 20260606_v181_a3
 git status --short`,
     mustContain: ["작업 폴더 이동", "Node 문법 검사", "npm 의존성 설치", "npm 스크립트 실행", "Python 검증 실행", "Git 변경 상태 확인"],
     mustMetaContain: ["파일", "검증", "의존성", "Git"]
@@ -389,6 +398,83 @@ jobs:
       - run: npm test`,
     mustContain: ["워크플로 이름", "실행 조건 설정", "트리거 이벤트 설정", "작업 묶음", "실행 환경 선택", "작업 단계 목록", "GitHub Action 사용", "쉘 명령 실행"],
     mustMetaContain: ["GitHubActions", "CI"]
+  },
+  {
+    name: "dockerfile_basic",
+    requestedLanguage: "auto",
+    expectedLanguage: "dockerfile",
+    minSteps: 7,
+    code: `FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+ENV PYTHONUNBUFFERED=1
+EXPOSE 8000
+CMD ["python", "app.py"]`,
+    mustContain: ["베이스 이미지 선택", "작업 폴더 설정", "파일 복사", "이미지 빌드 중 명령 실행", "환경변수 설정", "포트 안내", "컨테이너 시작 명령"],
+    mustMetaContain: ["Docker", "의존성"]
+  },
+  {
+    name: "env_file_secret_config",
+    requestedLanguage: "auto",
+    expectedLanguage: "env_file",
+    minSteps: 4,
+    code: `API_BASE_URL=https://api.example.com
+DEBUG=false
+DATABASE_URL=sqlite:///app.db
+OPENAI_API_KEY=replace_me
+SESSION_SECRET=change_me`,
+    mustContain: ["환경변수 설정", "비밀 환경변수 설정"],
+    mustMetaContain: ["환경변수", "보안"]
+  },
+  {
+    name: "requirements_txt_versions",
+    requestedLanguage: "auto",
+    expectedLanguage: "requirements_txt",
+    minSteps: 4,
+    code: `fastapi==0.115.0
+uvicorn[standard]>=0.30.0
+pandas>=2.2.0
+python-dotenv==1.0.1
+-r requirements-dev.txt`,
+    mustContain: ["패키지 버전 고정", "패키지 버전 범위 지정", "다른 requirements 파일 포함"],
+    mustMetaContain: ["pip", "의존성"]
+  },
+  {
+    name: "pyproject_toml_project_tool",
+    requestedLanguage: "auto",
+    expectedLanguage: "pyproject_toml",
+    minSteps: 6,
+    code: `[project]
+name = "python-reading-trainer"
+version = "1.0.0"
+dependencies = [
+  "fastapi>=0.115.0",
+  "pandas>=2.2.0"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]`,
+    mustContain: ["프로젝트 메타데이터 영역", "프로젝트 이름 설정", "프로젝트 버전 설정", "의존성 목록 시작", "의존성 항목", "도구 설정 영역"],
+    mustMetaContain: ["pyproject", "의존성"]
+  },
+  {
+    name: "yaml_general_services",
+    requestedLanguage: "auto",
+    expectedLanguage: "yaml",
+    minSteps: 6,
+    code: `services:
+  app:
+    image: python:3.12
+    ports:
+      - "8000:8000"
+    environment:
+      DEBUG: "false"
+    volumes:
+      - .:/app`,
+    mustContain: ["YAML 설정 키", "YAML 목록 항목"],
+    mustMetaContain: ["YAML"]
   }
 ];
 
@@ -426,7 +512,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260606_v180_a4",
+  version: "20260606_v181_a3",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,

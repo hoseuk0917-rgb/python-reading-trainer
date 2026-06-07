@@ -88,7 +88,49 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - run: npm test`
+      - run: npm test`,
+
+    dockerfile: `FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+ENV PYTHONUNBUFFERED=1
+EXPOSE 8000
+CMD ["python", "app.py"]`,
+
+    env_file: `API_BASE_URL=https://api.example.com
+DEBUG=false
+DATABASE_URL=sqlite:///app.db
+OPENAI_API_KEY=replace_me
+SESSION_SECRET=change_me`,
+
+    requirements_txt: `fastapi==0.115.0
+uvicorn[standard]>=0.30.0
+pandas>=2.2.0
+python-dotenv==1.0.1
+-r requirements-dev.txt`,
+
+    pyproject_toml: `[project]
+name = "python-reading-trainer"
+version = "1.0.0"
+dependencies = [
+  "fastapi>=0.115.0",
+  "pandas>=2.2.0"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]`,
+
+    yaml: `services:
+  app:
+    image: python:3.12
+    ports:
+      - "8000:8000"
+    environment:
+      DEBUG: "false"
+    volumes:
+      - .:/app`
   };
 
   let lastMermaid = "";
@@ -116,7 +158,12 @@ jobs:
       workers: "Workers는 request, env, DB/KV/R2/AI, Response 흐름을 중심으로 설명합니다.",
       java: "Java는 class, main, 변수 선언, if/for, method, 출력 흐름을 중심으로 설명합니다.",
       package_json: "package.json은 npm scripts, dependencies, devDependencies를 중심으로 설명합니다.",
-      github_actions: "GitHub Actions YAML은 on, jobs, runs-on, steps, uses, run 흐름을 중심으로 설명합니다."
+      github_actions: "GitHub Actions YAML은 on, jobs, runs-on, steps, uses, run 흐름을 중심으로 설명합니다.",
+      dockerfile: "Dockerfile은 이미지 선택, 작업 폴더, 복사, 설치, 실행 명령을 중심으로 설명합니다.",
+      env_file: ".env는 환경변수와 비밀값 노출 위험을 중심으로 설명합니다.",
+      requirements_txt: "requirements.txt는 Python 패키지와 버전 고정 방식을 중심으로 설명합니다.",
+      pyproject_toml: "pyproject.toml은 Python 프로젝트 메타데이터와 도구 설정을 중심으로 설명합니다.",
+      yaml: "YAML은 들여쓰기 기반 설정 키, 목록, 서비스 설정을 중심으로 설명합니다."
     };
 
     hint.textContent = messages[value] || messages.auto;
@@ -130,7 +177,12 @@ jobs:
       workers: "Cloudflare Workers",
       java: "Java",
       package_json: "package.json",
-      github_actions: "GitHub Actions YAML"
+      github_actions: "GitHub Actions YAML",
+      dockerfile: "Dockerfile",
+      env_file: ".env",
+      requirements_txt: "requirements.txt",
+      pyproject_toml: "pyproject.toml",
+      yaml: "YAML"
     };
     return map[language] || language || "자동";
   }

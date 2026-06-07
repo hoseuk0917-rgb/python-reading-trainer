@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V178-A1 START ===
+// === CODE EXPLAINER RULES V181-A3 START ===
 (function() {
   "use strict";
 
@@ -19,6 +19,7 @@
     if (language === "python") return t.startsWith("#");
     if (language === "powershell") return t.startsWith("#");
     if (language === "github_actions") return t.startsWith("#");
+    if (language === "dockerfile" || language === "env_file" || language === "requirements_txt" || language === "pyproject_toml" || language === "yaml") return t.startsWith("#");
     if (language === "javascript" || language === "workers" || language === "java") {
       return t.startsWith("//") || t.startsWith("/*") || t.startsWith("*");
     }
@@ -44,16 +45,29 @@
     const text = String(code || "");
     const lower = text.toLowerCase();
 
+    if (/^\s*\[project\]\s*$/m.test(text) || /^\s*\[tool\.[^\]]+\]\s*$/m.test(text)) return "pyproject_toml";
     if (/"scripts"\s*:\s*\{/.test(text) && /"(dependencies|devDependencies)"\s*:/.test(text)) return "package_json";
     if ((/^\s*name\s*:/m.test(text) && /^\s*on\s*:/m.test(text) && /^\s*jobs\s*:/m.test(text)) || /uses:\s*actions\//.test(text)) return "github_actions";
+
     if (/export\s+default/.test(text) && /fetch\s*\(\s*request\s*,\s*env/.test(text)) return "workers";
-    if (/\benv\.(DB|KV|R2|AI)\b/.test(text) || /Response\.json/.test(text)) return "workers";
+    if (/\benv\.(DB|KV|R2|AI)\b/.test(text) || /Response\.json/.test(text) || /ctx\.waitUntil|caches\.default/.test(text)) return "workers";
+
     if (/Set-Location|Copy-Item|Remove-Item|Compress-Archive|Expand-Archive|Get-Date|New-Item|Test-Path|Select-String/i.test(text)) return "powershell";
     if (/^\s*\$[A-Za-z_][\w-]*\s*=/m.test(text) || /\bgit\s+(status|add|commit|push|tag|stash|reset|clean)\b/i.test(text)) return "powershell";
+
     if (/^\s*def\s+\w+\s*\(/m.test(text) || /^\s*import\s+\w+/m.test(text) || /^\s*from\s+\w+/m.test(text)) return "python";
     if (/^\s*class\s+\w+\s*[:(]/m.test(text) && lower.includes("self")) return "python";
+
     if (/public\s+static\s+void\s+main|System\.out\.println|public\s+class|private\s+class|class\s+\w+\s*\{/m.test(text)) return "java";
     if (/\b(const|let|var)\s+\w+\s*=/.test(text) || /function\s+\w+\s*\(/.test(text) || /document\.getElementById|addEventListener|localStorage/.test(text)) return "javascript";
+
+    // Dockerfile은 Python의 `from ... import ...`와 헷갈리지 않도록 대문자 명령 위주로 판단한다.
+    if (/^\s*FROM\s+\S+/m.test(text) || /^\s*(RUN|COPY|ADD|WORKDIR|CMD|ENTRYPOINT|EXPOSE|ENV|ARG)\s+/m.test(text)) return "dockerfile";
+
+    if (/^\s*[A-Z][A-Z0-9_]*\s*=.+/m.test(text) && !/[{};]/.test(text)) return "env_file";
+    if (/^\s*[-\w.]+(\[[^\]]+\])?\s*(==|>=|<=|~=|>|<).+/m.test(text) || /^\s*-r\s+\S+/m.test(text)) return "requirements_txt";
+    if (/^\s*[A-Za-z0-9_-]+\s*:\s*/m.test(text) && /^\s+[-A-Za-z0-9_]+\s*:/m.test(text)) return "yaml";
+
     return "powershell";
   }
 
@@ -81,6 +95,14 @@
     if (language === "java") {
       if (/Runtime\.getRuntime|ProcessBuilder/.test(t)) return "medium";
       if (/delete\s*\(/.test(t)) return "medium";
+    }
+    if (language === "dockerfile") {
+      if (/\brm\s+-rf\s+\//i.test(t)) return "high";
+      if (/\b(curl|wget)\b.*\|\s*(sh|bash)/i.test(t)) return "high";
+      if (/\bapt-get\s+install\b|\bpip\s+install\b/i.test(t)) return "medium";
+    }
+    if (language === "env_file") {
+      if (/SECRET|TOKEN|PASSWORD|API[_-]?KEY|PRIVATE/i.test(t)) return "medium";
     }
     return "low";
   }
@@ -518,6 +540,117 @@
     return makeStep(lineNo, t, "GitHub Actions YAML 설정", "GitHub Actions 자동화 설정 파일의 한 줄입니다.", risk);
   }
 
+
+  function explainDockerfileLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "dockerfile");
+
+    if (/^FROM\s+/i.test(t)) {
+      return makeStep(lineNo, t, "베이스 이미지 선택", "컨테이너를 어떤 기본 이미지에서 시작할지 정합니다. Python/Node 같은 실행 환경의 출발점입니다.", risk);
+    }
+    if (/^WORKDIR\s+/i.test(t)) {
+      return makeStep(lineNo, t, "작업 폴더 설정", "이후 RUN, COPY, CMD 명령이 실행될 컨테이너 안의 기본 폴더를 정합니다.", risk);
+    }
+    if (/^(COPY|ADD)\s+/i.test(t)) {
+      return makeStep(lineNo, t, "파일 복사", "로컬 파일이나 폴더를 컨테이너 이미지 안으로 넣습니다. 불필요한 파일이 들어가지 않게 .dockerignore도 확인해야 합니다.", risk);
+    }
+    if (/^RUN\s+/i.test(t)) {
+      return makeStep(lineNo, t, "이미지 빌드 중 명령 실행", "이미지를 만들 때 패키지 설치나 파일 준비 명령을 실행합니다. 네트워크 설치와 삭제 명령은 주의해야 합니다.", risk);
+    }
+    if (/^ENV\s+/i.test(t)) {
+      return makeStep(lineNo, t, "환경변수 설정", "컨테이너 실행 중 사용할 환경변수를 이미지에 넣습니다. 비밀키를 직접 넣는 것은 피해야 합니다.", risk);
+    }
+    if (/^ARG\s+/i.test(t)) {
+      return makeStep(lineNo, t, "빌드 인자 설정", "이미지를 빌드할 때만 쓰는 값을 정의합니다. 런타임 환경변수와 용도를 구분해야 합니다.", risk);
+    }
+    if (/^EXPOSE\s+/i.test(t)) {
+      return makeStep(lineNo, t, "포트 안내", "컨테이너가 주로 사용할 포트를 문서화합니다. 실제 공개 여부는 실행 옵션이나 배포 설정에서 결정됩니다.", risk);
+    }
+    if (/^(CMD|ENTRYPOINT)\s+/i.test(t)) {
+      return makeStep(lineNo, t, "컨테이너 시작 명령", "컨테이너가 실행될 때 기본으로 수행할 명령을 정합니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "Dockerfile 설정", "컨테이너 이미지를 만들기 위한 Dockerfile 설정 줄입니다.", risk);
+  }
+
+  function explainEnvFileLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "env_file");
+
+    if (/^[A-Z][A-Z0-9_]*\s*=/.test(t)) {
+      const key = t.split("=")[0].trim();
+      if (/SECRET|TOKEN|PASSWORD|API[_-]?KEY|PRIVATE/i.test(key)) {
+        return makeStep(lineNo, t, "비밀 환경변수 설정", "API 키, 토큰, 비밀번호처럼 노출되면 안 되는 값을 설정합니다. Git에 커밋하지 않아야 합니다.", risk);
+      }
+      return makeStep(lineNo, t, "환경변수 설정", "프로그램이 실행될 때 읽을 설정값을 이름=값 형태로 정의합니다.", risk);
+    }
+
+    return makeStep(lineNo, t, ".env 설정", ".env 파일의 환경설정 줄입니다.", risk);
+  }
+
+  function explainRequirementsLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "requirements_txt");
+
+    if (/^-r\s+/.test(t)) {
+      return makeStep(lineNo, t, "다른 requirements 파일 포함", "현재 파일에서 다른 의존성 목록 파일을 함께 읽도록 연결합니다.", risk);
+    }
+    if (/==/.test(t)) {
+      return makeStep(lineNo, t, "패키지 버전 고정", "Python 패키지를 특정 버전으로 고정해 재현성을 높입니다.", risk);
+    }
+    if (/>=|<=|~=|>|</.test(t)) {
+      return makeStep(lineNo, t, "패키지 버전 범위 지정", "허용할 패키지 버전 범위를 정합니다. 너무 넓으면 나중에 동작이 바뀔 수 있습니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "Python 패키지 의존성", "pip install -r requirements.txt로 설치할 Python 패키지를 적은 줄입니다.", risk);
+  }
+
+  function explainPyprojectLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "pyproject_toml");
+
+    if (/^\[project\]/.test(t)) {
+      return makeStep(lineNo, t, "프로젝트 메타데이터 영역", "프로젝트 이름, 버전, 의존성 같은 기본 정보를 적는 영역입니다.", risk);
+    }
+    if (/^\[tool\./.test(t)) {
+      return makeStep(lineNo, t, "도구 설정 영역", "pytest, black, ruff 같은 개발 도구의 설정을 적는 영역입니다.", risk);
+    }
+    if (/^name\s*=/.test(t)) {
+      return makeStep(lineNo, t, "프로젝트 이름 설정", "패키지나 프로젝트의 이름을 설정합니다.", risk);
+    }
+    if (/^version\s*=/.test(t)) {
+      return makeStep(lineNo, t, "프로젝트 버전 설정", "현재 프로젝트의 버전을 설정합니다.", risk);
+    }
+    if (/^dependencies\s*=/.test(t)) {
+      return makeStep(lineNo, t, "의존성 목록 시작", "프로젝트 실행에 필요한 Python 패키지 목록을 정의합니다.", risk);
+    }
+    if (/^["']?[A-Za-z0-9_.-]+.*(>=|==|<=|~=)/.test(t)) {
+      return makeStep(lineNo, t, "의존성 항목", "필요한 패키지와 버전 조건을 적은 항목입니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "pyproject.toml 설정", "Python 프로젝트 설정 파일의 한 줄입니다.", risk);
+  }
+
+  function explainYamlLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "yaml");
+
+    if (/^[A-Za-z0-9_-]+\s*:/.test(t)) {
+      return makeStep(lineNo, t, "YAML 설정 키", "들여쓰기 아래에 묶일 설정 이름을 정의합니다.", risk);
+    }
+    if (/^-\s+/.test(t)) {
+      return makeStep(lineNo, t, "YAML 목록 항목", "여러 값 중 하나를 목록 형태로 추가합니다.", risk);
+    }
+    if (/image\s*:/.test(t)) {
+      return makeStep(lineNo, t, "컨테이너 이미지 설정", "서비스가 사용할 컨테이너 이미지를 지정합니다.", risk);
+    }
+    if (/ports\s*:|volumes\s*:|environment\s*:/.test(t)) {
+      return makeStep(lineNo, t, "서비스 실행 옵션", "포트, 볼륨, 환경변수처럼 서비스 실행에 필요한 옵션을 정의합니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "YAML 설정", "들여쓰기 구조로 값을 표현하는 YAML 설정 줄입니다.", risk);
+  }
+
   function explainJavaLine(line, lineNo) {
     const t = cleanLine(line);
     const risk = riskOf(t, "java");
@@ -595,7 +728,15 @@
       pushUnique(tags, "API");
     }
 
-    if (language !== "github_actions" && /package_json|package\.json|npm 스크립트|npm|dependencies|devdependencies|패키지|의존성/.test(text)) {
+    if (
+      language !== "github_actions" &&
+      language !== "requirements_txt" &&
+      language !== "pyproject_toml" &&
+      language !== "dockerfile" &&
+      language !== "env_file" &&
+      language !== "yaml" &&
+      /package_json|package\.json|npm 스크립트|npm|dependencies|devdependencies|패키지|의존성/.test(text)
+    ) {
       category = category === "처리" ? "패키지설정" : category;
       pushUnique(tags, "npm");
       pushUnique(tags, "의존성");
@@ -605,6 +746,32 @@
       category = category === "처리" ? "CI/CD" : category;
       pushUnique(tags, "GitHubActions");
       pushUnique(tags, "CI");
+    }
+
+    if (/dockerfile|docker|컨테이너|베이스 이미지|이미지 빌드|container/.test(text)) {
+      category = category === "처리" ? "컨테이너" : category;
+      pushUnique(tags, "Docker");
+    }
+
+    if (/env_file|\.env|환경변수|비밀 환경변수|secret|token|password|api[_-]?key/.test(text)) {
+      category = category === "처리" ? "환경설정" : category;
+      pushUnique(tags, "환경변수");
+    }
+
+    if (/requirements_txt|requirements\.txt|pip install|패키지 버전|python 패키지/.test(text)) {
+      category = category === "처리" ? "패키지설정" : category;
+      pushUnique(tags, "pip");
+      pushUnique(tags, "의존성");
+    }
+
+    if (/pyproject_toml|pyproject\.toml|toml|프로젝트 메타데이터|도구 설정/.test(text)) {
+      category = category === "처리" ? "프로젝트설정" : category;
+      pushUnique(tags, "pyproject");
+    }
+
+    if (/yaml|yaml 설정|설정 키|목록 항목|services:|image:|ports:|volumes:/.test(text)) {
+      category = category === "처리" ? "YAML설정" : category;
+      pushUnique(tags, "YAML");
     }
 
     if (/git\b/.test(text)) {
@@ -712,7 +879,12 @@
       workers: "Cloudflare Workers 코드",
       java: "Java 코드",
       package_json: "package.json 설정",
-      github_actions: "GitHub Actions YAML"
+      github_actions: "GitHub Actions YAML",
+      dockerfile: "Dockerfile",
+      env_file: ".env 환경변수 파일",
+      requirements_txt: "requirements.txt",
+      pyproject_toml: "pyproject.toml",
+      yaml: "YAML 설정"
     };
     return (names[language] || "코드") + "를 " + steps.length + "단계로 나눠 해석했습니다." + (risky ? " 주의가 필요한 단계가 " + risky + "개 있습니다." : " 특별히 높은 위험 명령은 감지되지 않았습니다.");
   }
@@ -760,6 +932,11 @@
       else if (language === "javascript" || language === "workers") steps.push(explainJavaScriptLine(line, lineNo, language));
       else if (language === "package_json") steps.push(explainPackageJsonLine(line, lineNo));
       else if (language === "github_actions") steps.push(explainGitHubActionsLine(line, lineNo));
+      else if (language === "dockerfile") steps.push(explainDockerfileLine(line, lineNo));
+      else if (language === "env_file") steps.push(explainEnvFileLine(line, lineNo));
+      else if (language === "requirements_txt") steps.push(explainRequirementsLine(line, lineNo));
+      else if (language === "pyproject_toml") steps.push(explainPyprojectLine(line, lineNo));
+      else if (language === "yaml") steps.push(explainYamlLine(line, lineNo));
       else if (language === "java") steps.push(explainJavaLine(line, lineNo));
       else steps.push(makeStep(lineNo, cleanLine(line), "코드 실행", "이 줄을 순서대로 실행합니다.", "low"));
     });
@@ -783,4 +960,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V178-A1 END ===
+// === CODE EXPLAINER RULES V181-A3 END ===
