@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V175-A1 START ===
+// === CODE EXPLAINER RULES V176-A4 START ===
 (function() {
   "use strict";
 
@@ -18,6 +18,7 @@
     if (!t) return true;
     if (language === "python") return t.startsWith("#");
     if (language === "powershell") return t.startsWith("#");
+    if (language === "github_actions") return t.startsWith("#");
     if (language === "javascript" || language === "workers" || language === "java") {
       return t.startsWith("//") || t.startsWith("/*") || t.startsWith("*");
     }
@@ -29,7 +30,7 @@
     if (!t) return true;
 
     // 닫는 중괄호/괄호만 있는 줄은 설명 step으로 만들지 않는다.
-    if (/^[}\])]+[;,]?$/.test(t)) return true;
+    if (/^[{}\[\](),;]+$/.test(t)) return true;
 
     // JS/Workers 객체 리터럴의 단순 키 시작 줄은 실제 동작이 아니라 구조 보조 줄이다.
     if ((language === "javascript" || language === "workers") && /^[A-Za-z_$][\w$-]*\s*:\s*\{\s*,?$/.test(t)) {
@@ -43,6 +44,8 @@
     const text = String(code || "");
     const lower = text.toLowerCase();
 
+    if (/"scripts"\s*:\s*\{/.test(text) && /"(dependencies|devDependencies)"\s*:/.test(text)) return "package_json";
+    if ((/^\s*name\s*:/m.test(text) && /^\s*on\s*:/m.test(text) && /^\s*jobs\s*:/m.test(text)) || /uses:\s*actions\//.test(text)) return "github_actions";
     if (/export\s+default/.test(text) && /fetch\s*\(\s*request\s*,\s*env/.test(text)) return "workers";
     if (/\benv\.(DB|KV|R2|AI)\b/.test(text) || /Response\.json/.test(text)) return "workers";
     if (/Set-Location|Copy-Item|Remove-Item|Compress-Archive|Expand-Archive|Get-Date|New-Item|Test-Path|Select-String/i.test(text)) return "powershell";
@@ -190,6 +193,21 @@
     if (/^foreach\s*\(/i.test(t)) {
       return makeStep(lineNo, t, "반복 실행", "목록에 들어 있는 값을 하나씩 꺼내며 같은 작업을 반복합니다.", risk);
     }
+    if (/^node\s+--check\b/i.test(t)) {
+      return makeStep(lineNo, t, "Node 문법 검사", "JavaScript 파일을 실행하지 않고 문법 오류가 있는지만 검사합니다.", risk);
+    }
+    if (/^npm\s+(install|ci)\b/i.test(t)) {
+      return makeStep(lineNo, t, "npm 의존성 설치", "package.json 기준으로 JavaScript 프로젝트에 필요한 패키지를 설치합니다.", risk);
+    }
+    if (/^npm\s+run\b/i.test(t)) {
+      return makeStep(lineNo, t, "npm 스크립트 실행", "package.json의 scripts에 정의된 build, test 같은 명령을 실행합니다.", risk);
+    }
+    if (/^python\s+.*validate_lessons\.py\b/i.test(t)) {
+      return makeStep(lineNo, t, "Python 검증 실행", "학습 데이터와 앱 버전이 맞는지 검증 스크립트를 실행합니다.", risk);
+    }
+    if (/^python\s+/.test(t)) {
+      return makeStep(lineNo, t, "Python 명령 실행", "Python 스크립트나 모듈을 실행합니다. 인자와 실행 위치를 확인해야 합니다.", risk);
+    }
     if (/^git\s+status/i.test(t)) {
       return makeStep(lineNo, t, "Git 변경 상태 확인", "현재 폴더에서 어떤 파일이 수정되었는지 확인합니다.", risk);
     }
@@ -283,7 +301,7 @@
     if (/^import\s+/.test(t) || /^from\s+.+\s+import\s+/.test(t)) {
       return makeStep(lineNo, t, "라이브러리 불러오기", "이미 만들어진 기능을 현재 코드에서 사용할 수 있게 가져옵니다.", risk);
     }
-    if (/^def\s+\w+\s*\(/.test(t)) {
+    if (/^(async\s+)?def\s+\w+\s*\(/.test(t)) {
       return makeStep(lineNo, t, "함수 정의", "나중에 이름으로 불러서 실행할 수 있는 코드 묶음을 만듭니다. 이 줄만으로 함수 안쪽이 바로 실행되지는 않습니다.", risk);
     }
     if (/^class\s+\w+/.test(t)) {
@@ -315,6 +333,18 @@
     }
     if (/requests\.(get|post|put|delete)/.test(t)) {
       return makeStep(lineNo, t, "HTTP 요청", "웹 API나 URL에 요청을 보냅니다. timeout과 오류 처리가 있는지 확인하는 것이 좋습니다.", risk);
+    }
+    if (/argparse\.ArgumentParser|\.add_argument\s*\(|\.parse_args\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "명령행 인자 처리", "터미널에서 받은 --input 같은 옵션을 정의하거나 읽습니다.", risk);
+    }
+    if (/\bPath\s*\(|pathlib|\.read_text\s*\(|\.write_text\s*\(|\.exists\s*\(|\.mkdir\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "파일/경로 처리", "pathlib 기반으로 파일 경로를 만들거나 파일을 읽고 씁니다.", risk);
+    }
+    if (/subprocess\.(run|Popen|check_output|check_call)/.test(t)) {
+      return makeStep(lineNo, t, "외부 프로그램 실행", "Python 코드에서 다른 명령어나 프로그램을 실행합니다. 인자와 check=True 여부를 확인해야 합니다.", risk);
+    }
+    if (/FastAPI\s*\(|from\s+fastapi\s+import|@app\.(get|post|put|delete|patch)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "FastAPI 앱/라우트 설정", "API 서버 앱을 만들거나 특정 URL로 들어온 요청을 처리할 함수를 연결합니다.", risk);
     }
     if (/^return\b/.test(t)) {
       return makeStep(lineNo, t, "값 돌려주기", "함수 안에서 계산한 결과를 함수 밖으로 돌려줍니다.", risk);
@@ -421,6 +451,73 @@
     return makeStep(lineNo, t, language === "workers" ? "Worker/JavaScript 코드 실행" : "JavaScript 코드 실행", "이 줄은 위에서 아래로 실행되는 JavaScript 코드입니다.", risk);
   }
 
+  function explainPackageJsonLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "package_json");
+
+    if (/^"name"\s*:/.test(t)) {
+      return makeStep(lineNo, t, "패키지 이름 설정", "이 프로젝트나 패키지의 이름을 정합니다.", risk);
+    }
+    if (/^"version"\s*:/.test(t)) {
+      return makeStep(lineNo, t, "패키지 버전 설정", "현재 패키지의 버전 번호를 기록합니다.", risk);
+    }
+    if (/^"scripts"\s*:/.test(t)) {
+      return makeStep(lineNo, t, "npm 스크립트 목록", "npm run build 같은 명령으로 실행할 스크립트들을 모아 둔 영역입니다.", risk);
+    }
+    if (/^"(build|test|dev|start|lint|preview)"\s*:/.test(t)) {
+      return makeStep(lineNo, t, "npm 스크립트 정의", "터미널에서 npm run 뒤에 붙여 실행할 작업을 정의합니다.", risk);
+    }
+    if (/^"dependencies"\s*:/.test(t)) {
+      return makeStep(lineNo, t, "실행 의존성 목록", "앱이 실제 실행될 때 필요한 패키지 목록입니다.", risk);
+    }
+    if (/^"devDependencies"\s*:/.test(t)) {
+      return makeStep(lineNo, t, "개발 의존성 목록", "개발, 빌드, 테스트 때 필요한 패키지 목록입니다.", risk);
+    }
+    if (/^"[^"]+"\s*:\s*"[^"]+"/.test(t)) {
+      return makeStep(lineNo, t, "패키지 항목 설정", "package.json 안의 설정 항목입니다. 패키지명, 버전, 스크립트 값을 확인합니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "package.json 설정", "Node/npm 프로젝트 설정 파일의 한 줄입니다.", risk);
+  }
+
+  function explainGitHubActionsLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "github_actions");
+
+    if (/^name\s*:/.test(t)) {
+      return makeStep(lineNo, t, "워크플로 이름", "GitHub Actions 화면에 표시될 자동화 작업 이름입니다.", risk);
+    }
+    if (/^on\s*:/.test(t)) {
+      return makeStep(lineNo, t, "실행 조건 설정", "push, pull_request 같은 어떤 사건에서 자동화를 실행할지 정합니다.", risk);
+    }
+    if (/^(push|pull_request|workflow_dispatch)\s*:/.test(t)) {
+      return makeStep(lineNo, t, "트리거 이벤트 설정", "어떤 GitHub 이벤트에서 워크플로가 시작되는지 지정합니다.", risk);
+    }
+    if (/^branches\s*:/.test(t)) {
+      return makeStep(lineNo, t, "브랜치 조건 설정", "main 같은 특정 브랜치에서만 실행되도록 제한합니다.", risk);
+    }
+    if (/^jobs\s*:/.test(t)) {
+      return makeStep(lineNo, t, "작업 묶음", "하나 이상의 job을 모아 정의하는 영역입니다.", risk);
+    }
+    if (/^runs-on\s*:/.test(t)) {
+      return makeStep(lineNo, t, "실행 환경 선택", "ubuntu-latest 같은 어떤 가상 환경에서 job을 실행할지 정합니다.", risk);
+    }
+    if (/^steps\s*:/.test(t)) {
+      return makeStep(lineNo, t, "작업 단계 목록", "checkout, setup, test 같은 실제 실행 단계를 나열합니다.", risk);
+    }
+    if (/^-?\s*uses\s*:/.test(t)) {
+      return makeStep(lineNo, t, "GitHub Action 사용", "이미 만들어진 GitHub Action을 가져와 실행합니다.", risk);
+    }
+    if (/^-?\s*run\s*:/.test(t)) {
+      return makeStep(lineNo, t, "쉘 명령 실행", "CI 환경에서 npm, python 같은 터미널 명령을 실행합니다.", risk);
+    }
+    if (/^with\s*:/.test(t) || /^[A-Za-z0-9_-]+\s*:/.test(t)) {
+      return makeStep(lineNo, t, "액션 옵션 설정", "앞에서 사용한 action이나 job에 필요한 옵션을 지정합니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "GitHub Actions YAML 설정", "GitHub Actions 자동화 설정 파일의 한 줄입니다.", risk);
+  }
+
   function explainJavaLine(line, lineNo) {
     const t = cleanLine(line);
     const risk = riskOf(t, "java");
@@ -480,6 +577,34 @@
     if (/ctx\.waituntil|백그라운드 작업|백그라운드/.test(text)) {
       category = "백그라운드";
       pushUnique(tags, "Cloudflare");
+    }
+
+    if (/argparse|명령행 인자/.test(text)) {
+      category = "CLI";
+      pushUnique(tags, "CLI");
+    }
+
+    if (/subprocess|외부 프로그램/.test(text)) {
+      category = "프로세스";
+      pushUnique(tags, "프로세스");
+    }
+
+    if (/fastapi|라우트|api 서버/.test(text)) {
+      category = "웹서버";
+      pushUnique(tags, "FastAPI");
+      pushUnique(tags, "API");
+    }
+
+    if (/package_json|package\.json|npm 스크립트|npm|dependencies|devdependencies|패키지|의존성/.test(text)) {
+      category = category === "처리" ? "패키지설정" : category;
+      pushUnique(tags, "npm");
+      pushUnique(tags, "의존성");
+    }
+
+    if (/github_actions|github actions|워크플로|runs-on|uses:\s*actions\/|ci\/cd|트리거 이벤트|실행 환경|쉘 명령/.test(text)) {
+      category = category === "처리" ? "CI/CD" : category;
+      pushUnique(tags, "GitHubActions");
+      pushUnique(tags, "CI");
     }
 
     if (/git\b/.test(text)) {
@@ -585,7 +710,9 @@
       python: "Python 코드",
       javascript: "JavaScript 코드",
       workers: "Cloudflare Workers 코드",
-      java: "Java 코드"
+      java: "Java 코드",
+      package_json: "package.json 설정",
+      github_actions: "GitHub Actions YAML"
     };
     return (names[language] || "코드") + "를 " + steps.length + "단계로 나눠 해석했습니다." + (risky ? " 주의가 필요한 단계가 " + risky + "개 있습니다." : " 특별히 높은 위험 명령은 감지되지 않았습니다.");
   }
@@ -631,6 +758,8 @@
       if (language === "powershell") steps.push(explainPowerShellLine(line, lineNo));
       else if (language === "python") steps.push(explainPythonLine(line, lineNo));
       else if (language === "javascript" || language === "workers") steps.push(explainJavaScriptLine(line, lineNo, language));
+      else if (language === "package_json") steps.push(explainPackageJsonLine(line, lineNo));
+      else if (language === "github_actions") steps.push(explainGitHubActionsLine(line, lineNo));
       else if (language === "java") steps.push(explainJavaLine(line, lineNo));
       else steps.push(makeStep(lineNo, cleanLine(line), "코드 실행", "이 줄을 순서대로 실행합니다.", "low"));
     });
@@ -654,4 +783,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V175-A1 END ===
+// === CODE EXPLAINER RULES V176-A4 END ===

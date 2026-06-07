@@ -64,6 +64,11 @@ function normalizeReportKey(value) {
     "배포": "deploy",
     "백그라운드": "background",
     "저장소": "storage",
+    "CLI": "cli",
+    "프로세스": "process_exec",
+    "웹서버": "web_server",
+    "패키지설정": "package_config",
+    "CI/CD": "cicd",
     "구조": "structure",
     "네트워크/API": "network_api",
     "변수/값": "variable_value",
@@ -88,7 +93,13 @@ function normalizeReportKey(value) {
     "Python": "python",
     "PowerShell": "powershell",
     "Workers": "workers",
-    "Java": "java"
+    "Java": "java",
+    "CLI": "cli",
+    "FastAPI": "fastapi",
+    "프로세스": "process_exec",
+    "npm": "npm",
+    "GitHubActions": "github_actions",
+    "CI": "ci"
   };
 
   if (map[value]) return map[value];
@@ -149,9 +160,9 @@ const samples = [
 
 git diff --stat
 git stash push -u -m "wip-test"
-python tools/validate_lessons.py --expected-app-version 20260606_v172_a2 --expected-lesson-cards 1785
+python tools/validate_lessons.py --expected-app-version 20260606_v176_a4 --expected-lesson-cards 1785
 Write-Host "DONE"`,
-    mustContain: ["변경량 요약 확인", "임시 보관", "Python 실행"],
+    mustContain: ["변경량 요약 확인", "임시 보관", "Python 검증 실행"],
     mustMetaContain: ["Git", "검증", "출력"]
   },
   {
@@ -284,6 +295,100 @@ for row in df["name"]:
 }`,
     mustContain: ["클래스 정의", "프로그램 시작점", "변수 선언과 값 저장", "반복 실행", "조건 검사", "화면에 출력"],
     mustMetaContain: ["반복문", "조건문", "출력"]
+  },
+  {
+    name: "python_argparse_path_subprocess",
+    requestedLanguage: "auto",
+    expectedLanguage: "python",
+    minSteps: 9,
+    code: `import argparse
+import subprocess
+from pathlib import Path
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--input")
+args = parser.parse_args()
+
+input_path = Path(args.input)
+if input_path.exists():
+    text = input_path.read_text(encoding="utf-8")
+    subprocess.run(["python", "-m", "json.tool", str(input_path)], check=True)
+    print(text[:50])`,
+    mustContain: ["라이브러리 불러오기", "명령행 인자 처리", "파일/경로 처리", "조건 검사", "외부 프로그램 실행", "화면에 출력"],
+    mustMetaContain: ["CLI", "파일", "프로세스", "조건문", "출력"]
+  },
+  {
+    name: "python_fastapi_endpoint",
+    requestedLanguage: "auto",
+    expectedLanguage: "python",
+    minSteps: 5,
+    code: `from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/health")
+async def health():
+    return {"ok": True}`,
+    mustContain: ["라이브러리 불러오기", "FastAPI 앱/라우트 설정", "함수 정의", "값 돌려주기"],
+    mustMetaContain: ["FastAPI", "API", "함수/구조"]
+  },
+  {
+    name: "powershell_node_npm_flow",
+    requestedLanguage: "auto",
+    expectedLanguage: "powershell",
+    minSteps: 6,
+    code: `Set-Location "D:\\projects\\python-reading-trainer"
+node --check .\\src\\pwa\\app.js
+npm install
+npm run build
+python tools/validate_lessons.py --expected-app-version 20260606_v176_a4
+git status --short`,
+    mustContain: ["작업 폴더 이동", "Node 문법 검사", "npm 의존성 설치", "npm 스크립트 실행", "Python 검증 실행", "Git 변경 상태 확인"],
+    mustMetaContain: ["파일", "검증", "의존성", "Git"]
+  },
+  {
+    name: "package_json_npm_scripts",
+    requestedLanguage: "auto",
+    expectedLanguage: "package_json",
+    minSteps: 6,
+    code: `{
+  "name": "python-reading-trainer",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "vite build",
+    "test": "node --check src/pwa/app.js"
+  },
+  "dependencies": {
+    "@vitejs/plugin-legacy": "^5.0.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}`,
+    mustContain: ["패키지 이름 설정", "패키지 버전 설정", "npm 스크립트 목록", "npm 스크립트 정의", "실행 의존성 목록", "개발 의존성 목록"],
+    mustMetaContain: ["npm", "의존성"]
+  },
+  {
+    name: "github_actions_workflow",
+    requestedLanguage: "auto",
+    expectedLanguage: "github_actions",
+    minSteps: 9,
+    code: `name: Build and test
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test`,
+    mustContain: ["워크플로 이름", "실행 조건 설정", "트리거 이벤트 설정", "작업 묶음", "실행 환경 선택", "작업 단계 목록", "GitHub Action 사용", "쉘 명령 실행"],
+    mustMetaContain: ["GitHubActions", "CI"]
   }
 ];
 
@@ -321,7 +426,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260606_v175_a1",
+  version: "20260606_v176_a4",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,
