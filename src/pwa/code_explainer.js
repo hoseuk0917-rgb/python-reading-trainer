@@ -314,17 +314,34 @@ jobs:
       '</div>';
   }
 
+  function shouldShowRiskOnly() {
+    const toggle = el("showRiskOnlyToggle");
+    return !!(toggle && toggle.checked);
+  }
+
+  function getVisibleSteps(steps) {
+    const list = Array.isArray(steps) ? steps : [];
+    if (!shouldShowRiskOnly()) return list;
+    return list.filter(function(step) {
+      return step.risk === "medium" || step.risk === "high";
+    });
+  }
+
   function renderSteps(steps) {
     const box = el("codeSteps");
     if (!box) return;
     box.innerHTML = "";
 
-    if (!steps.length) {
-      box.innerHTML = '<p class="muted">표시할 단계가 없습니다.</p>';
+    const visibleSteps = getVisibleSteps(steps);
+
+    if (!visibleSteps.length) {
+      box.innerHTML = shouldShowRiskOnly()
+        ? '<p class="muted">위험/주의 단계가 없습니다. 전체 단계를 보려면 필터를 끄세요.</p>'
+        : '<p class="muted">표시할 단계가 없습니다.</p>';
       return;
     }
 
-    steps.forEach(function(step, idx) {
+    visibleSteps.forEach(function(step, idx) {
       const item = document.createElement("div");
       item.className = "code-step risk-" + step.risk;
       item.innerHTML = `
@@ -397,6 +414,17 @@ jobs:
     lines.push("단계 수: " + steps.length);
     lines.push("주의/위험 줄: " + warnings.length);
 
+    // SOURCE_CODE_PREVIEW_V180_A4
+    const sourceCode = String(result.sourceCode || "");
+    if (sourceCode.trim()) {
+      lines.push("");
+      lines.push("[원본 코드 앞부분]");
+      const sourceLines = sourceCode.split(/\r?\n/);
+      lines.push(sourceLines.slice(0, 120).join("\n").slice(0, 8000));
+      if (sourceCode.length > 8000 || sourceLines.length > 120) {
+        lines.push("... 원본 코드 일부 생략");
+      }
+    }
     if (warnings.length) {
       lines.push("");
       lines.push("[주의/위험 명령]");
@@ -501,6 +529,7 @@ jobs:
 
     const requested = select ? select.value : "auto";
     const result = window.CodeExplainerRules.analyze(input.value, requested);
+    result.sourceCode = input.value;
     lastAnalysis = result;
     lastReport = buildPlainTextReport(result);
 
@@ -544,6 +573,7 @@ jobs:
     const diagram = el("mermaidDiagram");
     const source = el("mermaidSource");
     const quick = el("codeQuickReport");
+    const riskOnly = el("showRiskOnlyToggle");
     if (summary) {
       summary.className = "code-summary muted";
       summary.textContent = "아직 분석한 코드가 없습니다.";
@@ -553,6 +583,7 @@ jobs:
       warnings.textContent = "위험 명령이 감지되면 여기에 표시됩니다.";
     }
     if (steps) steps.innerHTML = "";
+    if (riskOnly) riskOnly.checked = false;
     if (diagram) diagram.innerHTML = "";
     if (source) source.textContent = "";
     if (quick) {
@@ -596,12 +627,18 @@ jobs:
     const clearBtn = el("clearCodeBtn");
     const copyBtn = el("copyMermaidBtn");
     const copyReportBtn = el("copyCodeReportBtn");
+    const riskOnlyToggle = el("showRiskOnlyToggle");
 
     if (analyzeBtn) analyzeBtn.onclick = analyzeCurrentCode;
     if (sampleBtn) sampleBtn.onclick = loadSample;
     if (clearBtn) clearBtn.onclick = clearInput;
     if (copyBtn) copyBtn.onclick = copyMermaid;
     if (copyReportBtn) copyReportBtn.onclick = copyCodeReport;
+    if (riskOnlyToggle) {
+      riskOnlyToggle.onchange = function() {
+        if (lastAnalysis) renderSteps(lastAnalysis.steps || []);
+      };
+    }
 
     const select = el("codeLangSelect");
     if (select) {
