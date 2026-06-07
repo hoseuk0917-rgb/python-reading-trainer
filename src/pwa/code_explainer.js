@@ -626,6 +626,186 @@ port = 5432`
       .join(" · ");
   }
 
+  // LONG_CODE_OVERVIEW_V186_A3
+  function getSourceStats(source) {
+    const lines = String(source || "").split(/\r?\n/);
+    const nonEmpty = lines.filter(function(line) { return line.trim(); }).length;
+    const commentLike = lines.filter(function(line) {
+      const t = line.trim();
+      return t.startsWith("#") || t.startsWith("//") || t.startsWith("/*") || t.startsWith("*") || t.startsWith(";") || t.startsWith("<!--");
+    }).length;
+
+    return {
+      lineCount: lines.length,
+      nonEmptyCount: nonEmpty,
+      commentLikeCount: commentLike,
+      charCount: String(source || "").length
+    };
+  }
+
+  function addOutlineItem(list, lineNo, type, name, detail) {
+    if (!name && !detail) return;
+    list.push({
+      lineNo: lineNo,
+      type: type,
+      name: name || detail,
+      detail: detail || ""
+    });
+  }
+
+  function extractCodeOutline(source, language) {
+    const lines = String(source || "").split(/\r?\n/);
+    const outline = [];
+
+    lines.forEach(function(line, idx) {
+      const lineNo = idx + 1;
+      const t = line.trim();
+      let match;
+
+      if (!t) return;
+
+      if (language === "python") {
+        match = t.match(/^(async\s+def|def)\s+([A-Za-z_][\w_]*)\s*\(/);
+        if (match) addOutlineItem(outline, lineNo, "함수", match[2], match[1]);
+        match = t.match(/^class\s+([A-Za-z_][\w_]*)/);
+        if (match) addOutlineItem(outline, lineNo, "클래스", match[1], "class");
+        if (/^if\s+__name__\s*==\s*["']__main__["']/.test(t)) addOutlineItem(outline, lineNo, "실행 시작점", "__main__", "직접 실행될 때 시작되는 구간");
+      }
+
+      if (language === "javascript" || language === "workers") {
+        match = t.match(/^(async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/);
+        if (match) addOutlineItem(outline, lineNo, "함수", match[2], "function");
+        match = t.match(/^(const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(async\s*)?\(?/);
+        if (match && /=>|function|\(/.test(t)) addOutlineItem(outline, lineNo, "함수/핸들러", match[2], match[1]);
+        if (/export\s+default/.test(t)) addOutlineItem(outline, lineNo, "모듈 진입점", "export default", "외부로 공개되는 기본 객체");
+        if (/fetch\s*\(\s*request\s*,\s*env/.test(t)) addOutlineItem(outline, lineNo, "요청 처리", "fetch(request, env)", "Workers 요청 처리 함수");
+        if (/addEventListener\s*\(/.test(t)) addOutlineItem(outline, lineNo, "이벤트 연결", "addEventListener", "사용자 동작과 함수를 연결");
+      }
+
+      if (language === "java") {
+        match = t.match(/class\s+([A-Za-z_][\w_]*)/);
+        if (match) addOutlineItem(outline, lineNo, "클래스", match[1], "class");
+        if (/public\s+static\s+void\s+main/.test(t)) addOutlineItem(outline, lineNo, "실행 시작점", "main", "Java 프로그램 시작 메서드");
+        match = t.match(/(?:public|private|protected)?\s*(?:static\s+)?[A-Za-z_<>\[\]]+\s+([A-Za-z_][\w_]*)\s*\([^)]*\)\s*\{/);
+        if (match && match[1] !== "main") addOutlineItem(outline, lineNo, "메서드", match[1], "method");
+      }
+
+      if (language === "powershell") {
+        match = t.match(/^function\s+([A-Za-z_][\w-]*)/i);
+        if (match) addOutlineItem(outline, lineNo, "함수", match[1], "PowerShell function");
+        if (/^param\s*\(/i.test(t)) addOutlineItem(outline, lineNo, "입력 파라미터", "param", "스크립트 입력값 정의");
+        if (/^git\s+/i.test(t)) addOutlineItem(outline, lineNo, "Git 작업", t.split(/\s+/).slice(0, 3).join(" "), "버전관리 명령");
+        if (/wrangler/i.test(t)) addOutlineItem(outline, lineNo, "Cloudflare 작업", t, "wrangler 명령");
+      }
+
+      if (language === "markdown") {
+        match = t.match(/^(#{1,6})\s+(.+)/);
+        if (match) addOutlineItem(outline, lineNo, "문서 제목", match[2], "level " + match[1].length);
+      }
+
+      if (language === "yaml" || language === "github_actions") {
+        match = t.match(/^([A-Za-z0-9_-]+)\s*:\s*$/);
+        if (match) addOutlineItem(outline, lineNo, "설정 구간", match[1], "YAML block");
+      }
+
+      if (language === "toml" || language === "pyproject_toml" || language === "ini_file") {
+        match = t.match(/^\[([^\]]+)\]$/);
+        if (match) addOutlineItem(outline, lineNo, "설정 섹션", match[1], "section");
+      }
+
+      if (language === "dockerfile") {
+        match = t.match(/^(FROM|WORKDIR|COPY|RUN|CMD|ENTRYPOINT|EXPOSE|ENV)\b/i);
+        if (match) addOutlineItem(outline, lineNo, "Docker 단계", match[1].toUpperCase(), t);
+      }
+    });
+
+    return outline.slice(0, 16);
+  }
+
+  function buildReadingOrder(result) {
+    const steps = Array.isArray(result.steps) ? result.steps : [];
+    const categories = countByValue(steps, function(step) { return step.category || "처리"; });
+    const order = [];
+
+    function has(category) {
+      return categories[category] > 0;
+    }
+
+    if (has("의존성") || has("패키지설정") || has("프로젝트설정")) order.push("1. 먼저 import, 의존성, 프로젝트 설정을 확인합니다.");
+    if (has("구조") || has("CLI") || has("웹서버")) order.push("2. 함수, 클래스, CLI 진입점, API 엔드포인트 같은 큰 구조를 봅니다.");
+    if (has("파일/경로") || has("저장소") || has("DB")) order.push("3. 파일, 저장소, DB처럼 데이터가 들어오고 나가는 지점을 확인합니다.");
+    if (has("조건") || has("반복") || has("검증")) order.push("4. 조건문, 반복문, 검증 로직이 실제 처리를 어떻게 나누는지 봅니다.");
+    if (has("출력/응답") || has("배포")) order.push("5. 마지막 출력, 응답, 배포 명령으로 결과가 어디로 나가는지 확인합니다.");
+
+    if (!order.length) {
+      order.push("1. 위에서 아래로 읽되, 제목/섹션/함수처럼 큰 구간부터 먼저 확인합니다.");
+      order.push("2. 그다음 위험/주의 단계와 출력 지점을 확인합니다.");
+    }
+
+    return order.slice(0, 5);
+  }
+
+  function buildLongCodeOverview(result) {
+    const steps = Array.isArray(result.steps) ? result.steps : [];
+    const warnings = Array.isArray(result.warnings) ? result.warnings : [];
+    const source = String(result.sourceCode || "");
+    const stats = getSourceStats(source);
+    const categories = countByValue(steps, function(step) { return step.category || "처리"; });
+    const tags = countByValue(steps, function(step) {
+      if (!Array.isArray(step.tags) || !step.tags.length) return "";
+      return step.tags[0];
+    });
+
+    return {
+      stats: stats,
+      topCategories: formatCountSummary(categories),
+      topTags: formatCountSummary(tags),
+      outline: extractCodeOutline(source, result.language),
+      readingOrder: buildReadingOrder(result),
+      warningLines: warnings.slice(0, 8).map(function(step) {
+        return "line " + step.lineNo + " · " + step.title;
+      })
+    };
+  }
+
+  function renderStructureOverview(result) {
+    const box = el("codeStructureOverview");
+    if (!box) return;
+
+    const overview = buildLongCodeOverview(result);
+    const stats = overview.stats;
+    const outline = overview.outline;
+    const readingOrder = overview.readingOrder;
+    const warningLines = overview.warningLines;
+
+    const outlineHtml = outline.length
+      ? '<ul>' + outline.map(function(item) {
+          return '<li><strong>' + escapeHtml(item.type) + '</strong> · line ' + item.lineNo + ' · ' + escapeHtml(item.name) + (item.detail ? ' <span class="muted">(' + escapeHtml(item.detail) + ')</span>' : '') + '</li>';
+        }).join("") + '</ul>'
+      : '<p class="muted">함수/클래스/섹션 같은 큰 구조는 뚜렷하게 감지되지 않았습니다.</p>';
+
+    const orderHtml = '<ol>' + readingOrder.map(function(item) {
+      return '<li>' + escapeHtml(item.replace(/^\d+\.\s*/, "")) + '</li>';
+    }).join("") + '</ol>';
+
+    const warningHtml = warningLines.length
+      ? '<p class="code-structure-warning">주의 구간: ' + escapeHtml(warningLines.join(" / ")) + '</p>'
+      : '<p class="muted">주의/위험 구간은 별도로 감지되지 않았습니다.</p>';
+
+    box.className = "code-structure-overview";
+    box.innerHTML = '<div class="code-structure-stats">' +
+      '<span><strong>' + stats.lineCount + '</strong><small>줄</small></span>' +
+      '<span><strong>' + stats.nonEmptyCount + '</strong><small>내용 줄</small></span>' +
+      '<span><strong>' + stats.commentLikeCount + '</strong><small>주석/문서 줄</small></span>' +
+      '<span><strong>' + stats.charCount + '</strong><small>글자</small></span>' +
+      '</div>' +
+      '<p class="code-structure-categories">주요 분류: ' + escapeHtml(overview.topCategories || "분류 없음") + '</p>' +
+      '<p class="code-structure-categories">주요 태그: ' + escapeHtml(overview.topTags || "태그 없음") + '</p>' +
+      '<details open class="code-structure-detail"><summary>주요 함수/구간</summary>' + outlineHtml + '</details>' +
+      '<details class="code-structure-detail"><summary>추천 읽는 순서</summary>' + orderHtml + '</details>' +
+      warningHtml;
+  }
+
   function buildPlainTextReport(result) {
     const steps = Array.isArray(result.steps) ? result.steps : [];
     const warnings = Array.isArray(result.warnings) ? result.warnings : [];
@@ -643,6 +823,25 @@ port = 5432`
     if (result.flowSummary) lines.push("흐름: " + result.flowSummary);
     lines.push("단계 수: " + steps.length);
     lines.push("주의/위험 줄: " + warnings.length);
+
+    const overview = buildLongCodeOverview(result);
+    lines.push("");
+    lines.push("[긴 코드 구조 요약]");
+    lines.push("원본 규모: " + overview.stats.lineCount + "줄 / 내용 " + overview.stats.nonEmptyCount + "줄 / 글자 " + overview.stats.charCount);
+    lines.push("주요 분류: " + (overview.topCategories || "분류 없음"));
+    lines.push("주요 태그: " + (overview.topTags || "태그 없음"));
+    if (overview.outline.length) {
+      lines.push("주요 함수/구간:");
+      overview.outline.slice(0, 12).forEach(function(item) {
+        lines.push("- line " + item.lineNo + " · " + item.type + " · " + item.name + (item.detail ? " (" + item.detail + ")" : ""));
+      });
+    }
+    if (overview.readingOrder.length) {
+      lines.push("추천 읽는 순서:");
+      overview.readingOrder.forEach(function(item) {
+        lines.push("- " + item);
+      });
+    }
 
     // SOURCE_CODE_PREVIEW_V180_A4
     const sourceCode = String(result.sourceCode || "");
@@ -774,6 +973,7 @@ port = 5432`
 
     renderDetectionDetails(result, requested, input.value);
     renderQuickReport(result);
+    renderStructureOverview(result);
     renderWarnings(result.warnings || []);
     renderSteps(result.steps || []);
     renderRelatedCards(result);
@@ -806,6 +1006,7 @@ port = 5432`
     const diagram = el("mermaidDiagram");
     const source = el("mermaidSource");
     const quick = el("codeQuickReport");
+    const structure = el("codeStructureOverview");
     const detection = el("codeDetectionDetails");
     const riskOnly = el("showRiskOnlyToggle");
     if (summary) {
@@ -823,6 +1024,10 @@ port = 5432`
     if (quick) {
       quick.className = "code-quick-report muted";
       quick.textContent = "분석하면 단계 수, 위험 줄, 주요 분류가 요약됩니다.";
+    }
+    if (structure) {
+      structure.className = "code-structure-overview muted";
+      structure.textContent = "긴 코드를 분석하면 전체 구조, 주요 함수/구간, 읽는 순서가 표시됩니다.";
     }
     if (detection) {
       detection.className = "code-detection-details muted";
