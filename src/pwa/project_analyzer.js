@@ -1,6 +1,6 @@
-// === PROJECT ANALYZER V193-A1 START ===
+// === PROJECT ANALYZER V194-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260606_v193_a1";
+  const PROJECT_ANALYZER_VERSION = "20260606_v194_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
@@ -29,6 +29,8 @@
 "import json",
 "import re",
 "import subprocess",
+"import sys",
+"from shutil import which",
 "from datetime import datetime",
 "",
 "ROOT = Path('.').resolve()",
@@ -44,6 +46,19 @@
 "        return subprocess.check_output(cmd, cwd=ROOT, shell=True, text=True, stderr=subprocess.STDOUT, encoding='utf-8', errors='replace').strip()",
 "    except Exception as e:",
 "        return 'ERROR: ' + str(e)",
+"",
+"# ENV_AUDIT_REPORT_V194_A1",
+"def audit_environment():",
+"    required_pip_packages = []",
+"    return {",
+"        'python_executable': sys.executable,",
+"        'python_version': sys.version.split()[0],",
+"        'git': run('git --version') if which('git') else 'missing_optional',",
+"        'node': run('node --version') if which('node') else 'missing_optional',",
+"        'pip': run('python -m pip --version') if which('python') else 'missing_optional',",
+"        'required_pip_packages': required_pip_packages,",
+"        'standard_library_only': len(required_pip_packages) == 0,",
+"    }",
 "",
 "def rel(path):",
 "    return str(path.relative_to(ROOT)).replace('\\\\', '/')",
@@ -119,6 +134,31 @@
 "            refs.add(m.group(1))",
 "    return sorted(refs)[:80]",
 "",
+"# CALL_CANDIDATES_V194_A1",
+"def extract_js_calls(text):",
+"    exclude = {'if', 'for', 'while', 'switch', 'catch', 'function', 'return', 'typeof', 'new'}",
+"    counts = Counter()",
+"    for m in re.finditer(r'\\b([A-Za-z_$][\\w$]*)\\s*\\(', text):",
+"        name = m.group(1)",
+"        if name not in exclude:",
+"            counts[name] += 1",
+"    return [{'name': k, 'count': v} for k, v in counts.most_common(30)]",
+"",
+"def extract_py_calls(text):",
+"    try:",
+"        tree = ast.parse(text)",
+"    except Exception:",
+"        return []",
+"    counts = Counter()",
+"    for node in ast.walk(tree):",
+"        if isinstance(node, ast.Call):",
+"            func = node.func",
+"            if isinstance(func, ast.Name):",
+"                counts[func.id] += 1",
+"            elif isinstance(func, ast.Attribute):",
+"                counts[func.attr] += 1",
+"    return [{'name': k, 'count': v} for k, v in counts.most_common(30)]",
+"",
 "files = []",
 "for p in ROOT.rglob('*'):",
 "    if p.is_file() and not should_skip(p):",
@@ -139,6 +179,7 @@
 "",
 "symbols = {}",
 "references = {}",
+"call_candidates = {}",
 "for f in files:",
 "    p = ROOT / f['path']",
 "    ext = p.suffix.lower()",
@@ -149,10 +190,16 @@
 "        s = extract_js_symbols(text)",
 "        if s:",
 "            symbols[f['path']] = s",
+"        c = extract_js_calls(text)",
+"        if c:",
+"            call_candidates[f['path']] = c",
 "    elif ext == '.py':",
 "        s = extract_py_symbols(text)",
 "        if s:",
 "            symbols[f['path']] = s",
+"        c = extract_py_calls(text)",
+"        if c:",
+"            call_candidates[f['path']] = c",
 "    refs = extract_refs(text)",
 "    if refs:",
 "        references[f['path']] = refs",
@@ -181,6 +228,7 @@
 "",
 "lesson_card_count, lesson_bad = count_json_cards(lesson_files)",
 "side_card_count, side_bad = count_json_cards(side_files)",
+"environment = audit_environment()",
 "",
 "verify_files = sorted([f['path'] for f in files if f['path'].startswith('tools/') and ('verify' in f['path'].lower() or 'smoke' in f['path'].lower() or 'validate' in f['path'].lower())])[:60]",
 "",
@@ -196,7 +244,9 @@
 "    'top_dirs': dict(top_dirs.most_common(30)),",
 "    'key_files': key_status,",
 "    'candidate_bundles': {'코드해석/다이어그램': ['src/pwa/index.html', 'src/pwa/code_explainer.js', 'src/pwa/code_explainer_rules.js', 'src/pwa/style.css'], '프로젝트분석': ['src/pwa/index.html', 'src/pwa/project_analyzer.js', 'src/pwa/style.css'], '학습카드 데이터': ['data/lessons', 'data/side_cards', 'tools/validate_lessons.py'], '검증/품질': verify_files},",
+"    'environment': environment,",
 "    'symbols': symbols,",
+"    'call_candidates': call_candidates,",
 "    'references': references,",
 "    'json_errors': {'lesson_errors': lesson_bad, 'side_card_errors': side_bad},",
 "    'mermaid': '\\n'.join(mermaid_lines),",
@@ -220,6 +270,10 @@
 "for k, v in report['role_counts'].items():",
 "    md.append('- ' + k + ': ' + str(v))",
 "md.append('')",
+"md.append('## Environment')",
+"for k, v in report['environment'].items():",
+"    md.append('- ' + k + ': ' + json.dumps(v, ensure_ascii=False))",
+"md.append('')",
 "md.append('## Key files')",
 "for k, v in report['key_files'].items():",
 "    md.append('- ' + k + ': ' + ('OK' if v['exists'] else 'MISSING') + ' (' + str(v['size']) + ' bytes)')",
@@ -233,6 +287,10 @@
 "md.append('## Top symbol files')",
 "for path, syms in list(symbols.items())[:20]:",
 "    md.append('- ' + path + ': ' + ', '.join([s['name'] for s in syms[:12]]))",
+"md.append('')",
+"md.append('## Top call files')",
+"for path, calls in list(call_candidates.items())[:20]:",
+"    md.append('- ' + path + ': ' + ', '.join([c['name'] + '(' + str(c['count']) + ')' for c in calls[:12]]))",
 "md.append('')",
 "md.append('## Mermaid')",
 "md.extend(mermaid_lines)",
@@ -252,6 +310,9 @@
 "print('LESSON_CARDS_ESTIMATED', report['counts']['lesson_cards_estimated'])",
 "print('SIDE_CARDS_ESTIMATED', report['counts']['side_cards_estimated'])",
 "print('ROLE_COUNTS', json.dumps(report['role_counts'], ensure_ascii=False))",
+"print('ENV_PYTHON_VERSION', environment.get('python_version', ''))",
+"print('ENV_STANDARD_LIBRARY_ONLY', environment.get('standard_library_only', True))",
+"print('CALL_CANDIDATE_FILES', len(call_candidates))",
 "print('OUT_JSON', rel(OUT_JSON))",
 "print('OUT_MD', rel(OUT_MD))",
 "print('MERMAID_START')",
@@ -278,6 +339,32 @@
       "  New-Item -ItemType Directory -Force .\\.tmp | Out-Null",
       "}",
       "",
+      "# ENV_AUDIT_V194_A1",
+      "$PythonCmd = Get-Command python -ErrorAction SilentlyContinue",
+      "if (-not $PythonCmd) { throw 'PYTHON_NOT_FOUND: Python을 설치하거나 PATH에 추가한 뒤 다시 실행하세요.' }",
+      "$GitCmd = Get-Command git -ErrorAction SilentlyContinue",
+      "$NodeCmd = Get-Command node -ErrorAction SilentlyContinue",
+      "$PipCmd = python -m pip --version 2>$null",
+      "$RequiredPipPackages = @()",
+      "Write-Host 'ENV_AUDIT_V194_A1'",
+      "Write-Host ('ENV_PYTHON ' + $PythonCmd.Source)",
+      "Write-Host ('ENV_GIT ' + $(if ($GitCmd) { $GitCmd.Source } else { 'missing_optional' }))",
+      "Write-Host ('ENV_NODE ' + $(if ($NodeCmd) { $NodeCmd.Source } else { 'missing_optional' }))",
+      "Write-Host ('ENV_PIP ' + $(if ($PipCmd) { $PipCmd } else { 'missing_optional' }))",
+      "if ($RequiredPipPackages.Count -eq 0) {",
+      "  Write-Host 'ENV_PIP_PACKAGES none'",
+      "} else {",
+      "  foreach ($pkg in $RequiredPipPackages) {",
+      "    python -m pip show $pkg *> $null",
+      "    if ($LASTEXITCODE -ne 0) {",
+      "      Write-Host ('ENV_INSTALLING_PIP_PACKAGE ' + $pkg)",
+      "      python -m pip install $pkg",
+      "    } else {",
+      "      Write-Host ('ENV_PIP_PACKAGE_OK ' + $pkg)",
+      "    }",
+      "  }",
+      "}",
+      "",
       "@'",
       pythonCode,
       "'@ | Set-Content .\\.tmp\\project_probe_v193_from_app.py -Encoding UTF8",
@@ -298,6 +385,20 @@
   function parseMarkdownCount(text, label) {
     const match = text.match(new RegExp("- " + label + ":\\s*([^\\n\\r]+)"));
     return match ? match[1].trim() : "";
+  }
+
+  // ENV_PARSE_V194_A1
+  function parseEnvironmentAudit(text) {
+    return {
+      audit: getLineValue(text, "ENV_AUDIT_V194_A1") || "",
+      python: getLineValue(text, "ENV_PYTHON") || "",
+      git: getLineValue(text, "ENV_GIT") || "",
+      node: getLineValue(text, "ENV_NODE") || "",
+      pip: getLineValue(text, "ENV_PIP") || "",
+      pipPackages: getLineValue(text, "ENV_PIP_PACKAGES") || "none",
+      pythonVersion: getLineValue(text, "ENV_PYTHON_VERSION") || "",
+      standardLibraryOnly: getLineValue(text, "ENV_STANDARD_LIBRARY_ONLY") || ""
+    };
   }
 
   function parseProbeOutput(text) {
@@ -330,6 +431,8 @@
       outMd: getLineValue(raw, "OUT_MD"),
       counts: counts,
       roleCounts: roleCounts,
+      environment: parseEnvironmentAudit(raw),
+      callCandidateFiles: getLineValue(raw, "CALL_CANDIDATE_FILES"),
       mermaid: extractMermaid(raw),
       raw: raw
     };
@@ -371,6 +474,22 @@
 
     return '<div class="project-mini-grid">' + entries.slice(0, 12).map(function(item) {
       return '<div class="project-mini-card"><strong>' + escapeHtml(item[1]) + '</strong><span>' + escapeHtml(item[0]) + '</span></div>';
+    }).join("") + '</div>';
+  }
+
+  function renderEnvironmentAudit(environment) {
+    const env = environment || {};
+    const rows = [
+      ["Python", env.python || env.pythonVersion || "-"],
+      ["Git", env.git || "-"],
+      ["Node", env.node || "-"],
+      ["pip", env.pip || "-"],
+      ["필요 pip 패키지", env.pipPackages || "none"],
+      ["표준 라이브러리만 사용", env.standardLibraryOnly || "true"]
+    ];
+
+    return '<div class="project-env-list">' + rows.map(function(row) {
+      return '<div class="project-env-row"><strong>' + escapeHtml(row[0]) + '</strong><span>' + escapeHtml(row[1]) + '</span></div>';
     }).join("") + '</div>';
   }
 
@@ -451,8 +570,16 @@
       '<p><strong>Status:</strong> ' + escapeHtml(statusLabel(parsed.gitStatus)) + '</p>' +
       '</div>' +
       '<div class="project-detail-section">' +
+      '<h3>환경 감사</h3>' +
+      renderEnvironmentAudit(parsed.environment) +
+      '</div>' +
+      '<div class="project-detail-section">' +
       '<h3>역할별 파일 수</h3>' +
       renderRoleCounts(parsed.roleCounts) +
+      '</div>' +
+      '<div class="project-detail-section">' +
+      '<h3>함수 호출 후보</h3>' +
+      '<p>호출 후보가 감지된 파일 수: ' + escapeHtml(parsed.callCandidateFiles || "-") + '</p>' +
       '</div>' +
       '<div class="project-detail-section">' +
       '<h3>다음에 같이 봐야 할 파일 묶음</h3>' +
@@ -576,4 +703,4 @@
     init();
   }
 })();
- // === PROJECT ANALYZER V193-A1 END ===
+ // === PROJECT ANALYZER V194-A1 END ===
