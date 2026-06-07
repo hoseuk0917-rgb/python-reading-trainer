@@ -141,7 +141,17 @@ function normalizeReportKey(value) {
     "데이터변환": "data_transform",
     "JSON": "json",
     "CSV": "csv",
-    "프로세스": "process_exec"
+    "프로세스": "process_exec",
+    "화면/UI": "ui",
+    "DOM": "dom",
+    "UI": "ui",
+    "비동기": "async",
+    "배열": "array",
+    "KV": "kv",
+    "R2": "r2",
+    "Queue": "queue",
+    "큐": "queue",
+    "캐시": "cache"
   };
 
   if (map[value]) return map[value];
@@ -202,7 +212,7 @@ const samples = [
 
 git diff --stat
 git stash push -u -m "wip-test"
-python tools/validate_lessons.py --expected-app-version 20260606_v188_a2 --expected-lesson-cards 1785
+python tools/validate_lessons.py --expected-app-version 20260606_v189_a2 --expected-lesson-cards 1785
 Write-Host "DONE"`,
     mustContain: ["변경량 요약 확인", "임시 보관", "Python 검증 실행"],
     mustMetaContain: ["Git", "검증", "출력"]
@@ -241,6 +251,22 @@ button.addEventListener("click", function() {
     mustMetaContain: ["JavaScript", "변수", "출력"]
   },
   {
+    name: "javascript_async_dom_array",
+    requestedLanguage: "auto",
+    expectedLanguage: "javascript",
+    minSteps: 7,
+    code: `document.addEventListener("DOMContentLoaded", () => {
+  const cards = Array.from(document.querySelectorAll(".card"));
+  const active = cards.filter((card) => card.dataset.active === "true");
+  const labels = active.map((card) => card.dataset.label);
+  active.forEach((card) => card.classList.add("ready"));
+  const saved = JSON.parse(localStorage.getItem("state") || "{}");
+  localStorage.setItem("state", JSON.stringify({ count: labels.length, saved }));
+});`,
+    mustContain: ["DOM 준비 후 실행", "배열로 변환", "배열 필터링", "배열 변환", "CSS 클래스 변경", "JSON 문자열 변환", "JSON 문자열 만들기"],
+    mustMetaContain: ["DOM", "배열", "JSON"]
+  },
+  {
     name: "workers_d1_api",
     requestedLanguage: "auto",
     expectedLanguage: "workers",
@@ -262,6 +288,43 @@ button.addEventListener("click", function() {
 }`,
     mustContain: ["요청 처리 함수", "요청 주소 분석", "경로 조건 확인", "요청 본문 JSON 읽기", "D1 SQL 준비", "SQL 값 안전하게 연결", "JSON 응답 반환"],
     mustMetaContain: ["Cloudflare", "DB", "SQL", "API", "출력"]
+  },
+  {
+    name: "workers_async_storage_queue",
+    requestedLanguage: "auto",
+    expectedLanguage: "workers",
+    minSteps: 15,
+    code: `export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const id = url.searchParams.get("id");
+
+    try {
+      const cached = await caches.default.match(request);
+      if (cached) return cached;
+
+      const profile = await env.KV.get(id, "json");
+      const object = await env.R2.get("profiles/" + id + ".json");
+      const response = await fetch("https://api.example.com/users/" + id);
+
+      if (!response.ok) {
+        return Response.json({ ok: false }, { status: response.status });
+      }
+
+      const data = await response.json();
+      await env.KV.put(id, JSON.stringify(data));
+      await env.QUEUE.send({ id, cached: false });
+      ctx.waitUntil(env.KV.put("last_profile_id", id));
+
+      return Response.json({ ok: true, profile, object, data });
+    } catch (err) {
+      console.error(err);
+      return new Response("error", { status: 500 });
+    }
+  }
+}`,
+    mustContain: ["요청 처리 함수", "요청 주소 분석", "쿼리 문자열 읽기", "오류 대비 시작", "캐시 응답 조회", "KV 값 읽기", "R2 객체 읽기", "비동기 외부 요청", "응답 상태 확인", "응답 JSON 변환", "KV 값 저장", "Queue 메시지 전송", "백그라운드 작업 예약", "JSON 응답 반환", "오류 처리"],
+    mustMetaContain: ["Cloudflare", "KV", "R2", "Queue", "캐시", "JSON"]
   },
   {
     name: "powershell_risky_web_wrangler",
@@ -316,7 +379,7 @@ for row in df["name"]:
     });
   }
 }`,
-    mustContain: ["Worker 진입 객체 정의", "요청 처리 함수", "KV 저장소 사용", "R2 저장소 사용", "Cloudflare 캐시 사용", "백그라운드 작업 예약", "응답 반환", "CORS 헤더 설정"],
+    mustContain: ["Worker 진입 객체 정의", "요청 처리 함수", "KV 값 읽기", "R2 객체 저장", "Cloudflare 캐시 사용", "백그라운드 작업 예약", "응답 반환", "CORS 헤더 설정"],
     mustMetaContain: ["Cloudflare", "출력"]
   },
   {
@@ -418,7 +481,7 @@ async def health():
 node --check .\\src\\pwa\\app.js
 npm install
 npm run build
-python tools/validate_lessons.py --expected-app-version 20260606_v188_a2
+python tools/validate_lessons.py --expected-app-version 20260606_v189_a2
 git status --short`,
     mustContain: ["작업 폴더 이동", "Node 문법 검사", "npm 의존성 설치", "npm 스크립트 실행", "Python 검증 실행", "Git 변경 상태 확인"],
     mustMetaContain: ["파일", "검증", "의존성", "Git"]
@@ -685,7 +748,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260606_v188_a2",
+  version: "20260606_v189_a2",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,

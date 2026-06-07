@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V188-A2 START ===
+// === CODE EXPLAINER RULES V189-A2 START ===
 (function() {
   "use strict";
 
@@ -60,6 +60,9 @@
 
     if (/Set-Location|Copy-Item|Remove-Item|Compress-Archive|Expand-Archive|Get-Date|New-Item|Test-Path|Select-String/i.test(text)) return "powershell";
     if (/^\s*\$[A-Za-z_][\w-]*\s*=/m.test(text) || /\bgit\s+(status|add|commit|push|tag|stash|reset|clean)\b/i.test(text)) return "powershell";
+
+    // JS_MODULE_DETECT_GUARD_V189_A2
+    if (/^\s*import\s+.+\s+from\s+["'][^"']+["']/m.test(text) || /^\s*export\s+(async\s+)?(function|const|let|class)\b/m.test(text)) return "javascript";
 
     if (/^\s*def\s+\w+\s*\(/m.test(text) || /^\s*import\s+\w+/m.test(text) || /^\s*from\s+\w+/m.test(text)) return "python";
     if (/^\s*class\s+\w+\s*[:(]/m.test(text) && lower.includes("self")) return "python";
@@ -141,8 +144,12 @@
       if (/SECRET|TOKEN|PASSWORD|API[_-]?KEY|PRIVATE/i.test(t) && /os\.environ|os\.getenv|getenv\s*\(|load_dotenv/.test(t)) return "medium";
     }
     if (language === "javascript" || language === "workers") {
+      // JS_WORKERS_RISK_GUARD_V189_A2
       if (/eval\s*\(|new\s+Function/.test(t)) return "high";
       if (/delete\s+|\.delete\s*\(/.test(t)) return "medium";
+      if (/innerHTML\s*=/.test(t)) return "medium";
+      if (/localStorage\.clear|sessionStorage\.clear|indexedDB\.deleteDatabase/.test(t)) return "medium";
+      if (/env\.KV.*\.delete|env\.R2.*\.delete|caches\.default\.delete/.test(t)) return "medium";
       if (/env\.DB.*\bDELETE\b|env\.DB.*\bDROP\b|env\.DB.*\bUPDATE\b/i.test(t)) return "medium";
     }
     if (language === "java") {
@@ -676,6 +683,28 @@
     if (/ctx\.waitUntil\s*\(/.test(t)) {
       return makeStep(lineNo, t, "백그라운드 작업 예약", "응답을 먼저 돌려준 뒤에도 로그 저장이나 캐시 갱신 같은 작업을 이어서 실행하게 합니다.", risk);
     }
+    // WORKERS_STORAGE_QUEUE_RULES_V189_A2
+    if (/env\.KV\.get\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "KV 값 읽기", "Cloudflare KV에서 키에 해당하는 값을 읽습니다. json 옵션을 쓰면 객체 형태로 받을 수 있습니다.", risk);
+    }
+    if (/env\.KV\.put\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "KV 값 저장", "Cloudflare KV에 키와 값을 저장합니다. TTL이나 만료 정책이 필요한지 확인해야 합니다.", risk);
+    }
+    if (/env\.KV\.delete\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "KV 값 삭제", "Cloudflare KV에서 특정 키의 값을 삭제합니다. 복구가 어려울 수 있으니 키를 확인해야 합니다.", risk);
+    }
+    if (/env\.R2\.get\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "R2 객체 읽기", "Cloudflare R2 버킷에서 파일/객체를 읽습니다. 키 경로와 null 처리 여부를 확인해야 합니다.", risk);
+    }
+    if (/env\.R2\.put\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "R2 객체 저장", "Cloudflare R2 버킷에 파일/객체를 저장합니다. 덮어쓰기 여부와 Content-Type을 확인해야 합니다.", risk);
+    }
+    if (/env\.R2\.delete\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "R2 객체 삭제", "Cloudflare R2 버킷의 객체를 삭제합니다. 대상 키를 반드시 확인해야 합니다.", risk);
+    }
+    if (/env\.QUEUE\.send\s*\(/.test(t) || /env\.[A-Z0-9_]*QUEUE\.send\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "Queue 메시지 전송", "Cloudflare Queue에 나중에 처리할 메시지를 넣습니다. 소비자 Worker가 어떤 형식의 메시지를 기대하는지 확인해야 합니다.", risk);
+    }
     if (/env\.KV/.test(t)) {
       return makeStep(lineNo, t, "KV 저장소 사용", "Cloudflare KV에서 값을 읽거나 씁니다.", risk);
     }
@@ -691,11 +720,86 @@
     if (/new\s+Response/.test(t)) {
       return makeStep(lineNo, t, "응답 반환", "문자열, 상태 코드, 헤더 등을 담은 HTTP 응답을 돌려줍니다.", risk);
     }
+    if (/caches\.default\.match\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "캐시 응답 조회", "Cloudflare 캐시에서 기존 응답이 있는지 확인합니다. 캐시 hit이면 원본 API나 DB를 다시 호출하지 않을 수 있습니다.", risk);
+    }
+    if (/caches\.default\.put\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "응답 캐시에 저장", "응답을 Cloudflare 엣지 캐시에 저장합니다. 캐시 키와 만료 조건을 확인해야 합니다.", risk);
+    }
+    if (/caches\.default\.delete\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "캐시 삭제", "Cloudflare 캐시에서 특정 응답을 삭제합니다. 캐시 키가 맞는지 확인해야 합니다.", risk);
+    }
     if (/caches\.default/.test(t)) {
       return makeStep(lineNo, t, "Cloudflare 캐시 사용", "Cloudflare 엣지 캐시에 응답을 저장하거나 읽습니다. 캐시 키와 만료 정책을 확인해야 합니다.", risk);
     }
     if (/Access-Control-Allow-Origin|CORS/i.test(t)) {
       return makeStep(lineNo, t, "CORS 헤더 설정", "다른 도메인에서 이 API를 호출할 수 있는지 제어합니다. 공개 범위를 확인해야 합니다.", risk);
+    }
+
+    // JS_WORKERS_DEEP_RULES_V189_A2
+    if (/^import\s+.+\s+from\s+["']/.test(t)) {
+      return makeStep(lineNo, t, "모듈 불러오기", "다른 JavaScript 파일이나 패키지에서 필요한 기능을 가져옵니다.", risk);
+    }
+    if (/^export\s+(async\s+)?(function|const|let|class)\b/.test(t)) {
+      return makeStep(lineNo, t, "모듈로 내보내기", "다른 파일에서 import해서 사용할 수 있도록 함수, 값, 클래스를 공개합니다.", risk);
+    }
+    if (/DOMContentLoaded/.test(t)) {
+      return makeStep(lineNo, t, "DOM 준비 후 실행", "HTML 문서 구조가 준비된 뒤에 화면 요소를 찾고 이벤트를 연결합니다.", risk);
+    }
+    if (/url\.searchParams\.get\s*\(/.test(t) || /\.searchParams\.get\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "쿼리 문자열 읽기", "URL의 ?id= 같은 검색 파라미터 값을 읽습니다. 값이 없을 때의 처리가 필요합니다.", risk);
+    }
+    if (/^try\s*\{/.test(t)) {
+      return makeStep(lineNo, t, "오류 대비 시작", "아래 코드에서 오류가 나면 catch/finally로 넘어가 처리할 수 있게 준비합니다.", risk);
+    }
+    if (/^\}?\s*catch\s*\(/.test(t) || /^\}?\s*catch\s*\{/.test(t)) {
+      return makeStep(lineNo, t, "오류 처리", "try 안에서 발생한 오류를 잡아 로그를 남기거나 사용자에게 실패 응답을 돌려줍니다.", risk);
+    }
+    if (/^\}?\s*finally\s*\{/.test(t)) {
+      return makeStep(lineNo, t, "마지막 정리", "성공/실패와 관계없이 마지막에 실행되는 정리 구간입니다.", risk);
+    }
+    // JS_WORKERS_AWAIT_JSON_RULE_V189_A2
+    if (/\bawait\b.*\.json\s*\(/.test(t) && !/Response\.json/.test(t)) {
+      return makeStep(lineNo, t, "응답 JSON 변환", "fetch 응답 본문을 JavaScript 객체로 변환합니다. 응답이 JSON이 아니면 오류가 날 수 있습니다.", risk);
+    }
+    if (/^await\s+/.test(t) || /\bawait\b/.test(t)) {
+      if (/fetch\s*\(/.test(t)) {
+        return makeStep(lineNo, t, "비동기 외부 요청", "fetch 요청이 끝날 때까지 기다립니다. 네트워크 실패와 응답 상태 확인이 필요합니다.", risk);
+      }
+      return makeStep(lineNo, t, "비동기 작업 대기", "Promise가 끝날 때까지 기다린 뒤 다음 줄을 실행합니다. 실패하면 catch로 넘어갈 수 있습니다.", risk);
+    }
+    if (/Promise\.(all|allSettled|race|any)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "Promise 묶음 처리", "여러 비동기 작업을 함께 실행하거나 가장 먼저 끝나는 작업을 기다립니다.", risk);
+    }
+    if (/JSON\.parse\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "JSON 문자열 변환", "JSON 문자열을 JavaScript 객체로 바꿉니다. 잘못된 JSON이면 오류가 날 수 있습니다.", risk);
+    }
+    if (/JSON\.stringify\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "JSON 문자열 만들기", "JavaScript 객체를 저장하거나 전송하기 쉬운 JSON 문자열로 바꿉니다.", risk);
+    }
+    if (/\.json\s*\(/.test(t) && !/Response\.json/.test(t)) {
+      return makeStep(lineNo, t, "응답 JSON 변환", "fetch 응답 본문을 JavaScript 객체로 변환합니다. 응답이 JSON이 아니면 오류가 날 수 있습니다.", risk);
+    }
+    if (/\.ok\b|\.status\b/.test(t) && /response|res\b/i.test(t)) {
+      return makeStep(lineNo, t, "응답 상태 확인", "HTTP 응답이 성공인지 상태 코드로 확인합니다. 실패 응답을 그대로 성공처럼 처리하지 않게 합니다.", risk);
+    }
+    if (/Array\.from\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "배열로 변환", "NodeList나 반복 가능한 값을 배열로 바꿔 map/filter 같은 배열 메서드를 쓰기 쉽게 만듭니다.", risk);
+    }
+    if (/\.map\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "배열 변환", "배열의 각 항목을 다른 값으로 바꾼 새 배열을 만듭니다.", risk);
+    }
+    if (/\.filter\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "배열 필터링", "배열에서 조건에 맞는 항목만 남긴 새 배열을 만듭니다.", risk);
+    }
+    if (/\.reduce\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "배열 누적 계산", "배열 값을 하나의 결과로 누적 계산합니다. 합계, 그룹화, 인덱스 만들기에 자주 씁니다.", risk);
+    }
+    if (/\.classList\.(add|remove|toggle|contains)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "CSS 클래스 변경", "화면 요소의 클래스를 추가/삭제/토글해서 스타일이나 상태를 바꿉니다.", risk);
+    }
+    if (/\.dataset\./.test(t)) {
+      return makeStep(lineNo, t, "data 속성 읽기", "HTML의 data-* 속성에 저장된 값을 읽습니다. 화면 요소의 상태나 식별값을 코드에서 사용할 때 씁니다.", risk);
     }
     if (/document\.getElementById|querySelector/.test(t)) {
       return makeStep(lineNo, t, "화면 요소 찾기", "HTML 화면에서 특정 요소를 찾아 값을 읽거나 내용을 바꾸기 위해 준비합니다.", risk);
@@ -1284,6 +1388,47 @@
       pushUnique(tags, "의존성");
     }
 
+    // JS_WORKERS_META_GUARD_V189_A2
+    if (language === "javascript" || language === "workers") {
+      if (/domcontentloaded|document\.|queryselector|getelementbyid|classlist|dataset|화면 요소|css 클래스/.test(text)) {
+        category = category === "처리" ? "화면/UI" : category;
+        pushUnique(tags, "DOM");
+        pushUnique(tags, "UI");
+      }
+      if (/json\.parse|json\.stringify|응답 json|json 문자열|json/.test(text)) {
+        category = category === "처리" ? "데이터변환" : category;
+        pushUnique(tags, "JSON");
+      }
+      if (/array\.from|\.map\s*\(|\.filter\s*\(|\.reduce\s*\(|배열/.test(text)) {
+        category = category === "처리" ? "데이터처리" : category;
+        pushUnique(tags, "배열");
+      }
+      if (/await|promise|비동기/.test(text)) {
+        category = category === "처리" ? "비동기" : category;
+        pushUnique(tags, "비동기");
+      }
+      if (/env\.kv|kv 값|kv 저장소/.test(text)) {
+        category = category === "처리" ? "저장소" : category;
+        pushUnique(tags, "KV");
+        pushUnique(tags, "Cloudflare");
+      }
+      if (/env\.r2|r2 객체|r2 저장소/.test(text)) {
+        category = category === "처리" ? "저장소" : category;
+        pushUnique(tags, "R2");
+        pushUnique(tags, "Cloudflare");
+      }
+      if (/env\.[a-z0-9_]*queue|queue 메시지|queue/.test(text)) {
+        category = category === "처리" ? "큐" : category;
+        pushUnique(tags, "Queue");
+        pushUnique(tags, "Cloudflare");
+      }
+      if (/caches\.default|캐시/.test(text)) {
+        category = category === "처리" ? "캐시" : category;
+        pushUnique(tags, "캐시");
+        pushUnique(tags, "Cloudflare");
+      }
+    }
+
     if (/github_actions|github actions|워크플로|runs-on|uses:\s*actions\/|ci\/cd|트리거 이벤트|실행 환경|쉘 명령/.test(text)) {
       category = category === "처리" ? "CI/CD" : category;
       pushUnique(tags, "GitHubActions");
@@ -1535,4 +1680,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V188-A2 END ===
+// === CODE EXPLAINER RULES V189-A2 END ===
