@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260606_v192_a1";
+const APP_DATA_VERSION = "20260606_v193_a1";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -376,6 +376,9 @@ function setView(viewName) {
   }
   if (viewName === "code" && window.CodeExplainer && typeof window.CodeExplainer.refresh === "function") {
     window.CodeExplainer.refresh();
+  }
+  if (viewName === "project" && window.ProjectAnalyzer && typeof window.ProjectAnalyzer.refresh === "function") {
+    window.ProjectAnalyzer.refresh();
   }
 }
 
