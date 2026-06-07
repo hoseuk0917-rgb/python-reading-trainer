@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V176-A4 START ===
+// === CODE EXPLAINER RULES V177-A1 START ===
 (function() {
   "use strict";
 
@@ -595,7 +595,7 @@
       pushUnique(tags, "API");
     }
 
-    if (/package_json|package\.json|npm 스크립트|npm|dependencies|devdependencies|패키지|의존성/.test(text)) {
+    if (language !== "github_actions" && /package_json|package\.json|npm 스크립트|npm|dependencies|devdependencies|패키지|의존성/.test(text)) {
       category = category === "처리" ? "패키지설정" : category;
       pushUnique(tags, "npm");
       pushUnique(tags, "의존성");
@@ -623,7 +623,7 @@
       category = category === "처리" ? "네트워크/API" : category;
       pushUnique(tags, "API");
     }
-    if (/env\.db|database|d1|sql|select|insert|update|delete|prepare|bind|run\(|all\(|first\(/.test(text)) {
+    if (/env\.db|database|d1|sql|select|insert|update|delete|prepare|\.bind\s*\(/.test(text)) {
       category = "DB";
       pushUnique(tags, "DB");
       pushUnique(tags, "SQL");
@@ -783,4 +783,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V176-A4 END ===
+// === CODE EXPLAINER RULES V177-A1 END ===
