@@ -1,12 +1,16 @@
-// === CODE EXPLAINER RULES V183-A1 START ===
+// === CODE EXPLAINER RULES V184-A3 START ===
 (function() {
   "use strict";
 
   function stripFence(input) {
-    return String(input || "")
-      .replace(/^```[a-zA-Z0-9_-]*\s*/m, "")
-      .replace(/```\s*$/m, "")
-      .trim();
+    const raw = String(input || "").trim();
+    const wholeFence = raw.match(/^```[a-zA-Z0-9_-]*\s*\r?\n([\s\S]*?)\r?\n```\s*$/);
+
+    if (wholeFence) {
+      return wholeFence[1].trim();
+    }
+
+    return raw;
   }
 
   function cleanLine(line) {
@@ -19,7 +23,9 @@
     if (language === "python") return t.startsWith("#");
     if (language === "powershell") return t.startsWith("#");
     if (language === "github_actions") return t.startsWith("#");
-    if (language === "dockerfile" || language === "env_file" || language === "requirements_txt" || language === "pyproject_toml" || language === "yaml") return t.startsWith("#");
+    if (language === "dockerfile" || language === "env_file" || language === "requirements_txt" || language === "pyproject_toml" || language === "yaml" || language === "toml") return t.startsWith("#");
+    if (language === "gitignore") return t.startsWith("#");
+    if (language === "ini_file") return t.startsWith(";") || t.startsWith("#");
     if (language === "javascript" || language === "workers" || language === "java") {
       return t.startsWith("//") || t.startsWith("/*") || t.startsWith("*");
     }
@@ -45,7 +51,7 @@
     const text = String(code || "");
     const lower = text.toLowerCase();
 
-    if (/^\s*\[project\]\s*$/m.test(text) || /^\s*\[tool\.[^\]]+\]\s*$/m.test(text)) return "pyproject_toml";
+    if (/^\s*\[project\]\s*$/m.test(text) || /^\s*\[build-system\]\s*$/m.test(text)) return "pyproject_toml";
     if (/"scripts"\s*:\s*\{/.test(text) && /"(dependencies|devDependencies)"\s*:/.test(text)) return "package_json";
     if ((/^\s*name\s*:/m.test(text) && /^\s*on\s*:/m.test(text) && /^\s*jobs\s*:/m.test(text)) || /uses:\s*actions\//.test(text)) return "github_actions";
 
@@ -63,6 +69,44 @@
 
     // Dockerfile은 Python의 `from ... import ...`와 헷갈리지 않도록 대문자 명령 위주로 판단한다.
     if (/^\s*FROM\s+\S+/m.test(text) || /^\s*(RUN|COPY|ADD|WORKDIR|CMD|ENTRYPOINT|EXPOSE|ENV|ARG)\s+/m.test(text)) return "dockerfile";
+
+    const gitignoreLines = text.split(/\r?\n/).map(function(line) { return line.trim(); }).filter(Boolean);
+    const gitignoreHits = gitignoreLines.filter(function(line) {
+      return /^!/.test(line) ||
+        /^\*\./.test(line) ||
+        /\/$/.test(line) ||
+        /^\.env$/.test(line) ||
+        /^\.venv\/$/.test(line) ||
+        /^node_modules\/$/.test(line) ||
+        /^dist\/$/.test(line) ||
+        /^build\/$/.test(line) ||
+        /^__pycache__\/$/.test(line);
+    }).length;
+    if (gitignoreHits >= 2 && !/[{};]/.test(text)) return "gitignore";
+
+    if (/^\s*#\s+.+/m.test(text) || /^\s*#{2,6}\s+.+/m.test(text) || /\[[^\]]+\]\([^)]+\)/.test(text) || /^\s*```/m.test(text)) return "markdown";
+
+    const hasBracketSection = /^\s*\[[A-Za-z0-9_. -]+\]\s*$/m.test(text);
+
+    // INI_DETECT_GUARD_V184_A3
+    // INI는 host=127.0.0.1, token=replace_me처럼 따옴표 없는 값이 자주 나오고,
+    // TOML은 문자열을 따옴표로 감싸거나 배열/boolean/number 형태가 더 명확하다.
+    const iniStyleHits = text.split(/\r?\n/).filter(function(line) {
+      const t = line.trim();
+      if (!/^[A-Za-z0-9_.-]+=/.test(t)) return false;
+
+      const value = t.split("=").slice(1).join("=").trim();
+      if (!value) return false;
+      if (/^["'\[]/.test(value)) return false;
+      if (/^(true|false)$/i.test(value)) return false;
+      if (/^\d+$/.test(value)) return false;
+
+      return true;
+    }).length;
+
+    if (hasBracketSection && iniStyleHits >= 1) return "ini_file";
+    if (/^\s*\[[A-Za-z0-9_.-]+\]\s*$/m.test(text) && /^\s*[A-Za-z0-9_.-]+\s*=\s*("|\[|true|false|\d)/m.test(text)) return "toml";
+    if (hasBracketSection && /^\s*[A-Za-z0-9_.-]+\s*=\s*[^=]+/m.test(text)) return "ini_file";
 
     if (/^\s*[A-Z][A-Z0-9_]*\s*=.+/m.test(text) && !/[{};]/.test(text)) return "env_file";
     if (/^\s*[-\w.]+(\[[^\]]+\])?\s*(==|>=|<=|~=|>|<).+/m.test(text) || /^\s*-r\s+\S+/m.test(text)) return "requirements_txt";
@@ -102,6 +146,12 @@
       if (/\bapt-get\s+install\b|\bpip\s+install\b/i.test(t)) return "medium";
     }
     if (language === "env_file") {
+      if (/SECRET|TOKEN|PASSWORD|API[_-]?KEY|PRIVATE/i.test(t)) return "medium";
+    }
+    if (language === "gitignore") {
+      if (/^!.*(\.env|secret|token|password|api[_-]?key|private)/i.test(t)) return "medium";
+    }
+    if (language === "ini_file" || language === "toml") {
       if (/SECRET|TOKEN|PASSWORD|API[_-]?KEY|PRIVATE/i.test(t)) return "medium";
     }
     return "low";
@@ -651,6 +701,96 @@
     return makeStep(lineNo, t, "YAML 설정", "들여쓰기 구조로 값을 표현하는 YAML 설정 줄입니다.", risk);
   }
 
+
+  function explainMarkdownLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "markdown");
+
+    if (/^#{1,6}\s+/.test(t)) {
+      return makeStep(lineNo, t, "Markdown 제목", "# 개수로 문서 제목이나 소제목 단계를 표시합니다.", risk);
+    }
+    if (/^```/.test(t)) {
+      return makeStep(lineNo, t, "코드 블록 경계", "문서 안에 명령어나 코드 예시를 넣는 구간의 시작 또는 끝입니다.", risk);
+    }
+    if (/^- \[[ xX]\]\s+/.test(t)) {
+      return makeStep(lineNo, t, "Markdown 체크리스트", "할 일이나 확인 항목을 체크박스 형태로 표시합니다.", risk);
+    }
+    if (/^[-*]\s+/.test(t) || /^\d+\.\s+/.test(t)) {
+      return makeStep(lineNo, t, "Markdown 목록", "여러 항목을 읽기 쉬운 목록 형태로 정리합니다.", risk);
+    }
+    if (/!\[[^\]]*\]\([^)]+\)/.test(t)) {
+      return makeStep(lineNo, t, "Markdown 이미지", "문서에 이미지를 삽입하는 문법입니다. 대체 텍스트와 파일 경로를 확인해야 합니다.", risk);
+    }
+    if (/\[[^\]]+\]\([^)]+\)/.test(t)) {
+      return makeStep(lineNo, t, "Markdown 링크", "다른 문서나 웹 주소로 이동하는 링크를 만듭니다.", risk);
+    }
+    if (/^>\s+/.test(t)) {
+      return makeStep(lineNo, t, "Markdown 인용문", "다른 문장이나 참고 내용을 인용 블록으로 강조합니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "Markdown 문단", "README나 설명 문서의 일반 문장입니다.", risk);
+  }
+
+  function explainGitignoreLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "gitignore");
+
+    if (/^!/.test(t)) {
+      return makeStep(lineNo, t, "gitignore 예외 규칙", "앞에서 무시한 패턴 중 이 항목은 다시 Git 추적 대상에 포함하겠다는 뜻입니다.", risk);
+    }
+    if (/^\.env$|secret|token|password|api[_-]?key/i.test(t)) {
+      return makeStep(lineNo, t, "민감 파일 무시", "환경변수나 비밀값 파일이 Git에 올라가지 않게 제외합니다.", risk);
+    }
+    if (/\/$/.test(t)) {
+      return makeStep(lineNo, t, "폴더 무시", "해당 폴더와 그 안의 파일들을 Git 추적에서 제외합니다.", risk);
+    }
+    if (/^\*\./.test(t)) {
+      return makeStep(lineNo, t, "확장자 패턴 무시", "특정 확장자를 가진 파일들을 한 번에 Git 추적에서 제외합니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "gitignore 무시 규칙", "이 패턴과 맞는 파일이나 폴더를 Git 추적에서 제외합니다.", risk);
+  }
+
+  function explainIniLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "ini_file");
+
+    if (/^\[[^\]]+\]$/.test(t)) {
+      return makeStep(lineNo, t, "INI 섹션", "관련 설정들을 묶는 구역 이름입니다.", risk);
+    }
+    if (/^[A-Za-z0-9_.-]+\s*=/.test(t)) {
+      if (/secret|token|password|api[_-]?key|private/i.test(t)) {
+        return makeStep(lineNo, t, "민감 설정값", "토큰이나 비밀번호처럼 노출되면 안 되는 설정값입니다. 저장소에 올릴지 확인해야 합니다.", risk);
+      }
+      return makeStep(lineNo, t, "INI 키-값 설정", "왼쪽 이름에 오른쪽 설정값을 넣는 key=value 형식입니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "INI 설정", "섹션과 key=value 구조로 쓰는 설정 파일의 한 줄입니다.", risk);
+  }
+
+  function explainTomlLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "toml");
+
+    if (/^\[\[[^\]]+\]\]$/.test(t)) {
+      return makeStep(lineNo, t, "TOML 테이블 배열", "같은 종류의 설정 묶음을 여러 개 반복해서 정의하는 영역입니다.", risk);
+    }
+    if (/^\[[^\]]+\]$/.test(t)) {
+      return makeStep(lineNo, t, "TOML 테이블", "관련 설정값들을 묶는 TOML 구역입니다.", risk);
+    }
+    if (/^[A-Za-z0-9_.-]+\s*=\s*\[/.test(t)) {
+      return makeStep(lineNo, t, "TOML 목록 설정", "하나의 키에 여러 값을 배열 형태로 넣습니다.", risk);
+    }
+    if (/^[A-Za-z0-9_.-]+\s*=/.test(t)) {
+      if (/secret|token|password|api[_-]?key|private/i.test(t)) {
+        return makeStep(lineNo, t, "민감 TOML 설정값", "토큰이나 비밀번호처럼 노출되면 안 되는 설정값입니다.", risk);
+      }
+      return makeStep(lineNo, t, "TOML 키-값 설정", "왼쪽 키에 오른쪽 값을 넣는 TOML 설정입니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "TOML 설정", "TOML 설정 파일의 한 줄입니다.", risk);
+  }
+
   function explainJavaLine(line, lineNo) {
     const t = cleanLine(line);
     const risk = riskOf(t, "java");
@@ -697,7 +837,7 @@
     const tags = [];
     let category = "처리";
 
-    // CONFIG_META_GUARD_V183_A1
+    // CONFIG_META_GUARD_V184_A1
     // 설정 파일 계열은 설명문 안의 단어 때문에 Git/CI/API/DB 등으로 오염되기 쉬워서
     // 파일 형식별 핵심 분류를 먼저 확정하고 여기서 반환한다.
     if (language === "dockerfile") {
@@ -766,7 +906,7 @@
       category = "YAML설정";
       pushUnique(tags, "YAML");
 
-      // YAML_TAG_GUARD_V183_A1
+      // YAML_TAG_GUARD_V184_A1
       if (/services\s*:/.test(code)) {
         pushUnique(tags, "서비스");
       }
@@ -789,6 +929,60 @@
         pushUnique(tags, "설정");
       }
 
+      return Object.assign({}, step, {
+        category: category,
+        tags: tags.slice(0, 4)
+      });
+    }
+
+    // DOC_CONFIG_META_GUARD_V184_A3
+    if (language === "markdown") {
+      category = "문서";
+      pushUnique(tags, "Markdown");
+      if (/^#{1,6}\s+/.test(code)) pushUnique(tags, "제목");
+      if (/^```/.test(code)) pushUnique(tags, "코드블록");
+      if (/^[-*]\s+|^\d+\.\s+/.test(code)) pushUnique(tags, "목록");
+      if (/\[[^\]]+\]\([^)]+\)/.test(code)) pushUnique(tags, "링크");
+      if (/^- \[[ x]\]/.test(code)) pushUnique(tags, "체크리스트");
+      if (tags.length === 1) pushUnique(tags, "문서");
+      return Object.assign({}, step, {
+        category: category,
+        tags: tags.slice(0, 4)
+      });
+    }
+
+    if (language === "gitignore") {
+      category = "무시규칙";
+      pushUnique(tags, "GitIgnore");
+      if (/^!/.test(code)) pushUnique(tags, "예외");
+      else pushUnique(tags, "무시");
+      if (/\/$|^\*\.|^\.env$/.test(code)) pushUnique(tags, "파일");
+      if (/\.env|secret|token|password|api[_-]?key|private/.test(code)) pushUnique(tags, "보안");
+      return Object.assign({}, step, {
+        category: category,
+        tags: tags.slice(0, 4)
+      });
+    }
+
+    if (language === "ini_file") {
+      category = "INI설정";
+      pushUnique(tags, "INI");
+      if (/^\[[^\]]+\]$/.test(code)) pushUnique(tags, "섹션");
+      else pushUnique(tags, "설정");
+      if (/secret|token|password|api[_-]?key|private/.test(code)) pushUnique(tags, "보안");
+      return Object.assign({}, step, {
+        category: category,
+        tags: tags.slice(0, 4)
+      });
+    }
+
+    if (language === "toml") {
+      category = "TOML설정";
+      pushUnique(tags, "TOML");
+      if (/^\[/.test(code)) pushUnique(tags, "섹션");
+      else pushUnique(tags, "설정");
+      if (/\[.*\]|dependencies|select\s*=/.test(code)) pushUnique(tags, "목록");
+      if (/secret|token|password|api[_-]?key|private/.test(code)) pushUnique(tags, "보안");
       return Object.assign({}, step, {
         category: category,
         tags: tags.slice(0, 4)
@@ -995,7 +1189,11 @@
       env_file: ".env 환경변수 파일",
       requirements_txt: "requirements.txt",
       pyproject_toml: "pyproject.toml",
-      yaml: "YAML 설정"
+      yaml: "YAML 설정",
+      markdown: "Markdown / README",
+      gitignore: ".gitignore",
+      ini_file: "INI 설정",
+      toml: "TOML 설정"
     };
     return (names[language] || "코드") + "를 " + steps.length + "단계로 나눠 해석했습니다." + (risky ? " 주의가 필요한 단계가 " + risky + "개 있습니다." : " 특별히 높은 위험 명령은 감지되지 않았습니다.");
   }
@@ -1048,6 +1246,10 @@
       else if (language === "requirements_txt") steps.push(explainRequirementsLine(line, lineNo));
       else if (language === "pyproject_toml") steps.push(explainPyprojectLine(line, lineNo));
       else if (language === "yaml") steps.push(explainYamlLine(line, lineNo));
+      else if (language === "markdown") steps.push(explainMarkdownLine(line, lineNo));
+      else if (language === "gitignore") steps.push(explainGitignoreLine(line, lineNo));
+      else if (language === "ini_file") steps.push(explainIniLine(line, lineNo));
+      else if (language === "toml") steps.push(explainTomlLine(line, lineNo));
       else if (language === "java") steps.push(explainJavaLine(line, lineNo));
       else steps.push(makeStep(lineNo, cleanLine(line), "코드 실행", "이 줄을 순서대로 실행합니다.", "low"));
     });
@@ -1071,4 +1273,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V183-A1 END ===
+// === CODE EXPLAINER RULES V184-A3 END ===

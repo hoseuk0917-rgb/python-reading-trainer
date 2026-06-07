@@ -115,7 +115,22 @@ function normalizeReportKey(value) {
     "컨테이너": "container",
     "환경설정": "env_config",
     "프로젝트설정": "project_config",
-    "YAML설정": "yaml_config"
+    "YAML설정": "yaml_config",
+    "문서": "document",
+    "무시규칙": "ignore_rule",
+    "INI설정": "ini_config",
+    "TOML설정": "toml_config",
+    "Markdown": "markdown",
+    "제목": "heading",
+    "코드블록": "code_block",
+    "링크": "link",
+    "체크리스트": "checklist",
+    "GitIgnore": "gitignore",
+    "무시": "ignore",
+    "예외": "exception",
+    "섹션": "section",
+    "INI": "ini",
+    "TOML": "toml"
   };
 
   if (map[value]) return map[value];
@@ -176,7 +191,7 @@ const samples = [
 
 git diff --stat
 git stash push -u -m "wip-test"
-python tools/validate_lessons.py --expected-app-version 20260606_v183_a1 --expected-lesson-cards 1785
+python tools/validate_lessons.py --expected-app-version 20260606_v184_a3 --expected-lesson-cards 1785
 Write-Host "DONE"`,
     mustContain: ["변경량 요약 확인", "임시 보관", "Python 검증 실행"],
     mustMetaContain: ["Git", "검증", "출력"]
@@ -357,7 +372,7 @@ async def health():
 node --check .\\src\\pwa\\app.js
 npm install
 npm run build
-python tools/validate_lessons.py --expected-app-version 20260606_v183_a1
+python tools/validate_lessons.py --expected-app-version 20260606_v184_a3
 git status --short`,
     mustContain: ["작업 폴더 이동", "Node 문법 검사", "npm 의존성 설치", "npm 스크립트 실행", "Python 검증 실행", "Git 변경 상태 확인"],
     mustMetaContain: ["파일", "검증", "의존성", "Git"]
@@ -482,6 +497,73 @@ testpaths = ["tests"]`,
       - .:/app`,
     mustContain: ["YAML 설정 키", "YAML 목록 항목"],
     mustMetaContain: ["YAML"]
+  },
+  {
+    name: "markdown_readme_basic",
+    requestedLanguage: "auto",
+    expectedLanguage: "markdown",
+    minSteps: 8,
+    code: `# Python Reading Trainer
+
+파이썬 코드를 읽는 연습을 위한 학습 앱입니다.
+
+## 설치
+
+- Node.js를 설치합니다.
+- 의존성을 설치합니다.
+- 검증 명령을 실행합니다.
+
+\`\`\`powershell
+npm test
+\`\`\`
+
+자세한 내용은 [개발 문서](./docs/dev.md)를 참고하세요.`,
+    mustContain: ["Markdown 제목", "Markdown 문단", "Markdown 목록", "코드 블록 경계", "Markdown 링크"],
+    mustMetaContain: ["Markdown", "문서", "제목", "목록", "링크"]
+  },
+  {
+    name: "gitignore_basic",
+    requestedLanguage: "auto",
+    expectedLanguage: "gitignore",
+    minSteps: 5,
+    code: `node_modules/
+.env
+*.log
+!important.log
+dist/
+__pycache__/`,
+    mustContain: ["폴더 무시", "민감 파일 무시", "확장자 패턴 무시", "gitignore 예외 규칙"],
+    mustMetaContain: ["GitIgnore", "무시규칙", "무시", "예외"]
+  },
+  {
+    name: "ini_file_basic",
+    requestedLanguage: "auto",
+    expectedLanguage: "ini_file",
+    minSteps: 5,
+    code: `[server]
+host=127.0.0.1
+port=8000
+debug=false
+
+[auth]
+token=replace_me`,
+    mustContain: ["INI 섹션", "INI 키-값 설정", "민감 설정값"],
+    mustMetaContain: ["INI", "INI설정", "섹션", "보안"]
+  },
+  {
+    name: "toml_general_config",
+    requestedLanguage: "auto",
+    expectedLanguage: "toml",
+    minSteps: 5,
+    code: `[tool.ruff]
+line-length = 100
+select = ["E", "F"]
+
+[database]
+enabled = true
+port = 5432`,
+    mustContain: ["TOML 테이블", "TOML 키-값 설정", "TOML 목록 설정"],
+    mustMetaContain: ["TOML", "TOML설정", "섹션", "설정"]
   }
 ];
 
@@ -519,7 +601,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260606_v183_a1",
+  version: "20260606_v184_a3",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,

@@ -130,7 +130,46 @@ testpaths = ["tests"]`,
     environment:
       DEBUG: "false"
     volumes:
-      - .:/app`
+      - .:/app`,
+
+    markdown: `# Python Reading Trainer
+
+파이썬 코드를 읽는 연습을 위한 학습 앱입니다.
+
+## 설치
+
+- Node.js를 설치합니다.
+- 의존성을 설치합니다.
+- 검증 명령을 실행합니다.
+
+\`\`\`powershell
+npm test
+\`\`\`
+
+자세한 내용은 [개발 문서](./docs/dev.md)를 참고하세요.`,
+
+    gitignore: `node_modules/
+.env
+*.log
+!important.log
+dist/
+__pycache__/`,
+
+    ini_file: `[server]
+host=127.0.0.1
+port=8000
+debug=false
+
+[auth]
+token=replace_me`,
+
+    toml: `[tool.ruff]
+line-length = 100
+select = ["E", "F"]
+
+[database]
+enabled = true
+port = 5432`
   };
 
   let lastMermaid = "";
@@ -163,7 +202,11 @@ testpaths = ["tests"]`,
       env_file: ".env는 환경변수와 비밀값 노출 위험을 중심으로 설명합니다.",
       requirements_txt: "requirements.txt는 Python 패키지와 버전 고정 방식을 중심으로 설명합니다.",
       pyproject_toml: "pyproject.toml은 Python 프로젝트 메타데이터와 도구 설정을 중심으로 설명합니다.",
-      yaml: "YAML은 들여쓰기 기반 설정 키, 목록, 서비스 설정을 중심으로 설명합니다."
+      yaml: "YAML은 들여쓰기 기반 설정 키, 목록, 서비스 설정을 중심으로 설명합니다.",
+      markdown: "Markdown/README는 제목, 목록, 코드블록, 링크를 중심으로 설명합니다.",
+      gitignore: ".gitignore는 Git에서 제외할 파일/폴더 패턴과 예외 규칙을 설명합니다.",
+      ini_file: "INI 설정은 섹션과 key=value 설정을 중심으로 설명합니다.",
+      toml: "TOML 설정은 테이블, 키-값, 목록 설정을 중심으로 설명합니다."
     };
 
     hint.textContent = messages[value] || messages.auto;
@@ -182,7 +225,11 @@ testpaths = ["tests"]`,
       env_file: ".env",
       requirements_txt: "requirements.txt",
       pyproject_toml: "pyproject.toml",
-      yaml: "YAML"
+      yaml: "YAML",
+      markdown: "Markdown / README",
+      gitignore: ".gitignore",
+      ini_file: "INI 설정",
+      toml: "TOML 설정"
     };
     return map[language] || language || "자동";
   }
