@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V202-A1 START ===
+// === CODE EXPLAINER RULES V203-A1 START ===
 (function() {
   "use strict";
 
@@ -1795,7 +1795,7 @@
     return id + '["' + label + '"]';
   }
 
-  function buildMermaid(steps) {
+  function buildMermaid(steps, dataFlow, callFlow) {
     if (!steps.length) return "flowchart TD\n  START_NODE([시작])\n  START_NODE --> EMPTY[분석할 코드 없음]\n  EMPTY --> END_NODE([끝])";
 
     const lines = [
@@ -1837,7 +1837,205 @@
       lines.push("  N" + limited.length + " --> END_NODE");
     }
 
+    const dataItems = Array.isArray(dataFlow) ? dataFlow : [];
+    const callItems = Array.isArray(callFlow) ? callFlow : [];
+
+    if (dataItems.length) {
+      lines.push("  subgraph DATA_FLOW[데이터 흐름]");
+      dataItems.slice(0, 8).forEach(function(item, idx) {
+        const id = "DF" + (idx + 1);
+        const label = mermaidLabel(item.kind + " · " + item.name);
+        lines.push("  " + id + '["' + label + '"]');
+        lines.push("  class " + id + " dataStep;");
+        if (idx > 0) lines.push("  DF" + idx + " -.-> " + id);
+      });
+      lines.push("  end");
+      lines.push("  START_NODE -.데이터.-> DF1");
+    }
+
+    if (callItems.length) {
+      lines.push("  subgraph CALL_FLOW[호출 흐름]");
+      callItems.slice(0, 8).forEach(function(item, idx) {
+        const id = "CF" + (idx + 1);
+        const label = mermaidLabel(item.type + " · " + item.name);
+        lines.push("  " + id + '["' + label + '"]');
+        lines.push("  class " + id + " defaultStep;");
+        if (idx > 0) lines.push("  CF" + idx + " -.-> " + id);
+      });
+      lines.push("  end");
+      lines.push("  START_NODE -.호출.-> CF1");
+    }
+
     return lines.join("\n");
+  }
+
+  // DATA_CALL_FLOW_V203_A1
+  function trimSourcePreview(value) {
+    return String(value || "").trim().replace(/;$/, "").slice(0, 80);
+  }
+
+  function addDataFlowItem(list, seen, lineNo, kind, name, code, summary) {
+    const key = [lineNo, kind, name, code].join("|");
+    if (seen[key]) return;
+    seen[key] = true;
+    list.push({
+      lineNo: lineNo,
+      kind: kind,
+      name: name || "값",
+      code: code,
+      summary: summary || ""
+    });
+  }
+
+  function collectDataFlow(steps, language) {
+    const list = [];
+    const seen = {};
+
+    (steps || []).forEach(function(step) {
+      const code = cleanLine(step.code);
+      let match;
+
+      if (!code) return;
+
+      if (language === "powershell") {
+        match = code.match(/^\$([A-Za-z_][\w-]*)\s*=\s*(.+)$/);
+      } else if (language === "javascript" || language === "workers") {
+        match = code.match(/^(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(.+)$/);
+      } else if (language === "python") {
+        match = code.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
+      } else if (language === "java") {
+        match = code.match(/\b(?:String|int|double|boolean|long|float|var|List<[^>]+>|Map<[^>]+>|Set<[^>]+>)\s+([A-Za-z_]\w*)\s*=\s*(.+?);?$/);
+      }
+
+      if (match) {
+        addDataFlowItem(list, seen, step.lineNo, "생성/저장", match[1], code, match[1] + "에 " + trimSourcePreview(match[2]) + " 결과를 저장합니다.");
+      }
+
+      match = code.match(/\b([A-Za-z_]\w*)\.(append|extend|update|push|add|put|setItem)\s*\(/);
+      if (match) {
+        addDataFlowItem(list, seen, step.lineNo, "가공", match[1], code, match[1] + " 값을 추가하거나 갱신합니다.");
+      }
+
+      if (/^return\b/.test(code) || /\breturn\s+/.test(code)) {
+        addDataFlowItem(list, seen, step.lineNo, "반환", "return", code, "함수 밖으로 결과를 돌려줍니다.");
+      }
+
+      if (/print\s*\(|console\.(log|error)\s*\(|System\.(out|err)\.println|Response\.json|new\s+Response/.test(code)) {
+        addDataFlowItem(list, seen, step.lineNo, "출력/응답", "output", code, "처리 결과를 화면이나 응답으로 내보냅니다.");
+      }
+
+      if (/json\.dump\s*\(|\.write_text\s*\(|\.write\s*\(|\.to_csv\s*\(|Set-Content|Out-File|Export-Csv/i.test(code)) {
+        addDataFlowItem(list, seen, step.lineNo, "파일 저장", "file", code, "처리 결과를 파일에 저장합니다.");
+      }
+    });
+
+    return list.slice(0, 20);
+  }
+
+  function addCallFlowItem(list, seen, lineNo, type, name, target, code, summary) {
+    const key = [lineNo, type, name, target, code].join("|");
+    if (seen[key]) return;
+    seen[key] = true;
+    list.push({
+      lineNo: lineNo,
+      type: type,
+      name: name,
+      target: target || "",
+      code: code,
+      summary: summary || ""
+    });
+  }
+
+  function collectCallFlow(raw, language) {
+    const lines = String(raw || "").split(/\r?\n/);
+    const definitions = {};
+    const list = [];
+    const seen = {};
+    const skip = {
+      "if": true,
+      "for": true,
+      "while": true,
+      "with": true,
+      "return": true,
+      "class": true,
+      "catch": true,
+      "function": true,
+      "public": true,
+      "private": true,
+      "protected": true,
+      "new": true,
+      "switch": true
+    };
+
+    lines.forEach(function(line, idx) {
+      const lineNo = idx + 1;
+      const code = cleanLine(line);
+      let match;
+
+      if (!code) return;
+
+      if (language === "python") {
+        match = code.match(/^(?:async\s+)?def\s+([A-Za-z_]\w*)\s*\(/);
+        if (match) {
+          definitions[match[1]] = lineNo;
+          addCallFlowItem(list, seen, lineNo, "정의", match[1], "", code, "사용자 함수 정의입니다.");
+        }
+      }
+
+      if (language === "javascript" || language === "workers") {
+        match = code.match(/^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/) || code.match(/^(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\(?/);
+        if (match && /=>|function\s*\(|function\s+/.test(code)) {
+          definitions[match[1]] = lineNo;
+          addCallFlowItem(list, seen, lineNo, "정의", match[1], "", code, "사용자 함수/핸들러 정의입니다.");
+        }
+      }
+
+      if (language === "java") {
+        match = code.match(/\b(?:public|private|protected)?\s*(?:static\s+)?[A-Za-z_<>, \[\]]+\s+([A-Za-z_]\w*)\s*\([^)]*\)\s*(?:throws\s+[\w, ]+)?\s*\{/);
+        if (match) {
+          definitions[match[1]] = lineNo;
+          addCallFlowItem(list, seen, lineNo, "정의", match[1], "", code, "Java 메서드 정의입니다.");
+        }
+      }
+
+      if (language === "powershell") {
+        match = code.match(/^function\s+([A-Za-z_][\w-]*)/i);
+        if (match) {
+          definitions[match[1]] = lineNo;
+          addCallFlowItem(list, seen, lineNo, "정의", match[1], "", code, "PowerShell 함수 정의입니다.");
+        }
+      }
+    });
+
+    lines.forEach(function(line, idx) {
+      const lineNo = idx + 1;
+      const code = cleanLine(line);
+      let re;
+      let match;
+
+      if (!code) return;
+
+      if (language === "powershell") {
+        re = /\b([A-Za-z][\w-]*)\b/g;
+      } else {
+        re = /\b([A-Za-z_$][\w$]*)\s*\(/g;
+      }
+
+      while ((match = re.exec(code)) !== null) {
+        const name = match[1];
+        if (!name || skip[name]) continue;
+        if (language === "python" && /^def\s+/.test(code)) continue;
+        if ((language === "javascript" || language === "workers") && /function\s+/.test(code) && code.includes(name)) continue;
+
+        if (definitions[name]) {
+          addCallFlowItem(list, seen, lineNo, "호출", name, "line " + definitions[name], code, "사용자 정의 함수/메서드를 호출합니다.");
+        } else if (/^(print|open|range|enumerate|len|json|fetch|setTimeout|addEventListener|println|readString|Path|Files|Response|console|document|localStorage)$/.test(name)) {
+          addCallFlowItem(list, seen, lineNo, "호출", name, "내장/라이브러리", code, "내장 함수나 라이브러리 기능을 호출합니다.");
+        }
+      }
+    });
+
+    return list.slice(0, 24);
   }
 
   // UNSUPPORTED_ITEMS_V202_A1
@@ -1941,6 +2139,9 @@
       return inferStepMeta(step, language);
     });
 
+    const dataFlow = collectDataFlow(enrichedSteps, language);
+    const callFlow = collectCallFlow(raw, language);
+
     return {
       language: language,
       sourceCode: raw,
@@ -1948,9 +2149,11 @@
       flowSummary: summarizeFlow(enrichedSteps),
       confidenceSummary: summarizeConfidence(enrichedSteps),
       unsupportedItems: collectUnsupportedItems(enrichedSteps, language),
+      dataFlow: dataFlow,
+      callFlow: callFlow,
       steps: enrichedSteps,
       warnings: enrichedSteps.filter(function(step) { return step.risk === "high" || step.risk === "medium"; }),
-      mermaid: buildMermaid(enrichedSteps)
+      mermaid: buildMermaid(enrichedSteps, dataFlow, callFlow)
     };
   }
 
@@ -1959,4 +2162,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V202-A1 END ===
+// === CODE EXPLAINER RULES V203-A1 END ===

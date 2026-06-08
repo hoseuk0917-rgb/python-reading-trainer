@@ -203,6 +203,8 @@ function summarizeResult(sample, result, status, message) {
     titles: steps.map((step) => step.title),
     confidenceCounts: countValues(steps.map((step) => step.confidence || "inferred")),
     unsupportedCount: Array.isArray(result.unsupportedItems) ? result.unsupportedItems.length : 0,
+    dataFlowCount: Array.isArray(result.dataFlow) ? result.dataFlow.length : 0,
+    callFlowCount: Array.isArray(result.callFlow) ? result.callFlow.length : 0,
     warningTitles: steps
       .filter((step) => step.risk === "high" || step.risk === "medium")
       .map((step) => step.title)
@@ -820,6 +822,23 @@ print(data)`,
     mustContain: ["변수에 값 저장", "Python 코드 실행", "미지원", "화면에 출력"],
     mustMetaContain: ["Python", "출력"]
   }
+,
+  {
+    name: "python_data_call_flow",
+    requestedLanguage: "python",
+    expectedLanguage: "python",
+    minSteps: 7,
+    code: `def normalize(items):
+    result = []
+    for item in items:
+        result.append(item.strip().lower())
+    return result
+
+values = normalize([" A ", " B "])
+print(values)`,
+    mustContain: ["함수 정의", "반복문", "목록에 항목 추가", "값 돌려주기", "데이터 흐름", "호출 흐름", "normalize", "DATA_FLOW", "CALL_FLOW"],
+    mustMetaContain: ["Python", "반복문", "출력"]
+  }
 
 ];
 
@@ -832,7 +851,11 @@ const printJson = process.argv.includes("--json");
 samples.forEach((sample) => {
   const result = analyzer.analyze(sample.code, sample.requestedLanguage);
   const text = flattenStepText(result);
-  const summaryText = [result.summary, result.flowSummary || "", text].join("\n");
+  const flowAnalysisText = [
+    ...(Array.isArray(result.dataFlow) ? result.dataFlow.map((item) => ["데이터 흐름", item.kind, item.name, item.summary, item.code].join(" ")) : []),
+    ...(Array.isArray(result.callFlow) ? result.callFlow.map((item) => ["호출 흐름", item.type, item.name, item.target, item.summary, item.code].join(" ")) : [])
+  ].join("\n");
+  const summaryText = [result.summary, result.flowSummary || "", text, flowAnalysisText, result.mermaid || ""].join("\n");
 
   try {
     assert(result.language === sample.expectedLanguage, `${sample.name}: expected language ${sample.expectedLanguage}, got ${result.language}`);
@@ -861,7 +884,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260608_v202_a1",
+  version: "20260608_v203_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,

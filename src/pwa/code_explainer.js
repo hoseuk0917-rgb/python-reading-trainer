@@ -1,4 +1,4 @@
-// === CODE EXPLAINER UI V202-A1 START ===
+// === CODE EXPLAINER UI V203-A1 START ===
 (function() {
   "use strict";
 
@@ -852,6 +852,25 @@ port = 5432`
       });
     }
 
+    const dataFlow = Array.isArray(result.dataFlow) ? result.dataFlow : [];
+    const callFlow = Array.isArray(result.callFlow) ? result.callFlow : [];
+
+    if (dataFlow.length) {
+      lines.push("");
+      lines.push("[데이터 흐름]");
+      dataFlow.slice(0, 16).forEach(function(item) {
+        lines.push("- line " + item.lineNo + " · " + item.kind + " · " + item.name + " · " + item.summary);
+      });
+    }
+
+    if (callFlow.length) {
+      lines.push("");
+      lines.push("[호출 흐름]");
+      callFlow.slice(0, 16).forEach(function(item) {
+        lines.push("- line " + item.lineNo + " · " + item.type + " · " + item.name + (item.target ? " → " + item.target : "") + " · " + item.summary);
+      });
+    }
+
     const overview = buildLongCodeOverview(result);
     lines.push("");
     lines.push("[긴 코드 구조 요약]");
@@ -956,6 +975,41 @@ port = 5432`
       '</details>';
   }
 
+  // DATA_CALL_FLOW_UI_V203_A1
+  function renderFlowList(items, emptyMessage) {
+    if (!Array.isArray(items) || !items.length) {
+      return '<p class="muted">' + escapeHtml(emptyMessage) + '</p>';
+    }
+
+    return '<ul>' + items.slice(0, 12).map(function(item) {
+      const summary = item.summary ? ' <span class="muted">· ' + escapeHtml(item.summary) + '</span>' : "";
+      const target = item.target ? ' <span class="muted">→ ' + escapeHtml(item.target) + '</span>' : "";
+      return '<li><strong>line ' + item.lineNo + '</strong> · ' +
+        escapeHtml(item.kind || item.type || "흐름") + ' · ' +
+        escapeHtml(item.name || "값") + target + summary + '</li>';
+    }).join("") + '</ul>';
+  }
+
+  function renderFlowAnalysisReport(result) {
+    const box = el("codeFlowAnalysisReport");
+    if (!box) return;
+
+    const dataFlow = Array.isArray(result.dataFlow) ? result.dataFlow : [];
+    const callFlow = Array.isArray(result.callFlow) ? result.callFlow : [];
+
+    box.className = "code-flow-analysis-report";
+    box.innerHTML = '<div class="code-flow-mini-grid">' +
+      '<span class="code-report-chip"><strong>' + dataFlow.length + '</strong><small>데이터 흐름</small></span>' +
+      '<span class="code-report-chip"><strong>' + callFlow.length + '</strong><small>호출 흐름</small></span>' +
+      '</div>' +
+      '<details open class="code-flow-detail"><summary>데이터 흐름</summary>' +
+      renderFlowList(dataFlow, "변수 저장, 가공, 출력 흐름이 뚜렷하게 감지되지 않았습니다.") +
+      '</details>' +
+      '<details class="code-flow-detail"><summary>호출 흐름</summary>' +
+      renderFlowList(callFlow, "함수 정의/호출 흐름이 뚜렷하게 감지되지 않았습니다.") +
+      '</details>';
+  }
+
   async function copyCodeReport() {
     if (!lastReport) {
       alert("복사할 코드 해석 리포트가 없습니다. 먼저 분석하기를 눌러주세요.");
@@ -1027,6 +1081,7 @@ port = 5432`
     renderDetectionDetails(result, requested, input.value);
     renderQuickReport(result);
     renderConfidenceReport(result);
+    renderFlowAnalysisReport(result);
     renderStructureOverview(result);
     renderWarnings(result.warnings || []);
     renderSteps(result.steps || []);
@@ -1061,6 +1116,7 @@ port = 5432`
     const source = el("mermaidSource");
     const quick = el("codeQuickReport");
     const confidence = el("codeConfidenceReport");
+    const flowAnalysis = el("codeFlowAnalysisReport");
     const structure = el("codeStructureOverview");
     const detection = el("codeDetectionDetails");
     const largeBody = el("diagramLargeBody");
@@ -1090,6 +1146,10 @@ port = 5432`
     if (confidence) {
       confidence.className = "code-confidence-report muted";
       confidence.textContent = "분석하면 확실/추정/미지원 단계가 표시됩니다.";
+    }
+    if (flowAnalysis) {
+      flowAnalysis.className = "code-flow-analysis-report muted";
+      flowAnalysis.textContent = "분석하면 데이터 흐름과 함수 호출 흐름이 표시됩니다.";
     }
     if (structure) {
       structure.className = "code-structure-overview muted";
@@ -1267,4 +1327,4 @@ port = 5432`
     init();
   }
 })();
-// === CODE EXPLAINER UI V202-A1 END ===
+// === CODE EXPLAINER UI V203-A1 END ===
