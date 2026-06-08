@@ -1,9 +1,11 @@
-// === PROJECT ANALYZER V196-A1 START ===
+// === PROJECT ANALYZER V197-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260606_v196_a1";
+  const PROJECT_ANALYZER_VERSION = "20260608_v197_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
+  let lastParsedReport = null;
+  let lastHandoffText = "";
 
   function el(id) {
     return document.getElementById(id);
@@ -35,8 +37,8 @@
 "",
 "ROOT = Path('.').resolve()",
 "OUT_DIR = ROOT / '.tmp'",
-"OUT_JSON = OUT_DIR / 'project_probe_v196.json'",
-"OUT_MD = OUT_DIR / 'project_probe_v196_report.md'",
+"OUT_JSON = OUT_DIR / 'project_probe_v197.json'",
+"OUT_MD = OUT_DIR / 'project_probe_v197_report.md'",
 "SKIP_DIRS = {'.git', '.tmp', 'node_modules', '.venv', '.venv_lora_infer', '__pycache__', '.pytest_cache', 'dist', 'build', '.next'}",
 "TEXT_EXTS = {'.js', '.css', '.html', '.json', '.py', '.ps1', '.md', '.toml', '.yml', '.yaml', '.txt', '.gitignore', '.env'}",
 "KEY_FILES = ['index.html', 'src/pwa/index.html', 'src/pwa/app.js', 'src/pwa/code_explainer.js', 'src/pwa/code_explainer_rules.js', 'src/pwa/project_analyzer.js', 'src/pwa/style.css', 'tools/validate_lessons.py', 'tools/code_explainer_smoke_v171.js']",
@@ -254,7 +256,7 @@
 "",
 "OUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')",
 "md = []",
-"md.append('# Project Probe V196')",
+"md.append('# Project Probe V197')",
 "md.append('')",
 "md.append('- generated_at: ' + report['generated_at'])",
 "md.append('- root: `' + report['root'] + '`')",
@@ -300,7 +302,7 @@
 "md.append('- ' + rel(OUT_MD))",
 "OUT_MD.write_text('\\n'.join(md), encoding='utf-8')",
 "",
-"print('PROJECT_PROBE_V196_OK')",
+"print('PROJECT_PROBE_V197_OK')",
 "print('ROOT', ROOT)",
 "print('GIT_HEAD', report['git']['head'])",
 "print('GIT_STATUS', report['git']['status_short'] or 'clean')",
@@ -367,12 +369,12 @@
       "",
       "@'",
       pythonCode,
-      "'@ | Set-Content .\\.tmp\\project_probe_v196_from_app.py -Encoding UTF8",
+      "'@ | Set-Content .\\.tmp\\project_probe_v197_from_app.py -Encoding UTF8",
       "",
-      "python .\\.tmp\\project_probe_v196_from_app.py",
+      "python .\\.tmp\\project_probe_v197_from_app.py",
       "",
       '"`n=== REPORT PREVIEW ==="',
-      "Get-Content .\\.tmp\\project_probe_v196_report.md -Encoding UTF8 -TotalCount 220"
+      "Get-Content .\\.tmp\\project_probe_v197_report.md -Encoding UTF8 -TotalCount 220"
     ].join("\n");
   }
 
@@ -427,7 +429,7 @@
     };
   }
 
-  // PROJECT_ANALYZER_CLEANUP_V196_A1
+  // PROJECT_ANALYZER_CLEANUP_V197_A1
   function parseProjectReportJson(text) {
     const raw = String(text || "").trim();
 
@@ -504,7 +506,7 @@
     };
 
     return {
-      ok: raw.includes("PROJECT_PROBE_V196_OK") || raw.includes("PROJECT_PROBE_V195_OK") || raw.includes("PROJECT_PROBE_V193_OK") || raw.includes("# Project Probe V196") || raw.includes("# Project Probe V195") || raw.includes("# Project Probe V193"),
+      ok: raw.includes("PROJECT_PROBE_V197_OK") || raw.includes("PROJECT_PROBE_V195_OK") || raw.includes("PROJECT_PROBE_V193_OK") || raw.includes("# Project Probe V197") || raw.includes("# Project Probe V195") || raw.includes("# Project Probe V193"),
       inputMode: "terminal",
       root: getLineValue(raw, "ROOT") || (raw.match(/- root: `([^`]+)`/) || [])[1] || "",
       gitHead: getLineValue(raw, "GIT_HEAD") || (raw.match(/- git_head: `([^`]+)`/) || [])[1] || "",
@@ -596,7 +598,7 @@
     }
 
     if (!parsed.ok) {
-      items.push("PROJECT_PROBE_V196_OK 또는 # Project Probe V196가 보이지 않습니다. 출력이 잘렸을 수 있습니다.");
+      items.push("PROJECT_PROBE_V197_OK 또는 # Project Probe V197가 보이지 않습니다. 출력이 잘렸을 수 있습니다.");
     }
 
     return items;
@@ -708,11 +710,102 @@
     ].filter(Boolean).join("");
   }
 
+  function buildProjectHandoff(parsed) {
+    const counts = parsed.counts || {};
+    const recommendations = buildRecommendations(parsed);
+    const env = parsed.environment || {};
+    const keyFiles = objectEntries(parsed.keyFiles || {}).map(function(item) {
+      const info = item[1] || {};
+      return "- " + item[0] + ": " + (info.exists ? "OK" : "MISSING");
+    }).slice(0, 14);
+
+    const lines = [
+      "# python-reading-trainer 인계문서 — V197 프로젝트분석 인계문서 자동 생성",
+      "",
+      "## 현재 상태",
+      "",
+      "프로젝트:",
+      parsed.root || "D:\\projects\\python-reading-trainer",
+      "",
+      "APP_VERSION:",
+      PROJECT_ANALYZER_VERSION,
+      "",
+      "Git:",
+      parsed.gitHead || "-",
+      "",
+      "Working tree:",
+      statusLabel(parsed.gitStatus),
+      "",
+      "입력 방식:",
+      parsed.inputMode || "terminal",
+      "",
+      "## 프로젝트 수치",
+      "",
+      "- 파일 수: " + (counts.filesTotal || "-"),
+      "- lesson 파일: " + (counts.lessonFiles || "-"),
+      "- side 파일: " + (counts.sideCardFiles || "-"),
+      "- lesson 카드: " + (counts.lessonCards || "-"),
+      "- side 카드: " + (counts.sideCards || "-"),
+      "- 함수 호출 후보 파일 수: " + (parsed.callCandidateFiles || "-"),
+      "",
+      "## 환경 감사",
+      "",
+      "- Python: " + (env.pythonVersion || "-"),
+      "- Git: " + (env.git || "-"),
+      "- Node: " + (env.node || "-"),
+      "- pip: " + (env.pip || "-"),
+      "- 표준 라이브러리 only: " + (env.standardLibraryOnly ? "yes" : "no"),
+      "",
+      "## 핵심 파일 상태",
+      "",
+      keyFiles.length ? keyFiles.join("\n") : "- JSON report를 붙여넣으면 핵심 파일 상태가 더 자세히 표시됨",
+      "",
+      "## 다음에 같이 봐야 할 파일 묶음",
+      "",
+      recommendations.length ? recommendations.map(function(item) { return "- " + item; }).join("\n") : "- 추가 권장 묶음 없음",
+      "",
+      "## 다음 권장 작업",
+      "",
+      "1. 프로젝트분석 결과 복사 / 인계문서 자동 생성 기능 검증",
+      "2. JSON report 붙여넣기 안내와 기능별 파일 묶음 강조 UX 확인",
+      "3. 검증 통과 후 커밋, 태그, 푸시, GitHub Pages live 확인",
+      "",
+      "## 주의",
+      "",
+      "- .tmp는 probe/검증 산출물이므로 커밋하지 않는다.",
+      "- 검증 전 커밋 금지.",
+      "- 코드 수정 전에는 관련 기존 블록을 먼저 추출한다."
+    ];
+
+    return lines.join("\n");
+  }
+
+  async function copyProjectHandoff() {
+    if (!lastHandoffText && lastParsedReport) {
+      lastHandoffText = buildProjectHandoff(lastParsedReport);
+    }
+
+    if (!lastHandoffText) {
+      alert("먼저 분석 결과를 생성하세요.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(lastHandoffText);
+      alert("다음 대화창용 인계문서를 복사했습니다.");
+    } catch (error) {
+      alert("인계문서 복사 실패: " + String(error));
+    }
+  }
+
   function renderProbeAnalysis(parsed) {
     const summary = el("projectAnalysisSummary");
     const details = el("projectAnalysisDetails");
 
     if (!summary || !details) return;
+
+    lastParsedReport = parsed;
+    lastHandoffText = buildProjectHandoff(parsed);
 
     const counts = parsed.counts || {};
     summary.classList.remove("muted");
@@ -752,8 +845,19 @@
       '</div>' +
       '<div class="project-detail-section">' +
       '<h3>산출 파일</h3>' +
-      '<p>' + escapeHtml([parsed.outJson, parsed.outMd].filter(Boolean).join(" · ") || ".tmp/project_probe_v196_report.md") + '</p>' +
+      '<p>' + escapeHtml([parsed.outJson, parsed.outMd].filter(Boolean).join(" · ") || ".tmp/project_probe_v197_report.md") + '</p>' +
+      '</div>' +
+      '<div class="project-detail-section project-handoff-section">' +
+      '<h3>다음 대화창 인계문서</h3>' +
+      '<p class="muted">분석 결과에서 버전, Git 상태, 카드 수, 핵심 파일, 다음 작업을 자동 정리합니다.</p>' +
+      '<div class="project-action-row">' +
+      '<button id="copyProjectHandoffBtn" type="button">인계문서 복사</button>' +
+      '</div>' +
+      '<pre id="projectHandoffOutput" class="code-block project-handoff-box">' + escapeHtml(lastHandoffText) + '</pre>' +
       '</div>';
+
+    const handoffBtn = el("copyProjectHandoffBtn");
+    if (handoffBtn) handoffBtn.onclick = copyProjectHandoff;
 
     renderProjectMermaid(parsed.mermaid);
   }
@@ -818,6 +922,8 @@
 
     lastCommand = "";
     lastMermaid = "";
+    lastParsedReport = null;
+    lastHandoffText = "";
 
     if (command) command.textContent = "프로젝트 루트를 입력하고 “명령 생성”을 누르세요.";
     if (output) output.value = "";
@@ -868,4 +974,4 @@
     init();
   }
 })();
- // === PROJECT ANALYZER V196-A1 END ===
+ // === PROJECT ANALYZER V197-A1 END ===
