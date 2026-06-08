@@ -1,0 +1,1044 @@
+{
+  "audit": "V206 code explainer precision audit",
+  "version": "20260608_v205_a1",
+  "gitHead": "577c8dd Improve code explainer flow precision",
+  "gitStatus": "?? .tmp/",
+  "featureGates": {
+    "version_v205": true,
+    "rules_v205_marker": true,
+    "ps_setcontent": true,
+    "ps_convert_json_fix": true,
+    "js_return_fix": true,
+    "unknown_assignment": true,
+    "python_assignment_token": true,
+    "call_self_guard": true,
+    "smoke_v205": true
+  },
+  "hardFailures": [],
+  "candidateCount": 7,
+  "candidateNotes": [
+    "powershell_param_object_literal_noise: candidate: noisy unsupported/step around [string]$Root",
+    "powershell_param_object_literal_noise: candidate: noisy unsupported/step around [pscustomobject]@",
+    "powershell_param_object_literal_noise: candidate: noisy unsupported/step around path = $_",
+    "python_unknown_nested_call_candidate: candidate: unknown call not marked unsupported: mystery_transform",
+    "python_unknown_chain_candidate: candidate: unknown call not marked unsupported: transform",
+    "javascript_unknown_nested_call_candidate: candidate: unknown call not marked unsupported: mysteryTransform",
+    "java_object_static_call_precision_candidate: candidate: callFlow name missing or not explicit: of"
+  ],
+  "results": [
+    {
+      "name": "baseline_v205_python_unknown_assignment",
+      "language": "python",
+      "purpose": "V205에서 고친 대입문 오른쪽 unknown call이 계속 unsupported로 잡히는지 확인",
+      "stepCount": 3,
+      "confidenceCounts": {
+        "inferred": 1,
+        "unsupported": 1,
+        "exact": 1
+      },
+      "unsupportedCount": 1,
+      "unsupportedTokens": [
+        "mystery_transform"
+      ],
+      "dataFlowCount": 3,
+      "dataFlowNames": [
+        "data",
+        "result",
+        "output"
+      ],
+      "callFlowCount": 1,
+      "callFlowNames": [
+        "print"
+      ],
+      "selfCallCount": 0,
+      "mermaidHasDataFlow": true,
+      "mermaidHasCallFlow": true,
+      "candidateNotes": [],
+      "stepsPreview": [
+        {
+          "lineNo": 1,
+          "title": "변수에 값 저장",
+          "confidence": "inferred",
+          "code": "data = [1, 2, 3]"
+        },
+        {
+          "lineNo": 2,
+          "title": "미등록 함수 결과 저장",
+          "confidence": "unsupported",
+          "code": "result = mystery_transform(data)"
+        },
+        {
+          "lineNo": 3,
+          "title": "화면에 출력",
+          "confidence": "exact",
+          "code": "print(result)"
+        }
+      ],
+      "unsupportedPreview": [
+        {
+          "lineNo": 2,
+          "token": "mystery_transform",
+          "code": "result = mystery_transform(data)",
+          "title": "미등록 함수 결과 저장"
+        }
+      ],
+      "dataFlowPreview": [
+        {
+          "lineNo": 1,
+          "kind": "생성/저장",
+          "name": "data",
+          "code": "data = [1, 2, 3]",
+          "summary": "data에 [1, 2, 3] 결과를 저장합니다."
+        },
+        {
+          "lineNo": 2,
+          "kind": "생성/저장",
+          "name": "result",
+          "code": "result = mystery_transform(data)",
+          "summary": "result에 mystery_transform(data) 결과를 저장합니다."
+        },
+        {
+          "lineNo": 3,
+          "kind": "출력/응답",
+          "name": "output",
+          "code": "print(result)",
+          "summary": "처리 결과를 화면이나 응답으로 내보냅니다."
+        }
+      ],
+      "callFlowPreview": [
+        {
+          "lineNo": 3,
+          "type": "호출",
+          "name": "print",
+          "target": "내장/라이브러리",
+          "code": "print(result)",
+          "summary": "내장 함수나 라이브러리 기능을 호출합니다."
+        }
+      ]
+    },
+    {
+      "name": "powershell_param_object_literal_noise",
+      "language": "powershell",
+      "purpose": "param block 내부 타입 선언과 pscustomobject literal 내부 줄이 미지원으로 과하게 보이는지 확인",
+      "stepCount": 9,
+      "confidenceCounts": {
+        "exact": 6,
+        "unsupported": 3
+      },
+      "unsupportedCount": 3,
+      "unsupportedTokens": [
+        "[string]$Root = \".\"",
+        "[pscustomobject]@{",
+        "path"
+      ],
+      "dataFlowCount": 4,
+      "dataFlowNames": [
+        "ErrorActionPreference",
+        "files",
+        "result",
+        "file"
+      ],
+      "callFlowCount": 7,
+      "callFlowNames": [
+        "Get-ChildItem",
+        "Where-Object",
+        "ForEach-Object",
+        "ForEach-Object",
+        "Test-Path",
+        "ConvertTo-Json",
+        "Set-Content"
+      ],
+      "selfCallCount": 0,
+      "mermaidHasDataFlow": true,
+      "mermaidHasCallFlow": true,
+      "candidateNotes": [
+        "candidate: noisy unsupported/step around [string]$Root",
+        "candidate: noisy unsupported/step around [pscustomobject]@",
+        "candidate: noisy unsupported/step around path = $_"
+      ],
+      "stepsPreview": [
+        {
+          "lineNo": 1,
+          "title": "오류 시 즉시 중단 설정",
+          "confidence": "exact",
+          "code": "$ErrorActionPreference = \"Stop\""
+        },
+        {
+          "lineNo": 3,
+          "title": "입력 파라미터 정의",
+          "confidence": "exact",
+          "code": "param("
+        },
+        {
+          "lineNo": 4,
+          "title": "명령 실행",
+          "confidence": "unsupported",
+          "code": "[string]$Root = \".\""
+        },
+        {
+          "lineNo": 7,
+          "title": "파이프라인 결과 저장",
+          "confidence": "exact",
+          "code": "$files = Get-ChildItem -Path $Root -Filter \"*.json\" -Recurse | Where-Object { $_.Length -gt 0 } | ForEach-Object { $_.FullName }"
+        },
+        {
+          "lineNo": 11,
+          "title": "파이프라인 결과 저장",
+          "confidence": "exact",
+          "code": "$result = $files | ForEach-Object {"
+        },
+        {
+          "lineNo": 12,
+          "title": "명령 실행",
+          "confidence": "unsupported",
+          "code": "[pscustomobject]@{"
+        },
+        {
+          "lineNo": 13,
+          "title": "명령 실행",
+          "confidence": "unsupported",
+          "code": "path = $_"
+        },
+        {
+          "lineNo": 14,
+          "title": "경로 존재 확인",
+          "confidence": "exact",
+          "code": "exists = Test-Path $_"
+        },
+        {
+          "lineNo": 18,
+          "title": "객체를 JSON으로 변환 후 파일 저장",
+          "confidence": "exact",
+          "code": "$result | ConvertTo-Json -Depth 4 | Set-Content .\report.json -Encoding UTF8"
+        }
+      ],
+      "unsupportedPreview": [
+        {
+          "lineNo": 4,
+          "token": "[string]$Root = \".\"",
+          "code": "[string]$Root = \".\"",
+          "title": "명령 실행"
+        },
+        {
+          "lineNo": 12,
+          "token": "[pscustomobject]@{",
+          "code": "[pscustomobject]@{",
+          "title": "명령 실행"
+        },
+        {
+          "lineNo": 13,
+          "token": "path",
+          "code": "path = $_",
+          "title": "명령 실행"
+        }
+      ],
+      "dataFlowPreview": [
+        {
+          "lineNo": 1,
+          "kind": "생성/저장",
+          "name": "ErrorActionPreference",
+          "code": "$ErrorActionPreference = \"Stop\"",
+          "summary": "ErrorActionPreference에 \"Stop\" 결과를 저장합니다."
+        },
+        {
+          "lineNo": 7,
+          "kind": "생성/저장",
+          "name": "files",
+          "code": "$files = Get-ChildItem -Path $Root -Filter \"*.json\" -Recurse | Where-Object { $_.Length -gt 0 } | ForEach-Object { $_.FullName }",
+          "summary": "files에 Get-ChildItem -Path $Root -Filter \"*.json\" -Recurse | Where-Object { $_.Length - 결과를 저장합니다."
+        },
+        {
+          "lineNo": 11,
+          "kind": "생성/저장",
+          "name": "result",
+          "code": "$result = $files | ForEach-Object {",
+          "summary": "result에 $files | ForEach-Object { 결과를 저장합니다."
+        },
+        {
+          "lineNo": 18,
+          "kind": "파일 저장",
+          "name": "file",
+          "code": "$result | ConvertTo-Json -Depth 4 | Set-Content .\report.json -Encoding UTF8",
+          "summary": "처리 결과를 파일에 저장합니다."
+        }
+      ],
+      "callFlowPreview": [
+        {
+          "lineNo": 7,
+          "type": "호출",
+          "name": "Get-ChildItem",
+          "target": "PowerShell 명령",
+          "code": "$files = Get-ChildItem -Path $Root -Filter \"*.json\" -Recurse |",
+          "summary": "PowerShell 내장 명령이나 cmdlet을 호출합니다."
+        },
+        {
+          "lineNo": 8,
+          "type": "호출",
+          "name": "Where-Object",
+          "target": "PowerShell 명령",
+          "code": "Where-Object { $_.Length -gt 0 } |",
+          "summary": "PowerShell 내장 명령이나 cmdlet을 호출합니다."
+        },
+        {
+          "lineNo": 9,
+          "type": "호출",
+          "name": "ForEach-Object",
+          "target": "PowerShell 명령",
+          "code": "ForEach-Object { $_.FullName }",
+          "summary": "PowerShell 내장 명령이나 cmdlet을 호출합니다."
+        },
+        {
+          "lineNo": 11,
+          "type": "호출",
+          "name": "ForEach-Object",
+          "target": "PowerShell 명령",
+          "code": "$result = $files | ForEach-Object {",
+          "summary": "PowerShell 내장 명령이나 cmdlet을 호출합니다."
+        },
+        {
+          "lineNo": 14,
+          "type": "호출",
+          "name": "Test-Path",
+          "target": "PowerShell 명령",
+          "code": "exists = Test-Path $_",
+          "summary": "PowerShell 내장 명령이나 cmdlet을 호출합니다."
+        },
+        {
+          "lineNo": 18,
+          "type": "호출",
+          "name": "ConvertTo-Json",
+          "target": "PowerShell 명령",
+          "code": "$result | ConvertTo-Json -Depth 4 | Set-Content .\report.json -Encoding UTF8",
+          "summary": "PowerShell 내장 명령이나 cmdlet을 호출합니다."
+        },
+        {
+          "lineNo": 18,
+          "type": "호출",
+          "name": "Set-Content",
+          "target": "PowerShell 명령",
+          "code": "$result | ConvertTo-Json -Depth 4 | Set-Content .\report.json -Encoding UTF8",
+          "summary": "PowerShell 내장 명령이나 cmdlet을 호출합니다."
+        }
+      ]
+    },
+    {
+      "name": "powershell_convert_json_setcontent_v205_regression",
+      "language": "powershell",
+      "purpose": "ConvertTo-Json | Set-Content 우선 처리와 Set-Content callFlow가 유지되는지 확인",
+      "stepCount": 3,
+      "confidenceCounts": {
+        "exact": 3
+      },
+      "unsupportedCount": 0,
+      "unsupportedTokens": [],
+      "dataFlowCount": 3,
+      "dataFlowNames": [
+        "items",
+        "summary",
+        "file"
+      ],
+      "callFlowCount": 4,
+      "callFlowNames": [
+        "Get-ChildItem",
+        "Select-Object",
+        "ConvertTo-Json",
+        "Set-Content"
+      ],
+      "selfCallCount": 0,
+      "mermaidHasDataFlow": true,
+      "mermaidHasCallFlow": true,
+      "candidateNotes": [],
+      "stepsPreview": [
+        {
+          "lineNo": 1,
+          "title": "파이프라인 결과 저장",
+          "confidence": "exact",
+          "code": "$items = Get-ChildItem .data -Filter *.json"
+        },
+        {
+          "lineNo": 2,
+          "title": "파이프라인 결과 저장",
+          "confidence": "exact",
+          "code": "$summary = $items | Select-Object Name, Length"
+        },
+        {
+          "lineNo": 3,
+          "title": "객체를 JSON으로 변환 후 파일 저장",
+          "confidence": "exact",
+          "code": "$summary | ConvertTo-Json -Depth 4 | Set-Content ..tmpsummary.json -Encoding UTF8"
+        }
+      ],
+      "unsupportedPreview": [],
+      "dataFlowPreview": [
+        {
+          "lineNo": 1,
+          "kind": "생성/저장",
+          "name": "items",
+          "code": "$items = Get-ChildItem .data -Filter *.json",
+          "summary": "items에 Get-ChildItem .data -Filter *.json 결과를 저장합니다."
+        },
+        {
+          "lineNo": 2,
+          "kind": "생성/저장",
+          "name": "summary",
+          "code": "$summary = $items | Select-Object Name, Length",
+          "summary": "summary에 $items | Select-Object Name, Length 결과를 저장합니다."
+        },
+        {
+          "lineNo": 3,
+          "kind": "파일 저장",
+          "name": "file",
+          "code": "$summary | ConvertTo-Json -Depth 4 | Set-Content ..tmpsummary.json -Encoding UTF8",
+          "summary": "처리 결과를 파일에 저장합니다."
+        }
+      ],
+      "callFlowPreview": [
+        {
+          "lineNo": 1,
+          "type": "호출",
+          "name": "Get-ChildItem",
+          "target": "PowerShell 명령",
+          "code": "$items = Get-ChildItem .data -Filter *.json",
+          "summary": "PowerShell 내장 명령이나 cmdlet을 호출합니다."
+        },
+        {
+          "lineNo": 2,
+          "type": "호출",
+          "name": "Select-Object",
+          "target": "PowerShell 명령",
+          "code": "$summary = $items | Select-Object Name, Length",
+          "summary": "PowerShell 내장 명령이나 cmdlet을 호출합니다."
+        },
+        {
+          "lineNo": 3,
+          "type": "호출",
+          "name": "ConvertTo-Json",
+          "target": "PowerShell 명령",
+          "code": "$summary | ConvertTo-Json -Depth 4 | Set-Content ..tmpsummary.json -Encoding UTF8",
+          "summary": "PowerShell 내장 명령이나 cmdlet을 호출합니다."
+        },
+        {
+          "lineNo": 3,
+          "type": "호출",
+          "name": "Set-Content",
+          "target": "PowerShell 명령",
+          "code": "$summary | ConvertTo-Json -Depth 4 | Set-Content ..tmpsummary.json -Encoding UTF8",
+          "summary": "PowerShell 내장 명령이나 cmdlet을 호출합니다."
+        }
+      ]
+    },
+    {
+      "name": "javascript_return_chain_v205_regression",
+      "language": "javascript",
+      "purpose": "return value.trim().toLowerCase()가 미지원이 아니라 값 반환으로 유지되는지 확인",
+      "stepCount": 4,
+      "confidenceCounts": {
+        "exact": 2,
+        "inferred": 2
+      },
+      "unsupportedCount": 0,
+      "unsupportedTokens": [],
+      "dataFlowCount": 3,
+      "dataFlowNames": [
+        "return",
+        "value",
+        "output"
+      ],
+      "callFlowCount": 2,
+      "callFlowNames": [
+        "normalize",
+        "normalize"
+      ],
+      "selfCallCount": 0,
+      "mermaidHasDataFlow": true,
+      "mermaidHasCallFlow": true,
+      "candidateNotes": [],
+      "stepsPreview": [
+        {
+          "lineNo": 1,
+          "title": "함수 정의",
+          "confidence": "exact",
+          "code": "function normalize(value) {"
+        },
+        {
+          "lineNo": 2,
+          "title": "값 돌려주기",
+          "confidence": "inferred",
+          "code": "return value.trim().toLowerCase();"
+        },
+        {
+          "lineNo": 5,
+          "title": "변수에 값 저장",
+          "confidence": "inferred",
+          "code": "const value = normalize(\" A \");"
+        },
+        {
+          "lineNo": 6,
+          "title": "화면/콘솔에 출력",
+          "confidence": "exact",
+          "code": "console.log(value);"
+        }
+      ],
+      "unsupportedPreview": [],
+      "dataFlowPreview": [
+        {
+          "lineNo": 2,
+          "kind": "반환",
+          "name": "return",
+          "code": "return value.trim().toLowerCase();",
+          "summary": "함수 밖으로 결과를 돌려줍니다."
+        },
+        {
+          "lineNo": 5,
+          "kind": "생성/저장",
+          "name": "value",
+          "code": "const value = normalize(\" A \");",
+          "summary": "value에 normalize(\" A \") 결과를 저장합니다."
+        },
+        {
+          "lineNo": 6,
+          "kind": "출력/응답",
+          "name": "output",
+          "code": "console.log(value);",
+          "summary": "처리 결과를 화면이나 응답으로 내보냅니다."
+        }
+      ],
+      "callFlowPreview": [
+        {
+          "lineNo": 1,
+          "type": "정의",
+          "name": "normalize",
+          "target": "",
+          "code": "function normalize(value) {",
+          "summary": "사용자 함수/핸들러 정의입니다."
+        },
+        {
+          "lineNo": 5,
+          "type": "호출",
+          "name": "normalize",
+          "target": "line 1",
+          "code": "const value = normalize(\" A \");",
+          "summary": "사용자 정의 함수/메서드를 호출합니다."
+        }
+      ]
+    },
+    {
+      "name": "python_unknown_nested_call_candidate",
+      "language": "python",
+      "purpose": "unknown call이 대입문의 최상위가 아니라 함수 인자 안에 있을 때 미탐되는지 확인",
+      "stepCount": 3,
+      "confidenceCounts": {
+        "inferred": 2,
+        "exact": 1
+      },
+      "unsupportedCount": 0,
+      "unsupportedTokens": [],
+      "dataFlowCount": 3,
+      "dataFlowNames": [
+        "data",
+        "result",
+        "output"
+      ],
+      "callFlowCount": 1,
+      "callFlowNames": [
+        "print"
+      ],
+      "selfCallCount": 0,
+      "mermaidHasDataFlow": true,
+      "mermaidHasCallFlow": true,
+      "candidateNotes": [
+        "candidate: unknown call not marked unsupported: mystery_transform"
+      ],
+      "stepsPreview": [
+        {
+          "lineNo": 1,
+          "title": "변수에 값 저장",
+          "confidence": "inferred",
+          "code": "data = [1, 2, 3]"
+        },
+        {
+          "lineNo": 2,
+          "title": "변수에 값 저장",
+          "confidence": "inferred",
+          "code": "result = list(map(mystery_transform, data))"
+        },
+        {
+          "lineNo": 3,
+          "title": "화면에 출력",
+          "confidence": "exact",
+          "code": "print(result)"
+        }
+      ],
+      "unsupportedPreview": [],
+      "dataFlowPreview": [
+        {
+          "lineNo": 1,
+          "kind": "생성/저장",
+          "name": "data",
+          "code": "data = [1, 2, 3]",
+          "summary": "data에 [1, 2, 3] 결과를 저장합니다."
+        },
+        {
+          "lineNo": 2,
+          "kind": "생성/저장",
+          "name": "result",
+          "code": "result = list(map(mystery_transform, data))",
+          "summary": "result에 list(map(mystery_transform, data)) 결과를 저장합니다."
+        },
+        {
+          "lineNo": 3,
+          "kind": "출력/응답",
+          "name": "output",
+          "code": "print(result)",
+          "summary": "처리 결과를 화면이나 응답으로 내보냅니다."
+        }
+      ],
+      "callFlowPreview": [
+        {
+          "lineNo": 3,
+          "type": "호출",
+          "name": "print",
+          "target": "내장/라이브러리",
+          "code": "print(result)",
+          "summary": "내장 함수나 라이브러리 기능을 호출합니다."
+        }
+      ]
+    },
+    {
+      "name": "python_unknown_chain_candidate",
+      "language": "python",
+      "purpose": "loader().transform(data) 같은 체인 호출을 unknown으로 볼지 후보 확인",
+      "stepCount": 3,
+      "confidenceCounts": {
+        "inferred": 1,
+        "unsupported": 1,
+        "exact": 1
+      },
+      "unsupportedCount": 1,
+      "unsupportedTokens": [
+        "loader"
+      ],
+      "dataFlowCount": 3,
+      "dataFlowNames": [
+        "data",
+        "result",
+        "output"
+      ],
+      "callFlowCount": 1,
+      "callFlowNames": [
+        "print"
+      ],
+      "selfCallCount": 0,
+      "mermaidHasDataFlow": true,
+      "mermaidHasCallFlow": true,
+      "candidateNotes": [
+        "candidate: unknown call not marked unsupported: transform"
+      ],
+      "stepsPreview": [
+        {
+          "lineNo": 1,
+          "title": "변수에 값 저장",
+          "confidence": "inferred",
+          "code": "data = [1, 2, 3]"
+        },
+        {
+          "lineNo": 2,
+          "title": "미등록 함수 결과 저장",
+          "confidence": "unsupported",
+          "code": "result = loader().transform(data)"
+        },
+        {
+          "lineNo": 3,
+          "title": "화면에 출력",
+          "confidence": "exact",
+          "code": "print(result)"
+        }
+      ],
+      "unsupportedPreview": [
+        {
+          "lineNo": 2,
+          "token": "loader",
+          "code": "result = loader().transform(data)",
+          "title": "미등록 함수 결과 저장"
+        }
+      ],
+      "dataFlowPreview": [
+        {
+          "lineNo": 1,
+          "kind": "생성/저장",
+          "name": "data",
+          "code": "data = [1, 2, 3]",
+          "summary": "data에 [1, 2, 3] 결과를 저장합니다."
+        },
+        {
+          "lineNo": 2,
+          "kind": "생성/저장",
+          "name": "result",
+          "code": "result = loader().transform(data)",
+          "summary": "result에 loader().transform(data) 결과를 저장합니다."
+        },
+        {
+          "lineNo": 3,
+          "kind": "출력/응답",
+          "name": "output",
+          "code": "print(result)",
+          "summary": "처리 결과를 화면이나 응답으로 내보냅니다."
+        }
+      ],
+      "callFlowPreview": [
+        {
+          "lineNo": 3,
+          "type": "호출",
+          "name": "print",
+          "target": "내장/라이브러리",
+          "code": "print(result)",
+          "summary": "내장 함수나 라이브러리 기능을 호출합니다."
+        }
+      ]
+    },
+    {
+      "name": "javascript_unknown_nested_call_candidate",
+      "language": "javascript",
+      "purpose": "JS 대입문 오른쪽 unknown wrapper call 처리 후보 확인",
+      "stepCount": 3,
+      "confidenceCounts": {
+        "inferred": 1,
+        "unsupported": 1,
+        "exact": 1
+      },
+      "unsupportedCount": 1,
+      "unsupportedTokens": [
+        "const result = knownWrapper(mysteryTrans"
+      ],
+      "dataFlowCount": 3,
+      "dataFlowNames": [
+        "data",
+        "result",
+        "output"
+      ],
+      "callFlowCount": 0,
+      "callFlowNames": [],
+      "selfCallCount": 0,
+      "mermaidHasDataFlow": true,
+      "mermaidHasCallFlow": false,
+      "candidateNotes": [
+        "candidate: unknown call not marked unsupported: mysteryTransform"
+      ],
+      "stepsPreview": [
+        {
+          "lineNo": 1,
+          "title": "변수에 값 저장",
+          "confidence": "inferred",
+          "code": "const data = [1, 2, 3];"
+        },
+        {
+          "lineNo": 2,
+          "title": "미등록 함수 결과 저장",
+          "confidence": "unsupported",
+          "code": "const result = knownWrapper(mysteryTransform(data));"
+        },
+        {
+          "lineNo": 3,
+          "title": "화면/콘솔에 출력",
+          "confidence": "exact",
+          "code": "console.log(result);"
+        }
+      ],
+      "unsupportedPreview": [
+        {
+          "lineNo": 2,
+          "token": "const result = knownWrapper(mysteryTrans",
+          "code": "const result = knownWrapper(mysteryTransform(data));",
+          "title": "미등록 함수 결과 저장"
+        }
+      ],
+      "dataFlowPreview": [
+        {
+          "lineNo": 1,
+          "kind": "생성/저장",
+          "name": "data",
+          "code": "const data = [1, 2, 3];",
+          "summary": "data에 [1, 2, 3] 결과를 저장합니다."
+        },
+        {
+          "lineNo": 2,
+          "kind": "생성/저장",
+          "name": "result",
+          "code": "const result = knownWrapper(mysteryTransform(data));",
+          "summary": "result에 knownWrapper(mysteryTransform(data)) 결과를 저장합니다."
+        },
+        {
+          "lineNo": 3,
+          "kind": "출력/응답",
+          "name": "output",
+          "code": "console.log(result);",
+          "summary": "처리 결과를 화면이나 응답으로 내보냅니다."
+        }
+      ],
+      "callFlowPreview": []
+    },
+    {
+      "name": "java_object_static_call_precision_candidate",
+      "language": "java",
+      "purpose": "Java 객체 메서드 호출과 static/라이브러리 호출 구분 후보 확인",
+      "stepCount": 10,
+      "confidenceCounts": {
+        "exact": 9,
+        "inferred": 1
+      },
+      "unsupportedCount": 0,
+      "unsupportedTokens": [],
+      "dataFlowCount": 4,
+      "dataFlowNames": [
+        "text",
+        "return",
+        "text",
+        "output"
+      ],
+      "callFlowCount": 5,
+      "callFlowNames": [
+        "readText",
+        "main",
+        "readString",
+        "readText",
+        "println"
+      ],
+      "selfCallCount": 0,
+      "mermaidHasDataFlow": true,
+      "mermaidHasCallFlow": true,
+      "candidateNotes": [
+        "candidate: callFlow name missing or not explicit: of"
+      ],
+      "stepsPreview": [
+        {
+          "lineNo": 1,
+          "title": "라이브러리 불러오기",
+          "confidence": "exact",
+          "code": "import java.io.IOException;"
+        },
+        {
+          "lineNo": 2,
+          "title": "라이브러리 불러오기",
+          "confidence": "exact",
+          "code": "import java.nio.file.Files;"
+        },
+        {
+          "lineNo": 3,
+          "title": "라이브러리 불러오기",
+          "confidence": "exact",
+          "code": "import java.nio.file.Path;"
+        },
+        {
+          "lineNo": 5,
+          "title": "클래스 정의",
+          "confidence": "exact",
+          "code": "public class App {"
+        },
+        {
+          "lineNo": 6,
+          "title": "입출력 예외 처리",
+          "confidence": "exact",
+          "code": "static String readText(String path) throws IOException {"
+        },
+        {
+          "lineNo": 7,
+          "title": "파일/경로 처리",
+          "confidence": "exact",
+          "code": "String text = Files.readString(Path.of(path));"
+        },
+        {
+          "lineNo": 8,
+          "title": "값 돌려주기",
+          "confidence": "inferred",
+          "code": "return text;"
+        },
+        {
+          "lineNo": 11,
+          "title": "프로그램 시작점",
+          "confidence": "exact",
+          "code": "public static void main(String[] args) throws IOException {"
+        },
+        {
+          "lineNo": 12,
+          "title": "변수 선언과 값 저장",
+          "confidence": "exact",
+          "code": "String text = readText(\"input.txt\");"
+        },
+        {
+          "lineNo": 13,
+          "title": "화면에 출력",
+          "confidence": "exact",
+          "code": "System.out.println(text);"
+        }
+      ],
+      "unsupportedPreview": [],
+      "dataFlowPreview": [
+        {
+          "lineNo": 7,
+          "kind": "생성/저장",
+          "name": "text",
+          "code": "String text = Files.readString(Path.of(path));",
+          "summary": "text에 Files.readString(Path.of(path)) 결과를 저장합니다."
+        },
+        {
+          "lineNo": 8,
+          "kind": "반환",
+          "name": "return",
+          "code": "return text;",
+          "summary": "함수 밖으로 결과를 돌려줍니다."
+        },
+        {
+          "lineNo": 12,
+          "kind": "생성/저장",
+          "name": "text",
+          "code": "String text = readText(\"input.txt\");",
+          "summary": "text에 readText(\"input.txt\") 결과를 저장합니다."
+        },
+        {
+          "lineNo": 13,
+          "kind": "출력/응답",
+          "name": "output",
+          "code": "System.out.println(text);",
+          "summary": "처리 결과를 화면이나 응답으로 내보냅니다."
+        }
+      ],
+      "callFlowPreview": [
+        {
+          "lineNo": 6,
+          "type": "정의",
+          "name": "readText",
+          "target": "",
+          "code": "static String readText(String path) throws IOException {",
+          "summary": "Java 메서드 정의입니다."
+        },
+        {
+          "lineNo": 11,
+          "type": "정의",
+          "name": "main",
+          "target": "",
+          "code": "public static void main(String[] args) throws IOException {",
+          "summary": "Java 메서드 정의입니다."
+        },
+        {
+          "lineNo": 7,
+          "type": "호출",
+          "name": "readString",
+          "target": "내장/라이브러리",
+          "code": "String text = Files.readString(Path.of(path));",
+          "summary": "내장 함수나 라이브러리 기능을 호출합니다."
+        },
+        {
+          "lineNo": 12,
+          "type": "호출",
+          "name": "readText",
+          "target": "line 6",
+          "code": "String text = readText(\"input.txt\");",
+          "summary": "사용자 정의 함수/메서드를 호출합니다."
+        },
+        {
+          "lineNo": 13,
+          "type": "호출",
+          "name": "println",
+          "target": "내장/라이브러리",
+          "code": "System.out.println(text);",
+          "summary": "내장 함수나 라이브러리 기능을 호출합니다."
+        }
+      ]
+    },
+    {
+      "name": "producer_consumer_candidate",
+      "language": "python",
+      "purpose": "변수별 producer/consumer 연결을 UI에 더 자세히 보여줄 필요가 있는지 확인",
+      "stepCount": 4,
+      "confidenceCounts": {
+        "inferred": 3,
+        "exact": 1
+      },
+      "unsupportedCount": 0,
+      "unsupportedTokens": [],
+      "dataFlowCount": 4,
+      "dataFlowNames": [
+        "raw",
+        "cleaned",
+        "payload",
+        "output"
+      ],
+      "callFlowCount": 1,
+      "callFlowNames": [
+        "print"
+      ],
+      "selfCallCount": 0,
+      "mermaidHasDataFlow": true,
+      "mermaidHasCallFlow": true,
+      "candidateNotes": [],
+      "stepsPreview": [
+        {
+          "lineNo": 1,
+          "title": "변수에 값 저장",
+          "confidence": "inferred",
+          "code": "raw = \" A \""
+        },
+        {
+          "lineNo": 2,
+          "title": "변수에 값 저장",
+          "confidence": "inferred",
+          "code": "cleaned = raw.strip().lower()"
+        },
+        {
+          "lineNo": 3,
+          "title": "변수에 값 저장",
+          "confidence": "inferred",
+          "code": "payload = {\"value\": cleaned}"
+        },
+        {
+          "lineNo": 4,
+          "title": "화면에 출력",
+          "confidence": "exact",
+          "code": "print(payload)"
+        }
+      ],
+      "unsupportedPreview": [],
+      "dataFlowPreview": [
+        {
+          "lineNo": 1,
+          "kind": "생성/저장",
+          "name": "raw",
+          "code": "raw = \" A \"",
+          "summary": "raw에 \" A \" 결과를 저장합니다."
+        },
+        {
+          "lineNo": 2,
+          "kind": "생성/저장",
+          "name": "cleaned",
+          "code": "cleaned = raw.strip().lower()",
+          "summary": "cleaned에 raw.strip().lower() 결과를 저장합니다."
+        },
+        {
+          "lineNo": 3,
+          "kind": "생성/저장",
+          "name": "payload",
+          "code": "payload = {\"value\": cleaned}",
+          "summary": "payload에 {\"value\": cleaned} 결과를 저장합니다."
+        },
+        {
+          "lineNo": 4,
+          "kind": "출력/응답",
+          "name": "output",
+          "code": "print(payload)",
+          "summary": "처리 결과를 화면이나 응답으로 내보냅니다."
+        }
+      ],
+      "callFlowPreview": [
+        {
+          "lineNo": 4,
+          "type": "호출",
+          "name": "print",
+          "target": "내장/라이브러리",
+          "code": "print(payload)",
+          "summary": "내장 함수나 라이브러리 기능을 호출합니다."
+        }
+      ]
+    }
+  ],
+  "recommendation": "V207 후보로 candidateNotes를 우선순위화해 보강하세요."
+}

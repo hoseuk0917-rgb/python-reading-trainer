@@ -769,3 +769,46 @@ Java 메서드 정의 줄을 자기 자신 호출로 잘못 잡는 부분 보정
 
 - V203 smoke 31개 유지
 - V205 smoke는 35개 이상 통과해야 함
+
+## V206 코드해석 정밀도 감사 3차 — 20260608
+
+기준 버전: 20260608_v205_a1
+기준 커밋: 577c8dd Improve code explainer flow precision
+
+감사 파일:
+- docs/audits/code_explainer_precision_audit_v206.md
+- docs/audits/code_explainer_precision_audit_v206.json
+
+### 감사 결과
+
+V206_CODE_EXPLAINER_PRECISION_AUDIT_OK
+HARD_FAILURES 0
+CANDIDATE_NOTES 7
+
+### Feature Gates
+
+OK version_v205
+OK rules_v205_marker
+OK ps_setcontent
+OK ps_convert_json_fix
+OK js_return_fix
+OK unknown_assignment
+OK python_assignment_token
+OK call_self_guard
+OK smoke_v205
+
+### V207 후보 이슈
+
+- PowerShell param block 내부 [string]$Root 미지원/노이즈 완화
+- PowerShell [pscustomobject]@{ 구조 줄 미지원/노이즈 완화
+- PowerShell object literal 내부 path = $_ 줄 미지원/노이즈 완화
+- Python nested unknown call: list(map(mystery_transform, data)) 탐지
+- Python chain call: loader().transform(data)에서 transform까지 탐지할지 검토
+- JavaScript nested unknown call: knownWrapper(mysteryTransform(data)) 탐지
+- Java Path.of 호출을 callFlow에 더 명시적으로 표시
+
+### 결론
+
+V205 기능 게이트는 안정적이다.
+V207에서는 candidateNotes 7개 중 사용자 체감이 큰 항목부터 정밀도 보강한다.
+우선순위는 PowerShell 노이즈 완화, Python/JS nested unknown call 탐지, Java Path.of 명시 순서가 적절하다.
