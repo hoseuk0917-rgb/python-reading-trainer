@@ -1,6 +1,6 @@
-// === PROJECT ANALYZER V195-A1 START ===
+// === PROJECT ANALYZER V196-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260606_v195_a1";
+  const PROJECT_ANALYZER_VERSION = "20260606_v196_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
@@ -35,8 +35,8 @@
 "",
 "ROOT = Path('.').resolve()",
 "OUT_DIR = ROOT / '.tmp'",
-"OUT_JSON = OUT_DIR / 'project_probe_v193.json'",
-"OUT_MD = OUT_DIR / 'project_probe_v193_report.md'",
+"OUT_JSON = OUT_DIR / 'project_probe_v196.json'",
+"OUT_MD = OUT_DIR / 'project_probe_v196_report.md'",
 "SKIP_DIRS = {'.git', '.tmp', 'node_modules', '.venv', '.venv_lora_infer', '__pycache__', '.pytest_cache', 'dist', 'build', '.next'}",
 "TEXT_EXTS = {'.js', '.css', '.html', '.json', '.py', '.ps1', '.md', '.toml', '.yml', '.yaml', '.txt', '.gitignore', '.env'}",
 "KEY_FILES = ['index.html', 'src/pwa/index.html', 'src/pwa/app.js', 'src/pwa/code_explainer.js', 'src/pwa/code_explainer_rules.js', 'src/pwa/project_analyzer.js', 'src/pwa/style.css', 'tools/validate_lessons.py', 'tools/code_explainer_smoke_v171.js']",
@@ -254,7 +254,7 @@
 "",
 "OUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')",
 "md = []",
-"md.append('# Project Probe V193')",
+"md.append('# Project Probe V196')",
 "md.append('')",
 "md.append('- generated_at: ' + report['generated_at'])",
 "md.append('- root: `' + report['root'] + '`')",
@@ -269,10 +269,6 @@
 "md.append('## Role counts')",
 "for k, v in report['role_counts'].items():",
 "    md.append('- ' + k + ': ' + str(v))",
-"md.append('')",
-"md.append('## Environment')",
-"for k, v in report['environment'].items():",
-"    md.append('- ' + k + ': ' + json.dumps(v, ensure_ascii=False))",
 "md.append('')",
 "md.append('## Environment')",
 "for k, v in report['environment'].items():",
@@ -296,10 +292,6 @@
 "for path, calls in list(call_candidates.items())[:20]:",
 "    md.append('- ' + path + ': ' + ', '.join([c['name'] + '(' + str(c['count']) + ')' for c in calls[:12]]))",
 "md.append('')",
-"md.append('## Top call files')",
-"for path, calls in list(call_candidates.items())[:20]:",
-"    md.append('- ' + path + ': ' + ', '.join([c['name'] + '(' + str(c['count']) + ')' for c in calls[:12]]))",
-"md.append('')",
 "md.append('## Mermaid')",
 "md.extend(mermaid_lines)",
 "md.append('')",
@@ -308,7 +300,7 @@
 "md.append('- ' + rel(OUT_MD))",
 "OUT_MD.write_text('\\n'.join(md), encoding='utf-8')",
 "",
-"print('PROJECT_PROBE_V193_OK')",
+"print('PROJECT_PROBE_V196_OK')",
 "print('ROOT', ROOT)",
 "print('GIT_HEAD', report['git']['head'])",
 "print('GIT_STATUS', report['git']['status_short'] or 'clean')",
@@ -375,12 +367,12 @@
       "",
       "@'",
       pythonCode,
-      "'@ | Set-Content .\\.tmp\\project_probe_v193_from_app.py -Encoding UTF8",
+      "'@ | Set-Content .\\.tmp\\project_probe_v196_from_app.py -Encoding UTF8",
       "",
-      "python .\\.tmp\\project_probe_v193_from_app.py",
+      "python .\\.tmp\\project_probe_v196_from_app.py",
       "",
       '"`n=== REPORT PREVIEW ==="',
-      "Get-Content .\\.tmp\\project_probe_v193_report.md -Encoding UTF8 -TotalCount 220"
+      "Get-Content .\\.tmp\\project_probe_v196_report.md -Encoding UTF8 -TotalCount 220"
     ].join("\n");
   }
 
@@ -435,6 +427,7 @@
     };
   }
 
+  // PROJECT_ANALYZER_CLEANUP_V196_A1
   function parseProjectReportJson(text) {
     const raw = String(text || "").trim();
 
@@ -511,7 +504,7 @@
     };
 
     return {
-      ok: raw.includes("PROJECT_PROBE_V193_OK") || raw.includes("# Project Probe V193"),
+      ok: raw.includes("PROJECT_PROBE_V196_OK") || raw.includes("PROJECT_PROBE_V195_OK") || raw.includes("PROJECT_PROBE_V193_OK") || raw.includes("# Project Probe V196") || raw.includes("# Project Probe V195") || raw.includes("# Project Probe V193"),
       inputMode: "terminal",
       root: getLineValue(raw, "ROOT") || (raw.match(/- root: `([^`]+)`/) || [])[1] || "",
       gitHead: getLineValue(raw, "GIT_HEAD") || (raw.match(/- git_head: `([^`]+)`/) || [])[1] || "",
@@ -594,12 +587,16 @@
     items.push("코드해석/다이어그램 수정 시 src/pwa/index.html, code_explainer.js, code_explainer_rules.js, style.css, smoke/verify 스크립트를 같이 봐야 합니다.");
     items.push("학습 카드 수정 시 data/lessons, data/side_cards, tools/validate_lessons.py를 함께 검증해야 합니다.");
 
+    if (parsed.inputMode !== "json") {
+      items.push("JSON 리포트 전체를 붙여넣으면 핵심 파일, 함수/클래스, 호출 후보, 참조 관계까지 더 자세히 볼 수 있습니다.");
+    }
+
     if (String(parsed.gitStatus || "").includes("?? .tmp/")) {
       items.push(".tmp는 probe 산출물이므로 커밋하지 말고 마지막에 삭제하세요.");
     }
 
     if (!parsed.ok) {
-      items.push("PROJECT_PROBE_V193_OK 또는 # Project Probe V193가 보이지 않습니다. 출력이 잘렸을 수 있습니다.");
+      items.push("PROJECT_PROBE_V196_OK 또는 # Project Probe V196가 보이지 않습니다. 출력이 잘렸을 수 있습니다.");
     }
 
     return items;
@@ -735,6 +732,7 @@
       '<p><strong>Root:</strong> ' + escapeHtml(parsed.root || "-") + '</p>' +
       '<p><strong>Git:</strong> ' + escapeHtml(parsed.gitHead || "-") + '</p>' +
       '<p><strong>Status:</strong> ' + escapeHtml(statusLabel(parsed.gitStatus)) + '</p>' +
+      '<p><strong>입력 방식:</strong> ' + escapeHtml(parsed.inputMode || "terminal") + '</p>' +
       '</div>' +
       '<div class="project-detail-section">' +
       '<h3>환경 감사</h3>' +
@@ -754,7 +752,7 @@
       '</div>' +
       '<div class="project-detail-section">' +
       '<h3>산출 파일</h3>' +
-      '<p>' + escapeHtml([parsed.outJson, parsed.outMd].filter(Boolean).join(" · ") || ".tmp/project_probe_v193_report.md") + '</p>' +
+      '<p>' + escapeHtml([parsed.outJson, parsed.outMd].filter(Boolean).join(" · ") || ".tmp/project_probe_v196_report.md") + '</p>' +
       '</div>';
 
     renderProjectMermaid(parsed.mermaid);
@@ -870,4 +868,4 @@
     init();
   }
 })();
- // === PROJECT ANALYZER V195-A1 END ===
+ // === PROJECT ANALYZER V196-A1 END ===
