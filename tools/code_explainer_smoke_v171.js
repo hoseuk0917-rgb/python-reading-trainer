@@ -1002,6 +1002,18 @@ print(payload)`,
     mustContain: ["변수에 값 저장", "화면에 출력"],
     mustMetaContain: ["Python", "출력"]
   }
+,
+  {
+    name: "powershell_file_save_consumes_out_v210",
+    requestedLanguage: "powershell",
+    expectedLanguage: "powershell",
+    minSteps: 3,
+    code: `$out = ".\\report.json"
+$result = @()
+$result | ConvertTo-Json -Depth 4 | Set-Content $out -Encoding UTF8`,
+    mustContain: ["변수에 값 저장", "파일 저장"],
+    mustMetaContain: ["PowerShell", "파일"]
+  }
 
 ];
 
@@ -1047,7 +1059,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260608_v209_a1",
+  version: "20260608_v210_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,

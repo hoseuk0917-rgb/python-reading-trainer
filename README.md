@@ -862,3 +862,19 @@ V207에서는 candidateNotes 7개 중 사용자 체감이 큰 항목부터 정�
 
 - raw → cleaned → payload → output 같은 데이터 흐름을 사용자가 더 쉽게 읽도록 만든다.
 - V208 감사에서 남은 candidate인 producer-consumer links are still implicit 항목을 UI 개선으로 처리한다.
+
+## V210 PowerShell producer-consumer 정밀도 보강 — 20260608
+
+기준 버전: 20260608_v210_a1
+
+### 보강 내용
+
+- V210 감사에서 발견된 PowerShell 파일 저장 흐름의 소비 변수 누락을 수정했다.
+- `$result | ConvertTo-Json | Set-Content $out` 형태에서 `$result`와 `$out`을 모두 사용 변수로 잡도록 보강했다.
+- Java `System.out` 잡음 방지를 위한 공통 noise 목록 때문에 PowerShell `$out` 변수가 제외되던 문제를 분리 처리했다.
+- V209 smoke 41개 기준선을 유지하고 PowerShell `$out` 소비 변수 회귀 방지 sample을 1개 추가한다.
+
+### 남은 후보
+
+- Mermaid 데이터 흐름 다이어그램은 아직 producer-consumer edge label까지 표현하지 않는다.
+- 이 항목은 규칙 오류가 아니라 V211 다이어그램 표현 개선 후보로 분리한다.

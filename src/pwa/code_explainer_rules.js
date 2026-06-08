@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V209-A1 START ===
+// === CODE EXPLAINER RULES V210-A1 START ===
 (function() {
   "use strict";
 
@@ -1953,7 +1953,10 @@
       re = /\$([A-Za-z_][\w-]*)/g;
       while ((match = re.exec(text)) !== null) {
         const name = match[1];
-        if (!excludes[name] && !isDataFlowNoiseName(name, language)) out.push(name);
+        // POWERSHELL_OUT_VARIABLE_CONSUME_FIX_V210_A1
+        // PowerShell 변수는 $out처럼 일반 변수명이 out일 수 있다.
+        // Java System.out 잡음을 막기 위한 공통 noise 목록을 그대로 적용하지 않는다.
+        if (!excludes[name] && !/^(true|false|null|args|input|this|PSItem|_)$/i.test(name)) out.push(name);
       }
       return uniqueNames(out);
     }
@@ -2421,4 +2424,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V209-A1 END ===
+// === CODE EXPLAINER RULES V210-A1 END ===
