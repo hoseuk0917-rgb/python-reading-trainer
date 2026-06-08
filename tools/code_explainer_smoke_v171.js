@@ -205,6 +205,9 @@ function summarizeResult(sample, result, status, message) {
     unsupportedCount: Array.isArray(result.unsupportedItems) ? result.unsupportedItems.length : 0,
     dataFlowCount: Array.isArray(result.dataFlow) ? result.dataFlow.length : 0,
     callFlowCount: Array.isArray(result.callFlow) ? result.callFlow.length : 0,
+    unsupportedTokens: Array.isArray(result.unsupportedItems) ? result.unsupportedItems.map((item) => item.token) : [],
+    callFlowNames: Array.isArray(result.callFlow) ? result.callFlow.map((item) => item.name) : [],
+    callFlowSelfCallCount: Array.isArray(result.callFlow) ? result.callFlow.filter((item) => item.target === "line " + item.lineNo).length : 0,
     warningTitles: steps
       .filter((step) => step.risk === "high" || step.risk === "medium")
       .map((step) => step.title)
@@ -839,6 +842,63 @@ print(values)`,
     mustContain: ["함수 정의", "반복문", "목록에 항목 추가", "값 돌려주기", "데이터 흐름", "호출 흐름", "normalize", "DATA_FLOW", "CALL_FLOW"],
     mustMetaContain: ["Python", "반복문", "출력"]
   }
+,
+  {
+    name: "powershell_pipeline_set_content_precision",
+    requestedLanguage: "powershell",
+    expectedLanguage: "powershell",
+    minSteps: 4,
+    code: `$files = Get-ChildItem .\src -Recurse -Filter *.js
+$summary = $files | Select-Object Name, Length | ConvertTo-Json
+$summary | Set-Content .\.tmp\summary.json -Encoding UTF8
+Write-Host "done"`,
+    mustContain: ["파이프라인 결과 저장", "파일에 내용 저장", "Set-Content", "PowerShell 명령"],
+    mustMetaContain: ["PowerShell", "파일", "JSON"]
+  },
+  {
+    name: "javascript_return_chain_precision",
+    requestedLanguage: "javascript",
+    expectedLanguage: "javascript",
+    minSteps: 4,
+    code: `function normalize(value) {
+  return value.trim().toLowerCase();
+}
+
+const value = normalize(" A ");
+console.log(value);`,
+    mustContain: ["함수 정의", "값 돌려주기", "normalize", "호출 흐름"],
+    mustMetaContain: ["JavaScript", "함수/구조", "출력"]
+  },
+  {
+    name: "python_unknown_assignment_unsupported",
+    requestedLanguage: "python",
+    expectedLanguage: "python",
+    minSteps: 3,
+    code: `data = [1, 2, 3]
+result = mystery_transform(data)
+print(result)`,
+    mustContain: ["미등록 함수 결과 저장", "미지원", "mystery_transform", "화면에 출력"],
+    mustMetaContain: ["Python", "출력"]
+  },
+  {
+    name: "java_method_definition_no_self_call",
+    requestedLanguage: "java",
+    expectedLanguage: "java",
+    minSteps: 7,
+    code: `public class App {
+  static String readText(String path) throws IOException {
+    String text = Files.readString(Path.of(path));
+    return text;
+  }
+
+  public static void main(String[] args) {
+    String text = readText("input.txt");
+    System.out.println(text);
+  }
+}`,
+    mustContain: ["메서드 정의", "readText", "호출 흐름", "화면에 출력"],
+    mustMetaContain: ["Java", "함수/구조", "출력"]
+  }
 
 ];
 
@@ -884,7 +944,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260608_v203_a1",
+  version: "20260608_v205_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,

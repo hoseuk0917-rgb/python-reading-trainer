@@ -751,3 +751,21 @@ JavaScript return value.trim().toLowerCase() 미지원 표시 정리
 Python result = mystery_transform(data) 같은 unknown call을 unsupported로 더 정확히 잡기
 Java 메서드 정의 줄을 자기 자신 호출로 잘못 잡는 부분 보정
 변수별 producer/consumer 연결 강화
+
+## V205 코드해석 흐름 정밀도 보강 — 20260608
+
+기준 버전: 20260608_v205_a1
+
+### 보강 내용
+
+- PowerShell pipeline Set-Content를 파일 저장 단계로 정확히 표시
+- PowerShell callFlow에서 파일 확장자 json 같은 path segment 오탐 방지
+- JavaScript return value.trim().toLowerCase() 같은 반환 체인을 값 반환으로 표시
+- Python result = mystery_transform(data) 같은 미등록 함수 결과 저장을 unsupported로 표시
+- Java 메서드 정의 줄을 자기 자신 호출로 잡는 self-call 오탐 방지
+- smoke sample 4개 추가
+
+### 기준선
+
+- V203 smoke 31개 유지
+- V205 smoke는 35개 이상 통과해야 함

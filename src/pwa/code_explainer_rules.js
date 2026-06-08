@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V203-A1 START ===
+// === CODE EXPLAINER RULES V205-A1 START ===
 (function() {
   "use strict";
 
@@ -331,10 +331,18 @@
     if (/^Get-Content\b/i.test(t)) {
       return makeStep(lineNo, t, "파일 내용 읽기", "텍스트 파일 내용을 읽습니다. -Raw는 전체 파일을 한 문자열로 읽고, 없으면 줄 단위로 읽는 경우가 많습니다.", risk);
     }
+    // POWERSHELL_SET_CONTENT_PIPELINE_V205_A1
     if (/^Out-File\b/i.test(t) || /\|\s*Out-File\b/i.test(t)) {
       return makeStep(lineNo, t, "파일로 출력 저장", "화면에 나올 결과를 파일에 저장합니다. 기존 파일을 덮어쓸 수 있으니 경로를 확인해야 합니다.", risk);
     }
-    if (/^Add-Content\b/i.test(t)) {
+    // POWERSHELL_CONVERT_JSON_SET_CONTENT_V205_FIX
+    if (/\bConvertTo-Json\b/i.test(t) && /\|\s*Set-Content\b/i.test(t)) {
+      return makeStep(lineNo, t, "객체를 JSON으로 변환 후 파일 저장", "PowerShell 객체를 JSON 문자열로 바꾼 뒤 파일에 저장합니다. -Depth가 낮으면 중첩 객체가 잘릴 수 있고, Set-Content는 기존 파일을 덮어쓸 수 있으니 경로와 인코딩을 확인해야 합니다.", risk);
+    }
+    if (/^Set-Content\b/i.test(t) || /\|\s*Set-Content\b/i.test(t)) {
+      return makeStep(lineNo, t, "파일에 내용 저장", "값이나 파이프라인 결과를 파일에 저장합니다. 기존 파일을 덮어쓸 수 있으니 경로와 인코딩을 확인해야 합니다.", risk);
+    }
+    if (/^Add-Content\b/i.test(t) || /\|\s*Add-Content\b/i.test(t)) {
       return makeStep(lineNo, t, "파일에 내용 추가", "기존 파일 끝에 새 내용을 덧붙입니다. 로그나 누적 기록을 남길 때 씁니다.", risk);
     }
     if (/\bWhere-Object\b/i.test(t)) {
@@ -858,6 +866,10 @@
     }
     if (/localStorage/.test(t)) {
       return makeStep(lineNo, t, "브라우저 저장소 사용", "현재 브라우저에 작은 데이터를 저장하거나 다시 불러옵니다.", risk);
+    }
+    // JS_RETURN_CHAIN_V205_A1
+    if (/^return\b/.test(t)) {
+      return makeStep(lineNo, t, "값 돌려주기", "함수 안에서 만든 값이나 계산 결과를 호출한 곳으로 돌려줍니다.", risk);
     }
     if (/alert\s*\(/.test(t) || /console\.log\s*\(/.test(t)) {
       return makeStep(lineNo, t, "화면/콘솔에 출력", "사용자에게 메시지를 보여주거나 개발자 콘솔에 값을 출력합니다.", risk);
@@ -1946,6 +1958,11 @@
     });
   }
 
+  // FLOW_PRECISION_HELPERS_V205_A1
+  function isKnownPowerShellCommand(name) {
+    return /^(Set-Location|Get-ChildItem|Get-Content|Set-Content|Add-Content|Out-File|Write-Host|Select-Object|Where-Object|ForEach-Object|Sort-Object|Group-Object|Measure-Object|ConvertTo-Json|ConvertFrom-Json|Import-Csv|Export-Csv|New-Item|Copy-Item|Remove-Item|Test-Path|Join-Path|Start-Process|Get-Process|Stop-Process)$/i.test(String(name || ""));
+  }
+
   function collectCallFlow(raw, language) {
     const lines = String(raw || "").split(/\r?\n/);
     const definitions = {};
@@ -2024,11 +2041,23 @@
       while ((match = re.exec(code)) !== null) {
         const name = match[1];
         if (!name || skip[name]) continue;
+
+        // CALL_FLOW_SELF_CALL_GUARD_V205_A1
+        if (definitions[name] && definitions[name] === lineNo) continue;
         if (language === "python" && /^def\s+/.test(code)) continue;
         if ((language === "javascript" || language === "workers") && /function\s+/.test(code) && code.includes(name)) continue;
 
+        if (language === "powershell") {
+          const before = code.slice(Math.max(0, match.index - 1), match.index);
+          const after = code.slice(re.lastIndex, re.lastIndex + 1);
+          if (before === "." || before === "\\" || before === "/" || after === "." || after === "\\" || after === "/") continue;
+          if (!definitions[name] && !isKnownPowerShellCommand(name)) continue;
+        }
+
         if (definitions[name]) {
           addCallFlowItem(list, seen, lineNo, "호출", name, "line " + definitions[name], code, "사용자 정의 함수/메서드를 호출합니다.");
+        } else if (language === "powershell" && isKnownPowerShellCommand(name)) {
+          addCallFlowItem(list, seen, lineNo, "호출", name, "PowerShell 명령", code, "PowerShell 내장 명령이나 cmdlet을 호출합니다.");
         } else if (/^(print|open|range|enumerate|len|json|fetch|setTimeout|addEventListener|println|readString|Path|Files|Response|console|document|localStorage)$/.test(name)) {
           addCallFlowItem(list, seen, lineNo, "호출", name, "내장/라이브러리", code, "내장 함수나 라이브러리 기능을 호출합니다.");
         }
@@ -2036,6 +2065,74 @@
     });
 
     return list.slice(0, 24);
+  }
+
+  // UNKNOWN_ASSIGNMENT_CALL_V205_A1
+  function collectLocalDefinitions(raw, language) {
+    const lines = String(raw || "").split(/\r?\n/);
+    const defs = {};
+
+    lines.forEach(function(line, idx) {
+      const code = cleanLine(line);
+      let match;
+
+      if (language === "python") {
+        match = code.match(/^(?:async\s+)?def\s+([A-Za-z_]\w*)\s*\(/);
+      } else if (language === "javascript" || language === "workers") {
+        match = code.match(/^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/) || code.match(/^(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\(?/);
+      } else if (language === "java") {
+        match = code.match(/\b(?:public|private|protected)?\s*(?:static\s+)?[A-Za-z_<>, \[\]]+\s+([A-Za-z_]\w*)\s*\([^)]*\)\s*(?:throws\s+[\w, ]+)?\s*\{/);
+      } else if (language === "powershell") {
+        match = code.match(/^function\s+([A-Za-z_][\w-]*)/i);
+      }
+
+      if (match) defs[match[1]] = idx + 1;
+    });
+
+    return defs;
+  }
+
+  function isKnownStandaloneCall(language, name) {
+    const n = String(name || "");
+    const common = /^(print|open|range|enumerate|len|list|dict|set|tuple|str|int|float|bool|sum|min|max|sorted|Path|JSON|URL|Date|String|Number|Boolean|Array|Object|parseInt|parseFloat|fetch)$/;
+    if (common.test(n)) return true;
+    if (language === "python" && /^(json|csv|pd|pandas|os|sys|Path)$/.test(n)) return true;
+    if ((language === "javascript" || language === "workers") && /^(document|console|localStorage|Response|Promise|Math)$/.test(n)) return true;
+    return false;
+  }
+
+  function unknownAssignmentCallName(code, language) {
+    const t = cleanLine(code);
+    let match;
+
+    if (language === "python") {
+      match = t.match(/^[A-Za-z_]\w*\s*=\s*([A-Za-z_]\w*)\s*\(/);
+      return match ? match[1] : "";
+    }
+
+    if (language === "javascript" || language === "workers") {
+      match = t.match(/^(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*([A-Za-z_$][\w$]*)\s*\(/);
+      return match ? match[1] : "";
+    }
+
+    return "";
+  }
+
+  function refineUnknownCallConfidence(steps, raw, language) {
+    const definitions = collectLocalDefinitions(raw, language);
+
+    return (steps || []).map(function(step) {
+      const name = unknownAssignmentCallName(step.code, language);
+      if (!name) return step;
+      if (definitions[name] || isKnownStandaloneCall(language, name)) return step;
+
+      return Object.assign({}, step, {
+        title: "미등록 함수 결과 저장",
+        explain: name + " 함수 호출 결과를 변수에 저장합니다. 이 코드 조각 안에서는 함수 정의가 보이지 않으므로 외부 정의나 오타 여부를 확인해야 합니다.",
+        confidence: "unsupported",
+        confidenceLabel: confidenceLabel("unsupported")
+      });
+    });
   }
 
   // UNSUPPORTED_ITEMS_V202_A1
@@ -2061,6 +2158,10 @@
     if (!code) return "";
 
     if (language === "python") {
+      // PYTHON_ASSIGNMENT_UNSUPPORTED_TOKEN_V205_FIX
+      match = code.match(/^[A-Za-z_]\w*\s*=\s*([A-Za-z_]\w*)\s*\(/);
+      if (match) return match[1];
+
       match = code.match(/^([A-Za-z_]\w*)\s*\(/);
       if (match) return match[1];
     }
@@ -2138,22 +2239,23 @@
     const enrichedSteps = steps.map(function(step) {
       return inferStepMeta(step, language);
     });
+    const refinedSteps = refineUnknownCallConfidence(enrichedSteps, raw, language);
 
-    const dataFlow = collectDataFlow(enrichedSteps, language);
+    const dataFlow = collectDataFlow(refinedSteps, language);
     const callFlow = collectCallFlow(raw, language);
 
     return {
       language: language,
       sourceCode: raw,
-      summary: summarize(language, enrichedSteps),
-      flowSummary: summarizeFlow(enrichedSteps),
-      confidenceSummary: summarizeConfidence(enrichedSteps),
-      unsupportedItems: collectUnsupportedItems(enrichedSteps, language),
+      summary: summarize(language, refinedSteps),
+      flowSummary: summarizeFlow(refinedSteps),
+      confidenceSummary: summarizeConfidence(refinedSteps),
+      unsupportedItems: collectUnsupportedItems(refinedSteps, language),
       dataFlow: dataFlow,
       callFlow: callFlow,
-      steps: enrichedSteps,
-      warnings: enrichedSteps.filter(function(step) { return step.risk === "high" || step.risk === "medium"; }),
-      mermaid: buildMermaid(enrichedSteps, dataFlow, callFlow)
+      steps: refinedSteps,
+      warnings: refinedSteps.filter(function(step) { return step.risk === "high" || step.risk === "medium"; }),
+      mermaid: buildMermaid(refinedSteps, dataFlow, callFlow)
     };
   }
 
@@ -2162,4 +2264,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V203-A1 END ===
+// === CODE EXPLAINER RULES V205-A1 END ===
