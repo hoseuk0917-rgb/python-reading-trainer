@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V208-A1 START ===
+// === CODE EXPLAINER RULES V209-A1 START ===
 (function() {
   "use strict";
 
@@ -1893,12 +1893,92 @@
   }
 
   // DATA_CALL_FLOW_V203_A1
+  // PRODUCER_CONSUMER_DATA_FLOW_V209_A1
   function trimSourcePreview(value) {
     return String(value || "").trim().replace(/;$/, "").slice(0, 80);
   }
 
-  function addDataFlowItem(list, seen, lineNo, kind, name, code, summary) {
-    const key = [lineNo, kind, name, code].join("|");
+  function uniqueNames(values) {
+    const seen = {};
+    const out = [];
+    (values || []).forEach(function(value) {
+      const name = String(value || "").trim();
+      if (!name || seen[name]) return;
+      seen[name] = true;
+      out.push(name);
+    });
+    return out;
+  }
+
+  function stripQuotedStrings(value) {
+    return String(value || "")
+      .replace(/"([^"\\]|\\.)*"/g, " ")
+      .replace(/'([^'\\]|\\.)*'/g, " ")
+      .replace(/`([^`\\]|\\.)*`/g, " ");
+  }
+
+  function isDataFlowNoiseName(name, language) {
+    const n = String(name || "");
+    if (!n) return true;
+    if (/^\d/.test(n)) return true;
+
+    const common = {
+      "true": true, "false": true, "null": true, "undefined": true, "None": true, "True": true, "False": true,
+      "return": true, "if": true, "else": true, "for": true, "while": true, "with": true, "try": true, "catch": true,
+      "function": true, "def": true, "class": true, "new": true, "const": true, "let": true, "var": true,
+      "public": true, "private": true, "protected": true, "static": true, "throws": true, "throw": true,
+      "print": true, "console": true, "log": true, "error": true, "System": true, "out": true, "err": true, "println": true,
+      "Response": true, "json": true, "Files": true, "Path": true, "of": true, "readString": true,
+      "map": true, "filter": true, "list": true, "dict": true, "set": true, "tuple": true, "str": true,
+      "int": true, "float": true, "bool": true, "String": true, "Number": true, "Boolean": true, "Array": true, "Object": true
+    };
+
+    if (common[n]) return true;
+    if (language === "powershell" && /^[A-Z][A-Za-z]+-[A-Z]/.test(n)) return true;
+    return false;
+  }
+
+  function extractDataFlowNames(value, language, exclude) {
+    const text = stripQuotedStrings(value);
+    const excludes = {};
+    (exclude || []).forEach(function(name) {
+      excludes[name] = true;
+    });
+
+    const out = [];
+    let re;
+    let match;
+
+    if (language === "powershell") {
+      re = /\$([A-Za-z_][\w-]*)/g;
+      while ((match = re.exec(text)) !== null) {
+        const name = match[1];
+        if (!excludes[name] && !isDataFlowNoiseName(name, language)) out.push(name);
+      }
+      return uniqueNames(out);
+    }
+
+    re = /\b([A-Za-z_$][\w$]*)\b/g;
+    while ((match = re.exec(text)) !== null) {
+      const name = match[1];
+      const before = match.index > 0 ? text[match.index - 1] : "";
+      const after = text[re.lastIndex] || "";
+
+      if (before === ".") continue;
+      if (after === ":") continue;
+      if (excludes[name]) continue;
+      if (isDataFlowNoiseName(name, language)) continue;
+
+      out.push(name);
+    }
+
+    return uniqueNames(out);
+  }
+
+  function addDataFlowItem(list, seen, lineNo, kind, name, code, summary, produces, consumes) {
+    const producerList = uniqueNames(produces || (name ? [name] : []));
+    const consumerList = uniqueNames(consumes || []);
+    const key = [lineNo, kind, name, code, producerList.join(","), consumerList.join(",")].join("|");
     if (seen[key]) return;
     seen[key] = true;
     list.push({
@@ -1906,7 +1986,9 @@
       kind: kind,
       name: name || "값",
       code: code,
-      summary: summary || ""
+      summary: summary || "",
+      produces: producerList,
+      consumes: consumerList
     });
   }
 
@@ -1931,24 +2013,43 @@
       }
 
       if (match) {
-        addDataFlowItem(list, seen, step.lineNo, "생성/저장", match[1], code, match[1] + "에 " + trimSourcePreview(match[2]) + " 결과를 저장합니다.");
+        const producedName = match[1];
+        const rhs = match[2];
+        const consumedNames = extractDataFlowNames(rhs, language, [producedName]);
+        const consumerText = consumedNames.length ? " 사용: " + consumedNames.join(", ") + "." : "";
+        addDataFlowItem(
+          list,
+          seen,
+          step.lineNo,
+          "생성/저장",
+          producedName,
+          code,
+          producedName + "에 " + trimSourcePreview(rhs) + " 결과를 저장합니다." + consumerText,
+          [producedName],
+          consumedNames
+        );
       }
 
       match = code.match(/\b([A-Za-z_]\w*)\.(append|extend|update|push|add|put|setItem)\s*\(/);
       if (match) {
-        addDataFlowItem(list, seen, step.lineNo, "가공", match[1], code, match[1] + " 값을 추가하거나 갱신합니다.");
+        const targetName = match[1];
+        const consumedNames = uniqueNames([targetName].concat(extractDataFlowNames(code, language, [targetName])));
+        addDataFlowItem(list, seen, step.lineNo, "가공", targetName, code, targetName + " 값을 추가하거나 갱신합니다.", [targetName], consumedNames);
       }
 
       if (/^return\b/.test(code) || /\breturn\s+/.test(code)) {
-        addDataFlowItem(list, seen, step.lineNo, "반환", "return", code, "함수 밖으로 결과를 돌려줍니다.");
+        const consumedNames = extractDataFlowNames(code.replace(/^return\s+/, ""), language, []);
+        addDataFlowItem(list, seen, step.lineNo, "반환", "return", code, "함수 밖으로 결과를 돌려줍니다.", ["return"], consumedNames);
       }
 
       if (/print\s*\(|console\.(log|error)\s*\(|System\.(out|err)\.println|Response\.json|new\s+Response/.test(code)) {
-        addDataFlowItem(list, seen, step.lineNo, "출력/응답", "output", code, "처리 결과를 화면이나 응답으로 내보냅니다.");
+        const consumedNames = extractDataFlowNames(code, language, []);
+        addDataFlowItem(list, seen, step.lineNo, "출력/응답", "output", code, "처리 결과를 화면이나 응답으로 내보냅니다.", ["output"], consumedNames);
       }
 
       if (/json\.dump\s*\(|\.write_text\s*\(|\.write\s*\(|\.to_csv\s*\(|Set-Content|Out-File|Export-Csv/i.test(code)) {
-        addDataFlowItem(list, seen, step.lineNo, "파일 저장", "file", code, "처리 결과를 파일에 저장합니다.");
+        const consumedNames = extractDataFlowNames(code, language, []);
+        addDataFlowItem(list, seen, step.lineNo, "파일 저장", "file", code, "처리 결과를 파일에 저장합니다.", ["file"], consumedNames);
       }
     });
 
@@ -2320,4 +2421,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V208-A1 END ===
+// === CODE EXPLAINER RULES V209-A1 END ===

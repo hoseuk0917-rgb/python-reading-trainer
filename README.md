@@ -846,3 +846,19 @@ V207에서는 candidateNotes 7개 중 사용자 체감이 큰 항목부터 정�
 
 - producer-consumer links are still implicit
 - 이 항목은 코드해석 규칙 오류가 아니라 UI/데이터 흐름 표현 개선 후보로 분리한다.
+
+## V209 producer-consumer 데이터 흐름 UI 개선 — 20260608
+
+기준 버전: 20260608_v209_a1
+
+### 보강 내용
+
+- dataFlow 항목에 produces와 consumes 필드를 추가했다.
+- 변수 생성과 변수 사용을 UI에서 칩 형태로 분리해 보여준다.
+- 텍스트 리포트의 데이터 흐름 항목에도 생성/사용 정보를 추가했다.
+- V208 smoke 40개 기준선을 유지하고 producer-consumer sample을 1개 추가한다.
+
+### 목표
+
+- raw → cleaned → payload → output 같은 데이터 흐름을 사용자가 더 쉽게 읽도록 만든다.
+- V208 감사에서 남은 candidate인 producer-consumer links are still implicit 항목을 UI 개선으로 처리한다.

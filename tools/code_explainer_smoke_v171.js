@@ -989,6 +989,19 @@ public class App {
     mustContain: ["메서드 정의", "package-private", "readString", "of", "화면에 출력"],
     mustMetaContain: ["Java", "파일", "함수/구조"]
   }
+,
+  {
+    name: "python_producer_consumer_flow_v209",
+    requestedLanguage: "python",
+    expectedLanguage: "python",
+    minSteps: 4,
+    code: `raw = " A "
+cleaned = raw.strip().lower()
+payload = {"value": cleaned}
+print(payload)`,
+    mustContain: ["변수에 값 저장", "화면에 출력"],
+    mustMetaContain: ["Python", "출력"]
+  }
 
 ];
 
@@ -1034,7 +1047,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260608_v208_a1",
+  version: "20260608_v209_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,

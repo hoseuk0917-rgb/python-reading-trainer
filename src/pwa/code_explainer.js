@@ -1,4 +1,4 @@
-// === CODE EXPLAINER UI V208-A1 START ===
+// === CODE EXPLAINER UI V209-A1 START ===
 (function() {
   "use strict";
 
@@ -859,7 +859,9 @@ port = 5432`
       lines.push("");
       lines.push("[데이터 흐름]");
       dataFlow.slice(0, 16).forEach(function(item) {
-        lines.push("- line " + item.lineNo + " · " + item.kind + " · " + item.name + " · " + item.summary);
+        const produces = Array.isArray(item.produces) && item.produces.length ? " · 생성: " + item.produces.join(", ") : "";
+        const consumes = Array.isArray(item.consumes) && item.consumes.length ? " · 사용: " + item.consumes.join(", ") : "";
+        lines.push("- line " + item.lineNo + " · " + item.kind + " · " + item.name + produces + consumes + " · " + item.summary);
       });
     }
 
@@ -976,6 +978,23 @@ port = 5432`
   }
 
   // DATA_CALL_FLOW_UI_V203_A1
+  // PRODUCER_CONSUMER_UI_V209_A1
+  function renderFlowPills(item) {
+    const produces = Array.isArray(item.produces) ? item.produces : [];
+    const consumes = Array.isArray(item.consumes) ? item.consumes : [];
+    const parts = [];
+
+    if (produces.length) {
+      parts.push('<span class="code-flow-pill produce">생성: ' + escapeHtml(produces.join(", ")) + '</span>');
+    }
+
+    if (consumes.length) {
+      parts.push('<span class="code-flow-pill consume">사용: ' + escapeHtml(consumes.join(", ")) + '</span>');
+    }
+
+    return parts.length ? '<div class="code-flow-pills">' + parts.join("") + '</div>' : "";
+  }
+
   function renderFlowList(items, emptyMessage) {
     if (!Array.isArray(items) || !items.length) {
       return '<p class="muted">' + escapeHtml(emptyMessage) + '</p>';
@@ -986,7 +1005,9 @@ port = 5432`
       const target = item.target ? ' <span class="muted">→ ' + escapeHtml(item.target) + '</span>' : "";
       return '<li><strong>line ' + item.lineNo + '</strong> · ' +
         escapeHtml(item.kind || item.type || "흐름") + ' · ' +
-        escapeHtml(item.name || "값") + target + summary + '</li>';
+        escapeHtml(item.name || "값") + target + summary +
+        renderFlowPills(item) +
+        '</li>';
     }).join("") + '</ul>';
   }
 
@@ -1327,4 +1348,4 @@ port = 5432`
     init();
   }
 })();
-// === CODE EXPLAINER UI V208-A1 END ===
+// === CODE EXPLAINER UI V209-A1 END ===
