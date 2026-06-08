@@ -1,6 +1,6 @@
-// === PROJECT ANALYZER V198-A1 START ===
+// === PROJECT ANALYZER V199-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260608_v198_a1";
+  const PROJECT_ANALYZER_VERSION = "20260608_v199_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
@@ -37,8 +37,8 @@
 "",
 "ROOT = Path('.').resolve()",
 "OUT_DIR = ROOT / '.tmp'",
-"OUT_JSON = OUT_DIR / 'project_probe_v198.json'",
-"OUT_MD = OUT_DIR / 'project_probe_v198_report.md'",
+"OUT_JSON = OUT_DIR / 'project_probe_v199.json'",
+"OUT_MD = OUT_DIR / 'project_probe_v199_report.md'",
 "SKIP_DIRS = {'.git', '.tmp', 'node_modules', '.venv', '.venv_lora_infer', '__pycache__', '.pytest_cache', 'dist', 'build', '.next'}",
 "TEXT_EXTS = {'.js', '.css', '.html', '.json', '.py', '.ps1', '.md', '.toml', '.yml', '.yaml', '.txt', '.gitignore', '.env'}",
 "KEY_FILES = ['index.html', 'src/pwa/index.html', 'src/pwa/app.js', 'src/pwa/code_explainer.js', 'src/pwa/code_explainer_rules.js', 'src/pwa/project_analyzer.js', 'src/pwa/style.css', 'tools/validate_lessons.py', 'tools/code_explainer_smoke_v171.js']",
@@ -256,7 +256,7 @@
 "",
 "OUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')",
 "md = []",
-"md.append('# Project Probe V198')",
+"md.append('# Project Probe V199')",
 "md.append('')",
 "md.append('- generated_at: ' + report['generated_at'])",
 "md.append('- root: `' + report['root'] + '`')",
@@ -302,7 +302,7 @@
 "md.append('- ' + rel(OUT_MD))",
 "OUT_MD.write_text('\\n'.join(md), encoding='utf-8')",
 "",
-"print('PROJECT_PROBE_V198_OK')",
+"print('PROJECT_PROBE_V199_OK')",
 "print('ROOT', ROOT)",
 "print('GIT_HEAD', report['git']['head'])",
 "print('GIT_STATUS', report['git']['status_short'] or 'clean')",
@@ -369,12 +369,12 @@
       "",
       "@'",
       pythonCode,
-      "'@ | Set-Content .\\.tmp\\project_probe_v198_from_app.py -Encoding UTF8",
+      "'@ | Set-Content .\\.tmp\\project_probe_v199_from_app.py -Encoding UTF8",
       "",
-      "python .\\.tmp\\project_probe_v198_from_app.py",
+      "python .\\.tmp\\project_probe_v199_from_app.py",
       "",
       '"`n=== REPORT PREVIEW ==="',
-      "Get-Content .\\.tmp\\project_probe_v198_report.md -Encoding UTF8 -TotalCount 220"
+      "Get-Content .\\.tmp\\project_probe_v199_report.md -Encoding UTF8 -TotalCount 220"
     ].join("\n");
   }
 
@@ -429,7 +429,7 @@
     };
   }
 
-  // PROJECT_ANALYZER_CLEANUP_V198_A1
+  // PROJECT_ANALYZER_CLEANUP_V199_A1
   function parseProjectReportJson(text) {
     const raw = String(text || "").trim();
 
@@ -506,7 +506,7 @@
     };
 
     return {
-      ok: raw.includes("PROJECT_PROBE_V198_OK") || raw.includes("PROJECT_PROBE_V197_OK") || raw.includes("PROJECT_PROBE_V195_OK") || raw.includes("PROJECT_PROBE_V193_OK") || raw.includes("# Project Probe V198") || raw.includes("# Project Probe V197") || raw.includes("# Project Probe V195") || raw.includes("# Project Probe V193"),
+      ok: raw.includes("PROJECT_PROBE_V199_OK") || raw.includes("PROJECT_PROBE_V198_OK") || raw.includes("PROJECT_PROBE_V197_OK") || raw.includes("PROJECT_PROBE_V195_OK") || raw.includes("PROJECT_PROBE_V193_OK") || raw.includes("# Project Probe V199") || raw.includes("# Project Probe V198") || raw.includes("# Project Probe V197") || raw.includes("# Project Probe V195") || raw.includes("# Project Probe V193"),
       inputMode: "terminal",
       root: getLineValue(raw, "ROOT") || (raw.match(/- root: `([^`]+)`/) || [])[1] || "",
       gitHead: getLineValue(raw, "GIT_HEAD") || (raw.match(/- git_head: `([^`]+)`/) || [])[1] || "",
@@ -598,7 +598,7 @@
     }
 
     if (!parsed.ok) {
-      items.push("PROJECT_PROBE_V198_OK 또는 # Project Probe V198가 보이지 않습니다. 출력이 잘렸을 수 있습니다. V197 출력도 읽을 수 있지만 새 probe 실행을 권장합니다.");
+      items.push("PROJECT_PROBE_V199_OK 또는 # Project Probe V199가 보이지 않습니다. 출력이 잘렸을 수 있습니다. V198/V197 출력도 읽을 수 있지만 새 probe 실행을 권장합니다.");
     }
 
     return items;
@@ -710,7 +710,7 @@
     ].filter(Boolean).join("");
   }
 
-  // PROJECT_ANALYZER_UX_V198_A1
+  // PROJECT_ANALYZER_UX_V199_A1
   function renderProjectUsageHint(parsed) {
     const mode = parsed.inputMode || "terminal";
     const jsonReady = mode === "json";
@@ -719,7 +719,7 @@
       '<h3>붙여넣기 품질 안내</h3>' +
       '<div class="project-hint-grid">' +
       '<div class="project-hint-card"><strong>현재 입력</strong><span>' + escapeHtml(jsonReady ? "JSON report 전체" : "터미널/Markdown 출력") + '</span></div>' +
-      '<div class="project-hint-card"><strong>추천 입력</strong><span>' + escapeHtml("project_probe_v198.json 전체 붙여넣기") + '</span></div>' +
+      '<div class="project-hint-card"><strong>추천 입력</strong><span>' + escapeHtml("project_probe_v199.json 전체 붙여넣기") + '</span></div>' +
       '<div class="project-hint-card"><strong>왜 필요한가</strong><span>' + escapeHtml("핵심 파일, 함수/클래스, 호출 후보, 참조 후보를 더 정확히 볼 수 있습니다.") + '</span></div>' +
       '</div>' +
       (jsonReady ? '<p class="muted">JSON report로 분석 중입니다. 기능별 파일 묶음과 상세 후보가 아래에 함께 표시됩니다.</p>' : '<p class="muted">현재 출력도 분석 가능하지만, JSON report 전체를 붙여넣으면 다음 수정에 필요한 파일 묶음이 더 선명해집니다.</p>') +
@@ -782,7 +782,7 @@
     }).slice(0, 14);
 
     const lines = [
-      "# python-reading-trainer 인계문서 — V198 프로젝트분석 UX 보강",
+      "# python-reading-trainer 인계문서 — V199 구조도 표시 개선",
       "",
       "## 현재 상태",
       "",
@@ -828,8 +828,8 @@
       "",
       "## 다음 권장 작업",
       "",
-      "1. 프로젝트분석 UX 보강 기능 검증",
-      "2. JSON report 붙여넣기 안내, 기능별 파일 묶음, 수정 전 파일 추천 UX 확인",
+      "1. 구조도 표시 위치와 Mermaid 렌더링 검증",
+      "2. JSON report 붙여넣기 후 구조도, 파일 추천, 인계문서 복사 UX 확인",
       "3. 검증 통과 후 커밋, 태그, 푸시, GitHub Pages live 확인",
       "",
       "## 주의",
@@ -909,7 +909,7 @@
       '</div>' +
       '<div class="project-detail-section">' +
       '<h3>산출 파일</h3>' +
-      '<p>' + escapeHtml([parsed.outJson, parsed.outMd].filter(Boolean).join(" · ") || ".tmp/project_probe_v198_report.md") + '</p>' +
+      '<p>' + escapeHtml([parsed.outJson, parsed.outMd].filter(Boolean).join(" · ") || ".tmp/project_probe_v199_report.md") + '</p>' +
       '</div>' +
       '<div class="project-detail-section project-handoff-section">' +
       '<h3>다음 대화창 인계문서</h3>' +
@@ -1008,6 +1008,13 @@
     }
   }
 
+  // PROJECT_ANALYZER_MERMAID_READY_V199_A1
+  function rerenderProjectMermaidWhenReady() {
+    if (lastParsedReport && lastParsedReport.mermaid) {
+      renderProjectMermaid(lastParsedReport.mermaid);
+    }
+  }
+
   function init() {
     const generateBtn = el("generateProjectProbeBtn");
     const copyBtn = el("copyProjectProbeCommandBtn");
@@ -1023,6 +1030,9 @@
     if (copyBtn) copyBtn.onclick = copyCommand;
     if (analyzeBtn) analyzeBtn.onclick = analyzePastedOutput;
     if (clearBtn) clearBtn.onclick = clearProjectAnalyzer;
+
+    window.removeEventListener("mermaid-ready", rerenderProjectMermaidWhenReady);
+    window.addEventListener("mermaid-ready", rerenderProjectMermaidWhenReady);
   }
 
   window.ProjectAnalyzer = {
@@ -1038,4 +1048,4 @@
     init();
   }
 })();
- // === PROJECT ANALYZER V198-A1 END ===
+ // === PROJECT ANALYZER V199-A1 END ===
