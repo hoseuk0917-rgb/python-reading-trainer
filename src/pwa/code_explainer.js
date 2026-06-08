@@ -1,4 +1,4 @@
-// === CODE EXPLAINER UI V170-A3 START ===
+// === CODE EXPLAINER UI V202-A1 START ===
 (function() {
   "use strict";
 
@@ -365,6 +365,20 @@ port = 5432`
     return "낮음";
   }
 
+  // CONFIDENCE_UI_V202_A1
+  function confidenceLabel(confidence) {
+    if (confidence === "exact") return "확실";
+    if (confidence === "inferred") return "추정";
+    if (confidence === "unsupported") return "미지원";
+    return "추정";
+  }
+
+  function confidenceClass(confidence) {
+    if (confidence === "exact") return "confidence-exact";
+    if (confidence === "unsupported") return "confidence-unsupported";
+    return "confidence-inferred";
+  }
+
   function escapeHtml(value) {
     return String(value || "")
       .replaceAll("&", "&amp;")
@@ -525,14 +539,14 @@ port = 5432`
   function renderStepMeta(step) {
     const tags = Array.isArray(step.tags) ? step.tags : [];
     const category = step.category || "";
-
-    if (!category && !tags.length) return "";
+    const confidence = step.confidence || "inferred";
 
     const tagHtml = tags.slice(0, 4).map(function(tag) {
       return '<span class="code-step-tag">' + escapeHtml(tag) + '</span>';
     }).join("");
 
     return '<div class="code-step-meta">' +
+      '<span class="code-confidence-chip ' + confidenceClass(confidence) + '">' + escapeHtml(confidenceLabel(confidence)) + '</span>' +
       (category ? '<span class="code-step-category">' + escapeHtml(category) + '</span>' : "") +
       tagHtml +
       '</div>';
@@ -566,12 +580,14 @@ port = 5432`
     }
 
     visibleSteps.forEach(function(step, idx) {
+      const confidence = step.confidence || "inferred";
       const item = document.createElement("div");
-      item.className = "code-step risk-" + step.risk;
+      item.className = "code-step risk-" + step.risk + " " + confidenceClass(confidence);
       item.innerHTML = `
         <div class="code-step-head">
           <span class="step-number">${idx + 1}</span>
           <strong>${escapeHtml(step.title)}</strong>
+          <span class="confidence-badge ${confidenceClass(confidence)}">${confidenceLabel(confidence)}</span>
           <span class="risk-badge">${riskLabel(step.risk)}</span>
         </div>
         <p>${escapeHtml(step.explain)}</p>
@@ -825,6 +841,17 @@ port = 5432`
     lines.push("단계 수: " + steps.length);
     lines.push("주의/위험 줄: " + warnings.length);
 
+    const confidence = result.confidenceSummary || {};
+    const unsupportedItems = Array.isArray(result.unsupportedItems) ? result.unsupportedItems : [];
+    lines.push("확신도: 확실 " + (confidence.exact || 0) + " / 추정 " + (confidence.inferred || 0) + " / 미지원 " + (confidence.unsupported || 0));
+
+    if (unsupportedItems.length) {
+      lines.push("미지원/확인필요:");
+      unsupportedItems.slice(0, 12).forEach(function(item) {
+        lines.push("- line " + item.lineNo + " · " + item.token + " · " + item.code);
+      });
+    }
+
     const overview = buildLongCodeOverview(result);
     lines.push("");
     lines.push("[긴 코드 구조 요약]");
@@ -867,7 +894,7 @@ port = 5432`
     lines.push("[단계별 해설]");
     steps.slice(0, 50).forEach(function(step, idx) {
       const tags = Array.isArray(step.tags) && step.tags.length ? " #" + step.tags.join(" #") : "";
-      lines.push((idx + 1) + ". line " + step.lineNo + " · " + step.title + " · " + step.explain + tags);
+      lines.push((idx + 1) + ". line " + step.lineNo + " · " + confidenceLabel(step.confidence) + " · " + step.title + " · " + step.explain + tags);
       lines.push("   코드: " + step.code);
     });
 
@@ -891,17 +918,42 @@ port = 5432`
     const steps = Array.isArray(result.steps) ? result.steps : [];
     const warnings = Array.isArray(result.warnings) ? result.warnings : [];
     const categories = countByValue(steps, function(step) { return step.category || "처리"; });
-    const mediumOrHigh = steps.filter(function(step) {
-      return step.risk === "medium" || step.risk === "high";
-    }).length;
+    const confidence = result.confidenceSummary || {};
+    const unsupportedItems = Array.isArray(result.unsupportedItems) ? result.unsupportedItems : [];
 
     box.className = "code-quick-report";
     box.innerHTML = '<div class="code-report-mini-grid">' +
       '<span class="code-report-chip"><strong>' + steps.length + '</strong><small>단계</small></span>' +
       '<span class="code-report-chip"><strong>' + warnings.length + '</strong><small>위험/주의</small></span>' +
-      '<span class="code-report-chip"><strong>' + mediumOrHigh + '</strong><small>확인필요</small></span>' +
+      '<span class="code-report-chip"><strong>' + (confidence.unsupported || 0) + '</strong><small>미지원</small></span>' +
+      '<span class="code-report-chip"><strong>' + unsupportedItems.length + '</strong><small>확인필요</small></span>' +
       '</div>' +
       '<p class="code-report-categories">' + escapeHtml(formatCountSummary(categories) || "분류 없음") + '</p>';
+  }
+
+  function renderConfidenceReport(result) {
+    const box = el("codeConfidenceReport");
+    if (!box) return;
+
+    const confidence = result.confidenceSummary || {};
+    const unsupportedItems = Array.isArray(result.unsupportedItems) ? result.unsupportedItems : [];
+
+    const unsupportedHtml = unsupportedItems.length
+      ? '<ul>' + unsupportedItems.slice(0, 10).map(function(item) {
+          return '<li>line ' + item.lineNo + ' · <strong>' + escapeHtml(item.token) + '</strong> · ' + escapeHtml(item.code) + '</li>';
+        }).join("") + '</ul>'
+      : '<p class="muted">미지원 함수/명령은 따로 감지되지 않았습니다.</p>';
+
+    box.className = "code-confidence-report";
+    box.innerHTML = '<div class="code-confidence-grid">' +
+      '<span class="code-confidence-chip confidence-exact"><strong>' + (confidence.exact || 0) + '</strong><small>확실</small></span>' +
+      '<span class="code-confidence-chip confidence-inferred"><strong>' + (confidence.inferred || 0) + '</strong><small>추정</small></span>' +
+      '<span class="code-confidence-chip confidence-unsupported"><strong>' + (confidence.unsupported || 0) + '</strong><small>미지원</small></span>' +
+      '</div>' +
+      '<details class="code-unsupported-detail" ' + (unsupportedItems.length ? 'open' : '') + '>' +
+      '<summary>미지원/확인필요 함수·명령</summary>' +
+      unsupportedHtml +
+      '</details>';
   }
 
   async function copyCodeReport() {
@@ -974,6 +1026,7 @@ port = 5432`
 
     renderDetectionDetails(result, requested, input.value);
     renderQuickReport(result);
+    renderConfidenceReport(result);
     renderStructureOverview(result);
     renderWarnings(result.warnings || []);
     renderSteps(result.steps || []);
@@ -1007,6 +1060,7 @@ port = 5432`
     const diagram = el("mermaidDiagram");
     const source = el("mermaidSource");
     const quick = el("codeQuickReport");
+    const confidence = el("codeConfidenceReport");
     const structure = el("codeStructureOverview");
     const detection = el("codeDetectionDetails");
     const largeBody = el("diagramLargeBody");
@@ -1032,6 +1086,10 @@ port = 5432`
     if (quick) {
       quick.className = "code-quick-report muted";
       quick.textContent = "분석하면 단계 수, 위험 줄, 주요 분류가 요약됩니다.";
+    }
+    if (confidence) {
+      confidence.className = "code-confidence-report muted";
+      confidence.textContent = "분석하면 확실/추정/미지원 단계가 표시됩니다.";
     }
     if (structure) {
       structure.className = "code-structure-overview muted";
@@ -1209,4 +1267,4 @@ port = 5432`
     init();
   }
 })();
-// === CODE EXPLAINER UI V170-A3 END ===
+// === CODE EXPLAINER UI V202-A1 END ===

@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V201-A1 START ===
+// === CODE EXPLAINER RULES V202-A1 START ===
 (function() {
   "use strict";
 
@@ -183,13 +183,39 @@
     return "low";
   }
 
+  // CONFIDENCE_LABEL_RULES_V202_A1
+  function confidenceForStep(title, explain) {
+    const t = String(title || "");
+    const e = String(explain || "");
+
+    if (/자동 규칙에 없는|코드 실행|명령 실행|설정 파일의 한 줄|설정 줄/.test(t + " " + e)) {
+      return "unsupported";
+    }
+
+    if (/변수에 값 저장|값 반환|값 돌려주기|Markdown 문단|YAML 설정|TOML 설정|INI 설정/.test(t)) {
+      return "inferred";
+    }
+
+    return "exact";
+  }
+
+  function confidenceLabel(confidence) {
+    if (confidence === "exact") return "확실";
+    if (confidence === "inferred") return "추정";
+    if (confidence === "unsupported") return "미지원";
+    return "추정";
+  }
+
   function makeStep(lineNo, code, title, explain, risk) {
+    const confidence = confidenceForStep(title, explain);
     return {
       lineNo: lineNo,
       code: code,
       title: title,
       explain: explain,
-      risk: risk || "low"
+      risk: risk || "low",
+      confidence: confidence,
+      confidenceLabel: confidenceLabel(confidence)
     };
   }
 
@@ -1814,6 +1840,74 @@
     return lines.join("\n");
   }
 
+  // UNSUPPORTED_ITEMS_V202_A1
+  function summarizeConfidence(steps) {
+    const counts = {
+      exact: 0,
+      inferred: 0,
+      unsupported: 0
+    };
+
+    (steps || []).forEach(function(step) {
+      const key = step.confidence || "inferred";
+      counts[key] = (counts[key] || 0) + 1;
+    });
+
+    return counts;
+  }
+
+  function unsupportedTokenFromStep(step, language) {
+    const code = cleanLine(step && step.code ? step.code : "");
+    let match;
+
+    if (!code) return "";
+
+    if (language === "python") {
+      match = code.match(/^([A-Za-z_]\w*)\s*\(/);
+      if (match) return match[1];
+    }
+
+    if (language === "javascript" || language === "workers") {
+      match = code.match(/^([A-Za-z_$][\w$]*)\s*\(/);
+      if (match) return match[1];
+    }
+
+    if (language === "java") {
+      match = code.match(/\b([A-Za-z_]\w*)\s*\(/);
+      if (match) return match[1];
+    }
+
+    if (language === "powershell") {
+      match = code.match(/^([A-Za-z][\w-]*)\b/);
+      if (match) return match[1];
+    }
+
+    return code.slice(0, 40);
+  }
+
+  function collectUnsupportedItems(steps, language) {
+    const seen = {};
+    const items = [];
+
+    (steps || []).forEach(function(step) {
+      if (step.confidence !== "unsupported") return;
+
+      const token = unsupportedTokenFromStep(step, language);
+      const key = [step.lineNo, token, step.code].join("|");
+      if (seen[key]) return;
+      seen[key] = true;
+
+      items.push({
+        lineNo: step.lineNo,
+        token: token || "확인 필요",
+        code: step.code,
+        title: step.title
+      });
+    });
+
+    return items;
+  }
+
   function analyze(code, requestedLanguage) {
     const raw = stripFence(code);
     const language = requestedLanguage && requestedLanguage !== "auto" ? requestedLanguage : detectLanguage(raw);
@@ -1849,8 +1943,11 @@
 
     return {
       language: language,
+      sourceCode: raw,
       summary: summarize(language, enrichedSteps),
       flowSummary: summarizeFlow(enrichedSteps),
+      confidenceSummary: summarizeConfidence(enrichedSteps),
+      unsupportedItems: collectUnsupportedItems(enrichedSteps, language),
       steps: enrichedSteps,
       warnings: enrichedSteps.filter(function(step) { return step.risk === "high" || step.risk === "medium"; }),
       mermaid: buildMermaid(enrichedSteps)
@@ -1862,4 +1959,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V201-A1 END ===
+// === CODE EXPLAINER RULES V202-A1 END ===

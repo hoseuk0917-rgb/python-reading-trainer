@@ -35,6 +35,8 @@ function flattenStepText(result) {
       step.explain,
       step.code,
       step.category,
+      step.confidence,
+      step.confidenceLabel,
       Array.isArray(step.tags) ? step.tags.join(" ") : ""
     ].join(" ");
   }).join("\n");
@@ -199,6 +201,8 @@ function summarizeResult(sample, result, status, message) {
     categoryKeyCounts: countNormalizedValues(categories),
     tagKeyCounts: countNormalizedValues(tags),
     titles: steps.map((step) => step.title),
+    confidenceCounts: countValues(steps.map((step) => step.confidence || "inferred")),
+    unsupportedCount: Array.isArray(result.unsupportedItems) ? result.unsupportedItems.length : 0,
     warningTitles: steps
       .filter((step) => step.risk === "high" || step.risk === "medium")
       .map((step) => step.title)
@@ -802,6 +806,20 @@ public class ReadFile {
     mustContain: ["라이브러리 불러오기", "클래스 정의", "프로그램 시작점", "오류 대비 시작", "파일/경로 처리", "화면에 출력", "입출력 예외 처리"],
     mustMetaContain: ["Java", "파일", "오류처리", "출력"]
   }
+,
+  {
+    name: "python_unknown_function_confidence",
+    requestedLanguage: "python",
+    expectedLanguage: "python",
+    minSteps: 3,
+    code: `data = [1, 2, 3]
+
+mystery_transform(data)
+
+print(data)`,
+    mustContain: ["변수에 값 저장", "Python 코드 실행", "미지원", "화면에 출력"],
+    mustMetaContain: ["Python", "출력"]
+  }
 
 ];
 
@@ -843,7 +861,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260608_v201_a1",
+  version: "20260608_v202_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,
