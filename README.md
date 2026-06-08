@@ -812,3 +812,22 @@ OK smoke_v205
 V205 기능 게이트는 안정적이다.
 V207에서는 candidateNotes 7개 중 사용자 체감이 큰 항목부터 정밀도 보강한다.
 우선순위는 PowerShell 노이즈 완화, Python/JS nested unknown call 탐지, Java Path.of 명시 순서가 적절하다.
+
+## V207 코드해석 후보 이슈 정밀도 보강 — 20260608
+
+기준 버전: 20260608_v207_a1
+
+### 보강 내용
+
+- PowerShell param block 내부 타입 선언 줄의 미지원 표시 완화
+- PowerShell object literal 시작 줄의 미지원 표시 완화
+- PowerShell object literal 내부 key-value 줄의 미지원 표시 완화
+- Python nested unknown call 탐지 보강
+- JavaScript nested unknown call 탐지 보강
+- Java Path.of 호출을 callFlow에 명시
+- Python chain call의 property method 탐지는 과탐 가능성 때문에 보류
+
+### 기준선
+
+- V205 smoke 35개 유지
+- V207 smoke는 39개 이상 통과해야 함

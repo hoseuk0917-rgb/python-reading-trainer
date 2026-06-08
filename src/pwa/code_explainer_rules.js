@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V205-A1 START ===
+// === CODE EXPLAINER RULES V207-A1 START ===
 (function() {
   "use strict";
 
@@ -312,6 +312,16 @@
     // POWERSHELL_DEEP_RULES_V188_A2
     if (/^param\s*\(/i.test(t)) {
       return makeStep(lineNo, t, "입력 파라미터 정의", "스크립트를 실행할 때 받을 입력값을 정의합니다. 예: -Path, -Port 같은 옵션을 명확히 정할 수 있습니다.", risk);
+    }
+    // POWERSHELL_PARAM_OBJECT_LITERAL_V207_A1
+    if (/^\[[A-Za-z_][\w.\[\]]*\]\$[A-Za-z_][\w-]*\s*=/.test(t)) {
+      return makeStep(lineNo, t, "입력 파라미터 기본값", "param 블록 안에서 파라미터의 타입과 기본값을 정합니다. 실행할 때 같은 이름의 옵션을 주면 이 기본값 대신 입력값이 사용됩니다.", risk);
+    }
+    if (/^\[pscustomobject\]@\{/.test(t)) {
+      return makeStep(lineNo, t, "PowerShell 객체 만들기", "여러 속성을 가진 사용자 정의 객체를 만들기 시작합니다. 보고서 행이나 JSON 변환용 데이터를 구성할 때 자주 씁니다.", risk);
+    }
+    if (/^[A-Za-z_][\w-]*\s*=\s*(\$_|[^=]+)$/.test(t) && !/^\$/.test(t)) {
+      return makeStep(lineNo, t, "객체 속성 값 설정", "PowerShell 객체 안에서 속성 이름과 값을 연결합니다. 왼쪽은 속성명, 오른쪽은 저장할 값입니다.", risk);
     }
     if (/^\$ErrorActionPreference\s*=/.test(t)) {
       return makeStep(lineNo, t, "오류 시 즉시 중단 설정", "PowerShell 명령 실패를 계속 무시하지 않고 Stop처럼 중단되게 만드는 설정입니다. 검증 스크립트에서 실패를 빨리 드러낼 때 유용합니다.", risk);
@@ -2058,7 +2068,7 @@
           addCallFlowItem(list, seen, lineNo, "호출", name, "line " + definitions[name], code, "사용자 정의 함수/메서드를 호출합니다.");
         } else if (language === "powershell" && isKnownPowerShellCommand(name)) {
           addCallFlowItem(list, seen, lineNo, "호출", name, "PowerShell 명령", code, "PowerShell 내장 명령이나 cmdlet을 호출합니다.");
-        } else if (/^(print|open|range|enumerate|len|json|fetch|setTimeout|addEventListener|println|readString|Path|Files|Response|console|document|localStorage)$/.test(name)) {
+        } else if (/^(print|open|range|enumerate|len|json|fetch|setTimeout|addEventListener|println|readString|of|Path|Files|Response|console|document|localStorage)$/.test(name)) {
           addCallFlowItem(list, seen, lineNo, "호출", name, "내장/라이브러리", code, "내장 함수나 라이브러리 기능을 호출합니다.");
         }
       }
@@ -2094,43 +2104,83 @@
 
   function isKnownStandaloneCall(language, name) {
     const n = String(name || "");
-    const common = /^(print|open|range|enumerate|len|list|dict|set|tuple|str|int|float|bool|sum|min|max|sorted|Path|JSON|URL|Date|String|Number|Boolean|Array|Object|parseInt|parseFloat|fetch)$/;
+    const common = /^(print|open|range|enumerate|len|list|dict|set|tuple|str|int|float|bool|sum|min|max|map|filter|sorted|Path|JSON|URL|Date|String|Number|Boolean|Array|Object|parseInt|parseFloat|fetch)$/;
     if (common.test(n)) return true;
     if (language === "python" && /^(json|csv|pd|pandas|os|sys|Path)$/.test(n)) return true;
     if ((language === "javascript" || language === "workers") && /^(document|console|localStorage|Response|Promise|Math)$/.test(n)) return true;
     return false;
   }
 
-  function unknownAssignmentCallName(code, language) {
+  // NESTED_UNKNOWN_CALL_V207_A1
+  function pushUnknownCallName(list, seen, language, name, definitions) {
+    const n = String(name || "");
+    if (!n || seen[n]) return;
+    if (definitions[n] || isKnownStandaloneCall(language, n)) return;
+    seen[n] = true;
+    list.push(n);
+  }
+
+  function unknownAssignmentCallNames(code, language, definitions) {
     const t = cleanLine(code);
+    const list = [];
+    const seen = {};
     let match;
+    let rhs = "";
 
     if (language === "python") {
-      match = t.match(/^[A-Za-z_]\w*\s*=\s*([A-Za-z_]\w*)\s*\(/);
-      return match ? match[1] : "";
+      match = t.match(/^[A-Za-z_]\w*\s*=\s*(.+)$/);
+      if (!match) return list;
+      rhs = match[1];
+
+      rhs.replace(/\b(?:map|filter)\s*\(\s*([A-Za-z_]\w*)\s*,/g, function(_, name) {
+        pushUnknownCallName(list, seen, language, name, definitions);
+        return _;
+      });
+
+      const re = /\b([A-Za-z_]\w*)\s*\(/g;
+      while ((match = re.exec(rhs)) !== null) {
+        if (match.index > 0 && rhs[match.index - 1] === ".") continue;
+        pushUnknownCallName(list, seen, language, match[1], definitions);
+      }
+
+      return list;
     }
 
     if (language === "javascript" || language === "workers") {
-      match = t.match(/^(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*([A-Za-z_$][\w$]*)\s*\(/);
-      return match ? match[1] : "";
+      match = t.match(/^(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*(.+)$/);
+      if (!match) return list;
+      rhs = match[1];
+
+      const re = /\b([A-Za-z_$][\w$]*)\s*\(/g;
+      while ((match = re.exec(rhs)) !== null) {
+        if (match.index > 0 && rhs[match.index - 1] === ".") continue;
+        pushUnknownCallName(list, seen, language, match[1], definitions);
+      }
+
+      return list;
     }
 
-    return "";
+    return list;
+  }
+
+  function unknownAssignmentCallName(code, language) {
+    const names = unknownAssignmentCallNames(code, language, {});
+    return names.length ? names[0] : "";
   }
 
   function refineUnknownCallConfidence(steps, raw, language) {
     const definitions = collectLocalDefinitions(raw, language);
 
     return (steps || []).map(function(step) {
-      const name = unknownAssignmentCallName(step.code, language);
-      if (!name) return step;
-      if (definitions[name] || isKnownStandaloneCall(language, name)) return step;
+      const names = unknownAssignmentCallNames(step.code, language, definitions);
+      if (!names.length) return step;
 
       return Object.assign({}, step, {
         title: "미등록 함수 결과 저장",
-        explain: name + " 함수 호출 결과를 변수에 저장합니다. 이 코드 조각 안에서는 함수 정의가 보이지 않으므로 외부 정의나 오타 여부를 확인해야 합니다.",
+        explain: names.join(", ") + " 함수 호출 결과를 변수에 저장합니다. 이 코드 조각 안에서는 함수 정의가 보이지 않으므로 외부 정의나 오타 여부를 확인해야 합니다.",
         confidence: "unsupported",
-        confidenceLabel: confidenceLabel("unsupported")
+        confidenceLabel: confidenceLabel("unsupported"),
+        unsupportedTokens: names
       });
     });
   }
@@ -2191,16 +2241,21 @@
     (steps || []).forEach(function(step) {
       if (step.confidence !== "unsupported") return;
 
-      const token = unsupportedTokenFromStep(step, language);
-      const key = [step.lineNo, token, step.code].join("|");
-      if (seen[key]) return;
-      seen[key] = true;
+      const tokens = Array.isArray(step.unsupportedTokens) && step.unsupportedTokens.length
+        ? step.unsupportedTokens
+        : [unsupportedTokenFromStep(step, language)];
 
-      items.push({
-        lineNo: step.lineNo,
-        token: token || "확인 필요",
-        code: step.code,
-        title: step.title
+      tokens.forEach(function(token) {
+        const key = [step.lineNo, token, step.code].join("|");
+        if (seen[key]) return;
+        seen[key] = true;
+
+        items.push({
+          lineNo: step.lineNo,
+          token: token || "확인 필요",
+          code: step.code,
+          title: step.title
+        });
       });
     });
 
@@ -2264,4 +2319,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V205-A1 END ===
+// === CODE EXPLAINER RULES V207-A1 END ===

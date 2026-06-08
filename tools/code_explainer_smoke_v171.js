@@ -899,6 +899,74 @@ print(result)`,
     mustContain: ["메서드 정의", "readText", "호출 흐름", "화면에 출력"],
     mustMetaContain: ["Java", "함수/구조", "출력"]
   }
+,
+  {
+    name: "powershell_param_object_literal_noise_v207",
+    requestedLanguage: "powershell",
+    expectedLanguage: "powershell",
+    minSteps: 8,
+    code: `$ErrorActionPreference = "Stop"
+
+param(
+  [string]$Root = "."
+)
+
+$result = @(
+  [pscustomobject]@{
+    path = $_
+    exists = Test-Path $_
+  }
+)
+
+$result | ConvertTo-Json -Depth 4 | Set-Content .\report.json -Encoding UTF8`,
+    mustContain: ["입력 파라미터 정의", "입력 파라미터 기본값", "PowerShell 객체 만들기", "객체 속성 값 설정", "객체를 JSON으로 변환 후 파일 저장"],
+    mustMetaContain: ["PowerShell", "JSON", "파일"]
+  },
+  {
+    name: "python_nested_unknown_call_v207",
+    requestedLanguage: "python",
+    expectedLanguage: "python",
+    minSteps: 3,
+    code: `data = [1, 2, 3]
+result = list(map(mystery_transform, data))
+print(result)`,
+    mustContain: ["미등록 함수 결과 저장", "mystery_transform", "미지원", "화면에 출력"],
+    mustMetaContain: ["Python", "출력"]
+  },
+  {
+    name: "javascript_nested_unknown_call_v207",
+    requestedLanguage: "javascript",
+    expectedLanguage: "javascript",
+    minSteps: 3,
+    code: `const data = [1, 2, 3];
+const result = knownWrapper(mysteryTransform(data));
+console.log(result);`,
+    mustContain: ["미등록 함수 결과 저장", "knownWrapper", "mysteryTransform", "화면/콘솔에 출력"],
+    mustMetaContain: ["JavaScript", "출력"]
+  },
+  {
+    name: "java_path_of_callflow_v207",
+    requestedLanguage: "java",
+    expectedLanguage: "java",
+    minSteps: 7,
+    code: `import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+public class App {
+  static String readText(String path) throws IOException {
+    String text = Files.readString(Path.of(path));
+    return text;
+  }
+
+  public static void main(String[] args) throws IOException {
+    String text = readText("input.txt");
+    System.out.println(text);
+  }
+}`,
+    mustContain: ["메서드 정의", "readText", "of", "화면에 출력"],
+    mustMetaContain: ["Java", "파일", "함수/구조"]
+  }
 
 ];
 
@@ -944,7 +1012,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260608_v205_a1",
+  version: "20260608_v207_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,
