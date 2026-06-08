@@ -1,4 +1,4 @@
-﻿# Python Reading Trainer
+# Python Reading Trainer
 
 ## 1. 프로젝트 목적
 
@@ -646,8 +646,8 @@ python-reading-trainer/
 
 ## V200 Code Explainer Coverage TODO
 
-기준 버전: `20260608_v199_a1`  
-기준 HEAD: `66eb6ba Improve project analyzer diagram visibility`  
+기준 버전: `20260608_v199_a1`
+기준 HEAD: `66eb6ba Improve project analyzer diagram visibility`
 감사 목적: 코드해석기가 타겟 언어별 대표 함수/명령어를 얼마나 설명할 수 있는지 확인하고, 다음 보강 우선순위를 정리한다.
 
 ### 감사 결과 요약
@@ -680,14 +680,14 @@ python-reading-trainer/
 
 ### V201 P0 TODO
 
-- [ ] Python `range` 설명 규칙 추가
-- [ ] Python `enumerate` 설명 규칙 추가
-- [ ] Python `json.dump` 설명 규칙 추가
-- [ ] Python `json.dumps` 설명 규칙 추가
-- [ ] Java `IOException` 설명 규칙 추가
-- [ ] 위 항목을 포함한 smoke sample 추가
-- [ ] `tools/code_explainer_smoke_v171.js` 기대 문구 업데이트
-- [ ] 검증 스크립트에서 새 smoke sample 통과 확인
+- [x] Python `range` 설명 규칙 추가
+- [x] Python `enumerate` 설명 규칙 추가
+- [x] Python `json.dump` 설명 규칙 추가
+- [x] Python `json.dumps` 설명 규칙 추가
+- [x] Java `IOException` 설명 규칙 추가
+- [x] 위 항목을 포함한 smoke sample 추가
+- [x] `tools/code_explainer_smoke_v171.js` 기대 문구 업데이트
+- [x] 검증 스크립트에서 새 smoke sample 통과 확인
 
 ### V202 P1 TODO
 
@@ -705,4 +705,3 @@ python-reading-trainer/
 - [ ] Mermaid 흐름도에 함수 호출, 데이터 저장, 외부 요청 노드 구분 강화
 
 <!-- CODE_EXPLAINER_COVERAGE_TODO_V200_END -->
-

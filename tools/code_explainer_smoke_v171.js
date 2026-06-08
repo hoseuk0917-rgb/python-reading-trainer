@@ -756,7 +756,53 @@ enabled = true
 port = 5432`,
     mustContain: ["TOML 테이블", "TOML 키-값 설정", "TOML 목록 설정"],
     mustMetaContain: ["TOML", "TOML설정", "섹션", "설정"]
+  },
+  {
+    name: "python_range_enumerate_json_write",
+    requestedLanguage: "auto",
+    expectedLanguage: "python",
+    minSteps: 9,
+    code: `import json
+
+items = ["kim", "lee"]
+rows = []
+
+for i in range(len(items)):
+    rows.append({"idx": i, "name": items[i]})
+
+for position, row in enumerate(rows):
+    print(position, row["name"])
+
+payload = json.dumps(rows, ensure_ascii=False)
+
+with open("out.json", "w", encoding="utf-8") as f:
+    json.dump(rows, f, ensure_ascii=False)`,
+    mustContain: ["라이브러리 불러오기", "range 반복", "목록에 항목 추가", "enumerate 반복", "화면에 출력", "JSON 문자열 만들기", "파일 열기", "JSON 파일 쓰기"],
+    mustMetaContain: ["Python", "반복문", "JSON", "파일", "출력"]
+  },
+  {
+    name: "java_io_exception_file_read",
+    requestedLanguage: "auto",
+    expectedLanguage: "java",
+    minSteps: 8,
+    code: `import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+public class ReadFile {
+  public static void main(String[] args) {
+    try {
+      String text = Files.readString(Path.of("input.txt"));
+      System.out.println(text);
+    } catch (IOException ex) {
+      System.err.println(ex.getMessage());
+    }
   }
+}`,
+    mustContain: ["라이브러리 불러오기", "클래스 정의", "프로그램 시작점", "오류 대비 시작", "파일/경로 처리", "화면에 출력", "입출력 예외 처리"],
+    mustMetaContain: ["Java", "파일", "오류처리", "출력"]
+  }
+
 ];
 
 let failed = 0;
@@ -797,7 +843,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260606_v196_a1",
+  version: "20260608_v201_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,

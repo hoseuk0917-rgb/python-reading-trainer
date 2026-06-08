@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V196-A1 START ===
+// === CODE EXPLAINER RULES V201-A1 START ===
 (function() {
   "use strict";
 
@@ -545,6 +545,13 @@
     if (/^else\s*:\s*$/.test(t)) {
       return makeStep(lineNo, t, "조건이 모두 아닐 때", "앞의 if/elif 조건이 맞지 않을 때 실행되는 부분입니다.", risk);
     }
+    // PYTHON_ITER_JSON_RULES_V201_A1
+    if (/^for\s+.+\s+in\s+range\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "range 반복", "range는 정해진 횟수나 숫자 범위를 만들어 반복할 때 씁니다. 시작값, 끝값, step이 의도한 범위인지 확인해야 합니다.", risk);
+    }
+    if (/^for\s+.+\s+in\s+enumerate\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "enumerate 반복", "enumerate는 목록의 값과 함께 순서 번호를 같이 꺼내 반복합니다. 인덱스와 실제 값이 각각 어디에 들어가는지 확인해야 합니다.", risk);
+    }
     if (/^for\s+.+\s+in\s+.+:\s*$/.test(t)) {
       return makeStep(lineNo, t, "반복문", "목록이나 범위에서 값을 하나씩 꺼내며 아래 코드를 반복합니다.", risk);
     }
@@ -553,6 +560,12 @@
     }
     if (/^with\s+open\s*\(/.test(t) || /open\s*\(/.test(t)) {
       return makeStep(lineNo, t, "파일 열기", "파일을 읽거나 쓰기 위해 엽니다. with를 쓰면 작업 후 파일을 자동으로 닫기 쉽습니다.", risk);
+    }
+    if (/json\.dump\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "JSON 파일 쓰기", "Python 딕셔너리나 리스트를 JSON 형식으로 파일에 저장합니다. ensure_ascii, indent, 파일 인코딩을 확인해야 합니다.", risk);
+    }
+    if (/json\.dumps\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "JSON 문자열 만들기", "Python 딕셔너리나 리스트를 JSON 문자열로 바꿉니다. API 응답, 로그, 파일 저장 전에 자주 씁니다.", risk);
     }
     if (/json\.load|json\.loads/.test(t)) {
       return makeStep(lineNo, t, "JSON 읽기", "JSON 형식의 문자열이나 파일 내용을 Python 데이터로 바꿉니다.", risk);
@@ -1142,6 +1155,10 @@
     }
     if (/^try\s*\{/.test(t)) {
       return makeStep(lineNo, t, "오류 대비 시작", "아래 코드를 실행하다가 예외가 생기면 catch/finally 구간에서 처리할 수 있게 준비합니다.", risk);
+    }
+    // JAVA_IO_EXCEPTION_RULE_V201_A1
+    if (/\bIOException\b/.test(t)) {
+      return makeStep(lineNo, t, "입출력 예외 처리", "파일 읽기/쓰기나 네트워크 입출력 중 발생할 수 있는 IOException을 처리합니다. 실패 시 사용자에게 어떤 메시지를 보여줄지 확인해야 합니다.", risk);
     }
     if (/^\}?\s*catch\s*\(/.test(t)) {
       return makeStep(lineNo, t, "오류 처리", "try 안에서 발생한 예외를 잡아 로그를 남기거나 대체 처리를 합니다.", risk);
@@ -1845,4 +1862,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V196-A1 END ===
+// === CODE EXPLAINER RULES V201-A1 END ===
