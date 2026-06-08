@@ -641,3 +641,68 @@ python-reading-trainer/
 - KG Python Reader
 - Python for PM
 - Python Code Reading Gym
+
+<!-- CODE_EXPLAINER_COVERAGE_TODO_V200_START -->
+
+## V200 Code Explainer Coverage TODO
+
+기준 버전: `20260608_v199_a1`  
+기준 HEAD: `66eb6ba Improve project analyzer diagram visibility`  
+감사 목적: 코드해석기가 타겟 언어별 대표 함수/명령어를 얼마나 설명할 수 있는지 확인하고, 다음 보강 우선순위를 정리한다.
+
+### 감사 결과 요약
+
+| 영역 | 결과 |
+|---|---:|
+| Python | 24/28 matched, missing 4, coverage 0.857 |
+| PowerShell | 25/25 matched, missing 0, coverage 1.0 |
+| JavaScript | 22/22 matched, missing 0, coverage 1.0 |
+| Cloudflare Workers | 23/23 matched, missing 0, coverage 1.0 |
+| Java | 28/29 matched, missing 1, coverage 0.966 |
+| Config / Docs | 29/29 matched, missing 0, coverage 1.0 |
+
+### Missing 항목
+
+#### Python
+- `range`
+- `enumerate`
+- `json.dump`
+- `json.dumps`
+
+#### Java
+- `IOException`
+
+### 구조적 GAP
+
+- `confidence_label`: 확실 / 추정 / 미지원 표시가 아직 없다.
+- `data_flow_tracking`: 변수 생성 → 가공 → 저장/출력 흐름 추적이 아직 없다.
+- `call_graph`: 사용자 정의 함수 정의와 호출 관계 연결이 아직 없다.
+
+### V201 P0 TODO
+
+- [ ] Python `range` 설명 규칙 추가
+- [ ] Python `enumerate` 설명 규칙 추가
+- [ ] Python `json.dump` 설명 규칙 추가
+- [ ] Python `json.dumps` 설명 규칙 추가
+- [ ] Java `IOException` 설명 규칙 추가
+- [ ] 위 항목을 포함한 smoke sample 추가
+- [ ] `tools/code_explainer_smoke_v171.js` 기대 문구 업데이트
+- [ ] 검증 스크립트에서 새 smoke sample 통과 확인
+
+### V202 P1 TODO
+
+- [ ] 각 step에 확신도 표시 추가
+- [ ] 정확 매칭은 `확실`로 표시
+- [ ] 이름/문맥 기반 추정은 `추정`으로 표시
+- [ ] 미등록 함수는 `미지원`으로 분리
+- [ ] 결과 화면에 미지원 함수 목록 표시
+
+### V203 P2 TODO
+
+- [ ] 변수 생성 → 가공 → 저장/출력 데이터 흐름 추적
+- [ ] 사용자 정의 함수 정의와 호출 연결
+- [ ] 긴 코드를 함수/블록 단위로 요약
+- [ ] Mermaid 흐름도에 함수 호출, 데이터 저장, 외부 요청 노드 구분 강화
+
+<!-- CODE_EXPLAINER_COVERAGE_TODO_V200_END -->
+
