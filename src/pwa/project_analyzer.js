@@ -1,6 +1,6 @@
-// === PROJECT ANALYZER V194-A1 START ===
+// === PROJECT ANALYZER V195-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260606_v194_a1";
+  const PROJECT_ANALYZER_VERSION = "20260606_v195_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
@@ -409,8 +409,88 @@
     };
   }
 
+  // JSON_REPORT_PARSE_V195_A1
+  function normalizeJsonCounts(counts) {
+    const c = counts || {};
+    return {
+      filesTotal: String(c.files_total || c.filesTotal || ""),
+      lessonFiles: String(c.lesson_files || c.lessonFiles || ""),
+      sideCardFiles: String(c.side_card_files || c.sideCardFiles || ""),
+      lessonCards: String(c.lesson_cards_estimated || c.lessonCards || ""),
+      sideCards: String(c.side_cards_estimated || c.sideCards || "")
+    };
+  }
+
+  function normalizeJsonEnvironment(environment) {
+    const env = environment || {};
+    return {
+      audit: "json_report",
+      python: env.python_executable || "",
+      git: env.git || "",
+      node: env.node || "",
+      pip: env.pip || "",
+      pipPackages: Array.isArray(env.required_pip_packages) ? env.required_pip_packages.join(", ") || "none" : "none",
+      pythonVersion: env.python_version || "",
+      standardLibraryOnly: String(env.standard_library_only !== false)
+    };
+  }
+
+  function parseProjectReportJson(text) {
+    const raw = String(text || "").trim();
+
+    if (!raw || raw[0] !== "{") {
+      return null;
+    }
+
+    let report = null;
+
+    try {
+      report = JSON.parse(raw);
+    } catch (error) {
+      return null;
+    }
+
+    if (!report || typeof report !== "object") {
+      return null;
+    }
+
+    const git = report.git || {};
+    const callCandidates = report.call_candidates || {};
+    const symbols = report.symbols || {};
+    const references = report.references || {};
+    const keyFiles = report.key_files || {};
+    const candidateBundles = report.candidate_bundles || {};
+
+    return {
+      ok: true,
+      inputMode: "json",
+      root: report.root || "",
+      gitHead: git.head || "",
+      gitStatus: git.status_short || "",
+      outJson: "",
+      outMd: "",
+      counts: normalizeJsonCounts(report.counts || {}),
+      roleCounts: report.role_counts || {},
+      environment: normalizeJsonEnvironment(report.environment || {}),
+      callCandidateFiles: String(Object.keys(callCandidates).length),
+      symbols: symbols,
+      callCandidates: callCandidates,
+      references: references,
+      keyFiles: keyFiles,
+      candidateBundles: candidateBundles,
+      mermaid: report.mermaid || "",
+      raw: raw
+    };
+  }
+
   function parseProbeOutput(text) {
     const raw = String(text || "");
+    const jsonParsed = parseProjectReportJson(raw);
+
+    if (jsonParsed) {
+      return jsonParsed;
+    }
+
     const roleRaw = getLineValue(raw, "ROLE_COUNTS");
     let roleCounts = {};
 
@@ -432,6 +512,7 @@
 
     return {
       ok: raw.includes("PROJECT_PROBE_V193_OK") || raw.includes("# Project Probe V193"),
+      inputMode: "terminal",
       root: getLineValue(raw, "ROOT") || (raw.match(/- root: `([^`]+)`/) || [])[1] || "",
       gitHead: getLineValue(raw, "GIT_HEAD") || (raw.match(/- git_head: `([^`]+)`/) || [])[1] || "",
       gitStatus: getLineValue(raw, "GIT_STATUS") || (raw.match(/- git_status_short: `([^`]+)`/) || [])[1] || "",
@@ -441,6 +522,11 @@
       roleCounts: roleCounts,
       environment: parseEnvironmentAudit(raw),
       callCandidateFiles: getLineValue(raw, "CALL_CANDIDATE_FILES"),
+      symbols: {},
+      callCandidates: {},
+      references: {},
+      keyFiles: {},
+      candidateBundles: {},
       mermaid: extractMermaid(raw),
       raw: raw
     };
@@ -550,6 +636,79 @@
       diagram.textContent = String(error);
       if (status) status.textContent = "구조도 오류";
     }
+  }
+
+  // JSON_REPORT_RENDER_V195_A1
+  function objectEntries(obj) {
+    return Object.keys(obj || {}).map(function(key) {
+      return [key, obj[key]];
+    });
+  }
+
+  function renderDataSection(title, entries, renderer, emptyText) {
+    if (!entries || entries.length === 0) {
+      return "";
+    }
+
+    return '<div class="project-detail-section">' +
+      '<h3>' + escapeHtml(title) + '</h3>' +
+      '<div class="project-data-list">' +
+      entries.map(renderer).join("") +
+      '</div>' +
+      '</div>';
+  }
+
+  function renderKeyFiles(keyFiles) {
+    return renderDataSection("핵심 파일 상태", objectEntries(keyFiles).slice(0, 20), function(item) {
+      const info = item[1] || {};
+      const status = info.exists ? "OK" : "MISSING";
+      const size = typeof info.size === "number" ? " · " + info.size + " bytes" : "";
+      return '<div class="project-data-row"><strong>' + escapeHtml(item[0]) + '</strong><span>' + escapeHtml(status + size) + '</span></div>';
+    });
+  }
+
+  function renderCandidateBundles(candidateBundles) {
+    return renderDataSection("기능별 파일 묶음", objectEntries(candidateBundles).slice(0, 12), function(item) {
+      const files = Array.isArray(item[1]) ? item[1] : [];
+      return '<div class="project-data-row"><strong>' + escapeHtml(item[0]) + '</strong><span>' + escapeHtml(files.slice(0, 12).join(" · ")) + '</span></div>';
+    });
+  }
+
+  function renderSymbolFiles(symbols) {
+    return renderDataSection("주요 함수/클래스", objectEntries(symbols).slice(0, 15), function(item) {
+      const names = Array.isArray(item[1]) ? item[1].slice(0, 10).map(function(symbol) { return symbol.name || ""; }).filter(Boolean) : [];
+      return '<div class="project-data-row"><strong>' + escapeHtml(item[0]) + '</strong><span>' + escapeHtml(names.join(" · ")) + '</span></div>';
+    });
+  }
+
+  function renderCallCandidateDetails(callCandidates) {
+    return renderDataSection("함수 호출 후보 상세", objectEntries(callCandidates).slice(0, 15), function(item) {
+      const calls = Array.isArray(item[1]) ? item[1].slice(0, 10).map(function(call) {
+        return (call.name || "") + "(" + (call.count || 0) + ")";
+      }) : [];
+      return '<div class="project-data-row"><strong>' + escapeHtml(item[0]) + '</strong><span>' + escapeHtml(calls.join(" · ")) + '</span></div>';
+    });
+  }
+
+  function renderReferenceDetails(references) {
+    return renderDataSection("참조 관계 후보", objectEntries(references).slice(0, 15), function(item) {
+      const refs = Array.isArray(item[1]) ? item[1].slice(0, 10) : [];
+      return '<div class="project-data-row"><strong>' + escapeHtml(item[0]) + '</strong><span>' + escapeHtml(refs.join(" · ")) + '</span></div>';
+    });
+  }
+
+  function renderJsonReportSections(parsed) {
+    if (!parsed || parsed.inputMode !== "json") {
+      return "";
+    }
+
+    return [
+      renderKeyFiles(parsed.keyFiles),
+      renderCandidateBundles(parsed.candidateBundles),
+      renderSymbolFiles(parsed.symbols),
+      renderCallCandidateDetails(parsed.callCandidates),
+      renderReferenceDetails(parsed.references)
+    ].filter(Boolean).join("");
   }
 
   function renderProbeAnalysis(parsed) {
@@ -711,4 +870,4 @@
     init();
   }
 })();
- // === PROJECT ANALYZER V194-A1 END ===
+ // === PROJECT ANALYZER V195-A1 END ===
