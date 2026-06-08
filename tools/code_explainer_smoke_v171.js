@@ -967,6 +967,28 @@ public class App {
     mustContain: ["메서드 정의", "readText", "of", "화면에 출력"],
     mustMetaContain: ["Java", "파일", "함수/구조"]
   }
+,
+  {
+    name: "java_package_private_static_method_v208",
+    requestedLanguage: "java",
+    expectedLanguage: "java",
+    minSteps: 8,
+    code: `import java.nio.file.Files;
+import java.nio.file.Path;
+
+public class App {
+  static String load(String fileName) throws Exception {
+    return Files.readString(Path.of(fileName));
+  }
+
+  public static void main(String[] args) throws Exception {
+    String text = load("input.txt");
+    System.out.println(text);
+  }
+}`,
+    mustContain: ["메서드 정의", "package-private", "readString", "of", "화면에 출력"],
+    mustMetaContain: ["Java", "파일", "함수/구조"]
+  }
 
 ];
 
@@ -1012,7 +1034,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260608_v207_a1",
+  version: "20260608_v208_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,

@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V207-A1 START ===
+// === CODE EXPLAINER RULES V208-A1 START ===
 (function() {
   "use strict";
 
@@ -1198,8 +1198,9 @@
       return makeStep(lineNo, t, "프로그램 시작점", "Java 프로그램이 실행될 때 가장 먼저 들어오는 main 메서드입니다.", risk);
     }
     // JAVA_METHOD_STREAM_RULES_V190_A2
-    if (/\b(public|private|protected)\s+(static\s+)?[\w<>\[\], ?]+\s+\w+\s*\([^)]*\)\s*(throws\s+[\w, ]+)?\s*\{?/.test(t) && !/class\s+/.test(t)) {
-      return makeStep(lineNo, t, "메서드 정의", "나중에 객체나 클래스 이름으로 호출할 수 있는 Java 코드 묶음을 정의합니다. 매개변수와 반환 타입을 함께 확인해야 합니다.", risk);
+    // JAVA_PACKAGE_PRIVATE_METHOD_RULE_V208_A1
+    if (/^\s*(?:public|private|protected)?\s*(?:static\s+)?[\w<>\[\], ?]+\s+\w+\s*\([^)]*\)\s*(?:throws\s+[\w, ]+)?\s*\{?/.test(t) && !/class\s+/.test(t)) {
+      return makeStep(lineNo, t, "메서드 정의", "나중에 객체나 클래스 이름으로 호출할 수 있는 Java 코드 묶음을 정의합니다. 접근제어자가 없어도 같은 패키지 안에서 쓸 수 있는 package-private 메서드일 수 있습니다. 매개변수와 반환 타입을 함께 확인해야 합니다.", risk);
     }
     if (/^try\s*\{/.test(t)) {
       return makeStep(lineNo, t, "오류 대비 시작", "아래 코드를 실행하다가 예외가 생기면 catch/finally 구간에서 처리할 수 있게 준비합니다.", risk);
@@ -2319,4 +2320,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V207-A1 END ===
+// === CODE EXPLAINER RULES V208-A1 END ===

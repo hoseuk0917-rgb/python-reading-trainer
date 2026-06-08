@@ -831,3 +831,18 @@ V207에서는 candidateNotes 7개 중 사용자 체감이 큰 항목부터 정�
 
 - V205 smoke 35개 유지
 - V207 smoke는 39개 이상 통과해야 함
+
+## V208 Java package-private method 정밀도 보강 — 20260608
+
+기준 버전: 20260608_v208_a1
+
+### 보강 내용
+
+- V208 감사에서 발견한 Java package-private static method 오탐을 수정했다.
+- `static String load(...)`처럼 접근제어자 없이 static 또는 반환 타입으로 시작하는 Java 메서드 정의를 `메서드 정의`로 분류한다.
+- 기존 V207 smoke 39개 기준선을 유지하고, Java package-private method smoke sample을 1개 추가한다.
+
+### 남은 후보
+
+- producer-consumer links are still implicit
+- 이 항목은 코드해석 규칙 오류가 아니라 UI/데이터 흐름 표현 개선 후보로 분리한다.
