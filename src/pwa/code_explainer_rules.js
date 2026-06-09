@@ -204,7 +204,7 @@
       return "unsupported";
     }
 
-    if (/변수에 값 저장|값 반환|값 돌려주기|Markdown 문단|YAML 설정|TOML 설정|INI 설정|객체 속성 설정|문자열 데이터 항목|예제 코드 문자열|블록\/객체 닫기|딕셔너리 항목 설정|함수 호출|입력 파라미터 선언/.test(t)) {
+    if (/변수에 값 저장|값 반환|값 돌려주기|Markdown 문단|YAML 설정|TOML 설정|INI 설정|객체 속성 설정|문자열 데이터 항목|예제 코드 문자열|블록\/객체 닫기|딕셔너리 항목 설정|함수 호출|입력 파라미터 선언|문자열\/HTML 조각|예제\/문서 문자열|객체\/배열 값 항목|변수 선언/.test(t)) {
       return "inferred";
     }
 
@@ -816,23 +816,52 @@
     if (/["']Access-Control-Allow-Origin["']\s*:/.test(t)) {
       return makeStep(lineNo, t, "CORS 헤더 설정", "브라우저의 다른 출처 요청을 허용할지 정하는 응답 헤더입니다. 별표(*)는 모든 출처를 허용하므로 공개 범위가 맞는지 확인해야 합니다.", risk);
     }
+    // JAVASCRIPT_UI_DATA_FALLBACK_RULES_V220_A1
+    const embeddedText = t.replace(/^["'`]\s*/, "").replace(/["'`],?\s*$/, "");
+    if (!/^return\b/.test(t) && /^(?:\$[A-Za-z_][\w-]*\s*=|Set-Location\b|New-Item\b|Copy-Item\b|Compress-Archive\b|git\s+|from\s+[\w.]+\s+import\b|import\s+\w+|def\s+\w+\s*\(|return\s+|with\s+open\s*\(|for\s+\w+\s+in\s+|if\s+.+:|elif\s+.+:|else:|[A-Za-z_]\w*\s*=\s*[^=;]+$|print\s*\(|public\s+class\b|public\s+static\b|int\s+\w+\s*=|System\.out\.println|FROM\s+|WORKDIR\b|COPY\s+|RUN\s+|ENV\s+|EXPOSE\s+|CMD\s+|image:\s|ports:\s|volumes:\s|- uses:|- run:|- ["']?\d+:\d+["']?|services:|jobs:|steps:|runs-on:|node-version:|[A-Za-z_][\w-]*:\s*$|[A-Z][A-Z0-9_]*=|\[[A-Za-z0-9_. -]+\]|#{1,6}\s+|```|uvicorn\[|pandas[<>=~]|python-dotenv|-r\s+\S+)/.test(embeddedText)) {
+      return makeStep(lineNo, t, "문자열 데이터 항목", "배열이나 객체 안에 들어 있는 문자열 데이터입니다. JavaScript 문자열 안에 Python, YAML, TOML, 설정 파일 예제 코드가 들어 있을 수도 있으므로 실제 실행 줄인지 구분해서 봅니다.", risk);
+    }
+    if (/^["'`].*["'`]?\s*\+?$/.test(t) || /^['"`]?\s*<\/?[A-Za-z][^>]*>/.test(t) || /^\$\{[^}]+\}/.test(t)) {
+      return makeStep(lineNo, t, "문자열/HTML 조각", "화면에 넣을 HTML 문자열, 템플릿 문자열, 메시지 조각입니다. 실제 실행 명령이라기보다 UI 출력 내용을 조립하는 데이터 줄일 수 있습니다.", risk);
+    }
+    if (/^[-*]\s+/.test(t) || /^```/.test(t) || /^[가-힣][^;{}]*$/.test(t)) {
+      return makeStep(lineNo, t, "예제/문서 문자열", "JavaScript 문자열 안에 들어 있는 문서, 목록, 예제 코드 내용입니다. 현재 파일의 JavaScript 명령으로 직접 실행되는 줄은 아닐 수 있습니다.", risk);
+    }
     if (/^"(?:\\.|[^"\\])*",?$/.test(t) || /^'(?:\\.|[^'\\])*',?$/.test(t) || /^`(?:\\.|[^`\\])*`,?$/.test(t)) {
       return makeStep(lineNo, t, "문자열 데이터 항목", "배열이나 객체 안에 들어 있는 문자열 데이터입니다. JavaScript 문자열 안에 Python, YAML, TOML, 설정 파일 예제 코드가 들어 있을 수도 있으므로 실제 실행 줄인지 구분해서 봅니다.", risk);
     }
-    if (/^["'][^"']+["']\s*:\s*/.test(t) || /^[A-Za-z_$][\w$]*\s*:\s*(?:`|["'{\[]|true|false|null|-?\d)/.test(t)) {
-      return makeStep(lineNo, t, "객체 속성 설정", "객체 안에서 이름과 값을 연결하는 데이터 설정 줄입니다. 설정값, 예제 문자열, 화면 문구, 규칙 데이터를 담을 때 자주 나옵니다.", risk);
+    if (/^["'][^"']+["']\s*:\s*/.test(t) || /^[A-Za-z_$][\w$]*\s*:\s*.+,?$/.test(t)) {
+      return makeStep(lineNo, t, "객체 속성 설정", "객체 안에서 이름과 값을 연결하는 데이터 설정 줄입니다. 설정값, 예제 문자열, 화면 문구, 계산 결과를 담을 때 자주 나옵니다.", risk);
     }
     if (/^(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*[\{\[]/.test(t)) {
       return makeStep(lineNo, t, "객체/배열 초기화", "여러 설정값이나 항목을 담기 위해 객체나 배열을 새로 만듭니다. 이후 줄에서 속성과 항목이 채워지는지 확인합니다.", risk);
     }
-    if (/^[A-Za-z_$][\w$]*(?:\[[^\]]+\]|\.(?!textContent\b|innerHTML\b|value\b|className\b)[A-Za-z_$][\w$]*)\s*=/.test(t)) {
+    if (/^(?:let|const|var)\s+[A-Za-z_$][\w$]*;?$/.test(t)) {
+      return makeStep(lineNo, t, "변수 선언", "나중에 값을 넣어 사용할 이름을 미리 선언합니다. 아직 실제 데이터가 들어간 것은 아닐 수 있습니다.", risk);
+    }
+    if (/^[A-Za-z_$][\w$]*(?:\[[^\]]+\]|\.(?!(?:textContent|innerHTML|value|className)\b)[A-Za-z_$][\w$]*)\s*(?:=|\+=|-=|\+\+|--)/.test(t)) {
       return makeStep(lineNo, t, "객체 값 갱신", "객체의 특정 속성이나 배열/딕셔너리 형태의 항목 값을 바꿉니다. 기존 값을 덮어쓰는지, 누적하는지 확인해야 합니다.", risk);
     }
-    if (!/^return\b/.test(t) && (/^\.(replace|join|split|slice)\s*\(/.test(t) || /\.(replace|join|split|slice)\s*\(/.test(t))) {
+    if (/^[A-Za-z_$][\w$]*\s*(?:=|\+=|-=)\s*/.test(t)) {
+      return makeStep(lineNo, t, "변수 값 갱신", "이미 선언된 변수에 새 값을 넣거나 기존 값에 더해 갱신합니다. 상태값, 인덱스, 계산 결과를 바꾸는 흐름입니다.", risk);
+    }
+    if (!/^return\b/.test(t) && /\.filter\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "배열 필터링", "배열에서 조건에 맞는 항목만 골라 새 배열을 만듭니다. 어떤 조건으로 제외하거나 남기는지 확인해야 합니다.", risk);
+    }
+    if (!/^return\b/.test(t) && /\.map\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "배열 변환", "배열의 각 항목을 다른 값으로 바꿔 새 배열을 만듭니다. 원본 항목에서 어떤 값만 뽑거나 계산하는지 확인합니다.", risk);
+    }
+    if (!/^return\b/.test(t) && (/^\.(replace|replaceAll|join|split|slice|sort|reduce)\s*\(/.test(t) || /\.(replace|replaceAll|join|split|slice|sort|reduce)\s*\(/.test(t))) {
       return makeStep(lineNo, t, "문자열/배열 메서드 처리", "문자열이나 배열에 메서드를 이어 붙여 변환, 필터링, 정렬, 결합 같은 처리를 합니다. 앞 단계의 결과가 다음 메서드로 넘어갑니다.", risk);
     }
-    if (!/^return\b/.test(t) && /^(?:\$[A-Za-z_][\w-]*\s*=|Set-Location\b|New-Item\b|Copy-Item\b|Compress-Archive\b|git\s+|from\s+[\w.]+\s+import\b|import\s+\w+|def\s+\w+\s*\(|with\s+open\s*\(|for\s+\w+\s+in\s+|if\s+.+:|elif\s+.+:|else:|[A-Za-z_]\w*\s*=\s*[^=;]+$|print\s*\(|public\s+class\b|int\s+\w+\s*=|System\.out\.println|FROM\s+|WORKDIR\b|COPY\s+|RUN\s+|ENV\s+|EXPOSE\s+|CMD\s+|- uses:|- run:|services:|jobs:|steps:|runs-on:|node-version:|[A-Za-z_][\w-]*:\s*$|[A-Z][A-Z0-9_]*=|\[[A-Za-z0-9_. -]+\]|#{1,6}\s+|```|uvicorn\[|pandas[<>=~]|python-dotenv|-r\s+\S+)/.test(t)) {
+    if (/^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?,?$/.test(t)) {
+      return makeStep(lineNo, t, "객체/배열 값 항목", "객체나 배열 안에 들어가는 값 항목입니다. 앞뒤 줄의 중괄호나 대괄호와 함께 데이터 묶음을 구성합니다.", risk);
+    }
+    if (!/^return\b/.test(t) && /^(?:\$[A-Za-z_][\w-]*\s*=|Set-Location\b|New-Item\b|Copy-Item\b|Compress-Archive\b|git\s+|from\s+[\w.]+\s+import\b|import\s+\w+|def\s+\w+\s*\(|with\s+open\s*\(|for\s+\w+\s+in\s+|if\s+.+:|elif\s+.+:|else:|[A-Za-z_]\w*\s*=\s*[^=;]+$|print\s*\(|public\s+class\b|public\s+static\b|int\s+\w+\s*=|System\.out\.println|FROM\s+|WORKDIR\b|COPY\s+|RUN\s+|ENV\s+|EXPOSE\s+|CMD\s+|image:\s|ports:\s|volumes:\s|- uses:|- run:|- ["']?\d+:\d+["']?|services:|jobs:|steps:|runs-on:|node-version:|[A-Za-z_][\w-]*:\s*$|[A-Z][A-Z0-9_]*=|\[[A-Za-z0-9_. -]+\]|#{1,6}\s+|```|uvicorn\[|pandas[<>=~]|python-dotenv|-r\s+\S+)/.test(t)) {
       return makeStep(lineNo, t, "예제 코드 문자열", "JavaScript 파일 안에 샘플로 들어 있는 다른 언어 코드나 설정 파일 내용입니다. 이 줄 자체가 현재 JavaScript로 실행되는 것이 아니라 화면 표시나 테스트 샘플로 쓰일 수 있습니다.", risk);
+    }
+    if (/^\}?\s*else\s*\{?$/.test(t)) {
+      return makeStep(lineNo, t, "조건 분기", "앞 조건이 맞지 않을 때 실행할 흐름으로 넘어갑니다. if와 else가 어떤 상태를 나누는지 함께 봐야 합니다.", risk);
     }
     if (/^\}\);?$/.test(t) || /^[}\])]+[,;]?$/.test(t)) {
       return makeStep(lineNo, t, "블록/객체 닫기", "앞에서 시작한 함수 호출, 객체, 배열, 블록을 닫는 경계 줄입니다. 새 동작을 실행하기보다 구조를 마무리합니다.", risk);
@@ -848,7 +877,13 @@
     if (/\.textContent\s*=/.test(t)) {
       return makeStep(lineNo, t, "DOM 텍스트 설정", "화면 요소 안에 표시할 텍스트를 설정합니다. 사용자에게 보이는 문구나 버튼 라벨을 바꾸는 단계입니다.", risk);
     }
-    if (/\.appendChild\s*\(/.test(t)) {
+    if (/\.(className|innerHTML|value)\s*=/.test(t)) {
+      return makeStep(lineNo, t, "DOM 표시 속성 설정", "화면 요소의 CSS 클래스, HTML 내용, 입력값 같은 표시 속성을 설정합니다. 사용자에게 보이는 UI 상태를 바꾸는 단계입니다.", risk);
+    }
+    if (/\.setAttribute\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "DOM 속성 설정", "화면 요소에 aria-expanded 같은 HTML 속성을 설정합니다. 접근성, 상태 표시, 동작 제어에 쓰입니다.", risk);
+    }
+    if (/\.appendChild\s*\(/.test(t) || /\.insertBefore\s*\(/.test(t)) {
       return makeStep(lineNo, t, "DOM 요소 삽입", "만들어 둔 화면 요소를 body나 다른 부모 요소 안에 실제로 붙입니다. 이 단계 이후 브라우저 화면에 요소가 나타납니다.", risk);
     }
     if (/\.preventDefault\s*\(/.test(t)) {
@@ -995,6 +1030,18 @@
     }
     if (/Promise\.(all|allSettled|race|any)\s*\(/.test(t)) {
       return makeStep(lineNo, t, "Promise 묶음 처리", "여러 비동기 작업을 함께 실행하거나 가장 먼저 끝나는 작업을 기다립니다.", risk);
+    }
+    if (/\.classList\.(add|remove|toggle|contains)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "CSS 클래스 변경", "화면 요소의 클래스를 추가, 제거, 토글하거나 확인해서 스타일이나 상태 표시를 바꿉니다.", risk);
+    }
+    if (/\.(push|add|set|delete)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "자료구조 항목 갱신", "배열, Set, Map 같은 자료구조에 항목을 추가하거나 값을 설정합니다. 누적되는 데이터가 무엇인지 확인해야 합니다.", risk);
+    }
+    if (/\.(get|has)\s*\(/.test(t) && /(Map|map|Set|set|localStorage|sessionStorage|progress|seen|cards|levels|concept)/.test(t)) {
+      return makeStep(lineNo, t, "자료구조 항목 조회", "Map, Set, 저장소, 상태 객체에서 특정 항목을 꺼내거나 존재 여부를 확인합니다.", risk);
+    }
+    if (/^[A-Za-z_$][\w$]*\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "함수 호출", "이미 정의했거나 브라우저가 제공하는 함수를 실행합니다. 인자와 실행 결과가 화면 상태나 데이터에 어떤 영향을 주는지 확인해야 합니다.", risk);
     }
     if (/JSON\.parse\s*\(/.test(t)) {
       return makeStep(lineNo, t, "JSON 문자열 변환", "JSON 문자열을 JavaScript 객체로 바꿉니다. 잘못된 JSON이면 오류가 날 수 있습니다.", risk);
@@ -2568,7 +2615,9 @@
         require: true,
         fetch: true,
         function: true,
-        Counter: true
+        Counter: true,
+        confirm: true,
+        alert: true
       };
       const unsupportedNames = names.filter(function(name) {
         return !knownGlobalCalls[name];
