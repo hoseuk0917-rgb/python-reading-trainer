@@ -961,7 +961,7 @@ V215 확장 감사에서 나온 P0 gap을 우선 줄이고, 코드해석 메뉴�
 
 ## V216 코드해석 JavaScript 데이터/도구 코드 커버리지 보강 — 20260609
 
-기준 버전: `20260609_v224_a1`
+기준 버전: `20260609_v225_a1`
 
 ### 보강 범위
 
@@ -977,21 +977,21 @@ V215 확장 감사에서 나온 P0 gap을 우선 줄이고, 코드해석 메뉴�
 
 ### V217-A1 code explainer confidence calibration
 
-- App version: `20260609_v224_a1`
+- App version: `20260609_v225_a1`
 - Focus: corrected confidence classification so JavaScript object/property data lines are no longer incorrectly counted as unsupported just because their Korean explanation contains "설정 줄".
 - Expected effect: real-code QA weak counts should drop most clearly in `src/pwa/app.js`, `src/pwa/code_explainer.js`, and `tools/code_explainer_smoke_v171.js`.
 - Previous V216 coverage remains: JavaScript data objects, embedded code strings, Node.js fs/path/vm, CORS header, DOM/URL/Promise, Workers, Java, TOML, PowerShell CSV, and Python pathlib/regex/date/copy samples.
 
 ### V218-A1 code explainer embedded JavaScript string coverage
 
-- App version: `20260609_v224_a1`
+- App version: `20260609_v225_a1`
 - Focus: reduced false `JavaScript 코드 실행` classifications when JavaScript files contain quoted embedded Python/config/sample-code lines.
 - Target examples: `src/pwa/project_analyzer.js`, `src/pwa/code_explainer.js`, and smoke samples that store Python/YAML/TOML/README snippets inside JavaScript strings.
 - Previous V217 confidence calibration remains active.
 
 ### V219-A1 code explainer Python/PowerShell fallback reduction
 
-- App version: `20260609_v224_a1`
+- App version: `20260609_v225_a1`
 - Focus: reduced remaining weak fallback classifications in PowerShell verification scripts and Python validation scripts.
 - Added coverage for PowerShell typed parameters, scriptblock execution, Invoke-Step/Assert-Contains verification calls, Format-Table pipelines, and string-list URL entries.
 - Added coverage for Python dict-result entries, continue statements, direct function calls, and imported Counter usage in validation scripts.
@@ -999,28 +999,28 @@ V215 확장 감사에서 나온 P0 gap을 우선 줄이고, 코드해석 메뉴�
 
 ### V220-A1 code explainer JavaScript UI/data fallback reduction
 
-- App version: `20260609_v224_a1`
+- App version: `20260609_v225_a1`
 - Focus: reduced JavaScript weak fallback classifications in app.js, code_explainer.js, project_analyzer.js, and smoke fixtures.
 - Added coverage for JavaScript UI string fragments, HTML template fragments, object/array value rows, variable declarations, DOM class/HTML/value assignments, DOM attributes, insertBefore, Map/Set/Array updates, and direct function calls.
 - Preserved V219 Python/PowerShell fallback reduction and V218 embedded string classification behavior.
 
 ### V221-A1 code explainer remaining JavaScript fallback cleanup
 
-- App version: `20260609_v224_a1`
+- App version: `20260609_v225_a1`
 - Focus: reduce the remaining JavaScript fallback rows after V220 by classifying UI/data fragments that still appeared as generic JavaScript execution.
 - Added coverage for example command strings, code block fences, array data rows, object value fragments with fallback defaults, ternary UI fragments, matchMedia checks, nested state updates, DOM style updates, object method calls, length calculation tails, continue statements, and explicit Error throws.
 - Preserved V220 JavaScript UI/data fallback behavior and V219 Python/PowerShell fallback reduction.
 
 ### V222-A1 code explainer JavaScript leftover fragment cleanup
 
-- App version: `20260609_v224_a1`
+- App version: `20260609_v225_a1`
 - Focus: reduce remaining JavaScript weak fallback rows in code_explainer.js, project_analyzer.js, code_explainer_rules.js, and smoke fixture analysis.
 - Added coverage for escaped Markdown code fences, callback/block closing tails, regex test/match lines, ternary UI fragments, UI string join fragments, picker callback results, Blob creation, console output, method-chain continuation lines, and embedded Python/Java sample code rows.
 - Preserved V221 remaining JavaScript fallback cleanup and V220 JavaScript UI/data fallback behavior.
 
 ### V223-A1 code explainer long-code UI guard
 
-- App version: `20260609_v224_a1`
+- App version: `20260609_v225_a1`
 - Focus: improve code explainer usability when pasted code produces many steps.
 - Added long-code step rendering guard with `LONG_CODE_STEP_THRESHOLD` and `MAX_RENDERED_CODE_STEPS`.
 - Added a visible long-code notice, capped initial step rendering, and quick-report guidance so large inputs do not overwhelm the page.
@@ -1028,9 +1028,17 @@ V215 확장 감사에서 나온 P0 gap을 우선 줄이고, 코드해석 메뉴�
 
 ### V224-A1 code explainer long-code expand toggle
 
-- App version: `20260609_v224_a1`
+- App version: `20260609_v225_a1`
 - Focus: improve long-code code explainer UX after V223.
 - Added a long-code toggle for `전체 단계 펼치기` and `120개만 보기`.
 - Reset the long-code expanded state on new analysis and clear.
 - Added small CSS styling for the long-code notice and toggle.
 - Preserved V223 long-code rendering guard and V222 JavaScript fragment cleanup.
+
+### V225-A1 code explainer long-code Mermaid render guard
+
+- App version: `20260609_v225_a1`
+- Focus: prevent browser slowdown when long pasted code generates very large Mermaid diagrams without omitting the full diagram.
+- Added `MAX_MERMAID_RENDER_STEPS` and folded oversized Mermaid SVG rendering behind a manual `전체 흐름도 그리기` button while preserving the full Mermaid source text.
+- Added a visible notice when long-code Mermaid rendering is folded instead of auto-rendered.
+- Preserved V224 long-code expand toggle and V223 long-code rendering guard.

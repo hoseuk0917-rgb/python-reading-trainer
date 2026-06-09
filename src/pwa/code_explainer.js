@@ -181,8 +181,10 @@ port = 5432`
 
   // CODE_EXPLAINER_LONG_CODE_UI_V223_A1
   // CODE_EXPLAINER_LONG_CODE_TOGGLE_V224_A1
+  // CODE_EXPLAINER_LONG_CODE_MERMAID_GUARD_V225_A1
   const LONG_CODE_STEP_THRESHOLD = 80;
   const MAX_RENDERED_CODE_STEPS = 120;
+  const MAX_MERMAID_RENDER_STEPS = 450;
   let showAllCodeSteps = false;
 
   function el(id) {
@@ -1115,21 +1117,7 @@ port = 5432`
     }
   }
 
-  async function renderMermaid(source) {
-    lastMermaid = source || "";
-    const sourceBox = el("mermaidSource");
-    const diagram = el("mermaidDiagram");
-    const status = el("diagramStatus");
-
-    if (sourceBox) sourceBox.textContent = lastMermaid;
-    if (!diagram) return;
-
-    if (!lastMermaid) {
-      diagram.textContent = "생성된 Mermaid 코드가 없습니다.";
-      if (status) status.textContent = "생성 없음";
-      return;
-    }
-
+  async function renderMermaidSvgNow(diagram, status) {
     if (!window.mermaid || typeof window.mermaid.render !== "function") {
       diagram.innerHTML = '<p class="muted">Mermaid 로딩 중입니다. 잠시 후 다시 분석하기를 눌러주세요.</p>';
       if (status) status.textContent = "Mermaid 로딩 중";
@@ -1145,6 +1133,49 @@ port = 5432`
       diagram.innerHTML = '<p class="muted">Mermaid 렌더링 실패: ' + escapeHtml(String(error)) + '</p>';
       if (status) status.textContent = "렌더링 실패";
     }
+  }
+
+  async function renderMermaid(source) {
+    lastMermaid = source || "";
+    const sourceBox = el("mermaidSource");
+    const diagram = el("mermaidDiagram");
+    const status = el("diagramStatus");
+    const stepCount = lastAnalysis && Array.isArray(lastAnalysis.steps) ? lastAnalysis.steps.length : 0;
+
+    if (sourceBox) sourceBox.textContent = lastMermaid;
+    if (!diagram) return;
+
+    if (!lastMermaid) {
+      diagram.textContent = "생성된 Mermaid 코드가 없습니다.";
+      if (status) status.textContent = "생성 없음";
+      return;
+    }
+
+    if (stepCount > MAX_MERMAID_RENDER_STEPS) {
+      diagram.innerHTML = "";
+      const guard = document.createElement("div");
+      guard.className = "code-mermaid-render-guard";
+      guard.innerHTML =
+        '<strong>긴 코드 흐름도 접기</strong>' +
+        '<p class="muted">감지된 단계가 ' + stepCount + '개라서 처음에는 그림 렌더링을 접어둡니다. Mermaid 원문은 이미 전체 보존되어 있고, 아래 버튼을 누르면 전체 흐름도 그림도 렌더링합니다.</p>';
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "code-mermaid-render-button";
+      button.textContent = "전체 흐름도 그리기";
+      button.addEventListener("click", function() {
+        button.disabled = true;
+        button.textContent = "전체 흐름도 그리는 중...";
+        renderMermaidSvgNow(diagram, status);
+      });
+
+      guard.appendChild(button);
+      diagram.appendChild(guard);
+      if (status) status.textContent = "긴 코드 흐름도 접힘";
+      return;
+    }
+
+    await renderMermaidSvgNow(diagram, status);
   }
 
   function analyzeCurrentCode() {
