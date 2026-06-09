@@ -915,7 +915,7 @@ V207에서는 candidateNotes 7개 중 사용자 체감이 큰 항목부터 정�
 
 ## V213 코드해석 external input node 과탐 감사 — 20260608
 
-기준 버전: `20260608_v212_a1`  
+기준 버전: `20260608_v212_a1`
 기준 커밋: `d81f137 Improve code explainer Mermaid external input flow`
 
 ### 감사 파일
@@ -937,7 +937,7 @@ V207에서는 candidateNotes 7개 중 사용자 체감이 큰 항목부터 정�
 
 ### 결론
 
-V212 external input node 기준선은 안정적이다.  
+V212 external input node 기준선은 안정적이다.
 다음 단계는 코드해석 샘플 확장 또는 실제 UX 확인이다.
 
 <!-- CODE_EXPLAINER_EXTERNAL_INPUT_AUDIT_V213_END -->
