@@ -179,6 +179,10 @@ port = 5432`
   let learningCards = [];
   let learningSideCards = [];
 
+  // CODE_EXPLAINER_LONG_CODE_UI_V223_A1
+  const LONG_CODE_STEP_THRESHOLD = 80;
+  const MAX_RENDERED_CODE_STEPS = 120;
+
   function el(id) {
     return document.getElementById(id);
   }
@@ -566,6 +570,41 @@ port = 5432`
     });
   }
 
+  function renderLongStepNotice(visibleSteps, renderedSteps) {
+    if (!Array.isArray(visibleSteps) || visibleSteps.length <= LONG_CODE_STEP_THRESHOLD) {
+      return "";
+    }
+
+    const hiddenCount = Math.max(0, visibleSteps.length - renderedSteps.length);
+    const filterText = shouldShowRiskOnly()
+      ? "현재 위험/주의 필터가 켜져 있어 해당 단계만 보여줍니다."
+      : "전체 단계 중 앞부분을 우선 렌더링합니다.";
+
+    return '<div class="code-long-step-notice">' +
+      '<strong>긴 코드 요약 보기</strong>' +
+      '<p class="muted">감지된 단계가 ' + visibleSteps.length + '개입니다. ' + filterText + '</p>' +
+      (hiddenCount > 0 ? '<p class="muted">화면 성능을 위해 먼저 ' + renderedSteps.length + '개만 표시했습니다. 전체 순서는 복사 리포트와 Mermaid 원문에서 함께 확인할 수 있습니다.</p>' : '') +
+      '</div>';
+  }
+
+  function renderStepItem(step, idx) {
+    const confidence = step.confidence || "inferred";
+    const item = document.createElement("div");
+    item.className = "code-step risk-" + step.risk + " " + confidenceClass(confidence);
+    item.innerHTML = `
+      <div class="code-step-head">
+        <span class="step-number">${idx + 1}</span>
+        <strong>${escapeHtml(step.title)}</strong>
+        <span class="confidence-badge ${confidenceClass(confidence)}">${confidenceLabel(confidence)}</span>
+        <span class="risk-badge">${riskLabel(step.risk)}</span>
+      </div>
+      <p>${escapeHtml(step.explain)}</p>
+      ${renderStepMeta(step)}
+      <pre class="code-step-line">line ${step.lineNo}: ${escapeHtml(step.code)}</pre>
+    `;
+    return item;
+  }
+
   function renderSteps(steps) {
     const box = el("codeSteps");
     if (!box) return;
@@ -580,23 +619,27 @@ port = 5432`
       return;
     }
 
-    visibleSteps.forEach(function(step, idx) {
-      const confidence = step.confidence || "inferred";
-      const item = document.createElement("div");
-      item.className = "code-step risk-" + step.risk + " " + confidenceClass(confidence);
-      item.innerHTML = `
-        <div class="code-step-head">
-          <span class="step-number">${idx + 1}</span>
-          <strong>${escapeHtml(step.title)}</strong>
-          <span class="confidence-badge ${confidenceClass(confidence)}">${confidenceLabel(confidence)}</span>
-          <span class="risk-badge">${riskLabel(step.risk)}</span>
-        </div>
-        <p>${escapeHtml(step.explain)}</p>
-        ${renderStepMeta(step)}
-        <pre class="code-step-line">line ${step.lineNo}: ${escapeHtml(step.code)}</pre>
-      `;
-      box.appendChild(item);
+    const renderedSteps = visibleSteps.length > MAX_RENDERED_CODE_STEPS
+      ? visibleSteps.slice(0, MAX_RENDERED_CODE_STEPS)
+      : visibleSteps;
+
+    const longNotice = renderLongStepNotice(visibleSteps, renderedSteps);
+    if (longNotice) {
+      const notice = document.createElement("div");
+      notice.innerHTML = longNotice;
+      box.appendChild(notice.firstChild);
+    }
+
+    renderedSteps.forEach(function(step, idx) {
+      box.appendChild(renderStepItem(step, idx));
     });
+
+    if (visibleSteps.length > renderedSteps.length) {
+      const tail = document.createElement("p");
+      tail.className = "muted code-long-step-tail";
+      tail.textContent = "나머지 " + (visibleSteps.length - renderedSteps.length) + "개 단계는 리포트 복사 또는 Mermaid 원문에서 이어서 확인하세요.";
+      box.appendChild(tail);
+    }
   }
 
   function renderWarnings(warnings) {
@@ -942,6 +985,11 @@ port = 5432`
     const categories = countByValue(steps, function(step) { return step.category || "처리"; });
     const confidence = result.confidenceSummary || {};
     const unsupportedItems = Array.isArray(result.unsupportedItems) ? result.unsupportedItems : [];
+    const source = result.sourceCode || "";
+    const lineCount = source ? source.split(/\r?\n/).length : 0;
+    const longCodeHtml = steps.length > LONG_CODE_STEP_THRESHOLD
+      ? '<p class="code-report-categories">긴 코드 모드: ' + steps.length + '개 단계 / ' + lineCount + '줄. 화면에는 핵심 앞부분을 우선 보여주고, 전체 흐름은 리포트와 Mermaid 원문으로 확인합니다.</p>'
+      : "";
 
     box.className = "code-quick-report";
     box.innerHTML = '<div class="code-report-mini-grid">' +
@@ -950,7 +998,8 @@ port = 5432`
       '<span class="code-report-chip"><strong>' + (confidence.unsupported || 0) + '</strong><small>미지원</small></span>' +
       '<span class="code-report-chip"><strong>' + unsupportedItems.length + '</strong><small>확인필요</small></span>' +
       '</div>' +
-      '<p class="code-report-categories">' + escapeHtml(formatCountSummary(categories) || "분류 없음") + '</p>';
+      '<p class="code-report-categories">' + escapeHtml(formatCountSummary(categories) || "분류 없음") + '</p>' +
+      longCodeHtml;
   }
 
   function renderConfidenceReport(result) {
