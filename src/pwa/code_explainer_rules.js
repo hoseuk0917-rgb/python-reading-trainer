@@ -204,7 +204,7 @@
       return "unsupported";
     }
 
-    if (/변수에 값 저장|값 반환|값 돌려주기|Markdown 문단|YAML 설정|TOML 설정|INI 설정|객체 속성 설정|문자열 데이터 항목|예제 코드 문자열|블록\/객체 닫기/.test(t)) {
+    if (/변수에 값 저장|값 반환|값 돌려주기|Markdown 문단|YAML 설정|TOML 설정|INI 설정|객체 속성 설정|문자열 데이터 항목|예제 코드 문자열|블록\/객체 닫기|딕셔너리 항목 설정|함수 호출|입력 파라미터 선언/.test(t)) {
       return "inferred";
     }
 
@@ -355,8 +355,8 @@
     if (/\|\s*(Group-Object|Sort-Object|Select-Object|Export-Csv)\b/i.test(t) && /\bExport-Csv\b/i.test(t)) {
       return makeStep(lineNo, t, "CSV 그룹 정렬 선택 저장", "파이프라인으로 넘어온 CSV/객체 데이터를 그룹으로 묶고, 정렬하고, 필요한 열을 선택한 뒤 저장하는 흐름입니다. Group-Object, Sort-Object, Select-Object, Export-Csv 순서를 확인해야 합니다.", risk);
     }
-    if (/\|\s*(Where-Object|ForEach-Object|Select-Object|Sort-Object|Group-Object|Measure-Object|Out-Null)\b/i.test(t)) {
-      return makeStep(lineNo, t, "파이프라인 처리", "앞 명령의 결과를 뒤 명령으로 넘기며 필터링, 반복, 선택, 정렬, 집계 같은 처리를 이어서 수행합니다.", risk);
+    if (/\|\s*(Where-Object|ForEach-Object|Select-Object|Sort-Object|Group-Object|Measure-Object|Format-Table|Out-Null)\b/i.test(t)) {
+      return makeStep(lineNo, t, "파이프라인 처리", "앞 명령의 결과를 뒤 명령으로 넘기며 필터링, 반복, 선택, 정렬, 집계, 표 표시 같은 처리를 이어서 수행합니다.", risk);
     }
     if (/^Get-ChildItem\b/i.test(t) || /^dir\b/i.test(t) || /^ls\b/i.test(t)) {
       return makeStep(lineNo, t, "파일 목록 가져오기", "폴더 안의 파일과 하위 폴더 목록을 가져옵니다. -Recurse가 있으면 하위 폴더까지 넓게 탐색합니다.", risk);
@@ -479,7 +479,7 @@
       return makeStep(lineNo, t, "Python 검증 실행", "학습 데이터와 앱 버전이 맞는지 검증 스크립트를 실행합니다.", risk);
     }
     if (/^python\s+/.test(t)) {
-      return makeStep(lineNo, t, "Python 명령 실행", "Python 스크립트나 모듈을 실행합니다. 인자와 실행 위치를 확인해야 합니다.", risk);
+      return makeStep(lineNo, t, "Python 실행", "Python 스크립트나 모듈을 실행합니다. 인자와 실행 위치를 확인해야 합니다.", risk);
     }
     if (/^git\s+status/i.test(t)) {
       return makeStep(lineNo, t, "Git 변경 상태 확인", "현재 폴더에서 어떤 파일이 수정되었는지 확인합니다.", risk);
@@ -536,6 +536,23 @@
       return makeStep(lineNo, t, "백그라운드 작업 중지", "실행 중인 백그라운드 작업을 멈춥니다.", risk);
     }
 
+    // POWERSHELL_VERIFY_SCRIPT_RULES_V219_A1
+    if (/^\[[A-Za-z_][\w.\[\]]*\]\$[A-Za-z_][\w-]*,?$/.test(t)) {
+      return makeStep(lineNo, t, "입력 파라미터 선언", "param 블록 안에서 입력값의 타입과 이름을 선언합니다. 실행할 때 같은 이름의 옵션으로 값을 받을 수 있습니다.", risk);
+    }
+    if (/^&\s+\$[A-Za-z_][\w-]*/.test(t)) {
+      return makeStep(lineNo, t, "스크립트블록 실행", "변수에 담긴 PowerShell 스크립트블록을 실행합니다. 검증 단계나 콜백처럼 전달된 명령 묶음을 실행할 때 쓰입니다.", risk);
+    }
+    if (/^Invoke-Step\b/i.test(t)) {
+      return makeStep(lineNo, t, "검증 단계 실행", "이름을 붙인 검증 단계를 실행합니다. 중괄호 안의 명령 묶음을 실행하고 성공/실패를 단계별로 보여주는 흐름입니다.", risk);
+    }
+    if (/^Assert-Contains\b/i.test(t)) {
+      return makeStep(lineNo, t, "문자열 포함 검증", "파일이나 텍스트 안에 기대한 문자열이 들어 있는지 확인합니다. 버전, 마커, 샘플 이름 검증에 자주 쓰입니다.", risk);
+    }
+    if (/^["'][^"']*["'],?$/.test(t)) {
+      return makeStep(lineNo, t, "문자열 데이터 항목", "배열이나 목록 안에 들어 있는 문자열 값입니다. URL, 파일 경로, 버전 붙은 리소스 주소처럼 데이터로 쓰일 수 있습니다.", risk);
+    }
+
     if (/^Start-Sleep\b/i.test(t)) {
       return makeStep(lineNo, t, "잠시 대기", "다음 명령을 바로 실행하지 않고 지정한 시간만큼 기다립니다. 배포 반영이나 서버 준비를 기다릴 때 씁니다.", risk);
     }
@@ -567,6 +584,9 @@
     }
     if (/\|\s*Out-Null/i.test(t)) {
       return makeStep(lineNo, t, "출력 숨기기", "명령 결과를 화면에 표시하지 않고 버립니다. 실제 작업은 실행되지만 출력만 숨겨집니다.", risk);
+    }
+    if (/\|\s*Format-Table\b/i.test(t)) {
+      return makeStep(lineNo, t, "표 형태로 출력", "파이프라인 결과를 표 형태로 화면에 보여줍니다. 검증 리포트나 요약 데이터를 읽기 좋게 표시할 때 씁니다.", risk);
     }
 
     return makeStep(lineNo, t, "명령 실행", "이 줄은 PowerShell 명령입니다. 자동 규칙에 없는 명령이므로 원문, 경로, 옵션을 확인한 뒤 실행해야 합니다.", risk);
@@ -633,6 +653,9 @@
     }
     if (/^else\s*:\s*$/.test(t)) {
       return makeStep(lineNo, t, "조건이 모두 아닐 때", "앞의 if/elif 조건이 맞지 않을 때 실행되는 부분입니다.", risk);
+    }
+    if (/^continue\s*$/.test(t)) {
+      return makeStep(lineNo, t, "다음 반복으로 건너뛰기", "현재 반복에서 남은 코드를 실행하지 않고 다음 항목 처리로 넘어갑니다. 조건에 맞지 않는 파일이나 데이터를 제외할 때 자주 씁니다.", risk);
     }
     // PYTHON_ITER_JSON_RULES_V201_A1
     if (/^for\s+.+\s+in\s+range\s*\(/.test(t)) {
@@ -745,11 +768,18 @@
     if (/FastAPI\s*\(|from\s+fastapi\s+import|@app\.(get|post|put|delete|patch)\s*\(/.test(t)) {
       return makeStep(lineNo, t, "FastAPI 앱/라우트 설정", "API 서버 앱을 만들거나 특정 URL로 들어온 요청을 처리할 함수를 연결합니다.", risk);
     }
+    // PYTHON_VERIFY_DATA_RULES_V219_A1
+    if (/^["'][^"']+["']\s*:/.test(t)) {
+      return makeStep(lineNo, t, "딕셔너리 항목 설정", "딕셔너리 안에서 키와 값을 연결하는 데이터 줄입니다. 검증 항목 이름과 검사 결과를 묶어 저장할 때 자주 나옵니다.", risk);
+    }
     if (/^return\b/.test(t)) {
       return makeStep(lineNo, t, "값 돌려주기", "함수 안에서 계산한 결과를 함수 밖으로 돌려줍니다.", risk);
     }
     if (/^print\s*\(/.test(t)) {
       return makeStep(lineNo, t, "화면에 출력", "괄호 안 값을 콘솔 화면에 보여줍니다.", risk);
+    }
+    if (/^(run|must|main)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "검증 함수 호출", "검증 스크립트 안에서 미리 정의된 보조 함수를 실행합니다. 명령 실행, 조건 확인, 메인 흐름 시작처럼 검증 절차를 묶어 호출할 때 쓰입니다.", risk);
     }
     if (/^[A-Za-z_]\w*\s*=/.test(t)) {
       return makeStep(lineNo, t, "변수에 값 저장", "왼쪽 이름에 오른쪽 값을 넣습니다. 이후 코드에서 이 이름으로 값을 다시 사용할 수 있습니다.", risk);
@@ -2537,7 +2567,8 @@
         decodeURIComponent: true,
         require: true,
         fetch: true,
-        function: true
+        function: true,
+        Counter: true
       };
       const unsupportedNames = names.filter(function(name) {
         return !knownGlobalCalls[name];
