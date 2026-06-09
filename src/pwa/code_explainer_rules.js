@@ -71,6 +71,8 @@
     if (/public\s+class|private\s+class|protected\s+class|class\s+\w+\s*\{/m.test(text)) return "java";
     if (/public\s+static\s+void\s+main|System\.(out|err)\.println|\b(List|Map|Set|Queue)<[^>]+>/.test(text)) return "java";
 
+    // PYTHON_PANDAS_NUMPY_DETECT_V231_A1
+    if (/^\s*(?:import|from)\s+(?:pandas|numpy)\b/m.test(text) || /\b(?:pd|pandas|np|numpy)\./.test(text)) return "python";
     if (/^\s*def\s+\w+\s*\(/m.test(text) || /^\s*import\s+\w+/m.test(text) || /^\s*from\s+\w+/m.test(text)) return "python";
     if (/^\s*class\s+\w+\s*[:(]/m.test(text) && lower.includes("self")) return "python";
 
@@ -719,6 +721,52 @@
     }
     if (/json\.load|json\.loads/.test(t)) {
       return makeStep(lineNo, t, "JSON 읽기", "JSON 형식의 문자열이나 파일 내용을 Python 데이터로 바꿉니다.", risk);
+    }
+    // PANDAS_NUMPY_MAPPING_V231_A1
+    if (/pandas\.read_(csv|excel|json)\s*\(|pd\.read_(csv|excel|json)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "pandas 파일 읽기", "CSV, Excel, JSON 같은 표 형태 파일을 pandas DataFrame으로 읽습니다. 파일 경로, 인코딩, 구분자, 헤더 행이 맞는지 확인해야 합니다.", risk);
+    }
+    if (/pd\.DataFrame\s*\(|pandas\.DataFrame\s*\(|pd\.Series\s*\(|pandas\.Series\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "pandas 표 만들기", "리스트나 딕셔너리 데이터를 pandas DataFrame 또는 Series 구조로 바꿉니다. 이후 필터링, 집계, 저장 같은 표 데이터 처리를 할 수 있습니다.", risk);
+    }
+    if (/pd\.concat\s*\(|pandas\.concat\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "pandas 표 이어붙이기", "여러 DataFrame을 위아래 또는 좌우로 이어 붙입니다. axis 방향과 인덱스 중복 여부를 확인해야 합니다.", risk);
+    }
+    if (/\.head\s*\(|\.tail\s*\(|\.info\s*\(|\.describe\s*\(|\.shape\b|\.columns\b/.test(t)) {
+      return makeStep(lineNo, t, "pandas 미리보기/요약", "표 데이터의 앞뒤 일부, 열 이름, 크기, 자료형, 통계 요약을 확인합니다. 본격 처리 전에 데이터 구조를 점검하는 단계입니다.", risk);
+    }
+    if (/\.loc\s*\[|\.iloc\s*\[/.test(t)) {
+      return makeStep(lineNo, t, "pandas 행/열 선택", "loc 또는 iloc으로 표에서 필요한 행과 열을 선택합니다. loc은 이름 기준, iloc은 위치 번호 기준이라는 차이를 확인해야 합니다.", risk);
+    }
+    if (/\.sort_values\s*\(|\.value_counts\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "pandas 정렬/빈도 계산", "표 데이터를 특정 열 기준으로 정렬하거나 값별 개수를 셉니다. 어떤 열을 기준으로 보는지 확인해야 합니다.", risk);
+    }
+    if (/\.isna\s*\(|\.notna\s*\(|\.fillna\s*\(|\.dropna\s*\(|\.astype\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "pandas 결측값/자료형 처리", "비어 있는 값 확인, 채우기, 제거, 자료형 변환을 수행합니다. 원본 데이터가 바뀌는지와 변환 실패 가능성을 확인해야 합니다.", risk);
+    }
+    if (/\.groupby\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "pandas 그룹 집계", "특정 열 값을 기준으로 행을 묶고 합계, 평균, 개수 같은 집계를 계산합니다. 그룹 기준 열과 집계 대상 열을 함께 확인해야 합니다.", risk);
+    }
+    if (/pd\.merge\s*\(|pandas\.merge\s*\(|\.merge\s*\(|\.join\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "pandas 표 병합", "공통 열이나 인덱스를 기준으로 두 표를 합칩니다. 조인 방식, 중복 행, 누락값 발생 여부를 확인해야 합니다.", risk);
+    }
+    if (/np\.array\s*\(|numpy\.array\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "NumPy 배열 만들기", "리스트 같은 값을 NumPy 배열로 바꿉니다. 수치 계산, 벡터 연산, 형태 변경을 빠르게 처리하기 위한 기본 구조입니다.", risk);
+    }
+    if (/np\.(zeros|ones|arange|linspace)\s*\(|numpy\.(zeros|ones|arange|linspace)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "NumPy 기본 배열 생성", "0이나 1로 채운 배열, 일정 간격 숫자 배열을 만듭니다. shape, 시작값, 끝값, 간격 조건을 확인해야 합니다.", risk);
+    }
+    if (/np\.(mean|median|std|sum|min|max)\s*\(|numpy\.(mean|median|std|sum|min|max)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "NumPy 통계 계산", "배열의 평균, 중앙값, 표준편차, 합계, 최솟값, 최댓값 같은 통계값을 계산합니다. axis 기준이 있는지 확인해야 합니다.", risk);
+    }
+    if (/\.reshape\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "NumPy 형태 변경", "배열의 전체 원소 수는 유지하면서 행과 열 모양을 바꿉니다. 바꾸려는 shape가 원소 개수와 맞는지 확인해야 합니다.", risk);
+    }
+    if (/np\.where\s*\(|numpy\.where\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "NumPy 조건 선택", "조건이 참일 때와 거짓일 때 사용할 값을 골라 새 배열을 만듭니다. 벡터화된 if 처리처럼 자주 씁니다.", risk);
+    }
+    if (/np\.random\.(rand|randn|randint|choice|seed)\s*\(|numpy\.random\.(rand|randn|randint|choice|seed)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "NumPy 무작위 값", "배열 형태의 난수나 무작위 선택값을 만듭니다. 재현 가능한 결과가 필요하면 seed 설정 여부를 확인해야 합니다.", risk);
     }
     if (/pandas\.read_csv|pd\.read_csv/.test(t)) {
       return makeStep(lineNo, t, "CSV 표 읽기", "CSV 파일을 표 형태 데이터로 읽습니다.", risk);
@@ -2660,7 +2708,7 @@
     const n = String(name || "");
     const common = /^(print|open|range|enumerate|len|list|dict|set|tuple|str|int|float|bool|sum|min|max|map|filter|sorted|reversed|next|iter|round|abs|isinstance|Path|JSON|URL|Date|String|Number|Boolean|Array|Object|parseInt|parseFloat|fetch)$/;
     if (common.test(n)) return true;
-    if (language === "python" && /^(json|csv|pd|pandas|os|sys|Path|traceback|time|dataclasses|collections|itertools|random|defaultdict|Counter|deque|FastAPI|APIRouter|Depends|HTTPException|Query|Body|Path)$/.test(n)) return true;
+    if (language === "python" && /^(json|csv|pd|pandas|np|numpy|os|sys|Path|traceback|time|dataclasses|collections|itertools|random|defaultdict|Counter|deque|FastAPI|APIRouter|Depends|HTTPException|Query|Body|Path|DataFrame|Series|array|zeros|ones|arange|linspace|read_csv|concat|mean|median|std)$/.test(n)) return true;
     if ((language === "javascript" || language === "workers") && /^(document|console|localStorage|Response|Promise|Math|process)$/.test(n)) return true;
     return false;
   }
