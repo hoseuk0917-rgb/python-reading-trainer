@@ -187,16 +187,24 @@
     return "low";
   }
 
-  // CONFIDENCE_LABEL_RULES_V202_A1
+  // CONFIDENCE_LABEL_RULES_V217_A1
   function confidenceForStep(title, explain) {
     const t = String(title || "");
     const e = String(explain || "");
 
-    if (/자동 규칙에 없는|코드 실행|명령 실행|설정 파일의 한 줄|설정 줄/.test(t + " " + e)) {
+    if (/자동 규칙에 없는/.test(e)) {
       return "unsupported";
     }
 
-    if (/변수에 값 저장|값 반환|값 돌려주기|Markdown 문단|YAML 설정|TOML 설정|INI 설정/.test(t)) {
+    if (/^(코드 실행|Python 코드 실행|JavaScript 코드 실행|Worker\/JavaScript 코드 실행|명령 실행|Python 명령 실행)$/.test(t)) {
+      return "unsupported";
+    }
+
+    if (/미등록 함수/.test(t)) {
+      return "unsupported";
+    }
+
+    if (/변수에 값 저장|값 반환|값 돌려주기|Markdown 문단|YAML 설정|TOML 설정|INI 설정|객체 속성 설정|문자열 데이터 항목|예제 코드 문자열|블록\/객체 닫기/.test(t)) {
       return "inferred";
     }
 

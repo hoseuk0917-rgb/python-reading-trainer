@@ -961,7 +961,7 @@ V215 확장 감사에서 나온 P0 gap을 우선 줄이고, 코드해석 메뉴�
 
 ## V216 코드해석 JavaScript 데이터/도구 코드 커버리지 보강 — 20260609
 
-기준 버전: `20260609_v216_a1`
+기준 버전: `20260609_v217_a1`
 
 ### 보강 범위
 
@@ -974,3 +974,10 @@ V215 확장 감사에서 나온 P0 gap을 우선 줄이고, 코드해석 메뉴�
 ### 목표
 
 실제 프로젝트의 큰 JavaScript 파일에서 `JavaScript 코드 실행`으로 뭉개지는 비율을 낮추고, 코드해석 메뉴가 앱 코드·분석기 코드·샘플 데이터 코드를 구분해서 설명하게 만든다.
+
+### V217-A1 code explainer confidence calibration
+
+- App version: `20260609_v217_a1`
+- Focus: corrected confidence classification so JavaScript object/property data lines are no longer incorrectly counted as unsupported just because their Korean explanation contains "설정 줄".
+- Expected effect: real-code QA weak counts should drop most clearly in `src/pwa/app.js`, `src/pwa/code_explainer.js`, and `tools/code_explainer_smoke_v171.js`.
+- Previous V216 coverage remains: JavaScript data objects, embedded code strings, Node.js fs/path/vm, CORS header, DOM/URL/Promise, Workers, Java, TOML, PowerShell CSV, and Python pathlib/regex/date/copy samples.
