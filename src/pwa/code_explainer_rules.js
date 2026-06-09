@@ -762,7 +762,7 @@
     const t = cleanLine(line);
     const risk = riskOf(t, language);
 
-    // JAVASCRIPT_DATA_NODE_FILE_RULES_V216_A1
+    // JAVASCRIPT_DATA_NODE_FILE_RULES_V218_A1
     if (/^["']use strict["'];?$/.test(t)) {
       return makeStep(lineNo, t, "엄격 모드 선언", "JavaScript 파일을 더 엄격한 규칙으로 실행하게 하는 선언입니다. 실수로 전역 변수를 만들거나 조용히 넘어가는 오류를 줄이는 데 도움이 됩니다.", risk);
     }
@@ -786,6 +786,9 @@
     if (/["']Access-Control-Allow-Origin["']\s*:/.test(t)) {
       return makeStep(lineNo, t, "CORS 헤더 설정", "브라우저의 다른 출처 요청을 허용할지 정하는 응답 헤더입니다. 별표(*)는 모든 출처를 허용하므로 공개 범위가 맞는지 확인해야 합니다.", risk);
     }
+    if (/^"(?:\\.|[^"\\])*",?$/.test(t) || /^'(?:\\.|[^'\\])*',?$/.test(t) || /^`(?:\\.|[^`\\])*`,?$/.test(t)) {
+      return makeStep(lineNo, t, "문자열 데이터 항목", "배열이나 객체 안에 들어 있는 문자열 데이터입니다. JavaScript 문자열 안에 Python, YAML, TOML, 설정 파일 예제 코드가 들어 있을 수도 있으므로 실제 실행 줄인지 구분해서 봅니다.", risk);
+    }
     if (/^["'][^"']+["']\s*:\s*/.test(t) || /^[A-Za-z_$][\w$]*\s*:\s*(?:`|["'{\[]|true|false|null|-?\d)/.test(t)) {
       return makeStep(lineNo, t, "객체 속성 설정", "객체 안에서 이름과 값을 연결하는 데이터 설정 줄입니다. 설정값, 예제 문자열, 화면 문구, 규칙 데이터를 담을 때 자주 나옵니다.", risk);
     }
@@ -798,10 +801,7 @@
     if (!/^return\b/.test(t) && (/^\.(replace|join|split|slice)\s*\(/.test(t) || /\.(replace|join|split|slice)\s*\(/.test(t))) {
       return makeStep(lineNo, t, "문자열/배열 메서드 처리", "문자열이나 배열에 메서드를 이어 붙여 변환, 필터링, 정렬, 결합 같은 처리를 합니다. 앞 단계의 결과가 다음 메서드로 넘어갑니다.", risk);
     }
-    if (/^["'][^"']*["'],?$/.test(t)) {
-      return makeStep(lineNo, t, "문자열 데이터 항목", "배열이나 객체 안에 들어 있는 문자열 데이터입니다. 실제 실행 명령이 아니라 예제 코드, 설명 문구, 파일 경로 같은 값일 수 있습니다.", risk);
-    }
-    if (/^(?:\$[A-Za-z_][\w-]*\s*=|Set-Location\b|New-Item\b|Copy-Item\b|Compress-Archive\b|git\s+|from\s+[\w.]+\s+import\b|import\s+\w+|def\s+\w+\s*\(|with\s+open\s*\(|for\s+\w+\s+in\s+|if\s+.+:|print\s*\(|public\s+class\b|int\s+\w+\s*=|System\.out\.println|FROM\s+|WORKDIR\b|COPY\s+|RUN\s+|ENV\s+|EXPOSE\s+|CMD\s+|- uses:|- run:|services:|jobs:|steps:|runs-on:|node-version:)/.test(t)) {
+    if (!/^return\b/.test(t) && /^(?:\$[A-Za-z_][\w-]*\s*=|Set-Location\b|New-Item\b|Copy-Item\b|Compress-Archive\b|git\s+|from\s+[\w.]+\s+import\b|import\s+\w+|def\s+\w+\s*\(|with\s+open\s*\(|for\s+\w+\s+in\s+|if\s+.+:|elif\s+.+:|else:|[A-Za-z_]\w*\s*=\s*[^=;]+$|print\s*\(|public\s+class\b|int\s+\w+\s*=|System\.out\.println|FROM\s+|WORKDIR\b|COPY\s+|RUN\s+|ENV\s+|EXPOSE\s+|CMD\s+|- uses:|- run:|services:|jobs:|steps:|runs-on:|node-version:|[A-Za-z_][\w-]*:\s*$|[A-Z][A-Z0-9_]*=|\[[A-Za-z0-9_. -]+\]|#{1,6}\s+|```|uvicorn\[|pandas[<>=~]|python-dotenv|-r\s+\S+)/.test(t)) {
       return makeStep(lineNo, t, "예제 코드 문자열", "JavaScript 파일 안에 샘플로 들어 있는 다른 언어 코드나 설정 파일 내용입니다. 이 줄 자체가 현재 JavaScript로 실행되는 것이 아니라 화면 표시나 테스트 샘플로 쓰일 수 있습니다.", risk);
     }
     if (/^\}\);?$/.test(t) || /^[}\])]+[,;]?$/.test(t)) {

@@ -961,7 +961,7 @@ V215 확장 감사에서 나온 P0 gap을 우선 줄이고, 코드해석 메뉴�
 
 ## V216 코드해석 JavaScript 데이터/도구 코드 커버리지 보강 — 20260609
 
-기준 버전: `20260609_v217_a1`
+기준 버전: `20260609_v218_a1`
 
 ### 보강 범위
 
@@ -977,7 +977,14 @@ V215 확장 감사에서 나온 P0 gap을 우선 줄이고, 코드해석 메뉴�
 
 ### V217-A1 code explainer confidence calibration
 
-- App version: `20260609_v217_a1`
+- App version: `20260609_v218_a1`
 - Focus: corrected confidence classification so JavaScript object/property data lines are no longer incorrectly counted as unsupported just because their Korean explanation contains "설정 줄".
 - Expected effect: real-code QA weak counts should drop most clearly in `src/pwa/app.js`, `src/pwa/code_explainer.js`, and `tools/code_explainer_smoke_v171.js`.
 - Previous V216 coverage remains: JavaScript data objects, embedded code strings, Node.js fs/path/vm, CORS header, DOM/URL/Promise, Workers, Java, TOML, PowerShell CSV, and Python pathlib/regex/date/copy samples.
+
+### V218-A1 code explainer embedded JavaScript string coverage
+
+- App version: `20260609_v218_a1`
+- Focus: reduced false `JavaScript 코드 실행` classifications when JavaScript files contain quoted embedded Python/config/sample-code lines.
+- Target examples: `src/pwa/project_analyzer.js`, `src/pwa/code_explainer.js`, and smoke samples that store Python/YAML/TOML/README snippets inside JavaScript strings.
+- Previous V217 confidence calibration remains active.
