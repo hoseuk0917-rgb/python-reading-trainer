@@ -75,7 +75,7 @@
     if (/^\s*class\s+\w+\s*[:(]/m.test(text) && lower.includes("self")) return "python";
 
     if (/public\s+static\s+void\s+main|System\.out\.println|public\s+class|private\s+class|class\s+\w+\s*\{/m.test(text)) return "java";
-    if (/\b(const|let|var)\s+\w+\s*=/.test(text) || /function\s+\w+\s*\(/.test(text) || /document\.getElementById|addEventListener|localStorage/.test(text)) return "javascript";
+    if (/\b(const|let|var)\s+\w+\s*=/.test(text) || /function\s+\w+\s*\(/.test(text) || /document\.getElementById|addEventListener|localStorage|\bprocess\.env\b/.test(text)) return "javascript";
 
     // Dockerfile은 Python의 `from ... import ...`와 헷갈리지 않도록 대문자 명령 위주로 판단한다.
     if (/^\s*FROM\s+\S+/m.test(text) || /^\s*(RUN|COPY|ADD|WORKDIR|CMD|ENTRYPOINT|EXPOSE|ENV|ARG)\s+/m.test(text)) return "dockerfile";
@@ -1189,6 +1189,10 @@
     }
     if (/\.dataset\./.test(t)) {
       return makeStep(lineNo, t, "data 속성 읽기", "HTML의 data-* 속성에 저장된 값을 읽습니다. 화면 요소의 상태나 식별값을 코드에서 사용할 때 씁니다.", risk);
+    }
+    // JAVASCRIPT_NODE_PROCESS_ENV_RULE_V229_A1
+    if (/\bprocess\.env(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])?/.test(t)) {
+      return makeStep(lineNo, t, "Node.js 환경변수 읽기", "Node.js 실행 환경에 설정된 환경변수를 읽습니다. API 주소, 실행 모드, 비밀키 이름처럼 코드 밖에서 주입되는 설정값을 확인할 때 자주 씁니다. 실제 비밀값을 코드나 화면에 그대로 출력하지 않도록 주의해야 합니다.", risk);
     }
     if (/document\.getElementById|querySelector/.test(t)) {
       return makeStep(lineNo, t, "화면 요소 찾기", "HTML 화면에서 특정 요소를 찾아 값을 읽거나 내용을 바꾸기 위해 준비합니다.", risk);
@@ -2619,7 +2623,7 @@
     const common = /^(print|open|range|enumerate|len|list|dict|set|tuple|str|int|float|bool|sum|min|max|map|filter|sorted|reversed|next|iter|round|abs|isinstance|Path|JSON|URL|Date|String|Number|Boolean|Array|Object|parseInt|parseFloat|fetch)$/;
     if (common.test(n)) return true;
     if (language === "python" && /^(json|csv|pd|pandas|os|sys|Path|traceback|time|dataclasses|collections|itertools|random|defaultdict|Counter|deque)$/.test(n)) return true;
-    if ((language === "javascript" || language === "workers") && /^(document|console|localStorage|Response|Promise|Math)$/.test(n)) return true;
+    if ((language === "javascript" || language === "workers") && /^(document|console|localStorage|Response|Promise|Math|process)$/.test(n)) return true;
     return false;
   }
 
