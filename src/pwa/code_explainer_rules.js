@@ -1039,7 +1039,8 @@
     if (/\buseState\s*\(/.test(t)) {
       return makeStep(lineNo, t, "React 상태값 만들기", "컴포넌트 안에서 바뀔 수 있는 상태값과 그 값을 바꾸는 setter 함수를 만듭니다. 값이 바뀌면 화면이 다시 렌더링될 수 있습니다.", risk);
     }
-    if (/^set[A-Z][A-Za-z0-9_$]*\s*\(/.test(t) || /\bset[A-Z][A-Za-z0-9_$]*\s*\(/.test(t)) {
+    // REACT_SETTER_DIRECT_CALL_FIX_V232_A3
+    if (/^set[A-Z][A-Za-z0-9_$]*\s*\(/.test(t)) {
       return makeStep(lineNo, t, "React 상태 변경", "useState로 만든 setter 함수를 호출해 상태값을 바꿉니다. 이전 값에 의존하면 함수형 업데이트가 필요한지 확인해야 합니다.", risk);
     }
     if (/\buseEffect\s*\(/.test(t)) {
@@ -1057,7 +1058,8 @@
     if (/\buseContext\s*\(/.test(t)) {
       return makeStep(lineNo, t, "React 컨텍스트 읽기", "상위에서 제공한 Context 값을 현재 컴포넌트에서 읽습니다. 테마, 로그인 사용자, 전역 설정 같은 값을 전달할 때 씁니다.", risk);
     }
-    if (/\bprops\.[A-Za-z_$][\w$]*/.test(t)) {
+    // REACT_JSX_BEFORE_PROPS_FIX_V232_A3
+    if (!/^return\b/.test(t) && /\bprops\.[A-Za-z_$][\w$]*/.test(t)) {
       return makeStep(lineNo, t, "React props 읽기", "부모 컴포넌트가 넘겨준 값을 읽습니다. props는 보통 현재 컴포넌트가 직접 바꾸지 않고 화면 표시나 조건 분기에 사용합니다.", risk);
     }
     if (/return\s*\(?\s*</.test(t) || /<\s*[A-Za-z][A-Za-z0-9.]*[\s>]/.test(t) || /\b(className|onClick|onChange|onSubmit|ref)=/.test(t)) {
