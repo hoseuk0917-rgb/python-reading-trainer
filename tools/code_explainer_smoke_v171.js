@@ -1014,6 +1014,19 @@ $result | ConvertTo-Json -Depth 4 | Set-Content $out -Encoding UTF8`,
     mustContain: ["변수에 값 저장", "파일 저장"],
     mustMetaContain: ["PowerShell", "파일"]
   }
+,
+  {
+    name: "python_mermaid_producer_consumer_edges_v211",
+    requestedLanguage: "python",
+    expectedLanguage: "python",
+    minSteps: 4,
+    code: `raw = " A "
+cleaned = raw.strip().lower()
+payload = {"value": cleaned}
+print(payload)`,
+    mustContain: ["변수에 값 저장", "화면에 출력"],
+    mustMetaContain: ["Python", "출력"]
+  }
 
 ];
 
@@ -1059,7 +1072,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260608_v210_a1",
+  version: "20260608_v211_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,

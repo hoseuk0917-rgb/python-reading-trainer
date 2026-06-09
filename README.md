@@ -878,3 +878,20 @@ V207에서는 candidateNotes 7개 중 사용자 체감이 큰 항목부터 정�
 
 - Mermaid 데이터 흐름 다이어그램은 아직 producer-consumer edge label까지 표현하지 않는다.
 - 이 항목은 규칙 오류가 아니라 V211 다이어그램 표현 개선 후보로 분리한다.
+
+## V211 Mermaid producer-consumer 데이터 흐름 다이어그램 개선 — 20260608
+
+기준 버전: 20260608_v211_a1
+
+### 보강 내용
+
+- Mermaid DATA_FLOW subgraph에서 produces와 consumes를 노드 라벨에 표시한다.
+- 같은 데이터 흐름 안에서 생성된 변수가 이후 단계에서 사용되면 producer node에서 consumer node로 edge를 직접 연결한다.
+- 예: raw 생성 단계에서 cleaned 생성 단계로 사용:raw edge를 연결한다.
+- producer를 찾지 못한 항목은 기존 순차 흐름 edge를 fallback으로 유지한다.
+- V210 smoke 42개 기준선을 유지하고 Mermaid producer-consumer sample을 1개 추가한다.
+
+### 목표
+
+- V210 감사에서 남은 Mermaid dataFlow sequential-only candidate를 해결한다.
+- 데이터 흐름 다이어그램에서 raw → cleaned → payload → output 관계를 더 직관적으로 보여준다.

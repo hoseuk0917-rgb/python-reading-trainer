@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V210-A1 START ===
+// === CODE EXPLAINER RULES V211-A1 START ===
 (function() {
   "use strict";
 
@@ -1864,14 +1864,51 @@
     const callItems = Array.isArray(callFlow) ? callFlow : [];
 
     if (dataItems.length) {
+      // MERMAID_PRODUCER_CONSUMER_EDGES_V211_A1
+      const limitedDataItems = dataItems.slice(0, 8);
+      const producedBy = {};
+      const dataEdgeSeen = {};
+
       lines.push("  subgraph DATA_FLOW[데이터 흐름]");
-      dataItems.slice(0, 8).forEach(function(item, idx) {
+      limitedDataItems.forEach(function(item, idx) {
         const id = "DF" + (idx + 1);
-        const label = mermaidLabel(item.kind + " · " + item.name);
+        const produces = Array.isArray(item.produces) ? item.produces : [];
+        const consumes = Array.isArray(item.consumes) ? item.consumes : [];
+        const details = [];
+
+        if (produces.length) details.push("생성:" + produces.slice(0, 3).join(","));
+        if (consumes.length) details.push("사용:" + consumes.slice(0, 3).join(","));
+
+        const label = mermaidLabel(item.kind + " · " + item.name + (details.length ? " · " + details.join(" · ") : ""));
         lines.push("  " + id + '["' + label + '"]');
         lines.push("  class " + id + " dataStep;");
-        if (idx > 0) lines.push("  DF" + idx + " -.-> " + id);
+
+        produces.forEach(function(name) {
+          if (name && !producedBy[name]) producedBy[name] = id;
+        });
       });
+
+      limitedDataItems.forEach(function(item, idx) {
+        const id = "DF" + (idx + 1);
+        const consumes = Array.isArray(item.consumes) ? item.consumes : [];
+        let hasProducerEdge = false;
+
+        consumes.forEach(function(name) {
+          const from = producedBy[name];
+          const key = from + "|" + id + "|" + name;
+
+          if (!from || from === id || dataEdgeSeen[key]) return;
+
+          dataEdgeSeen[key] = true;
+          hasProducerEdge = true;
+          lines.push("  " + from + " -->|사용:" + mermaidLabel(name) + "| " + id);
+        });
+
+        if (!hasProducerEdge && idx > 0) {
+          lines.push("  DF" + idx + " -.흐름.-> " + id);
+        }
+      });
+
       lines.push("  end");
       lines.push("  START_NODE -.데이터.-> DF1");
     }
@@ -2424,4 +2461,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V210-A1 END ===
+// === CODE EXPLAINER RULES V211-A1 END ===
