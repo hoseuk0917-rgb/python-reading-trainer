@@ -910,3 +910,34 @@ V207에서는 candidateNotes 7개 중 사용자 체감이 큰 항목부터 정�
 ### 목표
 
 - 메서드 매개변수, 외부 입력값처럼 코드 내부 dataFlow에서 생성되지 않은 값도 다이어그램에서 끊기지 않게 보여준다.
+
+<!-- CODE_EXPLAINER_EXTERNAL_INPUT_AUDIT_V213_START -->
+
+## V213 코드해석 external input node 과탐 감사 — 20260608
+
+기준 버전: `20260608_v212_a1`  
+기준 커밋: `d81f137 Improve code explainer Mermaid external input flow`
+
+### 감사 파일
+
+- `docs/audits/code_explainer_external_input_audit_v213.md`
+- `docs/audits/code_explainer_external_input_audit_v213.json`
+
+### 감사 결과
+
+- `V213_CODE_EXPLAINER_EXTERNAL_INPUT_AUDIT_OK`
+- `HARD_FAILURES 0`
+- Feature gates 전부 OK
+- Python dict/object 흐름에서 external input 과탐 없음
+- JavaScript object literal 흐름에서 external input 과탐 없음
+- PowerShell 선언 변수 흐름에서 external input 과탐 없음
+- Java 메서드 매개변수 `fileName`은 external input으로 정상 표시
+- JavaScript 함수 매개변수 `input`은 external input으로 정상 표시
+- Python 함수 매개변수 `text`는 external input으로 정상 표시
+
+### 결론
+
+V212 external input node 기준선은 안정적이다.  
+다음 단계는 코드해석 샘플 확장 또는 실제 UX 확인이다.
+
+<!-- CODE_EXPLAINER_EXTERNAL_INPUT_AUDIT_V213_END -->
