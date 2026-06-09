@@ -204,7 +204,7 @@
       return "unsupported";
     }
 
-    if (/변수에 값 저장|값 반환|값 돌려주기|Markdown 문단|YAML 설정|TOML 설정|INI 설정|객체 속성 설정|문자열 데이터 항목|예제 코드 문자열|블록\/객체 닫기|딕셔너리 항목 설정|함수 호출|입력 파라미터 선언|문자열\/HTML 조각|예제\/문서 문자열|객체\/배열 값 항목|변수 선언/.test(t)) {
+    if (/변수에 값 저장|값 반환|값 돌려주기|Markdown 문단|YAML 설정|TOML 설정|INI 설정|객체 속성 설정|문자열 데이터 항목|예제 코드 문자열|블록\/객체 닫기|딕셔너리 항목 설정|함수 호출|입력 파라미터 선언|문자열\/HTML 조각|예제\/문서 문자열|객체\/배열 값 항목|변수 선언|오류 발생|반복 다음 항목으로 이동|코드블록 경계|예제 명령 문자열|배열 데이터 항목|조건부 UI 조각|반응형 화면 조건 확인|DOM 스타일 설정|중첩 객체 값 갱신|배열\/문자열 길이 계산|객체 메서드 호출/.test(t)) {
       return "inferred";
     }
 
@@ -817,6 +817,50 @@
       return makeStep(lineNo, t, "CORS 헤더 설정", "브라우저의 다른 출처 요청을 허용할지 정하는 응답 헤더입니다. 별표(*)는 모든 출처를 허용하므로 공개 범위가 맞는지 확인해야 합니다.", risk);
     }
     // JAVASCRIPT_UI_DATA_FALLBACK_RULES_V220_A1
+    // JAVASCRIPT_REMAINING_FALLBACK_RULES_V221_A1
+    if (/^throw\s+new\s+Error\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "오류 발생", "조건이 맞지 않거나 검증에 실패했을 때 Error를 만들어 실행을 중단합니다. 실패 원인을 메시지로 남기는 방어 코드입니다.", risk);
+    }
+    if (/^continue;?$/.test(t)) {
+      return makeStep(lineNo, t, "반복 다음 항목으로 이동", "현재 반복의 남은 처리를 건너뛰고 다음 항목으로 넘어갑니다. 어떤 조건에서 건너뛰는지 함께 확인해야 합니다.", risk);
+    }
+    if (/^\\?`{3}[A-Za-z0-9_-]*$|^\\?`{3}$/.test(t)) {
+      return makeStep(lineNo, t, "코드블록 경계", "문서나 예제 문자열 안에서 코드 블록의 시작 또는 끝을 표시합니다. 실행 명령이 아니라 표시용 경계입니다.", risk);
+    }
+    if (/^(?:npm|node|python|npx)\s+/.test(t) || /^(?:Write-Host|Remove-Item|Invoke-RestMethod|Where-Object|ForEach-Object|Stop-Process)\b/.test(t) || /^\$[A-Za-z_]\w*\s*\|/.test(t)) {
+      return makeStep(lineNo, t, "예제 명령 문자열", "JavaScript 파일 안에 들어 있는 PowerShell, npm, node, python 같은 예제 명령입니다. 현재 JavaScript 줄로 직접 실행되는 것이 아니라 테스트 샘플이나 문서 문자열일 수 있습니다.", risk);
+    }
+    if (/^(?:\.env|!\S+|[A-Za-z0-9_.-]+\/|__pycache__\/?)(?:`|,)?$/.test(t) || /^[A-Za-z0-9_.-]+\s*=\s*[^;]+$/.test(t)) {
+      return makeStep(lineNo, t, "예제/문서 문자열", "문서, 설정 예시, .gitignore 예시처럼 문자열 안에 들어 있는 파일명이나 설정 줄입니다. 현재 JavaScript 명령으로 직접 실행되는 줄은 아닐 수 있습니다.", risk);
+    }
+    if (/^\[(?:["'`][^"'`]+["'`]|[A-Za-z_$][\w$]*|\[)/.test(t)) {
+      return makeStep(lineNo, t, "배열 데이터 항목", "배열 안에 들어가는 한 행의 데이터입니다. 라벨과 값, 키워드 묶음, 파일 묶음 같은 설정 목록을 구성합니다.", risk);
+    }
+    if (/^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])+(?:\s*\|\|\s*.+)?,?$/.test(t)) {
+      return makeStep(lineNo, t, "객체/배열 값 항목", "객체나 배열 안에 들어가는 값 항목입니다. 없을 때 기본값을 쓰는 표현이 함께 붙을 수 있습니다.", risk);
+    }
+    if (/^[?:]\s*.+/.test(t)) {
+      return makeStep(lineNo, t, "조건부 UI 조각", "삼항 연산자의 ? 또는 : 쪽에 놓인 화면 문구나 HTML 조각입니다. 조건에 따라 어떤 문구를 보여줄지 나누는 부분입니다.", risk);
+    }
+    if (/^window\.matchMedia\b/.test(t)) {
+      return makeStep(lineNo, t, "반응형 화면 조건 확인", "브라우저 화면 너비 같은 미디어 조건을 확인합니다. 모바일/데스크톱 UI를 나누는 데 자주 씁니다.", risk);
+    }
+    if (/\.style\.[A-Za-z_$][\w$]*\s*=/.test(t)) {
+      return makeStep(lineNo, t, "DOM 스타일 설정", "화면 요소의 style 값을 직접 바꿉니다. 진행률 막대 너비처럼 사용자에게 보이는 시각 상태를 갱신합니다.", risk);
+    }
+    if (/^[A-Za-z_$][\w$]*(?:(?:\.(?!(?:textContent|innerHTML|value|className|style)\b)[A-Za-z_$][\w$]*)|\[[^\]]+\])+\s*=\s*.+/.test(t)) {
+      return makeStep(lineNo, t, "중첩 객체 값 갱신", "객체 안의 객체나 배열 항목처럼 깊은 위치의 값을 바꿉니다. 진도, 정답 수, 마지막 학습 시각 같은 상태 저장에 자주 쓰입니다.", risk);
+    }
+    if (/^\}\)\.length;?$/.test(t)) {
+      return makeStep(lineNo, t, "배열/문자열 길이 계산", "앞에서 filter나 map 같은 처리를 끝낸 뒤 length로 개수를 계산하는 줄입니다.", risk);
+    }
+    if (
+      !/(?:addEventListener|setItem|getItem|classList\.|appendChild|insertBefore|preventDefault|waitUntil|\.ack\s*\(|console\.(?:log|error|warn)|Response\.json|new\s+Response|fetch\s*\(|\.json\s*\(|\.ok\b|\.status\b|env\.KV\.|env\.R2\.|env\.QUEUE\.|env\.VECTORIZE\.|env\.AI\.)/.test(t) &&
+      /^(?:window\.)?[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+\s*\(/.test(t)
+    ) {
+      return makeStep(lineNo, t, "객체 메서드 호출", "window나 객체에 붙어 있는 메서드를 실행합니다. 화면 갱신, 분석기 새로고침, 이벤트 해제 같은 동작일 수 있습니다.", risk);
+    }
+
     const embeddedText = t.replace(/^["'`]\s*/, "").replace(/["'`],?\s*$/, "");
     if (!/^return\b/.test(t) && /^(?:\$[A-Za-z_][\w-]*\s*=|Set-Location\b|New-Item\b|Copy-Item\b|Compress-Archive\b|git\s+|from\s+[\w.]+\s+import\b|import\s+\w+|def\s+\w+\s*\(|return\s+|with\s+open\s*\(|for\s+\w+\s+in\s+|if\s+.+:|elif\s+.+:|else:|[A-Za-z_]\w*\s*=\s*[^=;]+$|print\s*\(|public\s+class\b|public\s+static\b|int\s+\w+\s*=|System\.out\.println|FROM\s+|WORKDIR\b|COPY\s+|RUN\s+|ENV\s+|EXPOSE\s+|CMD\s+|image:\s|ports:\s|volumes:\s|- uses:|- run:|- ["']?\d+:\d+["']?|services:|jobs:|steps:|runs-on:|node-version:|[A-Za-z_][\w-]*:\s*$|[A-Z][A-Z0-9_]*=|\[[A-Za-z0-9_. -]+\]|#{1,6}\s+|```|uvicorn\[|pandas[<>=~]|python-dotenv|-r\s+\S+)/.test(embeddedText)) {
       return makeStep(lineNo, t, "문자열 데이터 항목", "배열이나 객체 안에 들어 있는 문자열 데이터입니다. JavaScript 문자열 안에 Python, YAML, TOML, 설정 파일 예제 코드가 들어 있을 수도 있으므로 실제 실행 줄인지 구분해서 봅니다.", risk);
@@ -1040,7 +1084,7 @@
     if (/\.(get|has)\s*\(/.test(t) && /(Map|map|Set|set|localStorage|sessionStorage|progress|seen|cards|levels|concept)/.test(t)) {
       return makeStep(lineNo, t, "자료구조 항목 조회", "Map, Set, 저장소, 상태 객체에서 특정 항목을 꺼내거나 존재 여부를 확인합니다.", risk);
     }
-    if (/^[A-Za-z_$][\w$]*\s*\(/.test(t)) {
+    if (/^(?!(?:if|for|while|switch|catch)\b)[A-Za-z_$][\w$]*\s*\(/.test(t)) {
       return makeStep(lineNo, t, "함수 호출", "이미 정의했거나 브라우저가 제공하는 함수를 실행합니다. 인자와 실행 결과가 화면 상태나 데이터에 어떤 영향을 주는지 확인해야 합니다.", risk);
     }
     if (/JSON\.parse\s*\(/.test(t)) {
