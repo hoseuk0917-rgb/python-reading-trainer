@@ -204,7 +204,7 @@
       return "unsupported";
     }
 
-    if (/변수에 값 저장|값 반환|값 돌려주기|Markdown 문단|YAML 설정|TOML 설정|INI 설정|객체 속성 설정|문자열 데이터 항목|예제 코드 문자열|블록\/객체 닫기|딕셔너리 항목 설정|함수 호출|입력 파라미터 선언|문자열\/HTML 조각|예제\/문서 문자열|객체\/배열 값 항목|변수 선언|오류 발생|반복 다음 항목으로 이동|코드블록 경계|예제 명령 문자열|배열 데이터 항목|조건부 UI 조각|반응형 화면 조건 확인|DOM 스타일 설정|중첩 객체 값 갱신|배열\/문자열 길이 계산|객체 메서드 호출/.test(t)) {
+    if (/변수에 값 저장|값 반환|값 돌려주기|Markdown 문단|YAML 설정|TOML 설정|INI 설정|객체 속성 설정|문자열 데이터 항목|예제 코드 문자열|블록\/객체 닫기|딕셔너리 항목 설정|함수 호출|입력 파라미터 선언|문자열\/HTML 조각|예제\/문서 문자열|객체\/배열 값 항목|변수 선언|오류 발생|반복 다음 항목으로 이동|코드블록 경계|예제 명령 문자열|배열 데이터 항목|조건부 UI 조각|반응형 화면 조건 확인|DOM 스타일 설정|중첩 객체 값 갱신|배열\/문자열 길이 계산|객체 메서드 호출|블록\/콜백 닫기|조건\/표현식 경계|정규식 조건 검사|UI 조각 연결|콜백 결과 저장|Blob 파일 데이터 생성|화면\/콘솔에 출력|메서드 체인 이어쓰기/.test(t)) {
       return "inferred";
     }
 
@@ -818,6 +818,40 @@
     }
     // JAVASCRIPT_UI_DATA_FALLBACK_RULES_V220_A1
     // JAVASCRIPT_REMAINING_FALLBACK_RULES_V221_A1
+    // JAVASCRIPT_LEFTOVER_FRAGMENT_RULES_V222_A1
+    if (/^(?:\\`){3}[A-Za-z0-9_-]*$|^(?:\\`){3}$|^`{3}[A-Za-z0-9_-]*$|^`{3}$/.test(t)) {
+      return makeStep(lineNo, t, "코드블록 경계", "문서나 예제 문자열 안에서 코드 블록의 시작 또는 끝을 표시합니다. 실행 명령이 아니라 표시용 경계입니다.", risk);
+    }
+    if (/^(?:\};?|\}\);?|\},\s*\d+\);?|\}\s*)(?:\\`|`|[,;])?$/.test(t)) {
+      return makeStep(lineNo, t, "블록/콜백 닫기", "앞에서 시작한 객체, 함수, 콜백, 예제 문자열 블록을 닫는 경계 줄입니다. 새 동작을 실행하기보다 구조를 마무리합니다.", risk);
+    }
+    if (/^\)\s*\{?$/.test(t) || /^\}\)\s*:\s*\[\];?$/.test(t)) {
+      return makeStep(lineNo, t, "조건/표현식 경계", "여러 줄로 나뉜 조건식이나 삼항 연산자 표현식을 마무리하는 경계 줄입니다. 앞줄의 조건과 함께 읽어야 합니다.", risk);
+    }
+    if (/^\/.*\/[gimsuy]*\.test\([^)]+\)\s*(?:\|\||&&)?;?$/.test(t) || /\.(match|replace|split)\s*\(\/.+\/[gimsuy]*\)/.test(t)) {
+      return makeStep(lineNo, t, "정규식 조건 검사", "정규식으로 문자열 형태를 검사하거나 특정 패턴을 찾습니다. 파일명, 코드펜스, 설정 줄처럼 형식 판별에 자주 쓰입니다.", risk);
+    }
+    if (/^\(?[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?\s*\?\s*['"`]<[^>]+>/.test(t) || /^\(.*\?\s*['"`]<[^>]+>/.test(t) || /^[?:]\s*['"`]<[^>]+>/.test(t)) {
+      return makeStep(lineNo, t, "조건부 UI 조각", "삼항 연산자의 조건에 따라 화면에 넣을 HTML 조각을 고르는 부분입니다. 어떤 상태에서 어떤 안내 문구가 보이는지 확인합니다.", risk);
+    }
+    if (/^[A-Za-z_$][\w$]*\s*(?:\+|;)$/.test(t)) {
+      return makeStep(lineNo, t, "UI 조각 연결", "앞뒤 HTML 문자열 조각을 이어 붙이거나 이미 만든 조각을 결과에 포함합니다. 화면 렌더링 문자열을 조립하는 줄입니다.", risk);
+    }
+    if (/^(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*picker\([^)]*\);?$/.test(t)) {
+      return makeStep(lineNo, t, "콜백 결과 저장", "전달받은 picker 콜백 함수를 실행해 분류 키나 값을 꺼내 변수에 저장합니다. countByValue 같은 집계 도우미에서 자주 쓰입니다.", risk);
+    }
+    if (/^(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*new\s+Blob\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "Blob 파일 데이터 생성", "문자열이나 SVG 같은 내용을 브라우저에서 다운로드 가능한 Blob 데이터로 만듭니다. 이후 URL.createObjectURL이나 링크 클릭으로 저장할 수 있습니다.", risk);
+    }
+    if (/^console\.(log|error|warn)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "화면/콘솔에 출력", "개발자 콘솔에 값이나 오류 메시지를 출력합니다. 디버깅, 스모크 테스트 실패 원인 확인, 상태 보고에 쓰입니다.", risk);
+    }
+    if (/^\.(?:toLowerCase|toUpperCase|trim|collect)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "메서드 체인 이어쓰기", "앞줄의 문자열, 배열, 스트림 처리 결과에 메서드를 이어 붙입니다. 여러 줄 체인에서는 앞 단계의 결과가 이 줄로 넘어옵니다.", risk);
+    }
+    if (/^(?:private\s+final\s+|public\s+(?:void|List<|String)|static\s+String\s+|interface\s+\w+|enum\s+\w+|with\s+.+:|except\s+\w+|raise\s+\w+|async\s+def\s+|@[A-Za-z_][\w.]*\(|for\s+\w+,\s*\w+\s+in\s+enumerate\(|[A-Z][A-Za-z0-9_<>, ?]+\s+\w+\s*=\s*).*/.test(t)) {
+      return makeStep(lineNo, t, "예제 코드 문자열", "JavaScript 파일 안에 샘플로 들어 있는 Python, Java 같은 다른 언어 코드입니다. 현재 JavaScript로 직접 실행되는 줄이 아니라 테스트 샘플이나 문서 문자열일 수 있습니다.", risk);
+    }
     if (/^throw\s+new\s+Error\s*\(/.test(t)) {
       return makeStep(lineNo, t, "오류 발생", "조건이 맞지 않거나 검증에 실패했을 때 Error를 만들어 실행을 중단합니다. 실패 원인을 메시지로 남기는 방어 코드입니다.", risk);
     }
