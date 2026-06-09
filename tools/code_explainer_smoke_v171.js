@@ -1159,6 +1159,59 @@ bucket_name = "app-assets"`,
     mustContain: ["Cloudflare D1 설정", "Cloudflare R2 설정", "Cloudflare binding 이름 설정", "Cloudflare 리소스 이름 설정"],
     mustMetaContain: ["TOML", "Cloudflare"]
   }
+,
+  {
+    name: "javascript_data_object_glossary_v216",
+    requestedLanguage: "javascript",
+    expectedLanguage: "javascript",
+    minSteps: 6,
+    code: `"use strict";
+
+const glossary = {
+  "print": {
+    definition: "값을 화면에 출력한다.",
+    example: "print(name)"
+  },
+  pipeline: {
+    definition: "입력, 처리, 출력으로 이어지는 흐름이다."
+  }
+};`,
+    mustContain: ["엄격 모드 선언", "객체/배열 초기화", "객체 속성 설정"],
+    mustMetaContain: ["JavaScript"]
+  },
+  {
+    name: "javascript_embedded_code_strings_v216",
+    requestedLanguage: "javascript",
+    expectedLanguage: "javascript",
+    minSteps: 7,
+    code: `const PYTHON_PROBE_LINES = [
+  "from pathlib import Path",
+  "import subprocess",
+  "def run(cmd):",
+  "    return subprocess.check_output(cmd)",
+  "ROOT = Path('.').resolve()"
+];
+
+const script = PYTHON_PROBE_LINES.join('\\n');`,
+    mustContain: ["객체/배열 초기화", "문자열 데이터 항목", "문자열/배열 메서드 처리"],
+    mustMetaContain: ["JavaScript"]
+  },
+  {
+    name: "javascript_node_file_path_vm_v216",
+    requestedLanguage: "javascript",
+    expectedLanguage: "javascript",
+    minSteps: 8,
+    code: `const fs = require("fs");
+const path = require("path");
+const vm = require("vm");
+const file = path.join(process.cwd(), "src", "pwa", "app.js");
+const code = fs.readFileSync(file, "utf8");
+const sandbox = { window: {}, console };
+vm.createContext(sandbox);
+vm.runInContext(code, sandbox);`,
+    mustContain: ["Node.js 모듈 불러오기", "Node.js 경로 처리", "Node.js 파일 처리", "격리 실행 컨텍스트 사용"],
+    mustMetaContain: ["JavaScript"]
+  }
 
 ];
 
@@ -1204,7 +1257,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260608_v215_a1",
+  version: "20260609_v216_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,

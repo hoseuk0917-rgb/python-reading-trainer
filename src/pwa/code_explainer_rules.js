@@ -754,6 +754,52 @@
     const t = cleanLine(line);
     const risk = riskOf(t, language);
 
+    // JAVASCRIPT_DATA_NODE_FILE_RULES_V216_A1
+    if (/^["']use strict["'];?$/.test(t)) {
+      return makeStep(lineNo, t, "엄격 모드 선언", "JavaScript 파일을 더 엄격한 규칙으로 실행하게 하는 선언입니다. 실수로 전역 변수를 만들거나 조용히 넘어가는 오류를 줄이는 데 도움이 됩니다.", risk);
+    }
+    if (/^(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*require\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "Node.js 모듈 불러오기", "require로 fs, path 같은 Node.js 모듈을 불러와 변수에 저장합니다. 이후 파일 처리, 경로 처리, 프로세스 실행 등에 사용됩니다.", risk);
+    }
+    if (/\bfs\.(readFileSync|writeFileSync|existsSync|mkdirSync|readdirSync|statSync|readFile|writeFile)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "Node.js 파일 처리", "fs 모듈로 파일이나 폴더를 읽고 쓰거나 존재 여부를 확인합니다. 읽는 경로와 덮어쓰기 여부를 확인해야 합니다.", risk);
+    }
+    if (/\bpath\.(join|resolve|basename|dirname|extname)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "Node.js 경로 처리", "path 모듈로 파일 경로를 안전하게 합치거나 파일명, 폴더명, 확장자를 계산합니다. Windows와 Linux 경로 차이를 줄이는 데 도움이 됩니다.", risk);
+    }
+    if (/\b(?:cp|child_process)\.(execFileSync|execSync|spawn|spawnSync)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "외부 명령 실행", "Node.js에서 git, node, python 같은 외부 명령을 실행합니다. 실행 명령, 인자, 작업 폴더, 실패 시 동작을 확인해야 합니다.", risk);
+    }
+    if (/\bvm\.(createContext|runInContext)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "격리 실행 컨텍스트 사용", "Node.js vm 모듈로 코드를 별도 컨텍스트에서 실행합니다. 분석기나 테스트용 샌드박스를 만들 때 쓰지만 실행 대상 코드의 신뢰성을 확인해야 합니다.", risk);
+    }
+
+    // JAVASCRIPT_CORS_HEADER_RULE_V216_A1_FIX
+    if (/["']Access-Control-Allow-Origin["']\s*:/.test(t)) {
+      return makeStep(lineNo, t, "CORS 헤더 설정", "브라우저의 다른 출처 요청을 허용할지 정하는 응답 헤더입니다. 별표(*)는 모든 출처를 허용하므로 공개 범위가 맞는지 확인해야 합니다.", risk);
+    }
+    if (/^["'][^"']+["']\s*:\s*/.test(t) || /^[A-Za-z_$][\w$]*\s*:\s*(?:`|["'{\[]|true|false|null|-?\d)/.test(t)) {
+      return makeStep(lineNo, t, "객체 속성 설정", "객체 안에서 이름과 값을 연결하는 데이터 설정 줄입니다. 설정값, 예제 문자열, 화면 문구, 규칙 데이터를 담을 때 자주 나옵니다.", risk);
+    }
+    if (/^(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*[\{\[]/.test(t)) {
+      return makeStep(lineNo, t, "객체/배열 초기화", "여러 설정값이나 항목을 담기 위해 객체나 배열을 새로 만듭니다. 이후 줄에서 속성과 항목이 채워지는지 확인합니다.", risk);
+    }
+    if (/^[A-Za-z_$][\w$]*(?:\[[^\]]+\]|\.(?!textContent\b|innerHTML\b|value\b|className\b)[A-Za-z_$][\w$]*)\s*=/.test(t)) {
+      return makeStep(lineNo, t, "객체 값 갱신", "객체의 특정 속성이나 배열/딕셔너리 형태의 항목 값을 바꿉니다. 기존 값을 덮어쓰는지, 누적하는지 확인해야 합니다.", risk);
+    }
+    if (!/^return\b/.test(t) && (/^\.(replace|join|split|slice)\s*\(/.test(t) || /\.(replace|join|split|slice)\s*\(/.test(t))) {
+      return makeStep(lineNo, t, "문자열/배열 메서드 처리", "문자열이나 배열에 메서드를 이어 붙여 변환, 필터링, 정렬, 결합 같은 처리를 합니다. 앞 단계의 결과가 다음 메서드로 넘어갑니다.", risk);
+    }
+    if (/^["'][^"']*["'],?$/.test(t)) {
+      return makeStep(lineNo, t, "문자열 데이터 항목", "배열이나 객체 안에 들어 있는 문자열 데이터입니다. 실제 실행 명령이 아니라 예제 코드, 설명 문구, 파일 경로 같은 값일 수 있습니다.", risk);
+    }
+    if (/^(?:\$[A-Za-z_][\w-]*\s*=|Set-Location\b|New-Item\b|Copy-Item\b|Compress-Archive\b|git\s+|from\s+[\w.]+\s+import\b|import\s+\w+|def\s+\w+\s*\(|with\s+open\s*\(|for\s+\w+\s+in\s+|if\s+.+:|print\s*\(|public\s+class\b|int\s+\w+\s*=|System\.out\.println|FROM\s+|WORKDIR\b|COPY\s+|RUN\s+|ENV\s+|EXPOSE\s+|CMD\s+|- uses:|- run:|services:|jobs:|steps:|runs-on:|node-version:)/.test(t)) {
+      return makeStep(lineNo, t, "예제 코드 문자열", "JavaScript 파일 안에 샘플로 들어 있는 다른 언어 코드나 설정 파일 내용입니다. 이 줄 자체가 현재 JavaScript로 실행되는 것이 아니라 화면 표시나 테스트 샘플로 쓰일 수 있습니다.", risk);
+    }
+    if (/^\}\);?$/.test(t) || /^[}\])]+[,;]?$/.test(t)) {
+      return makeStep(lineNo, t, "블록/객체 닫기", "앞에서 시작한 함수 호출, 객체, 배열, 블록을 닫는 경계 줄입니다. 새 동작을 실행하기보다 구조를 마무리합니다.", risk);
+    }
+
     // JAVASCRIPT_DOM_ASYNC_RULES_V215_A1
     if (/new\s+URLSearchParams\s*\(|URLSearchParams\s*\(/.test(t)) {
       return makeStep(lineNo, t, "URL 쿼리 파라미터 읽기", "URL의 ?id=... 같은 검색 파라미터를 읽기 위한 객체를 만듭니다. 주소에서 어떤 값을 꺼내 이후 요청이나 화면 처리에 쓰는지 확인합니다.", risk);
@@ -2441,7 +2487,20 @@
         step.title === "비동기 병렬 처리" ||
         step.title === "DOM 요소 생성" ||
         step.title === "DOM 텍스트 설정" ||
-        step.title === "DOM 요소 삽입"
+        step.title === "DOM 요소 삽입" ||
+        step.title === "엄격 모드 선언" ||
+        step.title === "Node.js 모듈 불러오기" ||
+        step.title === "Node.js 파일 처리" ||
+        step.title === "Node.js 경로 처리" ||
+        step.title === "외부 명령 실행" ||
+        step.title === "격리 실행 컨텍스트 사용" ||
+        step.title === "객체 속성 설정" ||
+        step.title === "객체/배열 초기화" ||
+        step.title === "객체 값 갱신" ||
+        step.title === "문자열/배열 메서드 처리" ||
+        step.title === "문자열 데이터 항목" ||
+        step.title === "예제 코드 문자열" ||
+        step.title === "블록/객체 닫기"
       )) {
         return step;
       }
@@ -2456,7 +2515,21 @@
         Object: true,
         Date: true,
         Map: true,
-        Set: true
+        Set: true,
+        String: true,
+        JSON: true,
+        Math: true,
+        RegExp: true,
+        Error: true,
+        Number: true,
+        Boolean: true,
+        parseInt: true,
+        parseFloat: true,
+        encodeURIComponent: true,
+        decodeURIComponent: true,
+        require: true,
+        fetch: true,
+        function: true
       };
       const unsupportedNames = names.filter(function(name) {
         return !knownGlobalCalls[name];
