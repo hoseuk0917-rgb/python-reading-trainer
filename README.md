@@ -941,3 +941,20 @@ V212 external input node 기준선은 안정적이다.
 다음 단계는 코드해석 샘플 확장 또는 실제 UX 확인이다.
 
 <!-- CODE_EXPLAINER_EXTERNAL_INPUT_AUDIT_V213_END -->
+
+## V215 코드해석 P0 커버리지 보강 — 20260608
+
+기준 버전: `20260608_v215_a1`
+
+### 보강 범위
+
+- Python: `re.findall`, `datetime.now`, `strftime`, `shutil.copy` 해석 보강
+- JavaScript: `URLSearchParams`, DOM 생성/삽입, `preventDefault`, `Promise.all`, `fetch` 흐름 보강
+- PowerShell: CSV 파이프라인의 `Import-Csv`, `Group-Object`, `Sort-Object`, `Select-Object`, `Export-Csv` 흐름 보강
+- Cloudflare Workers: `scheduled`, `queue`, `env.AI.run`, `VECTORIZE.upsert`, `message.ack` 보강
+- Java: `interface`, `enum`, `try-with-resources`, `Files.newBufferedReader`, `Optional` 보강
+- TOML/wrangler: `d1_databases`, `r2_buckets`, `binding`, `database_name`, `bucket_name` 보강
+
+### 목표
+
+V215 확장 감사에서 나온 P0 gap을 우선 줄이고, 코드해석 메뉴가 실제 프로젝트 코드와 설정 파일을 더 자연스럽게 설명하게 만든다.

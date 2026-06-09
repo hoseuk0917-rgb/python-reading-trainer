@@ -1,3 +1,4 @@
+// === CODE EXPLAINER RULES V215-A1 START ===
 // === CODE EXPLAINER RULES V212-A1 START ===
 (function() {
   "use strict";
@@ -113,6 +114,9 @@
       return true;
     }).length;
 
+
+    // TOML_CLOUDFLARE_DETECT_V215_A1
+    if (/^\s*\[\[(d1_databases|r2_buckets)\]\]\s*$/m.test(text)) return "toml";
     if (hasBracketSection && iniStyleHits >= 1) return "ini_file";
     if (/^\s*\[[A-Za-z0-9_.-]+\]\s*$/m.test(text) && /^\s*[A-Za-z0-9_.-]+\s*=\s*("|\[|true|false|\d)/m.test(text)) return "toml";
     if (hasBracketSection && /^\s*[A-Za-z0-9_.-]+\s*=\s*[^=]+/m.test(text)) return "ini_file";
@@ -289,6 +293,14 @@
         return makeStep(lineNo, t, "경로 조합 결과 저장", "$" + name + " 변수에 여러 경로 조각을 합친 결과를 저장합니다.", risk);
       }
 
+
+      // POWERSHELL_CSV_PIPELINE_RULES_V215_A1
+      if (/Import-Csv/i.test(value)) {
+        return makeStep(lineNo, t, "CSV 읽기 결과 저장", "$" + name + " 변수에 CSV 파일을 읽은 표 형태 데이터를 저장합니다. CSV 첫 줄은 보통 열 이름으로 쓰이고, 이후 파이프라인에서 그룹/정렬/선택 처리를 할 수 있습니다.", risk);
+      }
+      if (/Group-Object|Sort-Object|Select-Object|Export-Csv/i.test(value)) {
+        return makeStep(lineNo, t, "CSV 파이프라인 요약 저장", "$" + name + " 변수에 CSV 데이터를 파이프라인으로 넘겨 그룹, 정렬, 선택 같은 처리를 한 결과를 저장합니다. 어느 열을 기준으로 묶고 정렬하는지 확인해야 합니다.", risk);
+      }
       // POWERSHELL_VAR_RULES_V188_A2
       if (/ConvertFrom-Json|ConvertTo-Json/i.test(value)) {
         return makeStep(lineNo, t, "JSON 처리 결과 저장", "$" + name + " 변수에 JSON을 PowerShell 객체로 바꾸거나 객체를 JSON 문자열로 바꾼 결과를 저장합니다.", risk);
@@ -331,6 +343,9 @@
     }
     if (/^@['"]/.test(t) || /^['"]@/.test(t)) {
       return makeStep(lineNo, t, "여러 줄 문자열 경계", "here-string의 시작 또는 끝입니다. 긴 스크립트, JSON, Markdown, Python 코드 조각을 여러 줄 문자열로 저장할 때 씁니다.", risk);
+    }
+    if (/\|\s*(Group-Object|Sort-Object|Select-Object|Export-Csv)\b/i.test(t) && /\bExport-Csv\b/i.test(t)) {
+      return makeStep(lineNo, t, "CSV 그룹 정렬 선택 저장", "파이프라인으로 넘어온 CSV/객체 데이터를 그룹으로 묶고, 정렬하고, 필요한 열을 선택한 뒤 저장하는 흐름입니다. Group-Object, Sort-Object, Select-Object, Export-Csv 순서를 확인해야 합니다.", risk);
     }
     if (/\|\s*(Where-Object|ForEach-Object|Select-Object|Sort-Object|Group-Object|Measure-Object|Out-Null)\b/i.test(t)) {
       return makeStep(lineNo, t, "파이프라인 처리", "앞 명령의 결과를 뒤 명령으로 넘기며 필터링, 반복, 선택, 정렬, 집계 같은 처리를 이어서 수행합니다.", risk);
@@ -537,6 +552,11 @@
     if (/^\}?\s*catch\s*\{/i.test(t)) {
       return makeStep(lineNo, t, "오류 처리", "try 안에서 실패한 경우 이 블록으로 넘어와 실패 메시지나 대체 동작을 처리합니다.", risk);
     }
+
+    // POWERSHELL_CSV_PIPELINE_DIRECT_V215_A1
+    if (/\|\s*(Group-Object|Sort-Object|Select-Object|Export-Csv)\b/i.test(t)) {
+      return makeStep(lineNo, t, "CSV 그룹 정렬 선택 저장", "파이프라인으로 넘어온 CSV/객체 데이터를 그룹으로 묶고, 정렬하고, 필요한 열을 선택한 뒤 저장하는 흐름입니다. Group-Object, Sort-Object, Select-Object, Export-Csv 순서를 확인해야 합니다.", risk);
+    }
     if (/\|\s*Out-Null/i.test(t)) {
       return makeStep(lineNo, t, "출력 숨기기", "명령 결과를 화면에 표시하지 않고 버립니다. 실제 작업은 실행되지만 출력만 숨겨집니다.", risk);
     }
@@ -558,6 +578,23 @@
       return makeStep(lineNo, t, "클래스 정의", "관련 데이터와 기능을 묶어 객체를 만들기 위한 설계도를 정의합니다.", risk);
     }
 
+
+    // PYTHON_PATH_RE_DATE_COPY_RULES_V215_A1
+    if (/re\.(findall|search|match|sub|split)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "정규식 검색/치환", "re 모듈의 정규식으로 문자열 안에서 패턴을 찾거나 바꿉니다. 찾는 패턴, 대상 문자열, 결과가 리스트인지 문자열인지 확인해야 합니다.", risk);
+    }
+    if (/datetime\.(now|today|utcnow)\s*\(/.test(t) && /\.strftime\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "날짜/시간 생성 / 날짜 문자열 포맷", "현재 날짜나 시간을 만든 뒤 datetime 값을 원하는 날짜 문자열 형식으로 바꿉니다. 예를 들어 %Y%m%d는 연월일을 붙인 파일명용 문자열이 됩니다.", risk);
+    }
+    if (/datetime\.(now|today|utcnow)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "날짜/시간 생성", "현재 날짜나 시간을 만듭니다. 파일명, 로그 시각, 실행 시각 표시처럼 시간 기준 값을 만들 때 사용합니다.", risk);
+    }
+    if (/\.strftime\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "날짜 문자열 포맷", "datetime 값을 원하는 날짜 문자열 형식으로 바꿉니다. 예를 들어 %Y%m%d는 연월일을 붙인 파일명용 문자열이 됩니다.", risk);
+    }
+    if (/shutil\.(copy|copy2|copyfile)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "파일 복사", "shutil로 파일을 다른 위치나 다른 이름으로 복사합니다. 원본 경로와 대상 경로가 맞는지, 같은 이름을 덮어쓰지 않는지 확인해야 합니다.", risk);
+    }
     // PYTHON_ENTRY_ERROR_RULES_V187_A2
     if (/^if\s+__name__\s*==\s*["']__main__["']\s*:\s*$/.test(t)) {
       return makeStep(lineNo, t, "직접 실행 진입점", "이 파일을 직접 실행했을 때만 아래 들여쓰기 코드가 실행됩니다. 다른 파일에서 import할 때는 실행되지 않게 분리하는 패턴입니다.", risk);
@@ -716,6 +753,43 @@
   function explainJavaScriptLine(line, lineNo, language) {
     const t = cleanLine(line);
     const risk = riskOf(t, language);
+
+    // JAVASCRIPT_DOM_ASYNC_RULES_V215_A1
+    if (/new\s+URLSearchParams\s*\(|URLSearchParams\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "URL 쿼리 파라미터 읽기", "URL의 ?id=... 같은 검색 파라미터를 읽기 위한 객체를 만듭니다. 주소에서 어떤 값을 꺼내 이후 요청이나 화면 처리에 쓰는지 확인합니다.", risk);
+    }
+    if (/document\.createElement\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "DOM 요소 생성", "브라우저 화면에 넣을 HTML 요소를 JavaScript로 새로 만듭니다. 만든 요소는 아직 화면에 붙은 것이 아니므로 appendChild 같은 삽입 단계가 이어지는지 봐야 합니다.", risk);
+    }
+    if (/\.textContent\s*=/.test(t)) {
+      return makeStep(lineNo, t, "DOM 텍스트 설정", "화면 요소 안에 표시할 텍스트를 설정합니다. 사용자에게 보이는 문구나 버튼 라벨을 바꾸는 단계입니다.", risk);
+    }
+    if (/\.appendChild\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "DOM 요소 삽입", "만들어 둔 화면 요소를 body나 다른 부모 요소 안에 실제로 붙입니다. 이 단계 이후 브라우저 화면에 요소가 나타납니다.", risk);
+    }
+    if (/\.preventDefault\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "이벤트 기본 동작 방지", "클릭이나 제출 이벤트의 기본 브라우저 동작을 막습니다. 페이지 이동이나 폼 제출을 막고 JavaScript 흐름으로 처리하려는 의도입니다.", risk);
+    }
+    if (/Promise\.all\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "비동기 병렬 처리", "여러 비동기 작업을 동시에 시작하고 모두 끝날 때까지 기다립니다. fetch 요청 여러 개를 묶어 처리할 때 자주 씁니다.", risk);
+    }
+
+    // WORKERS_SCHEDULED_QUEUE_AI_VECTOR_RULES_V215_A1
+    if (/async\s+scheduled\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "스케줄 실행 함수", "Cloudflare Workers Cron Trigger가 정해진 시간에 호출하는 scheduled 핸들러입니다. 보통 주기 작업, 백필, 큐 투입을 시작합니다.", risk);
+    }
+    if (/async\s+queue\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "Queue 소비 함수", "Cloudflare Queue에 들어온 메시지 묶음을 처리하는 소비자 핸들러입니다. batch.messages를 반복하며 각 메시지를 처리합니다.", risk);
+    }
+    if (/env\.AI\.run\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "Workers AI 실행", "Cloudflare Workers AI 모델을 호출합니다. 입력 텍스트, 모델 이름, 응답 데이터 구조를 확인해야 합니다.", risk);
+    }
+    if (/env\.[A-Z0-9_]*VECTORIZE\.upsert\s*\(/.test(t) || /env\.VECTORIZE\.upsert\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "Vectorize 벡터 저장", "Cloudflare Vectorize 인덱스에 임베딩 벡터를 저장하거나 갱신합니다. id와 values가 검색에 쓸 수 있는 형태인지 확인해야 합니다.", risk);
+    }
+    if (/message\.ack\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "Queue 메시지 처리 완료", "Queue 메시지를 정상 처리했다고 확인합니다. ack 이후에는 같은 메시지가 다시 처리되지 않는 흐름입니다.", risk);
+    }
 
     if (/export\s+default/.test(t)) {
       return makeStep(lineNo, t, "Worker 진입 객체 정의", "Cloudflare Worker가 요청을 받을 때 사용할 기본 객체를 정의합니다.", risk);
@@ -1155,6 +1229,20 @@
     const t = cleanLine(line);
     const risk = riskOf(t, "toml");
 
+    // TOML_CLOUDFLARE_BINDING_RULES_V215_A1
+    if (/^\[\[d1_databases\]\]\s*$/.test(t)) {
+      return makeStep(lineNo, t, "Cloudflare D1 설정", "wrangler.toml에서 Cloudflare D1 데이터베이스 바인딩 묶음을 시작합니다. binding 이름과 database_name이 코드의 env.DB 사용과 맞는지 확인합니다.", risk);
+    }
+    if (/^\[\[r2_buckets\]\]\s*$/.test(t)) {
+      return makeStep(lineNo, t, "Cloudflare R2 설정", "wrangler.toml에서 Cloudflare R2 버킷 바인딩 묶음을 시작합니다. binding 이름과 bucket_name이 코드의 env.R2 사용과 맞는지 확인합니다.", risk);
+    }
+    if (/^binding\s*=/.test(t)) {
+      return makeStep(lineNo, t, "Cloudflare binding 이름 설정", "Worker 코드에서 env.DB, env.ASSETS처럼 접근할 바인딩 이름을 설정합니다. 코드에서 쓰는 이름과 정확히 일치해야 합니다.", risk);
+    }
+    if (/^(database_name|bucket_name)\s*=/.test(t)) {
+      return makeStep(lineNo, t, "Cloudflare 리소스 이름 설정", "D1 데이터베이스나 R2 버킷의 실제 리소스 이름을 설정합니다. 운영/개발 환경을 혼동하지 않도록 확인해야 합니다.", risk);
+    }
+
     if (/^\[\[[^\]]+\]\]$/.test(t)) {
       return makeStep(lineNo, t, "TOML 테이블 배열", "같은 종류의 설정 묶음을 여러 개 반복해서 정의하는 영역입니다.", risk);
     }
@@ -1178,6 +1266,26 @@
     const t = cleanLine(line);
     const risk = riskOf(t, "java");
 
+
+    // JAVA_INTERFACE_ENUM_OPTIONAL_IO_RULES_V215_A1
+    if (/\binterface\s+\w+/.test(t)) {
+      return makeStep(lineNo, t, "interface 정의", "Java interface는 구현 클래스가 따라야 할 메서드 약속을 정의합니다. 어떤 메서드를 반드시 구현해야 하는지 확인합니다.", risk);
+    }
+    if (/\benum\s+\w+/.test(t)) {
+      return makeStep(lineNo, t, "enum 열거형 정의", "Java enum은 FAST, SAFE처럼 정해진 선택지만 갖는 타입을 정의합니다. 상태나 모드를 제한할 때 씁니다.", risk);
+    }
+    if (/^try\s*\([^)]*\)\s*\{?/.test(t) && /Files\.newBufferedReader\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "try-with-resources 예외 처리 / 파일 reader 열기", "Java NIO Files.newBufferedReader로 파일 reader를 열고, try 블록이 끝나면 자동으로 닫는 Java 예외 처리 구조입니다. Path 값과 문자 인코딩, 예외 흐름을 함께 확인해야 합니다.", risk);
+    }
+    if (/^try\s*\([^)]*\)\s*\{?/.test(t)) {
+      return makeStep(lineNo, t, "try-with-resources 예외 처리", "파일 reader 같은 자원을 열고 try 블록이 끝나면 자동으로 닫는 Java 예외 처리 구조입니다. 파일 처리와 예외 흐름을 함께 확인해야 합니다.", risk);
+    }
+    if (/Files\.newBufferedReader\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "파일 reader 열기", "Java NIO Files.newBufferedReader로 파일을 읽기 위한 reader를 엽니다. Path 값과 문자 인코딩, 예외 처리를 확인해야 합니다.", risk);
+    }
+    if (/Optional\.ofNullable\s*\(|\.orElse\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "Optional null 처리", "값이 null일 수 있는 경우 Optional로 감싸고 기본값을 지정합니다. null 때문에 프로그램이 멈추는 일을 줄이는 방어 코드입니다.", risk);
+    }
     // JAVA_DEEP_RULES_V190_A2
     if (/^package\s+[A-Za-z_][\w.]*\s*;/.test(t)) {
       return makeStep(lineNo, t, "패키지 선언", "이 Java 파일이 어떤 패키지/폴더 논리 그룹에 속하는지 선언합니다.", risk);
@@ -2328,15 +2436,39 @@
     const definitions = collectLocalDefinitions(raw, language);
 
     return (steps || []).map(function(step) {
+      if (step && (
+        step.title === "URL 쿼리 파라미터 읽기" ||
+        step.title === "비동기 병렬 처리" ||
+        step.title === "DOM 요소 생성" ||
+        step.title === "DOM 텍스트 설정" ||
+        step.title === "DOM 요소 삽입"
+      )) {
+        return step;
+      }
+
       const names = unknownAssignmentCallNames(step.code, language, definitions);
       if (!names.length) return step;
 
+      const knownGlobalCalls = {
+        URLSearchParams: true,
+        Promise: true,
+        Array: true,
+        Object: true,
+        Date: true,
+        Map: true,
+        Set: true
+      };
+      const unsupportedNames = names.filter(function(name) {
+        return !knownGlobalCalls[name];
+      });
+      if (!unsupportedNames.length) return step;
+
       return Object.assign({}, step, {
         title: "미등록 함수 결과 저장",
-        explain: names.join(", ") + " 함수 호출 결과를 변수에 저장합니다. 이 코드 조각 안에서는 함수 정의가 보이지 않으므로 외부 정의나 오타 여부를 확인해야 합니다.",
+        explain: unsupportedNames.join(", ") + " 함수 호출 결과를 변수에 저장합니다. 이 코드 조각 안에서는 함수 정의가 보이지 않으므로 외부 정의나 오타 여부를 확인해야 합니다.",
         confidence: "unsupported",
         confidenceLabel: confidenceLabel("unsupported"),
-        unsupportedTokens: names
+        unsupportedTokens: unsupportedNames
       });
     });
   }
@@ -2476,3 +2608,4 @@
   };
 })();
 // === CODE EXPLAINER RULES V212-A1 END ===
+// === CODE EXPLAINER RULES V215-A1 END ===

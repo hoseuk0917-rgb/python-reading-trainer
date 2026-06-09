@@ -1045,6 +1045,120 @@ public class App {
     mustContain: ["메서드 정의", "파일/경로 처리", "값 돌려주기"],
     mustMetaContain: ["Java", "파일", "함수/구조"]
   }
+,
+  {
+    name: "python_pathlib_regex_date_copy_v215",
+    requestedLanguage: "python",
+    expectedLanguage: "python",
+    minSteps: 10,
+    code: `from pathlib import Path
+import shutil
+import re
+from datetime import datetime
+
+root = Path('data')
+files = list(root.glob('*.json'))
+stamp = datetime.now().strftime('%Y%m%d')
+for file in files:
+    text = file.read_text(encoding='utf-8')
+    found = re.findall(r'ERROR', text)
+    if found:
+        shutil.copy(file, root / f'backup_{stamp}.json')`,
+    mustContain: ["날짜/시간 생성", "날짜 문자열 포맷", "정규식 검색/치환", "파일 복사"],
+    mustMetaContain: ["Python"]
+  },
+  {
+    name: "javascript_dom_url_promise_fetch_v215",
+    requestedLanguage: "javascript",
+    expectedLanguage: "javascript",
+    minSteps: 9,
+    code: `const params = new URLSearchParams(location.search);
+const id = params.get('id');
+const button = document.createElement('button');
+button.textContent = 'Load';
+button.classList.toggle('active');
+document.body.appendChild(button);
+button.addEventListener('click', async (event) => {
+  event.preventDefault();
+  const [user, posts] = await Promise.all([fetch('/user/' + id), fetch('/posts')]);
+  console.log(user.status, posts.status);
+});`,
+    mustContain: ["URL 쿼리 파라미터 읽기", "DOM 요소 생성", "DOM 텍스트 설정", "DOM 요소 삽입", "이벤트 기본 동작 방지", "비동기 병렬 처리"],
+    mustMetaContain: ["JavaScript"]
+  },
+  {
+    name: "powershell_csv_group_sort_export_v215",
+    requestedLanguage: "powershell",
+    expectedLanguage: "powershell",
+    minSteps: 3,
+    code: `$rows = Import-Csv ".\input.csv"
+$summary = $rows | Group-Object region | Sort-Object Count -Descending
+$summary | Select-Object Name, Count | Export-Csv ".\summary.csv" -NoTypeInformation -Encoding UTF8`,
+    mustContain: ["CSV 읽기 결과 저장", "CSV 파이프라인 요약 저장", "CSV 그룹 정렬 선택 저장"],
+    mustMetaContain: ["PowerShell"]
+  },
+  {
+    name: "workers_scheduled_queue_ai_vectorize_v215",
+    requestedLanguage: "workers",
+    expectedLanguage: "workers",
+    minSteps: 7,
+    code: `export default {
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(env.QUEUE.send({ type: 'daily' }));
+  },
+  async queue(batch, env) {
+    for (const message of batch.messages) {
+      const embedding = await env.AI.run('@cf/baai/bge-base-en-v1.5', { text: message.body.type });
+      await env.VECTORIZE.upsert([{ id: crypto.randomUUID(), values: embedding.data[0] }]);
+      message.ack();
+    }
+  }
+}`,
+    mustContain: ["스케줄 실행 함수", "Queue 소비 함수", "Workers AI 실행", "Vectorize 벡터 저장", "Queue 메시지 처리 완료"],
+    mustMetaContain: ["Cloudflare"]
+  },
+  {
+    name: "java_interface_enum_try_optional_file_v215",
+    requestedLanguage: "java",
+    expectedLanguage: "java",
+    minSteps: 8,
+    code: `import java.io.BufferedReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
+
+interface Loader { String load(Path path) throws Exception; }
+enum Mode { FAST, SAFE }
+
+public class FileLoader implements Loader {
+  public String load(Path path) throws Exception {
+    try (BufferedReader reader = Files.newBufferedReader(path)) {
+      return Optional.ofNullable(reader.readLine()).orElse("");
+    }
+  }
+}`,
+    mustContain: ["interface 정의", "enum 열거형 정의", "try-with-resources 예외 처리", "파일 reader 열기", "Optional null 처리"],
+    mustMetaContain: ["Java"]
+  },
+  {
+    name: "toml_wrangler_d1_r2_v215",
+    requestedLanguage: "toml",
+    expectedLanguage: "toml",
+    minSteps: 7,
+    code: `name = "python-reading-trainer"
+main = "src/index.ts"
+compatibility_date = "2026-06-08"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "app_meta"
+
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "app-assets"`,
+    mustContain: ["Cloudflare D1 설정", "Cloudflare R2 설정", "Cloudflare binding 이름 설정", "Cloudflare 리소스 이름 설정"],
+    mustMetaContain: ["TOML", "Cloudflare"]
+  }
 
 ];
 
@@ -1090,7 +1204,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260608_v212_a1",
+  version: "20260608_v215_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,
