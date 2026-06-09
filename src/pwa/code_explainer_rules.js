@@ -596,11 +596,22 @@
     const t = cleanLine(line);
     const risk = riskOf(t, "python");
 
+    // FASTAPI_IMPORT_RULES_V230_A1
+    if (/^from\s+fastapi\s+import\s+/.test(t)) {
+      return makeStep(lineNo, t, "FastAPI 기능 불러오기", "FastAPI, APIRouter, Depends, HTTPException, Query, Body 같은 API 서버 구성 기능을 가져옵니다. 앱 생성, 라우트 연결, 요청값 검증, 오류 응답 처리에 쓰입니다.", risk);
+    }
+    if (/^from\s+pydantic\s+import\s+.*BaseModel/.test(t)) {
+      return makeStep(lineNo, t, "Pydantic 모델 기능 불러오기", "API 요청과 응답 데이터의 모양을 정의하고 검증하기 위한 BaseModel 기능을 가져옵니다.", risk);
+    }
     if (/^import\s+/.test(t) || /^from\s+.+\s+import\s+/.test(t)) {
       return makeStep(lineNo, t, "라이브러리 불러오기", "이미 만들어진 기능을 현재 코드에서 사용할 수 있게 가져옵니다.", risk);
     }
     if (/^(async\s+)?def\s+\w+\s*\(/.test(t)) {
       return makeStep(lineNo, t, "함수 정의", "나중에 이름으로 불러서 실행할 수 있는 코드 묶음을 만듭니다. 이 줄만으로 함수 안쪽이 바로 실행되지는 않습니다.", risk);
+    }
+    // PYDANTIC_BASEMODEL_RULE_V230_A1
+    if (/^class\s+\w+\s*\(\s*BaseModel\s*\)\s*:/.test(t)) {
+      return makeStep(lineNo, t, "Pydantic 데이터 모델 정의", "FastAPI에서 요청 본문이나 응답 JSON의 필드 구조를 정의합니다. 아래 들여쓰기된 필드 이름과 자료형이 API 데이터 규격이 됩니다.", risk);
     }
     if (/^class\s+\w+/.test(t)) {
       return makeStep(lineNo, t, "클래스 정의", "관련 데이터와 기능을 묶어 객체를 만들기 위한 설계도를 정의합니다.", risk);
@@ -638,6 +649,10 @@
     }
     if (/^raise\s+SystemExit\b/.test(t)) {
       return makeStep(lineNo, t, "친절한 종료", "CLI 도구에서 오류 메시지를 보여주고 프로그램을 종료합니다. 사용자에게 무엇이 문제인지 알려줄 때 씁니다.", risk);
+    }
+    // FASTAPI_HTTP_EXCEPTION_RULE_V230_A1
+    if (/^raise\s+HTTPException\s*\(/.test(t) || /HTTPException\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "FastAPI HTTP 오류 응답", "API 요청을 처리할 수 없을 때 상태 코드와 detail 메시지를 담아 HTTP 오류 응답을 만듭니다. status_code와 detail 내용이 사용자에게 보여져도 되는지 확인해야 합니다.", risk);
     }
     if (/^raise\b/.test(t)) {
       return makeStep(lineNo, t, "예외 발생시키기", "조건이 맞지 않거나 계속 진행하면 위험할 때 의도적으로 오류를 발생시킵니다.", risk);
@@ -803,6 +818,25 @@
     }
     if (/subprocess\.(run|Popen|check_output|check_call)/.test(t)) {
       return makeStep(lineNo, t, "외부 프로그램 실행", "Python 코드에서 다른 명령어나 프로그램을 실행합니다. 인자와 check=True 여부를 확인해야 합니다.", risk);
+    }
+    // FASTAPI_ROUTE_AND_PARAM_RULES_V230_A1
+    if (/\bFastAPI\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "FastAPI 앱 생성", "HTTP 요청을 받을 API 서버 앱 객체를 만듭니다. 이후 @app.get, @app.post 같은 라우트가 이 앱에 연결됩니다.", risk);
+    }
+    if (/\bAPIRouter\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "FastAPI 라우터 생성", "API 경로들을 묶어서 관리할 라우터 객체를 만듭니다. prefix, tags 같은 옵션으로 URL 그룹을 나눌 수 있습니다.", risk);
+    }
+    if (/@(?:app|router)\.(get|post|put|delete|patch)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "FastAPI 라우트 연결", "특정 HTTP 메서드와 URL 경로로 들어온 요청을 바로 아래 함수에 연결합니다. response_model, status_code, 경로 파라미터가 있는지 확인해야 합니다.", risk);
+    }
+    if (/\bDepends\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "FastAPI 의존성 주입", "요청 처리 전에 인증, DB 연결, 공통 검증 같은 보조 함수를 실행해 결과를 함수 인자로 넣습니다.", risk);
+    }
+    if (/\b(Query|Body|Path)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "FastAPI 요청값 검증 설정", "쿼리 문자열, 요청 본문, 경로 파라미터의 기본값과 검증 조건을 설정합니다. 필수 여부와 기본값을 확인해야 합니다.", risk);
+    }
+    if (/uvicorn\.run\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "Uvicorn 서버 실행", "FastAPI 앱을 실제 HTTP 서버로 실행합니다. host, port, reload 옵션을 확인해야 합니다.", risk);
     }
     if (/FastAPI\s*\(|from\s+fastapi\s+import|@app\.(get|post|put|delete|patch)\s*\(/.test(t)) {
       return makeStep(lineNo, t, "FastAPI 앱/라우트 설정", "API 서버 앱을 만들거나 특정 URL로 들어온 요청을 처리할 함수를 연결합니다.", risk);
