@@ -1,4 +1,4 @@
-// === CODE EXPLAINER RULES V211-A1 START ===
+// === CODE EXPLAINER RULES V212-A1 START ===
 (function() {
   "use strict";
 
@@ -1865,9 +1865,12 @@
 
     if (dataItems.length) {
       // MERMAID_PRODUCER_CONSUMER_EDGES_V211_A1
+      // MERMAID_EXTERNAL_INPUT_EDGES_V212_A1
       const limitedDataItems = dataItems.slice(0, 8);
       const producedBy = {};
       const dataEdgeSeen = {};
+      const externalInputByName = {};
+      let externalInputCount = 0;
 
       lines.push("  subgraph DATA_FLOW[데이터 흐름]");
       limitedDataItems.forEach(function(item, idx) {
@@ -1894,7 +1897,18 @@
         let hasProducerEdge = false;
 
         consumes.forEach(function(name) {
-          const from = producedBy[name];
+          let from = producedBy[name];
+
+          if (!from && name) {
+            if (!externalInputByName[name]) {
+              externalInputCount += 1;
+              externalInputByName[name] = "DI" + externalInputCount;
+              lines.push("  " + externalInputByName[name] + '(["' + mermaidLabel("입력 · " + name) + '"])');
+              lines.push("  class " + externalInputByName[name] + " dataStep;");
+            }
+            from = externalInputByName[name];
+          }
+
           const key = from + "|" + id + "|" + name;
 
           if (!from || from === id || dataEdgeSeen[key]) return;
@@ -2461,4 +2475,4 @@
     detectLanguage: detectLanguage
   };
 })();
-// === CODE EXPLAINER RULES V211-A1 END ===
+// === CODE EXPLAINER RULES V212-A1 END ===

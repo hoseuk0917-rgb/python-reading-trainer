@@ -1027,6 +1027,24 @@ print(payload)`,
     mustContain: ["변수에 값 저장", "화면에 출력"],
     mustMetaContain: ["Python", "출력"]
   }
+,
+  {
+    name: "java_mermaid_external_input_edge_v212",
+    requestedLanguage: "java",
+    expectedLanguage: "java",
+    minSteps: 5,
+    code: `import java.nio.file.Files;
+import java.nio.file.Path;
+
+public class App {
+  static String load(String fileName) throws Exception {
+    String text = Files.readString(Path.of(fileName));
+    return text;
+  }
+}`,
+    mustContain: ["메서드 정의", "파일/경로 처리", "값 돌려주기"],
+    mustMetaContain: ["Java", "파일", "함수/구조"]
+  }
 
 ];
 
@@ -1072,7 +1090,7 @@ samples.forEach((sample) => {
 });
 
 const report = {
-  version: "20260608_v211_a1",
+  version: "20260608_v212_a1",
   generatedAt: new Date().toISOString(),
   total: sampleReports.length,
   failed: failed,

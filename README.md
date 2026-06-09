@@ -895,3 +895,18 @@ V207에서는 candidateNotes 7개 중 사용자 체감이 큰 항목부터 정�
 
 - V210 감사에서 남은 Mermaid dataFlow sequential-only candidate를 해결한다.
 - 데이터 흐름 다이어그램에서 raw → cleaned → payload → output 관계를 더 직관적으로 보여준다.
+
+## V212 Mermaid external input edge 정밀도 보강 — 20260608
+
+기준 버전: 20260608_v212_a1
+
+### 보강 내용
+
+- V212 감사에서 발견된 Java 매개변수 consume edge 누락을 수정했다.
+- dataFlow 안에서 producer를 찾지 못한 consume 값은 Mermaid DATA_FLOW 안에 입력 노드로 표시한다.
+- 예: fileName 매개변수는 입력 · fileName 노드로 만들고 text 생성 노드와 사용:fileName edge로 연결한다.
+- V211 smoke 43개 기준선을 유지하고 Java external input edge sample을 1개 추가한다.
+
+### 목표
+
+- 메서드 매개변수, 외부 입력값처럼 코드 내부 dataFlow에서 생성되지 않은 값도 다이어그램에서 끊기지 않게 보여준다.
