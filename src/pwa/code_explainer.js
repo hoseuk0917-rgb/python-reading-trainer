@@ -180,8 +180,10 @@ port = 5432`
   let learningSideCards = [];
 
   // CODE_EXPLAINER_LONG_CODE_UI_V223_A1
+  // CODE_EXPLAINER_LONG_CODE_TOGGLE_V224_A1
   const LONG_CODE_STEP_THRESHOLD = 80;
   const MAX_RENDERED_CODE_STEPS = 120;
+  let showAllCodeSteps = false;
 
   function el(id) {
     return document.getElementById(id);
@@ -570,9 +572,9 @@ port = 5432`
     });
   }
 
-  function renderLongStepNotice(visibleSteps, renderedSteps) {
+  function renderLongStepNoticeElement(visibleSteps, renderedSteps) {
     if (!Array.isArray(visibleSteps) || visibleSteps.length <= LONG_CODE_STEP_THRESHOLD) {
-      return "";
+      return null;
     }
 
     const hiddenCount = Math.max(0, visibleSteps.length - renderedSteps.length);
@@ -580,11 +582,30 @@ port = 5432`
       ? "현재 위험/주의 필터가 켜져 있어 해당 단계만 보여줍니다."
       : "전체 단계 중 앞부분을 우선 렌더링합니다.";
 
-    return '<div class="code-long-step-notice">' +
+    const notice = document.createElement("div");
+    notice.className = "code-long-step-notice";
+    notice.innerHTML =
       '<strong>긴 코드 요약 보기</strong>' +
       '<p class="muted">감지된 단계가 ' + visibleSteps.length + '개입니다. ' + filterText + '</p>' +
-      (hiddenCount > 0 ? '<p class="muted">화면 성능을 위해 먼저 ' + renderedSteps.length + '개만 표시했습니다. 전체 순서는 복사 리포트와 Mermaid 원문에서 함께 확인할 수 있습니다.</p>' : '') +
-      '</div>';
+      (hiddenCount > 0
+        ? '<p class="muted">화면 성능을 위해 먼저 ' + renderedSteps.length + '개만 표시했습니다. 전체 순서는 복사 리포트와 Mermaid 원문에서 함께 확인할 수 있습니다.</p>'
+        : '<p class="muted">현재 전체 단계 표시 중입니다. 화면이 무거우면 다시 120개만 보기로 줄일 수 있습니다.</p>');
+
+    if (visibleSteps.length > MAX_RENDERED_CODE_STEPS) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "code-long-step-toggle";
+      button.textContent = showAllCodeSteps ? "120개만 보기" : "전체 단계 펼치기";
+      button.addEventListener("click", function() {
+        showAllCodeSteps = !showAllCodeSteps;
+        if (lastAnalysis && Array.isArray(lastAnalysis.steps)) {
+          renderSteps(lastAnalysis.steps);
+        }
+      });
+      notice.appendChild(button);
+    }
+
+    return notice;
   }
 
   function renderStepItem(step, idx) {
@@ -619,15 +640,14 @@ port = 5432`
       return;
     }
 
-    const renderedSteps = visibleSteps.length > MAX_RENDERED_CODE_STEPS
+    const shouldCapSteps = visibleSteps.length > MAX_RENDERED_CODE_STEPS && !showAllCodeSteps;
+    const renderedSteps = shouldCapSteps
       ? visibleSteps.slice(0, MAX_RENDERED_CODE_STEPS)
       : visibleSteps;
 
-    const longNotice = renderLongStepNotice(visibleSteps, renderedSteps);
+    const longNotice = renderLongStepNoticeElement(visibleSteps, renderedSteps);
     if (longNotice) {
-      const notice = document.createElement("div");
-      notice.innerHTML = longNotice;
-      box.appendChild(notice.firstChild);
+      box.appendChild(longNotice);
     }
 
     renderedSteps.forEach(function(step, idx) {
@@ -1139,6 +1159,7 @@ port = 5432`
     result.sourceCode = input.value;
     result.requestedLanguage = requested;
     result.detectionReasons = getDetectionReasons(result, requested, input.value);
+    showAllCodeSteps = false;
     lastAnalysis = result;
     lastReport = buildPlainTextReport(result);
 
@@ -1230,6 +1251,7 @@ port = 5432`
       detection.className = "code-detection-details muted";
       detection.textContent = "분석하면 자동감지 결과와 판단 근거가 표시됩니다.";
     }
+    showAllCodeSteps = false;
     lastMermaid = "";
     lastReport = "";
     lastAnalysis = null;
