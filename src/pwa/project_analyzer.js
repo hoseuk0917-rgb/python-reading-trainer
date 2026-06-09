@@ -673,19 +673,120 @@
     });
   }
 
+  // PROJECT_TO_CODE_EXPLAINER_BRIDGE_V233_A1
+  function inferBridgeSnippetLanguage(path) {
+    const p = String(path || "").toLowerCase();
+    if (/\.py$/.test(p)) return "python";
+    if (/\.ps1$/.test(p)) return "powershell";
+    if (/\.(js|jsx|ts|tsx)$/.test(p)) return "javascript";
+    if (/\.java$/.test(p)) return "java";
+    return "auto";
+  }
+
+  function buildProjectCodeBridgeSnippet(kind, path, name, type) {
+    const lang = inferBridgeSnippetLanguage(path);
+    const safeName = String(name || "target").replace(/[^\w$]/g, "_") || "target";
+
+    if (kind === "symbol") {
+      if (lang === "python") {
+        if (String(type || "").toLowerCase().indexOf("class") >= 0) {
+          return "class " + safeName + ":\n    pass";
+        }
+        return "def " + safeName + "():\n    pass";
+      }
+      if (lang === "javascript") {
+        if (String(type || "").toLowerCase().indexOf("class") >= 0) {
+          return "class " + safeName + " {\n  constructor() {}\n}";
+        }
+        return "function " + safeName + "() {\n  return null;\n}";
+      }
+      if (lang === "java") {
+        return "class " + safeName + " {\n  void run() {}\n}";
+      }
+      return safeName + "()";
+    }
+
+    if (lang === "python") return "result = " + safeName + "()";
+    if (lang === "javascript") return "const result = " + safeName + "();";
+    if (lang === "powershell") return safeName;
+    if (lang === "java") return safeName + "();";
+    return safeName + "()";
+  }
+
+  function encodeProjectCodeBridgePayload(kind, path, name, type) {
+    return encodeURIComponent(JSON.stringify({
+      kind: kind || "call",
+      path: path || "",
+      name: name || "",
+      type: type || ""
+    }));
+  }
+
+  function decodeProjectCodeBridgePayload(value) {
+    try {
+      return JSON.parse(decodeURIComponent(String(value || "")));
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function renderProjectCodeBridgeButton(kind, path, name, type) {
+    if (!name) return "";
+    const payload = encodeProjectCodeBridgePayload(kind, path, name, type);
+    return '<button type="button" class="project-code-bridge-btn" data-project-code-bridge="' + escapeHtml(payload) + '">코드해석</button>';
+  }
+
+  function handleProjectCodeBridgeClick(event) {
+    const target = event && event.target && event.target.closest
+      ? event.target.closest("[data-project-code-bridge]")
+      : null;
+    if (!target) return;
+
+    const payload = decodeProjectCodeBridgePayload(target.getAttribute("data-project-code-bridge"));
+    if (!payload || !payload.name) return;
+
+    event.preventDefault();
+
+    const snippet = buildProjectCodeBridgeSnippet(payload.kind, payload.path, payload.name, payload.type);
+    const language = inferBridgeSnippetLanguage(payload.path);
+
+    if (window.CodeExplainer && typeof window.CodeExplainer.analyzeSnippet === "function") {
+      window.CodeExplainer.analyzeSnippet(snippet, language);
+      target.textContent = "코드해석으로 보냄";
+      return;
+    }
+
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      navigator.clipboard.writeText(snippet);
+      target.textContent = "복사됨";
+    }
+  }
+
   function renderSymbolFiles(symbols) {
     return renderDataSection("주요 함수/클래스", objectEntries(symbols).slice(0, 15), function(item) {
-      const names = Array.isArray(item[1]) ? item[1].slice(0, 10).map(function(symbol) { return symbol.name || ""; }).filter(Boolean) : [];
-      return '<div class="project-data-row"><strong>' + escapeHtml(item[0]) + '</strong><span>' + escapeHtml(names.join(" · ")) + '</span></div>';
+      const filePath = item[0];
+      const names = Array.isArray(item[1]) ? item[1].slice(0, 10).map(function(symbol) {
+        const name = symbol.name || "";
+        if (!name) return "";
+        return '<span class="project-code-chip"><span>' + escapeHtml(name) + '</span> ' +
+          renderProjectCodeBridgeButton("symbol", filePath, name, symbol.type || "") +
+          '</span>';
+      }).filter(Boolean) : [];
+      return '<div class="project-data-row"><strong>' + escapeHtml(filePath) + '</strong><span>' + names.join(" · ") + '</span></div>';
     });
   }
 
   function renderCallCandidateDetails(callCandidates) {
     return renderDataSection("함수 호출 후보 상세", objectEntries(callCandidates).slice(0, 15), function(item) {
+      const filePath = item[0];
       const calls = Array.isArray(item[1]) ? item[1].slice(0, 10).map(function(call) {
-        return (call.name || "") + "(" + (call.count || 0) + ")";
-      }) : [];
-      return '<div class="project-data-row"><strong>' + escapeHtml(item[0]) + '</strong><span>' + escapeHtml(calls.join(" · ")) + '</span></div>';
+        const name = call.name || "";
+        if (!name) return "";
+        return '<span class="project-code-chip"><span>' + escapeHtml(name + "(" + (call.count || 0) + ")") + '</span> ' +
+          renderProjectCodeBridgeButton("call", filePath, name, "call") +
+          '</span>';
+      }).filter(Boolean) : [];
+      return '<div class="project-data-row"><strong>' + escapeHtml(filePath) + '</strong><span>' + calls.join(" · ") + '</span></div>';
     });
   }
 
@@ -1033,13 +1134,17 @@
 
     window.removeEventListener("mermaid-ready", rerenderProjectMermaidWhenReady);
     window.addEventListener("mermaid-ready", rerenderProjectMermaidWhenReady);
+
+    document.removeEventListener("click", handleProjectCodeBridgeClick);
+    document.addEventListener("click", handleProjectCodeBridgeClick);
   }
 
   window.ProjectAnalyzer = {
     refresh: refresh,
     buildProbeCommand: buildProbeCommand,
     parseProbeOutput: parseProbeOutput,
-    renderProbeAnalysis: renderProbeAnalysis
+    renderProbeAnalysis: renderProbeAnalysis,
+    buildCodeBridgeSnippet: buildProjectCodeBridgeSnippet
   };
 
   if (document.readyState === "loading") {

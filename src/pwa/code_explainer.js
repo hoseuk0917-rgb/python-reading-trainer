@@ -1212,6 +1212,28 @@ port = 5432`
     renderMermaid(result.mermaid || "");
   }
 
+  // PROJECT_TO_CODE_EXPLAINER_BRIDGE_V233_A1
+  function analyzeExternalCodeSnippet(source, language) {
+    const input = el("codeInput");
+    const select = el("codeLangSelect");
+    if (!input) return false;
+
+    input.value = String(source || "");
+
+    if (select && language) {
+      select.value = language;
+    }
+
+    analyzeCurrentCode();
+
+    if (typeof input.focus === "function") input.focus();
+    if (typeof input.scrollIntoView === "function") {
+      input.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    return true;
+  }
+
   function loadSample() {
     const select = el("codeLangSelect");
     const input = el("codeInput");
@@ -1442,6 +1464,8 @@ port = 5432`
   window.CodeExplainer = {
     refresh: refresh,
     analyze: analyzeCurrentCode,
+    analyzeSnippet: analyzeExternalCodeSnippet,
+    setCodeSnippet: analyzeExternalCodeSnippet,
     setLearningContent: setLearningContent
   };
 
