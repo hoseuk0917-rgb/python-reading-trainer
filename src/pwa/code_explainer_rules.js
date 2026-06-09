@@ -616,6 +616,10 @@
     if (/^class\s+\w+/.test(t)) {
       return makeStep(lineNo, t, "클래스 정의", "관련 데이터와 기능을 묶어 객체를 만들기 위한 설계도를 정의합니다.", risk);
     }
+    // PYDANTIC_FIELD_RULE_V230_A2
+    if (/^[A-Za-z_]\w*\s*:\s*[A-Za-z_][\w.\[\], |]*(?:\s*=\s*.+)?$/.test(t)) {
+      return makeStep(lineNo, t, "Pydantic 모델 필드 정의", "데이터 모델 안의 필드 이름과 자료형을 정의합니다. FastAPI에서는 요청 본문이나 응답 JSON에 어떤 값이 들어갈 수 있는지 정하는 규격으로 쓰입니다.", risk);
+    }
 
 
     // PYTHON_PATH_RE_DATE_COPY_RULES_V215_A1
@@ -2656,7 +2660,7 @@
     const n = String(name || "");
     const common = /^(print|open|range|enumerate|len|list|dict|set|tuple|str|int|float|bool|sum|min|max|map|filter|sorted|reversed|next|iter|round|abs|isinstance|Path|JSON|URL|Date|String|Number|Boolean|Array|Object|parseInt|parseFloat|fetch)$/;
     if (common.test(n)) return true;
-    if (language === "python" && /^(json|csv|pd|pandas|os|sys|Path|traceback|time|dataclasses|collections|itertools|random|defaultdict|Counter|deque)$/.test(n)) return true;
+    if (language === "python" && /^(json|csv|pd|pandas|os|sys|Path|traceback|time|dataclasses|collections|itertools|random|defaultdict|Counter|deque|FastAPI|APIRouter|Depends|HTTPException|Query|Body|Path)$/.test(n)) return true;
     if ((language === "javascript" || language === "workers") && /^(document|console|localStorage|Response|Promise|Math|process)$/.test(n)) return true;
     return false;
   }
@@ -2772,7 +2776,13 @@
         function: true,
         Counter: true,
         confirm: true,
-        alert: true
+        alert: true,
+        FastAPI: true,
+        APIRouter: true,
+        Depends: true,
+        HTTPException: true,
+        Query: true,
+        Body: true
       };
       const unsupportedNames = names.filter(function(name) {
         return !knownGlobalCalls[name];
