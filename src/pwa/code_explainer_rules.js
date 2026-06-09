@@ -62,6 +62,12 @@
     if (/Set-Location|Copy-Item|Remove-Item|Compress-Archive|Expand-Archive|Get-Date|New-Item|Test-Path|Select-String/i.test(text)) return "powershell";
     if (/^\s*\$[A-Za-z_][\w-]*\s*=/m.test(text) || /\bgit\s+(status|add|commit|push|tag|stash|reset|clean)\b/i.test(text)) return "powershell";
 
+    // REACT_JSX_DETECT_V232_A1
+    if (
+      /\bReactDOM\b|\bReact\b|\buse(State|Effect|Memo|Callback|Ref|Context)\s*\(/.test(text) ||
+      /<\s*[A-Za-z][A-Za-z0-9.]*[\s>][\s\S]*>|className=|onClick=|onChange=|onSubmit=/.test(text)
+    ) return "javascript";
+
     // JS_MODULE_DETECT_GUARD_V189_A2
     if (/^\s*import\s+.+\s+from\s+["'][^"']+["']/m.test(text) || /^\s*export\s+(async\s+)?(function|const|let|class)\b/m.test(text)) return "javascript";
 
@@ -1013,6 +1019,57 @@
     if (/^\}\)\.length;?$/.test(t)) {
       return makeStep(lineNo, t, "배열/문자열 길이 계산", "앞에서 filter나 map 같은 처리를 끝낸 뒤 length로 개수를 계산하는 줄입니다.", risk);
     }
+    // REACT_MAPPING_V232_A1
+    // REACT_HOOK_CLOSURE_RENDER_FIX_V232_A2
+    if (/^\}?\s*,\s*\[[^\]]*\]\s*\)\s*;?$/.test(t)) {
+      return makeStep(lineNo, t, "React Hook 의존성 닫기", "useEffect, useMemo, useCallback 같은 Hook의 콜백 함수와 의존성 배열을 마무리합니다. 배열 안의 값이 바뀔 때만 Hook이 다시 실행됩니다.", risk);
+    }
+    if (/\.render\s*\(/.test(t) && /<\s*[A-Z][A-Za-z0-9_$]*/.test(t)) {
+      return makeStep(lineNo, t, "React 화면 렌더링", "React 컴포넌트를 실제 브라우저 화면에 렌더링합니다. 앱의 시작점에서 루트 컴포넌트를 붙일 때 사용합니다.", risk);
+    }
+    if (/^import\s+React\b/.test(t) || /^import\s+\{[^}]*\buse(State|Effect|Memo|Callback|Ref|Context)\b[^}]*\}\s+from\s+["']react["']/.test(t) || /^import\s+.+\s+from\s+["']react["']/.test(t)) {
+      return makeStep(lineNo, t, "React 기능 불러오기", "React 컴포넌트와 useState, useEffect 같은 Hook 기능을 가져옵니다. 화면을 컴포넌트 단위로 만들고 상태 변화에 따라 다시 그리기 위한 준비 단계입니다.", risk);
+    }
+    if (/^import\s+\{[^}]*\bcreateRoot\b[^}]*\}\s+from\s+["']react-dom\/client["']/.test(t)) {
+      return makeStep(lineNo, t, "React DOM 렌더링 기능 불러오기", "React 컴포넌트를 실제 브라우저 DOM에 붙이기 위한 createRoot 기능을 가져옵니다.", risk);
+    }
+    if (/^(?:function\s+[A-Z][A-Za-z0-9_$]*\s*\(|(?:const|let|var)\s+[A-Z][A-Za-z0-9_$]*\s*=\s*(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>)/.test(t)) {
+      return makeStep(lineNo, t, "React 컴포넌트 정의", "대문자로 시작하는 화면 조각 함수를 정의합니다. React에서는 이런 컴포넌트를 조합해서 페이지 화면을 만듭니다.", risk);
+    }
+    if (/\buseState\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "React 상태값 만들기", "컴포넌트 안에서 바뀔 수 있는 상태값과 그 값을 바꾸는 setter 함수를 만듭니다. 값이 바뀌면 화면이 다시 렌더링될 수 있습니다.", risk);
+    }
+    if (/^set[A-Z][A-Za-z0-9_$]*\s*\(/.test(t) || /\bset[A-Z][A-Za-z0-9_$]*\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "React 상태 변경", "useState로 만든 setter 함수를 호출해 상태값을 바꿉니다. 이전 값에 의존하면 함수형 업데이트가 필요한지 확인해야 합니다.", risk);
+    }
+    if (/\buseEffect\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "React 효과 처리", "렌더링 이후 실행할 작업을 등록합니다. API 요청, 이벤트 연결, 타이머 같은 부수 효과를 넣으며 의존성 배열을 확인해야 합니다.", risk);
+    }
+    if (/\buseMemo\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "React 계산값 재사용", "비용이 큰 계산 결과를 의존성 값이 바뀔 때만 다시 계산하도록 저장합니다. 의존성 배열이 빠지면 오래된 값이 남을 수 있습니다.", risk);
+    }
+    if (/\buseCallback\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "React 콜백 재사용", "함수 자체를 의존성 값이 바뀔 때만 다시 만들도록 합니다. 자식 컴포넌트 렌더링 최적화나 이벤트 핸들러 전달에 자주 씁니다.", risk);
+    }
+    if (/\buseRef\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "React 참조값 만들기", "렌더링 사이에 유지되는 참조 객체를 만듭니다. DOM 요소를 가리키거나 다시 렌더링을 일으키지 않는 값을 저장할 때 씁니다.", risk);
+    }
+    if (/\buseContext\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "React 컨텍스트 읽기", "상위에서 제공한 Context 값을 현재 컴포넌트에서 읽습니다. 테마, 로그인 사용자, 전역 설정 같은 값을 전달할 때 씁니다.", risk);
+    }
+    if (/\bprops\.[A-Za-z_$][\w$]*/.test(t)) {
+      return makeStep(lineNo, t, "React props 읽기", "부모 컴포넌트가 넘겨준 값을 읽습니다. props는 보통 현재 컴포넌트가 직접 바꾸지 않고 화면 표시나 조건 분기에 사용합니다.", risk);
+    }
+    if (/return\s*\(?\s*</.test(t) || /<\s*[A-Za-z][A-Za-z0-9.]*[\s>]/.test(t) || /\b(className|onClick|onChange|onSubmit|ref)=/.test(t)) {
+      return makeStep(lineNo, t, "JSX 화면 구조", "React 컴포넌트가 화면에 보여줄 JSX 구조를 작성합니다. className은 CSS 클래스, onClick 같은 속성은 이벤트 처리 함수 연결에 쓰입니다.", risk);
+    }
+    if (/\bReactDOM\.createRoot\s*\(|\bcreateRoot\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "React 루트 생성", "React 앱을 붙일 브라우저 DOM 위치를 기준으로 렌더링 루트를 만듭니다. 보통 document.getElementById('root') 같은 요소를 넘깁니다.", risk);
+    }
+    if (/\.render\s*\(/.test(t) && /<\s*[A-Z][A-Za-z0-9_$]*/.test(t)) {
+      return makeStep(lineNo, t, "React 화면 렌더링", "React 컴포넌트를 실제 브라우저 화면에 렌더링합니다. 앱의 시작점에서 루트 컴포넌트를 붙일 때 사용합니다.", risk);
+    }
+
     if (
       !/(?:addEventListener|setItem|getItem|classList\.|appendChild|insertBefore|preventDefault|waitUntil|\.ack\s*\(|console\.(?:log|error|warn)|Response\.json|new\s+Response|fetch\s*\(|\.json\s*\(|\.ok\b|\.status\b|env\.KV\.|env\.R2\.|env\.QUEUE\.|env\.VECTORIZE\.|env\.AI\.)/.test(t) &&
       /^(?:window\.)?[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+\s*\(/.test(t)
@@ -2709,7 +2766,8 @@
     const common = /^(print|open|range|enumerate|len|list|dict|set|tuple|str|int|float|bool|sum|min|max|map|filter|sorted|reversed|next|iter|round|abs|isinstance|Path|JSON|URL|Date|String|Number|Boolean|Array|Object|parseInt|parseFloat|fetch)$/;
     if (common.test(n)) return true;
     if (language === "python" && /^(json|csv|pd|pandas|np|numpy|os|sys|Path|traceback|time|dataclasses|collections|itertools|random|defaultdict|Counter|deque|FastAPI|APIRouter|Depends|HTTPException|Query|Body|Path|DataFrame|Series|array|zeros|ones|arange|linspace|read_csv|concat|mean|median|std)$/.test(n)) return true;
-    if ((language === "javascript" || language === "workers") && /^(document|console|localStorage|Response|Promise|Math|process)$/.test(n)) return true;
+    if ((language === "javascript" || language === "workers") && /^set[A-Z][A-Za-z0-9_$]*$/.test(n)) return true;
+    if ((language === "javascript" || language === "workers") && /^(document|console|localStorage|Response|Promise|Math|process|React|ReactDOM|useState|useEffect|useMemo|useCallback|useRef|useContext|createRoot)$/.test(n)) return true;
     return false;
   }
 
