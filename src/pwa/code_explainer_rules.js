@@ -645,6 +645,25 @@
     if (/^assert\s+/.test(t)) {
       return makeStep(lineNo, t, "조건 검증", "반드시 참이어야 하는 조건을 검사합니다. 테스트나 내부 검증에는 유용하지만 사용자 입력 검증을 이것만으로 처리하면 부족할 수 있습니다.", risk);
     }
+    // PYTHON_BUILTIN_MAPPING_V228_A1
+    if (/\bnext\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "next 값 꺼내기", "반복 가능한 값에서 다음 항목을 하나 꺼냅니다. 두 번째 기본값을 넣으면 더 이상 값이 없을 때 오류 대신 그 값을 돌려줄 수 있습니다.", risk);
+    }
+    if (/\biter\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "반복자 만들기", "리스트, 튜플, 파일 같은 반복 가능한 값을 next로 하나씩 꺼낼 수 있는 반복자 형태로 바꿉니다.", risk);
+    }
+    if (/\breversed\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "거꾸로 반복하기", "순서가 있는 값을 뒤에서 앞으로 읽는 반복자를 만듭니다. 실제 리스트가 필요한 경우 list(reversed(...))처럼 감싸는지 확인합니다.", risk);
+    }
+    if (/\bround\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "반올림 계산", "숫자를 정해진 자리수로 반올림합니다. 두 번째 인자가 있으면 소수 몇 자리까지 남길지 정합니다.", risk);
+    }
+    if (/\babs\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "절댓값 계산", "음수와 양수의 부호를 제외하고 크기만 가져옵니다. 거리, 차이, 오차 계산에서 자주 씁니다.", risk);
+    }
+    if (/\bisinstance\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "자료형 확인", "값이 특정 자료형인지 검사합니다. 문자열, 숫자, 리스트처럼 입력 종류에 따라 다르게 처리할 때 씁니다.", risk);
+    }
     if (/^if\s+.+:\s*$/.test(t)) {
       return makeStep(lineNo, t, "조건 검사", "조건이 맞으면 바로 아래 들여쓰기된 코드가 실행됩니다.", risk);
     }
@@ -690,6 +709,26 @@
     }
     if (/argparse\.ArgumentParser|\.add_argument\s*\(|\.parse_args\s*\(/.test(t)) {
       return makeStep(lineNo, t, "명령행 인자 처리", "터미널에서 받은 --input 같은 옵션을 정의하거나 읽습니다.", risk);
+    }
+
+    // PYTHON_STDLIB_COMMON_MAPPING_V228_A1
+    if (/traceback\.(format_exc|print_exc|extract_tb|format_exception)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "traceback 오류 정보 처리", "예외가 발생했을 때 호출 경로와 오류 위치 정보를 문자열로 만들거나 출력합니다. 디버깅 로그와 오류 보고에 자주 씁니다.", risk);
+    }
+    if (/\btime\.(time|sleep|perf_counter|strftime|localtime)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "time 시간 처리", "현재 시각을 구하거나 잠시 멈추거나 실행 시간을 재는 표준 라이브러리 기능입니다. 대기 시간과 측정 기준을 확인해야 합니다.", risk);
+    }
+    if (/^@dataclass\b|dataclasses\.dataclass\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "dataclass 데이터 클래스", "반복해서 쓰는 데이터 묶음 클래스를 간단히 정의하게 해줍니다. 필드 이름과 기본값이 객체 구조를 결정합니다.", risk);
+    }
+    if (/\b(defaultdict|Counter|deque)\s*\(|collections\.(defaultdict|Counter|deque)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "collections 자료구조", "defaultdict, Counter, deque 같은 표준 자료구조를 만듭니다. 기본값, 개수 세기, 빠른 큐 처리를 할 때 자주 씁니다.", risk);
+    }
+    if (/itertools\.(product|chain|combinations|permutations|cycle|count|islice)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "itertools 반복 조합", "반복 가능한 값들을 조합하거나 이어 붙이거나 필요한 만큼 잘라 쓰는 표준 라이브러리 기능입니다. 반복 규모가 커질 수 있어 범위를 확인해야 합니다.", risk);
+    }
+    if (/random\.(choice|shuffle|randint|random|sample|seed)\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "random 무작위 처리", "목록에서 고르기, 섞기, 난수 만들기 같은 무작위 동작을 합니다. 재현이 필요하면 seed 설정 여부를 확인합니다.", risk);
     }
 
     // PYTHON_DEEP_RULES_V187_A2
@@ -2577,9 +2616,9 @@
 
   function isKnownStandaloneCall(language, name) {
     const n = String(name || "");
-    const common = /^(print|open|range|enumerate|len|list|dict|set|tuple|str|int|float|bool|sum|min|max|map|filter|sorted|Path|JSON|URL|Date|String|Number|Boolean|Array|Object|parseInt|parseFloat|fetch)$/;
+    const common = /^(print|open|range|enumerate|len|list|dict|set|tuple|str|int|float|bool|sum|min|max|map|filter|sorted|reversed|next|iter|round|abs|isinstance|Path|JSON|URL|Date|String|Number|Boolean|Array|Object|parseInt|parseFloat|fetch)$/;
     if (common.test(n)) return true;
-    if (language === "python" && /^(json|csv|pd|pandas|os|sys|Path)$/.test(n)) return true;
+    if (language === "python" && /^(json|csv|pd|pandas|os|sys|Path|traceback|time|dataclasses|collections|itertools|random|defaultdict|Counter|deque)$/.test(n)) return true;
     if ((language === "javascript" || language === "workers") && /^(document|console|localStorage|Response|Promise|Math)$/.test(n)) return true;
     return false;
   }
