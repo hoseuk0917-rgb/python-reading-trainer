@@ -736,6 +736,33 @@
     return '<button type="button" class="project-code-bridge-btn" data-project-code-bridge="' + escapeHtml(payload) + '">코드해석</button>';
   }
 
+  // PROJECT_TO_CODE_BRIDGE_UI_V234_A1
+  function switchToCodeExplainerViewV234() {
+    const tab = document.querySelector('[data-view="code"]');
+    if (tab && typeof tab.click === "function") {
+      tab.click();
+      return true;
+    }
+
+    const views = document.querySelectorAll(".view");
+    views.forEach(function(view) {
+      view.classList.remove("active-view");
+    });
+
+    const tabs = document.querySelectorAll(".tab-btn");
+    tabs.forEach(function(button) {
+      button.classList.toggle("active", button.getAttribute("data-view") === "code");
+    });
+
+    const codeView = el("codeView");
+    if (codeView) {
+      codeView.classList.add("active-view");
+      return true;
+    }
+
+    return false;
+  }
+
   function handleProjectCodeBridgeClick(event) {
     const target = event && event.target && event.target.closest
       ? event.target.closest("[data-project-code-bridge]")
@@ -751,14 +778,17 @@
     const language = inferBridgeSnippetLanguage(payload.path);
 
     if (window.CodeExplainer && typeof window.CodeExplainer.analyzeSnippet === "function") {
+      switchToCodeExplainerViewV234();
       window.CodeExplainer.analyzeSnippet(snippet, language);
-      target.textContent = "코드해석으로 보냄";
+      target.textContent = "전송됨";
+      target.classList.add("is-sent");
       return;
     }
 
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
       navigator.clipboard.writeText(snippet);
       target.textContent = "복사됨";
+      target.classList.add("is-sent");
     }
   }
 
