@@ -800,6 +800,7 @@
     return safeName + "()";
   }
 
+  // PROJECT_BRIDGE_PAYLOAD_LIGHT_V242_A1
   function encodeProjectCodeBridgePayload(kind, path, name, type, snippet) {
     const payload = {
       kind: kind || "call",
@@ -807,10 +808,6 @@
       name: name || "",
       type: type || ""
     };
-
-    if (snippet) {
-      payload.snippet = String(snippet).slice(0, 2400);
-    }
 
     return encodeURIComponent(JSON.stringify(payload));
   }
@@ -821,6 +818,33 @@
     } catch (err) {
       return null;
     }
+  }
+
+  function findProjectCodeBridgeSnippet(kind, path, name, type) {
+    const report = lastParsedReport || {};
+    const source = kind === "symbol" ? report.symbols : report.callCandidates;
+    const filePath = String(path || "");
+    const targetName = String(name || "");
+    const targetType = String(type || "").toLowerCase();
+
+    if (!source || !filePath || !targetName || !Array.isArray(source[filePath])) {
+      return "";
+    }
+
+    const items = source[filePath];
+    for (let i = 0; i < items.length; i += 1) {
+      const item = items[i] || {};
+      const itemName = String(item.name || "");
+      const itemType = String(item.type || "").toLowerCase();
+
+      if (itemName !== targetName) continue;
+      if (kind === "symbol" && targetType && itemType && itemType !== targetType) continue;
+
+      const snippet = String(item.snippet || "").trim();
+      if (snippet) return snippet;
+    }
+
+    return "";
   }
 
   function renderProjectCodeBridgeButton(kind, path, name, type, snippet) {
@@ -867,7 +891,8 @@
 
     event.preventDefault();
 
-    const snippet = buildProjectCodeBridgeSnippet(payload.kind, payload.path, payload.name, payload.type, payload.snippet || "");
+    const reportSnippet = findProjectCodeBridgeSnippet(payload.kind, payload.path, payload.name, payload.type);
+    const snippet = buildProjectCodeBridgeSnippet(payload.kind, payload.path, payload.name, payload.type, reportSnippet || payload.snippet || "");
     const language = inferBridgeSnippetLanguage(payload.path);
 
     if (window.CodeExplainer && typeof window.CodeExplainer.analyzeSnippet === "function") {
