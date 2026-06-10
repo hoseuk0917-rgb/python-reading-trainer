@@ -1,6 +1,6 @@
-// === PROJECT ANALYZER V199-A1 START ===
+// === PROJECT ANALYZER V247-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260610_v246_a1";
+  const PROJECT_ANALYZER_VERSION = "20260610_v247_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
@@ -364,7 +364,7 @@
 "",
 "OUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')",
 "md = []",
-"md.append('# Project Probe V199')",
+"md.append('# Project Probe Report V247')",
 "md.append('')",
 "md.append('- generated_at: ' + report['generated_at'])",
 "md.append('- root: `' + report['root'] + '`')",
@@ -614,7 +614,7 @@
     };
 
     return {
-      ok: raw.includes("PROJECT_PROBE_V199_OK") || raw.includes("PROJECT_PROBE_V198_OK") || raw.includes("PROJECT_PROBE_V197_OK") || raw.includes("PROJECT_PROBE_V195_OK") || raw.includes("PROJECT_PROBE_V193_OK") || raw.includes("# Project Probe V199") || raw.includes("# Project Probe V198") || raw.includes("# Project Probe V197") || raw.includes("# Project Probe V195") || raw.includes("# Project Probe V193"),
+      ok: raw.includes("PROJECT_PROBE_V199_OK") || raw.includes("PROJECT_PROBE_V198_OK") || raw.includes("PROJECT_PROBE_V197_OK") || raw.includes("PROJECT_PROBE_V195_OK") || raw.includes("PROJECT_PROBE_V193_OK") || raw.includes("# Project Probe Report V247") || raw.includes("# Project Probe V247") || raw.includes("# Project Probe V199") || raw.includes("# Project Probe V198") || raw.includes("# Project Probe V197") || raw.includes("# Project Probe V195") || raw.includes("# Project Probe V193"),
       inputMode: "terminal",
       root: getLineValue(raw, "ROOT") || (raw.match(/- root: `([^`]+)`/) || [])[1] || "",
       gitHead: getLineValue(raw, "GIT_HEAD") || (raw.match(/- git_head: `([^`]+)`/) || [])[1] || "",
@@ -706,7 +706,7 @@
     }
 
     if (!parsed.ok) {
-      items.push("PROJECT_PROBE_V199_OK 또는 # Project Probe V199가 보이지 않습니다. 출력이 잘렸을 수 있습니다. V198/V197 출력도 읽을 수 있지만 새 probe 실행을 권장합니다.");
+      items.push("PROJECT_PROBE_V199_OK 또는 최신 Project Probe Report 제목이 보이지 않습니다. 출력이 잘렸을 수 있습니다. V199/V198/V197 출력도 읽을 수 있지만 새 probe 실행을 권장합니다.");
     }
 
     return items;
@@ -1452,4 +1452,4 @@
     init();
   }
 })();
- // === PROJECT ANALYZER V199-A1 END ===
+ // === PROJECT ANALYZER V247-A1 END ===
