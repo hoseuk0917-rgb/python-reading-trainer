@@ -105,14 +105,47 @@
 "        return 'json_config_or_data'",
 "    return 'other'",
 "",
+"# PROJECT_PROBE_SNIPPETS_V239_A1",
+"def line_no_from_offset(text, offset):",
+"    return text.count('\\n', 0, max(0, offset)) + 1",
+"",
+"def make_line_snippet(text, line, radius=5, max_chars=1800):",
+"    try:",
+"        line = int(line or 0)",
+"    except Exception:",
+"        return ''",
+"    if line <= 0:",
+"        return ''",
+"    rows = text.splitlines()",
+"    if not rows:",
+"        return ''",
+"    start = max(1, line - radius)",
+"    end = min(len(rows), line + radius)",
+"    snippet = '\\n'.join(rows[start-1:end]).strip()",
+"    return snippet[:max_chars]",
+"",
+"def make_ast_snippet(text, node, radius=2, max_chars=2200):",
+"    rows = text.splitlines()",
+"    start = getattr(node, 'lineno', None)",
+"    end = getattr(node, 'end_lineno', None) or start",
+"    if not start:",
+"        return ''",
+"    start = max(1, int(start) - radius)",
+"    end = min(len(rows), int(end) + radius)",
+"    snippet = '\\n'.join(rows[start-1:end]).strip()",
+"    return snippet[:max_chars]",
+"",
 "def extract_js_symbols(text):",
 "    symbols = []",
 "    for m in re.finditer(r'\\bfunction\\s+([A-Za-z_$][\\w$]*)\\s*\\(', text):",
-"        symbols.append({'type': 'function', 'name': m.group(1)})",
+"        line = line_no_from_offset(text, m.start())",
+"        symbols.append({'type': 'function', 'name': m.group(1), 'line': line, 'snippet': make_line_snippet(text, line)})",
 "    for m in re.finditer(r'\\b(?:const|let|var)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*(?:async\\s*)?(?:function|\\([^)]*\\)\\s*=>|[A-Za-z_$][\\w$]*\\s*=>)', text):",
-"        symbols.append({'type': 'function_like', 'name': m.group(1)})",
+"        line = line_no_from_offset(text, m.start())",
+"        symbols.append({'type': 'function_like', 'name': m.group(1), 'line': line, 'snippet': make_line_snippet(text, line)})",
 "    for m in re.finditer(r'\\bclass\\s+([A-Za-z_$][\\w$]*)', text):",
-"        symbols.append({'type': 'class', 'name': m.group(1)})",
+"        line = line_no_from_offset(text, m.start())",
+"        symbols.append({'type': 'class', 'name': m.group(1), 'line': line, 'snippet': make_line_snippet(text, line)})",
 "    return symbols[:120]",
 "",
 "def extract_py_symbols(text):",
@@ -123,9 +156,9 @@
 "    symbols = []",
 "    for node in ast.walk(tree):",
 "        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):",
-"            symbols.append({'type': 'function', 'name': node.name, 'line': getattr(node, 'lineno', None)})",
+"            symbols.append({'type': 'function', 'name': node.name, 'line': getattr(node, 'lineno', None), 'snippet': make_ast_snippet(text, node)})",
 "        elif isinstance(node, ast.ClassDef):",
-"            symbols.append({'type': 'class', 'name': node.name, 'line': getattr(node, 'lineno', None)})",
+"            symbols.append({'type': 'class', 'name': node.name, 'line': getattr(node, 'lineno', None), 'snippet': make_ast_snippet(text, node)})",
 "    return symbols[:120]",
 "",
 "def extract_refs(text):",
@@ -138,13 +171,16 @@
 "",
 "# CALL_CANDIDATES_V194_A1",
 "def extract_js_calls(text):",
-"    exclude = {'if', 'for', 'while', 'switch', 'catch', 'function', 'return', 'typeof', 'new'}",
+"    exclude = set(['if', 'for', 'while', 'switch', 'catch', 'function', 'return', 'typeof', 'new', 'class', 'import', 'from', 'require', 'console', 'Math', 'JSON', 'String', 'Number', 'Boolean', 'Array', 'Object'])",
 "    counts = Counter()",
+"    first_line = {}",
 "    for m in re.finditer(r'\\b([A-Za-z_$][\\w$]*)\\s*\\(', text):",
 "        name = m.group(1)",
 "        if name not in exclude:",
 "            counts[name] += 1",
-"    return [{'name': k, 'count': v} for k, v in counts.most_common(30)]",
+"            if name not in first_line:",
+"                first_line[name] = line_no_from_offset(text, m.start())",
+"    return [{'name': k, 'count': v, 'line': first_line.get(k), 'snippet': make_line_snippet(text, first_line.get(k))} for k, v in counts.most_common(30)]",
 "",
 "def extract_py_calls(text):",
 "    try:",
@@ -152,64 +188,20 @@
 "    except Exception:",
 "        return []",
 "    counts = Counter()",
+"    first_line = {}",
 "    for node in ast.walk(tree):",
 "        if isinstance(node, ast.Call):",
 "            func = node.func",
+"            name = None",
 "            if isinstance(func, ast.Name):",
-"                counts[func.id] += 1",
+"                name = func.id",
 "            elif isinstance(func, ast.Attribute):",
-"                counts[func.attr] += 1",
-"    return [{'name': k, 'count': v} for k, v in counts.most_common(30)]",
-"",
-"files = []",
-"for p in ROOT.rglob('*'):",
-"    if p.is_file() and not should_skip(p):",
-"        try:",
-"            st = p.stat()",
-"        except Exception:",
-"            continue",
-"        files.append({'path': rel(p), 'ext': p.suffix.lower() or p.name.lower(), 'size': st.st_size, 'role': classify_file(p)})",
-"",
-"ext_counts = Counter(f['ext'] for f in files)",
-"role_counts = Counter(f['role'] for f in files)",
-"top_dirs = Counter(f['path'].split('/')[0] for f in files)",
-"",
-"key_status = {}",
-"for k in KEY_FILES:",
-"    p = ROOT / k",
-"    key_status[k] = {'exists': p.exists(), 'size': p.stat().st_size if p.exists() else 0}",
-"",
-"symbols = {}",
-"references = {}",
-"call_candidates = {}",
-"for f in files:",
-"    p = ROOT / f['path']",
-"    ext = p.suffix.lower()",
-"    if ext not in TEXT_EXTS and p.name not in ['.gitignore']:",
-"        continue",
-"    text = read_text(p)",
-"    if ext == '.js':",
-"        s = extract_js_symbols(text)",
-"        if s:",
-"            symbols[f['path']] = s",
-"        c = extract_js_calls(text)",
-"        if c:",
-"            call_candidates[f['path']] = c",
-"    elif ext == '.py':",
-"        s = extract_py_symbols(text)",
-"        if s:",
-"            symbols[f['path']] = s",
-"        c = extract_py_calls(text)",
-"        if c:",
-"            call_candidates[f['path']] = c",
-"    refs = extract_refs(text)",
-"    if refs:",
-"        references[f['path']] = refs",
-"",
-"lesson_dir = ROOT / 'data' / 'lessons'",
-"side_dir = ROOT / 'data' / 'side_cards'",
-"lesson_files = sorted(lesson_dir.glob('*.json')) if lesson_dir.exists() else []",
-"side_files = sorted(side_dir.glob('*.json')) if side_dir.exists() else []",
+"                name = func.attr",
+"            if name:",
+"                counts[name] += 1",
+"                if name not in first_line:",
+"                    first_line[name] = getattr(node, 'lineno', None)",
+"    return [{'name': k, 'count': v, 'line': first_line.get(k), 'snippet': make_line_snippet(text, first_line.get(k))} for k, v in counts.most_common(30)]",
 "",
 "def count_json_cards(paths):",
 "    total = 0",
@@ -683,7 +675,12 @@
     return "auto";
   }
 
-  function buildProjectCodeBridgeSnippet(kind, path, name, type) {
+  function buildProjectCodeBridgeSnippet(kind, path, name, type, snippet) {
+    const providedSnippet = String(snippet || "").trim();
+    if (providedSnippet) {
+      return providedSnippet;
+    }
+
     const lang = inferBridgeSnippetLanguage(path);
     const rawName = String(name || "target");
     const safeName = rawName.replace(/[^\w$]/g, "_") || "target";
@@ -714,13 +711,19 @@
     return safeName + "()";
   }
 
-  function encodeProjectCodeBridgePayload(kind, path, name, type) {
-    return encodeURIComponent(JSON.stringify({
+  function encodeProjectCodeBridgePayload(kind, path, name, type, snippet) {
+    const payload = {
       kind: kind || "call",
       path: path || "",
       name: name || "",
       type: type || ""
-    }));
+    };
+
+    if (snippet) {
+      payload.snippet = String(snippet).slice(0, 2400);
+    }
+
+    return encodeURIComponent(JSON.stringify(payload));
   }
 
   function decodeProjectCodeBridgePayload(value) {
@@ -731,9 +734,9 @@
     }
   }
 
-  function renderProjectCodeBridgeButton(kind, path, name, type) {
+  function renderProjectCodeBridgeButton(kind, path, name, type, snippet) {
     if (!name) return "";
-    const payload = encodeProjectCodeBridgePayload(kind, path, name, type);
+    const payload = encodeProjectCodeBridgePayload(kind, path, name, type, snippet || "");
     return '<button type="button" class="project-code-bridge-btn" data-project-code-bridge="' + escapeHtml(payload) + '">코드해석</button>';
   }
 
@@ -775,7 +778,7 @@
 
     event.preventDefault();
 
-    const snippet = buildProjectCodeBridgeSnippet(payload.kind, payload.path, payload.name, payload.type);
+    const snippet = buildProjectCodeBridgeSnippet(payload.kind, payload.path, payload.name, payload.type, payload.snippet || "");
     const language = inferBridgeSnippetLanguage(payload.path);
 
     if (window.CodeExplainer && typeof window.CodeExplainer.analyzeSnippet === "function") {
@@ -800,10 +803,10 @@
     return raw.replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 96) || "project-code-more";
   }
 
-  function renderProjectCodeChip(kind, filePath, name, type, label) {
+  function renderProjectCodeChip(kind, filePath, name, type, label, snippet) {
     if (!name) return "";
     return '<span class="project-code-chip"><span>' + escapeHtml(label || name) + '</span> ' +
-      renderProjectCodeBridgeButton(kind, filePath, name, type || "") +
+      renderProjectCodeBridgeButton(kind, filePath, name, type || "", snippet || "") +
       '</span>';
   }
 
@@ -852,11 +855,11 @@
       const moreId = buildProjectCodeMoreId("symbol", filePath);
       const names = visibleSymbols.map(function(symbol) {
         const name = symbol.name || "";
-        return renderProjectCodeChip("symbol", filePath, name, symbol.type || "", name);
+        return renderProjectCodeChip("symbol", filePath, name, symbol.type || "", name, symbol.snippet || "");
       }).filter(Boolean);
       const hiddenNames = hiddenSymbols.map(function(symbol) {
         const name = symbol.name || "";
-        return renderProjectCodeChip("symbol", filePath, name, symbol.type || "", name);
+        return renderProjectCodeChip("symbol", filePath, name, symbol.type || "", name, symbol.snippet || "");
       }).filter(Boolean);
       const moreHtml = hiddenNames.length
         ? ' · ' + renderProjectCodeMoreToggle(moreId, hiddenNames.length) + ' ' + renderProjectCodeHiddenItems(moreId, hiddenNames)
@@ -874,11 +877,11 @@
       const moreId = buildProjectCodeMoreId("call", filePath);
       const calls = visibleCalls.map(function(call) {
         const name = call.name || "";
-        return renderProjectCodeChip("call", filePath, name, "call", name + "(" + (call.count || 0) + ")");
+        return renderProjectCodeChip("call", filePath, name, "call", name + "(" + (call.count || 0) + ")", call.snippet || "");
       }).filter(Boolean);
       const hiddenCallChips = hiddenCalls.map(function(call) {
         const name = call.name || "";
-        return renderProjectCodeChip("call", filePath, name, "call", name + "(" + (call.count || 0) + ")");
+        return renderProjectCodeChip("call", filePath, name, "call", name + "(" + (call.count || 0) + ")", call.snippet || "");
       }).filter(Boolean);
       const moreHtml = hiddenCallChips.length
         ? ' · ' + renderProjectCodeMoreToggle(moreId, hiddenCallChips.length) + ' ' + renderProjectCodeHiddenItems(moreId, hiddenCallChips)
