@@ -685,7 +685,8 @@
 
   function buildProjectCodeBridgeSnippet(kind, path, name, type) {
     const lang = inferBridgeSnippetLanguage(path);
-    const safeName = String(name || "target").replace(/[^\w$]/g, "_") || "target";
+    const rawName = String(name || "target");
+    const safeName = rawName.replace(/[^\w$]/g, "_") || "target";
 
     if (kind === "symbol") {
       if (lang === "python") {
@@ -708,7 +709,7 @@
 
     if (lang === "python") return "result = " + safeName + "()";
     if (lang === "javascript") return "const result = " + safeName + "();";
-    if (lang === "powershell") return safeName;
+    if (lang === "powershell") return rawName || safeName;
     if (lang === "java") return safeName + "();";
     return safeName + "()";
   }
