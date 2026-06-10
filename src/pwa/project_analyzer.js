@@ -1035,6 +1035,7 @@
       '</div>' +
       renderProjectUsageHint(parsed) +
       renderFocusFiles(parsed) +
+      renderJsonReportSections(parsed) +
       '<div class="project-detail-section project-recommendations-section">' +
       '<h3>다음에 같이 봐야 할 파일 묶음</h3>' +
       renderRecommendationCards(recommendations) +
