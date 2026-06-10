@@ -793,21 +793,75 @@
     }
   }
 
+
+  // PROJECT_CODE_MORE_TOGGLE_V238_A1
+  function buildProjectCodeMoreId(kind, path) {
+    const raw = String(kind || "items") + "-" + String(path || "file");
+    return raw.replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 96) || "project-code-more";
+  }
+
+  function renderProjectCodeChip(kind, filePath, name, type, label) {
+    if (!name) return "";
+    return '<span class="project-code-chip"><span>' + escapeHtml(label || name) + '</span> ' +
+      renderProjectCodeBridgeButton(kind, filePath, name, type || "") +
+      '</span>';
+  }
+
+  function renderProjectCodeMoreToggle(id, hiddenCount) {
+    const moreLabel = "외 " + hiddenCount + "개 더보기";
+    return '<button type="button" class="project-code-more-toggle" data-project-code-more-toggle="' + escapeHtml(id) + '" data-more-label="' + escapeHtml(moreLabel) + '" aria-expanded="false">' + escapeHtml(moreLabel) + '</button>';
+  }
+
+  function renderProjectCodeHiddenItems(id, chips) {
+    if (!chips || !chips.length) return "";
+    return '<span class="project-code-hidden-items" data-project-code-more-items="' + escapeHtml(id) + '" hidden>' + chips.join(" · ") + '</span>';
+  }
+
+  function handleProjectCodeMoreToggleClick(event) {
+    const target = event && event.target && event.target.closest
+      ? event.target.closest("[data-project-code-more-toggle]")
+      : null;
+    if (!target) return;
+
+    const id = target.getAttribute("data-project-code-more-toggle");
+    if (!id) return;
+
+    const hiddenItems = document.querySelector('[data-project-code-more-items="' + id + '"]');
+    if (!hiddenItems) return;
+
+    event.preventDefault();
+
+    const expanded = target.getAttribute("aria-expanded") === "true";
+    if (expanded) {
+      hiddenItems.hidden = true;
+      target.setAttribute("aria-expanded", "false");
+      target.textContent = target.getAttribute("data-more-label") || "더보기";
+      return;
+    }
+
+    hiddenItems.hidden = false;
+    target.setAttribute("aria-expanded", "true");
+    target.textContent = "접기";
+  }
   function renderSymbolFiles(symbols) {
     return renderDataSection("주요 함수/클래스", objectEntries(symbols).slice(0, 15), function(item) {
       const filePath = item[0];
       const symbolItems = Array.isArray(item[1]) ? item[1] : [];
       const visibleSymbols = symbolItems.slice(0, 5);
+      const hiddenSymbols = symbolItems.slice(5);
+      const moreId = buildProjectCodeMoreId("symbol", filePath);
       const names = visibleSymbols.map(function(symbol) {
         const name = symbol.name || "";
-        if (!name) return "";
-        return '<span class="project-code-chip"><span>' + escapeHtml(name) + '</span> ' +
-          renderProjectCodeBridgeButton("symbol", filePath, name, symbol.type || "") +
-          '</span>';
+        return renderProjectCodeChip("symbol", filePath, name, symbol.type || "", name);
       }).filter(Boolean);
-      const hiddenCount = Math.max(0, symbolItems.length - visibleSymbols.length);
-      const hiddenHint = hiddenCount ? '<span class="project-code-more-hint">외 ' + escapeHtml(hiddenCount) + '개 더 있음</span>' : '';
-      return '<div class="project-data-row"><strong>' + escapeHtml(filePath) + '</strong><span>' + names.join(" · ") + hiddenHint + '</span></div>';
+      const hiddenNames = hiddenSymbols.map(function(symbol) {
+        const name = symbol.name || "";
+        return renderProjectCodeChip("symbol", filePath, name, symbol.type || "", name);
+      }).filter(Boolean);
+      const moreHtml = hiddenNames.length
+        ? ' · ' + renderProjectCodeMoreToggle(moreId, hiddenNames.length) + ' ' + renderProjectCodeHiddenItems(moreId, hiddenNames)
+        : '';
+      return '<div class="project-data-row"><strong>' + escapeHtml(filePath) + '</strong><span>' + names.join(" · ") + moreHtml + '</span></div>';
     });
   }
 
@@ -816,16 +870,20 @@
       const filePath = item[0];
       const callItems = Array.isArray(item[1]) ? item[1] : [];
       const visibleCalls = callItems.slice(0, 5);
+      const hiddenCalls = callItems.slice(5);
+      const moreId = buildProjectCodeMoreId("call", filePath);
       const calls = visibleCalls.map(function(call) {
         const name = call.name || "";
-        if (!name) return "";
-        return '<span class="project-code-chip"><span>' + escapeHtml(name + "(" + (call.count || 0) + ")") + '</span> ' +
-          renderProjectCodeBridgeButton("call", filePath, name, "call") +
-          '</span>';
+        return renderProjectCodeChip("call", filePath, name, "call", name + "(" + (call.count || 0) + ")");
       }).filter(Boolean);
-      const hiddenCount = Math.max(0, callItems.length - visibleCalls.length);
-      const hiddenHint = hiddenCount ? '<span class="project-code-more-hint">외 ' + escapeHtml(hiddenCount) + '개 더 있음</span>' : '';
-      return '<div class="project-data-row"><strong>' + escapeHtml(filePath) + '</strong><span>' + calls.join(" · ") + hiddenHint + '</span></div>';
+      const hiddenCallChips = hiddenCalls.map(function(call) {
+        const name = call.name || "";
+        return renderProjectCodeChip("call", filePath, name, "call", name + "(" + (call.count || 0) + ")");
+      }).filter(Boolean);
+      const moreHtml = hiddenCallChips.length
+        ? ' · ' + renderProjectCodeMoreToggle(moreId, hiddenCallChips.length) + ' ' + renderProjectCodeHiddenItems(moreId, hiddenCallChips)
+        : '';
+      return '<div class="project-data-row"><strong>' + escapeHtml(filePath) + '</strong><span>' + calls.join(" · ") + moreHtml + '</span></div>';
     });
   }
 
@@ -1174,6 +1232,9 @@
 
     window.removeEventListener("mermaid-ready", rerenderProjectMermaidWhenReady);
     window.addEventListener("mermaid-ready", rerenderProjectMermaidWhenReady);
+
+    document.removeEventListener("click", handleProjectCodeMoreToggleClick);
+    document.addEventListener("click", handleProjectCodeMoreToggleClick);
 
     document.removeEventListener("click", handleProjectCodeBridgeClick);
     document.addEventListener("click", handleProjectCodeBridgeClick);
