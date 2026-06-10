@@ -935,8 +935,36 @@
     target.setAttribute("aria-expanded", "true");
     target.textContent = "접기";
   }
+  // PROJECT_DETAIL_FOCUS_SORT_V241_A1
+  function projectDetailPathPriority(path) {
+    const p = String(path || "").replace(/\\/g, "/").toLowerCase();
+
+    if (p === "src/pwa/app.js") return 0;
+    if (p === "src/pwa/code_explainer.js") return 1;
+    if (p === "src/pwa/code_explainer_rules.js") return 2;
+    if (p === "src/pwa/project_analyzer.js") return 3;
+    if (p.startsWith("src/pwa/")) return 4;
+    if (p === "tools/validate_lessons.py") return 10;
+    if (p === "tools/code_explainer_smoke_v171.js") return 11;
+    if (p.startsWith("tools/verify_project_analyzer_")) return 20;
+    if (p.startsWith("tools/verify_code_explainer_")) return 21;
+    if (p.startsWith("tools/")) return 25;
+    if (p.startsWith("notes/design/backup") || p.indexOf("/backup") >= 0 || p.indexOf("backup_") >= 0) return 90;
+    if (p.startsWith("notes/")) return 80;
+    return 50;
+  }
+
+  function sortProjectDetailEntries(entries) {
+    return (Array.isArray(entries) ? entries : []).slice().sort(function(a, b) {
+      const pa = projectDetailPathPriority(a && a[0]);
+      const pb = projectDetailPathPriority(b && b[0]);
+      if (pa !== pb) return pa - pb;
+      return String((a && a[0]) || "").localeCompare(String((b && b[0]) || ""));
+    });
+  }
+
   function renderSymbolFiles(symbols) {
-    return renderDataSection("주요 함수/클래스", objectEntries(symbols).slice(0, 15), function(item) {
+    return renderDataSection("주요 함수/클래스", sortProjectDetailEntries(objectEntries(symbols)).slice(0, 15), function(item) {
       const filePath = item[0];
       const symbolItems = Array.isArray(item[1]) ? item[1] : [];
       const visibleSymbols = symbolItems.slice(0, 5);
@@ -958,7 +986,7 @@
   }
 
   function renderCallCandidateDetails(callCandidates) {
-    return renderDataSection("함수 호출 후보 상세", objectEntries(callCandidates).slice(0, 15), function(item) {
+    return renderDataSection("함수 호출 후보 상세", sortProjectDetailEntries(objectEntries(callCandidates)).slice(0, 15), function(item) {
       const filePath = item[0];
       const callItems = Array.isArray(item[1]) ? item[1] : [];
       const visibleCalls = callItems.slice(0, 5);
