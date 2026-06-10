@@ -796,28 +796,36 @@
   function renderSymbolFiles(symbols) {
     return renderDataSection("주요 함수/클래스", objectEntries(symbols).slice(0, 15), function(item) {
       const filePath = item[0];
-      const names = Array.isArray(item[1]) ? item[1].slice(0, 10).map(function(symbol) {
+      const symbolItems = Array.isArray(item[1]) ? item[1] : [];
+      const visibleSymbols = symbolItems.slice(0, 5);
+      const names = visibleSymbols.map(function(symbol) {
         const name = symbol.name || "";
         if (!name) return "";
         return '<span class="project-code-chip"><span>' + escapeHtml(name) + '</span> ' +
           renderProjectCodeBridgeButton("symbol", filePath, name, symbol.type || "") +
           '</span>';
-      }).filter(Boolean) : [];
-      return '<div class="project-data-row"><strong>' + escapeHtml(filePath) + '</strong><span>' + names.join(" · ") + '</span></div>';
+      }).filter(Boolean);
+      const hiddenCount = Math.max(0, symbolItems.length - visibleSymbols.length);
+      const hiddenHint = hiddenCount ? '<span class="project-code-more-hint">외 ' + escapeHtml(hiddenCount) + '개 더 있음</span>' : '';
+      return '<div class="project-data-row"><strong>' + escapeHtml(filePath) + '</strong><span>' + names.join(" · ") + hiddenHint + '</span></div>';
     });
   }
 
   function renderCallCandidateDetails(callCandidates) {
     return renderDataSection("함수 호출 후보 상세", objectEntries(callCandidates).slice(0, 15), function(item) {
       const filePath = item[0];
-      const calls = Array.isArray(item[1]) ? item[1].slice(0, 10).map(function(call) {
+      const callItems = Array.isArray(item[1]) ? item[1] : [];
+      const visibleCalls = callItems.slice(0, 5);
+      const calls = visibleCalls.map(function(call) {
         const name = call.name || "";
         if (!name) return "";
         return '<span class="project-code-chip"><span>' + escapeHtml(name + "(" + (call.count || 0) + ")") + '</span> ' +
           renderProjectCodeBridgeButton("call", filePath, name, "call") +
           '</span>';
-      }).filter(Boolean) : [];
-      return '<div class="project-data-row"><strong>' + escapeHtml(filePath) + '</strong><span>' + calls.join(" · ") + '</span></div>';
+      }).filter(Boolean);
+      const hiddenCount = Math.max(0, callItems.length - visibleCalls.length);
+      const hiddenHint = hiddenCount ? '<span class="project-code-more-hint">외 ' + escapeHtml(hiddenCount) + '개 더 있음</span>' : '';
+      return '<div class="project-data-row"><strong>' + escapeHtml(filePath) + '</strong><span>' + calls.join(" · ") + hiddenHint + '</span></div>';
     });
   }
 
