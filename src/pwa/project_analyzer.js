@@ -1,6 +1,6 @@
 // === PROJECT ANALYZER V199-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260608_v199_a1";
+  const PROJECT_ANALYZER_VERSION = "20260609_v244_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
@@ -747,10 +747,22 @@
     });
   }
 
+  // PROJECT_CANDIDATE_BUNDLE_KEYS_V244_A1
+  function candidateBundleDisplayLabel(key) {
+    const labels = {
+      code_explainer_diagram: "코드해석/다이어그램",
+      project_analyzer: "프로젝트분석",
+      learning_card_data: "학습 카드/데이터",
+      verification_smoke: "검증/스모크"
+    };
+
+    return labels[key] || key;
+  }
+
   function renderCandidateBundles(candidateBundles) {
     return renderDataSection("기능별 파일 묶음", objectEntries(candidateBundles).slice(0, 12), function(item) {
       const files = Array.isArray(item[1]) ? item[1] : [];
-      return '<div class="project-data-row"><strong>' + escapeHtml(item[0]) + '</strong><span>' + escapeHtml(files.slice(0, 12).join(" · ")) + '</span></div>';
+      return '<div class="project-data-row"><strong>' + escapeHtml(candidateBundleDisplayLabel(item[0])) + '</strong><span>' + escapeHtml(files.slice(0, 12).join(" · ")) + '</span></div>';
     });
   }
 
@@ -1085,10 +1097,23 @@
 
   function renderFocusFiles(parsed) {
     const bundles = parsed.candidateBundles || {};
+
+    function firstBundle(keys) {
+      for (let i = 0; i < keys.length; i += 1) {
+        const value = bundles[keys[i]];
+        if (Array.isArray(value) && value.length) {
+          return value;
+        }
+      }
+
+      return [];
+    }
+
     const preferred = [
-      ["프로젝트분석", bundles["프로젝트분석"]],
-      ["코드해석/다이어그램", bundles["코드해석/다이어그램"]],
-      ["검증/스모크", bundles["검증/스모크"] || bundles["검증"]]
+      ["프로젝트분석", firstBundle(["project_analyzer", "프로젝트분석"])],
+      ["코드해석/다이어그램", firstBundle(["code_explainer_diagram", "코드해석/다이어그램"])],
+      ["학습 카드/데이터", firstBundle(["learning_card_data", "학습 카드/데이터", "학습카드/데이터"])],
+      ["검증/스모크", firstBundle(["verification_smoke", "검증/스모크", "검증"])]
     ].filter(function(item) {
       return Array.isArray(item[1]) && item[1].length;
     });
@@ -1096,6 +1121,7 @@
     const fallback = [
       ["프로젝트분석", ["src/pwa/index.html", "src/pwa/project_analyzer.js", "src/pwa/style.css", "tools/verify_project_analyzer_v198.py"]],
       ["코드해석/다이어그램", ["src/pwa/code_explainer.js", "src/pwa/code_explainer_rules.js", "tools/code_explainer_smoke_v171.js"]],
+      ["학습 카드/데이터", ["data/lessons", "data/side_cards", "tools/validate_lessons.py"]],
       ["버전/배포", ["index.html", "src/pwa/index.html", "src/pwa/app.js"]]
     ];
 
@@ -1125,7 +1151,7 @@
     }).slice(0, 14);
 
     const lines = [
-      "# python-reading-trainer 인계문서 — V199 구조도 표시 개선",
+      "# python-reading-trainer 인계문서 — V244 후보 파일 묶음 정합성 개선",
       "",
       "## 현재 상태",
       "",
