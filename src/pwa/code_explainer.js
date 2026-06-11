@@ -1906,14 +1906,198 @@ function buildJsFunctionInterpretationsV257(source, language) {
   return enhanceJsFunctionInterpretationsV257(source, items);
 }
 
+
+// CODE_EXPLAINER_QUALITY_HINTS_V274_A1
+// CODE_EXPLAINER_VERSION_TEXT_V274_A1 20260611_v274_a1
+function appendUniqueQualityStepV274(steps, step) {
+  if (!Array.isArray(steps) || !step) return;
+  if (steps.indexOf(step) >= 0) return;
+  steps.push(step);
+}
+
+function hasCallNameV274(ir, pattern) {
+  return (Array.isArray(ir && ir.calls) ? ir.calls : []).some(function(call) {
+    return pattern.test(String(call && call.name || ""));
+  });
+}
+
+function addConceptsV274(ir, concepts) {
+  if (!ir) return;
+  ir.concepts = Array.isArray(ir.concepts) ? ir.concepts : [];
+  (Array.isArray(concepts) ? concepts : []).forEach(function(concept) {
+    if (ir.concepts.indexOf(concept) < 0) ir.concepts.push(concept);
+  });
+}
+
+function buildPythonQualityHintsV274(ir) {
+  const signals = ir && ir.signals ? ir.signals : {};
+  const hints = [];
+
+  const hasTry = Array.isArray(signals.errorHandlers) && signals.errorHandlers.some(function(item) {
+    return item && item.type === "try";
+  });
+  const hasExcept = Array.isArray(signals.errorHandlers) && signals.errorHandlers.some(function(item) {
+    return item && item.type === "except";
+  });
+  const hasCli = Array.isArray(signals.cli) && signals.cli.length > 0;
+  const hasContext = Array.isArray(signals.contextManagers) && signals.contextManagers.length > 0;
+  const hasFile = Array.isArray(signals.fileOps) && signals.fileOps.length > 0;
+  const hasJson = Array.isArray(signals.jsonOps) && signals.jsonOps.length > 0;
+  const hasPath = hasCallNameV274(ir, /^Path$|\.Path$|Path$/) || hasCallNameV274(ir, /read_text$|write_text$/);
+  const hasSubprocess = hasCallNameV274(ir, /^subprocess\.run$|^run$/);
+
+  if (hasTry && hasExcept) {
+    hints.push("try/except는 실패할 수 있는 부분을 안전하게 감싸고, 실패했을 때도 프로그램이 바로 멈추지 않게 대체 흐름을 준비합니다.");
+  }
+
+  if (hasContext || hasFile) {
+    hints.push("with open은 파일을 열고 작업이 끝나면 자동으로 닫아 주기 때문에, 파일 처리에서 실수를 줄이는 안전한 패턴입니다.");
+  }
+
+  if (hasJson) {
+    hints.push("json.load/load는 JSON을 Python 데이터로 읽고, json.dump/dumps는 Python 데이터를 JSON 형태로 내보내는 역할입니다.");
+  }
+
+  if (hasCli) {
+    hints.push("argparse는 사용자가 터미널에서 입력한 옵션을 코드 안의 args 값으로 바꿔 주는 입구 역할을 합니다.");
+  }
+
+  if (hasPath) {
+    hints.push("Path는 문자열 경로를 파일/폴더 경로 객체로 다루게 해 주어, 경로 결합과 파일 접근을 더 읽기 쉽게 만듭니다.");
+  }
+
+  if (hasSubprocess) {
+    hints.push("subprocess.run은 Python 코드 안에서 외부 명령을 실행하는 도구라서, 실패 가능성과 실행 환경을 함께 확인해야 합니다.");
+  }
+
+  return hints;
+}
+
+function enhancePythonQualityHintsV274(items) {
+  return (Array.isArray(items) ? items : []).map(function(ir) {
+    const hints = buildPythonQualityHintsV274(ir);
+
+    hints.forEach(function(hint) {
+      appendUniqueQualityStepV274(ir.steps, hint);
+    });
+
+    if (hints.length) {
+      ir.qualityHintsV274 = hints;
+      addConceptsV274(ir, ["quality_hint"]);
+    }
+
+    const signals = ir && ir.signals ? ir.signals : {};
+    const hasCli = Array.isArray(signals.cli) && signals.cli.length > 0;
+    const hasJson = Array.isArray(signals.jsonOps) && signals.jsonOps.length > 0;
+    const hasFile = Array.isArray(signals.fileOps) && signals.fileOps.length > 0;
+    const hasError = Array.isArray(signals.errorHandlers) && signals.errorHandlers.length > 0;
+
+    if (hasCli && hasFile) {
+      ir.roleSummary = "명령줄에서 받은 옵션으로 파일 경로를 정하고, 그 파일을 읽거나 처리하는 CLI 기반 파일 처리 함수로 보입니다.";
+    } else if (hasError && hasJson) {
+      ir.roleSummary = "JSON 읽기/변환처럼 실패할 수 있는 작업을 try/except로 감싸 안전하게 처리하는 함수로 보입니다.";
+    } else if (hasFile && hasJson) {
+      ir.roleSummary = "파일에서 JSON 데이터를 읽어 Python에서 다룰 수 있는 값으로 바꾸는 데이터 로더 함수로 보입니다.";
+    }
+
+    ir.concepts = Array.from(new Set(Array.isArray(ir.concepts) ? ir.concepts : [])).sort();
+    return ir;
+  });
+}
+
+function buildJsQualityHintsV274(ir) {
+  const signals = ir && ir.signals ? ir.signals : {};
+  const calls = Array.isArray(ir && ir.calls) ? ir.calls.map(function(call) {
+    return String(call && call.name || "");
+  }).join(" ") : "";
+
+  const hints = [];
+  const hasFetch = /fetch/.test(calls) || (Array.isArray(signals.fetchOps) && signals.fetchOps.length > 0);
+  const hasAwait = Array.isArray(signals.awaitOps) && signals.awaitOps.length > 0;
+  const hasExport = !!signals.isExported;
+  const hasClassMethod = !!signals.isClassMethod;
+  const hasDom = /document\.|getElementById|querySelector|addEventListener/.test(calls);
+  const hasStorage = /localStorage|sessionStorage/.test(calls);
+  const hasJson = /JSON\.parse|JSON\.stringify|\.json/.test(calls);
+  const hasArray = /(^|\s|\.)(map|filter|reduce)(\s|$)/.test(calls) || /map|filter|reduce/.test(calls);
+
+  if (hasExport) {
+    hints.push("export는 이 함수나 클래스를 다른 파일에서 import해 재사용할 수 있게 공개한다는 뜻입니다.");
+  }
+
+  if (hasClassMethod) {
+    hints.push("class 메서드는 객체가 가진 데이터(this)를 사용해 특정 행동을 수행하는 함수입니다.");
+  }
+
+  if (hasFetch && hasAwait) {
+    hints.push("fetch와 await가 함께 있으면, 서버/API 요청이 끝날 때까지 기다린 뒤 응답 데이터를 다음 줄에서 처리합니다.");
+  } else if (hasFetch) {
+    hints.push("fetch는 브라우저나 런타임에서 서버/API에 요청을 보내는 함수입니다.");
+  }
+
+  if (hasDom) {
+    hints.push("DOM 코드는 document로 화면 요소를 찾고, 값 변경이나 이벤트 연결로 사용자가 보는 UI를 바꿉니다.");
+  }
+
+  if (hasStorage) {
+    hints.push("localStorage/sessionStorage는 브라우저 안에 작은 값을 저장해 새로고침 후에도 다시 사용할 수 있게 합니다.");
+  }
+
+  if (hasJson) {
+    hints.push("JSON.parse/stringify 또는 response.json은 문자열/응답 데이터를 JavaScript 객체로 바꾸거나 다시 문자열로 바꿉니다.");
+  }
+
+  if (hasArray) {
+    hints.push("map/filter/reduce는 배열을 하나씩 보며 변환, 걸러내기, 누적 계산을 할 때 쓰는 대표 메서드입니다.");
+  }
+
+  return hints;
+}
+
+function enhanceJsQualityHintsV274(items) {
+  return (Array.isArray(items) ? items : []).map(function(ir) {
+    const hints = buildJsQualityHintsV274(ir);
+
+    hints.forEach(function(hint) {
+      appendUniqueQualityStepV274(ir.steps, hint);
+    });
+
+    if (hints.length) {
+      ir.qualityHintsV274 = hints;
+      addConceptsV274(ir, ["quality_hint"]);
+    }
+
+    const signals = ir && ir.signals ? ir.signals : {};
+    const calls = Array.isArray(ir && ir.calls) ? ir.calls.map(function(call) {
+      return String(call && call.name || "");
+    }).join(" ") : "";
+    const hasFetch = /fetch/.test(calls) || (Array.isArray(signals.fetchOps) && signals.fetchOps.length > 0);
+    const hasAwait = Array.isArray(signals.awaitOps) && signals.awaitOps.length > 0;
+    const hasDom = /document\.|getElementById|querySelector|addEventListener/.test(calls);
+    const hasArray = /map|filter|reduce/.test(calls);
+
+    if (hasFetch && hasAwait) {
+      ir.roleSummary = "async/await로 API 요청 결과를 기다린 뒤 데이터를 가공하는 비동기 데이터 처리 함수로 보입니다.";
+    } else if (hasDom && hasArray) {
+      ir.roleSummary = "배열 데이터를 화면에 표시하기 좋은 형태로 바꾼 뒤 DOM에 반영하는 UI 렌더링 함수로 보입니다.";
+    } else if (hasDom) {
+      ir.roleSummary = "화면 요소를 찾고 이벤트나 내용을 연결해 브라우저 UI 동작을 만드는 함수로 보입니다.";
+    }
+
+    ir.concepts = Array.from(new Set(Array.isArray(ir.concepts) ? ir.concepts : [])).sort();
+    return ir;
+  });
+}
+
+
 function buildFunctionInterpretationsV251(source, language) {
   if (language === "python") {
     const base = buildPythonFunctionInterpretationsV251(source, language);
-    return enhancePythonFunctionInterpretationsV252(source, base);
+    return enhancePythonQualityHintsV274(enhancePythonFunctionInterpretationsV252(source, base));
   }
 
   if (language === "javascript" || language === "js") {
-    return buildJsFunctionInterpretationsV257(source, language);
+    return enhanceJsQualityHintsV274(buildJsFunctionInterpretationsV257(source, language));
   }
 
   return [];
@@ -3892,7 +4076,11 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     getSelectedFunctionCallGraphMermaidV262: getSelectedFunctionCallGraphMermaidV262,
     groupInternalCallsV272: buildInternalCallGroupsV272,
     flattenInternalCallGroupsV272: flattenInternalCallGroupsV272,
-    renderInternalCallGroupsV272: renderInternalCallGroupsV272
+    renderInternalCallGroupsV272: renderInternalCallGroupsV272,
+    enhancePythonQualityHintsV274: enhancePythonQualityHintsV274,
+    enhanceJsQualityHintsV274: enhanceJsQualityHintsV274,
+    buildPythonQualityHintsV274: buildPythonQualityHintsV274,
+    buildJsQualityHintsV274: buildJsQualityHintsV274
   };
 
   if (document.readyState === "loading") {
