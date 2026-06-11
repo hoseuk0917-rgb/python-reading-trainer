@@ -728,7 +728,7 @@ port = 5432`
 
 // FUNCTION_IR_V251_A1
 const FUNCTION_IR_MAX_FUNCTIONS_V251 = 8;
-const FUNCTION_IR_MAX_ITEMS_V251 = 8;
+const FUNCTION_IR_MAX_ITEMS_V251 = 12;
 
 function splitFunctionParamsV251(raw) {
   return String(raw || "")
@@ -1019,9 +1019,267 @@ function buildPythonFunctionInterpretationsV251(source, language) {
   });
 }
 
+
+// FUNCTION_IR_V252_A1
+// FUNCTION_IR_V252_VISIBLE_STEPS_A1
+function extractPythonImportsV252(source) {
+  const imports = [];
+  String(source || "").split(/\r?\n/).forEach(function(rawLine, idx) {
+    const line = stripPythonCommentV251(rawLine);
+    let match;
+
+    match = line.match(/^import\s+(.+)$/);
+    if (match) {
+      match[1].split(",").map(function(item) { return item.trim(); }).filter(Boolean).forEach(function(item) {
+        imports.push({
+          lineNo: idx + 1,
+          kind: "import",
+          name: item.replace(/\s+as\s+.+$/, "").trim(),
+          alias: /\s+as\s+/.test(item) ? item.replace(/^.+\s+as\s+/, "").trim() : ""
+        });
+      });
+    }
+
+    match = line.match(/^from\s+([A-Za-z_][\w.]*)\s+import\s+(.+)$/);
+    if (match) {
+      match[2].split(",").map(function(item) { return item.trim(); }).filter(Boolean).forEach(function(item) {
+        imports.push({
+          lineNo: idx + 1,
+          kind: "from_import",
+          module: match[1],
+          name: item.replace(/\s+as\s+.+$/, "").trim(),
+          alias: /\s+as\s+/.test(item) ? item.replace(/^.+\s+as\s+/, "").trim() : ""
+        });
+      });
+    }
+  });
+  return imports;
+}
+
+function getPythonFunctionBodyForIrV252(source, ir) {
+  const blocks = extractPythonFunctionBlocksV251(source);
+  return blocks.find(function(block) {
+    return block.name === ir.name && block.lineNo === ir.lineNo;
+  }) || null;
+}
+
+function detectPythonFunctionSignalsV252(source, ir) {
+  const block = getPythonFunctionBodyForIrV252(source, ir);
+  const body = block && Array.isArray(block.body) ? block.body : [];
+  const signals = {
+    imports: extractPythonImportsV252(source),
+    contextManagers: [],
+    errorHandlers: [],
+    cli: [],
+    fileOps: [],
+    jsonOps: []
+  };
+
+  body.forEach(function(item) {
+    const line = item.text;
+    let match;
+
+    if (!line) return;
+
+    match = line.match(/^with\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s*:/);
+    if (match) {
+      signals.contextManagers.push({
+        lineNo: item.lineNo,
+        resource: match[1],
+        alias: match[2],
+        summary: match[1] + " 값을 열거나 준비한 뒤 " + match[2] + " 이름으로 다룹니다."
+      });
+    }
+
+    if (/^try\s*:$/.test(line)) {
+      signals.errorHandlers.push({
+        lineNo: item.lineNo,
+        type: "try",
+        summary: "실패할 수 있는 처리를 먼저 시도합니다."
+      });
+    }
+
+    match = line.match(/^except\s+([^:]+)\s*:/);
+    if (match) {
+      signals.errorHandlers.push({
+        lineNo: item.lineNo,
+        type: "except",
+        error: match[1],
+        summary: match[1] + " 예외가 발생했을 때 대체 흐름으로 처리합니다."
+      });
+    }
+
+    if (/argparse\.ArgumentParser|add_argument|parse_args/.test(line)) {
+      signals.cli.push({
+        lineNo: item.lineNo,
+        code: line,
+        summary: "명령줄 입력값을 정의하거나 읽는 CLI 처리입니다."
+      });
+    }
+
+    if (/open\(|Path\(|read_text|write_text/.test(line)) {
+      signals.fileOps.push({
+        lineNo: item.lineNo,
+        code: line,
+        summary: "파일이나 경로를 읽고 쓰는 처리입니다."
+      });
+    }
+
+    if (/json\.(load|loads|dump|dumps)\s*\(/.test(line)) {
+      signals.jsonOps.push({
+        lineNo: item.lineNo,
+        code: line,
+        summary: "JSON 데이터를 읽거나 변환하는 처리입니다."
+      });
+    }
+  });
+
+  return signals;
+}
+
+function improvePythonVariableRolesV252(ir, signals) {
+  ir.variables.forEach(function(variable) {
+    const expr = String(variable.expr || "");
+    const name = String(variable.name || "");
+
+    if (/argparse\.ArgumentParser/.test(expr) || name === "parser") {
+      variable.role = "명령줄 인자를 정의하고 읽기 위한 argparse 파서입니다.";
+    } else if (/parse_args/.test(expr) || name === "args") {
+      variable.role = "사용자가 명령줄에서 입력한 옵션 값을 담는 객체입니다.";
+    } else if (/json\.loads?\s*\(/.test(expr)) {
+      variable.role = "JSON 문자열이나 파일 내용을 Python 데이터로 바꾼 결과입니다.";
+    } else if (/Path\(|read_text|write_text|open\(/.test(expr)) {
+      variable.role = "파일이나 폴더 위치를 나타내거나 파일 처리에 쓰이는 값입니다.";
+    } else if (signals && signals.fileOps.length && /path|file|out/i.test(name)) {
+      variable.role = "파일 저장/읽기 위치를 나타내는 값입니다.";
+    }
+  });
+}
+
+function summarizePythonFunctionRoleV252(ir, signals) {
+  const hasCli = signals.cli.length > 0;
+  const hasJson = signals.jsonOps.length > 0;
+  const hasFile = signals.fileOps.length > 0 || signals.contextManagers.length > 0;
+  const hasTryExcept = signals.errorHandlers.some(function(item) { return item.type === "try"; }) &&
+    signals.errorHandlers.some(function(item) { return item.type === "except"; });
+  const hasWriteText = ir.calls.some(function(call) { return /write_text$/.test(call.name); });
+
+  if (hasCli) {
+    return "명령줄 옵션을 정의하고 parse_args로 사용자의 입력값을 읽어 준비하는 CLI 진입 함수로 보입니다.";
+  }
+
+  if (hasTryExcept && hasJson) {
+    return "JSON 파싱을 시도하고 실패하면 예외를 처리해 안전한 값을 반환하는 방어적 데이터 파싱 함수로 보입니다.";
+  }
+
+  if (hasFile && hasJson && ir.returns.length) {
+    return "파일을 열어 JSON 데이터를 읽고 Python 데이터로 바꿔 반환하는 파일 로더 함수로 보입니다.";
+  }
+
+  if (hasWriteText || (hasFile && /report|save|write/i.test(ir.name))) {
+    return "경로를 만들고 텍스트나 보고서를 파일에 저장한 뒤 결과 경로를 반환하는 파일 저장 함수로 보입니다.";
+  }
+
+  return ir.roleSummary;
+}
+
+function prependUniqueStepV252(steps, step) {
+  if (!step) return;
+  if (steps.indexOf(step) >= 0) return;
+  steps.unshift(step);
+}
+
+function appendUniqueStepV252(steps, step) {
+  if (!step) return;
+  if (steps.indexOf(step) >= 0) return;
+  steps.push(step);
+}
+
+function enhancePythonFunctionInterpretationsV252(source, items) {
+  return (Array.isArray(items) ? items : []).map(function(ir) {
+    const signals = detectPythonFunctionSignalsV252(source, ir);
+    const importNames = signals.imports.map(function(item) {
+      return item.module ? item.module + "." + item.name : item.name;
+    });
+
+    ir.signals = signals;
+    improvePythonVariableRolesV252(ir, signals);
+    ir.roleSummary = summarizePythonFunctionRoleV252(ir, signals);
+
+    if (importNames.length) {
+      appendUniqueStepV252(ir.steps, "사용 라이브러리/모듈: " + importNames.slice(0, 6).join(", "));
+    }
+
+    signals.contextManagers.slice(0, 3).forEach(function(item) {
+      appendUniqueStepV252(ir.steps, item.summary);
+    });
+
+    signals.errorHandlers.slice(0, 4).forEach(function(item) {
+      appendUniqueStepV252(ir.steps, item.summary);
+    });
+
+    signals.cli.slice(0, 4).forEach(function(item) {
+      appendUniqueStepV252(ir.steps, item.summary);
+    });
+
+    signals.fileOps.slice(0, 4).forEach(function(item) {
+      if (/write_text/.test(item.code)) {
+        appendUniqueStepV252(ir.steps, "write_text로 텍스트를 파일에 저장합니다.");
+      } else if (/read_text/.test(item.code)) {
+        appendUniqueStepV252(ir.steps, "read_text로 파일 내용을 문자열로 읽습니다.");
+      } else if (/open\(/.test(item.code)) {
+        appendUniqueStepV252(ir.steps, "open으로 파일을 열어 읽거나 씁니다.");
+      } else if (/Path\(/.test(item.code)) {
+        appendUniqueStepV252(ir.steps, "Path로 파일/폴더 경로를 만듭니다.");
+      }
+    });
+
+    signals.jsonOps.slice(0, 4).forEach(function(item) {
+      if (/json\.loads/.test(item.code)) {
+        appendUniqueStepV252(ir.steps, "json.loads로 JSON 문자열을 Python 데이터로 바꿉니다.");
+      } else if (/json\.load/.test(item.code)) {
+        appendUniqueStepV252(ir.steps, "json.load로 파일에서 JSON 데이터를 읽습니다.");
+      } else if (/json\.dumps/.test(item.code)) {
+        appendUniqueStepV252(ir.steps, "json.dumps로 Python 데이터를 JSON 문자열로 바꿉니다.");
+      } else if (/json\.dump/.test(item.code)) {
+        appendUniqueStepV252(ir.steps, "json.dump로 Python 데이터를 JSON 파일에 저장합니다.");
+      }
+    });
+
+    if (signals.cli.length) {
+      ["argparse", "cli", "parameter"].forEach(function(concept) {
+        if (ir.concepts.indexOf(concept) < 0) ir.concepts.push(concept);
+      });
+    }
+
+    if (signals.errorHandlers.length) {
+      if (ir.concepts.indexOf("try_except") < 0) ir.concepts.push("try_except");
+    }
+
+    if (signals.contextManagers.length) {
+      if (ir.concepts.indexOf("with") < 0) ir.concepts.push("with");
+      if (ir.concepts.indexOf("open") < 0) ir.concepts.push("open");
+    }
+
+    if (signals.fileOps.length) {
+      if (ir.concepts.indexOf("pathlib") < 0) ir.concepts.push("pathlib");
+    }
+
+    if (signals.jsonOps.length) {
+      if (ir.concepts.indexOf("json.loads") < 0) ir.concepts.push("json.loads");
+    }
+
+    ir.concepts = Array.from(new Set(ir.concepts)).sort();
+    ir.mermaid = buildPythonFunctionMermaidV251(ir);
+
+    return ir;
+  });
+}
+
 function buildFunctionInterpretationsV251(source, language) {
   if (language === "python") {
-    return buildPythonFunctionInterpretationsV251(source, language);
+    const base = buildPythonFunctionInterpretationsV251(source, language);
+    return enhancePythonFunctionInterpretationsV252(source, base);
   }
   return [];
 }
