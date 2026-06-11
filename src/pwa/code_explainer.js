@@ -1285,6 +1285,221 @@ function buildFunctionInterpretationsV251(source, language) {
 }
 
 
+
+// FUNCTION_IR_RELATED_CARDS_V254_A1
+const FUNCTION_IR_RELATED_CARD_LIMIT_V254 = 3;
+
+function normalizeFunctionConceptV254(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\./g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getCardSearchTextV254(card) {
+  const concepts = Array.isArray(card && card.concepts) ? card.concepts.join(" ") : "";
+  const related = Array.isArray(card && card.related_concepts) ? card.related_concepts.join(" ") : "";
+  const tags = Array.isArray(card && card.tags) ? card.tags.join(" ") : "";
+
+  return normalizeSearchText([
+    card && card.id,
+    card && card.title,
+    card && card.question,
+    card && card.type,
+    card && card.level,
+    card && card.body,
+    card && card.summary,
+    card && card.description,
+    card && card.detail,
+    card && card.explanation,
+    card && card.answer,
+    concepts,
+    related,
+    tags
+  ].join(" "));
+}
+
+function getCardTitleV254(card) {
+  return String(
+    card && (
+      card.title ||
+      card.question ||
+      card.name ||
+      card.id ||
+      "관련 카드"
+    ) || "관련 카드"
+  );
+}
+
+function getCardBodyV254(card) {
+  return String(
+    card && (
+      card.body ||
+      card.summary ||
+      card.description ||
+      card.explanation ||
+      card.detail ||
+      card.answer ||
+      ""
+    ) || ""
+  );
+}
+
+function collectFunctionRelatedKeywordsV254(item) {
+  const keywords = new Set();
+
+  (Array.isArray(item && item.concepts) ? item.concepts : []).forEach(function(concept) {
+    const normalized = normalizeFunctionConceptV254(concept);
+    if (normalized) keywords.add(normalized);
+  });
+
+  String(item && item.name || "")
+    .split(/[_\W]+/)
+    .map(normalizeFunctionConceptV254)
+    .filter(Boolean)
+    .forEach(function(part) {
+      if (part.length >= 3) keywords.add(part);
+    });
+
+  (Array.isArray(item && item.calls) ? item.calls : []).forEach(function(call) {
+    const name = normalizeFunctionConceptV254(call && call.name);
+    if (name) keywords.add(name);
+  });
+
+  const mappings = {
+    "function": ["함수", "def", "return"],
+    "parameter": ["매개변수", "인자", "입력값"],
+    "variable": ["변수", "저장", "값"],
+    "return": ["반환", "return"],
+    "for": ["반복", "for"],
+    "if": ["조건", "if"],
+    "append": ["append", "리스트", "추가"],
+    "list": ["리스트", "list", "배열"],
+    "dict": ["딕셔너리", "사전", "dict"],
+    "json loads": ["json", "json.load", "json.loads", "파싱"],
+    "json": ["json", "파싱"],
+    "pathlib": ["path", "pathlib", "파일", "경로"],
+    "open": ["open", "파일", "열기"],
+    "with": ["with", "컨텍스트", "파일"],
+    "try except": ["try", "except", "예외", "오류"],
+    "argparse": ["argparse", "cli", "명령줄", "인자"],
+    "cli": ["cli", "명령줄", "터미널", "인자"]
+  };
+
+  Array.from(keywords).forEach(function(keyword) {
+    Object.keys(mappings).forEach(function(key) {
+      if (keyword === key || keyword.indexOf(key) >= 0 || key.indexOf(keyword) >= 0) {
+        mappings[key].forEach(function(alias) {
+          keywords.add(normalizeFunctionConceptV254(alias));
+        });
+      }
+    });
+  });
+
+  return Array.from(keywords).filter(Boolean);
+}
+
+function scoreFunctionRelatedCardV254(card, item, sourceName) {
+  const keywords = collectFunctionRelatedKeywordsV254(item);
+  const text = getCardSearchTextV254(card);
+  const title = normalizeFunctionConceptV254(getCardTitleV254(card));
+  let score = 0;
+
+  if (!card || !keywords.length || !text) return 0;
+
+  keywords.forEach(function(keyword) {
+    if (!keyword) return;
+
+    if (text.includes(keyword)) score += 4;
+    if (title.includes(keyword)) score += 4;
+
+    if (keyword === "함수" && /function|def|함수|return|반환/.test(text)) score += 5;
+    if (keyword === "매개변수" && /parameter|argument|인자|매개변수|입력값/.test(text)) score += 5;
+    if (keyword === "변수" && /variable|변수|저장|할당/.test(text)) score += 5;
+    if (keyword === "리스트" && /list|array|append|리스트|배열|추가/.test(text)) score += 6;
+    if (keyword === "조건" && /if|condition|조건|분기/.test(text)) score += 5;
+    if (keyword === "반복" && /for|loop|반복|순회/.test(text)) score += 5;
+    if (keyword === "반환" && /return|반환|돌려줍니다/.test(text)) score += 5;
+    if (keyword === "json" && /json|load|loads|dump|dumps|파싱|인코딩|디코딩/.test(text)) score += 8;
+    if (keyword === "파일" && /file|path|open|read_text|write_text|파일|경로|폴더/.test(text)) score += 8;
+    if (keyword === "경로" && /path|pathlib|파일|경로|폴더/.test(text)) score += 8;
+    if (keyword === "예외" && /try|except|exception|error|예외|오류/.test(text)) score += 8;
+    if (keyword === "argparse" && /argparse|cli|command line|명령줄|인자|터미널/.test(text)) score += 8;
+    if (keyword === "cli" && /cli|command|terminal|명령어|명령줄|터미널|인자/.test(text)) score += 8;
+  });
+
+  if (sourceName === "side") score += 2;
+  if (sourceName === "lesson") score += 1;
+  if (getCardBodyV254(card).length > 80) score += 1;
+
+  return score;
+}
+
+function findFunctionRelatedCardsV254(item) {
+  const pools = [];
+
+  (Array.isArray(learningSideCards) ? learningSideCards : []).forEach(function(card) {
+    pools.push({ card: card, source: "side" });
+  });
+
+  (Array.isArray(learningCards) ? learningCards : []).forEach(function(card) {
+    pools.push({ card: card, source: "lesson" });
+  });
+
+  if (!pools.length) return [];
+
+  const seen = new Set();
+
+  return pools
+    .map(function(entry) {
+      return {
+        card: entry.card,
+        source: entry.source,
+        score: scoreFunctionRelatedCardV254(entry.card, item, entry.source)
+      };
+    })
+    .filter(function(entry) {
+      const id = String(entry.card && (entry.card.id || entry.card.title || entry.card.question) || "");
+      if (!id || seen.has(id) || entry.score <= 0) return false;
+      seen.add(id);
+      return true;
+    })
+    .sort(function(a, b) {
+      if (b.score !== a.score) return b.score - a.score;
+      return getCardTitleV254(a.card).localeCompare(getCardTitleV254(b.card));
+    })
+    .slice(0, FUNCTION_IR_RELATED_CARD_LIMIT_V254);
+}
+
+function renderFunctionRelatedCardsV254(item) {
+  const matches = findFunctionRelatedCardsV254(item);
+
+  if (!matches.length) {
+    return '<p class="muted function-ir-related-empty">이 함수와 직접 연결되는 학습 카드는 아직 찾지 못했습니다.</p>';
+  }
+
+  return '<details open class="function-ir-related-detail"><summary>이 함수 이해에 도움 되는 카드</summary>' +
+    '<div class="function-ir-related-grid">' +
+    matches.map(function(match) {
+      const card = match.card || {};
+      const title = getCardTitleV254(card);
+      const body = getCardBodyV254(card);
+      const sourceLabel = match.source === "lesson" ? "문제카드" : "사이드카드";
+
+      return '<article class="function-ir-related-card">' +
+        '<div class="function-ir-related-card-head">' +
+          '<strong>' + escapeHtml(title) + '</strong>' +
+          '<span>' + escapeHtml(sourceLabel) + ' · score ' + escapeHtml(String(match.score)) + '</span>' +
+        '</div>' +
+        '<p>' + escapeHtml(body.slice(0, 180)) + (body.length > 180 ? "..." : "") + '</p>' +
+      '</article>';
+    }).join("") +
+    '</div>' +
+    '</details>';
+}
+
 // FUNCTION_IR_V253_A1
 async function renderFunctionMermaidDiagramsV253(result) {
   const items = Array.isArray(result && result.functionInterpretations) ? result.functionInterpretations : [];
@@ -1345,6 +1560,8 @@ function renderFunctionInterpretationListV251(items, emptyText) {
         }).join("")
       : '<span class="muted">연결된 개념 없음</span>';
 
+    const relatedCards = renderFunctionRelatedCardsV254(item);
+
     const mermaid = item.mermaid
       ? '<details open class="code-flow-detail function-ir-mermaid-detail"><summary>함수 흐름도</summary>' +
         '<div id="functionMermaidDiagramV253_' + index + '" class="function-ir-mermaid-diagram"><p class="muted">함수 흐름도 렌더링 준비 중...</p></div>' +
@@ -1361,6 +1578,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
       '<p><strong>처리 흐름:</strong></p>' +
       steps +
       '<div class="code-flow-mini-grid">' + concepts + '</div>' +
+      relatedCards +
       mermaid +
       '</article>';
   }).join("");
