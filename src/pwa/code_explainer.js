@@ -1276,11 +1276,356 @@ function enhancePythonFunctionInterpretationsV252(source, items) {
   });
 }
 
+
+// FUNCTION_IR_JS_V256_A1
+const JS_FUNCTION_IR_MAX_BODY_LINES_V256 = 220;
+
+function jsLineNoFromIndexV256(source, index) {
+  return String(source || "").slice(0, Math.max(0, index)).split(/\r?\n/).length;
+}
+
+function stripJsCommentV256(line) {
+  return String(line || "").replace(/\/\/.*$/, "").trim();
+}
+
+function findMatchingBraceV256(source, openIndex) {
+  let depth = 0;
+  let quote = "";
+  let escaped = false;
+
+  for (let index = openIndex; index < source.length; index++) {
+    const ch = source[index];
+
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === quote) {
+        quote = "";
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'" || ch === "`") {
+      quote = ch;
+      continue;
+    }
+
+    if (ch === "{") depth += 1;
+    if (ch === "}") depth -= 1;
+
+    if (depth === 0) return index;
+  }
+
+  return -1;
+}
+
+function normalizeJsParamsV256(raw) {
+  return splitFunctionParamsV251(raw)
+    .map(function(param) {
+      return param.replace(/=.*$/, "").replace(/^\.\.\./, "").trim();
+    })
+    .filter(Boolean);
+}
+
+function extractJsFunctionBlocksV256(source) {
+  const text = String(source || "");
+  const blocks = [];
+  const seen = new Set();
+
+  const patterns = [
+    {
+      kind: "function",
+      regex: /(?:^|[\r\n;])\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*\{/g
+    },
+    {
+      kind: "arrow_function",
+      regex: /(?:^|[\r\n;])\s*(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\(([^)]*)\)\s*=>\s*\{/g
+    },
+    {
+      kind: "arrow_function",
+      regex: /(?:^|[\r\n;])\s*(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?([A-Za-z_$][\w$]*)\s*=>\s*\{/g
+    }
+  ];
+
+  patterns.forEach(function(pattern) {
+    let match;
+
+    while ((match = pattern.regex.exec(text))) {
+      const name = match[1];
+      const paramsRaw = match[2] || "";
+      const openIndex = text.indexOf("{", match.index);
+      const closeIndex = findMatchingBraceV256(text, openIndex);
+
+      if (openIndex < 0 || closeIndex < 0) continue;
+
+      const key = name + "@" + openIndex;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const bodyText = text.slice(openIndex + 1, closeIndex);
+      const bodyStartLine = jsLineNoFromIndexV256(text, openIndex + 1);
+      const body = bodyText.split(/\r?\n/).slice(0, JS_FUNCTION_IR_MAX_BODY_LINES_V256).map(function(line, idx) {
+        return {
+          lineNo: bodyStartLine + idx,
+          text: stripJsCommentV256(line)
+        };
+      }).filter(function(item) {
+        return item.text;
+      });
+
+      blocks.push({
+        name: name,
+        kind: pattern.kind,
+        lineNo: jsLineNoFromIndexV256(text, match.index + 1),
+        params: normalizeJsParamsV256(paramsRaw),
+        body: body
+      });
+    }
+  });
+
+  return blocks.sort(function(a, b) {
+    return a.lineNo - b.lineNo;
+  }).slice(0, FUNCTION_IR_MAX_FUNCTIONS_V251);
+}
+
+function inferJsVariableRoleV256(name, expr) {
+  const value = String(expr || "");
+  const lowerName = String(name || "").toLowerCase();
+
+  if (/^\[\s*\]$/.test(value)) return "조건에 맞는 값을 모아둘 빈 배열로 보입니다.";
+  if (/^\{\s*\}$/.test(value)) return "키와 값을 묶어 저장할 빈 객체로 보입니다.";
+  if (/JSON\.parse/.test(value)) return "JSON 문자열을 JavaScript 값으로 바꾼 결과입니다.";
+  if (/JSON\.stringify/.test(value)) return "JavaScript 값을 JSON 문자열로 바꾼 결과입니다.";
+  if (/document\.querySelector|getElementById/.test(value)) return "화면의 HTML 요소를 찾아 담은 값입니다.";
+  if (/fetch\s*\(/.test(value)) return "네트워크 요청 결과나 응답을 담는 값으로 보입니다.";
+  if (/await\s+/.test(value)) return "비동기 처리 결과를 기다려 받은 값입니다.";
+  if (/map\(|filter\(|reduce\(/.test(value)) return "배열을 가공해서 만든 결과입니다.";
+  if (/path|file|url/.test(lowerName)) return "파일, 경로, URL 같은 위치 정보를 담는 값으로 보입니다.";
+  if (/result|items|list|cards|rows/.test(lowerName)) return "여러 값을 모으거나 다음 단계로 넘기기 위한 묶음 데이터로 보입니다.";
+
+  return "함수 안에서 계산하거나 다음 단계에 넘기기 위해 만든 중간 값으로 보입니다.";
+}
+
+function addUniqueJsByNameV256(list, item) {
+  if (!item || !item.name) return;
+  if (list.some(function(existing) {
+    return existing.name === item.name && existing.lineNo === item.lineNo;
+  })) return;
+  list.push(item);
+}
+
+function parseJsFunctionIrV256(block) {
+  const ir = {
+    name: block.name,
+    kind: block.kind,
+    lineNo: block.lineNo,
+    params: block.params,
+    variables: [],
+    loops: [],
+    conditions: [],
+    calls: [],
+    returns: [],
+    steps: [],
+    concepts: ["function"],
+    roleSummary: "",
+    mermaid: ""
+  };
+
+  if (block.kind === "arrow_function") {
+    ir.concepts.push("arrow_function");
+  }
+
+  if (ir.params.length) {
+    ir.concepts.push("parameter");
+    ir.steps.push(ir.params.join(", ") + " 값을 입력으로 받습니다.");
+  }
+
+  block.body.forEach(function(item) {
+    const line = item.text;
+    let match;
+
+    match = line.match(/^(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(.+?);?$/);
+    if (match) {
+      const variable = {
+        name: match[1],
+        expr: match[2],
+        lineNo: item.lineNo,
+        role: inferJsVariableRoleV256(match[1], match[2])
+      };
+      addUniqueJsByNameV256(ir.variables, variable);
+      ir.steps.push(variable.name + " 값을 준비합니다: " + variable.role);
+      ir.concepts.push("variable");
+      if (/^const\b/.test(line)) ir.concepts.push("const");
+      if (/^let\b/.test(line)) ir.concepts.push("let");
+    }
+
+    match = line.match(/^for\s*\((.+)\)\s*\{?/);
+    if (match) {
+      const header = match[1];
+      let summary = header + " 조건으로 반복합니다.";
+      const ofMatch = header.match(/(?:const|let|var)?\s*([A-Za-z_$][\w$]*)\s+of\s+(.+)$/);
+
+      if (ofMatch) {
+        summary = ofMatch[2].trim() + "에서 " + ofMatch[1].trim() + " 값을 하나씩 꺼냅니다.";
+      }
+
+      ir.loops.push({
+        lineNo: item.lineNo,
+        header: header,
+        summary: summary
+      });
+      ir.steps.push(summary);
+      ir.concepts.push("for");
+    }
+
+    match = line.match(/^if\s*\((.+)\)\s*\{?/);
+    if (match) {
+      ir.conditions.push({
+        lineNo: item.lineNo,
+        expr: match[1],
+        summary: match[1] + " 조건을 확인합니다."
+      });
+      ir.steps.push(match[1] + " 조건을 확인합니다.");
+      ir.concepts.push("if");
+    }
+
+    match = line.match(/^return\b\s*(.*?);?$/);
+    if (match) {
+      const expr = (match[1] || "").trim();
+      ir.returns.push({
+        lineNo: item.lineNo,
+        expr: expr || "undefined",
+        summary: (expr || "undefined") + " 값을 함수 밖으로 반환합니다."
+      });
+      ir.steps.push((expr || "undefined") + " 값을 함수 밖으로 반환합니다.");
+      ir.concepts.push("return");
+    }
+
+    const callRegex = /([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?)\s*\(/g;
+    let callMatch;
+
+    while ((callMatch = callRegex.exec(line))) {
+      const callName = callMatch[1];
+      if (/^(if|for|while|switch|catch|function)$/.test(callName)) continue;
+      if (callName === ir.name) continue;
+
+      addUniqueJsByNameV256(ir.calls, {
+        name: callName,
+        lineNo: item.lineNo,
+        summary: callName + " 호출을 실행합니다."
+      });
+
+      if (/\.push$/.test(callName)) ir.concepts.push("push", "array");
+      if (/JSON\.parse|JSON\.stringify/.test(callName)) ir.concepts.push("json");
+      if (/fetch/.test(callName)) ir.concepts.push("fetch", "async");
+      if (/querySelector|getElementById/.test(callName)) ir.concepts.push("dom");
+      if (/addEventListener/.test(callName)) ir.concepts.push("event_listener");
+      if (/map|filter|reduce/.test(callName)) ir.concepts.push("array");
+    }
+  });
+
+  ir.calls.slice(0, FUNCTION_IR_MAX_ITEMS_V251).forEach(function(call) {
+    if (ir.steps.indexOf(call.summary) < 0) ir.steps.push(call.summary);
+  });
+
+  ir.roleSummary = summarizeJsFunctionRoleV256(ir);
+  ir.concepts = Array.from(new Set(ir.concepts)).sort();
+  ir.mermaid = buildJsFunctionMermaidV256(ir);
+
+  return ir;
+}
+
+function summarizeJsFunctionRoleV256(ir) {
+  const callNames = ir.calls.map(function(call) { return call.name; }).join(" ");
+  const hasLoop = ir.loops.length > 0;
+  const hasCondition = ir.conditions.length > 0;
+  const hasPush = /\.push/.test(callNames);
+  const hasJson = /JSON\.parse|JSON\.stringify/.test(callNames);
+  const hasDom = /querySelector|getElementById|addEventListener/.test(callNames);
+  const hasFetch = /fetch/.test(callNames);
+  const hasArrayTransform = /map|filter|reduce/.test(callNames);
+
+  if (hasFetch) {
+    return "fetch 같은 비동기 요청을 실행하고 응답 데이터를 다음 단계로 넘기는 네트워크 처리 함수로 보입니다.";
+  }
+
+  if (hasDom) {
+    return "화면 요소를 찾거나 이벤트를 연결해 브라우저 UI 동작을 처리하는 함수로 보입니다.";
+  }
+
+  if (hasJson) {
+    return "JSON 데이터를 JavaScript 값으로 바꾸거나 문자열로 변환하는 데이터 처리 함수로 보입니다.";
+  }
+
+  if (hasLoop && hasCondition && hasPush) {
+    return "입력 배열을 반복하면서 조건에 맞는 항목을 모아 반환하는 필터링/수집 함수로 보입니다.";
+  }
+
+  if (hasArrayTransform) {
+    return "배열 데이터를 map/filter/reduce 같은 메서드로 가공하는 함수로 보입니다.";
+  }
+
+  if (ir.returns.length) {
+    return "입력값이나 내부 계산값을 처리해 결과를 반환하는 JavaScript 함수로 보입니다.";
+  }
+
+  return "JavaScript 코드 흐름을 함수 단위로 묶어 실행하는 함수로 보입니다.";
+}
+
+function buildJsFunctionMermaidV256(ir) {
+  const lines = [];
+  lines.push("flowchart TD");
+  lines.push('  A["' + mermaidSafeTextV251(ir.name + " 입력") + '"] --> B["내부 변수/초기값 준비"]');
+
+  let previous = "B";
+  let nodeIndex = 0;
+
+  ir.loops.slice(0, 3).forEach(function(loop) {
+    const id = "L" + nodeIndex++;
+    lines.push('  ' + previous + ' --> ' + id + '["반복: ' + mermaidSafeTextV251(loop.summary) + '"]');
+    previous = id;
+  });
+
+  ir.conditions.slice(0, 4).forEach(function(condition) {
+    const id = "C" + nodeIndex++;
+    lines.push('  ' + previous + ' --> ' + id + '{"조건: ' + mermaidSafeTextV251(condition.expr) + '"}');
+    previous = id;
+  });
+
+  ir.calls.slice(0, 5).forEach(function(call) {
+    const id = "K" + nodeIndex++;
+    lines.push('  ' + previous + ' --> ' + id + '["호출: ' + mermaidSafeTextV251(call.name) + '"]');
+    previous = id;
+  });
+
+  if (ir.returns.length) {
+    const ret = ir.returns[0];
+    lines.push('  ' + previous + ' --> R["반환: ' + mermaidSafeTextV251(ret.expr) + '"]');
+  }
+
+  return lines.join("\n");
+}
+
+function buildJsFunctionInterpretationsV256(source, language) {
+  if (language !== "javascript" && language !== "js") return [];
+
+  return extractJsFunctionBlocksV256(source).map(function(block) {
+    return parseJsFunctionIrV256(block);
+  });
+}
+
 function buildFunctionInterpretationsV251(source, language) {
   if (language === "python") {
     const base = buildPythonFunctionInterpretationsV251(source, language);
     return enhancePythonFunctionInterpretationsV252(source, base);
   }
+
+  if (language === "javascript" || language === "js") {
+    return buildJsFunctionInterpretationsV256(source, language);
+  }
+
   return [];
 }
 
