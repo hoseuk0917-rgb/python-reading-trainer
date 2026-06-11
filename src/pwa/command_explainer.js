@@ -1,7 +1,8 @@
 // COMMAND_EXPLAINER_POWERSHELL_V277_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V277_A1 20260611_v277_a1
+// COMMAND_EXPLAINER_BASH_V278_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V277_A1 20260611_v278_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v277_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v278_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -15,6 +16,26 @@ python ".tmp\\script.py"
 git status --short
 git diff --check
 git add src\\pwa\\app.js
+git commit -m "Update app"
+git tag quality-test
+git push origin main --tags`;
+
+
+  const BASH_SAMPLE_V278 = `cd ~/python-reading-trainer
+
+if [ -d ".tmp" ]; then
+  rm -rf ".tmp"
+fi
+
+mkdir -p .tmp
+cat src/pwa/app.js
+grep "APP_DATA_VERSION" src/pwa/app.js
+chmod +x tools/run.sh
+sudo apt update
+python3 .tmp/script.py
+git status --short
+git diff --check
+git add src/pwa/app.js
 git commit -m "Update app"
 git tag quality-test
 git push origin main --tags`;
@@ -161,6 +182,151 @@ git push origin main --tags`;
       nextCheck: "필요하면 Out-Null을 빼고 다시 실행해 출력 확인"
     }
   ];
+
+
+  const BASH_RULES_V278 = [
+    {
+      id: "cd",
+      command: "cd",
+      group: "작업 위치",
+      risk: "safe",
+      pattern: /^\s*cd\b/i,
+      meaning: "작업 폴더를 이동합니다. 이후 명령은 이 폴더를 기준으로 실행됩니다.",
+      fileImpact: "파일을 직접 바꾸지는 않지만, 뒤 명령의 기준 위치를 바꿉니다.",
+      nextCheck: "pwd"
+    },
+    {
+      id: "rm_rf",
+      command: "rm -rf",
+      group: "파일 삭제",
+      risk: "danger",
+      pattern: /^\s*rm\s+.*(?:-rf|-fr|-r\s+-f|-f\s+-r)\b/i,
+      meaning: "파일이나 폴더를 강제로 삭제합니다.",
+      fileImpact: "대상 파일/폴더가 사라질 수 있습니다. -r은 하위 폴더까지, -f는 확인 없이 강제로 처리한다는 뜻입니다.",
+      nextCheck: "test -e <삭제 대상 경로>; echo $?"
+    },
+    {
+      id: "mkdir",
+      command: "mkdir",
+      group: "파일 생성",
+      risk: "safe",
+      pattern: /^\s*mkdir\b/i,
+      meaning: "새 폴더를 만듭니다.",
+      fileImpact: "새 폴더를 생성합니다. -p는 중간 폴더가 없어도 같이 만들고, 이미 있으면 오류를 줄입니다.",
+      nextCheck: "test -d <생성한 폴더>; echo $?"
+    },
+    {
+      id: "cat",
+      command: "cat",
+      group: "파일 읽기",
+      risk: "safe",
+      pattern: /^\s*cat\b/i,
+      meaning: "파일 내용을 터미널에 출력합니다.",
+      fileImpact: "파일을 읽기만 하며 보통 수정하지 않습니다.",
+      nextCheck: "head -n 20 <파일>"
+    },
+    {
+      id: "grep",
+      command: "grep",
+      group: "텍스트 검색",
+      risk: "safe",
+      pattern: /^\s*grep\b/i,
+      meaning: "파일이나 출력 내용에서 특정 문자열을 찾습니다.",
+      fileImpact: "검색 명령이라 보통 파일을 수정하지 않습니다.",
+      nextCheck: "grep -n <검색어> <파일>"
+    },
+    {
+      id: "chmod",
+      command: "chmod",
+      group: "권한 변경",
+      risk: "caution",
+      pattern: /^\s*chmod\b/i,
+      meaning: "파일의 실행/읽기/쓰기 권한을 바꿉니다.",
+      fileImpact: "파일 내용은 바꾸지 않지만, 실행 가능 여부 같은 권한 상태가 바뀝니다.",
+      nextCheck: "ls -l <파일>"
+    },
+    {
+      id: "sudo",
+      command: "sudo",
+      group: "관리자 권한",
+      risk: "danger",
+      pattern: /^\s*sudo\b/i,
+      meaning: "관리자 권한으로 명령을 실행합니다.",
+      fileImpact: "시스템 파일, 패키지, 권한 상태가 바뀔 수 있으므로 실행 전 명령 의미를 반드시 확인해야 합니다.",
+      nextCheck: "실행 전 명령 도움말 확인: <명령> --help"
+    },
+    {
+      id: "python3",
+      command: "python3",
+      group: "스크립트 실행",
+      risk: "caution",
+      pattern: /^\s*python3\b/i,
+      meaning: "Python 3 스크립트나 Python 명령을 실행합니다.",
+      fileImpact: "실행하는 스크립트 내용에 따라 파일 생성/수정/삭제가 일어날 수 있습니다.",
+      nextCheck: "스크립트 실행 후 git status --short"
+    },
+    {
+      id: "git_status",
+      command: "git status",
+      group: "Git 확인",
+      risk: "safe",
+      pattern: /^\s*git\s+status\b/i,
+      meaning: "Git 작업트리의 변경 상태를 확인합니다.",
+      fileImpact: "확인 명령이라 파일을 직접 수정하지 않습니다.",
+      nextCheck: "git status --short"
+    },
+    {
+      id: "git_diff",
+      command: "git diff",
+      group: "Git 확인",
+      risk: "safe",
+      pattern: /^\s*git\s+diff\b/i,
+      meaning: "Git에서 추적 중인 변경 내용을 비교해서 보여줍니다.",
+      fileImpact: "확인 명령이라 파일을 직접 수정하지 않습니다.",
+      nextCheck: "git diff --check"
+    },
+    {
+      id: "git_add",
+      command: "git add",
+      group: "Git 반영 준비",
+      risk: "caution",
+      pattern: /^\s*git\s+add\b/i,
+      meaning: "변경 파일을 다음 커밋에 포함되도록 스테이징합니다.",
+      fileImpact: "파일 내용은 바꾸지 않지만 Git의 스테이징 상태가 바뀝니다.",
+      nextCheck: "git status --short"
+    },
+    {
+      id: "git_commit",
+      command: "git commit",
+      group: "Git 기록",
+      risk: "caution",
+      pattern: /^\s*git\s+commit\b/i,
+      meaning: "스테이징된 변경을 로컬 Git 기록으로 저장합니다.",
+      fileImpact: "작업트리 파일을 직접 바꾸지는 않지만, 로컬 커밋 기록이 생깁니다.",
+      nextCheck: "git --no-pager log --oneline -3"
+    },
+    {
+      id: "git_tag",
+      command: "git tag",
+      group: "Git 기록",
+      risk: "caution",
+      pattern: /^\s*git\s+tag\b/i,
+      meaning: "현재 커밋에 이름표를 붙입니다.",
+      fileImpact: "파일 내용은 바꾸지 않지만 Git 태그 기록이 생깁니다.",
+      nextCheck: "git tag --list"
+    },
+    {
+      id: "git_push",
+      command: "git push",
+      group: "Git 원격 반영",
+      risk: "caution",
+      pattern: /^\s*git\s+push\b/i,
+      meaning: "로컬 커밋이나 태그를 GitHub 같은 원격 저장소로 보냅니다.",
+      fileImpact: "로컬 파일은 직접 바꾸지 않지만 원격 저장소 상태가 바뀝니다.",
+      nextCheck: "git status --short"
+    }
+  ];
+
 
   function escapeHtmlV277(value) {
     return String(value == null ? "" : value)
@@ -334,12 +500,145 @@ git push origin main --tags`;
     };
   }
 
+
+  function isBashCommentV278(line) {
+    return /^\s*#/.test(line);
+  }
+
+  function isBashControlLineV278(line) {
+    return /^\s*(if|then|else|elif|fi|for|while|do|done|case|esac)\b/i.test(line) ||
+      /^\s*\[\s+.+\s+\]\s*;?\s*(then)?\s*$/i.test(line);
+  }
+
+  function buildBashControlStepV278(line, lineNumber) {
+    return {
+      line: lineNumber,
+      command: "조건/블록",
+      group: "흐름 제어",
+      risk: "safe",
+      raw: line,
+      meaning: "Bash 조건문이나 반복문 구조입니다. 조건에 따라 안쪽 명령이 실행됩니다.",
+      fileImpact: "이 줄 자체는 보통 파일을 바꾸지 않고, 안쪽 명령의 실행 여부를 결정합니다.",
+      nextCheck: ""
+    };
+  }
+
+  function classifyBashLineV278(line, lineNumber) {
+    const trimmed = String(line || "").trim();
+
+    if (!trimmed) {
+      return null;
+    }
+
+    if (isBashCommentV278(trimmed)) {
+      return {
+        line: lineNumber,
+        command: "주석",
+        group: "메모",
+        risk: "safe",
+        raw: line,
+        meaning: "실행되지 않는 설명 줄입니다.",
+        fileImpact: "파일을 수정하지 않습니다.",
+        nextCheck: ""
+      };
+    }
+
+    if (isBashControlLineV278(trimmed)) {
+      return buildBashControlStepV278(line, lineNumber);
+    }
+
+    const rule = BASH_RULES_V278.find(function(item) {
+      return item.pattern.test(trimmed);
+    });
+
+    if (!rule) {
+      const first = trimmed.split(/\s+/)[0] || "알 수 없는 명령";
+      return {
+        line: lineNumber,
+        command: first,
+        group: "미분류",
+        risk: "unknown",
+        raw: line,
+        meaning: "아직 V278 규칙에 없는 Bash/Shell 명령입니다. 명령 이름과 옵션을 따로 확인해야 합니다.",
+        fileImpact: "파일을 바꾸는지 확실하지 않으므로 실행 전 의미를 확인해야 합니다.",
+        nextCheck: "명령 도움말 확인: " + first + " --help"
+      };
+    }
+
+    let risk = rule.risk;
+    let fileImpact = rule.fileImpact;
+
+    if (rule.id === "rm_rf") {
+      risk = "danger";
+      fileImpact += " 현재 줄은 rm 계열 삭제 명령이라 실행 전 경로를 반드시 확인해야 합니다.";
+    }
+
+    if (rule.id === "sudo") {
+      risk = "danger";
+      fileImpact += " sudo는 관리자 권한으로 실행되므로 시스템 변경 가능성이 큽니다.";
+    }
+
+    return {
+      line: lineNumber,
+      command: rule.command,
+      group: rule.group,
+      risk: risk,
+      raw: line,
+      meaning: rule.meaning,
+      fileImpact: fileImpact,
+      nextCheck: rule.nextCheck || ""
+    };
+  }
+
+  function analyzeBashV278(source) {
+    const lines = String(source || "").split(/\r?\n/);
+    const steps = lines.map(function(line, index) {
+      return classifyBashLineV278(line, index + 1);
+    }).filter(Boolean);
+
+    const warnings = steps.filter(function(step) {
+      return step.risk === "danger" || step.risk === "caution";
+    });
+
+    const danger = steps.filter(function(step) { return step.risk === "danger"; }).length;
+    const caution = steps.filter(function(step) { return step.risk === "caution"; }).length;
+    const safe = steps.filter(function(step) { return step.risk === "safe"; }).length;
+    const unknown = steps.filter(function(step) { return step.risk === "unknown"; }).length;
+
+    const nextChecks = Array.from(new Set(steps.map(function(step) {
+      return step.nextCheck;
+    }).filter(Boolean)));
+
+    const groups = {};
+    steps.forEach(function(step) {
+      groups[step.group] = (groups[step.group] || 0) + 1;
+    });
+
+    return {
+      version: COMMAND_EXPLAINER_VERSION,
+      language: "bash",
+      steps: steps,
+      warnings: warnings,
+      summary: {
+        total: steps.length,
+        safe: safe,
+        caution: caution,
+        danger: danger,
+        unknown: unknown,
+        groups: groups,
+        text: "Bash/Shell 명령 " + steps.length + "개를 작업 순서대로 분석했습니다. 위험 " + danger + "개, 주의 " + caution + "개, 미확인 " + unknown + "개입니다."
+      },
+      nextChecks: nextChecks
+    };
+  }
+
+
   function detectCommandLanguageV277(source) {
     const text = String(source || "");
     if (/Set-Location|Remove-Item|New-Item|Get-Content|Test-Path|\$env:|Out-Null/i.test(text)) {
       return "powershell";
     }
-    if (/\brm\s+-rf\b|\bmkdir\s+-p\b|^\s*cd\s+/m.test(text)) {
+    if (/\brm\s+.*(?:-rf|-fr|-r\s+-f|-f\s+-r)\b|\bmkdir\s+-p\b|^\s*cd\s+|\bchmod\b|\bsudo\b|\bpython3\b|\bgrep\b|\bcat\b/m.test(text)) {
       return "bash";
     }
     return "powershell";
@@ -429,11 +728,16 @@ git push origin main --tags`;
     const selected = shell ? shell.value : "powershell";
     const detected = selected === "auto" ? detectCommandLanguageV277(source) : selected;
 
+    if (detected === "bash") {
+      renderCommandAnalysisV277(analyzeBashV278(source));
+      return;
+    }
+
     if (detected !== "powershell") {
       renderCommandAnalysisV277({
         language: detected,
         steps: [],
-        warnings: [{ line: 1, command: "Bash/Shell", risk: "caution", fileImpact: "Bash/Shell 해석은 V278에서 구현 예정입니다." }],
+        warnings: [{ line: 1, command: "미지원 셸", risk: "caution", fileImpact: "현재 V278은 PowerShell과 Bash/Shell 1차 해석만 지원합니다." }],
         summary: {
           total: 0,
           safe: 0,
@@ -441,7 +745,7 @@ git push origin main --tags`;
           danger: 0,
           unknown: 0,
           groups: {},
-          text: "Bash/Shell은 V278에서 별도 구현 예정입니다. V277은 PowerShell 1차 해석만 지원합니다."
+          text: "지원하지 않는 셸입니다. PowerShell 또는 Bash/Shell을 선택해 주세요."
         },
         nextChecks: []
       });
@@ -453,8 +757,9 @@ git push origin main --tags`;
 
   function loadPowerShellSampleV277() {
     const input = getCommandElV277("commandInput");
+    const shell = getCommandElV277("commandShellSelect");
     if (input) {
-      input.value = POWERSHELL_SAMPLE_V277;
+      input.value = shell && shell.value === "bash" ? BASH_SAMPLE_V278 : POWERSHELL_SAMPLE_V277;
     }
     analyzeCommandInputV277();
   }
@@ -513,7 +818,7 @@ git push origin main --tags`;
 
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V277";
+      version.textContent = "V278";
     }
 
     const analyzeBtn = getCommandElV277("analyzeCommandBtn");
@@ -528,15 +833,18 @@ git push origin main --tags`;
   function refreshCommandExplainerV277() {
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V277";
+      version.textContent = "V278";
     }
   }
 
   window.CommandExplainer = {
     version: COMMAND_EXPLAINER_VERSION,
     samplePowerShellV277: POWERSHELL_SAMPLE_V277,
+    sampleBashV278: BASH_SAMPLE_V278,
     analyzePowerShellV277: analyzePowerShellV277,
+    analyzeBashV278: analyzeBashV278,
     classifyPowerShellLineV277: classifyPowerShellLineV277,
+    classifyBashLineV278: classifyBashLineV278,
     detectCommandLanguageV277: detectCommandLanguageV277,
     renderV277: renderCommandAnalysisV277,
     init: initCommandExplainerV277,
