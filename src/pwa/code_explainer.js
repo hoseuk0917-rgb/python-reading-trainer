@@ -2599,8 +2599,9 @@ function buildSelectedFunctionContextV261(source, outline, selectedItem) {
   const callers = findFunctionCallersV261(items, selectedItem);
   const internalCalls = getFunctionInternalCallsV261(selectedItem);
   const role = classifyFunctionSkeletonRoleV259(selectedItem);
+  const internalCallGroupsV272 = buildInternalCallGroupsV272(internalCalls, items, selectedItem);
 
-  return {
+  const context = {
     name: selectedItem.name,
     lineNo: selectedItem.lineNo,
     role: role,
@@ -2629,7 +2630,9 @@ function buildSelectedFunctionContextV261(source, outline, selectedItem) {
         roleLabel: getFunctionSkeletonRoleLabelV259(classifyFunctionSkeletonRoleV259(item))
       };
     }),
-    internalCalls: internalCalls
+    internalCalls: flattenInternalCallGroupsV272(internalCallGroupsV272),
+
+    internalCallGroupsV272: internalCallGroupsV272
   };
 
   context.callGraphMermaid = buildSelectedFunctionCallGraphMermaidV262(context);
@@ -2650,6 +2653,200 @@ function renderContextItemListV261(items, emptyText) {
     }).join("") +
   '</div>';
 }
+
+
+// CODE_EXPLAINER_INTERNAL_CALL_NOISE_GROUPS_V272_A1
+// CODE_EXPLAINER_VERSION_TEXT_V272_A1 20260611_v272_a1
+const INTERNAL_CALL_GROUP_ORDER_V272 = [
+  "dom_ui",
+  "storage_json",
+  "network_api",
+  "array_collection",
+  "internal_function",
+  "utility_transform",
+  "other"
+];
+
+const INTERNAL_CALL_NOISE_EXACT_V272 = new Set([
+  "add",
+  "has",
+  "get",
+  "set",
+  "remove",
+  "init",
+  "refresh",
+  "render",
+  "update",
+  "create",
+  "build",
+  "parse",
+  "format",
+  "log",
+  "warn",
+  "error"
+]);
+
+function getInternalCallGroupLabelV272(group) {
+  const labels = {
+    dom_ui: "DOM/UI",
+    storage_json: "저장/JSON",
+    network_api: "네트워크/API",
+    array_collection: "배열/컬렉션",
+    internal_function: "내부 함수",
+    utility_transform: "유틸/변환",
+    other: "기타"
+  };
+
+  return labels[group] || "기타";
+}
+
+function normalizeInternalCallNameV272(name) {
+  return String(name || "").trim();
+}
+
+function isNoisyInternalCallV272(name) {
+  const raw = normalizeInternalCallNameV272(name);
+  const leaf = raw.split(".").pop();
+
+  if (!raw) return true;
+  if (raw.indexOf(".") < 0 && INTERNAL_CALL_NOISE_EXACT_V272.has(raw)) return true;
+  if (/^console\.(log|warn|error|debug|info)$/.test(raw)) return true;
+  if (/^(setTimeout|clearTimeout|setInterval|clearInterval)$/.test(raw)) return false;
+  if (raw.indexOf(".") < 0 && INTERNAL_CALL_NOISE_EXACT_V272.has(leaf)) return true;
+
+  return false;
+}
+
+function getOutlineFunctionNameSetV272(outline, selectedItem) {
+  const names = new Set();
+
+  (Array.isArray(outline) ? outline : []).forEach(function(item) {
+    const name = item && item.name ? String(item.name) : "";
+    if (!name) return;
+    if (selectedItem && selectedItem.name === name) return;
+    names.add(name);
+  });
+
+  return names;
+}
+
+function classifyInternalCallGroupV272(name, outline, selectedItem) {
+  const raw = normalizeInternalCallNameV272(name);
+  const leaf = raw.split(".").pop();
+  const root = raw.split(".")[0];
+  const functionNames = getOutlineFunctionNameSetV272(outline, selectedItem);
+
+  if (
+    /^document\./.test(raw) ||
+    /(^|\.)(querySelector|querySelectorAll|getElementById|getElementsByClassName|getElementsByTagName|addEventListener|removeEventListener|appendChild|removeChild|setAttribute|getAttribute|scrollIntoView|focus|select)$/.test(raw) ||
+    /\.classList\.(add|remove|toggle|contains)$/.test(raw) ||
+    raw === "alert"
+  ) {
+    return "dom_ui";
+  }
+
+  if (
+    /^localStorage\.|^sessionStorage\.|^JSON\.(parse|stringify)$/.test(raw) ||
+    /(^|\.)(getItem|setItem|removeItem)$/.test(raw)
+  ) {
+    return "storage_json";
+  }
+
+  if (
+    raw === "fetch" ||
+    /^fetch$|^Response\.|^Request\.|^URL\.|^URLSearchParams$|^navigator\.clipboard\.|^clipboard\.writeText$/.test(raw)
+  ) {
+    return "network_api";
+  }
+
+  if (
+    /^Array\.isArray$/.test(raw) ||
+    /(^|\.)(map|filter|reduce|forEach|some|every|find|findIndex|slice|sort|push|pop|shift|unshift|join|split|flat|includes|indexOf)$/.test(raw)
+  ) {
+    return "array_collection";
+  }
+
+  if (functionNames.has(raw) || functionNames.has(leaf) || functionNames.has(root)) {
+    return "internal_function";
+  }
+
+  if (
+    /^(String|Number|Boolean|Date|RegExp|Object\.)/.test(raw) ||
+    /^Math\./.test(raw) ||
+    /^(parseInt|parseFloat|escapeHtml|normalizeSearchText|setTimeout|clearTimeout|setInterval|clearInterval|Promise\.)/.test(raw)
+  ) {
+    return "utility_transform";
+  }
+
+  return "other";
+}
+
+function buildInternalCallGroupsV272(calls, outline, selectedItem) {
+  const groupsByKey = {};
+  const seen = new Set();
+
+  INTERNAL_CALL_GROUP_ORDER_V272.forEach(function(key) {
+    groupsByKey[key] = {
+      key: key,
+      label: getInternalCallGroupLabelV272(key),
+      items: []
+    };
+  });
+
+  (Array.isArray(calls) ? calls : []).forEach(function(name) {
+    const raw = normalizeInternalCallNameV272(name);
+
+    if (!raw || isNoisyInternalCallV272(raw) || seen.has(raw)) return;
+
+    const key = classifyInternalCallGroupV272(raw, outline, selectedItem);
+    seen.add(raw);
+
+    groupsByKey[key].items.push({
+      name: raw,
+      group: key,
+      label: getInternalCallGroupLabelV272(key)
+    });
+  });
+
+  return INTERNAL_CALL_GROUP_ORDER_V272
+    .map(function(key) { return groupsByKey[key]; })
+    .filter(function(group) { return group.items.length > 0; });
+}
+
+function flattenInternalCallGroupsV272(groups) {
+  return (Array.isArray(groups) ? groups : [])
+    .flatMap(function(group) {
+      return (group.items || []).map(function(item) {
+        return item.name;
+      });
+    });
+}
+
+function renderInternalCallGroupsV272(groups) {
+  const list = Array.isArray(groups) ? groups : [];
+
+  if (!list.length) {
+    return '<p class="muted">내부 호출/API 신호가 뚜렷하지 않거나, 너무 일반적인 보조 호출만 있어 숨겼습니다.</p>';
+  }
+
+  return '<details open class="function-internal-call-groups-v272"><summary>내부 호출/API 그룹</summary>' +
+    '<p class="code-report-categories">너무 흔한 보조 호출은 줄이고, 실제 읽기 순서에 도움이 되는 호출만 성격별로 묶었습니다.</p>' +
+    list.map(function(group) {
+      return '<section class="function-internal-call-group-v272">' +
+        '<h5>' + escapeHtml(group.label) + ' · ' + escapeHtml(String(group.items.length)) + '개</h5>' +
+        '<div class="code-flow-mini-grid function-context-grid-v261 function-internal-call-grid-v272">' +
+        group.items.map(function(item) {
+          return '<span class="code-report-chip function-context-chip-v261 function-internal-call-chip-v272">' +
+            '<strong>' + escapeHtml(item.name) + '</strong>' +
+            '<small>' + escapeHtml(group.label) + '</small>' +
+          '</span>';
+        }).join("") +
+        '</div>' +
+      '</section>';
+    }).join("") +
+    '</details>';
+}
+
 
 function renderInternalCallListV261(calls) {
   if (!Array.isArray(calls) || !calls.length) {
@@ -2767,7 +2964,7 @@ function renderSelectedFunctionContextV261(result) {
     '<h4>이 함수를 호출하는 함수</h4>' +
     renderContextItemListV261(context.callers, "현재 파일 안에서 이 함수를 직접 호출하는 함수가 보이지 않습니다.") +
     '<h4>이 함수 내부 호출/API</h4>' +
-    renderInternalCallListV261(context.internalCalls) +
+    renderInternalCallGroupsV272(context.internalCallGroupsV272) +
     renderSelectedFunctionCallGraphV262(context) +
     '</details>';
 }
@@ -3692,7 +3889,10 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     setFunctionPickerSearchV260: setFunctionPickerSearchV260,
     setFunctionPickerRoleV260: setFunctionPickerRoleV260,
     getSelectedFunctionContextV261: getSelectedFunctionContextV261,
-    getSelectedFunctionCallGraphMermaidV262: getSelectedFunctionCallGraphMermaidV262
+    getSelectedFunctionCallGraphMermaidV262: getSelectedFunctionCallGraphMermaidV262,
+    groupInternalCallsV272: buildInternalCallGroupsV272,
+    flattenInternalCallGroupsV272: flattenInternalCallGroupsV272,
+    renderInternalCallGroupsV272: renderInternalCallGroupsV272
   };
 
   if (document.readyState === "loading") {
