@@ -1,6 +1,6 @@
 // === PROJECT ANALYZER V248-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260611_v266_a1";
+  const PROJECT_ANALYZER_VERSION = "20260611_v267_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
@@ -1334,6 +1334,88 @@
     return lines.join("\n");
   }
 
+
+  // PROJECT_CROSS_FILE_LINK_UI_GROUPS_V267_A1
+  function getProjectCrossFileGroupKeyV267(link) {
+    const symbol = String((link && link.symbol) || "");
+    const kind = String((link && link.kind) || "");
+
+    if (kind === "file-reference") return "file-reference";
+    if (kind.indexOf("window_object") >= 0) return "public-api";
+    if (/^[A-Z][A-Za-z0-9_$]+$/.test(symbol)) return "public-api";
+    if (PROJECT_CROSS_FILE_STRONG_SYMBOLS_V266.has(symbol)) return "public-api";
+    if (kind === "call-to-symbol") return "function-call";
+    return "other";
+  }
+
+  function getProjectCrossFileGroupLabelV267(key) {
+    if (key === "public-api") return "전역 객체 / 공개 API 연결";
+    if (key === "file-reference") return "파일 참조 / 로딩 연결";
+    if (key === "function-call") return "함수 호출 후보";
+    return "기타 연결 후보";
+  }
+
+  function groupProjectCrossFileLinksV267(links) {
+    const order = ["public-api", "file-reference", "function-call", "other"];
+    const groups = {};
+
+    order.forEach(function(key) {
+      groups[key] = [];
+    });
+
+    (Array.isArray(links) ? links : []).forEach(function(link) {
+      const key = getProjectCrossFileGroupKeyV267(link);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(link);
+    });
+
+    return order.map(function(key) {
+      return {
+        key: key,
+        label: getProjectCrossFileGroupLabelV267(key),
+        items: groups[key] || []
+      };
+    }).filter(function(group) {
+      return group.items.length > 0;
+    });
+  }
+
+  function renderProjectCrossFileConfidenceBadgeV267(confidence) {
+    const value = String(confidence || "medium");
+    const label = value === "high" ? "high" : value === "low" ? "low" : "medium";
+    return '<span class="project-code-chip project-cross-file-confidence-v267"><span>' + escapeHtml(label) + '</span></span>';
+  }
+
+  function renderProjectCrossFileRowV267(link) {
+    const reason = link.reason ? " · " + link.reason : "";
+
+    return '<div class="project-data-row project-cross-file-row-v267">' +
+      '<strong>' + escapeHtml(link.from + " → " + link.to) + '</strong>' +
+      '<span>' +
+      renderProjectCrossFileConfidenceBadgeV267(link.confidence || "medium") + ' ' +
+      escapeHtml(link.kind + " · " + link.symbol + " · " + link.count + "회" + reason) +
+      '</span>' +
+      '</div>';
+  }
+
+  function renderProjectCrossFileGroupsV267(links) {
+    const groups = groupProjectCrossFileLinksV267(links);
+
+    if (!groups.length) {
+      return '<p class="muted">표시할 파일 간 연결 후보가 없습니다.</p>';
+    }
+
+    return groups.map(function(group) {
+      return '<div class="project-detail-section project-cross-file-group-v267">' +
+        '<h4>' + escapeHtml(group.label + " · " + group.items.length + "개") + '</h4>' +
+        '<div class="project-data-list">' +
+        group.items.slice(0, 8).map(renderProjectCrossFileRowV267).join("") +
+        '</div>' +
+        '</div>';
+    }).join("");
+  }
+
+
   function renderProjectCrossFileLinksV265(parsed) {
     if (!parsed || parsed.inputMode !== "json") {
       return "";
@@ -1349,17 +1431,10 @@
         '</div>';
     }
 
-    return '<div class="project-detail-section project-cross-file-links-v265">' +
+    return '<div class="project-detail-section project-cross-file-links-v265 project-cross-file-links-v267">' +
       '<h3>파일 간 연결 후보</h3>' +
-      '<p class="muted">프로젝트분석 영역입니다. 단일 함수 설명은 코드해석, 여러 파일 연결은 프로젝트분석에서 봅니다. V266 노이즈 필터로 흔한 함수명 연결은 제외하고 명확한 전역 객체/멤버 연결을 우선 표시합니다.</p>' +
-      '<div class="project-data-list">' +
-      links.slice(0, 12).map(function(link) {
-        return '<div class="project-data-row">' +
-          '<strong>' + escapeHtml(link.from + " → " + link.to) + '</strong>' +
-          '<span>' + escapeHtml((link.confidence || "medium") + " · " + link.kind + " · " + link.symbol + " · " + link.count + "회") + '</span>' +
-          '</div>';
-      }).join("") +
-      '</div>' +
+      '<p class="muted">프로젝트분석 영역입니다. 단일 함수 설명은 코드해석, 여러 파일 연결은 프로젝트분석에서 봅니다. V266 노이즈 필터를 유지하고, V267에서 신뢰도와 연결 유형별 그룹을 분리했습니다.</p>' +
+      renderProjectCrossFileGroupsV267(links) +
       '<details class="project-detail-section"><summary>파일 간 연결 Mermaid 코드</summary><pre class="code-block">' +
       escapeHtml(mermaid) +
       '</pre></details>' +
@@ -1735,7 +1810,8 @@
     renderProbeAnalysis: renderProbeAnalysis,
     buildCodeBridgeSnippet: buildProjectCodeBridgeSnippet,
     buildCrossFileLinksV265: buildProjectCrossFileLinksV265,
-    filterCrossFileLinksV266: filterAndRankProjectCrossFileLinksV266
+    filterCrossFileLinksV266: filterAndRankProjectCrossFileLinksV266,
+    groupCrossFileLinksV267: groupProjectCrossFileLinksV267
   };
 
   if (document.readyState === "loading") {
