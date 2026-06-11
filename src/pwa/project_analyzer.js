@@ -1,6 +1,6 @@
 // === PROJECT ANALYZER V248-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260611_v265_a1";
+  const PROJECT_ANALYZER_VERSION = "20260611_v266_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
@@ -1091,6 +1091,111 @@
     return String(path || "").replace(/\\/g, "/").replace(/^\.\//, "");
   }
 
+
+  // PROJECT_CROSS_FILE_LINK_NOISE_FILTER_V266_A1
+  const PROJECT_CROSS_FILE_GENERIC_SYMBOLS_V266 = new Set([
+    "add",
+    "has",
+    "get",
+    "set",
+    "map",
+    "filter",
+    "reduce",
+    "init",
+    "refresh",
+    "render",
+    "update",
+    "create",
+    "build",
+    "parse",
+    "format",
+    "escape",
+    "escapeHtml",
+    "normalize",
+    "resolve",
+    "count",
+    "push",
+    "then",
+    "catch"
+  ]);
+
+  const PROJECT_CROSS_FILE_STRONG_SYMBOLS_V266 = new Set([
+    "CodeExplainer",
+    "ProjectAnalyzer",
+    "CodeExplainerRules",
+    "analyzeSnippet",
+    "analyze",
+    "detectLanguage",
+    "buildProbeCommand",
+    "parseProbeOutput",
+    "renderProbeAnalysis",
+    "buildCodeBridgeSnippet",
+    "buildCrossFileLinksV265"
+  ]);
+
+  function isProjectGenericSymbolV266(name) {
+    const value = String(name || "").trim();
+    if (!value) return true;
+    if (value.length <= 2) return true;
+    return PROJECT_CROSS_FILE_GENERIC_SYMBOLS_V266.has(value);
+  }
+
+  function isProjectStrongSymbolV266(name) {
+    const value = String(name || "").trim();
+    if (!value) return false;
+    return PROJECT_CROSS_FILE_STRONG_SYMBOLS_V266.has(value) || /^[A-Z][A-Za-z0-9_$]+$/.test(value);
+  }
+
+  function getProjectCrossFileConfidenceV266(link) {
+    const symbol = String((link && link.symbol) || "");
+    const kind = String((link && link.kind) || "");
+
+    if (kind === "file-reference") return "high";
+    if (kind.indexOf("window_object") >= 0) return "high";
+    if (isProjectStrongSymbolV266(symbol)) return "high";
+    if (isProjectGenericSymbolV266(symbol)) return "low";
+    return "medium";
+  }
+
+  function shouldKeepProjectCrossFileLinkV266(link) {
+    const symbol = String((link && link.symbol) || "");
+    const kind = String((link && link.kind) || "");
+
+    if (kind === "file-reference") return true;
+    if (kind.indexOf("window_object") >= 0) return true;
+    if (isProjectStrongSymbolV266(symbol)) return true;
+    if (isProjectGenericSymbolV266(symbol)) return false;
+
+    return true;
+  }
+
+  function annotateProjectCrossFileLinkV266(link) {
+    const confidence = getProjectCrossFileConfidenceV266(link);
+    return Object.assign({}, link, {
+      confidence: confidence,
+      reason: confidence === "high"
+        ? "명확한 파일 간 연결 신호"
+        : confidence === "medium"
+          ? "일반 함수명 기반 연결 후보"
+          : "흔한 이름 기반 저신뢰 후보"
+    });
+  }
+
+  function filterAndRankProjectCrossFileLinksV266(links) {
+    const confidenceRank = { high: 3, medium: 2, low: 1 };
+
+    return (Array.isArray(links) ? links : [])
+      .map(annotateProjectCrossFileLinkV266)
+      .filter(shouldKeepProjectCrossFileLinkV266)
+      .sort(function(a, b) {
+        const rankDiff = (confidenceRank[b.confidence] || 0) - (confidenceRank[a.confidence] || 0);
+        if (rankDiff) return rankDiff;
+        if (b.count !== a.count) return b.count - a.count;
+        return (a.from + a.to + a.symbol).localeCompare(b.from + b.to + b.symbol);
+      });
+  }
+
+
   function buildProjectSymbolOwnerIndexV265(symbols) {
     const index = {};
     objectEntries(symbols || {}).forEach(function(entry) {
@@ -1186,12 +1291,7 @@
       });
     });
 
-    links.sort(function(a, b) {
-      if (b.count !== a.count) return b.count - a.count;
-      return (a.from + a.to + a.symbol).localeCompare(b.from + b.to + b.symbol);
-    });
-
-    return links.slice(0, 80);
+    return filterAndRankProjectCrossFileLinksV266(links).slice(0, 80);
   }
 
   function buildProjectCrossFileMermaidV265(links) {
@@ -1251,12 +1351,12 @@
 
     return '<div class="project-detail-section project-cross-file-links-v265">' +
       '<h3>파일 간 연결 후보</h3>' +
-      '<p class="muted">프로젝트분석 영역입니다. 단일 함수 설명은 코드해석, 여러 파일 연결은 프로젝트분석에서 봅니다.</p>' +
+      '<p class="muted">프로젝트분석 영역입니다. 단일 함수 설명은 코드해석, 여러 파일 연결은 프로젝트분석에서 봅니다. V266 노이즈 필터로 흔한 함수명 연결은 제외하고 명확한 전역 객체/멤버 연결을 우선 표시합니다.</p>' +
       '<div class="project-data-list">' +
       links.slice(0, 12).map(function(link) {
         return '<div class="project-data-row">' +
           '<strong>' + escapeHtml(link.from + " → " + link.to) + '</strong>' +
-          '<span>' + escapeHtml(link.kind + " · " + link.symbol + " · " + link.count + "회") + '</span>' +
+          '<span>' + escapeHtml((link.confidence || "medium") + " · " + link.kind + " · " + link.symbol + " · " + link.count + "회") + '</span>' +
           '</div>';
       }).join("") +
       '</div>' +
@@ -1634,7 +1734,8 @@
     parseProbeOutput: parseProbeOutput,
     renderProbeAnalysis: renderProbeAnalysis,
     buildCodeBridgeSnippet: buildProjectCodeBridgeSnippet,
-    buildCrossFileLinksV265: buildProjectCrossFileLinksV265
+    buildCrossFileLinksV265: buildProjectCrossFileLinksV265,
+    filterCrossFileLinksV266: filterAndRankProjectCrossFileLinksV266
   };
 
   if (document.readyState === "loading") {
