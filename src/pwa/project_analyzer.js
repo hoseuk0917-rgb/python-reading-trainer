@@ -1,6 +1,6 @@
 // === PROJECT ANALYZER V248-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260611_v267_a1";
+  const PROJECT_ANALYZER_VERSION = "20260611_v268_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
