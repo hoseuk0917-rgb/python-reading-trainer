@@ -1,6 +1,6 @@
 // === PROJECT ANALYZER V248-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260611_v268_a1";
+  const PROJECT_ANALYZER_VERSION = "20260611_v269_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
@@ -1416,24 +1416,109 @@
   }
 
 
+
+  // PROJECT_CROSS_FILE_FOCUS_FILTER_V269_A1
+  let projectCrossFileFocusPathV269 = "all";
+  let lastProjectCrossFileParsedV269 = null;
+
+  function getProjectCrossFileFocusPathV269() {
+    return projectCrossFileFocusPathV269 || "all";
+  }
+
+  function setProjectCrossFileFocusPathV269(filePath) {
+    projectCrossFileFocusPathV269 = normalizeProjectPathV265(filePath || "all") || "all";
+
+    if (lastProjectCrossFileParsedV269) {
+      renderProbeAnalysis(lastProjectCrossFileParsedV269);
+    }
+
+    return projectCrossFileFocusPathV269;
+  }
+
+  function getProjectCrossFileAvailableFilesV269(links) {
+    const files = [];
+    const seen = new Set();
+
+    (Array.isArray(links) ? links : []).forEach(function(link) {
+      [link.from, link.to].forEach(function(filePath) {
+        const normalized = normalizeProjectPathV265(filePath);
+        if (!normalized || seen.has(normalized)) return;
+        seen.add(normalized);
+        files.push(normalized);
+      });
+    });
+
+    return files.sort(function(a, b) {
+      return a.localeCompare(b);
+    });
+  }
+
+  function filterProjectCrossFileLinksByFocusV269(links, focusPath) {
+    const focus = normalizeProjectPathV265(focusPath || "all");
+
+    if (!focus || focus === "all") {
+      return Array.isArray(links) ? links : [];
+    }
+
+    return (Array.isArray(links) ? links : []).filter(function(link) {
+      return normalizeProjectPathV265(link.from) === focus || normalizeProjectPathV265(link.to) === focus;
+    });
+  }
+
+  function renderProjectCrossFileFocusSelectV269(links, focusPath) {
+    const files = getProjectCrossFileAvailableFilesV269(links);
+    const current = normalizeProjectPathV265(focusPath || "all");
+    const options = ['<option value="all"' + (current === "all" ? " selected" : "") + '>전체 보기</option>']
+      .concat(files.map(function(filePath) {
+        return '<option value="' + escapeHtml(filePath) + '"' + (current === filePath ? " selected" : "") + '>' +
+          escapeHtml(filePath.replace("src/pwa/", "")) +
+          '</option>';
+      }));
+
+    return '<div class="project-detail-section project-cross-file-focus-v269">' +
+      '<h4>파일 중심 필터</h4>' +
+      '<p class="muted">특정 파일을 선택하면 해당 파일이 보내거나 받는 연결만 좁혀서 봅니다.</p>' +
+      '<label class="inline-label">기준 파일 ' +
+      '<select onchange="window.ProjectAnalyzer.setCrossFileFocusV269(this.value)">' +
+      options.join("") +
+      '</select>' +
+      '</label>' +
+      '<p class="muted">현재 보기: ' + escapeHtml(current === "all" ? "전체" : current) + '</p>' +
+      '</div>';
+  }
+
+
   function renderProjectCrossFileLinksV265(parsed) {
     if (!parsed || parsed.inputMode !== "json") {
       return "";
     }
 
-    const links = buildProjectCrossFileLinksV265(parsed);
+    lastProjectCrossFileParsedV269 = parsed;
+
+    const allLinks = buildProjectCrossFileLinksV265(parsed);
+    const availableFiles = getProjectCrossFileAvailableFilesV269(allLinks);
+    let focusPath = getProjectCrossFileFocusPathV269();
+
+    if (focusPath !== "all" && availableFiles.indexOf(focusPath) < 0) {
+      focusPath = "all";
+      projectCrossFileFocusPathV269 = "all";
+    }
+
+    const links = filterProjectCrossFileLinksByFocusV269(allLinks, focusPath);
     const mermaid = buildProjectCrossFileMermaidV265(links);
 
-    if (!links.length) {
+    if (!allLinks.length) {
       return '<div class="project-detail-section project-cross-file-links-v265">' +
         '<h3>파일 간 연결 후보</h3>' +
         '<p class="muted">JSON 리포트에서 파일 간 연결 후보를 찾지 못했습니다.</p>' +
         '</div>';
     }
 
-    return '<div class="project-detail-section project-cross-file-links-v265 project-cross-file-links-v267">' +
+    return '<div class="project-detail-section project-cross-file-links-v265 project-cross-file-links-v267 project-cross-file-links-v269">' +
       '<h3>파일 간 연결 후보</h3>' +
-      '<p class="muted">프로젝트분석 영역입니다. 단일 함수 설명은 코드해석, 여러 파일 연결은 프로젝트분석에서 봅니다. V266 노이즈 필터를 유지하고, V267에서 신뢰도와 연결 유형별 그룹을 분리했습니다.</p>' +
+      '<p class="muted">프로젝트분석 영역입니다. 단일 함수 설명은 코드해석, 여러 파일 연결은 프로젝트분석에서 봅니다. V266 노이즈 필터와 V267 그룹 보기를 유지하고, V269에서 파일 중심 필터를 추가했습니다.</p>' +
+      renderProjectCrossFileFocusSelectV269(allLinks, focusPath) +
+      '<p class="muted">표시 중인 연결: ' + escapeHtml(String(links.length)) + '개 / 전체 ' + escapeHtml(String(allLinks.length)) + '개</p>' +
       renderProjectCrossFileGroupsV267(links) +
       '<details class="project-detail-section"><summary>파일 간 연결 Mermaid 코드</summary><pre class="code-block">' +
       escapeHtml(mermaid) +
@@ -1811,7 +1896,11 @@
     buildCodeBridgeSnippet: buildProjectCodeBridgeSnippet,
     buildCrossFileLinksV265: buildProjectCrossFileLinksV265,
     filterCrossFileLinksV266: filterAndRankProjectCrossFileLinksV266,
-    groupCrossFileLinksV267: groupProjectCrossFileLinksV267
+    groupCrossFileLinksV267: groupProjectCrossFileLinksV267,
+    setCrossFileFocusV269: setProjectCrossFileFocusPathV269,
+    getCrossFileFocusV269: getProjectCrossFileFocusPathV269,
+    filterCrossFileLinksByFocusV269: filterProjectCrossFileLinksByFocusV269,
+    getCrossFileAvailableFilesV269: getProjectCrossFileAvailableFilesV269
   };
 
   if (document.readyState === "loading") {
