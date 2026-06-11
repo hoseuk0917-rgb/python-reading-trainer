@@ -1,6 +1,6 @@
 // === PROJECT ANALYZER V248-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260611_v270_a1";
+  const PROJECT_ANALYZER_VERSION = "20260611_v271_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
@@ -1386,15 +1386,128 @@
     return '<span class="project-code-chip project-cross-file-confidence-v267"><span>' + escapeHtml(label) + '</span></span>';
   }
 
+
+  // PROJECT_CROSS_FILE_DETAIL_PANEL_V271_A1
+  function getProjectCrossFileSourceEvidenceV271(parsed, link) {
+    const from = normalizeProjectPathV265(link && link.from);
+    const symbol = String((link && link.symbol) || "");
+    const kind = String((link && link.kind) || "");
+    const callsByFile = (parsed && parsed.callCandidates) || {};
+    const refsByFile = (parsed && parsed.references) || {};
+
+    if (kind === "file-reference") {
+      const refs = Array.isArray(refsByFile[from]) ? refsByFile[from] : [];
+      const foundRef = refs.find(function(ref) {
+        const raw = typeof ref === "string" ? ref : (ref && (ref.path || ref.reference || ref.name || ref.value));
+        return String(raw || "") === symbol || String(raw || "").indexOf(symbol) >= 0;
+      });
+
+      if (foundRef) {
+        const raw = typeof foundRef === "string" ? foundRef : (foundRef.path || foundRef.reference || foundRef.name || foundRef.value || "");
+        return {
+          type: "reference",
+          line: foundRef.line || "",
+          snippet: String(raw || "")
+        };
+      }
+
+      return {
+        type: "reference",
+        line: "",
+        snippet: symbol
+      };
+    }
+
+    const calls = Array.isArray(callsByFile[from]) ? callsByFile[from] : [];
+    const foundCall = calls.find(function(call) {
+      return call && call.name === symbol;
+    });
+
+    if (foundCall) {
+      return {
+        type: "call_candidate",
+        line: foundCall.line || "",
+        snippet: foundCall.snippet || foundCall.name || symbol
+      };
+    }
+
+    return {
+      type: kind || "link",
+      line: "",
+      snippet: symbol
+    };
+  }
+
+  function getProjectCrossFileTargetEvidenceV271(parsed, link) {
+    const to = normalizeProjectPathV265(link && link.to);
+    const symbol = String((link && link.symbol) || "");
+    const symbolsByFile = (parsed && parsed.symbols) || {};
+    const symbols = Array.isArray(symbolsByFile[to]) ? symbolsByFile[to] : [];
+    const foundSymbol = symbols.find(function(item) {
+      return item && item.name === symbol;
+    });
+
+    if (foundSymbol) {
+      return {
+        type: foundSymbol.type || "symbol",
+        line: foundSymbol.line || "",
+        snippet: foundSymbol.snippet || foundSymbol.name || symbol
+      };
+    }
+
+    return {
+      type: "target_file",
+      line: "",
+      snippet: symbol
+    };
+  }
+
+  function enrichProjectCrossFileLinksWithEvidenceV271(parsed, links) {
+    return (Array.isArray(links) ? links : []).map(function(link) {
+      return Object.assign({}, link, {
+        sourceEvidenceV271: getProjectCrossFileSourceEvidenceV271(parsed, link),
+        targetEvidenceV271: getProjectCrossFileTargetEvidenceV271(parsed, link)
+      });
+    });
+  }
+
+  function renderProjectCrossFileEvidenceBlockV271(title, evidence) {
+    const ev = evidence || {};
+    const meta = [ev.type || "evidence", ev.line ? "line " + ev.line : ""].filter(Boolean).join(" · ");
+
+    return '<div class="project-cross-file-evidence-v271">' +
+      '<strong>' + escapeHtml(title) + '</strong>' +
+      '<p class="muted">' + escapeHtml(meta || "evidence") + '</p>' +
+      '<pre class="code-block">' + escapeHtml(String(ev.snippet || "").slice(0, 420)) + '</pre>' +
+      '</div>';
+  }
+
+  function renderProjectCrossFileDetailPanelV271(link) {
+    return '<details class="project-cross-file-detail-v271">' +
+      '<summary>연결 상세</summary>' +
+      '<div class="project-detail-grid">' +
+      '<div><strong>from</strong><p class="muted">' + escapeHtml(link.from || "") + '</p></div>' +
+      '<div><strong>to</strong><p class="muted">' + escapeHtml(link.to || "") + '</p></div>' +
+      '<div><strong>symbol</strong><p class="muted">' + escapeHtml(link.symbol || "") + '</p></div>' +
+      '<div><strong>confidence</strong><p class="muted">' + escapeHtml(link.confidence || "medium") + '</p></div>' +
+      '</div>' +
+      '<p class="muted">reason: ' + escapeHtml(link.reason || "일반 파일 간 연결 후보") + '</p>' +
+      renderProjectCrossFileEvidenceBlockV271("from 파일 근거", link.sourceEvidenceV271) +
+      renderProjectCrossFileEvidenceBlockV271("to 파일 근거", link.targetEvidenceV271) +
+      '</details>';
+  }
+
+
   function renderProjectCrossFileRowV267(link) {
     const reason = link.reason ? " · " + link.reason : "";
 
-    return '<div class="project-data-row project-cross-file-row-v267">' +
+    return '<div class="project-data-row project-cross-file-row-v267 project-cross-file-row-v271">' +
       '<strong>' + escapeHtml(link.from + " → " + link.to) + '</strong>' +
       '<span>' +
       renderProjectCrossFileConfidenceBadgeV267(link.confidence || "medium") + ' ' +
       escapeHtml(link.kind + " · " + link.symbol + " · " + link.count + "회" + reason) +
       '</span>' +
+      renderProjectCrossFileDetailPanelV271(link) +
       '</div>';
   }
 
@@ -1495,7 +1608,7 @@
 
     lastProjectCrossFileParsedV269 = parsed;
 
-    const allLinks = buildProjectCrossFileLinksV265(parsed);
+    const allLinks = enrichProjectCrossFileLinksWithEvidenceV271(parsed, buildProjectCrossFileLinksV265(parsed));
     const availableFiles = getProjectCrossFileAvailableFilesV269(allLinks);
     let focusPath = getProjectCrossFileFocusPathV269();
 
@@ -1516,7 +1629,7 @@
 
     return '<div class="project-detail-section project-cross-file-links-v265 project-cross-file-links-v267 project-cross-file-links-v269">' +
       '<h3>파일 간 연결 후보</h3>' +
-      '<p class="muted">프로젝트분석 영역입니다. 단일 함수 설명은 코드해석, 여러 파일 연결은 프로젝트분석에서 봅니다. V266 노이즈 필터와 V267 그룹 보기를 유지하고, V269에서 파일 중심 필터를 추가했습니다.</p>' +
+      '<p class="muted">프로젝트분석 영역입니다. 단일 함수 설명은 코드해석, 여러 파일 연결은 프로젝트분석에서 봅니다. V266 노이즈 필터, V267 그룹 보기, V269 파일 중심 필터를 유지하고, V271에서 연결 상세 패널을 추가했습니다.</p>' +
       renderProjectCrossFileFocusSelectV269(allLinks, focusPath) +
       '<p class="muted">표시 중인 연결: ' + escapeHtml(String(links.length)) + '개 / 전체 ' + escapeHtml(String(allLinks.length)) + '개</p>' +
       renderProjectCrossFileGroupsV267(links) +
@@ -1900,7 +2013,9 @@
     setCrossFileFocusV269: setProjectCrossFileFocusPathV269,
     getCrossFileFocusV269: getProjectCrossFileFocusPathV269,
     filterCrossFileLinksByFocusV269: filterProjectCrossFileLinksByFocusV269,
-    getCrossFileAvailableFilesV269: getProjectCrossFileAvailableFilesV269
+    getCrossFileAvailableFilesV269: getProjectCrossFileAvailableFilesV269,
+    enrichCrossFileLinksWithEvidenceV271: enrichProjectCrossFileLinksWithEvidenceV271,
+    renderCrossFileDetailPanelV271: renderProjectCrossFileDetailPanelV271
   };
 
   if (document.readyState === "loading") {
