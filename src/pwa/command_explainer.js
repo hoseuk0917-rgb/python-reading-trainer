@@ -2,9 +2,10 @@
 // COMMAND_EXPLAINER_BASH_V278_A1
 // COMMAND_EXPLAINER_UI_USABILITY_AUDIT_V280_A1
 // COMMAND_EXPLAINER_BEGINNER_TERMS_V281_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V281_A1 20260611_v281_a1
+// COMMAND_EXPLAINER_GIT_FLOW_WORDING_V282_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V282_A1 20260611_v282_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v281_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v282_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -425,6 +426,76 @@ git push origin main --tags`;
   }
 
 
+
+  const COMMAND_GIT_FLOW_WORDING_V282 = {
+    "git status": {
+      label: "상태 확인",
+      note: "현재 어떤 파일이 바뀌었는지 먼저 확인하는 단계입니다."
+    },
+    "git diff": {
+      label: "변경 비교",
+      note: "저장하기 전에 실제로 무엇이 바뀌었는지 비교해 보는 단계입니다."
+    },
+    "git add": {
+      label: "준비",
+      note: "이번 저장 기록에 넣을 변경 파일을 고르는 단계입니다."
+    },
+    "git commit": {
+      label: "저장",
+      note: "준비된 변경사항을 내 컴퓨터 Git 기록에 저장하는 단계입니다."
+    },
+    "git tag": {
+      label: "이름표",
+      note: "중요한 저장 기록에 버전 이름표를 붙이는 단계입니다."
+    },
+    "git push": {
+      label: "업로드",
+      note: "내 컴퓨터에 저장된 커밋이나 태그를 GitHub 같은 원격 저장소로 올리는 단계입니다."
+    }
+  };
+
+  function buildCommandGitFlowNoteV282(step) {
+    if (!step || !step.command) {
+      return null;
+    }
+
+    const flow = COMMAND_GIT_FLOW_WORDING_V282[String(step.command || "")];
+    if (!flow) {
+      return null;
+    }
+
+    return {
+      label: flow.label,
+      note: flow.note
+    };
+  }
+
+  function enhanceCommandStepGitFlowWordingV282(step) {
+    const flow = buildCommandGitFlowNoteV282(step);
+    if (!flow) {
+      return step;
+    }
+
+    return Object.assign({}, step, {
+      gitFlowLabelV282: flow.label,
+      gitFlowNoteV282: flow.note
+    });
+  }
+
+  function enhanceCommandResultGitFlowWordingV282(result) {
+    const steps = (result && Array.isArray(result.steps) ? result.steps : []).map(enhanceCommandStepGitFlowWordingV282);
+    const warnings = steps.filter(function(step) {
+      return step.risk === "danger" || step.risk === "caution";
+    });
+
+    return Object.assign({}, result, {
+      steps: steps,
+      warnings: warnings,
+      gitFlowWording: COMMAND_GIT_FLOW_WORDING_V282
+    });
+  }
+
+
   function escapeHtmlV277(value) {
     return String(value == null ? "" : value)
       .replace(/&/g, "&amp;")
@@ -792,6 +863,7 @@ git push origin main --tags`;
         '<div><strong>의미:</strong> ' + escapeHtmlV277(step.meaning) + '</div>' +
         '<div><strong>파일/ Git 영향:</strong> ' + escapeHtmlV277(step.fileImpact) + '</div>' +
         (step.beginnerNote ? '<div class="beginner-note-v281"><strong>초보자 메모:</strong> ' + escapeHtmlV277(step.beginnerNote) + '</div>' : '') +
+        (step.gitFlowNoteV282 ? '<div class="git-flow-note-v282"><strong>Git 흐름:</strong> <span class="git-flow-label-v282">' + escapeHtmlV277(step.gitFlowLabelV282) + '</span> — ' + escapeHtmlV277(step.gitFlowNoteV282) + '</div>' : '') +
       '</div>';
     }).join("");
   }
@@ -814,10 +886,11 @@ git push origin main --tags`;
 
   function renderCommandAnalysisV277(result) {
     const beginnerResult = enhanceCommandResultForBeginnersV281(result);
-    renderCommandSummaryV277(beginnerResult);
-    renderCommandWarningsV277(beginnerResult);
-    renderCommandStepsV277(beginnerResult);
-    renderCommandNextChecksV277(beginnerResult);
+    const flowResult = enhanceCommandResultGitFlowWordingV282(beginnerResult);
+    renderCommandSummaryV277(flowResult);
+    renderCommandWarningsV277(flowResult);
+    renderCommandStepsV277(flowResult);
+    renderCommandNextChecksV277(flowResult);
   }
 
   function analyzeCommandInputV277() {
@@ -915,6 +988,20 @@ git push origin main --tags`;
         background: rgba(239, 246, 255, 0.9);
         border: 1px solid rgba(59, 130, 246, 0.25);
       }
+      .git-flow-note-v282 {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: rgba(240, 253, 244, 0.9);
+        border: 1px solid rgba(34, 197, 94, 0.25);
+      }
+      .git-flow-label-v282 {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: rgba(22, 163, 74, 0.12);
+        font-weight: 800;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -950,6 +1037,9 @@ git push origin main --tags`;
     beginnerTermsV281: COMMAND_BEGINNER_TERMS_V281,
     enhanceResultForBeginnersV281: enhanceCommandResultForBeginnersV281,
     enhanceStepForBeginnersV281: enhanceCommandStepForBeginnersV281,
+    gitFlowWordingV282: COMMAND_GIT_FLOW_WORDING_V282,
+    enhanceResultGitFlowWordingV282: enhanceCommandResultGitFlowWordingV282,
+    enhanceStepGitFlowWordingV282: enhanceCommandStepGitFlowWordingV282,
     analyzePowerShellV277: analyzePowerShellV277,
     analyzeBashV278: analyzeBashV278,
     classifyPowerShellLineV277: classifyPowerShellLineV277,
