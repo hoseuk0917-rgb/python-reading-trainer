@@ -8,9 +8,10 @@
 // COMMAND_EXPLAINER_ACTION_GUIDE_V285_A1
 // COMMAND_EXPLAINER_DANGER_FLOW_GUIDE_V286_A1
 // COMMAND_EXPLAINER_DANGER_COLLAPSE_V287_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V287_A1 20260611_v287_a1
+// COMMAND_EXPLAINER_SAMPLE_PRESETS_V288_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V288_A1 20260611_v288_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v287_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v288_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -47,6 +48,143 @@ git add src/pwa/app.js
 git commit -m "Update app"
 git tag quality-test
 git push origin main --tags`;
+
+
+  const COMMAND_SAMPLE_CATALOG_V288 = {
+    git_save_flow: {
+      label: "Git 저장 흐름",
+      shell: "powershell",
+      description: "변경 확인부터 GitHub 업로드까지의 기본 저장 흐름입니다.",
+      source: `Set-Location "D:\\projects\\python-reading-trainer"
+
+git status --short
+git diff --check
+git add src\\pwa\\app.js
+git commit -m "Update app"
+git tag quality-test
+git push origin main --tags`
+    },
+    danger_delete_flow: {
+      label: "위험 삭제 명령",
+      shell: "powershell",
+      description: "삭제/강제 정리 명령을 실행하기 전 확인해야 하는 흐름입니다.",
+      source: `Set-Location "D:\\projects\\python-reading-trainer"
+
+if (Test-Path ".tmp") {
+  Remove-Item ".tmp" -Recurse -Force
+}
+
+git clean -fd
+git status --short`
+    },
+    venv_run_flow: {
+      label: "가상환경 실행",
+      shell: "powershell",
+      description: "가상환경을 켜고 Python 검증 명령을 실행하는 흐름입니다.",
+      source: `Set-Location "D:\\projects\\python-reading-trainer"
+
+.\\.venv\\Scripts\\Activate.ps1
+python --version
+pip install -r requirements.txt
+python tools\\validate_lessons.py --expected-app-version 20260611_v288_a1 --expected-lesson-cards 1785`
+    },
+    verify_commit_flow: {
+      label: "검증/커밋 루틴",
+      shell: "powershell",
+      description: "검증 스크립트 실행 후 diff 확인, add, commit까지 이어지는 루틴입니다.",
+      source: `Set-Location "D:\\projects\\python-reading-trainer"
+
+.\\tools\\verify_command_explainer_v287.ps1
+git diff --check
+git status --short
+git add src\\pwa\\command_explainer.js
+git commit -m "Update command explainer"`
+    },
+    bash_git_save_flow: {
+      label: "Bash Git 흐름",
+      shell: "bash",
+      description: "Bash/Shell에서 변경 확인부터 push까지의 기본 Git 흐름입니다.",
+      source: `cd ~/python-reading-trainer
+
+git status --short
+git diff --check
+git add src/pwa/app.js
+git commit -m "Update app"
+git tag quality-test
+git push origin main --tags`
+    },
+    bash_venv_run_flow: {
+      label: "Bash 가상환경 실행",
+      shell: "bash",
+      description: "Bash/Shell에서 가상환경을 켜고 Python 검증 명령을 실행하는 흐름입니다.",
+      source: `cd ~/python-reading-trainer
+
+python3 -m venv .venv
+source .venv/bin/activate
+python3 --version
+pip install -r requirements.txt
+python3 tools/validate_lessons.py --expected-app-version 20260611_v288_a1 --expected-lesson-cards 1785`
+    }
+  };
+
+  function getCommandSampleV288(sampleId, shellValue) {
+    const id = String(sampleId || "auto_by_shell");
+
+    if (id !== "auto_by_shell" && COMMAND_SAMPLE_CATALOG_V288[id]) {
+      return Object.assign({ id: id }, COMMAND_SAMPLE_CATALOG_V288[id]);
+    }
+
+    if (String(shellValue || "powershell") === "bash") {
+      return {
+        id: "auto_bash",
+        label: "현재 셸 기본 Bash 예제",
+        shell: "bash",
+        description: "현재 Bash/Shell 선택에 맞춘 기본 예제입니다.",
+        source: BASH_SAMPLE_V278
+      };
+    }
+
+    return {
+      id: "auto_powershell",
+      label: "현재 셸 기본 PowerShell 예제",
+      shell: "powershell",
+      description: "현재 PowerShell 선택에 맞춘 기본 예제입니다.",
+      source: POWERSHELL_SAMPLE_V277
+    };
+  }
+
+  function syncCommandSampleShellV288() {
+    const sampleSelect = getCommandElV277("commandSampleSelect");
+    const shell = getCommandElV277("commandShellSelect");
+
+    if (!sampleSelect || !shell) {
+      return;
+    }
+
+    const sample = getCommandSampleV288(sampleSelect.value, shell.value);
+    if (sample && sample.shell && sampleSelect.value !== "auto_by_shell") {
+      shell.value = sample.shell;
+    }
+  }
+
+  function loadCommandSampleV288(sampleId) {
+    const input = getCommandElV277("commandInput");
+    const shell = getCommandElV277("commandShellSelect");
+    const sampleSelect = getCommandElV277("commandSampleSelect");
+    const selectedId = sampleId || (sampleSelect ? sampleSelect.value : "auto_by_shell");
+    const sample = getCommandSampleV288(selectedId, shell ? shell.value : "powershell");
+
+    if (shell && sample.shell) {
+      shell.value = sample.shell;
+    }
+
+    if (input) {
+      input.value = sample.source;
+    }
+
+    analyzeCommandInputV277();
+  }
+
 
   const POWERSHELL_RULES_V277 = [
     {
@@ -1213,12 +1351,7 @@ git push origin main --tags`;
   }
 
   function loadPowerShellSampleV277() {
-    const input = getCommandElV277("commandInput");
-    const shell = getCommandElV277("commandShellSelect");
-    if (input) {
-      input.value = shell && shell.value === "bash" ? BASH_SAMPLE_V278 : POWERSHELL_SAMPLE_V277;
-    }
-    analyzeCommandInputV277();
+    loadCommandSampleV288("auto_by_shell");
   }
 
   function clearCommandInputV277() {
@@ -1253,6 +1386,9 @@ git push origin main --tags`;
     style.id = "commandExplainerStyleV277";
     style.textContent = `
       .command-explainer-grid { align-items: start; }
+      .command-sample-select-v288 {
+        min-width: 180px;
+      }
       .command-step-v277 { margin-bottom: 12px; }
       .code-warning-item {
         border: 1px solid rgba(148, 163, 184, 0.4);
@@ -1450,6 +1586,9 @@ git push origin main --tags`;
         .command-danger-guide-expanded-v287 {
           padding: 0 10px 10px 10px;
         }
+        .command-sample-select-v288 {
+          min-width: 100%;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -1460,22 +1599,24 @@ git push origin main --tags`;
 
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V278";
+      version.textContent = "V288";
     }
 
     const analyzeBtn = getCommandElV277("analyzeCommandBtn");
     const sampleBtn = getCommandElV277("loadCommandSampleBtn");
+    const sampleSelect = getCommandElV277("commandSampleSelect");
     const clearBtn = getCommandElV277("clearCommandBtn");
 
     if (analyzeBtn) analyzeBtn.onclick = analyzeCommandInputV277;
-    if (sampleBtn) sampleBtn.onclick = loadPowerShellSampleV277;
+    if (sampleBtn) sampleBtn.onclick = function() { loadCommandSampleV288(); };
+    if (sampleSelect) sampleSelect.onchange = syncCommandSampleShellV288;
     if (clearBtn) clearBtn.onclick = clearCommandInputV277;
   }
 
   function refreshCommandExplainerV277() {
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V278";
+      version.textContent = "V288";
     }
   }
 
@@ -1497,6 +1638,10 @@ git push origin main --tags`;
     buildDangerGuideV286: buildCommandDangerGuideV286,
     renderDangerGuideV286: renderCommandDangerGuideV286,
     renderDangerGuideV287: renderCommandDangerGuideV287,
+    sampleCatalogV288: COMMAND_SAMPLE_CATALOG_V288,
+    getSampleV288: getCommandSampleV288,
+    loadSampleV288: loadCommandSampleV288,
+    syncSampleShellV288: syncCommandSampleShellV288,
     isDangerRawCommandV286: isDangerRawCommandV286,
     analyzePowerShellV277: analyzePowerShellV277,
     analyzeBashV278: analyzeBashV278,
