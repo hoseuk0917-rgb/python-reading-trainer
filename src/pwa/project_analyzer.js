@@ -1,6 +1,6 @@
-// === PROJECT ANALYZER V247-A1 START ===
+// === PROJECT ANALYZER V248-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260610_v247_a1";
+  const PROJECT_ANALYZER_VERSION = "20260611_v248_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
@@ -39,6 +39,8 @@
 "OUT_DIR = ROOT / '.tmp'",
 "OUT_JSON = OUT_DIR / 'project_probe_v199.json'",
 "OUT_MD = OUT_DIR / 'project_probe_v199_report.md'",
+"OUT_JSON_LATEST = OUT_DIR / 'project_probe_latest.json'",
+"OUT_MD_LATEST = OUT_DIR / 'project_probe_latest_report.md'",
 "SKIP_DIRS = {'.git', '.tmp', 'node_modules', '.venv', '.venv_lora_infer', '__pycache__', '.pytest_cache', 'dist', 'build', '.next'}",
 "TEXT_EXTS = {'.js', '.css', '.html', '.json', '.py', '.ps1', '.md', '.toml', '.yml', '.yaml', '.txt', '.gitignore', '.env'}",
 "KEY_FILES = ['index.html', 'src/pwa/index.html', 'src/pwa/app.js', 'src/pwa/code_explainer.js', 'src/pwa/code_explainer_rules.js', 'src/pwa/project_analyzer.js', 'src/pwa/style.css', 'tools/validate_lessons.py', 'tools/code_explainer_smoke_v171.js']",
@@ -363,8 +365,9 @@
 "}",
 "",
 "OUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')",
+"OUT_JSON_LATEST.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')",
 "md = []",
-"md.append('# Project Probe Report V247')",
+"md.append('# Project Probe Report V248')",
 "md.append('')",
 "md.append('- generated_at: ' + report['generated_at'])",
 "md.append('- root: `' + report['root'] + '`')",
@@ -408,8 +411,12 @@
 "md.append('## Output files')",
 "md.append('- ' + rel(OUT_JSON))",
 "md.append('- ' + rel(OUT_MD))",
+"md.append('- ' + rel(OUT_JSON_LATEST))",
+"md.append('- ' + rel(OUT_MD_LATEST))",
 "OUT_MD.write_text('\\n'.join(md), encoding='utf-8')",
+"OUT_MD_LATEST.write_text('\\n'.join(md), encoding='utf-8')",
 "",
+"print('PROJECT_PROBE_V248_OK')",
 "print('PROJECT_PROBE_V199_OK')",
 "print('ROOT', ROOT)",
 "print('GIT_HEAD', report['git']['head'])",
@@ -614,7 +621,7 @@
     };
 
     return {
-      ok: raw.includes("PROJECT_PROBE_V199_OK") || raw.includes("PROJECT_PROBE_V198_OK") || raw.includes("PROJECT_PROBE_V197_OK") || raw.includes("PROJECT_PROBE_V195_OK") || raw.includes("PROJECT_PROBE_V193_OK") || raw.includes("# Project Probe Report V247") || raw.includes("# Project Probe V247") || raw.includes("# Project Probe V199") || raw.includes("# Project Probe V198") || raw.includes("# Project Probe V197") || raw.includes("# Project Probe V195") || raw.includes("# Project Probe V193"),
+      ok: raw.includes("PROJECT_PROBE_V248_OK") || raw.includes("PROJECT_PROBE_V199_OK") || raw.includes("PROJECT_PROBE_V198_OK") || raw.includes("PROJECT_PROBE_V197_OK") || raw.includes("PROJECT_PROBE_V195_OK") || raw.includes("PROJECT_PROBE_V193_OK") || raw.includes("# Project Probe Report V248") || raw.includes("# Project Probe Report V247") || raw.includes("# Project Probe V247") || raw.includes("# Project Probe V199") || raw.includes("# Project Probe V198") || raw.includes("# Project Probe V197") || raw.includes("# Project Probe V195") || raw.includes("# Project Probe V193"),
       inputMode: "terminal",
       root: getLineValue(raw, "ROOT") || (raw.match(/- root: `([^`]+)`/) || [])[1] || "",
       gitHead: getLineValue(raw, "GIT_HEAD") || (raw.match(/- git_head: `([^`]+)`/) || [])[1] || "",
@@ -706,7 +713,7 @@
     }
 
     if (!parsed.ok) {
-      items.push("PROJECT_PROBE_V199_OK 또는 최신 Project Probe Report 제목이 보이지 않습니다. 출력이 잘렸을 수 있습니다. V199/V198/V197 출력도 읽을 수 있지만 새 probe 실행을 권장합니다.");
+      items.push("PROJECT_PROBE_V248_OK, PROJECT_PROBE_V199_OK 또는 최신 Project Probe Report 제목이 보이지 않습니다. 출력이 잘렸을 수 있습니다. V199/V198/V197 출력도 읽을 수 있지만 새 probe 실행을 권장합니다.");
     }
 
     return items;
@@ -1452,4 +1459,4 @@
     init();
   }
 })();
- // === PROJECT ANALYZER V247-A1 END ===
+ // === PROJECT ANALYZER V248-A1 END ===
