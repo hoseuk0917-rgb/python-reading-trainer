@@ -7,9 +7,10 @@
 // COMMAND_EXPLAINER_MOBILE_COMPACT_AUDIT_V284_A1
 // COMMAND_EXPLAINER_ACTION_GUIDE_V285_A1
 // COMMAND_EXPLAINER_DANGER_FLOW_GUIDE_V286_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V286_A1 20260611_v286_a1
+// COMMAND_EXPLAINER_DANGER_COLLAPSE_V287_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V287_A1 20260611_v287_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v286_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v287_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -1079,6 +1080,52 @@ git push origin main --tags`;
   }
 
 
+
+  function renderCommandDangerGuideV287(result) {
+    const guide = buildCommandDangerGuideV286(result);
+
+    if (!guide.items.length) {
+      return "";
+    }
+
+    const summaryText = "위험 명령 " + guide.items.length + "개 감지";
+
+    return (
+      '<details class="command-danger-guide-v286 command-danger-guide-collapsible-v287">' +
+        '<summary>' +
+          '<span class="command-danger-summary-title-v287">' + escapeHtmlV277(summaryText) + '</span>' +
+          '<span class="command-danger-summary-flow-v287">' + escapeHtmlV277(guide.flowText) + '</span>' +
+        '</summary>' +
+        '<div class="command-danger-guide-expanded-v287">' +
+          '<div class="command-danger-guide-title-v286">실행 전 확인 흐름: ' + escapeHtmlV277(guide.flowText) + '</div>' +
+          '<div class="command-danger-guide-flow-v286">' +
+            COMMAND_DANGER_FLOW_STEPS_V286.map(function(item, index) {
+              return (
+                '<div class="command-danger-guide-flow-item-v286">' +
+                  '<span class="badge bad">' + (index + 1) + '</span>' +
+                  '<strong>' + escapeHtmlV277(item.label) + '</strong>' +
+                  '<span>' + escapeHtmlV277(item.action) + '</span>' +
+                '</div>'
+              );
+            }).join("") +
+          '</div>' +
+          '<div class="command-danger-guide-targets-v286">' +
+            guide.items.map(function(step) {
+              return (
+                '<div class="command-danger-guide-target-v286">' +
+                  '<strong>line ' + escapeHtmlV277(step.line) + ' · ' + escapeHtmlV277(step.command) + '</strong>' +
+                  '<pre class="code-block small-code">' + escapeHtmlV277(step.raw) + '</pre>' +
+                  '<div>' + escapeHtmlV277(step.dangerReasonV286 || "실행 전 확인이 필요한 명령입니다.") + '</div>' +
+                '</div>'
+              );
+            }).join("") +
+          '</div>' +
+        '</div>' +
+      '</details>'
+    );
+  }
+
+
   function renderCommandStepsV277(result) {
     const box = getCommandElV277("commandSteps");
     if (!box) return;
@@ -1088,7 +1135,7 @@ git push origin main --tags`;
       return;
     }
 
-    const dangerGuideHtmlV286 = renderCommandDangerGuideV286(result);
+    const dangerGuideHtmlV286 = renderCommandDangerGuideV287(result);
     const actionGuideHtmlV285 = renderCommandActionGuideV285(result);
 
     box.innerHTML = dangerGuideHtmlV286 + actionGuideHtmlV285 + result.steps.map(function(step, index) {
@@ -1326,6 +1373,36 @@ git push origin main --tags`;
         background: rgba(255, 255, 255, 0.75);
         border: 1px solid rgba(239, 68, 68, 0.18);
       }
+      .command-danger-guide-collapsible-v287 {
+        padding: 0;
+        overflow: hidden;
+      }
+      .command-danger-guide-collapsible-v287 summary {
+        cursor: pointer;
+        min-height: 44px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        line-height: 1.45;
+        color: #991b1b;
+        font-weight: 900;
+        overflow-wrap: anywhere;
+      }
+      .command-danger-guide-collapsible-v287 summary:focus-visible {
+        outline: 3px solid rgba(239, 68, 68, 0.28);
+        outline-offset: 3px;
+        border-radius: 10px;
+      }
+      .command-danger-summary-flow-v287 {
+        font-weight: 700;
+        color: #7f1d1d;
+        opacity: 0.86;
+      }
+      .command-danger-guide-expanded-v287 {
+        padding: 0 12px 12px 12px;
+      }
       @media (max-width: 640px) {
         .command-extra-note-v283 {
           padding: 10px 10px;
@@ -1361,6 +1438,17 @@ git push origin main --tags`;
         .command-danger-guide-flow-item-v286 span:last-child {
           flex-basis: 100%;
           margin-left: 32px;
+        }
+        .command-danger-guide-collapsible-v287 summary {
+          min-height: 46px;
+          padding: 12px 10px;
+          align-items: flex-start;
+        }
+        .command-danger-summary-flow-v287 {
+          flex-basis: 100%;
+        }
+        .command-danger-guide-expanded-v287 {
+          padding: 0 10px 10px 10px;
         }
       }
     `;
@@ -1408,6 +1496,7 @@ git push origin main --tags`;
     dangerFlowStepsV286: COMMAND_DANGER_FLOW_STEPS_V286,
     buildDangerGuideV286: buildCommandDangerGuideV286,
     renderDangerGuideV286: renderCommandDangerGuideV286,
+    renderDangerGuideV287: renderCommandDangerGuideV287,
     isDangerRawCommandV286: isDangerRawCommandV286,
     analyzePowerShellV277: analyzePowerShellV277,
     analyzeBashV278: analyzeBashV278,
