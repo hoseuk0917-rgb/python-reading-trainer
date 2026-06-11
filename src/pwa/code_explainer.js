@@ -2168,6 +2168,348 @@ async function renderFunctionMermaidDiagramsV253(result) {
     }
   }
 }
+
+// FUNCTION_PICKER_V259_A1
+const FUNCTION_PICKER_VISIBLE_LIMIT_V259 = 72;
+
+function makeJsBlockFromRangeV259(source, match, kind, name, paramsRaw) {
+  const text = String(source || "");
+  const openIndex = text.indexOf("{", match.index);
+  const closeIndex = findMatchingBraceV256(text, openIndex);
+
+  if (openIndex < 0 || closeIndex < 0) return null;
+
+  const bodyText = text.slice(openIndex + 1, closeIndex);
+  const bodyStartLine = jsLineNoFromIndexV256(text, openIndex + 1);
+  const headerStart = text.lastIndexOf("\n", match.index) + 1;
+  const headerEnd = text.indexOf("{", match.index);
+  const header = text.slice(headerStart, headerEnd >= 0 ? headerEnd : openIndex).trim();
+
+  const body = bodyText.split(/\r?\n/).slice(0, JS_FUNCTION_IR_MAX_BODY_LINES_V256).map(function(line, idx) {
+    return {
+      lineNo: bodyStartLine + idx,
+      text: stripJsCommentV256(line)
+    };
+  }).filter(function(item) {
+    return item.text;
+  });
+
+  return {
+    name: name,
+    kind: kind,
+    lineNo: jsLineNoFromIndexV256(text, match.index + 1),
+    startIndex: match.index,
+    openIndex: openIndex,
+    closeIndex: closeIndex,
+    endIndex: closeIndex + 1,
+    params: normalizeJsParamsV256(paramsRaw),
+    body: body,
+    header: header,
+    snippet: text.slice(match.index, closeIndex + 1)
+  };
+}
+
+function addJsPickerBlockV259(list, seen, block) {
+  if (!block || !block.name) return;
+
+  const key = block.name + "@" + block.lineNo + "@" + block.kind;
+  if (seen.has(key)) return;
+
+  seen.add(key);
+  list.push(block);
+}
+
+function extractJsFunctionBlocksForPickerV259(source) {
+  const text = String(source || "");
+  const blocks = [];
+  const seen = new Set();
+  const reserved = new Set(["if", "for", "while", "switch", "catch", "function", "return", "else", "do", "try"]);
+
+  const patterns = [
+    {
+      kind: "function",
+      regex: /(?:^|[\r\n;])\s*(?:export\s+(?:default\s+)?)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*\{/g
+    },
+    {
+      kind: "arrow_function",
+      regex: /(?:^|[\r\n;])\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\(([^)]*)\)\s*=>\s*\{/g
+    },
+    {
+      kind: "arrow_function",
+      regex: /(?:^|[\r\n;])\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?([A-Za-z_$][\w$]*)\s*=>\s*\{/g
+    }
+  ];
+
+  patterns.forEach(function(pattern) {
+    let match;
+
+    while ((match = pattern.regex.exec(text))) {
+      const block = makeJsBlockFromRangeV259(text, match, pattern.kind, match[1], match[2] || "");
+      addJsPickerBlockV259(blocks, seen, block);
+    }
+  });
+
+  const methodRegex = /(?:^|[\r\n])\s{0,12}(?:async\s+)?([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*\{/g;
+  let match;
+
+  while ((match = methodRegex.exec(text))) {
+    const name = match[1];
+    if (reserved.has(name)) continue;
+
+    const before = text.slice(Math.max(0, match.index - 700), match.index);
+    const afterHeader = text.slice(match.index, Math.min(text.length, match.index + 120));
+
+    if (!/class\s+[A-Za-z_$][\w$]*[\s\S]*$/.test(before)) continue;
+    if (/function\s+$/.test(before.slice(-40))) continue;
+    if (/=>/.test(afterHeader.split("{")[0])) continue;
+
+    const block = makeJsBlockFromRangeV259(text, match, "class_method", name, match[2] || "");
+    addJsPickerBlockV259(blocks, seen, block);
+  }
+
+  return blocks.sort(function(a, b) {
+    return a.lineNo - b.lineNo;
+  });
+}
+
+function buildFunctionOutlineV259(source, language) {
+  if (language !== "javascript" && language !== "js") return [];
+
+  return extractJsFunctionBlocksForPickerV259(source).map(function(block, index) {
+    return {
+      index: index,
+      name: block.name,
+      kind: block.kind,
+      lineNo: block.lineNo,
+      params: block.params,
+      block: block
+    };
+  });
+}
+
+function buildSelectedFunctionInterpretationV259(source, outlineItem) {
+  if (!outlineItem || !outlineItem.block) return [];
+
+  const snippetSource = outlineItem.block.snippet || source || "";
+  let items = buildJsFunctionInterpretationsV257(snippetSource, "javascript").filter(function(item) {
+    return item.name === outlineItem.name;
+  });
+
+  if (!items.length) {
+    const snippetBlock = Object.assign({}, outlineItem.block, {
+      lineNo: 1
+    });
+    items = enhanceJsFunctionInterpretationsV257(snippetSource, [parseJsFunctionIrV256(snippetBlock)]);
+  }
+
+  if (items[0]) {
+    items[0].lineNo = outlineItem.lineNo;
+
+    if (/async\s+function|async\s*\(/.test(snippetSource) && /fetch\s*\(/.test(snippetSource) && /\btry\b/.test(snippetSource) && /\bcatch\b/.test(snippetSource)) {
+      items[0].roleSummary = "async/await로 네트워크 요청을 시도하고 실패하면 catch에서 안전하게 처리하는 비동기 데이터 로더 함수로 보입니다.";
+      items[0].concepts = Array.from(new Set((items[0].concepts || []).concat(["async", "await", "fetch", "try_catch"]))).sort();
+    }
+  }
+
+  return items;
+}
+
+
+// FUNCTION_SKELETON_V259_A1
+// FUNCTION_SKELETON_SELECT_REPAIR_V259_A1
+function getFunctionBodyTextV259(item) {
+  const body = item && item.block && Array.isArray(item.block.body) ? item.block.body : [];
+  return body.map(function(row) { return row.text || ""; }).join("\n");
+}
+
+function classifyFunctionSkeletonRoleV259(item) {
+  const name = String(item && item.name || "");
+  const kind = String(item && item.kind || "");
+  const body = getFunctionBodyTextV259(item);
+  const header = String(item && item.block && item.block.header || "");
+  const joined = (name + "\n" + kind + "\n" + header + "\n" + body).toLowerCase();
+
+  if (/render|view|screen|ui|html|card|modal|dialog|panel|section|button|display/.test(joined)) {
+    return "render_ui";
+  }
+
+  if (/addeventlistener|onclick|onchange|keydown|keyup|submit|click|event|bind|handle/.test(joined)) {
+    return "event_dom";
+  }
+
+  if (/fetch|async|await|promise|then|catch|response|request|api/.test(joined)) {
+    return "async_io";
+  }
+
+  if (/load|save|storage|json|parse|stringify|localstorage|sessionstorage|file|data|cache/.test(joined)) {
+    return "data_state";
+  }
+
+  if (/normalize|format|escape|sanitize|slug|sort|filter|map|reduce|score|rank|match|search|helper|build|make|create|compute|calculate|pick|derive/.test(joined)) {
+    return "utility_transform";
+  }
+
+  if (kind === "class_method" || /class /.test(header)) {
+    return "class_method";
+  }
+
+  return "other";
+}
+
+function getFunctionSkeletonRoleLabelV259(role) {
+  const labels = {
+    render_ui: "화면/렌더링",
+    event_dom: "이벤트/DOM 연결",
+    async_io: "비동기/API 요청",
+    data_state: "데이터/상태/저장",
+    utility_transform: "유틸/정규화/변환",
+    class_method: "클래스 메서드",
+    other: "기타 보조 함수"
+  };
+
+  return labels[role] || role;
+}
+
+function buildFunctionSkeletonV259(source, language) {
+  const outline = buildFunctionOutlineV259(source, language);
+  const groups = {};
+  const orderedRoles = [
+    "render_ui",
+    "event_dom",
+    "async_io",
+    "data_state",
+    "utility_transform",
+    "class_method",
+    "other"
+  ];
+
+  outline.forEach(function(item) {
+    const role = classifyFunctionSkeletonRoleV259(item);
+    if (!groups[role]) groups[role] = [];
+    groups[role].push(item);
+  });
+
+  const groupList = orderedRoles.map(function(role) {
+    return {
+      role: role,
+      label: getFunctionSkeletonRoleLabelV259(role),
+      items: groups[role] || []
+    };
+  }).filter(function(group) {
+    return group.items.length > 0;
+  });
+
+  const signals = {
+    total: outline.length,
+    hasAsync: /fetch\s*\(|\basync\b|\bawait\b|\.then\s*\(|\.catch\s*\(/.test(String(source || "")),
+    hasDom: /querySelector|getElementById|addEventListener|onclick|classList/.test(String(source || "")),
+    hasStorage: /localStorage|sessionStorage|JSON\.parse|JSON\.stringify/.test(String(source || "")),
+    hasClass: /\bclass\s+[A-Za-z_$][\w$]*/.test(String(source || ""))
+  };
+
+  return {
+    total: outline.length,
+    groups: groupList,
+    signals: signals
+  };
+}
+
+function renderFunctionSkeletonV259(result) {
+  const skeleton = result && result.functionSkeletonV259;
+  const groups = skeleton && Array.isArray(skeleton.groups) ? skeleton.groups : [];
+
+  if (!skeleton || !skeleton.total) return "";
+
+  const signalItems = [];
+  if (skeleton.signals.hasAsync) signalItems.push("비동기/API 흐름 포함");
+  if (skeleton.signals.hasDom) signalItems.push("DOM/UI 이벤트 흐름 포함");
+  if (skeleton.signals.hasStorage) signalItems.push("저장/JSON 데이터 흐름 포함");
+  if (skeleton.signals.hasClass) signalItems.push("class 구조 포함");
+
+  const signalHtml = signalItems.length
+    ? '<p class="code-report-categories">' + signalItems.map(escapeHtml).join(" · ") + '</p>'
+    : '<p class="code-report-categories">주요 신호는 함수명과 내부 호출 기준으로 분류했습니다.</p>';
+
+  return '<details open class="code-flow-detail function-skeleton-v259"><summary>전체 코드 뼈대 요약 · 함수 ' +
+    escapeHtml(String(skeleton.total)) + '개</summary>' +
+    '<p class="code-report-categories">기본 해석은 앞쪽 함수 몇 개가 아니라, 전체 파일의 함수 역할 분포를 먼저 보여줍니다. 세부 흐름은 아래 함수 목록에서 하나를 선택해 확인합니다.</p>' +
+    signalHtml +
+    '<div class="code-flow-mini-grid function-skeleton-grid-v259">' +
+    groups.map(function(group) {
+      const examples = group.items.slice(0, 6).map(function(item) {
+        return item.name;
+      }).join(", ");
+
+      return '<span class="code-report-chip function-skeleton-chip-v259">' +
+        '<strong>' + escapeHtml(String(group.items.length)) + '</strong>' +
+        '<small>' + escapeHtml(group.label) + '</small>' +
+        '<em>' + escapeHtml(examples || "예시 없음") + '</em>' +
+      '</span>';
+    }).join("") +
+    '</div>' +
+    '</details>';
+}
+
+function renderFunctionPickerV259(result) {
+  const outline = Array.isArray(result && result.functionOutlineV259) ? result.functionOutlineV259 : [];
+  const selected = result && result.selectedFunctionV259;
+  const shown = outline.slice(0, FUNCTION_PICKER_VISIBLE_LIMIT_V259);
+
+  if (!outline.length) return "";
+
+  const selectedHtml = selected
+    ? '<p class="code-report-categories">선택 해석 중: <strong>' + escapeHtml(selected.name) + '</strong> · line ' + escapeHtml(String(selected.lineNo)) + '</p>'
+    : '<p class="code-report-categories">대형 파일에서는 아래 함수 목록에서 하나를 골라 단독 해석할 수 있습니다.</p>';
+
+  const hiddenCount = Math.max(0, outline.length - shown.length);
+  const hiddenHtml = hiddenCount
+    ? '<p class="muted">목록이 길어 처음 ' + shown.length + '개만 표시합니다. 나머지는 다음 단계에서 검색/페이지네이션으로 확장 예정입니다.</p>'
+    : "";
+
+  return '<details open class="code-flow-detail function-picker-v259"><summary>함수 목록 / 선택 해석 · ' +
+    escapeHtml(String(outline.length)) + '개</summary>' +
+    selectedHtml +
+    '<div class="code-flow-mini-grid function-picker-grid-v259">' +
+    shown.map(function(item) {
+      const active = selected && selected.index === item.index ? " is-active" : "";
+      return '<button type="button" class="code-report-chip function-picker-button-v259' + active + '" onclick="window.CodeExplainer.selectFunctionV259(' + item.index + ')">' +
+        '<strong>' + escapeHtml(item.name) + '</strong>' +
+        '<small>line ' + escapeHtml(String(item.lineNo)) + ' · ' + escapeHtml(item.kind) + '</small>' +
+      '</button>';
+    }).join("") +
+    '</div>' +
+    hiddenHtml +
+    '</details>';
+}
+
+function selectFunctionV259(index) {
+  if (!lastAnalysis) return false;
+
+  const outline = Array.isArray(lastAnalysis.functionOutlineV259) ? lastAnalysis.functionOutlineV259 : [];
+  const item = outline[Number(index)];
+
+  if (!item) return false;
+
+  lastAnalysis.selectedFunctionV259 = {
+    index: item.index,
+    name: item.name,
+    lineNo: item.lineNo,
+    kind: item.kind
+  };
+
+  lastAnalysis.functionInterpretations = buildSelectedFunctionInterpretationV259(lastAnalysis.sourceCode || "", item);
+  lastReport = buildPlainTextReport(lastAnalysis);
+
+  renderFlowAnalysisReport(lastAnalysis);
+  renderFunctionMermaidDiagramsV253(lastAnalysis);
+
+  return true;
+}
+
+function getLastAnalysisV259() {
+  return lastAnalysis;
+}
+
 function renderFunctionInterpretationListV251(items, emptyText) {
   const list = Array.isArray(items) ? items : [];
 
@@ -2597,12 +2939,16 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     const dataFlow = Array.isArray(result.dataFlow) ? result.dataFlow : [];
     const callFlow = Array.isArray(result.callFlow) ? result.callFlow : [];
     const functionInterpretations = Array.isArray(result.functionInterpretations) ? result.functionInterpretations : [];
+    const functionOutlineV259 = Array.isArray(result.functionOutlineV259) ? result.functionOutlineV259 : [];
     box.className = "code-flow-analysis-report";
     box.innerHTML = '<div class="code-flow-mini-grid">' +
       '<span class="code-report-chip"><strong>' + dataFlow.length + '</strong><small>데이터 흐름</small></span>' +
       '<span class="code-report-chip"><strong>' + callFlow.length + '</strong><small>호출 흐름</small></span>' +
       '<span class="code-report-chip"><strong>' + functionInterpretations.length + '</strong><small>함수 해석</small></span>' +
+      '<span class="code-report-chip"><strong>' + functionOutlineV259.length + '</strong><small>함수 목록</small></span>' +
       '</div>' +
+      renderFunctionSkeletonV259(result) +
+      renderFunctionPickerV259(result) +
       '<details open class="code-flow-detail"><summary>데이터 흐름</summary>' +
       renderFlowList(dataFlow, "변수 저장, 가공, 출력 흐름이 뚜렷하게 감지되지 않았습니다.") +
       '</details>' +
@@ -2701,7 +3047,16 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     result.sourceCode = input.value;
     result.requestedLanguage = requested;
     result.detectionReasons = getDetectionReasons(result, requested, input.value);
-    result.functionInterpretations = buildFunctionInterpretationsV251(result.sourceCode, result.language);
+    result.functionOutlineV259 = buildFunctionOutlineV259(result.sourceCode, result.language);
+    result.functionSkeletonV259 = buildFunctionSkeletonV259(result.sourceCode, result.language);
+    result.selectedFunctionV259 = null;
+
+    if ((result.language === "javascript" || result.language === "js") && result.functionOutlineV259.length > FUNCTION_IR_MAX_ITEMS_V251) {
+      result.functionInterpretations = [];
+    } else {
+      result.functionInterpretations = buildFunctionInterpretationsV251(result.sourceCode, result.language);
+    }
+
     showAllCodeSteps = false;
     lastAnalysis = result;
     lastReport = buildPlainTextReport(result);
@@ -2979,7 +3334,9 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     analyze: analyzeCurrentCode,
     analyzeSnippet: analyzeExternalCodeSnippet,
     setCodeSnippet: analyzeExternalCodeSnippet,
-    setLearningContent: setLearningContent
+    setLearningContent: setLearningContent,
+    selectFunctionV259: selectFunctionV259,
+    getLastAnalysisV259: getLastAnalysisV259
   };
 
   if (document.readyState === "loading") {
