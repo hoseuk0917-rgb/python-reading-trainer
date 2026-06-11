@@ -2450,31 +2450,125 @@ function renderFunctionSkeletonV259(result) {
     '</details>';
 }
 
+
+// FUNCTION_PICKER_FILTER_V260_A1
+function normalizePickerQueryV260(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getPickerRoleOptionsV260(outline) {
+  const roles = new Set();
+
+  (Array.isArray(outline) ? outline : []).forEach(function(item) {
+    roles.add(classifyFunctionSkeletonRoleV259(item));
+  });
+
+  return Array.from(roles).sort(function(a, b) {
+    return getFunctionSkeletonRoleLabelV259(a).localeCompare(getFunctionSkeletonRoleLabelV259(b));
+  });
+}
+
+function filterFunctionOutlineV260(outline, query, role) {
+  const normalizedQuery = normalizePickerQueryV260(query);
+  const selectedRole = String(role || "all");
+
+  return (Array.isArray(outline) ? outline : []).filter(function(item) {
+    const itemRole = classifyFunctionSkeletonRoleV259(item);
+    const params = Array.isArray(item.params) ? item.params.join(", ") : "";
+    const bodyText = getFunctionBodyTextV259(item);
+    const haystack = [
+      item.name,
+      item.kind,
+      item.lineNo,
+      params,
+      getFunctionSkeletonRoleLabelV259(itemRole),
+      bodyText
+    ].join(" ").toLowerCase();
+
+    if (selectedRole !== "all" && itemRole !== selectedRole) return false;
+    if (normalizedQuery && haystack.indexOf(normalizedQuery) < 0) return false;
+
+    return true;
+  });
+}
+
+function renderFunctionPickerControlsV260(result, outline, filtered) {
+  const query = String(result && result.functionPickerSearchV260 || "");
+  const role = String(result && result.functionPickerRoleV260 || "all");
+  const roles = getPickerRoleOptionsV260(outline);
+
+  return '<div class="function-picker-controls-v260">' +
+    '<label class="function-picker-search-v260">함수 검색 ' +
+      '<input type="search" value="' + escapeHtml(query) + '" placeholder="함수명, 역할, 내부 호출 검색" ' +
+      'oninput="window.CodeExplainer.setFunctionPickerSearchV260(this.value)">' +
+    '</label>' +
+    '<label class="function-picker-role-v260">역할군 ' +
+      '<select onchange="window.CodeExplainer.setFunctionPickerRoleV260(this.value)">' +
+        '<option value="all"' + (role === "all" ? " selected" : "") + '>전체</option>' +
+        roles.map(function(itemRole) {
+          return '<option value="' + escapeHtml(itemRole) + '"' + (role === itemRole ? " selected" : "") + '>' +
+            escapeHtml(getFunctionSkeletonRoleLabelV259(itemRole)) +
+          '</option>';
+        }).join("") +
+      '</select>' +
+    '</label>' +
+    '<span class="code-report-chip function-picker-count-v260"><strong>' +
+      escapeHtml(String(filtered.length)) + '</strong><small>검색 결과 / 전체 ' + escapeHtml(String(outline.length)) + '</small></span>' +
+  '</div>';
+}
+
+function setFunctionPickerSearchV260(value) {
+  if (!lastAnalysis) return false;
+
+  lastAnalysis.functionPickerSearchV260 = String(value || "");
+  renderFlowAnalysisReport(lastAnalysis);
+  renderFunctionMermaidDiagramsV253(lastAnalysis);
+  return true;
+}
+
+function setFunctionPickerRoleV260(role) {
+  if (!lastAnalysis) return false;
+
+  lastAnalysis.functionPickerRoleV260 = String(role || "all");
+  renderFlowAnalysisReport(lastAnalysis);
+  renderFunctionMermaidDiagramsV253(lastAnalysis);
+  return true;
+}
+
+
 function renderFunctionPickerV259(result) {
   const outline = Array.isArray(result && result.functionOutlineV259) ? result.functionOutlineV259 : [];
   const selected = result && result.selectedFunctionV259;
-  const shown = outline.slice(0, FUNCTION_PICKER_VISIBLE_LIMIT_V259);
+  const filtered = filterFunctionOutlineV260(outline, result && result.functionPickerSearchV260, result && result.functionPickerRoleV260);
+  const shown = filtered.slice(0, FUNCTION_PICKER_VISIBLE_LIMIT_V259);
 
   if (!outline.length) return "";
 
   const selectedHtml = selected
     ? '<p class="code-report-categories">선택 해석 중: <strong>' + escapeHtml(selected.name) + '</strong> · line ' + escapeHtml(String(selected.lineNo)) + '</p>'
-    : '<p class="code-report-categories">대형 파일에서는 아래 함수 목록에서 하나를 골라 단독 해석할 수 있습니다.</p>';
+    : '<p class="code-report-categories">대형 파일에서는 전체 뼈대를 먼저 보고, 검색/필터로 함수를 찾은 뒤 하나를 골라 단독 해석할 수 있습니다.</p>';
 
-  const hiddenCount = Math.max(0, outline.length - shown.length);
+  const hiddenCount = Math.max(0, filtered.length - shown.length);
   const hiddenHtml = hiddenCount
-    ? '<p class="muted">목록이 길어 처음 ' + shown.length + '개만 표시합니다. 나머지는 다음 단계에서 검색/페이지네이션으로 확장 예정입니다.</p>'
+    ? '<p class="muted">검색 결과가 길어 처음 ' + shown.length + '개만 표시합니다. 검색어나 역할군 필터로 더 좁혀보세요.</p>'
     : "";
 
-  return '<details open class="code-flow-detail function-picker-v259"><summary>함수 목록 / 선택 해석 · ' +
-    escapeHtml(String(outline.length)) + '개</summary>' +
+  const emptyHtml = filtered.length
+    ? ""
+    : '<p class="muted">검색/필터 조건에 맞는 함수가 없습니다.</p>';
+
+  return '<details open class="code-flow-detail function-picker-v259 function-picker-filter-v260"><summary>함수 목록 / 선택 해석 · 전체 ' +
+    escapeHtml(String(outline.length)) + '개 · 결과 ' + escapeHtml(String(filtered.length)) + '개</summary>' +
     selectedHtml +
+    renderFunctionPickerControlsV260(result, outline, filtered) +
+    emptyHtml +
     '<div class="code-flow-mini-grid function-picker-grid-v259">' +
     shown.map(function(item) {
       const active = selected && selected.index === item.index ? " is-active" : "";
+      const role = classifyFunctionSkeletonRoleV259(item);
       return '<button type="button" class="code-report-chip function-picker-button-v259' + active + '" onclick="window.CodeExplainer.selectFunctionV259(' + item.index + ')">' +
         '<strong>' + escapeHtml(item.name) + '</strong>' +
-        '<small>line ' + escapeHtml(String(item.lineNo)) + ' · ' + escapeHtml(item.kind) + '</small>' +
+        '<small>line ' + escapeHtml(String(item.lineNo)) + ' · ' + escapeHtml(getFunctionSkeletonRoleLabelV259(role)) + '</small>' +
       '</button>';
     }).join("") +
     '</div>' +
@@ -3050,6 +3144,8 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     result.functionOutlineV259 = buildFunctionOutlineV259(result.sourceCode, result.language);
     result.functionSkeletonV259 = buildFunctionSkeletonV259(result.sourceCode, result.language);
     result.selectedFunctionV259 = null;
+    result.functionPickerSearchV260 = "";
+    result.functionPickerRoleV260 = "all";
 
     if ((result.language === "javascript" || result.language === "js") && result.functionOutlineV259.length > FUNCTION_IR_MAX_ITEMS_V251) {
       result.functionInterpretations = [];
@@ -3336,7 +3432,9 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     setCodeSnippet: analyzeExternalCodeSnippet,
     setLearningContent: setLearningContent,
     selectFunctionV259: selectFunctionV259,
-    getLastAnalysisV259: getLastAnalysisV259
+    getLastAnalysisV259: getLastAnalysisV259,
+    setFunctionPickerSearchV260: setFunctionPickerSearchV260,
+    setFunctionPickerRoleV260: setFunctionPickerRoleV260
   };
 
   if (document.readyState === "loading") {
