@@ -1,9 +1,10 @@
 // COMMAND_EXPLAINER_POWERSHELL_V277_A1
 // COMMAND_EXPLAINER_BASH_V278_A1
 // COMMAND_EXPLAINER_UI_USABILITY_AUDIT_V280_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V280_A1 20260611_v280_a1
+// COMMAND_EXPLAINER_BEGINNER_TERMS_V281_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V281_A1 20260611_v281_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v280_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v281_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -327,6 +328,101 @@ git push origin main --tags`;
       nextCheck: "git status --short"
     }
   ];
+
+
+
+  const COMMAND_BEGINNER_TERMS_V281 = {
+    staging: "스테이징은 커밋하기 전에 '이번 기록에 넣을 파일'을 고르는 준비 단계입니다.",
+    commit: "커밋은 현재 변경사항을 Git 안에 하나의 저장 기록으로 남기는 일입니다.",
+    tag: "태그는 특정 커밋에 버전 이름표를 붙여 나중에 쉽게 찾게 하는 표시입니다.",
+    remote: "원격 저장소는 내 컴퓨터 밖의 GitHub 저장소처럼 팀이나 배포용으로 쓰는 저장 위치입니다.",
+    admin: "관리자 권한은 일반 사용자보다 더 강한 권한이라 시스템 설정이나 중요한 파일도 바꿀 수 있습니다.",
+    forceDelete: "강제 삭제는 확인을 줄이고 바로 지우는 방식이라 경로를 잘못 쓰면 복구가 어려울 수 있습니다.",
+    executePermission: "실행 권한은 파일을 프로그램처럼 실행할 수 있게 허용하는 설정입니다.",
+    workingDirectory: "작업 폴더는 현재 명령이 기준으로 삼는 위치입니다. 상대경로는 이 위치를 기준으로 해석됩니다.",
+    scriptRun: "스크립트 실행은 파일 안의 여러 명령을 한 번에 실행하는 것이어서, 내부 내용을 먼저 확인하는 편이 안전합니다."
+  };
+
+  function buildCommandBeginnerNoteV281(step) {
+    if (!step || !step.command) {
+      return "";
+    }
+
+    const command = String(step.command || "");
+    const group = String(step.group || "");
+    const risk = String(step.risk || "");
+    const notes = [];
+
+    if (command === "Set-Location" || command === "cd") {
+      notes.push(COMMAND_BEGINNER_TERMS_V281.workingDirectory);
+    }
+
+    if (command === "Remove-Item" || command === "rm -rf") {
+      notes.push(COMMAND_BEGINNER_TERMS_V281.forceDelete);
+    }
+
+    if (command === "chmod") {
+      notes.push(COMMAND_BEGINNER_TERMS_V281.executePermission);
+    }
+
+    if (command === "sudo") {
+      notes.push(COMMAND_BEGINNER_TERMS_V281.admin);
+    }
+
+    if (command === "python" || command === "python3") {
+      notes.push(COMMAND_BEGINNER_TERMS_V281.scriptRun);
+    }
+
+    if (command === "git add") {
+      notes.push(COMMAND_BEGINNER_TERMS_V281.staging);
+    }
+
+    if (command === "git commit") {
+      notes.push(COMMAND_BEGINNER_TERMS_V281.commit);
+    }
+
+    if (command === "git tag") {
+      notes.push(COMMAND_BEGINNER_TERMS_V281.tag);
+    }
+
+    if (command === "git push") {
+      notes.push(COMMAND_BEGINNER_TERMS_V281.remote);
+    }
+
+    if (group === "관리자 권한" && !notes.includes(COMMAND_BEGINNER_TERMS_V281.admin)) {
+      notes.push(COMMAND_BEGINNER_TERMS_V281.admin);
+    }
+
+    if (risk === "danger" && !notes.some(function(note) { return note.includes("복구"); })) {
+      notes.push("위험 명령은 실행 전에 대상 경로와 옵션을 한 번 더 확인해야 합니다.");
+    }
+
+    return Array.from(new Set(notes)).join(" ");
+  }
+
+  function enhanceCommandStepForBeginnersV281(step) {
+    const beginnerNote = buildCommandBeginnerNoteV281(step);
+    if (!beginnerNote) {
+      return step;
+    }
+
+    return Object.assign({}, step, {
+      beginnerNote: beginnerNote
+    });
+  }
+
+  function enhanceCommandResultForBeginnersV281(result) {
+    const steps = (result && Array.isArray(result.steps) ? result.steps : []).map(enhanceCommandStepForBeginnersV281);
+    const warnings = steps.filter(function(step) {
+      return step.risk === "danger" || step.risk === "caution";
+    });
+
+    return Object.assign({}, result, {
+      steps: steps,
+      warnings: warnings,
+      beginnerGlossary: COMMAND_BEGINNER_TERMS_V281
+    });
+  }
 
 
   function escapeHtmlV277(value) {
@@ -695,6 +791,7 @@ git push origin main --tags`;
         '<pre class="code-block small-code">' + escapeHtmlV277(step.raw) + '</pre>' +
         '<div><strong>의미:</strong> ' + escapeHtmlV277(step.meaning) + '</div>' +
         '<div><strong>파일/ Git 영향:</strong> ' + escapeHtmlV277(step.fileImpact) + '</div>' +
+        (step.beginnerNote ? '<div class="beginner-note-v281"><strong>초보자 메모:</strong> ' + escapeHtmlV277(step.beginnerNote) + '</div>' : '') +
       '</div>';
     }).join("");
   }
@@ -716,10 +813,11 @@ git push origin main --tags`;
   }
 
   function renderCommandAnalysisV277(result) {
-    renderCommandSummaryV277(result);
-    renderCommandWarningsV277(result);
-    renderCommandStepsV277(result);
-    renderCommandNextChecksV277(result);
+    const beginnerResult = enhanceCommandResultForBeginnersV281(result);
+    renderCommandSummaryV277(beginnerResult);
+    renderCommandWarningsV277(beginnerResult);
+    renderCommandStepsV277(beginnerResult);
+    renderCommandNextChecksV277(beginnerResult);
   }
 
   function analyzeCommandInputV277() {
@@ -810,6 +908,13 @@ git push origin main --tags`;
       .badge.good { background: #dcfce7; color: #166534; }
       .badge.warn { background: #fef3c7; color: #92400e; }
       .badge.bad { background: #fee2e2; color: #991b1b; }
+      .beginner-note-v281 {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: rgba(239, 246, 255, 0.9);
+        border: 1px solid rgba(59, 130, 246, 0.25);
+      }
     `;
     document.head.appendChild(style);
   }
@@ -842,6 +947,9 @@ git push origin main --tags`;
     version: COMMAND_EXPLAINER_VERSION,
     samplePowerShellV277: POWERSHELL_SAMPLE_V277,
     sampleBashV278: BASH_SAMPLE_V278,
+    beginnerTermsV281: COMMAND_BEGINNER_TERMS_V281,
+    enhanceResultForBeginnersV281: enhanceCommandResultForBeginnersV281,
+    enhanceStepForBeginnersV281: enhanceCommandStepForBeginnersV281,
     analyzePowerShellV277: analyzePowerShellV277,
     analyzeBashV278: analyzeBashV278,
     classifyPowerShellLineV277: classifyPowerShellLineV277,
