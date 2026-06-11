@@ -2631,6 +2631,9 @@ function buildSelectedFunctionContextV261(source, outline, selectedItem) {
     }),
     internalCalls: internalCalls
   };
+
+  context.callGraphMermaid = buildSelectedFunctionCallGraphMermaidV262(context);
+  return context;
 }
 
 function renderContextItemListV261(items, emptyText) {
@@ -2663,6 +2666,92 @@ function renderInternalCallListV261(calls) {
   '</div>';
 }
 
+
+// FUNCTION_CALLGRAPH_V262_A1
+function sanitizeMermaidLabelV262(value) {
+  return String(value || "")
+    .replace(/[\[\]{}()"`]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80) || "unknown";
+}
+
+function buildSelectedFunctionCallGraphMermaidV262(context) {
+  if (!context || !context.name) return "";
+
+  const selectedName = sanitizeMermaidLabelV262(context.name);
+  const lines = [
+    "graph TD",
+    '  selected["' + selectedName + '"]'
+  ];
+
+  const callers = Array.isArray(context.callers) ? context.callers.slice(0, 8) : [];
+  const calls = Array.isArray(context.internalCalls) ? context.internalCalls.slice(0, 10) : [];
+
+  callers.forEach(function(item, index) {
+    const nodeId = "caller" + index;
+    lines.push('  ' + nodeId + '["' + sanitizeMermaidLabelV262(item.name) + '"] --> selected');
+  });
+
+  calls.forEach(function(name, index) {
+    const nodeId = "call" + index;
+    lines.push('  selected --> ' + nodeId + '["' + sanitizeMermaidLabelV262(name) + '"]');
+  });
+
+  if (!callers.length && !calls.length) {
+    lines.push('  selected --> isolated["직접 호출 신호 없음"]');
+  }
+
+  return lines.join("\n");
+}
+
+function renderSelectedFunctionCallGraphV262(context) {
+  const source = context && context.callGraphMermaid ? context.callGraphMermaid : buildSelectedFunctionCallGraphMermaidV262(context);
+
+  if (!source) return "";
+
+  return '<details open class="code-flow-detail function-callgraph-v262"><summary>선택 함수 호출 관계 그래프</summary>' +
+    '<p class="code-report-categories">왼쪽은 이 함수를 호출하는 함수, 오른쪽은 이 함수 내부에서 호출하는 함수/API입니다.</p>' +
+    '<div id="functionCallGraphDiagramV262" class="function-callgraph-diagram-v262">호출 관계 그래프 렌더링 대기</div>' +
+    '<details class="code-flow-detail"><summary>Mermaid 코드 보기</summary><pre><code>' +
+    escapeHtml(source) +
+    '</code></pre></details>' +
+    '</details>';
+}
+
+async function renderFunctionCallGraphDiagramV262(result) {
+  const context = result && result.selectedFunctionContextV261;
+  const source = context && context.callGraphMermaid;
+
+  if (!source) return false;
+
+  const box = document.getElementById("functionCallGraphDiagramV262");
+  if (!box) return false;
+
+  if (typeof mermaid === "undefined" || !mermaid || typeof mermaid.render !== "function") {
+    box.textContent = "Mermaid 렌더러를 찾지 못했습니다. Mermaid 코드 보기를 사용하세요.";
+    return false;
+  }
+
+  try {
+    const rendered = await mermaid.render("functionCallGraphV262_" + Date.now(), source);
+    box.innerHTML = rendered && rendered.svg ? rendered.svg : "";
+    if (box.classList && box.classList.add) {
+      box.classList.add("is-rendered");
+    }
+    return true;
+  } catch (error) {
+    box.textContent = "호출 관계 그래프 렌더링 실패: " + (error && error.message ? error.message : String(error));
+    return false;
+  }
+}
+
+function getSelectedFunctionCallGraphMermaidV262() {
+  const context = lastAnalysis ? lastAnalysis.selectedFunctionContextV261 : null;
+  return context && context.callGraphMermaid ? context.callGraphMermaid : "";
+}
+
+
 function renderSelectedFunctionContextV261(result) {
   const context = result && result.selectedFunctionContextV261;
   if (!context) return "";
@@ -2679,6 +2768,7 @@ function renderSelectedFunctionContextV261(result) {
     renderContextItemListV261(context.callers, "현재 파일 안에서 이 함수를 직접 호출하는 함수가 보이지 않습니다.") +
     '<h4>이 함수 내부 호출/API</h4>' +
     renderInternalCallListV261(context.internalCalls) +
+    renderSelectedFunctionCallGraphV262(context) +
     '</details>';
 }
 
@@ -2747,11 +2837,19 @@ function selectFunctionV259(index) {
     item
   );
 
+  // FUNCTION_CALLGRAPH_CONTEXT_WIRE_REPAIR_V262_A1
+  if (lastAnalysis.selectedFunctionContextV261) {
+    lastAnalysis.selectedFunctionContextV261.callGraphMermaid = buildSelectedFunctionCallGraphMermaidV262(
+      lastAnalysis.selectedFunctionContextV261
+    );
+  }
+
   lastAnalysis.functionInterpretations = buildSelectedFunctionInterpretationV259(lastAnalysis.sourceCode || "", item);
   lastReport = buildPlainTextReport(lastAnalysis);
 
   renderFlowAnalysisReport(lastAnalysis);
   renderFunctionMermaidDiagramsV253(lastAnalysis);
+  renderFunctionCallGraphDiagramV262(lastAnalysis);
 
   return true;
 }
@@ -3593,7 +3691,8 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     getLastAnalysisV259: getLastAnalysisV259,
     setFunctionPickerSearchV260: setFunctionPickerSearchV260,
     setFunctionPickerRoleV260: setFunctionPickerRoleV260,
-    getSelectedFunctionContextV261: getSelectedFunctionContextV261
+    getSelectedFunctionContextV261: getSelectedFunctionContextV261,
+    getSelectedFunctionCallGraphMermaidV262: getSelectedFunctionCallGraphMermaidV262
   };
 
   if (document.readyState === "loading") {
