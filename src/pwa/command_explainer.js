@@ -3,9 +3,10 @@
 // COMMAND_EXPLAINER_UI_USABILITY_AUDIT_V280_A1
 // COMMAND_EXPLAINER_BEGINNER_TERMS_V281_A1
 // COMMAND_EXPLAINER_GIT_FLOW_WORDING_V282_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V282_A1 20260611_v282_a1
+// COMMAND_EXPLAINER_COMPACT_EXTRA_NOTES_V283_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V283_A1 20260611_v283_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v282_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v283_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -843,6 +844,53 @@ git push origin main --tags`;
     }).join("");
   }
 
+
+  function renderCommandExtraNotesV283(step) {
+    if (!step) {
+      return "";
+    }
+
+    const notes = [];
+    const summaryParts = [];
+
+    if (step.gitFlowNoteV282) {
+      if (step.gitFlowLabelV282) {
+        summaryParts.push("Git: " + step.gitFlowLabelV282);
+      } else {
+        summaryParts.push("Git 흐름");
+      }
+
+      notes.push(
+        '<div class="git-flow-note-v282"><strong>Git 흐름:</strong> <span class="git-flow-label-v282">' +
+        escapeHtmlV277(step.gitFlowLabelV282 || "흐름") +
+        '</span> — ' +
+        escapeHtmlV277(step.gitFlowNoteV282) +
+        '</div>'
+      );
+    }
+
+    if (step.beginnerNote) {
+      summaryParts.push("초보자 메모");
+      notes.push(
+        '<div class="beginner-note-v281"><strong>초보자 메모:</strong> ' +
+        escapeHtmlV277(step.beginnerNote) +
+        '</div>'
+      );
+    }
+
+    if (!notes.length) {
+      return "";
+    }
+
+    return (
+      '<details class="command-extra-note-v283">' +
+      '<summary>' + escapeHtmlV277(summaryParts.join(" / ") || "추가 설명 보기") + '</summary>' +
+      '<div class="command-extra-note-body-v283">' + notes.join("") + '</div>' +
+      '</details>'
+    );
+  }
+
+
   function renderCommandStepsV277(result) {
     const box = getCommandElV277("commandSteps");
     if (!box) return;
@@ -862,8 +910,7 @@ git push origin main --tags`;
         '<pre class="code-block small-code">' + escapeHtmlV277(step.raw) + '</pre>' +
         '<div><strong>의미:</strong> ' + escapeHtmlV277(step.meaning) + '</div>' +
         '<div><strong>파일/ Git 영향:</strong> ' + escapeHtmlV277(step.fileImpact) + '</div>' +
-        (step.beginnerNote ? '<div class="beginner-note-v281"><strong>초보자 메모:</strong> ' + escapeHtmlV277(step.beginnerNote) + '</div>' : '') +
-        (step.gitFlowNoteV282 ? '<div class="git-flow-note-v282"><strong>Git 흐름:</strong> <span class="git-flow-label-v282">' + escapeHtmlV277(step.gitFlowLabelV282) + '</span> — ' + escapeHtmlV277(step.gitFlowNoteV282) + '</div>' : '') +
+        renderCommandExtraNotesV283(step) +
       '</div>';
     }).join("");
   }
@@ -1002,6 +1049,21 @@ git push origin main --tags`;
         background: rgba(22, 163, 74, 0.12);
         font-weight: 800;
       }
+      .command-extra-note-v283 {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: rgba(248, 250, 252, 0.92);
+        border: 1px solid rgba(148, 163, 184, 0.35);
+      }
+      .command-extra-note-v283 summary {
+        cursor: pointer;
+        font-weight: 800;
+        color: #166534;
+      }
+      .command-extra-note-body-v283 {
+        margin-top: 8px;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -1040,6 +1102,7 @@ git push origin main --tags`;
     gitFlowWordingV282: COMMAND_GIT_FLOW_WORDING_V282,
     enhanceResultGitFlowWordingV282: enhanceCommandResultGitFlowWordingV282,
     enhanceStepGitFlowWordingV282: enhanceCommandStepGitFlowWordingV282,
+    renderExtraNotesV283: renderCommandExtraNotesV283,
     analyzePowerShellV277: analyzePowerShellV277,
     analyzeBashV278: analyzeBashV278,
     classifyPowerShellLineV277: classifyPowerShellLineV277,
