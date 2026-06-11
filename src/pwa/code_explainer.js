@@ -2536,6 +2536,157 @@ function setFunctionPickerRoleV260(role) {
 }
 
 
+
+// FUNCTION_CONTEXT_V261_A1
+function escapeRegExpV261(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function getFunctionSnippetTextV261(item) {
+  if (!item || !item.block) return "";
+
+  if (item.block.snippet) return String(item.block.snippet || "");
+  return getFunctionBodyTextV259(item);
+}
+
+function getFunctionInternalCallsV261(item) {
+  const snippet = getFunctionSnippetTextV261(item);
+  const reserved = new Set([
+    "if", "for", "while", "switch", "catch", "function", "return", "else", "do", "try",
+    "const", "let", "var", "new", "class", "await", "async"
+  ]);
+  const calls = [];
+  const seen = new Set();
+  const regex = /\b([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?)\s*\(/g;
+  let match;
+
+  while ((match = regex.exec(snippet))) {
+    const name = match[1];
+    const root = name.split(".")[0];
+
+    if (reserved.has(root)) continue;
+    if (name === item.name) continue;
+    if (seen.has(name)) continue;
+
+    seen.add(name);
+    calls.push(name);
+  }
+
+  return calls.slice(0, 16);
+}
+
+function findFunctionCallersV261(outline, selectedItem) {
+  if (!selectedItem || !selectedItem.name) return [];
+
+  const target = selectedItem.name;
+  const targetPattern = new RegExp("\\b" + escapeRegExpV261(target) + "\\s*\\(");
+
+  return (Array.isArray(outline) ? outline : []).filter(function(item) {
+    if (!item || item.index === selectedItem.index) return false;
+
+    const snippet = getFunctionSnippetTextV261(item);
+    return targetPattern.test(snippet);
+  }).slice(0, 12);
+}
+
+function buildSelectedFunctionContextV261(source, outline, selectedItem) {
+  const items = Array.isArray(outline) ? outline : [];
+  if (!selectedItem) return null;
+
+  const index = Number(selectedItem.index);
+  const before = items.slice(Math.max(0, index - 3), index);
+  const after = items.slice(index + 1, index + 4);
+  const callers = findFunctionCallersV261(items, selectedItem);
+  const internalCalls = getFunctionInternalCallsV261(selectedItem);
+  const role = classifyFunctionSkeletonRoleV259(selectedItem);
+
+  return {
+    name: selectedItem.name,
+    lineNo: selectedItem.lineNo,
+    role: role,
+    roleLabel: getFunctionSkeletonRoleLabelV259(role),
+    before: before.map(function(item) {
+      return {
+        name: item.name,
+        lineNo: item.lineNo,
+        role: classifyFunctionSkeletonRoleV259(item),
+        roleLabel: getFunctionSkeletonRoleLabelV259(classifyFunctionSkeletonRoleV259(item))
+      };
+    }),
+    after: after.map(function(item) {
+      return {
+        name: item.name,
+        lineNo: item.lineNo,
+        role: classifyFunctionSkeletonRoleV259(item),
+        roleLabel: getFunctionSkeletonRoleLabelV259(classifyFunctionSkeletonRoleV259(item))
+      };
+    }),
+    callers: callers.map(function(item) {
+      return {
+        name: item.name,
+        lineNo: item.lineNo,
+        role: classifyFunctionSkeletonRoleV259(item),
+        roleLabel: getFunctionSkeletonRoleLabelV259(classifyFunctionSkeletonRoleV259(item))
+      };
+    }),
+    internalCalls: internalCalls
+  };
+}
+
+function renderContextItemListV261(items, emptyText) {
+  if (!Array.isArray(items) || !items.length) {
+    return '<p class="muted">' + escapeHtml(emptyText || "없음") + '</p>';
+  }
+
+  return '<div class="code-flow-mini-grid function-context-grid-v261">' +
+    items.map(function(item) {
+      return '<span class="code-report-chip function-context-chip-v261">' +
+        '<strong>' + escapeHtml(item.name) + '</strong>' +
+        '<small>line ' + escapeHtml(String(item.lineNo)) + ' · ' + escapeHtml(item.roleLabel || item.role || "") + '</small>' +
+      '</span>';
+    }).join("") +
+  '</div>';
+}
+
+function renderInternalCallListV261(calls) {
+  if (!Array.isArray(calls) || !calls.length) {
+    return '<p class="muted">내부 호출/API 신호가 뚜렷하지 않습니다.</p>';
+  }
+
+  return '<div class="code-flow-mini-grid function-context-grid-v261">' +
+    calls.map(function(name) {
+      return '<span class="code-report-chip function-context-chip-v261">' +
+        '<strong>' + escapeHtml(name) + '</strong>' +
+        '<small>내부 호출</small>' +
+      '</span>';
+    }).join("") +
+  '</div>';
+}
+
+function renderSelectedFunctionContextV261(result) {
+  const context = result && result.selectedFunctionContextV261;
+  if (!context) return "";
+
+  return '<details open class="code-flow-detail function-context-v261"><summary>선택 함수 주변 문맥 · ' +
+    escapeHtml(context.name) + '</summary>' +
+    '<p class="code-report-categories">이 함수는 <strong>' + escapeHtml(context.roleLabel || context.role || "미분류") +
+    '</strong> 역할군으로 보이며, 주변 함수/호출 관계를 함께 확인합니다.</p>' +
+    '<h4>앞쪽 주변 함수</h4>' +
+    renderContextItemListV261(context.before, "앞쪽 주변 함수가 없습니다.") +
+    '<h4>뒤쪽 주변 함수</h4>' +
+    renderContextItemListV261(context.after, "뒤쪽 주변 함수가 없습니다.") +
+    '<h4>이 함수를 호출하는 함수</h4>' +
+    renderContextItemListV261(context.callers, "현재 파일 안에서 이 함수를 직접 호출하는 함수가 보이지 않습니다.") +
+    '<h4>이 함수 내부 호출/API</h4>' +
+    renderInternalCallListV261(context.internalCalls) +
+    '</details>';
+}
+
+function getSelectedFunctionContextV261() {
+  return lastAnalysis ? lastAnalysis.selectedFunctionContextV261 : null;
+}
+
+
 function renderFunctionPickerV259(result) {
   const outline = Array.isArray(result && result.functionOutlineV259) ? result.functionOutlineV259 : [];
   const selected = result && result.selectedFunctionV259;
@@ -2590,6 +2741,11 @@ function selectFunctionV259(index) {
     lineNo: item.lineNo,
     kind: item.kind
   };
+  lastAnalysis.selectedFunctionContextV261 = buildSelectedFunctionContextV261(
+    lastAnalysis.sourceCode || "",
+    outline,
+    item
+  );
 
   lastAnalysis.functionInterpretations = buildSelectedFunctionInterpretationV259(lastAnalysis.sourceCode || "", item);
   lastReport = buildPlainTextReport(lastAnalysis);
@@ -3043,6 +3199,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
       '</div>' +
       renderFunctionSkeletonV259(result) +
       renderFunctionPickerV259(result) +
+      renderSelectedFunctionContextV261(result) +
       '<details open class="code-flow-detail"><summary>데이터 흐름</summary>' +
       renderFlowList(dataFlow, "변수 저장, 가공, 출력 흐름이 뚜렷하게 감지되지 않았습니다.") +
       '</details>' +
@@ -3144,6 +3301,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     result.functionOutlineV259 = buildFunctionOutlineV259(result.sourceCode, result.language);
     result.functionSkeletonV259 = buildFunctionSkeletonV259(result.sourceCode, result.language);
     result.selectedFunctionV259 = null;
+    result.selectedFunctionContextV261 = null;
     result.functionPickerSearchV260 = "";
     result.functionPickerRoleV260 = "all";
 
@@ -3434,7 +3592,8 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     selectFunctionV259: selectFunctionV259,
     getLastAnalysisV259: getLastAnalysisV259,
     setFunctionPickerSearchV260: setFunctionPickerSearchV260,
-    setFunctionPickerRoleV260: setFunctionPickerRoleV260
+    setFunctionPickerRoleV260: setFunctionPickerRoleV260,
+    getSelectedFunctionContextV261: getSelectedFunctionContextV261
   };
 
   if (document.readyState === "loading") {
