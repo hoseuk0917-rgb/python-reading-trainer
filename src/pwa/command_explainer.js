@@ -5,9 +5,10 @@
 // COMMAND_EXPLAINER_GIT_FLOW_WORDING_V282_A1
 // COMMAND_EXPLAINER_COMPACT_EXTRA_NOTES_V283_A1
 // COMMAND_EXPLAINER_MOBILE_COMPACT_AUDIT_V284_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V284_A1 20260611_v284_a1
+// COMMAND_EXPLAINER_ACTION_GUIDE_V285_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V285_A1 20260611_v285_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v284_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v285_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -892,6 +893,78 @@ git push origin main --tags`;
   }
 
 
+
+  const COMMAND_ACTION_GUIDE_ORDER_V285 = [
+    {
+      command: "git status",
+      label: "확인",
+      action: "현재 어떤 파일이 바뀌었는지 먼저 확인합니다."
+    },
+    {
+      command: "git diff",
+      label: "비교",
+      action: "저장하기 전에 실제 변경 내용을 비교합니다."
+    },
+    {
+      command: "git add",
+      label: "준비",
+      action: "이번 저장 기록에 넣을 파일을 고릅니다."
+    },
+    {
+      command: "git commit",
+      label: "저장",
+      action: "준비한 변경사항을 내 컴퓨터 Git 기록에 저장합니다."
+    },
+    {
+      command: "git push",
+      label: "업로드",
+      action: "저장한 기록을 GitHub 같은 원격 저장소로 올립니다."
+    }
+  ];
+
+  function buildCommandActionGuideV285(result) {
+    const steps = result && Array.isArray(result.steps) ? result.steps : [];
+    const presentCommands = new Set(steps.map(function(step) {
+      return step.command;
+    }));
+
+    const items = COMMAND_ACTION_GUIDE_ORDER_V285.filter(function(item) {
+      return presentCommands.has(item.command);
+    });
+
+    return {
+      items: items,
+      flowText: items.map(function(item) { return item.label; }).join(" → ")
+    };
+  }
+
+  function renderCommandActionGuideV285(result) {
+    const guide = buildCommandActionGuideV285(result);
+
+    if (!guide.items.length) {
+      return "";
+    }
+
+    return (
+      '<div class="command-action-guide-v285">' +
+        '<div class="command-action-guide-title-v285">다음 실행 흐름: ' + escapeHtmlV277(guide.flowText) + '</div>' +
+        '<div class="command-action-guide-items-v285">' +
+          guide.items.map(function(item, index) {
+            return (
+              '<div class="command-action-guide-item-v285">' +
+                '<span class="badge">' + (index + 1) + '</span>' +
+                '<strong>' + escapeHtmlV277(item.label) + '</strong>' +
+                '<code>' + escapeHtmlV277(item.command) + '</code>' +
+                '<span>' + escapeHtmlV277(item.action) + '</span>' +
+              '</div>'
+            );
+          }).join("") +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+
   function renderCommandStepsV277(result) {
     const box = getCommandElV277("commandSteps");
     if (!box) return;
@@ -901,7 +974,9 @@ git push origin main --tags`;
       return;
     }
 
-    box.innerHTML = result.steps.map(function(step, index) {
+    const actionGuideHtmlV285 = renderCommandActionGuideV285(result);
+
+    box.innerHTML = actionGuideHtmlV285 + result.steps.map(function(step, index) {
       return '<div class="code-step command-step-v277">' +
         '<div class="code-step-title">' +
           '<span class="badge">' + (index + 1) + '</span> ' +
@@ -1075,6 +1150,34 @@ git push origin main --tags`;
       .command-extra-note-body-v283 {
         margin-top: 8px;
       }
+      .command-action-guide-v285 {
+        margin: 0 0 14px 0;
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(240, 249, 255, 0.92);
+        border: 1px solid rgba(14, 165, 233, 0.25);
+      }
+      .command-action-guide-title-v285 {
+        font-weight: 900;
+        margin-bottom: 10px;
+        color: #075985;
+      }
+      .command-action-guide-items-v285 {
+        display: grid;
+        gap: 8px;
+      }
+      .command-action-guide-item-v285 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        line-height: 1.5;
+      }
+      .command-action-guide-item-v285 code {
+        padding: 2px 6px;
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.06);
+      }
       @media (max-width: 640px) {
         .command-extra-note-v283 {
           padding: 10px 10px;
@@ -1090,6 +1193,16 @@ git push origin main --tags`;
         }
         .git-flow-label-v282 {
           margin-right: 2px;
+        }
+        .command-action-guide-v285 {
+          padding: 10px;
+        }
+        .command-action-guide-item-v285 {
+          align-items: flex-start;
+        }
+        .command-action-guide-item-v285 span:last-child {
+          flex-basis: 100%;
+          margin-left: 32px;
         }
       }
     `;
@@ -1131,6 +1244,9 @@ git push origin main --tags`;
     enhanceResultGitFlowWordingV282: enhanceCommandResultGitFlowWordingV282,
     enhanceStepGitFlowWordingV282: enhanceCommandStepGitFlowWordingV282,
     renderExtraNotesV283: renderCommandExtraNotesV283,
+    actionGuideOrderV285: COMMAND_ACTION_GUIDE_ORDER_V285,
+    buildActionGuideV285: buildCommandActionGuideV285,
+    renderActionGuideV285: renderCommandActionGuideV285,
     analyzePowerShellV277: analyzePowerShellV277,
     analyzeBashV278: analyzeBashV278,
     classifyPowerShellLineV277: classifyPowerShellLineV277,
