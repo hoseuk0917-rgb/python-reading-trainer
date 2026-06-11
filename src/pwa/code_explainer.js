@@ -728,7 +728,8 @@ port = 5432`
 
 // FUNCTION_IR_V251_A1
 const FUNCTION_IR_MAX_FUNCTIONS_V251 = 8;
-const FUNCTION_IR_MAX_ITEMS_V251 = 12;
+const FUNCTION_IR_MAX_ITEMS_V251 = 16;
+// FUNCTION_IR_V257_VISIBLE_STEPS_A1
 
 function splitFunctionParamsV251(raw) {
   return String(raw || "")
@@ -1616,6 +1617,295 @@ function buildJsFunctionInterpretationsV256(source, language) {
   });
 }
 
+
+// FUNCTION_IR_JS_QUALITY_V257_A1
+function buildJsBlockFromMatchV257(source, match, kind, name, paramsRaw) {
+  const text = String(source || "");
+  const openIndex = text.indexOf("{", match.index);
+  const closeIndex = findMatchingBraceV256(text, openIndex);
+
+  if (openIndex < 0 || closeIndex < 0) return null;
+
+  const bodyText = text.slice(openIndex + 1, closeIndex);
+  const bodyStartLine = jsLineNoFromIndexV256(text, openIndex + 1);
+  const headerStart = text.lastIndexOf("\n", match.index) + 1;
+  const headerEnd = text.indexOf("{", match.index);
+  const header = text.slice(headerStart, headerEnd >= 0 ? headerEnd : openIndex).trim();
+
+  const body = bodyText.split(/\r?\n/).slice(0, JS_FUNCTION_IR_MAX_BODY_LINES_V256).map(function(line, idx) {
+    return {
+      lineNo: bodyStartLine + idx,
+      text: stripJsCommentV256(line)
+    };
+  }).filter(function(item) {
+    return item.text;
+  });
+
+  return {
+    name: name,
+    kind: kind,
+    lineNo: jsLineNoFromIndexV256(text, match.index + 1),
+    params: normalizeJsParamsV256(paramsRaw),
+    body: body,
+    header: header
+  };
+}
+
+function extractJsExtraFunctionBlocksV257(source) {
+  const text = String(source || "");
+  const blocks = [];
+  const reserved = new Set(["if", "for", "while", "switch", "catch", "function", "return", "else", "do", "try"]);
+
+  const exportRegex = /(?:^|[\r\n;])\s*export\s+(?:default\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*\{/g;
+  let match;
+
+  while ((match = exportRegex.exec(text))) {
+    const block = buildJsBlockFromMatchV257(text, match, "export_function", match[1], match[2] || "");
+    if (block) blocks.push(block);
+  }
+
+  const methodRegex = /(?:^|[\r\n])\s{0,12}(?:async\s+)?([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*\{/g;
+
+  while ((match = methodRegex.exec(text))) {
+    const name = match[1];
+    if (reserved.has(name)) continue;
+
+    const before = text.slice(Math.max(0, match.index - 500), match.index);
+    const afterHeader = text.slice(match.index, Math.min(text.length, match.index + 120));
+
+    if (!/class\s+[A-Za-z_$][\w$]*[\s\S]*$/.test(before)) continue;
+    if (/function\s+$/.test(before.slice(-30))) continue;
+    if (/=>/.test(afterHeader.split("{")[0])) continue;
+
+    const block = buildJsBlockFromMatchV257(text, match, "class_method", name, match[2] || "");
+    if (block) blocks.push(block);
+  }
+
+  return blocks;
+}
+
+function dedupeJsBlocksV257(blocks) {
+  const seen = new Set();
+
+  return (Array.isArray(blocks) ? blocks : []).filter(function(block) {
+    const key = block.name + "@" + block.lineNo + "@" + block.kind;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).sort(function(a, b) {
+    return a.lineNo - b.lineNo;
+  }).slice(0, FUNCTION_IR_MAX_FUNCTIONS_V251);
+}
+
+function extractJsFunctionBlocksV257(source) {
+  const base = extractJsFunctionBlocksV256(source);
+  const extras = extractJsExtraFunctionBlocksV257(source);
+  const baseKeys = new Set(base.map(function(block) {
+    return block.name + "@" + block.lineNo;
+  }));
+
+  const extraOnly = extras.filter(function(block) {
+    return !baseKeys.has(block.name + "@" + block.lineNo);
+  });
+
+  return dedupeJsBlocksV257(base.concat(extraOnly));
+}
+
+function getJsFunctionBodyForIrV257(source, ir) {
+  const blocks = extractJsFunctionBlocksV257(source);
+  return blocks.find(function(block) {
+    return block.name === ir.name && block.lineNo === ir.lineNo;
+  }) || null;
+}
+
+function detectJsFunctionSignalsV257(source, ir) {
+  const block = getJsFunctionBodyForIrV257(source, ir);
+  const body = block && Array.isArray(block.body) ? block.body : [];
+  const header = String(block && block.header || "");
+  const signals = {
+    isExported: /export\s+/.test(header),
+    isAsync: /async\s+/.test(header),
+    isClassMethod: block && block.kind === "class_method",
+    awaitOps: [],
+    tryCatch: [],
+    promiseChains: [],
+    fetchOps: []
+  };
+
+  body.forEach(function(item) {
+    const line = item.text;
+    let match;
+
+    if (!line) return;
+
+    if (/await\s+/.test(line)) {
+      signals.awaitOps.push({
+        lineNo: item.lineNo,
+        code: line,
+        summary: "await로 비동기 처리 결과를 기다립니다."
+      });
+    }
+
+    if (/^try\s*\{?$/.test(line)) {
+      signals.tryCatch.push({
+        lineNo: item.lineNo,
+        type: "try",
+        summary: "try 블록에서 실패할 수 있는 처리를 먼저 시도합니다."
+      });
+    }
+
+    match = line.match(/^\}?\s*catch\s*\(([^)]*)\)\s*\{?/);
+    if (match) {
+      signals.tryCatch.push({
+        lineNo: item.lineNo,
+        type: "catch",
+        error: match[1],
+        summary: "catch 블록에서 " + match[1] + " 오류를 받아 대체 흐름으로 처리합니다."
+      });
+    }
+
+    if (/\.then\s*\(/.test(line)) {
+      signals.promiseChains.push({
+        lineNo: item.lineNo,
+        type: "then",
+        summary: "then으로 Promise 성공 결과를 이어서 처리합니다."
+      });
+    }
+
+    if (/\.catch\s*\(/.test(line)) {
+      signals.promiseChains.push({
+        lineNo: item.lineNo,
+        type: "catch",
+        summary: "catch로 Promise 실패 흐름을 처리합니다."
+      });
+    }
+
+    if (/fetch\s*\(/.test(line)) {
+      signals.fetchOps.push({
+        lineNo: item.lineNo,
+        summary: "fetch로 네트워크 요청을 실행합니다."
+      });
+    }
+  });
+
+  return signals;
+}
+
+function improveJsVariableRolesV257(ir, signals) {
+  ir.variables.forEach(function(variable) {
+    const expr = String(variable.expr || "");
+    const name = String(variable.name || "").toLowerCase();
+
+    if (/await\s+fetch\s*\(/.test(expr) || /^response$|res$/.test(name)) {
+      variable.role = "fetch 요청의 응답 객체를 기다려 받은 값입니다.";
+    } else if (/await\s+[^.]+\.json\s*\(/.test(expr) || /data|payload/.test(name)) {
+      variable.role = "응답 본문을 JSON으로 변환해 얻은 JavaScript 데이터입니다.";
+    } else if (/Promise|\.then\s*\(|\.catch\s*\(/.test(expr)) {
+      variable.role = "Promise 체인에서 이어지는 비동기 처리 결과입니다.";
+    }
+  });
+}
+
+function summarizeJsFunctionRoleV257(ir, signals) {
+  const hasFetch = signals.fetchOps.length > 0 || ir.calls.some(function(call) { return call.name === "fetch"; });
+  const hasAwait = signals.awaitOps.length > 0;
+  const hasTry = signals.tryCatch.some(function(item) { return item.type === "try"; });
+  const hasCatch = signals.tryCatch.some(function(item) { return item.type === "catch"; });
+  const hasPromise = signals.promiseChains.length > 0;
+
+  if (hasFetch && hasAwait && hasTry && hasCatch) {
+    return "async/await로 네트워크 요청을 시도하고 실패하면 catch에서 안전하게 처리하는 비동기 데이터 로더 함수로 보입니다.";
+  }
+
+  if (hasFetch && hasPromise) {
+    return "fetch 요청 뒤 then/catch Promise 체인으로 성공·실패 흐름을 이어 처리하는 네트워크 함수로 보입니다.";
+  }
+
+  if (signals.isExported && ir.returns.length) {
+    return "다른 파일에서 import해 쓸 수 있도록 공개된 JavaScript 함수로, 입력을 처리해 결과를 반환합니다.";
+  }
+
+  if (signals.isClassMethod) {
+    return "클래스 객체 안에서 특정 동작을 담당하는 메서드로 보입니다.";
+  }
+
+  if (hasAwait) {
+    return "await로 비동기 작업 결과를 기다린 뒤 다음 처리를 이어가는 JavaScript 함수로 보입니다.";
+  }
+
+  if (hasTry && hasCatch) {
+    return "실패할 수 있는 처리를 try에서 시도하고 catch에서 오류를 처리하는 방어적 함수로 보입니다.";
+  }
+
+  return ir.roleSummary;
+}
+
+function appendUniqueJsStepV257(steps, step) {
+  if (!step) return;
+  if (steps.indexOf(step) >= 0) return;
+  steps.push(step);
+}
+
+function enhanceJsFunctionInterpretationsV257(source, items) {
+  return (Array.isArray(items) ? items : []).map(function(ir) {
+    const signals = detectJsFunctionSignalsV257(source, ir);
+
+    ir.signals = signals;
+    improveJsVariableRolesV257(ir, signals);
+    ir.roleSummary = summarizeJsFunctionRoleV257(ir, signals);
+
+    if (signals.isExported) {
+      appendUniqueJsStepV257(ir.steps, "export로 다른 파일에서 import해 쓸 수 있게 공개합니다.");
+      ir.concepts.push("export");
+    }
+
+    if (signals.isAsync) {
+      appendUniqueJsStepV257(ir.steps, "async 함수로 비동기 작업을 다룰 수 있습니다.");
+      ir.concepts.push("async");
+    }
+
+    if (signals.isClassMethod) {
+      appendUniqueJsStepV257(ir.steps, "class 안에 정의된 메서드로 객체의 동작을 담당합니다.");
+      ir.concepts.push("class_method");
+    }
+
+    signals.fetchOps.slice(0, 3).forEach(function(item) {
+      appendUniqueJsStepV257(ir.steps, item.summary);
+      ir.concepts.push("fetch");
+    });
+
+    signals.awaitOps.slice(0, 4).forEach(function(item) {
+      appendUniqueJsStepV257(ir.steps, item.summary);
+      ir.concepts.push("await", "async");
+    });
+
+    signals.tryCatch.slice(0, 4).forEach(function(item) {
+      appendUniqueJsStepV257(ir.steps, item.summary);
+      ir.concepts.push("try_catch");
+    });
+
+    signals.promiseChains.slice(0, 4).forEach(function(item) {
+      appendUniqueJsStepV257(ir.steps, item.summary);
+      ir.concepts.push("promise");
+    });
+
+    ir.concepts = Array.from(new Set(ir.concepts)).sort();
+    ir.mermaid = buildJsFunctionMermaidV256(ir);
+
+    return ir;
+  });
+}
+
+function buildJsFunctionInterpretationsV257(source, language) {
+  if (language !== "javascript" && language !== "js") return [];
+
+  const items = extractJsFunctionBlocksV257(source).map(function(block) {
+    return parseJsFunctionIrV256(block);
+  });
+
+  return enhanceJsFunctionInterpretationsV257(source, items);
+}
+
 function buildFunctionInterpretationsV251(source, language) {
   if (language === "python") {
     const base = buildPythonFunctionInterpretationsV251(source, language);
@@ -1623,7 +1913,7 @@ function buildFunctionInterpretationsV251(source, language) {
   }
 
   if (language === "javascript" || language === "js") {
-    return buildJsFunctionInterpretationsV256(source, language);
+    return buildJsFunctionInterpretationsV257(source, language);
   }
 
   return [];
