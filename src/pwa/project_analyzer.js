@@ -1,6 +1,6 @@
 // === PROJECT ANALYZER V248-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260611_v248_a1";
+  const PROJECT_ANALYZER_VERSION = "20260611_v265_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
@@ -1085,6 +1085,188 @@
     });
   }
 
+
+  // PROJECT_CROSS_FILE_LINKS_V265_A1
+  function normalizeProjectPathV265(path) {
+    return String(path || "").replace(/\\/g, "/").replace(/^\.\//, "");
+  }
+
+  function buildProjectSymbolOwnerIndexV265(symbols) {
+    const index = {};
+    objectEntries(symbols || {}).forEach(function(entry) {
+      const filePath = normalizeProjectPathV265(entry[0]);
+      const items = Array.isArray(entry[1]) ? entry[1] : [];
+
+      items.forEach(function(item) {
+        const name = String((item && item.name) || "").trim();
+        if (!name || name.length < 3) return;
+
+        if (!index[name]) index[name] = [];
+        if (index[name].indexOf(filePath) < 0) {
+          index[name].push(filePath);
+        }
+      });
+    });
+
+    return index;
+  }
+
+  function resolveProjectReferenceTargetV265(fromPath, ref, knownFiles) {
+    const raw = String(ref || "").split("?")[0].trim();
+    if (!raw || /^https?:\/\//i.test(raw)) return "";
+
+    const normalized = normalizeProjectPathV265(raw);
+    const fromDir = normalizeProjectPathV265(fromPath).split("/").slice(0, -1).join("/");
+    const candidates = [
+      normalized,
+      normalizeProjectPathV265(fromDir ? fromDir + "/" + normalized : normalized),
+      normalizeProjectPathV265("src/pwa/" + normalized.replace(/^src\/pwa\//, "")),
+      normalizeProjectPathV265(normalized.replace(/^\.\.\//, ""))
+    ];
+
+    for (let i = 0; i < candidates.length; i += 1) {
+      if (knownFiles.indexOf(candidates[i]) >= 0) return candidates[i];
+    }
+
+    return "";
+  }
+
+  function buildProjectCrossFileLinksV265(parsed) {
+    const symbols = parsed && parsed.symbols ? parsed.symbols : {};
+    const callCandidates = parsed && parsed.callCandidates ? parsed.callCandidates : {};
+    const references = parsed && parsed.references ? parsed.references : {};
+    const ownerIndex = buildProjectSymbolOwnerIndexV265(symbols);
+    const knownFiles = objectEntries(symbols).map(function(entry) {
+      return normalizeProjectPathV265(entry[0]);
+    });
+    const links = [];
+    const seen = new Set();
+
+    function addLink(from, to, symbol, kind, count) {
+      const fromPath = normalizeProjectPathV265(from);
+      const toPath = normalizeProjectPathV265(to);
+
+      if (!fromPath || !toPath || fromPath === toPath) return;
+
+      const key = [fromPath, toPath, symbol, kind].join("::");
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      links.push({
+        from: fromPath,
+        to: toPath,
+        symbol: symbol || "",
+        kind: kind || "unknown",
+        count: Number(count || 1)
+      });
+    }
+
+    objectEntries(callCandidates).forEach(function(entry) {
+      const fromPath = normalizeProjectPathV265(entry[0]);
+      const calls = Array.isArray(entry[1]) ? entry[1] : [];
+
+      calls.forEach(function(call) {
+        const name = String((call && call.name) || "").trim();
+        const owners = ownerIndex[name] || [];
+        owners.forEach(function(ownerPath) {
+          addLink(fromPath, ownerPath, name, "call-to-symbol", call.count || 1);
+        });
+      });
+    });
+
+    objectEntries(references).forEach(function(entry) {
+      const fromPath = normalizeProjectPathV265(entry[0]);
+      const refs = Array.isArray(entry[1]) ? entry[1] : [];
+
+      refs.forEach(function(ref) {
+        const target = resolveProjectReferenceTargetV265(fromPath, ref, knownFiles);
+        if (target) {
+          addLink(fromPath, target, ref, "file-reference", 1);
+        }
+      });
+    });
+
+    links.sort(function(a, b) {
+      if (b.count !== a.count) return b.count - a.count;
+      return (a.from + a.to + a.symbol).localeCompare(b.from + b.to + b.symbol);
+    });
+
+    return links.slice(0, 80);
+  }
+
+  function buildProjectCrossFileMermaidV265(links) {
+    const items = Array.isArray(links) ? links.slice(0, 20) : [];
+    const files = [];
+    const idMap = {};
+
+    function idFor(file) {
+      if (!idMap[file]) {
+        idMap[file] = "F" + Object.keys(idMap).length;
+        files.push(file);
+      }
+      return idMap[file];
+    }
+
+    items.forEach(function(link) {
+      idFor(link.from);
+      idFor(link.to);
+    });
+
+    if (!items.length) {
+      return "graph LR\n  empty[파일 간 연결 후보 없음]";
+    }
+
+    const lines = ["graph LR"];
+
+    files.forEach(function(file) {
+      lines.push('  ' + idFor(file) + '["' + file.replace("src/pwa/", "") + '"]');
+    });
+
+    items.forEach(function(link) {
+      const label = String(link.symbol || link.kind || "link")
+        .replace(/[\[\]{}()"`|]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 48);
+      lines.push("  " + idFor(link.from) + " -->|" + label + "| " + idFor(link.to));
+    });
+
+    return lines.join("\n");
+  }
+
+  function renderProjectCrossFileLinksV265(parsed) {
+    if (!parsed || parsed.inputMode !== "json") {
+      return "";
+    }
+
+    const links = buildProjectCrossFileLinksV265(parsed);
+    const mermaid = buildProjectCrossFileMermaidV265(links);
+
+    if (!links.length) {
+      return '<div class="project-detail-section project-cross-file-links-v265">' +
+        '<h3>파일 간 연결 후보</h3>' +
+        '<p class="muted">JSON 리포트에서 파일 간 연결 후보를 찾지 못했습니다.</p>' +
+        '</div>';
+    }
+
+    return '<div class="project-detail-section project-cross-file-links-v265">' +
+      '<h3>파일 간 연결 후보</h3>' +
+      '<p class="muted">프로젝트분석 영역입니다. 단일 함수 설명은 코드해석, 여러 파일 연결은 프로젝트분석에서 봅니다.</p>' +
+      '<div class="project-data-list">' +
+      links.slice(0, 12).map(function(link) {
+        return '<div class="project-data-row">' +
+          '<strong>' + escapeHtml(link.from + " → " + link.to) + '</strong>' +
+          '<span>' + escapeHtml(link.kind + " · " + link.symbol + " · " + link.count + "회") + '</span>' +
+          '</div>';
+      }).join("") +
+      '</div>' +
+      '<details class="project-detail-section"><summary>파일 간 연결 Mermaid 코드</summary><pre class="code-block">' +
+      escapeHtml(mermaid) +
+      '</pre></details>' +
+      '</div>';
+  }
+
+
   function renderJsonReportSections(parsed) {
     if (!parsed || parsed.inputMode !== "json") {
       return "";
@@ -1095,7 +1277,8 @@
       renderCandidateBundles(parsed.candidateBundles),
       renderSymbolFiles(parsed.symbols),
       renderCallCandidateDetails(parsed.callCandidates),
-      renderReferenceDetails(parsed.references)
+      renderReferenceDetails(parsed.references),
+      renderProjectCrossFileLinksV265(parsed)
     ].filter(Boolean).join("");
   }
 
@@ -1450,7 +1633,8 @@
     buildProbeCommand: buildProbeCommand,
     parseProbeOutput: parseProbeOutput,
     renderProbeAnalysis: renderProbeAnalysis,
-    buildCodeBridgeSnippet: buildProjectCodeBridgeSnippet
+    buildCodeBridgeSnippet: buildProjectCodeBridgeSnippet,
+    buildCrossFileLinksV265: buildProjectCrossFileLinksV265
   };
 
   if (document.readyState === "loading") {
