@@ -725,6 +725,352 @@ port = 5432`
     };
   }
 
+
+// FUNCTION_IR_V251_A1
+const FUNCTION_IR_MAX_FUNCTIONS_V251 = 8;
+const FUNCTION_IR_MAX_ITEMS_V251 = 8;
+
+function splitFunctionParamsV251(raw) {
+  return String(raw || "")
+    .split(",")
+    .map(function(item) {
+      return item.trim().replace(/=.*$/, "").trim();
+    })
+    .filter(Boolean);
+}
+
+function pythonIndentLengthV251(line) {
+  const match = String(line || "").match(/^ */);
+  return match ? match[0].length : 0;
+}
+
+function stripPythonCommentV251(line) {
+  return String(line || "").replace(/#.*/, "").trim();
+}
+
+function mermaidSafeTextV251(value) {
+  return String(value || "")
+    .replace(/"/g, "'")
+    .replace(/[\[\]{}|]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 70);
+}
+
+function inferPythonVariableRoleV251(name, expr) {
+  const n = String(name || "");
+  const e = String(expr || "").trim();
+
+  if (/^\[\]$|list\(/.test(e)) return "조건에 맞는 값을 모아둘 빈 목록으로 보입니다.";
+  if (/^\{\}$|dict\(/.test(e)) return "키와 값을 모아둘 사전으로 보입니다.";
+  if (/json\.load|json\.loads/.test(e)) return "JSON 데이터를 Python에서 다루는 값으로 바꾼 결과입니다.";
+  if (/json\.dump|json\.dumps/.test(e)) return "Python 데이터를 JSON 형태로 바꾼 결과입니다.";
+  if (/Path\(|open\(|read_text|write_text/.test(e)) return "파일이나 경로와 관련된 값을 담습니다.";
+  if (/filter\(|map\(|sorted\(/.test(e)) return "기존 데이터를 걸러내거나 변환한 결과입니다.";
+  if (/len\(|count|total|size/i.test(n + " " + e)) return "개수나 크기 같은 숫자 정보를 담습니다.";
+  if (/result|results|out|output|items|rows/i.test(n)) return "함수의 최종 결과나 중간 결과를 모아두는 변수로 보입니다.";
+  if (/card|item|row|entry|file|line/i.test(n)) return "반복문 안에서 항목 하나를 가리키는 변수로 보입니다.";
+  if (/text|raw|content|source/i.test(n)) return "입력이나 파일에서 읽은 문자열 내용을 담는 변수로 보입니다.";
+
+  return "함수 안에서 계산하거나 다음 단계에 넘기기 위해 만든 중간 값으로 보입니다.";
+}
+
+function addUniqueByNameV251(list, item) {
+  if (!item || !item.name) return;
+  if (list.some(function(existing) { return existing.name === item.name; })) return;
+  list.push(item);
+}
+
+function extractPythonFunctionBlocksV251(source) {
+  const lines = String(source || "").split(/\r?\n/);
+  const blocks = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const header = lines[i];
+    const match = header.match(/^(\s*)(async\s+def|def)\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*:/);
+    if (!match) continue;
+
+    const indent = match[1].length;
+    const body = [];
+
+    for (let j = i + 1; j < lines.length; j++) {
+      const line = lines[j];
+      if (line.trim() && pythonIndentLengthV251(line) <= indent) break;
+      body.push({
+        lineNo: j + 1,
+        raw: line,
+        text: stripPythonCommentV251(line)
+      });
+    }
+
+    blocks.push({
+      kind: "python_function",
+      name: match[3],
+      detail: match[2],
+      lineNo: i + 1,
+      params: splitFunctionParamsV251(match[4]),
+      body: body
+    });
+
+    if (blocks.length >= FUNCTION_IR_MAX_FUNCTIONS_V251) break;
+  }
+
+  return blocks;
+}
+
+function buildPythonFunctionMermaidV251(ir) {
+  const lines = ["flowchart TD"];
+  const name = mermaidSafeTextV251(ir.name);
+  lines.push('  A["' + name + ' 입력"] --> B["내부 변수/초기값 준비"]');
+
+  let prev = "B";
+  let idx = 0;
+
+  ir.loops.slice(0, 3).forEach(function(loop) {
+    const id = "L" + idx++;
+    lines.push("  " + prev + ' --> ' + id + '["반복: ' + mermaidSafeTextV251(loop.summary) + '"]');
+    prev = id;
+  });
+
+  ir.conditions.slice(0, 3).forEach(function(condition) {
+    const id = "C" + idx++;
+    lines.push("  " + prev + ' --> ' + id + '{"조건: ' + mermaidSafeTextV251(condition.condition) + '"}');
+    prev = id;
+  });
+
+  ir.calls.slice(0, 4).forEach(function(call) {
+    const id = "K" + idx++;
+    lines.push("  " + prev + ' --> ' + id + '["호출: ' + mermaidSafeTextV251(call.name) + '"]');
+    prev = id;
+  });
+
+  if (ir.returns.length) {
+    lines.push("  " + prev + ' --> R["반환: ' + mermaidSafeTextV251(ir.returns[0]) + '"]');
+  } else {
+    lines.push("  " + prev + ' --> R["결과/부수효과 완료"]');
+  }
+
+  return lines.join("\n");
+}
+
+function summarizePythonFunctionRoleV251(ir) {
+  const hasLoop = ir.loops.length > 0;
+  const hasCondition = ir.conditions.length > 0;
+  const hasReturn = ir.returns.length > 0;
+  const hasAppend = ir.calls.some(function(call) { return /\.append$|append$/.test(call.name); });
+  const hasPrint = ir.calls.some(function(call) { return call.name === "print"; });
+  const hasJson = ir.calls.some(function(call) { return /^json\.(load|loads|dump|dumps)$/.test(call.name); });
+  const hasFile = ir.calls.some(function(call) { return /open|Path|read_text|write_text/.test(call.name); });
+
+  if (hasLoop && hasCondition && hasAppend && hasReturn) {
+    return "입력 목록을 반복하면서 조건에 맞는 항목을 모아 반환하는 필터링/수집 함수로 보입니다.";
+  }
+  if (hasLoop && hasAppend && hasReturn) {
+    return "여러 항목을 순회하면서 결과 목록을 만들고 반환하는 수집 함수로 보입니다.";
+  }
+  if (hasJson) {
+    return "JSON 데이터를 읽거나 변환해서 다음 처리에 넘기는 데이터 처리 함수로 보입니다.";
+  }
+  if (hasFile) {
+    return "파일이나 경로를 읽고 쓰는 파일 처리 함수로 보입니다.";
+  }
+  if (hasPrint && hasLoop) {
+    return "여러 항목을 순회하면서 필요한 값을 화면/터미널에 출력하는 함수로 보입니다.";
+  }
+  if (hasLoop && hasReturn) {
+    return "여러 항목을 순회해 계산하거나 가공한 뒤 결과를 반환하는 함수로 보입니다.";
+  }
+  if (hasReturn) {
+    return "입력값이나 내부 계산값을 처리해 결과를 반환하는 함수로 보입니다.";
+  }
+
+  return "입력값과 내부 명령을 실행해 상태를 바꾸거나 부수효과를 만드는 함수로 보입니다.";
+}
+
+function buildPythonFunctionConceptsV251(ir) {
+  const concepts = new Set(["function"]);
+
+  if (ir.params.length) concepts.add("parameter");
+  if (ir.variables.length) concepts.add("variable");
+  if (ir.variables.some(function(v) { return /\[\]|목록|list/i.test(v.expr + " " + v.role); })) concepts.add("list");
+  if (ir.variables.some(function(v) { return /\{\}|사전|dict/i.test(v.expr + " " + v.role); })) concepts.add("dict");
+  if (ir.loops.length) concepts.add("for");
+  if (ir.conditions.length) concepts.add("if");
+  if (ir.returns.length) concepts.add("return");
+  if (ir.calls.some(function(call) { return /\.append$|append$/.test(call.name); })) concepts.add("append");
+  if (ir.calls.some(function(call) { return /^json\.loads?$/.test(call.name); })) concepts.add("json.loads");
+  if (ir.calls.some(function(call) { return /^json\.dumps?$/.test(call.name); })) concepts.add("json.dumps");
+  if (ir.calls.some(function(call) { return /Path|open|read_text|write_text/.test(call.name); })) concepts.add("pathlib");
+
+  return Array.from(concepts).sort();
+}
+
+function buildPythonFunctionInterpretationsV251(source, language) {
+  if (language !== "python") return [];
+
+  const blocks = extractPythonFunctionBlocksV251(source);
+  const keywordCalls = new Set(["if", "for", "while", "return", "def", "class", "with", "except", "elif"]);
+
+  return blocks.map(function(block) {
+    const ir = {
+      name: block.name,
+      kind: block.kind,
+      lineNo: block.lineNo,
+      params: block.params,
+      variables: [],
+      loops: [],
+      conditions: [],
+      calls: [],
+      returns: [],
+      steps: [],
+      concepts: [],
+      roleSummary: "",
+      mermaid: ""
+    };
+
+    const callNames = new Set();
+
+    block.body.forEach(function(item) {
+      const line = item.text;
+      let match;
+
+      if (!line) return;
+
+      match = line.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
+      if (match && !/[=!<>]=/.test(match[0])) {
+        addUniqueByNameV251(ir.variables, {
+          name: match[1],
+          expr: match[2],
+          lineNo: item.lineNo,
+          role: inferPythonVariableRoleV251(match[1], match[2])
+        });
+      }
+
+      match = line.match(/^for\s+([A-Za-z_]\w*)\s+in\s+(.+):$/);
+      if (match) {
+        ir.loops.push({
+          lineNo: item.lineNo,
+          variable: match[1],
+          source: match[2],
+          summary: match[2] + "에서 " + match[1] + "를 하나씩 꺼냅니다."
+        });
+        addUniqueByNameV251(ir.variables, {
+          name: match[1],
+          expr: "for " + match[1] + " in " + match[2],
+          lineNo: item.lineNo,
+          role: match[2] + " 안의 항목 하나를 반복 중에 가리킵니다."
+        });
+      }
+
+      match = line.match(/^(if|elif)\s+(.+):$/);
+      if (match) {
+        ir.conditions.push({
+          lineNo: item.lineNo,
+          condition: match[2]
+        });
+      }
+
+      match = line.match(/^return\s+(.+)$/);
+      if (match) {
+        ir.returns.push(match[1]);
+      }
+
+      Array.from(line.matchAll(/([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*\(/g)).forEach(function(callMatch) {
+        const name = callMatch[1];
+        if (keywordCalls.has(name)) return;
+        if (name === block.name) return;
+        callNames.add(name);
+      });
+    });
+
+    ir.calls = Array.from(callNames).sort().map(function(name) {
+      return { name: name };
+    });
+
+    ir.roleSummary = summarizePythonFunctionRoleV251(ir);
+    ir.concepts = buildPythonFunctionConceptsV251(ir);
+    ir.mermaid = buildPythonFunctionMermaidV251(ir);
+
+    if (ir.params.length) {
+      ir.steps.push(ir.params.join(", ") + " 값을 입력으로 받습니다.");
+    }
+
+    ir.variables.slice(0, FUNCTION_IR_MAX_ITEMS_V251).forEach(function(variable) {
+      ir.steps.push(variable.name + " 값을 준비합니다: " + variable.role);
+    });
+
+    ir.loops.slice(0, 3).forEach(function(loop) {
+      ir.steps.push(loop.summary);
+    });
+
+    ir.conditions.slice(0, 3).forEach(function(condition) {
+      ir.steps.push(condition.condition + " 조건을 확인합니다.");
+    });
+
+    ir.calls.slice(0, 5).forEach(function(call) {
+      ir.steps.push(call.name + " 호출을 실행합니다.");
+    });
+
+    ir.returns.slice(0, 2).forEach(function(value) {
+      ir.steps.push(value + " 값을 함수 밖으로 반환합니다.");
+    });
+
+    return ir;
+  });
+}
+
+function buildFunctionInterpretationsV251(source, language) {
+  if (language === "python") {
+    return buildPythonFunctionInterpretationsV251(source, language);
+  }
+  return [];
+}
+
+function renderFunctionInterpretationListV251(items, emptyText) {
+  const list = Array.isArray(items) ? items : [];
+
+  if (!list.length) {
+    return '<p class="muted">' + escapeHtml(emptyText || "함수 단위 해석 대상이 아직 감지되지 않았습니다.") + '</p>';
+  }
+
+  return list.slice(0, FUNCTION_IR_MAX_FUNCTIONS_V251).map(function(item) {
+    const params = Array.isArray(item.params) && item.params.length ? item.params.join(", ") : "없음";
+    const variables = Array.isArray(item.variables) && item.variables.length
+      ? '<ul>' + item.variables.slice(0, FUNCTION_IR_MAX_ITEMS_V251).map(function(variable) {
+          return '<li><code>' + escapeHtml(variable.name) + '</code> — ' + escapeHtml(variable.role || "") + '</li>';
+        }).join("") + '</ul>'
+      : '<p class="muted">감지된 내부 변수가 없습니다.</p>';
+
+    const steps = Array.isArray(item.steps) && item.steps.length
+      ? '<ol>' + item.steps.slice(0, FUNCTION_IR_MAX_ITEMS_V251).map(function(step) {
+          return '<li>' + escapeHtml(step) + '</li>';
+        }).join("") + '</ol>'
+      : '<p class="muted">처리 흐름을 아직 요약하지 못했습니다.</p>';
+
+    const concepts = Array.isArray(item.concepts) && item.concepts.length
+      ? item.concepts.map(function(concept) {
+          return '<span class="code-report-chip"><small>' + escapeHtml(concept) + '</small></span>';
+        }).join("")
+      : '<span class="muted">연결된 개념 없음</span>';
+
+    const mermaid = item.mermaid
+      ? '<details class="code-flow-detail"><summary>함수 흐름도 Mermaid 초안</summary><pre><code>' + escapeHtml(item.mermaid) + '</code></pre></details>'
+      : "";
+
+    return '<article class="code-flow-item function-ir-card">' +
+      '<h4>' + escapeHtml(item.name || "함수") + ' <small>line ' + escapeHtml(String(item.lineNo || "")) + '</small></h4>' +
+      '<p><strong>역할:</strong> ' + escapeHtml(item.roleSummary || "") + '</p>' +
+      '<p><strong>입력:</strong> ' + escapeHtml(params) + '</p>' +
+      '<p><strong>내부 변수:</strong></p>' +
+      variables +
+      '<p><strong>처리 흐름:</strong></p>' +
+      steps +
+      '<div class="code-flow-mini-grid">' + concepts + '</div>' +
+      mermaid +
+      '</article>';
+  }).join("");
+}
+
   function addOutlineItem(list, lineNo, type, name, detail) {
     if (!name && !detail) return;
     list.push({
@@ -920,7 +1266,7 @@ port = 5432`
 
     const dataFlow = Array.isArray(result.dataFlow) ? result.dataFlow : [];
     const callFlow = Array.isArray(result.callFlow) ? result.callFlow : [];
-
+    const functionInterpretations = Array.isArray(result.functionInterpretations) ? result.functionInterpretations : [];
     if (dataFlow.length) {
       lines.push("");
       lines.push("[데이터 흐름]");
@@ -936,6 +1282,19 @@ port = 5432`
       lines.push("[호출 흐름]");
       callFlow.slice(0, 16).forEach(function(item) {
         lines.push("- line " + item.lineNo + " · " + item.type + " · " + item.name + (item.target ? " → " + item.target : "") + " · " + item.summary);
+      });
+    }
+
+    if (functionInterpretations.length) {
+      lines.push("");
+      lines.push("[함수 단위 해석]");
+      functionInterpretations.slice(0, 8).forEach(function(item) {
+        lines.push("- line " + item.lineNo + " · " + item.name + " · " + item.roleSummary);
+        if (Array.isArray(item.steps) && item.steps.length) {
+          item.steps.slice(0, 6).forEach(function(step) {
+            lines.push("  - " + step);
+          });
+        }
       });
     }
 
@@ -1089,17 +1448,21 @@ port = 5432`
 
     const dataFlow = Array.isArray(result.dataFlow) ? result.dataFlow : [];
     const callFlow = Array.isArray(result.callFlow) ? result.callFlow : [];
-
+    const functionInterpretations = Array.isArray(result.functionInterpretations) ? result.functionInterpretations : [];
     box.className = "code-flow-analysis-report";
     box.innerHTML = '<div class="code-flow-mini-grid">' +
       '<span class="code-report-chip"><strong>' + dataFlow.length + '</strong><small>데이터 흐름</small></span>' +
       '<span class="code-report-chip"><strong>' + callFlow.length + '</strong><small>호출 흐름</small></span>' +
+      '<span class="code-report-chip"><strong>' + functionInterpretations.length + '</strong><small>함수 해석</small></span>' +
       '</div>' +
       '<details open class="code-flow-detail"><summary>데이터 흐름</summary>' +
       renderFlowList(dataFlow, "변수 저장, 가공, 출력 흐름이 뚜렷하게 감지되지 않았습니다.") +
       '</details>' +
       '<details class="code-flow-detail"><summary>호출 흐름</summary>' +
       renderFlowList(callFlow, "함수 정의/호출 흐름이 뚜렷하게 감지되지 않았습니다.") +
+      '</details>' +
+      '<details open class="code-flow-detail"><summary>함수 단위 해석</summary>' +
+      renderFunctionInterpretationListV251(functionInterpretations, "함수 단위 해석 대상이 아직 감지되지 않았습니다.") +
       '</details>';
   }
 
@@ -1190,6 +1553,7 @@ port = 5432`
     result.sourceCode = input.value;
     result.requestedLanguage = requested;
     result.detectionReasons = getDetectionReasons(result, requested, input.value);
+    result.functionInterpretations = buildFunctionInterpretationsV251(result.sourceCode, result.language);
     showAllCodeSteps = false;
     lastAnalysis = result;
     lastReport = buildPlainTextReport(result);
