@@ -4,9 +4,10 @@
 // COMMAND_EXPLAINER_BEGINNER_TERMS_V281_A1
 // COMMAND_EXPLAINER_GIT_FLOW_WORDING_V282_A1
 // COMMAND_EXPLAINER_COMPACT_EXTRA_NOTES_V283_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V283_A1 20260611_v283_a1
+// COMMAND_EXPLAINER_MOBILE_COMPACT_AUDIT_V284_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V284_A1 20260611_v284_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v283_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v284_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -1060,9 +1061,36 @@ git push origin main --tags`;
         cursor: pointer;
         font-weight: 800;
         color: #166534;
+        min-height: 34px;
+        display: flex;
+        align-items: center;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+      }
+      .command-extra-note-v283 summary:focus-visible {
+        outline: 3px solid rgba(34, 197, 94, 0.35);
+        outline-offset: 3px;
+        border-radius: 8px;
       }
       .command-extra-note-body-v283 {
         margin-top: 8px;
+      }
+      @media (max-width: 640px) {
+        .command-extra-note-v283 {
+          padding: 10px 10px;
+        }
+        .command-extra-note-v283 summary {
+          min-height: 42px;
+          font-size: 0.94rem;
+        }
+        .beginner-note-v281,
+        .git-flow-note-v282 {
+          padding: 9px 10px;
+          line-height: 1.55;
+        }
+        .git-flow-label-v282 {
+          margin-right: 2px;
+        }
       }
     `;
     document.head.appendChild(style);
