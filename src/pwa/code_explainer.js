@@ -1284,6 +1284,40 @@ function buildFunctionInterpretationsV251(source, language) {
   return [];
 }
 
+
+// FUNCTION_IR_V253_A1
+async function renderFunctionMermaidDiagramsV253(result) {
+  const items = Array.isArray(result && result.functionInterpretations) ? result.functionInterpretations : [];
+
+  if (!items.length) return;
+
+  if (!window.mermaid || typeof window.mermaid.render !== "function") {
+    items.slice(0, FUNCTION_IR_MAX_FUNCTIONS_V251).forEach(function(item, index) {
+      const box = el("functionMermaidDiagramV253_" + index);
+      if (box) box.innerHTML = '<p class="muted">Mermaid 로딩 중입니다. 잠시 후 다시 분석하기를 눌러주세요.</p>';
+    });
+    return;
+  }
+
+  for (let index = 0; index < Math.min(items.length, FUNCTION_IR_MAX_FUNCTIONS_V251); index++) {
+    const item = items[index];
+    const box = el("functionMermaidDiagramV253_" + index);
+
+    if (!box || !item || !item.mermaid) continue;
+
+    box.className = "function-ir-mermaid-diagram";
+    box.innerHTML = '<p class="muted">함수 흐름도 그리는 중...</p>';
+
+    try {
+      const renderId = "functionIrDiagramV253_" + index + "_" + Date.now();
+      const rendered = await window.mermaid.render(renderId, item.mermaid);
+      box.innerHTML = rendered && rendered.svg ? rendered.svg : '<p class="muted">렌더링 결과가 비어 있습니다.</p>';
+      box.className = "function-ir-mermaid-diagram rendered";
+    } catch (error) {
+      box.innerHTML = '<p class="muted">함수 흐름도 렌더링 실패: ' + escapeHtml(String(error)) + '</p>';
+    }
+  }
+}
 function renderFunctionInterpretationListV251(items, emptyText) {
   const list = Array.isArray(items) ? items : [];
 
@@ -1291,7 +1325,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     return '<p class="muted">' + escapeHtml(emptyText || "함수 단위 해석 대상이 아직 감지되지 않았습니다.") + '</p>';
   }
 
-  return list.slice(0, FUNCTION_IR_MAX_FUNCTIONS_V251).map(function(item) {
+  return list.slice(0, FUNCTION_IR_MAX_FUNCTIONS_V251).map(function(item, index) {
     const params = Array.isArray(item.params) && item.params.length ? item.params.join(", ") : "없음";
     const variables = Array.isArray(item.variables) && item.variables.length
       ? '<ul>' + item.variables.slice(0, FUNCTION_IR_MAX_ITEMS_V251).map(function(variable) {
@@ -1312,7 +1346,10 @@ function renderFunctionInterpretationListV251(items, emptyText) {
       : '<span class="muted">연결된 개념 없음</span>';
 
     const mermaid = item.mermaid
-      ? '<details class="code-flow-detail"><summary>함수 흐름도 Mermaid 초안</summary><pre><code>' + escapeHtml(item.mermaid) + '</code></pre></details>'
+      ? '<details open class="code-flow-detail function-ir-mermaid-detail"><summary>함수 흐름도</summary>' +
+        '<div id="functionMermaidDiagramV253_' + index + '" class="function-ir-mermaid-diagram"><p class="muted">함수 흐름도 렌더링 준비 중...</p></div>' +
+        '<details class="code-flow-detail function-ir-mermaid-source"><summary>Mermaid 코드 보기</summary><pre><code>' + escapeHtml(item.mermaid) + '</code></pre></details>' +
+        '</details>'
       : "";
 
     return '<article class="code-flow-item function-ir-card">' +
@@ -1827,6 +1864,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     renderQuickReport(result);
     renderConfidenceReport(result);
     renderFlowAnalysisReport(result);
+    renderFunctionMermaidDiagramsV253(result);
     renderStructureOverview(result);
     renderWarnings(result.warnings || []);
     renderSteps(result.steps || []);
