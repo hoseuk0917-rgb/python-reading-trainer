@@ -6,9 +6,10 @@
 // COMMAND_EXPLAINER_COMPACT_EXTRA_NOTES_V283_A1
 // COMMAND_EXPLAINER_MOBILE_COMPACT_AUDIT_V284_A1
 // COMMAND_EXPLAINER_ACTION_GUIDE_V285_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V285_A1 20260611_v285_a1
+// COMMAND_EXPLAINER_DANGER_FLOW_GUIDE_V286_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V286_A1 20260611_v286_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v285_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v286_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -965,6 +966,119 @@ git push origin main --tags`;
   }
 
 
+
+  const COMMAND_DANGER_FLOW_STEPS_V286 = [
+    {
+      label: "대상 확인",
+      action: "삭제하거나 되돌릴 경로/브랜치/파일 이름이 맞는지 먼저 확인합니다."
+    },
+    {
+      label: "백업 확인",
+      action: "되돌릴 수 없는 작업이면 커밋, 복사본, 백업, 원격 저장 상태를 먼저 확인합니다."
+    },
+    {
+      label: "실행",
+      action: "명령 의미와 옵션을 이해한 뒤 필요한 경우에만 실행합니다."
+    },
+    {
+      label: "결과 확인",
+      action: "실행 후 파일 존재 여부, git status, 로그를 확인합니다."
+    }
+  ];
+
+  function isDangerRawCommandV286(raw) {
+    const text = String(raw || "");
+    return /Remove-Item\b/i.test(text) ||
+      /\brm\s+.*(?:-rf|-fr|-r\s+-f|-f\s+-r)\b/i.test(text) ||
+      /\bsudo\b/i.test(text) ||
+      /\bgit\s+reset\s+--hard\b/i.test(text) ||
+      /\bgit\s+clean\s+.*(?:-fd|-df|-f\s+-d|-d\s+-f)\b/i.test(text);
+  }
+
+  function getDangerReasonV286(step) {
+    const command = String(step && step.command || "");
+    const raw = String(step && step.raw || "");
+
+    if (command === "Remove-Item" || /Remove-Item\b/i.test(raw)) {
+      return "파일/폴더 삭제 명령입니다. -Recurse 또는 -Force가 있으면 삭제 범위가 커질 수 있습니다.";
+    }
+
+    if (command === "rm -rf" || /\brm\s+.*(?:-rf|-fr|-r\s+-f|-f\s+-r)\b/i.test(raw)) {
+      return "강제 삭제 명령입니다. 경로를 잘못 쓰면 복구가 어려울 수 있습니다.";
+    }
+
+    if (command === "sudo" || /\bsudo\b/i.test(raw)) {
+      return "관리자 권한 명령입니다. 시스템 설정이나 중요한 파일이 바뀔 수 있습니다.";
+    }
+
+    if (/\bgit\s+reset\s+--hard\b/i.test(raw)) {
+      return "Git 변경사항을 강제로 되돌릴 수 있는 명령입니다. 커밋되지 않은 작업이 사라질 수 있습니다.";
+    }
+
+    if (/\bgit\s+clean\s+.*(?:-fd|-df|-f\s+-d|-d\s+-f)\b/i.test(raw)) {
+      return "Git이 추적하지 않는 파일/폴더를 삭제할 수 있는 명령입니다.";
+    }
+
+    if (step && step.risk === "danger") {
+      return "위험 명령으로 분류되었습니다. 실행 전 대상과 옵션을 다시 확인해야 합니다.";
+    }
+
+    return "";
+  }
+
+  function buildCommandDangerGuideV286(result) {
+    const steps = result && Array.isArray(result.steps) ? result.steps : [];
+    const items = steps.filter(function(step) {
+      return step && (step.risk === "danger" || isDangerRawCommandV286(step.raw));
+    }).map(function(step) {
+      return Object.assign({}, step, {
+        dangerReasonV286: getDangerReasonV286(step)
+      });
+    });
+
+    return {
+      items: items,
+      flowText: COMMAND_DANGER_FLOW_STEPS_V286.map(function(item) { return item.label; }).join(" → ")
+    };
+  }
+
+  function renderCommandDangerGuideV286(result) {
+    const guide = buildCommandDangerGuideV286(result);
+
+    if (!guide.items.length) {
+      return "";
+    }
+
+    return (
+      '<div class="command-danger-guide-v286">' +
+        '<div class="command-danger-guide-title-v286">위험 명령 실행 전 확인: ' + escapeHtmlV277(guide.flowText) + '</div>' +
+        '<div class="command-danger-guide-flow-v286">' +
+          COMMAND_DANGER_FLOW_STEPS_V286.map(function(item, index) {
+            return (
+              '<div class="command-danger-guide-flow-item-v286">' +
+                '<span class="badge bad">' + (index + 1) + '</span>' +
+                '<strong>' + escapeHtmlV277(item.label) + '</strong>' +
+                '<span>' + escapeHtmlV277(item.action) + '</span>' +
+              '</div>'
+            );
+          }).join("") +
+        '</div>' +
+        '<div class="command-danger-guide-targets-v286">' +
+          guide.items.map(function(step) {
+            return (
+              '<div class="command-danger-guide-target-v286">' +
+                '<strong>line ' + escapeHtmlV277(step.line) + ' · ' + escapeHtmlV277(step.command) + '</strong>' +
+                '<pre class="code-block small-code">' + escapeHtmlV277(step.raw) + '</pre>' +
+                '<div>' + escapeHtmlV277(step.dangerReasonV286 || "실행 전 확인이 필요한 명령입니다.") + '</div>' +
+              '</div>'
+            );
+          }).join("") +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+
   function renderCommandStepsV277(result) {
     const box = getCommandElV277("commandSteps");
     if (!box) return;
@@ -974,9 +1088,10 @@ git push origin main --tags`;
       return;
     }
 
+    const dangerGuideHtmlV286 = renderCommandDangerGuideV286(result);
     const actionGuideHtmlV285 = renderCommandActionGuideV285(result);
 
-    box.innerHTML = actionGuideHtmlV285 + result.steps.map(function(step, index) {
+    box.innerHTML = dangerGuideHtmlV286 + actionGuideHtmlV285 + result.steps.map(function(step, index) {
       return '<div class="code-step command-step-v277">' +
         '<div class="code-step-title">' +
           '<span class="badge">' + (index + 1) + '</span> ' +
@@ -1178,6 +1293,39 @@ git push origin main --tags`;
         border-radius: 8px;
         background: rgba(15, 23, 42, 0.06);
       }
+      .command-danger-guide-v286 {
+        margin: 0 0 14px 0;
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(254, 242, 242, 0.94);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+      .command-danger-guide-title-v286 {
+        font-weight: 900;
+        margin-bottom: 10px;
+        color: #991b1b;
+      }
+      .command-danger-guide-flow-v286,
+      .command-danger-guide-targets-v286 {
+        display: grid;
+        gap: 8px;
+      }
+      .command-danger-guide-flow-v286 {
+        margin-bottom: 10px;
+      }
+      .command-danger-guide-flow-item-v286 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        line-height: 1.5;
+      }
+      .command-danger-guide-target-v286 {
+        padding: 10px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.75);
+        border: 1px solid rgba(239, 68, 68, 0.18);
+      }
       @media (max-width: 640px) {
         .command-extra-note-v283 {
           padding: 10px 10px;
@@ -1201,6 +1349,16 @@ git push origin main --tags`;
           align-items: flex-start;
         }
         .command-action-guide-item-v285 span:last-child {
+          flex-basis: 100%;
+          margin-left: 32px;
+        }
+        .command-danger-guide-v286 {
+          padding: 10px;
+        }
+        .command-danger-guide-flow-item-v286 {
+          align-items: flex-start;
+        }
+        .command-danger-guide-flow-item-v286 span:last-child {
           flex-basis: 100%;
           margin-left: 32px;
         }
@@ -1247,6 +1405,10 @@ git push origin main --tags`;
     actionGuideOrderV285: COMMAND_ACTION_GUIDE_ORDER_V285,
     buildActionGuideV285: buildCommandActionGuideV285,
     renderActionGuideV285: renderCommandActionGuideV285,
+    dangerFlowStepsV286: COMMAND_DANGER_FLOW_STEPS_V286,
+    buildDangerGuideV286: buildCommandDangerGuideV286,
+    renderDangerGuideV286: renderCommandDangerGuideV286,
+    isDangerRawCommandV286: isDangerRawCommandV286,
     analyzePowerShellV277: analyzePowerShellV277,
     analyzeBashV278: analyzeBashV278,
     classifyPowerShellLineV277: classifyPowerShellLineV277,
