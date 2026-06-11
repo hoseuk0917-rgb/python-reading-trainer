@@ -9,9 +9,10 @@
 // COMMAND_EXPLAINER_DANGER_FLOW_GUIDE_V286_A1
 // COMMAND_EXPLAINER_DANGER_COLLAPSE_V287_A1
 // COMMAND_EXPLAINER_SAMPLE_PRESETS_V288_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V288_A1 20260611_v288_a1
+// COMMAND_EXPLAINER_SAMPLE_DESCRIPTION_V289_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V289_A1 20260611_v289_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v288_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v289_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -86,7 +87,7 @@ git status --short`
 .\\.venv\\Scripts\\Activate.ps1
 python --version
 pip install -r requirements.txt
-python tools\\validate_lessons.py --expected-app-version 20260611_v288_a1 --expected-lesson-cards 1785`
+python tools\\validate_lessons.py --expected-app-version 20260611_v289_a1 --expected-lesson-cards 1785`
     },
     verify_commit_flow: {
       label: "검증/커밋 루틴",
@@ -123,7 +124,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 python3 --version
 pip install -r requirements.txt
-python3 tools/validate_lessons.py --expected-app-version 20260611_v288_a1 --expected-lesson-cards 1785`
+python3 tools/validate_lessons.py --expected-app-version 20260611_v289_a1 --expected-lesson-cards 1785`
     }
   };
 
@@ -153,11 +154,45 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v288_a1 --expe
     };
   }
 
+
+  function renderCommandSampleDescriptionV289(sample) {
+    const item = sample || getCommandSampleV288("auto_by_shell", "powershell");
+    const shellLabel = item.shell === "bash" ? "Bash/Shell" : "PowerShell";
+
+    return (
+      '<div class="command-sample-description-title-v289">' +
+        escapeHtmlV277(item.label || "명령어 예제") +
+        '<span class="badge command-sample-shell-badge-v289">' + escapeHtmlV277(shellLabel) + '</span>' +
+      '</div>' +
+      '<div class="command-sample-description-text-v289">' +
+        escapeHtmlV277(item.description || "선택한 예제의 명령 흐름을 연습합니다.") +
+      '</div>'
+    );
+  }
+
+  function updateCommandSampleDescriptionV289(sampleId) {
+    const box = getCommandElV277("commandSampleDescription");
+    const shell = getCommandElV277("commandShellSelect");
+    const sampleSelect = getCommandElV277("commandSampleSelect");
+
+    if (!box) {
+      return;
+    }
+
+    const selectedId = sampleId || (sampleSelect ? sampleSelect.value : "auto_by_shell");
+    const sample = getCommandSampleV288(selectedId, shell ? shell.value : "powershell");
+
+    box.className = "command-sample-description-v289";
+    box.innerHTML = renderCommandSampleDescriptionV289(sample);
+  }
+
+
   function syncCommandSampleShellV288() {
     const sampleSelect = getCommandElV277("commandSampleSelect");
     const shell = getCommandElV277("commandShellSelect");
 
     if (!sampleSelect || !shell) {
+      updateCommandSampleDescriptionV289();
       return;
     }
 
@@ -165,6 +200,8 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v288_a1 --expe
     if (sample && sample.shell && sampleSelect.value !== "auto_by_shell") {
       shell.value = sample.shell;
     }
+
+    updateCommandSampleDescriptionV289(sampleSelect.value);
   }
 
   function loadCommandSampleV288(sampleId) {
@@ -178,10 +215,15 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v288_a1 --expe
       shell.value = sample.shell;
     }
 
+    if (sampleSelect && sampleId && sampleId !== "auto_by_shell" && COMMAND_SAMPLE_CATALOG_V288[sampleId]) {
+      sampleSelect.value = sampleId;
+    }
+
     if (input) {
       input.value = sample.source;
     }
 
+    updateCommandSampleDescriptionV289(selectedId);
     analyzeCommandInputV277();
   }
 
@@ -1378,6 +1420,8 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v288_a1 --expe
       next.className = "code-related-cards muted";
       next.textContent = "분석 후 추천 확인 명령이 표시됩니다.";
     }
+
+    updateCommandSampleDescriptionV289();
   }
 
   function injectCommandExplainerStyleV277() {
@@ -1388,6 +1432,30 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v288_a1 --expe
       .command-explainer-grid { align-items: start; }
       .command-sample-select-v288 {
         min-width: 180px;
+      }
+      .command-sample-description-v289 {
+        margin: 8px 0 10px 0;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(240, 249, 255, 0.88);
+        border: 1px solid rgba(14, 165, 233, 0.22);
+        line-height: 1.55;
+      }
+      .command-sample-description-title-v289 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        font-weight: 900;
+        color: #075985;
+      }
+      .command-sample-shell-badge-v289 {
+        background: rgba(14, 165, 233, 0.14);
+        color: #075985;
+      }
+      .command-sample-description-text-v289 {
+        margin-top: 4px;
+        color: #334155;
       }
       .command-step-v277 { margin-bottom: 12px; }
       .code-warning-item {
@@ -1589,6 +1657,13 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v288_a1 --expe
         .command-sample-select-v288 {
           min-width: 100%;
         }
+        .command-sample-description-v289 {
+          padding: 10px;
+          margin-top: 8px;
+        }
+        .command-sample-description-title-v289 {
+          align-items: flex-start;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -1599,7 +1674,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v288_a1 --expe
 
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V288";
+      version.textContent = "V289";
     }
 
     const analyzeBtn = getCommandElV277("analyzeCommandBtn");
@@ -1611,12 +1686,14 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v288_a1 --expe
     if (sampleBtn) sampleBtn.onclick = function() { loadCommandSampleV288(); };
     if (sampleSelect) sampleSelect.onchange = syncCommandSampleShellV288;
     if (clearBtn) clearBtn.onclick = clearCommandInputV277;
+
+    updateCommandSampleDescriptionV289();
   }
 
   function refreshCommandExplainerV277() {
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V288";
+      version.textContent = "V289";
     }
   }
 
@@ -1642,6 +1719,8 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v288_a1 --expe
     getSampleV288: getCommandSampleV288,
     loadSampleV288: loadCommandSampleV288,
     syncSampleShellV288: syncCommandSampleShellV288,
+    renderSampleDescriptionV289: renderCommandSampleDescriptionV289,
+    updateSampleDescriptionV289: updateCommandSampleDescriptionV289,
     isDangerRawCommandV286: isDangerRawCommandV286,
     analyzePowerShellV277: analyzePowerShellV277,
     analyzeBashV278: analyzeBashV278,
