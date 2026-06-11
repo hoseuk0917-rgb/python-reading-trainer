@@ -10,9 +10,10 @@
 // COMMAND_EXPLAINER_DANGER_COLLAPSE_V287_A1
 // COMMAND_EXPLAINER_SAMPLE_PRESETS_V288_A1
 // COMMAND_EXPLAINER_SAMPLE_DESCRIPTION_V289_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V289_A1 20260611_v289_a1
+// COMMAND_EXPLAINER_SAFETY_CHECKLIST_V290_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V290_A1 20260611_v290_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v289_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v290_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -87,7 +88,7 @@ git status --short`
 .\\.venv\\Scripts\\Activate.ps1
 python --version
 pip install -r requirements.txt
-python tools\\validate_lessons.py --expected-app-version 20260611_v289_a1 --expected-lesson-cards 1785`
+python tools\\validate_lessons.py --expected-app-version 20260611_v290_a1 --expected-lesson-cards 1785`
     },
     verify_commit_flow: {
       label: "검증/커밋 루틴",
@@ -124,7 +125,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 python3 --version
 pip install -r requirements.txt
-python3 tools/validate_lessons.py --expected-app-version 20260611_v289_a1 --expected-lesson-cards 1785`
+python3 tools/validate_lessons.py --expected-app-version 20260611_v290_a1 --expected-lesson-cards 1785`
     }
   };
 
@@ -1306,6 +1307,249 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v289_a1 --expe
   }
 
 
+
+  function getCommandResultShellV290(result) {
+    const value = String((result && result.shell) || (result && result.kind) || "").toLowerCase();
+
+    if (value.indexOf("bash") >= 0 || value.indexOf("shell") >= 0) {
+      return "bash";
+    }
+
+    const sourceParts = [];
+
+    if (result && result.source) {
+      sourceParts.push(String(result.source));
+    }
+
+    if (result && result.raw) {
+      sourceParts.push(String(result.raw));
+    }
+
+    if (result && Array.isArray(result.steps)) {
+      result.steps.forEach(function(step) {
+        if (step && step.raw) {
+          sourceParts.push(String(step.raw));
+        }
+        if (step && step.command) {
+          sourceParts.push(String(step.command));
+        }
+      });
+    }
+
+    const probe = sourceParts.join("\n").toLowerCase();
+
+    if (
+      /(^|\n)\s*cd\s+~\//.test(probe) ||
+      /(^|\n)\s*source\s+\.venv\/bin\/activate\b/.test(probe) ||
+      /(^|\n)\s*rm\s+-/.test(probe) ||
+      /(^|\n)\s*sudo\s+/.test(probe) ||
+      /(^|\n)\s*ls\s+-/.test(probe)
+    ) {
+      return "bash";
+    }
+
+    return "powershell";
+  }
+
+
+  function extractQuotedOrPathV290(raw, commandName) {
+    const text = String(raw || "");
+    const quoted = text.match(/["']([^"']+)["']/);
+    if (quoted && quoted[1]) {
+      return quoted[1];
+    }
+
+    const parts = text.trim().split(/\s+/);
+    const commandIndex = parts.findIndex(function(part) {
+      return part.toLowerCase() === String(commandName || "").toLowerCase();
+    });
+
+    if (commandIndex >= 0 && parts[commandIndex + 1] && !parts[commandIndex + 1].startsWith("-")) {
+      return parts[commandIndex + 1];
+    }
+
+    return "";
+  }
+
+  function normalizeSafetyCommandsV290(commands) {
+    const seen = {};
+    return commands.filter(function(command) {
+      const key = String(command || "").trim();
+      if (!key || seen[key]) {
+        return false;
+      }
+      seen[key] = true;
+      return true;
+    });
+  }
+
+  function buildCommandSafetyChecklistV290(result) {
+    const guide = buildCommandDangerGuideV286(result);
+
+    if (!guide.items.length) {
+      return {
+        shell: getCommandResultShellV290(result),
+        commands: [],
+        items: [],
+        notes: [],
+        commandText: "",
+        title: "안전 실행 체크리스트"
+      };
+    }
+
+    const shell = getCommandResultShellV290(result);
+    const commands = [];
+    const notes = [];
+
+    if (shell === "bash") {
+      commands.push("pwd");
+      commands.push("git status --short");
+      commands.push("git diff --check");
+      commands.push("git branch --show-current");
+    } else {
+      commands.push("Get-Location");
+      commands.push("git status --short");
+      commands.push("git diff --check");
+      commands.push("git branch --show-current");
+    }
+
+    guide.items.forEach(function(step) {
+      const raw = String(step.raw || "");
+      const lower = raw.toLowerCase();
+
+      if (step.command === "Remove-Item") {
+        const target = extractQuotedOrPathV290(raw, "Remove-Item") || ".";
+        commands.push('Test-Path "' + target + '"');
+        commands.push('Get-ChildItem -Force "' + target + '"');
+        notes.push("Remove-Item 실행 전 삭제 대상 경로가 맞는지 확인합니다.");
+      } else if (/\brm\s+/.test(lower)) {
+        const target = extractQuotedOrPathV290(raw, "rm") || ".";
+        commands.push("pwd");
+        commands.push('ls -la "' + target + '"');
+        notes.push("rm 실행 전 삭제 대상 경로가 맞는지 확인합니다.");
+      } else if (/\bgit\s+clean\b/.test(lower)) {
+        commands.push("git clean -nd");
+        notes.push("git clean 실행 전에는 삭제 예정 목록만 보여주는 dry-run을 먼저 실행합니다.");
+      } else if (/\bgit\s+reset\s+--hard\b/.test(lower)) {
+        commands.push("git log --oneline -5");
+        commands.push("git status --short");
+        notes.push("git reset --hard 실행 전 현재 브랜치와 최근 커밋을 확인합니다.");
+      } else if (/\bsudo\b/.test(lower)) {
+        if (shell === "bash") {
+          commands.push("whoami");
+          commands.push("groups");
+        }
+        notes.push("sudo 실행 전 현재 사용자와 권한 범위를 확인합니다.");
+      } else {
+        notes.push("위험 명령 실행 전 대상과 현재 상태를 먼저 확인합니다.");
+      }
+    });
+
+    const safeCommands = normalizeSafetyCommandsV290(commands);
+
+    return {
+      shell: shell,
+      commands: safeCommands,
+      items: guide.items,
+      notes: normalizeSafetyCommandsV290(notes),
+      commandText: safeCommands.join("\n"),
+      title: "안전 실행 체크리스트"
+    };
+  }
+
+  function renderCommandSafetyChecklistV290(result) {
+    const checklist = buildCommandSafetyChecklistV290(result);
+
+    if (!checklist.commands.length) {
+      return "";
+    }
+
+    const shellLabel = checklist.shell === "bash" ? "Bash/Shell" : "PowerShell";
+    const noteHtml = checklist.notes.length
+      ? '<ul class="command-safety-notes-v290">' + checklist.notes.map(function(note) {
+          return '<li>' + escapeHtmlV277(note) + '</li>';
+        }).join("") + '</ul>'
+      : "";
+
+    return (
+      '<details class="command-safety-checklist-v290" open>' +
+        '<summary>' +
+          '<span class="command-safety-title-v290">복사 가능한 안전 실행 체크리스트</span>' +
+          '<span class="badge command-safety-shell-v290">' + escapeHtmlV277(shellLabel) + '</span>' +
+        '</summary>' +
+        '<div class="command-safety-body-v290">' +
+          '<p>위험 명령을 실행하기 전에 아래 확인 명령만 먼저 실행해 보세요.</p>' +
+          '<button type="button" class="mini-btn command-safety-copy-btn-v290" data-command-safety-copy-v290>체크리스트 복사</button>' +
+          '<pre class="code-block small-code command-safety-code-v290">' + escapeHtmlV277(checklist.commandText) + '</pre>' +
+          noteHtml +
+        '</div>' +
+      '</details>'
+    );
+  }
+
+  function copyTextToClipboardV290(text, button) {
+    const value = String(text || "");
+
+    function markDone() {
+      if (button) {
+        const original = button.textContent;
+        button.textContent = "복사됨";
+        setTimeout(function() {
+          button.textContent = original || "체크리스트 복사";
+        }, 1200);
+      }
+    }
+
+    if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(value).then(markDone).catch(function() {
+        fallbackCopyTextV290(value);
+        markDone();
+      });
+      return;
+    }
+
+    fallbackCopyTextV290(value);
+    markDone();
+  }
+
+  function fallbackCopyTextV290(text) {
+    if (typeof document === "undefined" || !document.createElement || !document.body) {
+      return;
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = String(text || "");
+    textarea.setAttribute("readonly", "readonly");
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    try {
+      document.execCommand("copy");
+    } catch (error) {
+      // Ignore copy fallback errors. The code block remains visible for manual copy.
+    }
+
+    document.body.removeChild(textarea);
+  }
+
+  function bindCommandSafetyChecklistCopyV290(root) {
+    if (!root || !root.querySelectorAll) {
+      return;
+    }
+
+    const buttons = root.querySelectorAll("[data-command-safety-copy-v290]");
+    Array.prototype.forEach.call(buttons, function(button) {
+      button.onclick = function() {
+        const wrapper = button.closest ? button.closest(".command-safety-checklist-v290") : null;
+        const code = wrapper && wrapper.querySelector ? wrapper.querySelector(".command-safety-code-v290") : null;
+        copyTextToClipboardV290(code ? code.textContent : "", button);
+      };
+    });
+  }
+
+
   function renderCommandStepsV277(result) {
     const box = getCommandElV277("commandSteps");
     if (!box) return;
@@ -1316,9 +1560,10 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v289_a1 --expe
     }
 
     const dangerGuideHtmlV286 = renderCommandDangerGuideV287(result);
+    const safetyChecklistHtmlV290 = renderCommandSafetyChecklistV290(result);
     const actionGuideHtmlV285 = renderCommandActionGuideV285(result);
 
-    box.innerHTML = dangerGuideHtmlV286 + actionGuideHtmlV285 + result.steps.map(function(step, index) {
+    box.innerHTML = dangerGuideHtmlV286 + safetyChecklistHtmlV290 + actionGuideHtmlV285 + result.steps.map(function(step, index) {
       return '<div class="code-step command-step-v277">' +
         '<div class="code-step-title">' +
           '<span class="badge">' + (index + 1) + '</span> ' +
@@ -1331,6 +1576,8 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v289_a1 --expe
         renderCommandExtraNotesV283(step) +
       '</div>';
     }).join("");
+
+    bindCommandSafetyChecklistCopyV290(box);
   }
 
   function renderCommandNextChecksV277(result) {
@@ -1664,6 +1911,17 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v289_a1 --expe
         .command-sample-description-title-v289 {
           align-items: flex-start;
         }
+        .command-safety-checklist-v290 summary {
+          min-height: 46px;
+          padding: 12px 10px;
+          align-items: flex-start;
+        }
+        .command-safety-body-v290 {
+          padding: 0 10px 10px 10px;
+        }
+        .command-safety-copy-btn-v290 {
+          width: 100%;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -1674,7 +1932,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v289_a1 --expe
 
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V289";
+      version.textContent = "V290";
     }
 
     const analyzeBtn = getCommandElV277("analyzeCommandBtn");
@@ -1693,7 +1951,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v289_a1 --expe
   function refreshCommandExplainerV277() {
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V289";
+      version.textContent = "V290";
     }
   }
 
@@ -1721,6 +1979,9 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v289_a1 --expe
     syncSampleShellV288: syncCommandSampleShellV288,
     renderSampleDescriptionV289: renderCommandSampleDescriptionV289,
     updateSampleDescriptionV289: updateCommandSampleDescriptionV289,
+    buildSafetyChecklistV290: buildCommandSafetyChecklistV290,
+    renderSafetyChecklistV290: renderCommandSafetyChecklistV290,
+    bindSafetyChecklistCopyV290: bindCommandSafetyChecklistCopyV290,
     isDangerRawCommandV286: isDangerRawCommandV286,
     analyzePowerShellV277: analyzePowerShellV277,
     analyzeBashV278: analyzeBashV278,
