@@ -9,15 +9,17 @@
 // COMMAND_EXPLAINER_DANGER_FLOW_GUIDE_V286_A1
 // COMMAND_EXPLAINER_DANGER_COLLAPSE_V287_A1
 // COMMAND_EXPLAINER_SAMPLE_PRESETS_V288_A1
+// COMMAND_EXPLAINER_SAMPLE_DESCRIPTIONS_V289_A1
 // COMMAND_EXPLAINER_SAMPLE_DESCRIPTION_V289_A1
 // COMMAND_EXPLAINER_SAFETY_CHECKLIST_V290_A1
 // COMMAND_EXPLAINER_DANGER_PRECISION_V291_A1
 // COMMAND_EXPLAINER_SAFETY_GROUPED_UI_V292_A1
 // COMMAND_EXPLAINER_SAFETY_GROUP_REASON_V293_A1
 // COMMAND_EXPLAINER_SAMPLE_SAFETY_GROUP_HINT_V294_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V294_A1 20260611_v294_a1
+// COMMAND_EXPLAINER_FULL_REGRESSION_AUDIT_V295_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V295_A1 20260611_v295_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v294_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v295_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -92,7 +94,7 @@ git status --short`
 .\\.venv\\Scripts\\Activate.ps1
 python --version
 pip install -r requirements.txt
-python tools\\validate_lessons.py --expected-app-version 20260611_v294_a1 --expected-lesson-cards 1785`
+python tools\\validate_lessons.py --expected-app-version 20260611_v295_a1 --expected-lesson-cards 1785`
     },
     verify_commit_flow: {
       label: "검증/커밋 루틴",
@@ -129,7 +131,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 python3 --version
 pip install -r requirements.txt
-python3 tools/validate_lessons.py --expected-app-version 20260611_v294_a1 --expected-lesson-cards 1785`
+python3 tools/validate_lessons.py --expected-app-version 20260611_v295_a1 --expected-lesson-cards 1785`
     }
   };
 
@@ -2289,7 +2291,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v294_a1 --expe
 
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V294";
+      version.textContent = "V295";
     }
 
     const analyzeBtn = getCommandElV277("analyzeCommandBtn");
@@ -2308,7 +2310,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v294_a1 --expe
   function refreshCommandExplainerV277() {
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V294";
+      version.textContent = "V295";
     }
   }
 
