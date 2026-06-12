@@ -11,9 +11,10 @@
 // COMMAND_EXPLAINER_SAMPLE_PRESETS_V288_A1
 // COMMAND_EXPLAINER_SAMPLE_DESCRIPTION_V289_A1
 // COMMAND_EXPLAINER_SAFETY_CHECKLIST_V290_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V290_A1 20260611_v290_a1
+// COMMAND_EXPLAINER_DANGER_PRECISION_V291_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V291_A1 20260611_v291_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v290_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v291_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -88,7 +89,7 @@ git status --short`
 .\\.venv\\Scripts\\Activate.ps1
 python --version
 pip install -r requirements.txt
-python tools\\validate_lessons.py --expected-app-version 20260611_v290_a1 --expected-lesson-cards 1785`
+python tools\\validate_lessons.py --expected-app-version 20260611_v291_a1 --expected-lesson-cards 1785`
     },
     verify_commit_flow: {
       label: "검증/커밋 루틴",
@@ -125,7 +126,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 python3 --version
 pip install -r requirements.txt
-python3 tools/validate_lessons.py --expected-app-version 20260611_v290_a1 --expected-lesson-cards 1785`
+python3 tools/validate_lessons.py --expected-app-version 20260611_v291_a1 --expected-lesson-cards 1785`
     }
   };
 
@@ -1364,12 +1365,21 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v290_a1 --expe
       return part.toLowerCase() === String(commandName || "").toLowerCase();
     });
 
-    if (commandIndex >= 0 && parts[commandIndex + 1] && !parts[commandIndex + 1].startsWith("-")) {
-      return parts[commandIndex + 1];
+    if (commandIndex < 0) {
+      return "";
+    }
+
+    for (let index = commandIndex + 1; index < parts.length; index += 1) {
+      const part = parts[index];
+      if (!part || part.startsWith("-")) {
+        continue;
+      }
+      return part;
     }
 
     return "";
   }
+
 
   function normalizeSafetyCommandsV290(commands) {
     const seen = {};
@@ -1381,6 +1391,63 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v290_a1 --expe
       seen[key] = true;
       return true;
     });
+  }
+
+  function classifyDangerChecklistStepV291(step) {
+    const raw = String((step && step.raw) || "");
+    const lower = raw.toLowerCase();
+
+    if (step && step.command === "Remove-Item") {
+      return "remove_item";
+    }
+
+    if (/\brm\s+/.test(lower)) {
+      return "rm";
+    }
+
+    if (/\bgit\s+clean\b/.test(lower)) {
+      return "git_clean";
+    }
+
+    if (/\bgit\s+reset\s+--hard\b/.test(lower)) {
+      return "git_reset_hard";
+    }
+
+    if (/\bsudo\b/.test(lower)) {
+      return "sudo";
+    }
+
+    return "generic";
+  }
+
+  function pushTargetInspectionCommandsV291(commands, shell, target) {
+    const safeTarget = target || ".";
+
+    if (shell === "bash") {
+      commands.push('test -e "' + safeTarget + '" && echo "target exists"');
+      commands.push('ls -la "' + safeTarget + '"');
+      commands.push('find "' + safeTarget + '" -maxdepth 2 -print | head -50');
+      commands.push('du -sh "' + safeTarget + '" 2>/dev/null');
+      return;
+    }
+
+    commands.push('Test-Path "' + safeTarget + '"');
+    commands.push('Get-Item -Force "' + safeTarget + '"');
+    commands.push('Get-ChildItem -Force "' + safeTarget + '" | Select-Object -First 20');
+    commands.push('(Get-ChildItem -Force "' + safeTarget + '" -Recurse -ErrorAction SilentlyContinue | Measure-Object).Count');
+  }
+
+  function pushBackupBranchCommandsV291(commands, shell) {
+    if (shell === "bash") {
+      commands.push('backup_branch="backup/before-reset-$(date +%Y%m%d-%H%M%S)"');
+      commands.push('git branch "$backup_branch"');
+      commands.push('git branch --list "backup/before-reset-*"');
+      return;
+    }
+
+    commands.push("$backupBranch = \"backup/before-reset-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"");
+    commands.push("git branch $backupBranch");
+    commands.push('git branch --list "backup/before-reset-*"');
   }
 
   function buildCommandSafetyChecklistV290(result) {
@@ -1415,34 +1482,51 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v290_a1 --expe
 
     guide.items.forEach(function(step) {
       const raw = String(step.raw || "");
-      const lower = raw.toLowerCase();
+      const type = classifyDangerChecklistStepV291(step);
 
-      if (step.command === "Remove-Item") {
+      if (type === "remove_item") {
         const target = extractQuotedOrPathV290(raw, "Remove-Item") || ".";
-        commands.push('Test-Path "' + target + '"');
-        commands.push('Get-ChildItem -Force "' + target + '"');
-        notes.push("Remove-Item 실행 전 삭제 대상 경로가 맞는지 확인합니다.");
-      } else if (/\brm\s+/.test(lower)) {
+        pushTargetInspectionCommandsV291(commands, "powershell", target);
+        notes.push("Remove-Item 실행 전 삭제 대상의 존재 여부, 목록, 재귀 대상 개수를 확인합니다.");
+        return;
+      }
+
+      if (type === "rm") {
         const target = extractQuotedOrPathV290(raw, "rm") || ".";
-        commands.push("pwd");
-        commands.push('ls -la "' + target + '"');
-        notes.push("rm 실행 전 삭제 대상 경로가 맞는지 확인합니다.");
-      } else if (/\bgit\s+clean\b/.test(lower)) {
+        pushTargetInspectionCommandsV291(commands, "bash", target);
+        notes.push("rm 실행 전 삭제 대상의 존재 여부, 목록, 크기를 확인합니다.");
+        return;
+      }
+
+      if (type === "git_clean") {
         commands.push("git clean -nd");
+        commands.push("git clean -ndx");
+        commands.push("git status --short");
         notes.push("git clean 실행 전에는 삭제 예정 목록만 보여주는 dry-run을 먼저 실행합니다.");
-      } else if (/\bgit\s+reset\s+--hard\b/.test(lower)) {
+        return;
+      }
+
+      if (type === "git_reset_hard") {
         commands.push("git log --oneline -5");
         commands.push("git status --short");
-        notes.push("git reset --hard 실행 전 현재 브랜치와 최근 커밋을 확인합니다.");
-      } else if (/\bsudo\b/.test(lower)) {
+        pushBackupBranchCommandsV291(commands, shell);
+        notes.push("git reset --hard 실행 전 현재 HEAD 기준 백업 브랜치를 먼저 만들어 둡니다.");
+        return;
+      }
+
+      if (type === "sudo") {
         if (shell === "bash") {
           commands.push("whoami");
           commands.push("groups");
+          commands.push("sudo -l");
+        } else {
+          commands.push("whoami");
         }
         notes.push("sudo 실행 전 현재 사용자와 권한 범위를 확인합니다.");
-      } else {
-        notes.push("위험 명령 실행 전 대상과 현재 상태를 먼저 확인합니다.");
+        return;
       }
+
+      notes.push("위험 명령 실행 전 대상과 현재 상태를 먼저 확인합니다.");
     });
 
     const safeCommands = normalizeSafetyCommandsV290(commands);
@@ -1456,6 +1540,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v290_a1 --expe
       title: "안전 실행 체크리스트"
     };
   }
+
 
   function renderCommandSafetyChecklistV290(result) {
     const checklist = buildCommandSafetyChecklistV290(result);
@@ -1932,7 +2017,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v290_a1 --expe
 
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V290";
+      version.textContent = "V291";
     }
 
     const analyzeBtn = getCommandElV277("analyzeCommandBtn");
@@ -1951,7 +2036,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v290_a1 --expe
   function refreshCommandExplainerV277() {
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V290";
+      version.textContent = "V291";
     }
   }
 
@@ -1982,6 +2067,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v290_a1 --expe
     buildSafetyChecklistV290: buildCommandSafetyChecklistV290,
     renderSafetyChecklistV290: renderCommandSafetyChecklistV290,
     bindSafetyChecklistCopyV290: bindCommandSafetyChecklistCopyV290,
+    classifyDangerStepV291: classifyDangerChecklistStepV291,
     isDangerRawCommandV286: isDangerRawCommandV286,
     analyzePowerShellV277: analyzePowerShellV277,
     analyzeBashV278: analyzeBashV278,
