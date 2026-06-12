@@ -18,9 +18,10 @@
 // COMMAND_EXPLAINER_SAMPLE_SAFETY_GROUP_HINT_V294_A1
 // COMMAND_EXPLAINER_FULL_REGRESSION_AUDIT_V295_A1
 // COMMAND_EXPLAINER_MANUAL_QA_CHECKLIST_V296_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V296_A1 20260611_v296_a1
+// COMMAND_EXPLAINER_SCREEN_UX_TUNE_V297_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V297_A1 20260611_v297_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v296_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v297_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -95,7 +96,7 @@ git status --short`
 .\\.venv\\Scripts\\Activate.ps1
 python --version
 pip install -r requirements.txt
-python tools\\validate_lessons.py --expected-app-version 20260611_v296_a1 --expected-lesson-cards 1785`
+python tools\\validate_lessons.py --expected-app-version 20260611_v297_a1 --expected-lesson-cards 1785`
     },
     verify_commit_flow: {
       label: "검증/커밋 루틴",
@@ -132,7 +133,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 python3 --version
 pip install -r requirements.txt
-python3 tools/validate_lessons.py --expected-app-version 20260611_v296_a1 --expected-lesson-cards 1785`
+python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expected-lesson-cards 1785`
     }
   };
 
@@ -198,13 +199,13 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v296_a1 --expe
 
     return (
       '<div class="command-sample-safety-groups-v294">' +
-        '<div class="command-sample-safety-title-v294">이 예제에서 뜨는 안전 체크 그룹</div>' +
+        '<div class="command-sample-safety-title-v294">분석하면 먼저 보여줄 안전 확인 그룹</div>' +
         '<div class="command-sample-safety-badges-v294">' +
           groups.map(function(group) {
             return '<span class="badge command-sample-safety-badge-v294">' + escapeHtmlV277(group.title) + '</span>';
           }).join("") +
         '</div>' +
-        '<div class="command-sample-safety-hint-v294">예제를 불러오면 분석 결과 위쪽에 이 그룹들이 먼저 표시됩니다.</div>' +
+        '<div class="command-sample-safety-hint-v294">예제를 불러와 분석하면 결과 위쪽에 이 안전 확인 그룹들이 표시됩니다.</div>' +
       '</div>'
     );
   }
@@ -1698,7 +1699,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v296_a1 --expe
 
   function renderCommandSafetyGroupV292(group) {
     const reasonHtml = group.reason
-      ? '<em class="command-safety-group-reason-v293">왜 먼저? ' + escapeHtmlV277(group.reason) + '</em>'
+      ? '<em class="command-safety-group-reason-v293">먼저 확인하는 이유: ' + escapeHtmlV277(group.reason) + '</em>'
       : "";
 
     return (
@@ -1733,13 +1734,13 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v296_a1 --expe
     return (
       '<details class="command-safety-checklist-v290 command-safety-checklist-grouped-v292" open>' +
         '<summary>' +
-          '<span class="command-safety-title-v290">복사 가능한 안전 실행 체크리스트</span>' +
+          '<span class="command-safety-title-v290">위험 명령 실행 전 안전 확인</span>' +
           '<span class="badge command-safety-shell-v290">' + escapeHtmlV277(shellLabel) + '</span>' +
           '<span class="badge command-safety-group-count-v292">' + groups.length + '개 그룹</span>' +
         '</summary>' +
         '<div class="command-safety-body-v290">' +
-          '<p>위험 명령을 실행하기 전에 아래 확인 명령만 먼저 실행해 보세요. 그룹별로 확인하면 실수 가능성을 줄일 수 있습니다.</p>' +
-          '<button type="button" class="mini-btn command-safety-copy-btn-v290" data-command-safety-copy-v290>전체 체크리스트 복사</button>' +
+          '<p>아래 명령은 삭제/초기화 명령이 아니라 현재 상태를 먼저 확인하는 안전 확인 명령입니다. 그룹별로 확인하면 실수 가능성을 줄일 수 있습니다.</p>' +
+          '<button type="button" class="mini-btn command-safety-copy-btn-v290" data-command-safety-copy-v290>안전 확인 명령 전체 복사</button>' +
           '<pre hidden class="code-block small-code command-safety-code-v290 command-safety-copy-source-v292">' + escapeHtmlV277(checklist.commandText) + '</pre>' +
           '<div class="command-safety-groups-v292">' +
             groupHtml +
@@ -1759,7 +1760,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v296_a1 --expe
         const original = button.textContent;
         button.textContent = "복사됨";
         setTimeout(function() {
-          button.textContent = original || "체크리스트 복사";
+          button.textContent = original || "안전 확인 명령 복사";
         }, 1200);
       }
     }
@@ -2283,6 +2284,41 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v296_a1 --expe
         }
       }
 
+      /* COMMAND_EXPLAINER_SCREEN_UX_TUNE_V297_A1 */
+      .command-explainer-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+      .command-explainer-grid > * {
+        min-width: 0;
+      }
+      .command-safety-checklist-v290 summary {
+        gap: 8px;
+      }
+      .command-safety-body-v290 > p {
+        margin-top: 0;
+        color: #475569;
+        line-height: 1.55;
+      }
+      .command-safety-copy-btn-v290 {
+        font-weight: 900;
+        border-color: rgba(245, 158, 11, 0.38);
+        background: rgba(255, 251, 235, 0.95);
+        color: #92400e;
+      }
+      .command-safety-group-reason-v293 {
+        padding: 5px 8px;
+        border-radius: 8px;
+        background: rgba(245, 158, 11, 0.09);
+      }
+      @media (max-width: 900px) {
+        .command-explainer-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
 `;
     document.head.appendChild(style);
   }
@@ -2292,7 +2328,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v296_a1 --expe
 
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V296";
+      version.textContent = "V297";
     }
 
     const analyzeBtn = getCommandElV277("analyzeCommandBtn");
@@ -2311,7 +2347,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v296_a1 --expe
   function refreshCommandExplainerV277() {
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V296";
+      version.textContent = "V297";
     }
   }
 
