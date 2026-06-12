@@ -13,9 +13,10 @@
 // COMMAND_EXPLAINER_SAFETY_CHECKLIST_V290_A1
 // COMMAND_EXPLAINER_DANGER_PRECISION_V291_A1
 // COMMAND_EXPLAINER_SAFETY_GROUPED_UI_V292_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V292_A1 20260611_v292_a1
+// COMMAND_EXPLAINER_SAFETY_GROUP_REASON_V293_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V293_A1 20260611_v293_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v292_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v293_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -90,7 +91,7 @@ git status --short`
 .\\.venv\\Scripts\\Activate.ps1
 python --version
 pip install -r requirements.txt
-python tools\\validate_lessons.py --expected-app-version 20260611_v292_a1 --expected-lesson-cards 1785`
+python tools\\validate_lessons.py --expected-app-version 20260611_v293_a1 --expected-lesson-cards 1785`
     },
     verify_commit_flow: {
       label: "검증/커밋 루틴",
@@ -127,7 +128,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 python3 --version
 pip install -r requirements.txt
-python3 tools/validate_lessons.py --expected-app-version 20260611_v292_a1 --expected-lesson-cards 1785`
+python3 tools/validate_lessons.py --expected-app-version 20260611_v293_a1 --expected-lesson-cards 1785`
     }
   };
 
@@ -1591,19 +1592,23 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v292_a1 --expe
     const meta = {
       common: {
         title: "공통 확인",
-        description: "현재 위치, 브랜치, Git 변경 상태를 먼저 확인합니다."
+        description: "현재 위치, 브랜치, Git 변경 상태를 먼저 확인합니다.",
+        reason: "현재 위치와 브랜치를 모르면 안전한 명령도 엉뚱한 폴더에서 실행될 수 있습니다."
       },
       delete: {
         title: "삭제 계열",
-        description: "파일이나 폴더가 실제로 무엇인지, 몇 개인지, 얼마나 큰지 확인합니다."
+        description: "파일이나 폴더가 실제로 무엇인지, 몇 개인지, 얼마나 큰지 확인합니다.",
+        reason: "삭제 명령은 되돌리기 어렵기 때문에 대상 경로와 범위를 먼저 눈으로 확인해야 합니다."
       },
       git_recovery: {
         title: "Git 복구 계열",
-        description: "되돌리기 전에 최근 커밋과 백업 브랜치를 확인합니다."
+        description: "되돌리기 전에 최근 커밋과 백업 브랜치를 확인합니다.",
+        reason: "reset이나 되돌리기 작업 전에는 돌아갈 지점을 남겨야 실수해도 복구할 수 있습니다."
       },
       permission: {
         title: "권한 계열",
-        description: "관리자 권한 실행 전 현재 사용자와 권한 범위를 확인합니다."
+        description: "관리자 권한 실행 전 현재 사용자와 권한 범위를 확인합니다.",
+        reason: "sudo 같은 권한 명령은 시스템 범위에 영향을 줄 수 있어서 실행 주체를 먼저 확인해야 합니다."
       }
     };
 
@@ -1630,6 +1635,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v292_a1 --expe
         key: key,
         title: meta.title,
         description: meta.description,
+        reason: meta.reason,
         commands: grouped[key]
       };
     }).filter(function(group) {
@@ -1638,16 +1644,22 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v292_a1 --expe
   }
 
   function renderCommandSafetyGroupV292(group) {
+    const reasonHtml = group.reason
+      ? '<em class="command-safety-group-reason-v293">왜 먼저? ' + escapeHtmlV277(group.reason) + '</em>'
+      : "";
+
     return (
       '<section class="command-safety-group-v292 command-safety-group-' + escapeHtmlV277(group.key) + '-v292">' +
         '<div class="command-safety-group-head-v292">' +
           '<strong>' + escapeHtmlV277(group.title) + '</strong>' +
           '<span>' + escapeHtmlV277(group.description) + '</span>' +
+          reasonHtml +
         '</div>' +
         '<pre class="code-block small-code command-safety-group-code-v292">' + escapeHtmlV277(group.commands.join("\n")) + '</pre>' +
       '</section>'
     );
   }
+
 
   function renderCommandSafetyChecklistV290(result) {
     const checklist = buildCommandSafetyChecklistV290(result);
@@ -2168,6 +2180,20 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v292_a1 --expe
         }
       }
 
+      .command-safety-group-reason-v293 {
+        display: block;
+        margin-top: 3px;
+        color: #92400e;
+        font-style: normal;
+        font-size: 0.86rem;
+        line-height: 1.45;
+      }
+      @media (max-width: 640px) {
+        .command-safety-group-reason-v293 {
+          font-size: 0.84rem;
+        }
+      }
+
 `;
     document.head.appendChild(style);
   }
@@ -2177,7 +2203,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v292_a1 --expe
 
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V292";
+      version.textContent = "V293";
     }
 
     const analyzeBtn = getCommandElV277("analyzeCommandBtn");
@@ -2196,7 +2222,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v292_a1 --expe
   function refreshCommandExplainerV277() {
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V292";
+      version.textContent = "V293";
     }
   }
 
@@ -2229,6 +2255,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v292_a1 --expe
     bindSafetyChecklistCopyV290: bindCommandSafetyChecklistCopyV290,
     classifyDangerStepV291: classifyDangerChecklistStepV291,
     getSafetyGroupsV292: getCommandSafetyGroupsV292,
+    getSafetyGroupMetaV293: getCommandSafetyGroupMetaV292,
     isDangerRawCommandV286: isDangerRawCommandV286,
     analyzePowerShellV277: analyzePowerShellV277,
     analyzeBashV278: analyzeBashV278,
