@@ -12,9 +12,10 @@
 // COMMAND_EXPLAINER_SAMPLE_DESCRIPTION_V289_A1
 // COMMAND_EXPLAINER_SAFETY_CHECKLIST_V290_A1
 // COMMAND_EXPLAINER_DANGER_PRECISION_V291_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V291_A1 20260611_v291_a1
+// COMMAND_EXPLAINER_SAFETY_GROUPED_UI_V292_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V292_A1 20260611_v292_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v291_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v292_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -89,7 +90,7 @@ git status --short`
 .\\.venv\\Scripts\\Activate.ps1
 python --version
 pip install -r requirements.txt
-python tools\\validate_lessons.py --expected-app-version 20260611_v291_a1 --expected-lesson-cards 1785`
+python tools\\validate_lessons.py --expected-app-version 20260611_v292_a1 --expected-lesson-cards 1785`
     },
     verify_commit_flow: {
       label: "검증/커밋 루틴",
@@ -126,7 +127,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 python3 --version
 pip install -r requirements.txt
-python3 tools/validate_lessons.py --expected-app-version 20260611_v291_a1 --expected-lesson-cards 1785`
+python3 tools/validate_lessons.py --expected-app-version 20260611_v292_a1 --expected-lesson-cards 1785`
     }
   };
 
@@ -1542,6 +1543,112 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v291_a1 --expe
   }
 
 
+  function getCommandSafetyGroupKeyV292(command) {
+    const text = String(command || "").trim();
+
+    if (!text) {
+      return "common";
+    }
+
+    if (
+      text === "whoami" ||
+      text === "groups" ||
+      text === "sudo -l"
+    ) {
+      return "permission";
+    }
+
+    if (
+      text.indexOf("backup/before-reset") >= 0 ||
+      text.indexOf("$backupBranch") >= 0 ||
+      text.indexOf("backup_branch") >= 0 ||
+      text === "git branch $backupBranch" ||
+      text === 'git branch "$backup_branch"' ||
+      text.indexOf('git branch --list "backup/before-reset-*"') >= 0 ||
+      text.indexOf("git log --oneline") === 0
+    ) {
+      return "git_recovery";
+    }
+
+    if (
+      text.indexOf("Test-Path") === 0 ||
+      text.indexOf("Get-Item") === 0 ||
+      text.indexOf("Get-ChildItem") === 0 ||
+      text.indexOf("Measure-Object") >= 0 ||
+      text.indexOf("test -e") === 0 ||
+      text.indexOf("ls -la") === 0 ||
+      text.indexOf("find ") === 0 ||
+      text.indexOf("du -sh") === 0 ||
+      text.indexOf("git clean") === 0
+    ) {
+      return "delete";
+    }
+
+    return "common";
+  }
+
+  function getCommandSafetyGroupMetaV292(key) {
+    const meta = {
+      common: {
+        title: "공통 확인",
+        description: "현재 위치, 브랜치, Git 변경 상태를 먼저 확인합니다."
+      },
+      delete: {
+        title: "삭제 계열",
+        description: "파일이나 폴더가 실제로 무엇인지, 몇 개인지, 얼마나 큰지 확인합니다."
+      },
+      git_recovery: {
+        title: "Git 복구 계열",
+        description: "되돌리기 전에 최근 커밋과 백업 브랜치를 확인합니다."
+      },
+      permission: {
+        title: "권한 계열",
+        description: "관리자 권한 실행 전 현재 사용자와 권한 범위를 확인합니다."
+      }
+    };
+
+    return meta[key] || meta.common;
+  }
+
+  function getCommandSafetyGroupsV292(checklist) {
+    const order = ["common", "delete", "git_recovery", "permission"];
+    const grouped = {
+      common: [],
+      delete: [],
+      git_recovery: [],
+      permission: []
+    };
+
+    (checklist.commands || []).forEach(function(command) {
+      const key = getCommandSafetyGroupKeyV292(command);
+      grouped[key].push(command);
+    });
+
+    return order.map(function(key) {
+      const meta = getCommandSafetyGroupMetaV292(key);
+      return {
+        key: key,
+        title: meta.title,
+        description: meta.description,
+        commands: grouped[key]
+      };
+    }).filter(function(group) {
+      return group.commands.length > 0;
+    });
+  }
+
+  function renderCommandSafetyGroupV292(group) {
+    return (
+      '<section class="command-safety-group-v292 command-safety-group-' + escapeHtmlV277(group.key) + '-v292">' +
+        '<div class="command-safety-group-head-v292">' +
+          '<strong>' + escapeHtmlV277(group.title) + '</strong>' +
+          '<span>' + escapeHtmlV277(group.description) + '</span>' +
+        '</div>' +
+        '<pre class="code-block small-code command-safety-group-code-v292">' + escapeHtmlV277(group.commands.join("\n")) + '</pre>' +
+      '</section>'
+    );
+  }
+
   function renderCommandSafetyChecklistV290(result) {
     const checklist = buildCommandSafetyChecklistV290(result);
 
@@ -1550,6 +1657,8 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v291_a1 --expe
     }
 
     const shellLabel = checklist.shell === "bash" ? "Bash/Shell" : "PowerShell";
+    const groups = getCommandSafetyGroupsV292(checklist);
+    const groupHtml = groups.map(renderCommandSafetyGroupV292).join("");
     const noteHtml = checklist.notes.length
       ? '<ul class="command-safety-notes-v290">' + checklist.notes.map(function(note) {
           return '<li>' + escapeHtmlV277(note) + '</li>';
@@ -1557,20 +1666,25 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v291_a1 --expe
       : "";
 
     return (
-      '<details class="command-safety-checklist-v290" open>' +
+      '<details class="command-safety-checklist-v290 command-safety-checklist-grouped-v292" open>' +
         '<summary>' +
           '<span class="command-safety-title-v290">복사 가능한 안전 실행 체크리스트</span>' +
           '<span class="badge command-safety-shell-v290">' + escapeHtmlV277(shellLabel) + '</span>' +
+          '<span class="badge command-safety-group-count-v292">' + groups.length + '개 그룹</span>' +
         '</summary>' +
         '<div class="command-safety-body-v290">' +
-          '<p>위험 명령을 실행하기 전에 아래 확인 명령만 먼저 실행해 보세요.</p>' +
-          '<button type="button" class="mini-btn command-safety-copy-btn-v290" data-command-safety-copy-v290>체크리스트 복사</button>' +
-          '<pre class="code-block small-code command-safety-code-v290">' + escapeHtmlV277(checklist.commandText) + '</pre>' +
+          '<p>위험 명령을 실행하기 전에 아래 확인 명령만 먼저 실행해 보세요. 그룹별로 확인하면 실수 가능성을 줄일 수 있습니다.</p>' +
+          '<button type="button" class="mini-btn command-safety-copy-btn-v290" data-command-safety-copy-v290>전체 체크리스트 복사</button>' +
+          '<pre hidden class="code-block small-code command-safety-code-v290 command-safety-copy-source-v292">' + escapeHtmlV277(checklist.commandText) + '</pre>' +
+          '<div class="command-safety-groups-v292">' +
+            groupHtml +
+          '</div>' +
           noteHtml +
         '</div>' +
       '</details>'
     );
   }
+
 
   function copyTextToClipboardV290(text, button) {
     const value = String(text || "");
@@ -2008,7 +2122,53 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v291_a1 --expe
           width: 100%;
         }
       }
-    `;
+
+      .command-safety-group-count-v292 {
+        background: rgba(15, 23, 42, 0.08);
+        color: #334155;
+      }
+      .command-safety-groups-v292 {
+        display: grid;
+        gap: 10px;
+        margin-top: 8px;
+      }
+      .command-safety-group-v292 {
+        border-radius: 12px;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        background: rgba(255, 255, 255, 0.72);
+        overflow: hidden;
+      }
+      .command-safety-group-head-v292 {
+        display: grid;
+        gap: 3px;
+        padding: 10px 10px 0 10px;
+      }
+      .command-safety-group-head-v292 strong {
+        color: #78350f;
+        font-size: 0.96rem;
+      }
+      .command-safety-group-head-v292 span {
+        color: #64748b;
+        font-size: 0.88rem;
+        line-height: 1.45;
+      }
+      .command-safety-group-code-v292 {
+        margin: 8px 10px 10px 10px;
+        white-space: pre-wrap;
+      }
+      @media (max-width: 640px) {
+        .command-safety-groups-v292 {
+          gap: 8px;
+        }
+        .command-safety-group-head-v292 {
+          padding: 9px 9px 0 9px;
+        }
+        .command-safety-group-code-v292 {
+          margin: 8px 9px 9px 9px;
+        }
+      }
+
+`;
     document.head.appendChild(style);
   }
 
@@ -2017,7 +2177,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v291_a1 --expe
 
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V291";
+      version.textContent = "V292";
     }
 
     const analyzeBtn = getCommandElV277("analyzeCommandBtn");
@@ -2036,7 +2196,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v291_a1 --expe
   function refreshCommandExplainerV277() {
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V291";
+      version.textContent = "V292";
     }
   }
 
@@ -2068,6 +2228,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v291_a1 --expe
     renderSafetyChecklistV290: renderCommandSafetyChecklistV290,
     bindSafetyChecklistCopyV290: bindCommandSafetyChecklistCopyV290,
     classifyDangerStepV291: classifyDangerChecklistStepV291,
+    getSafetyGroupsV292: getCommandSafetyGroupsV292,
     isDangerRawCommandV286: isDangerRawCommandV286,
     analyzePowerShellV277: analyzePowerShellV277,
     analyzeBashV278: analyzeBashV278,
