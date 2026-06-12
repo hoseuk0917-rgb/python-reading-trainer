@@ -14,9 +14,10 @@
 // COMMAND_EXPLAINER_DANGER_PRECISION_V291_A1
 // COMMAND_EXPLAINER_SAFETY_GROUPED_UI_V292_A1
 // COMMAND_EXPLAINER_SAFETY_GROUP_REASON_V293_A1
-// COMMAND_EXPLAINER_VERSION_TEXT_V293_A1 20260611_v293_a1
+// COMMAND_EXPLAINER_SAMPLE_SAFETY_GROUP_HINT_V294_A1
+// COMMAND_EXPLAINER_VERSION_TEXT_V294_A1 20260611_v294_a1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v293_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260611_v294_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -91,7 +92,7 @@ git status --short`
 .\\.venv\\Scripts\\Activate.ps1
 python --version
 pip install -r requirements.txt
-python tools\\validate_lessons.py --expected-app-version 20260611_v293_a1 --expected-lesson-cards 1785`
+python tools\\validate_lessons.py --expected-app-version 20260611_v294_a1 --expected-lesson-cards 1785`
     },
     verify_commit_flow: {
       label: "검증/커밋 루틴",
@@ -128,7 +129,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 python3 --version
 pip install -r requirements.txt
-python3 tools/validate_lessons.py --expected-app-version 20260611_v293_a1 --expected-lesson-cards 1785`
+python3 tools/validate_lessons.py --expected-app-version 20260611_v294_a1 --expected-lesson-cards 1785`
     }
   };
 
@@ -159,9 +160,56 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v293_a1 --expe
   }
 
 
+  function buildCommandSampleSafetyGroupsV294(sample) {
+    const item = sample || getCommandSampleV288("auto_by_shell", "powershell");
+
+    if (!item || !item.source) {
+      return [];
+    }
+
+    try {
+      const shell = item.shell === "bash" ? "bash" : "powershell";
+      const rawResult = shell === "bash"
+        ? analyzeBashV278(item.source)
+        : analyzePowerShellV277(item.source);
+      const beginnerResult = enhanceCommandResultForBeginnersV281(rawResult);
+      const flowResult = enhanceCommandResultGitFlowWordingV282(beginnerResult);
+      const checklist = buildCommandSafetyChecklistV290(flowResult);
+
+      if (!checklist || !checklist.commands || !checklist.commands.length) {
+        return [];
+      }
+
+      return getCommandSafetyGroupsV292(checklist);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function renderCommandSampleSafetyGroupsV294(sample) {
+    const groups = buildCommandSampleSafetyGroupsV294(sample);
+
+    if (!groups.length) {
+      return "";
+    }
+
+    return (
+      '<div class="command-sample-safety-groups-v294">' +
+        '<div class="command-sample-safety-title-v294">이 예제에서 뜨는 안전 체크 그룹</div>' +
+        '<div class="command-sample-safety-badges-v294">' +
+          groups.map(function(group) {
+            return '<span class="badge command-sample-safety-badge-v294">' + escapeHtmlV277(group.title) + '</span>';
+          }).join("") +
+        '</div>' +
+        '<div class="command-sample-safety-hint-v294">예제를 불러오면 분석 결과 위쪽에 이 그룹들이 먼저 표시됩니다.</div>' +
+      '</div>'
+    );
+  }
+
   function renderCommandSampleDescriptionV289(sample) {
     const item = sample || getCommandSampleV288("auto_by_shell", "powershell");
     const shellLabel = item.shell === "bash" ? "Bash/Shell" : "PowerShell";
+    const safetyGroupsHtml = renderCommandSampleSafetyGroupsV294(item);
 
     return (
       '<div class="command-sample-description-title-v289">' +
@@ -170,9 +218,11 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v293_a1 --expe
       '</div>' +
       '<div class="command-sample-description-text-v289">' +
         escapeHtmlV277(item.description || "선택한 예제의 명령 흐름을 연습합니다.") +
-      '</div>'
+      '</div>' +
+      safetyGroupsHtml
     );
   }
+
 
   function updateCommandSampleDescriptionV289(sampleId) {
     const box = getCommandElV277("commandSampleDescription");
@@ -2194,6 +2244,42 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v293_a1 --expe
         }
       }
 
+      .command-sample-safety-groups-v294 {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: rgba(255, 251, 235, 0.86);
+        border: 1px solid rgba(245, 158, 11, 0.24);
+      }
+      .command-sample-safety-title-v294 {
+        font-weight: 900;
+        color: #92400e;
+        margin-bottom: 6px;
+      }
+      .command-sample-safety-badges-v294 {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 6px;
+      }
+      .command-sample-safety-badge-v294 {
+        background: rgba(245, 158, 11, 0.15);
+        color: #92400e;
+      }
+      .command-sample-safety-hint-v294 {
+        color: #64748b;
+        font-size: 0.88rem;
+        line-height: 1.45;
+      }
+      @media (max-width: 640px) {
+        .command-sample-safety-groups-v294 {
+          padding: 8px;
+        }
+        .command-sample-safety-badges-v294 {
+          gap: 5px;
+        }
+      }
+
 `;
     document.head.appendChild(style);
   }
@@ -2203,7 +2289,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v293_a1 --expe
 
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V293";
+      version.textContent = "V294";
     }
 
     const analyzeBtn = getCommandElV277("analyzeCommandBtn");
@@ -2222,7 +2308,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v293_a1 --expe
   function refreshCommandExplainerV277() {
     const version = getCommandElV277("commandExplainerVersion");
     if (version) {
-      version.textContent = "V293";
+      version.textContent = "V294";
     }
   }
 
@@ -2256,6 +2342,8 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v293_a1 --expe
     classifyDangerStepV291: classifyDangerChecklistStepV291,
     getSafetyGroupsV292: getCommandSafetyGroupsV292,
     getSafetyGroupMetaV293: getCommandSafetyGroupMetaV292,
+    buildSampleSafetyGroupsV294: buildCommandSampleSafetyGroupsV294,
+    renderSampleSafetyGroupsV294: renderCommandSampleSafetyGroupsV294,
     isDangerRawCommandV286: isDangerRawCommandV286,
     analyzePowerShellV277: analyzePowerShellV277,
     analyzeBashV278: analyzeBashV278,
