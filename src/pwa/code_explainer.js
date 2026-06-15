@@ -2090,6 +2090,436 @@ function enhanceJsQualityHintsV274(items) {
 }
 
 
+// PYTHON_FUNCTION_PRECISION_V302_A1
+const PYTHON_FUNCTION_PRECISION_LIMIT_NOTICE_THRESHOLD_V302 = FUNCTION_IR_MAX_FUNCTIONS_V251;
+
+function appendUniqueStepV302(steps, step) {
+  if (!Array.isArray(steps) || !step) return;
+  if (steps.indexOf(step) >= 0) return;
+  steps.push(step);
+}
+
+function addConceptsV302(ir, concepts) {
+  if (!ir) return;
+  if (!Array.isArray(ir.concepts)) ir.concepts = [];
+  (Array.isArray(concepts) ? concepts : []).forEach(function(concept) {
+    if (concept && ir.concepts.indexOf(concept) < 0) ir.concepts.push(concept);
+  });
+}
+
+function countPythonFunctionHeadersV302(source) {
+  const matches = String(source || "").match(/^\s*(?:async\s+)?def\s+[A-Za-z_]\w*\s*\([^)]*\)\s*(?:->\s*[^:]+)?\s*:/gm);
+  return matches ? matches.length : 0;
+}
+
+function getPythonFunctionKindLabelV302(ir) {
+  if (!ir) return "Python 함수";
+  if (ir.kind === "python_async_method") return "Python async 메서드";
+  if (ir.kind === "python_method") return "Python 클래스 메서드";
+  if (ir.kind === "python_async_function") return "Python async 함수";
+  return "Python 함수";
+}
+
+const extractPythonFunctionBlocksV251BaseV302 = extractPythonFunctionBlocksV251;
+
+extractPythonFunctionBlocksV251 = function(source) {
+  const lines = String(source || "").split(/\r?\n/);
+  const blocks = [];
+  let classStack = [];
+  let pendingDecorators = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const trimmed = raw.trim();
+    const indent = pythonIndentLengthV251(raw);
+    let match;
+
+    if (trimmed) {
+      classStack = classStack.filter(function(item) {
+        return indent > item.indent;
+      });
+    }
+
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+
+    match = trimmed.match(/^@[A-Za-z_][\w.]*\b.*$/);
+    if (match) {
+      pendingDecorators.push({
+        lineNo: i + 1,
+        indent: indent,
+        text: trimmed
+      });
+      continue;
+    }
+
+    match = trimmed.match(/^class\s+([A-Za-z_]\w*)\s*(?:\(([^)]*)\))?\s*:/);
+    if (match) {
+      classStack.push({
+        name: match[1],
+        base: match[2] || "",
+        lineNo: i + 1,
+        indent: indent
+      });
+      pendingDecorators = [];
+      continue;
+    }
+
+    match = raw.match(/^(\s*)(async\s+def|def)\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*(?:->\s*([^:]+))?\s*:/);
+    if (!match) {
+      pendingDecorators = [];
+      continue;
+    }
+
+    const defIndent = match[1].length;
+    const defType = match[2];
+    const isAsync = defType.indexOf("async") >= 0;
+    const enclosingClass = classStack.slice().reverse().find(function(item) {
+      return defIndent > item.indent;
+    }) || null;
+    const decorators = pendingDecorators
+      .filter(function(item) { return item.indent === defIndent; })
+      .map(function(item) { return item.text; });
+
+    pendingDecorators = [];
+
+    const body = [];
+    for (let j = i + 1; j < lines.length; j++) {
+      const bodyLine = lines[j];
+      if (bodyLine.trim() && pythonIndentLengthV251(bodyLine) <= defIndent) break;
+      body.push({
+        lineNo: j + 1,
+        raw: bodyLine,
+        text: stripPythonCommentV251(bodyLine)
+      });
+    }
+
+    const name = match[3];
+    const className = enclosingClass ? enclosingClass.name : "";
+    const kind = className
+      ? (isAsync ? "python_async_method" : "python_method")
+      : (isAsync ? "python_async_function" : "python_function");
+
+    blocks.push({
+      kind: kind,
+      name: name,
+      qualifiedName: className ? className + "." + name : name,
+      className: className,
+      isAsync: isAsync,
+      detail: defType,
+      lineNo: i + 1,
+      params: splitFunctionParamsV251(match[4]),
+      returnAnnotation: String(match[5] || "").trim(),
+      decorators: decorators,
+      bodyLineCount: body.filter(function(item) { return item.text; }).length,
+      body: body
+    });
+
+    if (blocks.length >= FUNCTION_IR_MAX_FUNCTIONS_V251) break;
+  }
+
+  return blocks;
+};
+
+const detectPythonFunctionSignalsV252BaseV302 = detectPythonFunctionSignalsV252;
+
+detectPythonFunctionSignalsV252 = function(source, ir) {
+  const signals = detectPythonFunctionSignalsV252BaseV302(source, ir) || {};
+  const block = getPythonFunctionBodyForIrV252(source, ir);
+  const body = block && Array.isArray(block.body) ? block.body : [];
+
+  signals.decorators = block && Array.isArray(block.decorators) ? block.decorators : [];
+  signals.classContext = block && block.className ? {
+    name: block.className,
+    qualifiedName: block.qualifiedName || block.name
+  } : null;
+  signals.returnAnnotation = block && block.returnAnnotation ? block.returnAnnotation : "";
+  signals.isAsync = !!(block && block.isAsync);
+  signals.bodyLineCount = block && block.bodyLineCount ? block.bodyLineCount : body.length;
+  signals.awaitOps = [];
+  signals.raises = [];
+  signals.whileLoops = [];
+  signals.comprehensions = [];
+  signals.branchClosers = [];
+  signals.yields = [];
+
+  body.forEach(function(item) {
+    const line = item.text;
+    let match;
+
+    if (!line) return;
+
+    match = line.match(/^while\s+(.+):$/);
+    if (match) {
+      signals.whileLoops.push({
+        lineNo: item.lineNo,
+        condition: match[1],
+        summary: match[1] + " 조건이 참인 동안 반복합니다."
+      });
+    }
+
+    match = line.match(/^raise\s+(.+)$/);
+    if (match) {
+      signals.raises.push({
+        lineNo: item.lineNo,
+        expr: match[1],
+        summary: match[1] + " 예외를 발생시킬 수 있습니다."
+      });
+    }
+
+    if (/\bawait\s+/.test(line)) {
+      signals.awaitOps.push({
+        lineNo: item.lineNo,
+        code: line,
+        summary: "await로 비동기 작업이 끝날 때까지 기다립니다."
+      });
+    }
+
+    if (/\[[^\]]+\bfor\b[^\]]+\]|\{[^}]+\bfor\b[^}]+\}|\([^)]*\bfor\b[^)]*\)/.test(line)) {
+      signals.comprehensions.push({
+        lineNo: item.lineNo,
+        code: line,
+        summary: "컴프리헨션으로 반복과 생성/필터링을 한 줄에 압축했습니다."
+      });
+    }
+
+    if (/^else\s*:$/.test(line)) {
+      signals.branchClosers.push({
+        lineNo: item.lineNo,
+        kind: "else",
+        summary: "앞 조건이 거짓일 때 실행되는 else 흐름입니다."
+      });
+    }
+
+    if (/^finally\s*:$/.test(line)) {
+      signals.branchClosers.push({
+        lineNo: item.lineNo,
+        kind: "finally",
+        summary: "성공/실패와 관계없이 마지막에 실행되는 finally 흐름입니다."
+      });
+    }
+
+    match = line.match(/^yield\s+(.+)$/);
+    if (match) {
+      signals.yields.push({
+        lineNo: item.lineNo,
+        expr: match[1],
+        summary: match[1] + " 값을 하나씩 내보내는 generator 흐름입니다."
+      });
+    }
+  });
+
+  return signals;
+};
+
+function buildPythonFunctionMermaidV302(ir) {
+  const signals = ir && ir.signals ? ir.signals : {};
+  const lines = ["flowchart TD"];
+  const title = mermaidSafeTextV251((signals.classContext && signals.classContext.qualifiedName) || ir.qualifiedNameV302 || ir.name || "Python 함수");
+
+  lines.push('  A["' + title + ' 시작"]');
+
+  let previous = "A";
+  let index = 0;
+
+  function addBox(prefix, text) {
+    const id = prefix + index++;
+    lines.push('  ' + previous + ' --> ' + id + '["' + mermaidSafeTextV251(text) + '"]');
+    previous = id;
+  }
+
+  function addDiamond(prefix, text) {
+    const id = prefix + index++;
+    lines.push('  ' + previous + ' --> ' + id + '{"' + mermaidSafeTextV251(text) + '"}');
+    previous = id;
+  }
+
+  if (signals.classContext && signals.classContext.name) {
+    addBox("CLS", signals.classContext.name + " 클래스 안의 메서드");
+  }
+
+  if (Array.isArray(signals.decorators) && signals.decorators.length) {
+    addBox("D", "데코레이터: " + signals.decorators.slice(0, 2).join(", "));
+  }
+
+  if (signals.isAsync) {
+    addBox("AS", "async 함수로 비동기 흐름 준비");
+  }
+
+  if (Array.isArray(ir.params) && ir.params.length) {
+    addBox("P", "입력값: " + ir.params.slice(0, 5).join(", "));
+  }
+
+  if (Array.isArray(ir.loops)) {
+    ir.loops.slice(0, 2).forEach(function(loop) {
+      addBox("L", "for 반복: " + loop.summary);
+    });
+  }
+
+  if (Array.isArray(signals.whileLoops)) {
+    signals.whileLoops.slice(0, 2).forEach(function(loop) {
+      addDiamond("W", "while: " + loop.condition);
+    });
+  }
+
+  if (Array.isArray(ir.conditions)) {
+    ir.conditions.slice(0, 3).forEach(function(condition) {
+      addDiamond("C", "if: " + condition.condition);
+    });
+  }
+
+  if (Array.isArray(signals.comprehensions)) {
+    signals.comprehensions.slice(0, 2).forEach(function(item) {
+      addBox("CMP", item.summary);
+    });
+  }
+
+  if (Array.isArray(signals.awaitOps)) {
+    signals.awaitOps.slice(0, 2).forEach(function(item) {
+      addBox("AW", item.summary);
+    });
+  }
+
+  if (Array.isArray(signals.errorHandlers) && signals.errorHandlers.length) {
+    addBox("E", "try/except 예외 처리 흐름");
+  }
+
+  if (Array.isArray(ir.calls)) {
+    ir.calls.slice(0, 4).forEach(function(call) {
+      addBox("K", "호출: " + call.name);
+    });
+  }
+
+  if (Array.isArray(signals.raises) && signals.raises.length) {
+    addBox("RA", "예외 발생 가능: " + signals.raises[0].expr);
+  }
+
+  if (Array.isArray(ir.returns) && ir.returns.length) {
+    addBox("R", "반환: " + ir.returns[0]);
+  } else if (Array.isArray(signals.yields) && signals.yields.length) {
+    addBox("Y", "yield: " + signals.yields[0].expr);
+  } else {
+    addBox("Z", "완료");
+  }
+
+  return lines.join("\n");
+}
+
+buildPythonFunctionMermaidV251 = buildPythonFunctionMermaidV302;
+
+const enhancePythonFunctionInterpretationsV252BaseV302 = enhancePythonFunctionInterpretationsV252;
+
+enhancePythonFunctionInterpretationsV252 = function(source, items) {
+  const totalFunctionHeaders = countPythonFunctionHeadersV302(source);
+  const enhanced = enhancePythonFunctionInterpretationsV252BaseV302(source, items);
+
+  return (Array.isArray(enhanced) ? enhanced : []).map(function(ir, idx) {
+    const signals = ir && ir.signals ? ir.signals : {};
+    const addedConcepts = [];
+
+    if (!ir) return ir;
+
+    ir.qualifiedNameV302 = (signals.classContext && signals.classContext.qualifiedName) || ir.name;
+    ir.functionKindLabelV302 = getPythonFunctionKindLabelV302(ir);
+
+    appendUniqueStepV302(ir.steps, "함수 형태: " + ir.functionKindLabelV302 + "입니다.");
+
+    if (signals.classContext && signals.classContext.name) {
+      appendUniqueStepV302(ir.steps, signals.classContext.name + " 클래스 안에 들어 있는 메서드입니다.");
+      addedConcepts.push("class_method");
+    }
+
+    if (Array.isArray(signals.decorators) && signals.decorators.length) {
+      appendUniqueStepV302(ir.steps, "데코레이터 " + signals.decorators.slice(0, 3).join(", ") + "가 함수 동작을 감싸거나 등록합니다.");
+      addedConcepts.push("decorator");
+    }
+
+    if (signals.returnAnnotation) {
+      appendUniqueStepV302(ir.steps, "반환 타입 힌트는 " + signals.returnAnnotation + " 입니다.");
+      addedConcepts.push("return_annotation", "type_hint");
+    }
+
+    if (signals.isAsync) {
+      appendUniqueStepV302(ir.steps, "async 함수라서 await와 함께 비동기 작업을 다룰 수 있습니다.");
+      addedConcepts.push("async");
+    }
+
+    (Array.isArray(signals.awaitOps) ? signals.awaitOps : []).slice(0, 3).forEach(function(item) {
+      appendUniqueStepV302(ir.steps, item.summary);
+      addedConcepts.push("await");
+    });
+
+    (Array.isArray(signals.whileLoops) ? signals.whileLoops : []).slice(0, 3).forEach(function(item) {
+      appendUniqueStepV302(ir.steps, item.summary);
+      addedConcepts.push("while");
+    });
+
+    (Array.isArray(signals.raises) ? signals.raises : []).slice(0, 3).forEach(function(item) {
+      appendUniqueStepV302(ir.steps, item.summary);
+      addedConcepts.push("raise");
+    });
+
+    (Array.isArray(signals.comprehensions) ? signals.comprehensions : []).slice(0, 3).forEach(function(item) {
+      appendUniqueStepV302(ir.steps, item.summary);
+      addedConcepts.push("comprehension");
+    });
+
+    (Array.isArray(signals.branchClosers) ? signals.branchClosers : []).slice(0, 3).forEach(function(item) {
+      appendUniqueStepV302(ir.steps, item.summary);
+      addedConcepts.push(item.kind);
+    });
+
+    (Array.isArray(signals.yields) ? signals.yields : []).slice(0, 2).forEach(function(item) {
+      appendUniqueStepV302(ir.steps, item.summary);
+      addedConcepts.push("yield", "generator");
+    });
+
+    if (totalFunctionHeaders > PYTHON_FUNCTION_PRECISION_LIMIT_NOTICE_THRESHOLD_V302 && idx === 0) {
+      appendUniqueStepV302(
+        ir.steps,
+        "정밀도 안내: 이 코드에는 함수/메서드가 " + totalFunctionHeaders + "개 이상 보입니다. 화면 성능을 위해 앞 " + FUNCTION_IR_MAX_FUNCTIONS_V251 + "개 중심으로 정밀 해석합니다."
+      );
+      addedConcepts.push("analysis_limit");
+    }
+
+    if (signals.isAsync && Array.isArray(signals.awaitOps) && signals.awaitOps.length) {
+      ir.roleSummary = "async/await로 외부 작업이 끝나기를 기다린 뒤 결과를 처리하는 비동기 Python 함수로 보입니다.";
+    } else if (signals.classContext && signals.classContext.name && Array.isArray(signals.raises) && signals.raises.length) {
+      ir.roleSummary = signals.classContext.name + " 클래스 안에서 조건을 검사하고 필요하면 예외를 발생시키는 검증 메서드로 보입니다.";
+    } else if (signals.classContext && signals.classContext.name) {
+      ir.roleSummary = signals.classContext.name + " 클래스 안에서 객체의 동작을 담당하는 메서드로 보입니다.";
+    } else if (Array.isArray(signals.comprehensions) && signals.comprehensions.length && Array.isArray(ir.returns) && ir.returns.length) {
+      ir.roleSummary = "컴프리헨션으로 데이터를 빠르게 만들거나 걸러낸 뒤 결과를 반환하는 함수로 보입니다.";
+    } else if (Array.isArray(signals.raises) && signals.raises.length) {
+      ir.roleSummary = "조건을 검사하고 문제가 있으면 예외를 발생시키는 방어적 검증 함수로 보입니다.";
+    }
+
+    addConceptsV302(ir, addedConcepts);
+    ir.concepts = Array.from(new Set(Array.isArray(ir.concepts) ? ir.concepts : [])).sort();
+    ir.mermaid = buildPythonFunctionMermaidV302(ir);
+
+    ir.precisionV302 = {
+      kind: ir.kind,
+      kindLabel: ir.functionKindLabelV302,
+      qualifiedName: ir.qualifiedNameV302,
+      totalFunctionHeaders: totalFunctionHeaders,
+      bodyLineCount: signals.bodyLineCount || 0,
+      detected: {
+        decorators: Array.isArray(signals.decorators) ? signals.decorators.length : 0,
+        awaitOps: Array.isArray(signals.awaitOps) ? signals.awaitOps.length : 0,
+        raises: Array.isArray(signals.raises) ? signals.raises.length : 0,
+        whileLoops: Array.isArray(signals.whileLoops) ? signals.whileLoops.length : 0,
+        comprehensions: Array.isArray(signals.comprehensions) ? signals.comprehensions.length : 0,
+        yields: Array.isArray(signals.yields) ? signals.yields.length : 0
+      }
+    };
+
+    return ir;
+  });
+};
+
+
 function buildFunctionInterpretationsV251(source, language) {
   if (language === "python") {
     const base = buildPythonFunctionInterpretationsV251(source, language);
