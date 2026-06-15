@@ -2520,6 +2520,441 @@ enhancePythonFunctionInterpretationsV252 = function(source, items) {
 };
 
 
+// JAVASCRIPT_EVENT_ASYNC_PRECISION_V303_A1
+const JS_EVENT_ASYNC_PRECISION_LIMIT_NOTICE_THRESHOLD_V303 = FUNCTION_IR_MAX_FUNCTIONS_V251;
+
+function appendUniqueJsStepV303(steps, step) {
+  if (!Array.isArray(steps) || !step) return;
+  if (steps.indexOf(step) >= 0) return;
+  steps.push(step);
+}
+
+function addJsConceptsV303(ir, concepts) {
+  if (!ir) return;
+  if (!Array.isArray(ir.concepts)) ir.concepts = [];
+  (Array.isArray(concepts) ? concepts : []).forEach(function(concept) {
+    if (concept && ir.concepts.indexOf(concept) < 0) ir.concepts.push(concept);
+  });
+}
+
+function countJsFunctionHeadersV303(source) {
+  const text = String(source || "");
+  const patterns = [
+    /\b(?:async\s+)?function\s+[A-Za-z_$][\w$]*\s*\(/g,
+    /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>/g,
+    /\.addEventListener\s*\(\s*["'][^"']+["']\s*,\s*(?:async\s+)?(?:function\s*\(|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/g,
+    /\.on[a-z]+\s*=\s*(?:async\s+)?(?:function\s*\(|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/g
+  ];
+
+  return patterns.reduce(function(total, pattern) {
+    const matches = text.match(pattern);
+    return total + (matches ? matches.length : 0);
+  }, 0);
+}
+
+function sanitizeJsEventHandlerNameV303(target, eventName) {
+  const base = String(target || "element")
+    .replace(/^document\./, "")
+    .replace(/[^A-Za-z0-9_$]+/g, "_")
+    .replace(/^_+|_+$/g, "") || "element";
+  const event = String(eventName || "event").replace(/[^A-Za-z0-9_$]+/g, "_") || "event";
+  return base + "_" + event + "_handler";
+}
+
+function normalizeJsEventParamsV303(paramsRaw) {
+  const params = normalizeJsParamsV256(paramsRaw || "");
+  return params.length ? params : ["event"];
+}
+
+function buildJsEventCallbackBlockV303(source, match, target, eventName, paramsRaw, kind) {
+  const block = buildJsBlockFromMatchV257(source, match, kind, sanitizeJsEventHandlerNameV303(target, eventName), paramsRaw || "");
+  if (!block) return null;
+
+  block.eventTarget = target || "";
+  block.eventName = eventName || "";
+  block.params = normalizeJsEventParamsV303(paramsRaw);
+  block.isEventCallbackV303 = true;
+  block.kind = kind;
+  block.name = sanitizeJsEventHandlerNameV303(target, eventName);
+
+  return block;
+}
+
+function extractJsEventCallbackBlocksV303(source) {
+  const text = String(source || "");
+  const blocks = [];
+  let match;
+
+  const addEventRegex = /([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?)\.addEventListener\s*\(\s*["']([^"']+)["']\s*,\s*(?:async\s+)?(?:function\s*\(([^)]*)\)|\(([^)]*)\)\s*=>|([A-Za-z_$][\w$]*)\s*=>)\s*\{/g;
+  while ((match = addEventRegex.exec(text))) {
+    const block = buildJsEventCallbackBlockV303(
+      text,
+      match,
+      match[1],
+      match[2],
+      match[3] || match[4] || match[5] || "event",
+      "event_listener_callback"
+    );
+    if (block) blocks.push(block);
+  }
+
+  const onHandlerRegex = /([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?)\.on([a-z]+)\s*=\s*(?:async\s+)?(?:function\s*\(([^)]*)\)|\(([^)]*)\)\s*=>|([A-Za-z_$][\w$]*)\s*=>)\s*\{/g;
+  while ((match = onHandlerRegex.exec(text))) {
+    const block = buildJsEventCallbackBlockV303(
+      text,
+      match,
+      match[1],
+      match[2],
+      match[3] || match[4] || match[5] || "event",
+      "dom_property_event_callback"
+    );
+    if (block) blocks.push(block);
+  }
+
+  return blocks;
+}
+
+const extractJsFunctionBlocksV257BaseV303 = extractJsFunctionBlocksV257;
+
+extractJsFunctionBlocksV257 = function(source) {
+  const base = extractJsFunctionBlocksV257BaseV303(source);
+  const events = extractJsEventCallbackBlocksV303(source);
+  return dedupeJsBlocksV257(base.concat(events));
+};
+
+const detectJsFunctionSignalsV257BaseV303 = detectJsFunctionSignalsV257;
+
+detectJsFunctionSignalsV257 = function(source, ir) {
+  const signals = detectJsFunctionSignalsV257BaseV303(source, ir) || {};
+  const block = getJsFunctionBodyForIrV257(source, ir);
+  const body = block && Array.isArray(block.body) ? block.body : [];
+  const header = String(block && block.header || "");
+
+  signals.isAsync = !!(signals.isAsync || /async\s+/.test(header) || /\bawait\s+/.test(body.map(function(item) { return item.text; }).join("\n")));
+  signals.isEventHandler = !!(block && block.isEventCallbackV303);
+  signals.eventTarget = block && block.eventTarget ? block.eventTarget : "";
+  signals.eventName = block && block.eventName ? block.eventName : "";
+  signals.eventBindings = Array.isArray(signals.eventBindings) ? signals.eventBindings : [];
+  signals.domQueries = [];
+  signals.domWrites = [];
+  signals.storageOps = [];
+  signals.timerOps = [];
+  signals.eventObjectOps = [];
+  signals.promiseFinally = [];
+  signals.promiseFactories = [];
+  signals.jsonOps = [];
+  signals.bodyLineCount = body.length;
+
+  body.forEach(function(item) {
+    const line = item.text;
+    let match;
+
+    if (!line) return;
+
+    match = line.match(/([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?)\.addEventListener\s*\(\s*["']([^"']+)["']/);
+    if (match) {
+      signals.eventBindings.push({
+        lineNo: item.lineNo,
+        target: match[1],
+        eventName: match[2],
+        summary: match[1] + " 요소에 " + match[2] + " 이벤트를 연결합니다."
+      });
+    }
+
+    match = line.match(/([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?)\.on([a-z]+)\s*=/);
+    if (match) {
+      signals.eventBindings.push({
+        lineNo: item.lineNo,
+        target: match[1],
+        eventName: match[2],
+        summary: match[1] + ".on" + match[2] + " 이벤트 핸들러를 직접 연결합니다."
+      });
+    }
+
+    match = line.match(/(?:document\.)?(querySelector|querySelectorAll|getElementById|getElementsByClassName|getElementsByTagName)\s*\(([^)]*)\)/);
+    if (match) {
+      signals.domQueries.push({
+        lineNo: item.lineNo,
+        api: match[1],
+        selector: match[2],
+        summary: match[1] + "로 화면의 HTML 요소를 찾습니다."
+      });
+    }
+
+    if (/\.(textContent|innerText|innerHTML|value)\s*=/.test(line)) {
+      signals.domWrites.push({
+        lineNo: item.lineNo,
+        code: line,
+        summary: "화면 요소의 텍스트/HTML/값을 변경합니다."
+      });
+    }
+
+    if (/\.classList\.(add|remove|toggle|contains)\s*\(/.test(line)) {
+      signals.domWrites.push({
+        lineNo: item.lineNo,
+        code: line,
+        summary: "classList로 화면 요소의 CSS 클래스를 바꿉니다."
+      });
+    }
+
+    if (/\.style\.[A-Za-z-]+\s*=/.test(line)) {
+      signals.domWrites.push({
+        lineNo: item.lineNo,
+        code: line,
+        summary: "style 속성으로 화면 요소의 인라인 스타일을 바꿉니다."
+      });
+    }
+
+    match = line.match(/\b(localStorage|sessionStorage)\.(getItem|setItem|removeItem|clear)\s*\(/);
+    if (match) {
+      signals.storageOps.push({
+        lineNo: item.lineNo,
+        storage: match[1],
+        op: match[2],
+        summary: match[1] + "." + match[2] + "로 브라우저 저장소를 사용합니다."
+      });
+    }
+
+    if (/\b(setTimeout|setInterval|requestAnimationFrame)\s*\(/.test(line)) {
+      signals.timerOps.push({
+        lineNo: item.lineNo,
+        code: line,
+        summary: "시간 지연/반복 실행 또는 애니메이션 프레임을 예약합니다."
+      });
+    }
+
+    if (/\b(event|e)\.(preventDefault|stopPropagation|target|currentTarget)\b/.test(line)) {
+      signals.eventObjectOps.push({
+        lineNo: item.lineNo,
+        code: line,
+        summary: "이벤트 객체에서 기본 동작, 전파, 발생 대상을 다룹니다."
+      });
+    }
+
+    if (/\.finally\s*\(/.test(line)) {
+      signals.promiseFinally.push({
+        lineNo: item.lineNo,
+        summary: "finally로 Promise 성공/실패와 관계없이 마지막 처리를 실행합니다."
+      });
+    }
+
+    if (/\bPromise\.(all|race|allSettled|any)\s*\(/.test(line)) {
+      signals.promiseFactories.push({
+        lineNo: item.lineNo,
+        code: line,
+        summary: "여러 Promise를 함께 기다리거나 경쟁시키는 Promise 헬퍼를 사용합니다."
+      });
+    }
+
+    if (/\.json\s*\(|JSON\.parse\s*\(|JSON\.stringify\s*\(/.test(line)) {
+      signals.jsonOps.push({
+        lineNo: item.lineNo,
+        code: line,
+        summary: "JSON 데이터를 JavaScript 객체나 문자열로 변환합니다."
+      });
+    }
+  });
+
+  return signals;
+};
+
+function buildJsFunctionMermaidV303(ir) {
+  const signals = ir && ir.signals ? ir.signals : {};
+  const lines = ["flowchart TD"];
+  const title = signals.isEventHandler
+    ? ((signals.eventTarget || "element") + " " + (signals.eventName || "event") + " 이벤트")
+    : (ir.name || "JavaScript 함수");
+
+  lines.push('  A["' + mermaidSafeTextV251(title + " 시작") + '"]');
+
+  let previous = "A";
+  let index = 0;
+
+  function addBox(prefix, text) {
+    const id = prefix + index++;
+    lines.push('  ' + previous + ' --> ' + id + '["' + mermaidSafeTextV251(text) + '"]');
+    previous = id;
+  }
+
+  function addDiamond(prefix, text) {
+    const id = prefix + index++;
+    lines.push('  ' + previous + ' --> ' + id + '{"' + mermaidSafeTextV251(text) + '"}');
+    previous = id;
+  }
+
+  if (signals.isEventHandler) {
+    addBox("EV", (signals.eventTarget || "요소") + "의 " + (signals.eventName || "이벤트") + " 발생");
+  }
+
+  if (signals.isAsync) {
+    addBox("AS", "async/await 비동기 흐름");
+  }
+
+  if (Array.isArray(ir.params) && ir.params.length) {
+    addBox("P", "입력값: " + ir.params.slice(0, 5).join(", "));
+  }
+
+  (Array.isArray(signals.eventBindings) ? signals.eventBindings : []).slice(0, 2).forEach(function(item) {
+    addBox("B", item.target + "에 " + item.eventName + " 이벤트 연결");
+  });
+
+  (Array.isArray(signals.domQueries) ? signals.domQueries : []).slice(0, 2).forEach(function(item) {
+    addBox("DQ", item.summary);
+  });
+
+  (Array.isArray(ir.conditions) ? ir.conditions : []).slice(0, 3).forEach(function(condition) {
+    addDiamond("C", "if: " + condition.expr);
+  });
+
+  (Array.isArray(ir.loops) ? ir.loops : []).slice(0, 2).forEach(function(loop) {
+    addBox("L", "반복: " + loop.summary);
+  });
+
+  (Array.isArray(signals.fetchOps) ? signals.fetchOps : []).slice(0, 2).forEach(function(item) {
+    addBox("F", item.summary);
+  });
+
+  (Array.isArray(signals.awaitOps) ? signals.awaitOps : []).slice(0, 2).forEach(function(item) {
+    addBox("AW", item.summary);
+  });
+
+  (Array.isArray(signals.promiseChains) ? signals.promiseChains : []).slice(0, 2).forEach(function(item) {
+    addBox("PR", item.summary);
+  });
+
+  (Array.isArray(signals.storageOps) ? signals.storageOps : []).slice(0, 2).forEach(function(item) {
+    addBox("ST", item.summary);
+  });
+
+  (Array.isArray(signals.domWrites) ? signals.domWrites : []).slice(0, 3).forEach(function(item) {
+    addBox("DW", item.summary);
+  });
+
+  (Array.isArray(signals.tryCatch) ? signals.tryCatch : []).slice(0, 2).forEach(function(item) {
+    addBox("TC", item.summary);
+  });
+
+  if (Array.isArray(ir.returns) && ir.returns.length) {
+    addBox("R", "반환: " + ir.returns[0].expr);
+  } else {
+    addBox("Z", "완료");
+  }
+
+  return lines.join("\n");
+}
+
+buildJsFunctionMermaidV256 = buildJsFunctionMermaidV303;
+
+const enhanceJsFunctionInterpretationsV257BaseV303 = enhanceJsFunctionInterpretationsV257;
+
+enhanceJsFunctionInterpretationsV257 = function(source, items) {
+  const totalFunctionHeaders = countJsFunctionHeadersV303(source);
+  const enhanced = enhanceJsFunctionInterpretationsV257BaseV303(source, items);
+
+  return (Array.isArray(enhanced) ? enhanced : []).map(function(ir, idx) {
+    const signals = ir && ir.signals ? ir.signals : {};
+    const addedConcepts = [];
+
+    if (!ir) return ir;
+
+    if (signals.isEventHandler) {
+      appendUniqueJsStepV303(
+        ir.steps,
+        (signals.eventTarget || "요소") + "에서 " + (signals.eventName || "이벤트") + "가 발생했을 때 실행되는 이벤트 콜백입니다."
+      );
+      addedConcepts.push("event_handler", "callback", "dom_event");
+      ir.roleSummary = (signals.eventName || "이벤트") + " 이벤트가 발생했을 때 화면 값, 저장소, DOM 변경을 처리하는 UI 이벤트 콜백으로 보입니다.";
+    }
+
+    (Array.isArray(signals.eventBindings) ? signals.eventBindings : []).slice(0, 4).forEach(function(item) {
+      appendUniqueJsStepV303(ir.steps, item.summary);
+      addedConcepts.push("event_listener", "dom_event");
+    });
+
+    (Array.isArray(signals.domQueries) ? signals.domQueries : []).slice(0, 4).forEach(function(item) {
+      appendUniqueJsStepV303(ir.steps, item.summary);
+      addedConcepts.push("dom_query", "dom");
+    });
+
+    (Array.isArray(signals.domWrites) ? signals.domWrites : []).slice(0, 4).forEach(function(item) {
+      appendUniqueJsStepV303(ir.steps, item.summary);
+      addedConcepts.push("dom_write", "dom");
+    });
+
+    (Array.isArray(signals.storageOps) ? signals.storageOps : []).slice(0, 4).forEach(function(item) {
+      appendUniqueJsStepV303(ir.steps, item.summary);
+      addedConcepts.push("browser_storage", item.storage === "sessionStorage" ? "sessionStorage" : "localStorage");
+    });
+
+    (Array.isArray(signals.eventObjectOps) ? signals.eventObjectOps : []).slice(0, 3).forEach(function(item) {
+      appendUniqueJsStepV303(ir.steps, item.summary);
+      addedConcepts.push("event_object");
+    });
+
+    (Array.isArray(signals.promiseFinally) ? signals.promiseFinally : []).slice(0, 2).forEach(function(item) {
+      appendUniqueJsStepV303(ir.steps, item.summary);
+      addedConcepts.push("promise_finally");
+    });
+
+    (Array.isArray(signals.promiseFactories) ? signals.promiseFactories : []).slice(0, 3).forEach(function(item) {
+      appendUniqueJsStepV303(ir.steps, item.summary);
+      addedConcepts.push("promise_helper");
+    });
+
+    (Array.isArray(signals.jsonOps) ? signals.jsonOps : []).slice(0, 3).forEach(function(item) {
+      appendUniqueJsStepV303(ir.steps, item.summary);
+      addedConcepts.push("json");
+    });
+
+    (Array.isArray(signals.timerOps) ? signals.timerOps : []).slice(0, 2).forEach(function(item) {
+      appendUniqueJsStepV303(ir.steps, item.summary);
+      addedConcepts.push("timer");
+    });
+
+    if (!signals.isEventHandler && signals.eventBindings && signals.eventBindings.length) {
+      ir.roleSummary = "DOM 요소에 이벤트 리스너를 연결해 사용자의 클릭/입력 같은 행동을 처리하도록 준비하는 함수로 보입니다.";
+    } else if (!signals.isEventHandler && signals.domQueries && signals.domQueries.length && signals.domWrites && signals.domWrites.length) {
+      ir.roleSummary = "화면 요소를 찾고 내용을 바꿔 브라우저 UI를 갱신하는 DOM 조작 함수로 보입니다.";
+    } else if (!signals.isEventHandler && signals.storageOps && signals.storageOps.length) {
+      ir.roleSummary = "브라우저 저장소를 읽거나 써서 사용자 입력값이나 상태를 보존하는 함수로 보입니다.";
+    }
+
+    if (totalFunctionHeaders > JS_EVENT_ASYNC_PRECISION_LIMIT_NOTICE_THRESHOLD_V303 && idx === 0) {
+      appendUniqueJsStepV303(
+        ir.steps,
+        "정밀도 안내: 이 코드에는 함수/이벤트 콜백이 " + totalFunctionHeaders + "개 이상 보입니다. 화면 성능을 위해 앞 " + FUNCTION_IR_MAX_FUNCTIONS_V251 + "개 중심으로 정밀 해석합니다."
+      );
+      addedConcepts.push("analysis_limit");
+    }
+
+    addJsConceptsV303(ir, addedConcepts);
+    ir.concepts = Array.from(new Set(Array.isArray(ir.concepts) ? ir.concepts : [])).sort();
+    ir.mermaid = buildJsFunctionMermaidV303(ir);
+
+    ir.precisionV303 = {
+      kind: ir.kind,
+      totalFunctionHeaders: totalFunctionHeaders,
+      isEventHandler: !!signals.isEventHandler,
+      eventTarget: signals.eventTarget || "",
+      eventName: signals.eventName || "",
+      detected: {
+        eventBindings: Array.isArray(signals.eventBindings) ? signals.eventBindings.length : 0,
+        domQueries: Array.isArray(signals.domQueries) ? signals.domQueries.length : 0,
+        domWrites: Array.isArray(signals.domWrites) ? signals.domWrites.length : 0,
+        storageOps: Array.isArray(signals.storageOps) ? signals.storageOps.length : 0,
+        awaitOps: Array.isArray(signals.awaitOps) ? signals.awaitOps.length : 0,
+        promiseChains: Array.isArray(signals.promiseChains) ? signals.promiseChains.length : 0,
+        promiseFactories: Array.isArray(signals.promiseFactories) ? signals.promiseFactories.length : 0,
+        jsonOps: Array.isArray(signals.jsonOps) ? signals.jsonOps.length : 0,
+        timerOps: Array.isArray(signals.timerOps) ? signals.timerOps.length : 0
+      }
+    };
+
+    return ir;
+  });
+};
+
+
 function buildFunctionInterpretationsV251(source, language) {
   if (language === "python") {
     const base = buildPythonFunctionInterpretationsV251(source, language);
