@@ -2955,6 +2955,156 @@ enhanceJsFunctionInterpretationsV257 = function(source, items) {
 };
 
 
+// MERMAID_QUALITY_MODE_V304_A1
+const MERMAID_QUALITY_MODES_V304 = {
+  simple_overview: {
+    id: "simple_overview",
+    label: "간단 개요도",
+    description: "코드 전체의 큰 역할을 짧게 보여주는 기본 도식입니다."
+  },
+  function_flow: {
+    id: "function_flow",
+    label: "함수 흐름도",
+    description: "입력, 조건, 반복, 호출, 반환처럼 함수 내부 실행 순서를 보여주는 도식입니다."
+  },
+  event_flow: {
+    id: "event_flow",
+    label: "이벤트/비동기 흐름도",
+    description: "클릭/입력 이벤트, DOM 변경, fetch/await/Promise 같은 브라우저 흐름을 보여주는 도식입니다."
+  }
+};
+
+function appendUniqueMermaidStepV304(steps, step) {
+  if (!Array.isArray(steps) || !step) return;
+  if (steps.indexOf(step) >= 0) return;
+  steps.unshift(step);
+}
+
+function addMermaidConceptsV304(ir, concepts) {
+  if (!ir) return;
+  if (!Array.isArray(ir.concepts)) ir.concepts = [];
+  (Array.isArray(concepts) ? concepts : []).forEach(function(concept) {
+    if (concept && ir.concepts.indexOf(concept) < 0) ir.concepts.push(concept);
+  });
+}
+
+function hasAnyMermaidSignalV304(items) {
+  return (Array.isArray(items) ? items : []).some(function(item) {
+    return item && item.mermaid;
+  });
+}
+
+function chooseMermaidQualityModeV304(ir, language) {
+  const normalizedLanguage = String(language || "").toLowerCase();
+  const kind = String(ir && ir.kind || "").toLowerCase();
+  const signals = ir && ir.signals ? ir.signals : {};
+
+  const hasEventSignal =
+    !!signals.isEventHandler ||
+    (Array.isArray(signals.eventBindings) && signals.eventBindings.length > 0) ||
+    (Array.isArray(signals.domQueries) && signals.domQueries.length > 0) ||
+    (Array.isArray(signals.domWrites) && signals.domWrites.length > 0) ||
+    (Array.isArray(signals.fetchOps) && signals.fetchOps.length > 0) ||
+    (Array.isArray(signals.awaitOps) && signals.awaitOps.length > 0) ||
+    (Array.isArray(signals.promiseChains) && signals.promiseChains.length > 0) ||
+    (Array.isArray(signals.promiseFactories) && signals.promiseFactories.length > 0);
+
+  if (normalizedLanguage === "javascript" && hasEventSignal) {
+    return MERMAID_QUALITY_MODES_V304.event_flow;
+  }
+
+  if (
+    kind.indexOf("python_") === 0 ||
+    kind.indexOf("js_") === 0 ||
+    normalizedLanguage === "python" ||
+    normalizedLanguage === "javascript"
+  ) {
+    return MERMAID_QUALITY_MODES_V304.function_flow;
+  }
+
+  return MERMAID_QUALITY_MODES_V304.simple_overview;
+}
+
+function buildMermaidQualityGuideV304(mode, ir, language) {
+  const signalSummary = [];
+  const signals = ir && ir.signals ? ir.signals : {};
+
+  if (Array.isArray(ir && ir.params) && ir.params.length) signalSummary.push("입력값");
+  if (Array.isArray(ir && ir.conditions) && ir.conditions.length) signalSummary.push("조건");
+  if (Array.isArray(ir && ir.loops) && ir.loops.length) signalSummary.push("반복");
+  if (Array.isArray(ir && ir.calls) && ir.calls.length) signalSummary.push("호출");
+  if (Array.isArray(ir && ir.returns) && ir.returns.length) signalSummary.push("반환");
+
+  if (Array.isArray(signals.eventBindings) && signals.eventBindings.length) signalSummary.push("이벤트 연결");
+  if (Array.isArray(signals.domQueries) && signals.domQueries.length) signalSummary.push("DOM 조회");
+  if (Array.isArray(signals.domWrites) && signals.domWrites.length) signalSummary.push("DOM 변경");
+  if (Array.isArray(signals.fetchOps) && signals.fetchOps.length) signalSummary.push("fetch");
+  if (Array.isArray(signals.awaitOps) && signals.awaitOps.length) signalSummary.push("await");
+  if (Array.isArray(signals.promiseChains) && signals.promiseChains.length) signalSummary.push("Promise");
+
+  return {
+    modeId: mode.id,
+    modeLabel: mode.label,
+    description: mode.description,
+    language: language || "unknown",
+    targetName: ir && (ir.qualifiedNameV302 || ir.name) ? (ir.qualifiedNameV302 || ir.name) : "",
+    visibleSignals: Array.from(new Set(signalSummary)).slice(0, 8)
+  };
+}
+
+function applyMermaidQualityModeV304(ir, language, index, total) {
+  if (!ir) return ir;
+
+  const mode = chooseMermaidQualityModeV304(ir, language);
+  const guide = buildMermaidQualityGuideV304(mode, ir, language);
+
+  ir.mermaidQualityModeV304 = guide;
+  ir.mermaidModeLabelV304 = mode.label;
+  ir.mermaidModeDescriptionV304 = mode.description;
+
+  appendUniqueMermaidStepV304(
+    ir.steps,
+    "도식 모드: " + mode.label + "입니다. " + mode.description
+  );
+
+  if (guide.visibleSignals.length) {
+    appendUniqueMermaidStepV304(
+      ir.steps,
+      "도식 핵심 신호: " + guide.visibleSignals.join(", ") + " 중심으로 읽으면 됩니다."
+    );
+  }
+
+  if (total > 1 && index === 0) {
+    appendUniqueMermaidStepV304(
+      ir.steps,
+      "Mermaid 안내: 여러 함수가 있을 때는 함수별로 도식 모드를 따로 붙여 읽습니다."
+    );
+  }
+
+  addMermaidConceptsV304(ir, [
+    "mermaid_quality_mode",
+    "mermaid_" + mode.id
+  ]);
+
+  ir.concepts = Array.from(new Set(Array.isArray(ir.concepts) ? ir.concepts : [])).sort();
+
+  return ir;
+}
+
+const buildFunctionInterpretationsV251BaseV304 = buildFunctionInterpretationsV251;
+
+buildFunctionInterpretationsV251 = function(source, language) {
+  const items = buildFunctionInterpretationsV251BaseV304(source, language);
+  const list = Array.isArray(items) ? items : [];
+
+  if (!hasAnyMermaidSignalV304(list)) return items;
+
+  return list.map(function(ir, index) {
+    return applyMermaidQualityModeV304(ir, language, index, list.length);
+  });
+};
+
+
 function buildFunctionInterpretationsV251(source, language) {
   if (language === "python") {
     const base = buildPythonFunctionInterpretationsV251(source, language);
