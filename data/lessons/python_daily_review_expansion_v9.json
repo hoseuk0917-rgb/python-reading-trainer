@@ -14,7 +14,7 @@
       "requests",
       "review"
     ],
-    "reading_goal": "‘긴 AI API 호출 코드를 전체 흐름으로 먼저 읽는다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "긴 AI API 호출 코드를 전체 흐름으로 먼저 읽는다.",
     "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
     "question_type": "review_choice",
     "question": "이 코드의 전체 목적에 가장 가까운 것은?",
@@ -47,7 +47,7 @@
       "env",
       "security"
     ],
-    "reading_goal": "‘API 키가 환경변수에서 읽히는 구조를 찾는다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "API 키가 환경변수에서 읽히는 구조를 찾는다.",
     "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
     "question_type": "review_choice",
     "question": "API 키를 읽는 부분은 어디인가?",
@@ -80,7 +80,7 @@
       "timeout",
       "api"
     ],
-    "reading_goal": "‘긴 코드에서 실제 외부 호출이 일어나는 줄을 찾는다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "긴 코드에서 실제 외부 호출이 일어나는 줄을 찾는다.",
     "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
     "question_type": "review_choice",
     "question": "실제로 외부 API 요청을 보내는 코드는?",
@@ -179,7 +179,7 @@
       "security",
       "review"
     ],
-    "reading_goal": "‘긴 코드를 읽고 운영 관점의 개선 지점을 고른다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "긴 코드를 읽고 운영 관점의 개선 지점을 고른다.",
     "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
     "question_type": "review_choice",
     "question": "운영용 코드로 개선할 때 우선순위가 높은 것은?",
@@ -371,7 +371,7 @@
       "embedding",
       "quality"
     ],
-    "reading_goal": "‘단순 검색 RAG 코드에서 품질 개선 지점을 고른다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "단순 검색 RAG 코드에서 품질 개선 지점을 고른다.",
     "code": "from pathlib import Path\nimport json\n\nCHUNK_PATH = Path(\"chunks.jsonl\")\nOUT_PATH = Path(\"answers.jsonl\")\n\ndef load_chunks():\n    chunks = []\n    with CHUNK_PATH.open(\"r\", encoding=\"utf-8\") as f:\n        for line in f:\n            chunks.append(json.loads(line))\n    return chunks\n\ndef retrieve(query, chunks, top_k=3):\n    terms = query.lower().split()\n    scored = []\n    for chunk in chunks:\n        text = chunk[\"text\"].lower()\n        score = sum(1 for term in terms if term in text)\n        if score > 0:\n            scored.append((score, chunk))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [chunk for score, chunk in scored[:top_k]]\n\ndef build_prompt(query, hits):\n    context = \"\\n\\n\".join(f\"[{hit['doc_id']}:{hit['chunk_id']}] {hit['text']}\" for hit in hits)\n    return f\"Use only the context below.\\n\\n{context}\\n\\nQuestion: {query}\"\n\ndef answer_with_rag(query):\n    chunks = load_chunks()\n    hits = retrieve(query, chunks)\n    if not hits:\n        return {\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}\n    prompt = build_prompt(query, hits)\n    answer = call_llm(prompt)\n    citations = [{\"doc_id\": h[\"doc_id\"], \"chunk_id\": h[\"chunk_id\"]} for h in hits]\n    row = {\"query\": query, \"answer\": answer, \"citations\": citations}\n    with OUT_PATH.open(\"a\", encoding=\"utf-8\") as f:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")\n    return row",
     "question_type": "review_choice",
     "question": "이 RAG 코드의 다음 개선으로 가장 자연스러운 것은?",
@@ -404,7 +404,7 @@
       "prediction",
       "review"
     ],
-    "reading_goal": "‘칼만필터 코드를 수학 암기보다 코드 흐름으로 읽는다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "칼만필터 코드를 수학 암기보다 코드 흐름으로 읽는다.",
     "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
     "question_type": "review_choice",
     "question": "이 코드의 전체 목적은?",
@@ -436,7 +436,7 @@
       "state",
       "numpy"
     ],
-    "reading_goal": "‘state 벡터가 무엇을 담고 있는지 코드에서 읽는다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "state 벡터가 무엇을 담고 있는지 코드에서 읽는다.",
     "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
     "question_type": "review_choice",
     "question": "self.state = [[x], [v]]는 무엇을 담는가?",
@@ -467,7 +467,7 @@
       "predict",
       "matrix"
     ],
-    "reading_goal": "‘이전 상태를 dt만큼 앞으로 보내는 예측 단계를 찾는다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "이전 상태를 dt만큼 앞으로 보내는 예측 단계를 찾는다.",
     "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
     "question_type": "review_choice",
     "question": "predict에서 상태를 앞으로 예측하는 줄은?",
@@ -498,7 +498,7 @@
       "measurement",
       "update"
     ],
-    "reading_goal": "‘측정값 measured_x가 어디서 보정에 들어가는지 읽는다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "측정값 measured_x가 어디서 보정에 들어가는지 읽는다.",
     "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
     "question_type": "review_choice",
     "question": "측정값을 행렬로 바꾸는 줄은?",
@@ -529,7 +529,7 @@
       "noise",
       "uncertainty"
     ],
-    "reading_goal": "‘Q/R 같은 noise 변수가 어느 계산에 들어가는지 읽는다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "Q/R 같은 noise 변수가 어느 계산에 들어가는지 읽는다.",
     "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
     "question_type": "review_choice",
     "question": "R은 어디에 사용되는가?",
@@ -560,7 +560,7 @@
       "review",
       "debugging"
     ],
-    "reading_goal": "‘긴 수식 코드에서 어떤 순서로 읽으면 되는지 정리한다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "긴 수식 코드에서 어떤 순서로 읽으면 되는지 정리한다.",
     "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
     "question_type": "review_choice",
     "question": "이런 필터 코드를 처음 읽을 때 가장 좋은 순서는?",
@@ -593,7 +593,7 @@
       "resume",
       "review"
     ],
-    "reading_goal": "‘긴 batch shard 코드를 전체적으로 읽는다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "긴 batch shard 코드를 전체적으로 읽는다.",
     "code": "import json\nfrom pathlib import Path\n\nINPUT_PATH = Path(\"tasks.jsonl\")\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef shard_slice(tasks, shard_id, shard_size):\n    start = shard_id * shard_size\n    end = start + shard_size\n    return tasks[start:end]\n\ndef output_path(task):\n    return OUT_DIR / f\"{task['id']}.json\"\n\ndef run_shard(tasks, shard_id, shard_size=200):\n    selected = shard_slice(tasks, shard_id, shard_size)\n    done = 0\n    skipped = 0\n    failed = []\n    for task in selected:\n        if output_path(task).exists():\n            skipped += 1\n            continue\n        try:\n            answer = call_llm(task[\"prompt\"])\n            output_path(task).write_text(json.dumps({\"id\": task[\"id\"], \"answer\": answer}, ensure_ascii=False), encoding=\"utf-8\")\n            done += 1\n        except Exception as error:\n            failed.append({\"id\": task[\"id\"], \"error\": str(error)})\n    return {\"shard_id\": shard_id, \"done\": done, \"skipped\": skipped, \"failed\": failed}",
     "question_type": "review_choice",
     "question": "이 코드의 전체 목적은?",
@@ -784,7 +784,7 @@
       "schema",
       "request"
     ],
-    "reading_goal": "‘클라이언트가 보내야 하는 입력 구조를 찾는다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "클라이언트가 보내야 하는 입력 구조를 찾는다.",
     "code": "from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass SearchRequest(BaseModel):\n    query: str\n    top_k: int = 5\n\nclass SearchHit(BaseModel):\n    doc_id: str\n    title: str\n    score: float\n\nclass SearchResponse(BaseModel):\n    query: str\n    hits: list[SearchHit]\n\n@app.post(\"/api/search\", response_model=SearchResponse)\ndef search(req: SearchRequest):\n    if not req.query.strip():\n        raise HTTPException(status_code=400, detail=\"query is empty\")\n    if req.top_k < 1 or req.top_k > 20:\n        raise HTTPException(status_code=400, detail=\"top_k out of range\")\n    rows = search_index(req.query, limit=req.top_k)\n    hits = [SearchHit(doc_id=row[\"doc_id\"], title=row[\"title\"], score=row[\"score\"]) for row in rows]\n    return SearchResponse(query=req.query, hits=hits)",
     "question_type": "review_choice",
     "question": "SearchRequest에 필요한 핵심 입력은?",
@@ -943,7 +943,7 @@
       "error",
       "script"
     ],
-    "reading_goal": "‘스크립트 중간 에러를 무시하지 않도록 하는 설정을 읽는다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "스크립트 중간 에러를 무시하지 않도록 하는 설정을 읽는다.",
     "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\n$ErrorActionPreference = \"Stop\"\n$appPath = \".\\src\\pwa\\app.js\"\n$app = Get-Content $appPath -Raw -Encoding UTF8\n$markerStart = \"// === FEATURE START ===\"\n$markerEnd = \"// === FEATURE END ===\"\n$featureBlock = \"// === FEATURE START ===\nfunction sayHello() {\n  console.log('hello');\n}\n// === FEATURE END ===\"\nif ($app.Contains($markerStart)) {\n  $pattern = [regex]::Escape($markerStart) + \"[\\s\\S]*?\" + [regex]::Escape($markerEnd)\n  $app = [regex]::Replace($app, $pattern, $featureBlock.Trim())\n} else {\n  $app = $app.TrimEnd() + \"`r`n\" + $featureBlock\n}\nSet-Content $appPath -Value $app -Encoding UTF8\nSelect-String -Path $appPath -Pattern \"FEATURE START|sayHello\" -Context 0,2",
     "question_type": "review_choice",
     "question": "ErrorActionPreference = Stop의 목적은?",
@@ -974,7 +974,7 @@
       "if",
       "marker"
     ],
-    "reading_goal": "‘기존 블록을 찾고 없으면 중단하는 조건문을 읽는다’라는 목표를 바탕으로, 코드 단서와 실행 이유를 함께 구분하는 연습입니다.",
+    "reading_goal": "기존 블록을 찾고 없으면 중단하는 조건문을 읽는다.",
     "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\n$ErrorActionPreference = \"Stop\"\n$appPath = \".\\src\\pwa\\app.js\"\n$app = Get-Content $appPath -Raw -Encoding UTF8\n$markerStart = \"// === FEATURE START ===\"\n$markerEnd = \"// === FEATURE END ===\"\n$featureBlock = \"// === FEATURE START ===\nfunction sayHello() {\n  console.log('hello');\n}\n// === FEATURE END ===\"\nif ($app.Contains($markerStart)) {\n  $pattern = [regex]::Escape($markerStart) + \"[\\s\\S]*?\" + [regex]::Escape($markerEnd)\n  $app = [regex]::Replace($app, $pattern, $featureBlock.Trim())\n} else {\n  $app = $app.TrimEnd() + \"`r`n\" + $featureBlock\n}\nSet-Content $appPath -Value $app -Encoding UTF8\nSelect-String -Path $appPath -Pattern \"FEATURE START|sayHello\" -Context 0,2",
     "question_type": "review_choice",
     "question": "이미 FEATURE START가 있으면 어떤 경로로 가는가?",
