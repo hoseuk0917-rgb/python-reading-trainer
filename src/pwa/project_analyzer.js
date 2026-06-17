@@ -1,6 +1,6 @@
 // === PROJECT ANALYZER V248-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260611_v271_a1";
+  const PROJECT_ANALYZER_VERSION = "20260611_v305_a1";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
@@ -163,13 +163,24 @@
 "            symbols.append({'type': 'class', 'name': node.name, 'line': getattr(node, 'lineno', None), 'snippet': make_ast_snippet(text, node)})",
 "    return symbols[:120]",
 "",
+"# PROJECT_CONNECTION_CANDIDATE_GRAPH_V305_A1",
 "def extract_refs(text):",
 "    refs = set()",
-"    patterns = [r'src=[\\\"\\']([^\\\"\\']+)[\\\"\\']', r'href=[\\\"\\']([^\\\"\\']+)[\\\"\\']', r'fetch\\([\\\"\\']([^\\\"\\']+)[\\\"\\']', r'import\\s+.*?from\\s+[\\\"\\']([^\\\"\\']+)[\\\"\\']', r'require\\([\\\"\\']([^\\\"\\']+)[\\\"\\']\\)']",
+"    patterns = [",
+"        r'src=[\\\"\\']([^\\\"\\']+)[\\\"\\']',",
+"        r'href=[\\\"\\']([^\\\"\\']+)[\\\"\\']',",
+"        r'fetch\\(\\s*[\\\"\\']([^\\\"\\']+)[\\\"\\']',",
+"        r'import\\s+.*?from\\s+[\\\"\\']([^\\\"\\']+)[\\\"\\']',",
+"        r'import\\s*\\(\\s*[\\\"\\']([^\\\"\\']+)[\\\"\\']\\s*\\)',",
+"        r'require\\(\\s*[\\\"\\']([^\\\"\\']+)[\\\"\\']\\s*\\)',",
+"        r'@import\\s+(?:url\\()?\\s*[\\\"\\']([^\\\"\\']+)[\\\"\\']',",
+"    ]",
 "    for pattern in patterns:",
 "        for m in re.finditer(pattern, text):",
-"            refs.add(m.group(1))",
-"    return sorted(refs)[:80]",
+"            value = m.group(1).strip()",
+"            if value and not value.startswith(('http://', 'https://', 'data:', '#')):",
+"                refs.add(value)",
+"    return sorted(refs)[:120]",
 "",
 "# CALL_CANDIDATES_V194_A1",
 "def extract_js_calls(text):",
@@ -1639,6 +1650,207 @@
       '</div>';
   }
 
+
+
+  // PROJECT_CONNECTION_CANDIDATE_GRAPH_V305_A1
+  const PROJECT_CONNECTION_KIND_LABELS_V305 = {
+    public_api: "전역 객체 / 공개 API",
+    script_or_import: "script/import 연결",
+    style_reference: "style/css 연결",
+    data_reference: "data/fetch 연결",
+    document_reference: "문서/html 연결",
+    file_reference: "파일 참조",
+    call_to_symbol: "함수 호출 후보",
+    other: "기타 연결 후보"
+  };
+
+  function classifyProjectConnectionKindV305(link) {
+    const kind = String((link && link.kind) || "");
+    const symbol = String((link && link.symbol) || "").split("?")[0].toLowerCase();
+
+    if (kind.indexOf("window_object") >= 0) return "public_api";
+
+    if (kind === "file-reference") {
+      if (/\.(js|jsx|ts|tsx|mjs|cjs)$/.test(symbol)) return "script_or_import";
+      if (/\.(css|scss|sass|less)$/.test(symbol)) return "style_reference";
+      if (/\.(json|csv|tsv|yml|yaml|toml)$/.test(symbol)) return "data_reference";
+      if (/\.(html|htm|md)$/.test(symbol)) return "document_reference";
+      return "file_reference";
+    }
+
+    if (kind === "call-to-symbol") return "call_to_symbol";
+    return "other";
+  }
+
+  function getProjectConnectionKindLabelV305(kind) {
+    return PROJECT_CONNECTION_KIND_LABELS_V305[kind] || PROJECT_CONNECTION_KIND_LABELS_V305.other;
+  }
+
+  function summarizeProjectConnectionGraphV305(links) {
+    const summary = {
+      total: 0,
+      confidence: { high: 0, medium: 0, low: 0 },
+      kinds: {},
+      topFiles: {}
+    };
+
+    (Array.isArray(links) ? links : []).forEach(function(link) {
+      const confidence = String((link && link.confidence) || "medium");
+      const kind = classifyProjectConnectionKindV305(link);
+      const from = normalizeProjectPathV265(link && link.from);
+      const to = normalizeProjectPathV265(link && link.to);
+
+      summary.total += 1;
+      summary.confidence[confidence] = (summary.confidence[confidence] || 0) + 1;
+      summary.kinds[kind] = (summary.kinds[kind] || 0) + 1;
+
+      [from, to].forEach(function(filePath) {
+        if (!filePath) return;
+        summary.topFiles[filePath] = (summary.topFiles[filePath] || 0) + 1;
+      });
+    });
+
+    summary.kindRows = Object.keys(summary.kinds).map(function(kind) {
+      return {
+        kind: kind,
+        label: getProjectConnectionKindLabelV305(kind),
+        count: summary.kinds[kind]
+      };
+    }).sort(function(a, b) {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.label.localeCompare(b.label);
+    });
+
+    summary.topFileRows = Object.keys(summary.topFiles).map(function(filePath) {
+      return {
+        filePath: filePath,
+        count: summary.topFiles[filePath]
+      };
+    }).sort(function(a, b) {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.filePath.localeCompare(b.filePath);
+    }).slice(0, 5);
+
+    return summary;
+  }
+
+  function renderProjectConnectionCandidateNoticeV305(summary) {
+    const total = summary && typeof summary.total === "number" ? summary.total : 0;
+
+    return '<div class="project-detail-section project-connection-notice-v305">' +
+      '<h4>V305 연결 후보 그래프 안내</h4>' +
+      '<p class="muted">이 그래프는 import, require, script src, link href, fetch, 함수 호출명, 공개 객체명 등을 근거로 만든 후보 그래프입니다. 정밀 AST/런타임 호출 그래프가 아니라서 실제 실행 흐름과 다를 수 있습니다.</p>' +
+      '<p class="muted">현재 후보 연결: ' + escapeHtml(String(total)) + '개 · high/medium/low 신뢰도와 연결 종류를 함께 봅니다.</p>' +
+      '</div>';
+  }
+
+  function renderProjectConnectionSummaryCardsV305(summary) {
+    if (!summary || !summary.total) {
+      return "";
+    }
+
+    const confidence = summary.confidence || {};
+    const kindText = (summary.kindRows || []).slice(0, 5).map(function(item) {
+      return item.label + " " + item.count;
+    }).join(" · ");
+
+    const topFileText = (summary.topFileRows || []).map(function(item) {
+      return item.filePath.replace("src/pwa/", "") + " " + item.count;
+    }).join(" · ");
+
+    const cards = [
+      ["전체 후보", String(summary.total)],
+      ["high", String(confidence.high || 0)],
+      ["medium", String(confidence.medium || 0)],
+      ["low", String(confidence.low || 0)],
+      ["연결 종류", kindText || "-"],
+      ["중심 파일", topFileText || "-"]
+    ];
+
+    return '<div class="project-connection-summary-grid-v305">' + cards.map(function(card) {
+      return '<div class="project-connection-summary-card-v305">' +
+        '<strong>' + escapeHtml(card[0]) + '</strong>' +
+        '<span>' + escapeHtml(card[1]) + '</span>' +
+        '</div>';
+    }).join("") + '</div>';
+  }
+
+  function buildProjectCrossFileMermaidV305(links) {
+    const items = Array.isArray(links) ? links.slice(0, 24) : [];
+    const files = [];
+    const idMap = {};
+
+    function idFor(file) {
+      if (!idMap[file]) {
+        idMap[file] = "F" + Object.keys(idMap).length;
+        files.push(file);
+      }
+      return idMap[file];
+    }
+
+    items.forEach(function(link) {
+      idFor(link.from);
+      idFor(link.to);
+    });
+
+    if (!items.length) {
+      return "graph LR\n  empty[파일 간 연결 후보 없음]";
+    }
+
+    const lines = [
+      "graph LR",
+      "  guide[\"V305 후보 그래프<br/>정밀 AST가 아니라 연결 후보\"]"
+    ];
+
+    files.forEach(function(file) {
+      const label = file.replace("src/pwa/", "");
+      lines.push('  ' + idFor(file) + '["' + label.replace(/[\[\]{}()"`|]/g, " ") + '"]');
+    });
+
+    items.forEach(function(link, index) {
+      const kind = classifyProjectConnectionKindV305(link);
+      const confidence = String(link.confidence || "medium");
+      const symbol = String(link.symbol || link.kind || "link")
+        .replace(/[\[\]{}()"`|]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 36);
+      const label = getProjectConnectionKindLabelV305(kind).replace(/\s+/g, " ") + " · " + confidence + (symbol ? " · " + symbol : "");
+
+      if (index === 0) {
+        lines.push("  guide -.-> " + idFor(link.from));
+      }
+
+      lines.push("  " + idFor(link.from) + " -->|" + label.slice(0, 64) + "| " + idFor(link.to));
+    });
+
+    return lines.join("\n");
+  }
+
+  const buildProjectCrossFileMermaidV265BaseV305 = buildProjectCrossFileMermaidV265;
+
+  buildProjectCrossFileMermaidV265 = function(links) {
+    return buildProjectCrossFileMermaidV305(links);
+  };
+
+  const renderProjectCrossFileLinksV265BaseV305 = renderProjectCrossFileLinksV265;
+
+  renderProjectCrossFileLinksV265 = function(parsed) {
+    const html = renderProjectCrossFileLinksV265BaseV305(parsed);
+
+    if (!parsed || parsed.inputMode !== "json" || !html) {
+      return html;
+    }
+
+    const allLinks = enrichProjectCrossFileLinksWithEvidenceV271(parsed, buildProjectCrossFileLinksV265(parsed));
+    const summary = summarizeProjectConnectionGraphV305(allLinks);
+    const guide = renderProjectConnectionCandidateNoticeV305(summary) + renderProjectConnectionSummaryCardsV305(summary);
+
+    return html.replace(
+      '<h3>파일 간 연결 후보</h3>',
+      '<h3>파일 간 연결 후보</h3>' + guide
+    );
+  };
 
   function renderJsonReportSections(parsed) {
     if (!parsed || parsed.inputMode !== "json") {
