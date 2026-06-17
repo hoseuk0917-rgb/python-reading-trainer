@@ -1,5 +1,5 @@
 // === CACHE BUST START ===
-const APP_DATA_VERSION = "20260611_v305_a1";
+const APP_DATA_VERSION = "20260611_v306_a1";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -147,6 +147,186 @@ function normalizeAnswer(value) {
     return value.map(String).sort().join(" | ");
   }
   return String(value);
+}
+
+
+// CONCEPT_INTRO_DEDUP_V306_A1
+function normalizeConceptIntroTextV306(value) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .replace(/A9_BODY_THICKENED:/g, "")
+    .trim();
+}
+
+function sentenceLooksLikeExampleV306(sentence) {
+  const text = String(sentence || "");
+  return /예시|예:|예를 들어|print\(|console\.log|\[[^\]]+\]|\{[^}]+\}|=|=>|->|정답|출력은|출력:/i.test(text);
+}
+
+function trimConceptIntroTextV306(text, limit) {
+  const normalized = normalizeConceptIntroTextV306(text);
+  if (!normalized) return "";
+
+  const sentences = normalized
+    .split(/(?<=[.!?。]|다\.|요\.)\s+/)
+    .map(function(sentence) { return sentence.trim(); })
+    .filter(Boolean);
+
+  const safe = sentences.filter(function(sentence) {
+    return !sentenceLooksLikeExampleV306(sentence);
+  });
+
+  const picked = (safe.length ? safe : sentences).slice(0, 2).join(" ");
+  return picked.length > limit ? picked.slice(0, limit - 1).trim() + "…" : picked;
+}
+
+function getCardConceptsV306(card) {
+  return Array.isArray(card && card.concepts) ? card.concepts.filter(Boolean) : [];
+}
+
+function getPrimaryConceptV306(card, sourceCard) {
+  const concepts = getCardConceptsV306(card);
+
+  for (let i = 0; i < concepts.length; i += 1) {
+    if (conceptInfo[concepts[i]]) {
+      return concepts[i];
+    }
+  }
+
+  const related = Array.isArray(sourceCard && sourceCard.related_concepts) ? sourceCard.related_concepts : [];
+  for (let j = 0; j < related.length; j += 1) {
+    if (conceptInfo[related[j]]) {
+      return related[j];
+    }
+  }
+
+  return concepts[0] || (related[0] || "");
+}
+
+function pickConceptIntroSideCardV306(card) {
+  const directIds = Array.isArray(card && card.side_card_ids) ? card.side_card_ids : [];
+  const directCards = directIds.map(getSideCardById).filter(Boolean);
+  const concepts = getCardConceptsV306(card);
+
+  if (!directCards.length) return null;
+
+  const scored = directCards.map(function(sc) {
+    const related = Array.isArray(sc.related_concepts) ? sc.related_concepts : [];
+    const overlap = related.filter(function(concept) {
+      return concepts.indexOf(concept) >= 0;
+    }).length;
+
+    let score = overlap * 5;
+    if (sc.detail) score += 3;
+    if (sc.summary || sc.description) score += 2;
+    if (sc.body) score += 1;
+    if (concepts.indexOf(sc.id) >= 0) score += 2;
+
+    return { card: sc, score: score };
+  }).sort(function(a, b) {
+    if (b.score !== a.score) return b.score - a.score;
+    return String(a.card.id).localeCompare(String(b.card.id));
+  });
+
+  return scored[0] && scored[0].score > 0 ? scored[0].card : directCards[0];
+}
+
+function buildSafeSideCardIntroTextV306(sourceCard) {
+  if (!sourceCard) return "";
+
+  const raw = [
+    sourceCard.detail,
+    sourceCard.summary,
+    sourceCard.description,
+    sourceCard.body
+  ].filter(Boolean).join(" ");
+
+  return trimConceptIntroTextV306(raw, 260);
+}
+
+function buildConceptIntroV306(card) {
+  const sourceCard = pickConceptIntroSideCardV306(card);
+  const primaryConcept = getPrimaryConceptV306(card, sourceCard);
+  const concept = primaryConcept && conceptInfo[primaryConcept] ? conceptInfo[primaryConcept] : null;
+
+  const conceptText = concept ? trimConceptIntroTextV306(concept.definition, 220) : "";
+  const sideText = buildSafeSideCardIntroTextV306(sourceCard);
+
+  const body = conceptText || sideText;
+  if (!body) {
+    return null;
+  }
+
+  return {
+    sourceSideCardId: sourceCard && sourceCard.id ? sourceCard.id : "",
+    concept: primaryConcept || "",
+    title: primaryConcept ? primaryConcept + " 기본 개념" : (sourceCard && sourceCard.title ? sourceCard.title : "개념 안내"),
+    body: body,
+    sourceTitle: sourceCard && sourceCard.title ? sourceCard.title : ""
+  };
+}
+
+function renderConceptIntroV306(card) {
+  const box = document.getElementById("conceptIntro");
+  if (!box) return "";
+
+  const intro = buildConceptIntroV306(card);
+  box.innerHTML = "";
+
+  if (!intro) {
+    box.classList.add("hidden");
+    box.removeAttribute("data-side-card-id");
+    return "";
+  }
+
+  box.classList.remove("hidden");
+  box.setAttribute("data-side-card-id", intro.sourceSideCardId || "");
+
+  const label = document.createElement("div");
+  label.className = "concept-intro-label-v306";
+  label.textContent = "개념 안내";
+
+  const title = document.createElement("div");
+  title.className = "concept-intro-title-v306";
+  title.textContent = intro.title;
+
+  const body = document.createElement("div");
+  body.className = "concept-intro-body-v306";
+  body.textContent = intro.body;
+
+  const note = document.createElement("div");
+  note.className = "concept-intro-note-v306";
+  note.textContent = intro.sourceSideCardId
+    ? "사이드카드의 일반 개념 설명만 먼저 보여줍니다. 예시와 정답 해설은 문제 풀이 뒤에 확인합니다."
+    : "정답을 직접 알려주지 않는 일반 개념 설명입니다.";
+
+  box.appendChild(label);
+  box.appendChild(title);
+  box.appendChild(body);
+  box.appendChild(note);
+
+  return intro.sourceSideCardId || "";
+}
+
+function renderReadingGoalV306(card) {
+  const goal = document.getElementById("readingGoal");
+  const wrap = document.getElementById("readingGoalWrap");
+  const text = String(card && card.reading_goal ? card.reading_goal : "").trim();
+
+  if (goal) {
+    goal.textContent = text;
+  }
+
+  if (!wrap) return;
+
+  if (!text) {
+    wrap.classList.add("hidden");
+    wrap.open = false;
+    return;
+  }
+
+  wrap.classList.remove("hidden");
+  wrap.open = false;
 }
 
 function getSideCardById(id) {
@@ -393,7 +573,8 @@ function renderCard() {
   document.getElementById("levelBadge").textContent = "Level " + card.level;
   document.getElementById("progressText").textContent = (currentIndex + 1) + " / " + cards.length;
   document.getElementById("cardTitle").textContent = card.title;
-  document.getElementById("readingGoal").textContent = card.reading_goal || "";
+  const conceptIntroSideCardIdV306 = renderConceptIntroV306(card);
+  renderReadingGoalV306(card);
   document.getElementById("codeBlock").textContent = card.code || "(코드 없음: 기능 선택형 문제)";
   document.getElementById("questionText").textContent = card.question || "";
   document.getElementById("projectContext").textContent = card.project_context || "";
@@ -416,7 +597,7 @@ function renderCard() {
     choicesEl.appendChild(btn);
   });
 
-  renderSideCards(card);
+  renderSideCards(card, conceptIntroSideCardIdV306);
   loadCardMemo(card.id);
   markSeen(card.id);
 }
@@ -564,13 +745,20 @@ function renderMobileSideTeaser(card, directCards, bonusCards) {
   teaser.appendChild(list);
 }
 
-function renderSideCards(card) {
+function renderSideCards(card, excludedIntroSideCardIdV306) {
   const sideEl = document.getElementById("sideCards");
   sideEl.innerHTML = "";
 
-  const directIds = card.side_card_ids || [];
+  const excludedIntroIdsV306 = new Set(
+    [excludedIntroSideCardIdV306].filter(Boolean)
+  );
+
+  const rawDirectIds = card.side_card_ids || [];
+  const directIds = rawDirectIds.filter(function(id) {
+    return !excludedIntroIdsV306.has(id);
+  });
   const directCards = directIds.map(getSideCardById).filter(Boolean);
-  const bonusCards = getBonusSideCards(card, directIds);
+  const bonusCards = getBonusSideCards(card, rawDirectIds.concat(Array.from(excludedIntroIdsV306)));
   renderMobileSideTeaser(card, directCards, bonusCards);
 
   const isMobileSideLayout = typeof window !== "undefined" &&
@@ -717,7 +905,9 @@ function renderSideCards(card) {
 
   makeSectionTitle(
     "연결된 개념",
-    "현재 문제와 직접 연결된 보조 개념입니다."
+    excludedIntroIdsV306.size
+      ? "상단 개념 안내로 이미 사용한 카드는 여기에서 중복 표시하지 않습니다."
+      : "현재 문제와 직접 연결된 보조 개념입니다."
   );
 
   if (directCards.length === 0) {
@@ -744,7 +934,7 @@ function renderSideCards(card) {
 
   const excludeIds = directCards.concat(bonusCards).map(function(sc) {
     return sc.id;
-  });
+  }).concat(Array.from(excludedIntroIdsV306));
 
   const randomCard = pickRandomBackgroundCard(excludeIds);
 
@@ -761,7 +951,7 @@ function renderSideCards(card) {
     nextBtn.className = "side-random-next";
     nextBtn.textContent = "다른 배경지식";
     nextBtn.addEventListener("click", function() {
-      renderSideCards(card);
+      renderSideCards(card, excludedIntroSideCardIdV306);
     });
     sideEl.appendChild(nextBtn);
   }
