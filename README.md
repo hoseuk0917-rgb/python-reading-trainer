@@ -1049,3 +1049,33 @@ V215 확장 감사에서 나온 P0 gap을 우선 줄이고, 코드해석 메뉴�
 - Focus: fix the visible code explainer version badge shown in the UI.
 - Changed the hardcoded code explainer badge from `V216` to `V226`.
 - Preserved V225 long-code Mermaid manual rendering behavior and V224 long-code expand toggle.
+
+<!-- PYTHON_READING_TRAINER_QUALITY_RECOVERY_START -->
+## Quality recovery status
+
+`QUALITY_RECOVERY_DOCS_HANDOFF_V321_A1`
+
+The V307 explanation/answer alignment quality track is closed.
+
+- Current docs-pass app version: `20260611_v321_a1`
+- V320 base commit: `c22696f`
+- V320 base tag: `quality-v320-low-explanation-final-reaudit-a1-20260611`
+- Lesson cards: `1785`
+- Side cards: `440`
+- Validation: `VALIDATION OK`
+
+### Closed audit results
+
+- V307 HIGH: `0`
+- V307 MEDIUM: `632` candidates fully covered and passed V317 final reaudit
+- V307 LOW: `219` candidates triaged; `11` patched, `206` already explicit, `2` kept for manual review only
+- Final failures: `0`
+- Structural issues: `0`
+
+See:
+
+- `docs/quality_recovery_v306_v320.md`
+- `docs/handoff_20260617_python_reading_trainer_v320.md`
+- `reports/explanation_medium_final_reaudit_v317.md`
+- `reports/explanation_low_final_reaudit_v320.md`
+<!-- PYTHON_READING_TRAINER_QUALITY_RECOVERY_END -->
