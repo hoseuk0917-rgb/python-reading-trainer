@@ -25,7 +25,7 @@
 // COMMAND_EXPLAINER_WRANGLER_DEPLOY_V322_A4B3
 // COMMAND_EXPLAINER_GIT_CLEAN_V322_A4B4
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260618_v322_a4b4";
+  const COMMAND_EXPLAINER_VERSION = "20260618_v322_a4b4a";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -458,7 +458,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
       risk: "danger",
       pattern: /^\s*git\s+clean\b/i,
       meaning: "git clean\uc740 Git\uc774 \ucd94\uc801\ud558\uc9c0 \uc54a\ub294 untracked \ud30c\uc77c/\ud3f4\ub354\ub97c \uc791\uc5c5 \ud3f4\ub354\uc5d0\uc11c \uc815\ub9ac\ud558\ub294 \uba85\ub839\uc785\ub2c8\ub2e4. -fd\ub294 \ud30c\uc77c\uacfc \ud3f4\ub354 \uc0ad\uc81c\ub97c \uc2e4\ud589\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
-      fileImpact: "untracked \ud30c\uc77c/\ud3f4\ub354\ub97c \uc0ad\uc81c\ud560 \uc218 \uc788\uace0, \uc0ad\uc81c \ud6c4 Git\uc73c\ub85c \ubcf5\uad6c\ud558\uae30 \uc5b4\ub824\uc6b8 \uc218 \uc788\uc2b5\ub2c8\ub2e4. -x \uc635\uc158\uc774 \uc788\uc73c\uba74 ignored \ud30c\uc77c\uae4c\uc9c0 \ud3ec\ud568\ub420 \uc218 \uc788\uc2b5\ub2c8\ub2e4. \uc2e4\ud589 \uc804\ub294 \ubc18\ub4dc\uc2dc dry-run\uc778 git clean -fdn\uc73c\ub85c \ubbf8\ub9ac\ubcf4\uae30\ud558\uc138\uc694.",
+      fileImpact: "untracked \ud30c\uc77c/\ud3f4\ub354\ub97c \uc0ad\uc81c\ud560 \uc218 \uc788\uace0, \uc0ad\uc81c \ud6c4 Git\uc73c\ub85c \ubcf5\uad6c\ud558\uae30 \uc5b4\ub824\uc6b8 \uc218 \uc788\uc2b5\ub2c8\ub2e4. -x \uc635\uc158\uc774 \uc788\uc73c\uba74 ignored \ud30c\uc77c\uae4c\uc9c0 \ud3ec\ud568\ub420 \uc218 \uc788\uc2b5\ub2c8\ub2e4. \uc2e4\ud589 \uc804\uc5d0\ub294 \ubc18\ub4dc\uc2dc dry-run\uc778 git clean -fdn\uc73c\ub85c \ubbf8\ub9ac\ubcf4\uae30\ud558\uc138\uc694.",
       nextCheck: "git clean -fdn; git status --short"
     },
     {
