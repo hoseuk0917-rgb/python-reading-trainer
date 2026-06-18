@@ -22,8 +22,9 @@
 // COMMAND_EXPLAINER_VERSION_TEXT_V297_A1 20260611_v297_a1
 // COMMAND_EXPLAINER_PIPELINE_LIST_V322_A4B1
 // COMMAND_EXPLAINER_WEB_REQUEST_OUTFILE_V322_A4B2
+// COMMAND_EXPLAINER_WRANGLER_DEPLOY_V322_A4B3
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260618_v322_a4b2";
+  const COMMAND_EXPLAINER_VERSION = "20260618_v322_a4b3";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -438,6 +439,16 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
       meaning: "\uc6f9 \uc8fc\uc18c\ub85c HTTP \uc694\uccad\uc744 \ubcf4\ub0b4\uace0 \uacb0\uacfc\ub97c \ubc1b\uc544\uc635\ub2c8\ub2e4. -OutFile\uc774 \uc788\uc73c\uba74 \ubc1b\uc740 \ub0b4\uc6a9\uc744 \ud30c\uc77c\ub85c \uc800\uc7a5\ud569\ub2c8\ub2e4.",
       fileImpact: "-OutFile\uc744 \uc4f0\uba74 \uc9c0\uc815\ud55c \ud30c\uc77c\uc774 \uc0c8\ub85c \ub9cc\ub4e4\uc5b4\uc9c0\uac70\ub098 \uae30\uc874 \ud30c\uc77c\uc774 \ub36e\uc5b4\uc368\uc9c8 \uc218 \uc788\uc2b5\ub2c8\ub2e4. \uba85\ub839\uc758 raw \uc904\uc5d0\uc11c \uc2e4\uc81c -OutFile \uacbd\ub85c\ub97c \ud655\uc778\ud558\uc138\uc694.",
       nextCheck: "Test-Path <OutFile path>; git diff -- <OutFile path>"
+    },
+    {
+      id: "wrangler_deploy_v322_a4b3",
+      command: "npx wrangler deploy",
+      group: "Cloudflare \ubc30\ud3ec",
+      risk: "caution",
+      pattern: /^\s*npx\s+wrangler\s+deploy\b/i,
+      meaning: "Cloudflare Wrangler\ub85c Workers/Pages \ucf54\ub4dc\ub97c \uc6d0\uaca9 \ud658\uacbd\uc5d0 deploy\ud569\ub2c8\ub2e4. \uc131\uacf5\ud558\uba74 Cloudflare\uc758 \ubc30\ud3ec \uc0c1\ud0dc\uac00 \ubc14\ub014 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
+      fileImpact: "\ub85c\uceec \ud30c\uc77c\uc744 \uc9c1\uc811 \uc0ad\uc81c\ud558\ub294 \uba85\ub839\uc740 \uc544\ub2c8\uc9c0\ub9cc, \uc6d0\uaca9 Cloudflare \uc11c\ube44\uc2a4\uc5d0 \uc2e4\uc81c \ubc30\ud3ec\ub97c \ubc18\uc601\ud560 \uc218 \uc788\uc73c\ubbc0\ub85c \uc2e4\ud589 \uc804 \uacc4\uc815/\ud504\ub85c\uc81d\ud2b8/\ud658\uacbd\uc744 \ud655\uc778\ud574\uc57c \ud569\ub2c8\ub2e4.",
+      nextCheck: "npx wrangler deployments list; npx wrangler whoami"
     },
     {
       id: "out_null",
