@@ -20,8 +20,9 @@
 // COMMAND_EXPLAINER_MANUAL_QA_CHECKLIST_V296_A1
 // COMMAND_EXPLAINER_SCREEN_UX_TUNE_V297_A1
 // COMMAND_EXPLAINER_VERSION_TEXT_V297_A1 20260611_v297_a1
+// COMMAND_EXPLAINER_PIPELINE_LIST_V322_A4B1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260611_v297_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260618_v322_a4b1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -418,6 +419,16 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
       nextCheck: "git status --short"
     },
     {
+      id: "get_child_item_v322_a4b1",
+      command: "Get-ChildItem",
+      group: "\ud30c\uc77c \ubaa9\ub85d",
+      risk: "safe",
+      pattern: /^\s*(?:Get-ChildItem|gci|dir|ls)\b/i,
+      meaning: "\ud604\uc7ac \ud3f4\ub354\ub098 \uc9c0\uc815\ud55c \uacbd\ub85c\uc758 \ud30c\uc77c/\ud3f4\ub354 \ubaa9\ub85d\uc744 \uac00\uc838\uc635\ub2c8\ub2e4.",
+      fileImpact: "\ubaa9\ub85d\uc744 \uc77d\ub294 \uba85\ub839\uc774\ub77c \ubcf4\ud1b5 \ud30c\uc77c\uc744 \uc218\uc815\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4. -File\uc740 \ud30c\uc77c\ub9cc \ubcf4\uaca0\ub2e4\ub294 \ub73b\uc785\ub2c8\ub2e4.",
+      nextCheck: "Get-ChildItem -File | Select-Object -First 5 Name, Length"
+    },
+    {
       id: "out_null",
       command: "Out-Null",
       group: "출력 제어",
@@ -811,6 +822,27 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
 
     if (isPowerShellControlLineV277(trimmed)) {
       return buildControlStepV277(line, lineNumber);
+    }
+
+    if (/\|/.test(trimmed) && /(?:Get-ChildItem|gci|dir|ls|Where-Object|Select-Object)/i.test(trimmed)) {
+      const pipePartsV322A4B1 = trimmed.split("|").map(function(part) {
+        return part.trim();
+      }).filter(Boolean);
+      const hasWhereV322A4B1 = /\|\s*Where-Object\b/i.test(trimmed);
+      const hasSelectV322A4B1 = /\|\s*Select-Object\b/i.test(trimmed);
+
+      return {
+        line: lineNumber,
+        command: "PowerShell pipeline",
+        group: "\ud30c\uc774\ud504\ub77c\uc778",
+        risk: "safe",
+        raw: line,
+        meaning: "PowerShell pipeline\uc785\ub2c8\ub2e4. \uc67c\ucabd \uba85\ub839\uc758 \uacb0\uacfc \uac1d\uccb4\uac00 \uc624\ub978\ucabd \uba85\ub839\uc73c\ub85c \uc21c\uc11c\ub300\ub85c \ub118\uc5b4\uac11\ub2c8\ub2e4." +
+          (hasWhereV322A4B1 ? " Where-Object\ub294 \uc870\uac74\uc5d0 \ub9de\ub294 \ud56d\ubaa9\ub9cc \ud1b5\uacfc\uc2dc\ud0b5\ub2c8\ub2e4." : "") +
+          (hasSelectV322A4B1 ? " Select-Object\ub294 \ud544\uc694\ud55c \uc18d\uc131\uc774\ub098 \uc77c\ubd80 \ud56d\ubaa9\ub9cc \uace8\ub77c \ubcf4\uc5ec\uc90d\ub2c8\ub2e4." : ""),
+        fileImpact: "\uc774 \uc870\ud569\uc740 \uc8fc\ub85c \ubaa9\ub85d \uc870\ud68c, \uc870\uac74 \ud544\ud130\ub9c1, \ud45c\uc2dc \ud56d\ubaa9 \uc120\ud0dd \ud750\ub984\uc785\ub2c8\ub2e4. \uc0ad\uc81c/\uc4f0\uae30 \uba85\ub839\uc774 \uc5c6\ub2e4\uba74 \ubcf4\ud1b5 \ud30c\uc77c\uc744 \uc218\uc815\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+        nextCheck: "pipeline steps: " + pipePartsV322A4B1.join(" -> ")
+      };
     }
 
     const primaryRule = POWERSHELL_RULES_V277.find(function(rule) {
