@@ -369,17 +369,17 @@ port = 5432`
   }
 
   function riskLabel(risk) {
-    if (risk === "high") return "높음";
+    if (risk === "high") return "위험";
     if (risk === "medium") return "주의";
     return "낮음";
   }
 
   // CONFIDENCE_UI_V202_A1
   function confidenceLabel(confidence) {
-    if (confidence === "exact") return "확실";
-    if (confidence === "inferred") return "추정";
-    if (confidence === "unsupported") return "미지원";
-    return "추정";
+    if (confidence === "exact") return "규칙 일치";
+    if (confidence === "inferred") return "추정 해석";
+    if (confidence === "unsupported") return "일반 설명";
+    return "추정 해석";
   }
 
   function confidenceClass(confidence) {
@@ -508,7 +508,7 @@ port = 5432`
 
     if (!matches.length) {
       box.className = "code-related-cards muted";
-      box.textContent = "해석 후 참고할 만한 보충 사이드카드를 찾지 못했습니다.";
+      box.textContent = "관련 보충 카드가 아직 연결되지 않았습니다. 위의 단계별 해석만으로도 학습을 진행할 수 있습니다.";
       return;
     }
 
@@ -637,8 +637,8 @@ port = 5432`
 
     if (!visibleSteps.length) {
       box.innerHTML = shouldShowRiskOnly()
-        ? '<p class="muted">위험/주의 단계가 없습니다. 전체 단계를 보려면 필터를 끄세요.</p>'
-        : '<p class="muted">표시할 단계가 없습니다.</p>';
+        ? '<p class="muted">현재 필터에서 위험/주의 단계가 없습니다. 전체 해석을 보려면 필터를 끄세요.</p>'
+        : '<p class="muted">표시할 해석 단계가 없습니다. 언어 선택이나 코드 범위를 확인한 뒤 다시 분석해 보세요.</p>';
       return;
     }
 
@@ -671,7 +671,7 @@ port = 5432`
 
     if (!warnings.length) {
       box.className = "code-warnings muted";
-      box.textContent = "높은 위험 명령은 감지되지 않았습니다.";
+      box.textContent = "위험/주의 명령은 감지되지 않았습니다.";
       return;
     }
 
@@ -679,7 +679,7 @@ port = 5432`
     warnings.forEach(function(step) {
       const item = document.createElement("div");
       item.className = "warning-item risk-" + step.risk;
-      item.textContent = "line " + step.lineNo + " · " + step.title + " · " + step.code;
+      item.textContent = "line " + step.lineNo + " · " + riskLabel(step.risk) + " · " + step.title + " · " + step.code;
       box.appendChild(item);
     });
   }
