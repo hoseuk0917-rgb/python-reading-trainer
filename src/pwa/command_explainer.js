@@ -21,8 +21,9 @@
 // COMMAND_EXPLAINER_SCREEN_UX_TUNE_V297_A1
 // COMMAND_EXPLAINER_VERSION_TEXT_V297_A1 20260611_v297_a1
 // COMMAND_EXPLAINER_PIPELINE_LIST_V322_A4B1
+// COMMAND_EXPLAINER_WEB_REQUEST_OUTFILE_V322_A4B2
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260618_v322_a4b1";
+  const COMMAND_EXPLAINER_VERSION = "20260618_v322_a4b2";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -427,6 +428,16 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
       meaning: "\ud604\uc7ac \ud3f4\ub354\ub098 \uc9c0\uc815\ud55c \uacbd\ub85c\uc758 \ud30c\uc77c/\ud3f4\ub354 \ubaa9\ub85d\uc744 \uac00\uc838\uc635\ub2c8\ub2e4.",
       fileImpact: "\ubaa9\ub85d\uc744 \uc77d\ub294 \uba85\ub839\uc774\ub77c \ubcf4\ud1b5 \ud30c\uc77c\uc744 \uc218\uc815\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4. -File\uc740 \ud30c\uc77c\ub9cc \ubcf4\uaca0\ub2e4\ub294 \ub73b\uc785\ub2c8\ub2e4.",
       nextCheck: "Get-ChildItem -File | Select-Object -First 5 Name, Length"
+    },
+    {
+      id: "invoke_web_request_v322_a4b2",
+      command: "Invoke-WebRequest",
+      group: "\ub124\ud2b8\uc6cc\ud06c \ub2e4\uc6b4\ub85c\ub4dc",
+      risk: "caution",
+      pattern: /^\s*(?:Invoke-WebRequest|iwr|wget|curl)\b/i,
+      meaning: "\uc6f9 \uc8fc\uc18c\ub85c HTTP \uc694\uccad\uc744 \ubcf4\ub0b4\uace0 \uacb0\uacfc\ub97c \ubc1b\uc544\uc635\ub2c8\ub2e4. -OutFile\uc774 \uc788\uc73c\uba74 \ubc1b\uc740 \ub0b4\uc6a9\uc744 \ud30c\uc77c\ub85c \uc800\uc7a5\ud569\ub2c8\ub2e4.",
+      fileImpact: "-OutFile\uc744 \uc4f0\uba74 \uc9c0\uc815\ud55c \ud30c\uc77c\uc774 \uc0c8\ub85c \ub9cc\ub4e4\uc5b4\uc9c0\uac70\ub098 \uae30\uc874 \ud30c\uc77c\uc774 \ub36e\uc5b4\uc368\uc9c8 \uc218 \uc788\uc2b5\ub2c8\ub2e4. \uba85\ub839\uc758 raw \uc904\uc5d0\uc11c \uc2e4\uc81c -OutFile \uacbd\ub85c\ub97c \ud655\uc778\ud558\uc138\uc694.",
+      nextCheck: "Test-Path <OutFile path>; git diff -- <OutFile path>"
     },
     {
       id: "out_null",
