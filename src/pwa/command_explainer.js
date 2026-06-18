@@ -23,8 +23,9 @@
 // COMMAND_EXPLAINER_PIPELINE_LIST_V322_A4B1
 // COMMAND_EXPLAINER_WEB_REQUEST_OUTFILE_V322_A4B2
 // COMMAND_EXPLAINER_WRANGLER_DEPLOY_V322_A4B3
+// COMMAND_EXPLAINER_GIT_CLEAN_V322_A4B4
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260618_v322_a4b3";
+  const COMMAND_EXPLAINER_VERSION = "20260618_v322_a4b4";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -449,6 +450,16 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
       meaning: "Cloudflare Wrangler\ub85c Workers/Pages \ucf54\ub4dc\ub97c \uc6d0\uaca9 \ud658\uacbd\uc5d0 deploy\ud569\ub2c8\ub2e4. \uc131\uacf5\ud558\uba74 Cloudflare\uc758 \ubc30\ud3ec \uc0c1\ud0dc\uac00 \ubc14\ub014 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
       fileImpact: "\ub85c\uceec \ud30c\uc77c\uc744 \uc9c1\uc811 \uc0ad\uc81c\ud558\ub294 \uba85\ub839\uc740 \uc544\ub2c8\uc9c0\ub9cc, \uc6d0\uaca9 Cloudflare \uc11c\ube44\uc2a4\uc5d0 \uc2e4\uc81c \ubc30\ud3ec\ub97c \ubc18\uc601\ud560 \uc218 \uc788\uc73c\ubbc0\ub85c \uc2e4\ud589 \uc804 \uacc4\uc815/\ud504\ub85c\uc81d\ud2b8/\ud658\uacbd\uc744 \ud655\uc778\ud574\uc57c \ud569\ub2c8\ub2e4.",
       nextCheck: "npx wrangler deployments list; npx wrangler whoami"
+    },
+    {
+      id: "git_clean_v322_a4b4",
+      command: "git clean",
+      group: "Git \uc704\ud5d8 \uc815\ub9ac",
+      risk: "danger",
+      pattern: /^\s*git\s+clean\b/i,
+      meaning: "git clean\uc740 Git\uc774 \ucd94\uc801\ud558\uc9c0 \uc54a\ub294 untracked \ud30c\uc77c/\ud3f4\ub354\ub97c \uc791\uc5c5 \ud3f4\ub354\uc5d0\uc11c \uc815\ub9ac\ud558\ub294 \uba85\ub839\uc785\ub2c8\ub2e4. -fd\ub294 \ud30c\uc77c\uacfc \ud3f4\ub354 \uc0ad\uc81c\ub97c \uc2e4\ud589\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
+      fileImpact: "untracked \ud30c\uc77c/\ud3f4\ub354\ub97c \uc0ad\uc81c\ud560 \uc218 \uc788\uace0, \uc0ad\uc81c \ud6c4 Git\uc73c\ub85c \ubcf5\uad6c\ud558\uae30 \uc5b4\ub824\uc6b8 \uc218 \uc788\uc2b5\ub2c8\ub2e4. -x \uc635\uc158\uc774 \uc788\uc73c\uba74 ignored \ud30c\uc77c\uae4c\uc9c0 \ud3ec\ud568\ub420 \uc218 \uc788\uc2b5\ub2c8\ub2e4. \uc2e4\ud589 \uc804\ub294 \ubc18\ub4dc\uc2dc dry-run\uc778 git clean -fdn\uc73c\ub85c \ubbf8\ub9ac\ubcf4\uae30\ud558\uc138\uc694.",
+      nextCheck: "git clean -fdn; git status --short"
     },
     {
       id: "out_null",
