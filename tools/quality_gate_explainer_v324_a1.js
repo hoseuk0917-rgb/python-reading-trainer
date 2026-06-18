@@ -7,7 +7,10 @@ const childProcess = require("child_process");
 const ROOT = process.cwd();
 const OUT_JSON = path.join(ROOT, ".tmp", "explainer_quality_gate_v324_a1.json");
 const OUT_TSV = path.join(ROOT, ".tmp", "explainer_quality_gate_v324_a1.tsv");
-const OUT_MD = path.join(ROOT, "docs", "quality", "explainer_quality_gate_v324_a1.md");
+const WRITE_MARKDOWN_REPORT = process.argv.includes("--update-doc"); // QUALITY_GATE_NO_DIRTY_DEFAULT_V324_A3
+const OUT_MD = WRITE_MARKDOWN_REPORT
+  ? path.join(ROOT, "docs", "quality", "explainer_quality_gate_v324_a1.md")
+  : path.join(ROOT, ".tmp", "explainer_quality_gate_v324_a1.md");
 
 function run(command, args, options) {
   const started = Date.now();
