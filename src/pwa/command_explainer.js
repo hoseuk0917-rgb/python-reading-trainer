@@ -24,8 +24,9 @@
 // COMMAND_EXPLAINER_WEB_REQUEST_OUTFILE_V322_A4B2
 // COMMAND_EXPLAINER_WRANGLER_DEPLOY_V322_A4B3
 // COMMAND_EXPLAINER_GIT_CLEAN_V322_A4B4
+// COMMAND_EXPLAINER_NPM_NODE_SCRIPTS_V325_A2
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260618_v322_a4b4a";
+  const COMMAND_EXPLAINER_VERSION = "20260619_v325_a2";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -352,6 +353,36 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
       nextCheck: "git diff -- <파일>"
     },
     {
+      id: "npm_install_v325_a2",
+      command: "npm install",
+      group: "\ud328\ud0a4\uc9c0 \uc124\uce58",
+      risk: "caution",
+      pattern: /^\s*npm\s+(?:install|i)\b/i,
+      meaning: "Node.js \ud504\ub85c\uc81d\ud2b8\uc758 package.json\uc744 \uae30\uc900\uc73c\ub85c \ud544\uc694\ud55c \ud328\ud0a4\uc9c0\ub97c \uc124\uce58\ud569\ub2c8\ub2e4.",
+      fileImpact: "node_modules \ud3f4\ub354\uac00 \uc0dd\uc131\ub418\uac70\ub098 package-lock.json\uc774 \uc0dd\uc131/\uc218\uc815\ub420 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
+      nextCheck: "git status --short; Test-Path package-lock.json"
+    },
+    {
+      id: "npm_run_v325_a2",
+      command: "npm run",
+      group: "JS \uc2a4\ud06c\ub9bd\ud2b8 \uc2e4\ud589",
+      risk: "caution",
+      pattern: /^\s*npm\s+run\b/i,
+      meaning: "package.json\uc758 scripts\uc5d0 \uc815\uc758\ub41c \uba85\ub839\uc744 \uc2e4\ud589\ud569\ub2c8\ub2e4. build/test/deploy \ub4f1 \uc2a4\ud06c\ub9bd\ud2b8 \uc774\ub984\uc5d0 \ub530\ub77c \ub3d9\uc791\uc774 \ub2ec\ub77c\uc9d1\ub2c8\ub2e4.",
+      fileImpact: "build \uc0b0\ucd9c\ubb3c, \uce90\uc2dc, \ud14c\uc2a4\ud2b8 \uacb0\uacfc \ud30c\uc77c\uc774 \uc0dd\uc131/\uc218\uc815\ub420 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
+      nextCheck: "npm run; git status --short"
+    },
+    {
+      id: "node_script_v325_a2",
+      command: "node",
+      group: "JS \uc2a4\ud06c\ub9bd\ud2b8 \uc2e4\ud589",
+      risk: "caution",
+      pattern: /^\s*node(?:\.exe)?\b/i,
+      meaning: "Node.js\ub85c JavaScript \ud30c\uc77c\uc774\ub098 \uc778\ub77c\uc778 \ucf54\ub4dc\ub97c \uc2e4\ud589\ud569\ub2c8\ub2e4.",
+      fileImpact: "\uc2e4\ud589\ud558\ub294 JS \uc2a4\ud06c\ub9bd\ud2b8 \ub0b4\uc6a9\uc5d0 \ub530\ub77c \ud30c\uc77c \uc0dd\uc131/\uc218\uc815/\uc0ad\uc81c\uac00 \uc77c\uc5b4\ub0a0 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
+      nextCheck: "\uc2a4\ud06c\ub9bd\ud2b8 \uc2e4\ud589 \ud6c4 git status --short"
+    },
+    {
       id: "python",
       command: "python",
       group: "스크립트 실행",
@@ -544,6 +575,36 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
       meaning: "관리자 권한으로 명령을 실행합니다.",
       fileImpact: "시스템 파일, 패키지, 권한 상태가 바뀔 수 있으므로 실행 전 명령 의미를 반드시 확인해야 합니다.",
       nextCheck: "실행 전 명령 도움말 확인: <명령> --help"
+    },
+    {
+      id: "npm_install_v325_a2",
+      command: "npm install",
+      group: "\ud328\ud0a4\uc9c0 \uc124\uce58",
+      risk: "caution",
+      pattern: /^\s*npm\s+(?:install|i)\b/i,
+      meaning: "Node.js \ud504\ub85c\uc81d\ud2b8\uc758 package.json\uc744 \uae30\uc900\uc73c\ub85c \ud544\uc694\ud55c \ud328\ud0a4\uc9c0\ub97c \uc124\uce58\ud569\ub2c8\ub2e4.",
+      fileImpact: "node_modules \ud3f4\ub354\uac00 \uc0dd\uc131\ub418\uac70\ub098 package-lock.json\uc774 \uc0dd\uc131/\uc218\uc815\ub420 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
+      nextCheck: "git status --short; test -f package-lock.json && echo package-lock exists"
+    },
+    {
+      id: "npm_run_v325_a2",
+      command: "npm run",
+      group: "JS \uc2a4\ud06c\ub9bd\ud2b8 \uc2e4\ud589",
+      risk: "caution",
+      pattern: /^\s*npm\s+run\b/i,
+      meaning: "package.json\uc758 scripts\uc5d0 \uc815\uc758\ub41c \uba85\ub839\uc744 \uc2e4\ud589\ud569\ub2c8\ub2e4. build/test/deploy \ub4f1 \uc2a4\ud06c\ub9bd\ud2b8 \uc774\ub984\uc5d0 \ub530\ub77c \ub3d9\uc791\uc774 \ub2ec\ub77c\uc9d1\ub2c8\ub2e4.",
+      fileImpact: "build \uc0b0\ucd9c\ubb3c, \uce90\uc2dc, \ud14c\uc2a4\ud2b8 \uacb0\uacfc \ud30c\uc77c\uc774 \uc0dd\uc131/\uc218\uc815\ub420 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
+      nextCheck: "npm run; git status --short"
+    },
+    {
+      id: "node_script_v325_a2",
+      command: "node",
+      group: "JS \uc2a4\ud06c\ub9bd\ud2b8 \uc2e4\ud589",
+      risk: "caution",
+      pattern: /^\s*node\b/i,
+      meaning: "Node.js\ub85c JavaScript \ud30c\uc77c\uc774\ub098 \uc778\ub77c\uc778 \ucf54\ub4dc\ub97c \uc2e4\ud589\ud569\ub2c8\ub2e4.",
+      fileImpact: "\uc2e4\ud589\ud558\ub294 JS \uc2a4\ud06c\ub9bd\ud2b8 \ub0b4\uc6a9\uc5d0 \ub530\ub77c \ud30c\uc77c \uc0dd\uc131/\uc218\uc815/\uc0ad\uc81c\uac00 \uc77c\uc5b4\ub0a0 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
+      nextCheck: "\uc2a4\ud06c\ub9bd\ud2b8 \uc2e4\ud589 \ud6c4 git status --short"
     },
     {
       id: "python3",

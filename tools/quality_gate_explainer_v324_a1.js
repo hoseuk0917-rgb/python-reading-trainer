@@ -78,7 +78,7 @@ fs.mkdirSync(path.dirname(OUT_JSON), { recursive: true });
 fs.mkdirSync(path.dirname(OUT_MD), { recursive: true });
 
 const appText = fs.readFileSync(path.join(ROOT, "src", "pwa", "app.js"), "utf8");
-const appVersion = (appText.match(/20260618_v[0-9a-z_]+/) || ["unknown"])[0];
+const appVersion = (appText.match(/\d{8}_v[0-9a-z_]+/) || ["unknown"])[0];
 
 const rows = [];
 
