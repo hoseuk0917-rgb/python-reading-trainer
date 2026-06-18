@@ -614,6 +614,11 @@
     if (/^import\s+/.test(t) || /^from\s+.+\s+import\s+/.test(t)) {
       return makeStep(lineNo, t, "라이브러리 불러오기", "이미 만들어진 기능을 현재 코드에서 사용할 수 있게 가져옵니다.", risk);
     }
+    // PYTHON_INIT_METHOD_RULE_V322_A3
+    if (/^(async\s+)?def\s+__init__\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "\uac1d\uccb4 \ucd08\uae30\ud654 \uba54\uc11c\ub4dc \uc815\uc758", "__init__ \uba54\uc11c\ub4dc\ub294 \uc0c8 \uac1d\uccb4\uac00 \ub9cc\ub4e4\uc5b4\uc9c8 \ub54c \ucc98\uc74c \uc2e4\ud589\ub418\uba70 self.name\ucc98\ub7fc \uac1d\uccb4\uac00 \uae30\uc5b5\ud560 \uc18d\uc131\uc758 \ucd08\uae30\uac12\uc744 \uc900\ube44\ud569\ub2c8\ub2e4.", risk);
+    }
+
     if (/^(async\s+)?def\s+\w+\s*\(/.test(t)) {
       return makeStep(lineNo, t, "함수 정의", "나중에 이름으로 불러서 실행할 수 있는 코드 묶음을 만듭니다. 이 줄만으로 함수 안쪽이 바로 실행되지는 않습니다.", risk);
     }
@@ -912,6 +917,27 @@
     if (/^(run|must|main)\s*\(/.test(t)) {
       return makeStep(lineNo, t, "검증 함수 호출", "검증 스크립트 안에서 미리 정의된 보조 함수를 실행합니다. 명령 실행, 조건 확인, 메인 흐름 시작처럼 검증 절차를 묶어 호출할 때 쓰입니다.", risk);
     }
+    // PYTHON_OBJECT_LAMBDA_RULES_V322_A3
+    const selfAssignMatchV322 = t.match(/^self\.([A-Za-z_]\w*)\s*([+\-*/%]?=)\s*(.+)$/);
+    if (selfAssignMatchV322) {
+      const attrNameV322 = selfAssignMatchV322[1];
+      const opV322 = selfAssignMatchV322[2];
+      const valueV322 = selfAssignMatchV322[3];
+      if (opV322 === "=") {
+        return makeStep(lineNo, t, "\uc778\uc2a4\ud134\uc2a4 \uc18d\uc131 \uc800\uc7a5", "self." + attrNameV322 + "\uc5d0 \uac12\uc744 \uc800\uc7a5\ud574 \uc774 \uac1d\uccb4\uac00 \uae30\uc5b5\ud560 \uc0c1\ud0dc\ub97c \ub9cc\ub4ed\ub2c8\ub2e4. \uc624\ub978\ucabd \uac12(" + valueV322 + ")\uc774 \ub098\uc911\uc5d0 \uba54\uc11c\ub4dc\uc5d0\uc11c \ub2e4\uc2dc \uc0ac\uc6a9\ub420 \uc218 \uc788\uc2b5\ub2c8\ub2e4.", risk);
+      }
+      return makeStep(lineNo, t, "\uc778\uc2a4\ud134\uc2a4 \uc18d\uc131 \uac31\uc2e0", "self." + attrNameV322 + "\uac12\uc744 \uae30\uc874 \uac12\uc744 \uae30\uc900\uc73c\ub85c \ubc14\uafb8\ub294 \uc904\uc785\ub2c8\ub2e4. +=\ucc98\ub7fc \uac31\uc2e0 \uc5f0\uc0b0\uc790\ub294 \uac1d\uccb4\uc758 \uc0c1\ud0dc\uac00 \uc2e4\uc81c\ub85c \ubcc0\ud55c\ub2e4\ub294 \ub73b\uc785\ub2c8\ub2e4.", risk);
+    }
+
+    const objectCreateMatchV322 = t.match(/^([A-Za-z_]\w*)\s*=\s*([A-Z][A-Za-z_]\w*)\s*\((.*)\)\s*$/);
+    if (objectCreateMatchV322) {
+      return makeStep(lineNo, t, "\uac1d\uccb4 \uc0dd\uc131 \uacb0\uacfc \uc800\uc7a5", objectCreateMatchV322[2] + " \ud074\ub798\uc2a4\ub85c \uc0c8 \uac1d\uccb4\ub97c \ub9cc\ub4e4\uace0, \uadf8 \uacb0\uacfc\ub97c " + objectCreateMatchV322[1] + " \ubcc0\uc218\uc5d0 \uc800\uc7a5\ud569\ub2c8\ub2e4. \uc774\ub54c \ud074\ub798\uc2a4\uc758 __init__ \uba54\uc11c\ub4dc\uac00 \ucd08\uae30\uac12\uc744 \uc124\uc815\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.", risk);
+    }
+
+    if (/^[A-Za-z_]\w*(?:\[[^\]]+\])?\.(?:sort)\s*\([^)]*key\s*=\s*lambda\b/.test(t) || /\bsorted\s*\([^)]*key\s*=\s*lambda\b/.test(t)) {
+      return makeStep(lineNo, t, "lambda \uc815\ub82c \uae30\uc900 \uc0ac\uc6a9", "lambda\ub85c \uc7a0\uae50 \uc4f8 \ud568\uc218\ub97c \ub9cc\ub4e4\uc5b4 \uc815\ub82c \uae30\uc900(key)\uc73c\ub85c \ub118\uae41\ub2c8\ub2e4. \ubaa9\ub85d\uc744 \uc815\ub82c\ud560 \ub54c \uac01 \ud56d\ubaa9\uc5d0\uc11c \uc5b4\ub5a4 \uac12\uc744 \uae30\uc900\uc73c\ub85c \ubcfc\uc9c0 \uc815\ud558\ub294 \uc904\uc785\ub2c8\ub2e4.", risk);
+    }
+
     if (/^[A-Za-z_]\w*\s*=/.test(t)) {
       return makeStep(lineNo, t, "변수에 값 저장", "왼쪽 이름에 오른쪽 값을 넣습니다. 이후 코드에서 이 이름으로 값을 다시 사용할 수 있습니다.", risk);
     }
@@ -2896,6 +2922,20 @@
         return !knownGlobalCalls[name];
       });
       if (!unsupportedNames.length) return step;
+
+      // PYTHON_OBJECT_CREATE_BEFORE_UNKNOWN_CALL_V322_A3_FIX
+      const objectCreateBeforeUnknownCallV322A3 = step && step.code ? cleanLine(step.code).match(/^([A-Za-z_]\w*)\s*=\s*([A-Z][A-Za-z_]\w*)\s*\((.*)\)\s*$/) : null;
+      if (objectCreateBeforeUnknownCallV322A3) {
+        return Object.assign({}, step, {
+          title: "객체 생성 결과 저장",
+          explain: objectCreateBeforeUnknownCallV322A3[2] + " 클래스로 새 객체를 만들고, 그 결과를 " + objectCreateBeforeUnknownCallV322A3[1] + " 변수에 저장합니다. 이때 클래스의 __init__ 메서드가 객체의 초기값을 설정할 수 있습니다.",
+          confidence: "exact",
+          confidenceLabel: confidenceLabel("exact"),
+          unsupportedTokens: []
+        });
+      }
+
+
 
       return Object.assign({}, step, {
         title: "미등록 함수 결과 저장",
