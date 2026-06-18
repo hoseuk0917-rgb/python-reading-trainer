@@ -7,7 +7,10 @@ const vm = require("vm");
 const ROOT = process.cwd();
 const OUT_JSON = path.join(ROOT, ".tmp", "explainer_regression_smoke_v323_a6.json");
 const OUT_TSV = path.join(ROOT, ".tmp", "explainer_regression_smoke_v323_a6.tsv");
-const OUT_MD = path.join(ROOT, "docs", "quality", "explainer_regression_smoke_v323_a6.md");
+const WRITE_MARKDOWN_REPORT = process.argv.includes("--update-doc"); // REGRESSION_SMOKE_NO_DIRTY_DEFAULT_V325_A3
+const OUT_MD = WRITE_MARKDOWN_REPORT
+  ? path.join(ROOT, "docs", "quality", "explainer_regression_smoke_v323_a6.md")
+  : path.join(ROOT, ".tmp", "explainer_regression_smoke_v323_a6.md");
 
 const elements = Object.create(null);
 
@@ -150,7 +153,7 @@ loadScript("src/pwa/command_explainer.js");
 loadScript("src/pwa/project_analyzer.js");
 
 const appText = fs.readFileSync(path.join(ROOT, "src/pwa/app.js"), "utf8");
-const version = (appText.match(/20260618_v[0-9a-z_]+/) || ["unknown"])[0];
+const version = (appText.match(/\d{8}_v[0-9a-z_]+/) || ["unknown"])[0];
 
 const rows = [];
 
