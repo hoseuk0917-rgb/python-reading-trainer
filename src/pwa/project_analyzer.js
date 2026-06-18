@@ -1,6 +1,6 @@
 // === PROJECT ANALYZER V248-A1 START ===
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260611_v305_a1";
+  const PROJECT_ANALYZER_VERSION = "20260618_v323_a4";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
@@ -1102,6 +1102,7 @@
     return String(path || "").replace(/\\/g, "/").replace(/^\.\//, "");
   }
 
+  // PROJECT_ANALYZER_PWA_CROSS_FILE_LINKS_V323_A4
 
   // PROJECT_CROSS_FILE_LINK_NOISE_FILTER_V266_A1
   const PROJECT_CROSS_FILE_GENERIC_SYMBOLS_V266 = new Set([
@@ -1227,6 +1228,61 @@
     return index;
   }
 
+  function isProjectPwaManifestFileV323A4(path) {
+    return /(?:^|\/)(manifest\.webmanifest|manifest\.json|site\.webmanifest)$/i.test(normalizeProjectPathV265(path));
+  }
+
+  function isProjectServiceWorkerFileV323A4(path) {
+    return /(?:^|\/)(sw\.js|service-worker\.js|serviceWorker\.js|worker\.js)$/i.test(normalizeProjectPathV265(path));
+  }
+
+  function collectKnownProjectFilesV323A4(parsed) {
+    const known = [];
+    const seen = new Set();
+
+    function add(path) {
+      const normalized = normalizeProjectPathV265(path);
+      if (!normalized || /^https?:\/\//i.test(normalized) || normalized === "#") return;
+      if (seen.has(normalized)) return;
+      seen.add(normalized);
+      known.push(normalized);
+    }
+
+    objectEntries((parsed && parsed.symbols) || {}).forEach(function(entry) {
+      add(entry[0]);
+    });
+
+    objectEntries((parsed && parsed.callCandidates) || {}).forEach(function(entry) {
+      add(entry[0]);
+    });
+
+    objectEntries((parsed && parsed.references) || {}).forEach(function(entry) {
+      add(entry[0]);
+    });
+
+    objectEntries((parsed && parsed.keyFiles) || {}).forEach(function(entry) {
+      const value = entry[1];
+      if (value && value.exists === false) return;
+      add(entry[0]);
+    });
+
+    objectEntries((parsed && (parsed.candidateBundles || parsed.candidate_bundles)) || {}).forEach(function(entry) {
+      const files = Array.isArray(entry[1]) ? entry[1] : [];
+      files.forEach(add);
+    });
+
+    // PWA manifest / service worker files often have no parsed symbols.
+    // They still need to be known files so index.html -> manifest.webmanifest
+    // and app.js -> sw.js references can become cross-file links.
+    known.slice().forEach(function(file) {
+      if (isProjectPwaManifestFileV323A4(file) || isProjectServiceWorkerFileV323A4(file)) {
+        add(file);
+      }
+    });
+
+    return known;
+  }
+
   function resolveProjectReferenceTargetV265(fromPath, ref, knownFiles) {
     const raw = String(ref || "").split("?")[0].trim();
     if (!raw || /^https?:\/\//i.test(raw)) return "";
@@ -1252,9 +1308,7 @@
     const callCandidates = parsed && parsed.callCandidates ? parsed.callCandidates : {};
     const references = parsed && parsed.references ? parsed.references : {};
     const ownerIndex = buildProjectSymbolOwnerIndexV265(symbols);
-    const knownFiles = objectEntries(symbols).map(function(entry) {
-      return normalizeProjectPathV265(entry[0]);
-    });
+    const knownFiles = collectKnownProjectFilesV323A4(parsed);
     const links = [];
     const seen = new Set();
 
