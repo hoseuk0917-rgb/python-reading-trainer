@@ -1,4 +1,4 @@
-// === CODE EXPLAINER UI V215-A1 START ===
+﻿// === CODE EXPLAINER UI V215-A1 START ===
 // CODE_EXPLAINER_UI_RENDER_FUNCTION_ADVISOR_V327_A3
 // === CODE EXPLAINER UI V212-A1 START ===
 (function() {
@@ -4647,6 +4647,307 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     return lines.join("\n");
   }
 
+  // BEGINNER_FIRST_CODE_UX_V328_A1
+  function collectPythonFunctionBlocksV328A1(source) {
+    const text = String(source || "");
+    const lines = text.split(/\r?\n/);
+    const blocks = [];
+
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i];
+      const match = line.match(/^(\s*)def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)\s*:/);
+      if (!match) continue;
+
+      const baseIndent = match[1].length;
+      let end = lines.length;
+
+      for (let j = i + 1; j < lines.length; j += 1) {
+        const next = lines[j];
+        if (!next.trim()) continue;
+        const indent = (next.match(/^\s*/) || [""])[0].length;
+        if (indent <= baseIndent && /^\s*(def|class)\s+/.test(next)) {
+          end = j;
+          break;
+        }
+      }
+
+      const params = match[3].split(",").map(function(part) {
+        return part.trim().split("=")[0].trim();
+      }).filter(Boolean);
+
+      blocks.push({
+        name: match[2],
+        params: params,
+        lineNo: i + 1,
+        body: lines.slice(i, end).join("\n")
+      });
+    }
+
+    return blocks;
+  }
+
+  function signatureV328A1(block) {
+    return block.name + "(" + (block.params || []).join(", ") + ")";
+  }
+
+  function isCollectorFunctionV328A1(block) {
+    const body = String(block.body || "");
+    return /\bfor\b/.test(body) && /\bif\b/.test(body) && /\.(append|push)\s*\(/.test(body);
+  }
+
+  function isCountFunctionV328A1(block) {
+    const body = String(block.body || "");
+    return /\bcount\s*(\+=|=)\s*/.test(body) || /return\s+len\s*\(/.test(body);
+  }
+
+  function isDynamicFunctionV328A1(block) {
+    const body = String(block.body || "");
+    return /load_handler|handler\s*=|handler\s*\(|getattr\s*\(|globals\s*\(|locals\s*\(|importlib|registry|dispatch|callback/.test(body);
+  }
+
+  function scoreFunctionForBeginnerV328A1(block) {
+    let score = 0;
+    const lowerName = String(block.name || "").toLowerCase();
+
+    if (isCollectorFunctionV328A1(block)) score += 100;
+    if (isCountFunctionV328A1(block)) score += 90;
+    if (/filter|select|collect|find|list|names?/.test(lowerName)) score += 20;
+    if (/return\s+/.test(block.body || "")) score += 10;
+    if (isDynamicFunctionV328A1(block)) score -= 35;
+
+    return score;
+  }
+
+  function getBeginnerOrderedFunctionsV328A1(result) {
+    const blocks = collectPythonFunctionBlocksV328A1(result && result.sourceCode);
+    return blocks.sort(function(a, b) {
+      return scoreFunctionForBeginnerV328A1(b) - scoreFunctionForBeginnerV328A1(a);
+    });
+  }
+
+  function hasPersonListShapeV328A1(source) {
+    return /\busers\b/.test(source) && /\buser\b/.test(source) && /\bactive\b/.test(source) && /\bname\b/.test(source);
+  }
+
+  function buildBeginnerResultTextV328A1(result, functions) {
+    const source = String(result && result.sourceCode || "");
+    const main = functions[0];
+
+    if (!main) {
+      return "";
+    }
+
+    if (isCollectorFunctionV328A1(main) && hasPersonListShapeV328A1(source)) {
+      return "이 코드에서 가장 분명한 결과는 조건에 맞는 사람의 이름 목록을 만드는 것입니다. 그 결과를 만드는 핵심 함수는 " + signatureV328A1(main) + "입니다.";
+    }
+
+    if (isCollectorFunctionV328A1(main)) {
+      return "이 코드에서 가장 분명한 결과는 조건에 맞는 값을 골라 목록으로 모으는 것입니다. 핵심 함수는 " + signatureV328A1(main) + "입니다.";
+    }
+
+    if (isCountFunctionV328A1(main)) {
+      return "이 코드에서 가장 분명한 결과는 조건에 맞는 개수를 세는 것입니다. 핵심 함수는 " + signatureV328A1(main) + "입니다.";
+    }
+
+    if (isDynamicFunctionV328A1(main)) {
+      return "이 코드는 입력값을 보고 실제로 실행할 함수를 고르는 코드로 보입니다. 다만 외부 함수나 설정을 더 봐야 정확히 어떤 일을 실행하는지 알 수 있습니다.";
+    }
+
+    return "이 코드는 " + signatureV328A1(main) + " 함수를 중심으로 입력값을 처리하고 결과를 돌려주는 코드입니다.";
+  }
+
+  function renderBeginnerExampleV328A1(result, functions) {
+    const source = String(result && result.sourceCode || "");
+    const main = functions[0];
+
+    if (!main || !isCollectorFunctionV328A1(main) || !hasPersonListShapeV328A1(source)) {
+      return "";
+    }
+
+    return '<div class="code-beginner-example-v328-a1">' +
+      '<h4>예를 들면</h4>' +
+      '<p>사람 목록에 이런 값이 있다고 생각하면 됩니다.</p>' +
+      '<pre>철수: active = true\n영희: active = false\n민수: active = true</pre>' +
+      '<p>그러면 결과는 이렇게 됩니다.</p>' +
+      '<pre>["철수", "민수"]</pre>' +
+      '</div>';
+  }
+
+  function describeFunctionPurposeV328A1(block, source) {
+    const sig = signatureV328A1(block);
+    const personLike = hasPersonListShapeV328A1(source);
+
+    if (isCollectorFunctionV328A1(block) && personLike) {
+      return '<article class="code-beginner-function-card-v328-a1">' +
+        '<h4>' + escapeHtml(sig) + '</h4>' +
+        '<p><strong>무슨 일을 하나요?</strong><br>사람 목록(users)에서 조건에 맞는 사람의 이름만 골라냅니다.</p>' +
+        '<p><strong>무엇을 하나씩 보나요?</strong><br>user는 users에서 꺼낸 사람 한 명입니다.</p>' +
+        '<p><strong>어떤 조건을 보나요?</strong><br>active 값이 참인지 확인합니다.</p>' +
+        '<p><strong>무엇을 모으나요?</strong><br>name 값을 result 목록에 모읍니다.</p>' +
+        '<p><strong>최종 결과는?</strong><br>조건에 맞는 사람들의 이름 목록을 돌려줍니다.</p>' +
+        '</article>';
+    }
+
+    if (isCollectorFunctionV328A1(block)) {
+      return '<article class="code-beginner-function-card-v328-a1">' +
+        '<h4>' + escapeHtml(sig) + '</h4>' +
+        '<p><strong>무슨 일을 하나요?</strong><br>목록에서 조건에 맞는 값만 골라 새 목록에 모읍니다.</p>' +
+        '<p><strong>최종 결과는?</strong><br>골라낸 값들의 목록을 돌려줍니다.</p>' +
+        '</article>';
+    }
+
+    if (isCountFunctionV328A1(block)) {
+      return '<article class="code-beginner-function-card-v328-a1">' +
+        '<h4>' + escapeHtml(sig) + '</h4>' +
+        '<p><strong>무슨 일을 하나요?</strong><br>조건에 맞는 항목이 몇 개인지 셉니다.</p>' +
+        '<p><strong>최종 결과는?</strong><br>숫자 하나를 돌려줍니다.</p>' +
+        '</article>';
+    }
+
+    if (isDynamicFunctionV328A1(block)) {
+      return '<article class="code-beginner-function-card-v328-a1">' +
+        '<h4>' + escapeHtml(sig) + '</h4>' +
+        '<p><strong>무슨 일을 하나요?</strong><br>입력값을 보고 실행할 함수(handler)를 고른 뒤 실행합니다.</p>' +
+        '<p><strong>아직 모르는 점</strong><br>load_handler 같은 외부 함수가 이 코드 안에 없으면, 실제로 어떤 함수를 고르는지는 아직 알 수 없습니다.</p>' +
+        '<p><strong>더 정확히 보려면</strong><br>load_handler가 정의된 코드를 같이 봐야 합니다.</p>' +
+        '</article>';
+    }
+
+    return '<article class="code-beginner-function-card-v328-a1">' +
+      '<h4>' + escapeHtml(sig) + '</h4>' +
+      '<p><strong>무슨 일을 하나요?</strong><br>입력값을 처리해서 결과를 돌려주는 함수입니다.</p>' +
+      '</article>';
+  }
+
+  function labelForCodeNameV328A1(name) {
+    const labels = {
+      users: "사람 여러 명이 들어 있는 목록",
+      user: "목록에서 지금 꺼내 본 사람 한 명",
+      active: "조건에 맞는지 확인하는 표시",
+      name: "사람 이름",
+      result: "골라낸 값을 모아두는 목록",
+      config: "어떤 작업을 할지 정할 때 쓰는 입력값",
+      handler: "실제로 일을 처리할 함수",
+      type: "config 안에서 작업 종류를 가리키는 이름",
+      count: "개수를 세기 위해 쓰는 숫자",
+      item: "목록에서 꺼낸 항목 하나",
+      items: "여러 항목이 들어 있는 목록"
+    };
+
+    if (labels[name]) return labels[name];
+    if (/s$/.test(name)) return "여러 개가 들어 있는 목록처럼 보입니다.";
+    return "코드에서 잠깐 이름 붙여 둔 값입니다.";
+  }
+
+  function collectCodeNameLabelsV328A1(result, functions) {
+    const source = String(result && result.sourceCode || "");
+    const names = [];
+
+    function addName(name) {
+      if (!name || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) return;
+      if (["def", "return", "for", "if", "in", "true", "false", "None"].includes(name)) return;
+      if (!names.includes(name)) names.push(name);
+    }
+
+    functions.forEach(function(block) {
+      (block.params || []).forEach(addName);
+    });
+
+    let match;
+    const assignmentRe = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=/gm;
+    while ((match = assignmentRe.exec(source)) !== null) addName(match[1]);
+
+    const forRe = /\bfor\s+([A-Za-z_][A-Za-z0-9_]*)\s+in\s+([A-Za-z_][A-Za-z0-9_]*)/g;
+    while ((match = forRe.exec(source)) !== null) {
+      addName(match[1]);
+      addName(match[2]);
+    }
+
+    const keyRe = /(?:\.get\(|\[)\s*["']([A-Za-z_][A-Za-z0-9_]*)["']/g;
+    while ((match = keyRe.exec(source)) !== null) addName(match[1]);
+
+    if (/handler/.test(source)) addName("handler");
+
+    return names.slice(0, 12).map(function(name) {
+      return { name: name, label: labelForCodeNameV328A1(name) };
+    });
+  }
+
+  function renderCodeNameLabelsV328A1(labels) {
+    if (!Array.isArray(labels) || !labels.length) return "";
+
+    return '<details class="code-beginner-labels-v328-a1" open>' +
+      '<summary>코드 속 이름표</summary>' +
+      '<ul>' + labels.map(function(item) {
+        return '<li><strong>' + escapeHtml(item.name) + '</strong>: ' + escapeHtml(item.label) + '</li>';
+      }).join("") + '</ul>' +
+      '</details>';
+  }
+
+  function renderSimpleExecutionFlowV328A1(result, functions) {
+    const source = String(result && result.sourceCode || "");
+    const main = functions[0];
+    const steps = [];
+
+    if (main && isCollectorFunctionV328A1(main) && hasPersonListShapeV328A1(source)) {
+      steps.push(signatureV328A1(main) + "가 사람 목록(users)을 받습니다.");
+      steps.push("result라는 빈 목록을 만듭니다.");
+      steps.push("users에서 사람을 한 명씩 꺼내 user라고 부릅니다.");
+      steps.push("user의 active 값이 참인지 확인합니다.");
+      steps.push("조건에 맞으면 user의 name을 result에 넣습니다.");
+      steps.push("마지막에 result를 돌려줍니다.");
+    }
+
+    functions.forEach(function(block) {
+      if (isDynamicFunctionV328A1(block)) {
+        steps.push(signatureV328A1(block) + "는 입력값을 보고 실행할 함수를 찾은 뒤 실행합니다.");
+        steps.push("다만 외부 함수의 실제 내용은 이 코드만으로는 알 수 없습니다.");
+      }
+    });
+
+    if (!steps.length && main) {
+      steps.push(signatureV328A1(main) + "가 입력값을 받습니다.");
+      steps.push("함수 안의 줄들을 위에서 아래로 실행합니다.");
+      steps.push("return 줄에서 결과를 돌려줍니다.");
+    }
+
+    if (!steps.length) return "";
+
+    return '<div class="code-beginner-flow-v328-a1">' +
+      '<h4>실행 순서</h4>' +
+      '<ol>' + steps.slice(0, 8).map(function(step) {
+        return '<li>' + escapeHtml(step) + '</li>';
+      }).join("") + '</ol>' +
+      '</div>';
+  }
+
+  function renderBeginnerFirstPanelV328A1(result) {
+    const source = String(result && result.sourceCode || "");
+    const functions = getBeginnerOrderedFunctionsV328A1(result);
+    const resultText = buildBeginnerResultTextV328A1(result, functions);
+    if (!resultText) return "";
+    const labels = collectCodeNameLabelsV328A1(result, functions);
+
+    const functionCards = functions.slice(0, 4).map(function(block) {
+      return describeFunctionPurposeV328A1(block, source);
+    }).join("");
+
+    const dynamicNote = /load_handler/.test(source)
+      ? '<p class="muted">참고: load_handler는 이 코드 조각 안에 정의되어 있지 않아서, 실제 연결 대상은 추가 코드가 있어야 더 정확히 설명할 수 있습니다.</p>'
+      : "";
+
+    return '<section class="code-beginner-first-panel-v328-a1" data-beginner-first="v328-a1">' +
+      '<div class="code-beginner-eyebrow-v328-a1">초보자용 먼저 보기</div>' +
+      '<h3>이 코드는 어떤 결과를 만드나요?</h3>' +
+      '<p>' + escapeHtml(resultText) + '</p>' +
+      dynamicNote +
+      renderBeginnerExampleV328A1(result, functions) +
+      (functionCards ? '<div class="code-beginner-functions-v328-a1"><h4>함수별로 보면</h4>' + functionCards + '</div>' : "") +
+      renderCodeNameLabelsV328A1(labels) +
+      renderSimpleExecutionFlowV328A1(result, functions) +
+      '</section>';
+  }
+
   function renderQuickReport(result) {
     const box = el("codeQuickReport");
     if (!box) return;
@@ -4662,15 +4963,18 @@ function renderFunctionInterpretationListV251(items, emptyText) {
       ? '<p class="code-report-categories">긴 코드 모드: ' + steps.length + '개 단계 / ' + lineCount + '줄. 화면에는 핵심 앞부분을 우선 보여주고, 전체 흐름은 리포트와 Mermaid 원문으로 확인합니다.</p>'
       : "";
 
-    box.className = "code-quick-report";
-    box.innerHTML = '<div class="code-report-mini-grid">' +
+    box.className = "code-quick-report code-quick-report-v328-a1";
+    box.innerHTML = renderBeginnerFirstPanelV328A1(result) +
+      '<details class="code-detail-legacy-summary-v328-a1"><summary>기존 숫자 요약 보기</summary>' +
+      '<div class="code-report-mini-grid">' +
       '<span class="code-report-chip"><strong>' + steps.length + '</strong><small>단계</small></span>' +
       '<span class="code-report-chip"><strong>' + warnings.length + '</strong><small>위험/주의</small></span>' +
       '<span class="code-report-chip"><strong>' + (confidence.unsupported || 0) + '</strong><small>미지원</small></span>' +
       '<span class="code-report-chip"><strong>' + unsupportedItems.length + '</strong><small>확인필요</small></span>' +
       '</div>' +
       '<p class="code-report-categories">' + escapeHtml(formatCountSummary(categories) || "분류 없음") + '</p>' +
-      longCodeHtml;
+      longCodeHtml +
+      '</details>';
   }
 
   function renderConfidenceReport(result) {
@@ -5162,3 +5466,6 @@ function renderFunctionInterpretationListV251(items, emptyText) {
 })();
 // === CODE EXPLAINER UI V212-A1 END ===
 // === CODE EXPLAINER UI V215-A1 END ===
+
+
+
