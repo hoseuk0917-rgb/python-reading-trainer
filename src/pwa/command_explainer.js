@@ -25,8 +25,9 @@
 // COMMAND_EXPLAINER_WRANGLER_DEPLOY_V322_A4B3
 // COMMAND_EXPLAINER_GIT_CLEAN_V322_A4B4
 // COMMAND_EXPLAINER_NPM_NODE_SCRIPTS_V325_A2
+// COMMAND_EXPLAINER_POWERSHELL_ALIAS_PIPELINE_V326_A1
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260619_v325_a2";
+  const COMMAND_EXPLAINER_VERSION = "20260619_v326_a1";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -916,6 +917,29 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
 
     if (isPowerShellControlLineV277(trimmed)) {
       return buildControlStepV277(line, lineNumber);
+    }
+
+    if (/\|/.test(trimmed) && /\|\s*(?:\?|%|ForEach-Object\b)/i.test(trimmed)) {
+      const pipePartsV326A1 = trimmed.split("|").map(function(part) {
+        return part.trim();
+      }).filter(Boolean);
+      const hasWhereAliasV326A1 = /\|\s*\?(?:\s|$)/.test(trimmed);
+      const hasForEachAliasV326A1 = /\|\s*%(?:\s|$)/.test(trimmed);
+      const hasForEachObjectV326A1 = /\|\s*ForEach-Object\b/i.test(trimmed);
+
+      return {
+        line: lineNumber,
+        command: "PowerShell pipeline",
+        group: "\ud30c\uc774\ud504\ub77c\uc778",
+        risk: "safe",
+        raw: line,
+        meaning: "PowerShell pipeline\uc785\ub2c8\ub2e4. \uc67c\ucabd \uba85\ub839\uc758 \uacb0\uacfc \uac1d\uccb4\uac00 \uc624\ub978\ucabd \uba85\ub839\uc73c\ub85c \uc21c\uc11c\ub300\ub85c \ub118\uc5b4\uac11\ub2c8\ub2e4." +
+          (hasWhereAliasV326A1 ? " ?\ub294 Where-Object\uc758 \uc9e7\uc740 \ubcc4\uce6d\uc774\uba70, \uc870\uac74\uc5d0 \ub9de\ub294 \ud56d\ubaa9\ub9cc \ud1b5\uacfc\uc2dc\ud0b5\ub2c8\ub2e4." : "") +
+          (hasForEachAliasV326A1 ? " %\ub294 ForEach-Object\uc758 \uc9e7\uc740 \ubcc4\uce6d\uc774\uba70, \ub118\uc5b4\uc628 \ud56d\ubaa9\ub9c8\ub2e4 \uac19\uc740 \uc791\uc5c5\uc744 \uc2e4\ud589\ud569\ub2c8\ub2e4." : "") +
+          (hasForEachObjectV326A1 ? " ForEach-Object\ub294 \ub118\uc5b4\uc628 \ud56d\ubaa9\ub9c8\ub2e4 \uac19\uc740 \uc791\uc5c5\uc744 \uc2e4\ud589\ud569\ub2c8\ub2e4." : ""),
+        fileImpact: "\uc774 \uc870\ud569\uc740 \uc8fc\ub85c \ubaa9\ub85d \uc870\ud68c, \uc870\uac74 \ud544\ud130\ub9c1, \ubc18\ubcf5 \ucc98\ub9ac \ud750\ub984\uc785\ub2c8\ub2e4. \uc0ad\uc81c/\uc4f0\uae30 \uba85\ub839\uc774 \uc5c6\ub2e4\uba74 \ubcf4\ud1b5 \ud30c\uc77c\uc744 \uc218\uc815\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+        nextCheck: "pipeline steps: " + pipePartsV326A1.join(" -> ")
+      };
     }
 
     if (/\|/.test(trimmed) && /(?:Get-ChildItem|gci|dir|ls|Where-Object|Select-Object)/i.test(trimmed)) {
