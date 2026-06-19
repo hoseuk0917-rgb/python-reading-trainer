@@ -26,8 +26,9 @@
 // COMMAND_EXPLAINER_GIT_CLEAN_V322_A4B4
 // COMMAND_EXPLAINER_NPM_NODE_SCRIPTS_V325_A2
 // COMMAND_EXPLAINER_POWERSHELL_ALIAS_PIPELINE_V326_A1
+// COMMAND_EXPLAINER_BROAD_ADVISOR_V326_A3
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260619_v326_a1";
+  const COMMAND_EXPLAINER_VERSION = "20260619_v326_a3";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -293,6 +294,95 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
 
 
   const POWERSHELL_RULES_V277 = [
+
+    {
+      id: "git_reset_v326_a3",
+      command: "git reset",
+      group: "Git danger",
+      risk: "danger",
+      pattern: /^\s*git\s+reset\b/i,
+      meaning: "Moves Git state. With --hard, local tracked file changes can be discarded. Treat this as a recovery/destructive command, not a normal save command.",
+      fileImpact: "Can change Git history pointers and can discard local file changes when --hard is used.",
+      nextCheck: "git status --short; git --no-pager log --oneline -5",
+      pasteBackHint: "Paste the git status and recent log output back so the target commit and local changes can be checked before reset."
+    },
+    {
+      id: "git_restore_v326_a3",
+      command: "git restore",
+      group: "Git restore",
+      risk: "danger",
+      pattern: /^\s*git\s+restore\b/i,
+      meaning: "Restores files from Git. It is often used to discard local changes in a file or folder.",
+      fileImpact: "Can overwrite local edits in the target path.",
+      nextCheck: "git diff -- <path>; git status --short",
+      pasteBackHint: "Paste git diff/status output back before running restore if you are not sure what will be discarded."
+    },
+    {
+      id: "git_switch_checkout_v326_a3",
+      command: "git switch/checkout",
+      group: "Git branch",
+      risk: "caution",
+      pattern: /^\s*git\s+(?:switch|checkout|branch|fetch|pull|merge|rebase)\b/i,
+      meaning: "Changes, lists, updates, or combines Git branches. The exact effect depends on the subcommand and options.",
+      fileImpact: "May change the checked-out branch, update files, or combine commits. pull/merge/rebase can modify the working tree.",
+      nextCheck: "git status --short; git branch --show-current; git --no-pager log --oneline -5",
+      pasteBackHint: "Paste branch/status/log output back so the current branch and pending changes can be interpreted."
+    },
+    {
+      id: "pip_install_requirements_v326_a3",
+      command: "pip install",
+      group: "Python package",
+      risk: "caution",
+      pattern: /^\s*(?:python\s+-m\s+)?pip\s+install\b/i,
+      meaning: "Installs Python packages into the active Python environment. With -r requirements.txt, it installs the package list written in that file.",
+      fileImpact: "Usually changes the Python environment, not project source files. It may create cache files or update lock-related files depending on the tool.",
+      nextCheck: "python -m pip --version; Get-Content requirements.txt -TotalCount 40",
+      pasteBackHint: "Paste pip --version and requirements.txt output back to confirm which Python environment and packages are involved."
+    },
+    {
+      id: "python_venv_v326_a3",
+      command: "python -m venv",
+      group: "Python environment",
+      risk: "caution",
+      pattern: /^\s*python(?:\.exe)?\s+-m\s+venv\b/i,
+      meaning: "Creates a local Python virtual environment folder so packages can be installed separately from the system Python.",
+      fileImpact: "Creates a virtual environment folder such as .venv. It can add many generated files.",
+      nextCheck: "Test-Path .\\.venv; python -c \"import sys; print(sys.executable)\"",
+      pasteBackHint: "Paste the executable path back to confirm which Python will run."
+    },
+    {
+      id: "pytest_v326_a3",
+      command: "pytest",
+      group: "Python test",
+      risk: "caution",
+      pattern: /^\s*(?:python\s+-m\s+)?pytest\b/i,
+      meaning: "Runs Python tests with pytest. The result tells whether the current code passes the test suite.",
+      fileImpact: "Usually reads code and writes test cache or coverage artifacts. It can trigger test code side effects.",
+      nextCheck: "pytest -q; git status --short",
+      pasteBackHint: "Paste the pytest failure summary back and I can explain which test failed and where to look."
+    },
+    {
+      id: "uvicorn_v326_a3",
+      command: "uvicorn",
+      group: "Python web server",
+      risk: "caution",
+      pattern: /^\s*(?:python\s+-m\s+)?uvicorn\b/i,
+      meaning: "Starts an ASGI Python web server, commonly for FastAPI. app:app means module name app and application object app.",
+      fileImpact: "Usually starts a local server and does not edit source files, but app startup code can read/write files or connect to services.",
+      nextCheck: "python -m pip show fastapi uvicorn; Get-ChildItem -Recurse -File -Filter app.py",
+      pasteBackHint: "Paste the pip show and app.py listing output back to confirm the FastAPI entry point."
+    },
+    {
+      id: "select_string_v326_a3",
+      command: "Select-String",
+      group: "Source search",
+      risk: "safe",
+      pattern: /^\s*Select-String\b/i,
+      meaning: "Searches text in files. It is useful for finding where a function, class, handler, or error message is defined.",
+      fileImpact: "Read-only search. It normally does not modify files.",
+      nextCheck: "Select-String -Path .\\*.py -Recurse -Pattern \"def <name>|class <name>\"",
+      pasteBackHint: "Paste the matched lines back and I can explain which definition or call site is relevant."
+    },
     {
       id: "set_location",
       command: "Set-Location",
@@ -507,6 +597,84 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
 
 
   const BASH_RULES_V278 = [
+
+    {
+      id: "git_reset_v326_a3",
+      command: "git reset",
+      group: "Git danger",
+      risk: "danger",
+      pattern: /^\s*git\s+reset\b/i,
+      meaning: "Moves Git state. With --hard, local tracked file changes can be discarded.",
+      fileImpact: "Can change Git pointers and discard local file edits.",
+      nextCheck: "git status --short; git log --oneline -5",
+      pasteBackHint: "Paste status/log output back before reset."
+    },
+    {
+      id: "git_restore_v326_a3",
+      command: "git restore",
+      group: "Git restore",
+      risk: "danger",
+      pattern: /^\s*git\s+restore\b/i,
+      meaning: "Restores files from Git, often discarding local changes.",
+      fileImpact: "Can overwrite local edits in the target path.",
+      nextCheck: "git diff -- <path>; git status --short",
+      pasteBackHint: "Paste diff/status output back before restore."
+    },
+    {
+      id: "git_switch_checkout_v326_a3",
+      command: "git switch/checkout",
+      group: "Git branch",
+      risk: "caution",
+      pattern: /^\s*git\s+(?:switch|checkout|branch|fetch|pull|merge|rebase)\b/i,
+      meaning: "Changes, lists, updates, or combines Git branches depending on the subcommand.",
+      fileImpact: "May change checked-out files or branch state.",
+      nextCheck: "git status --short; git branch --show-current; git log --oneline -5",
+      pasteBackHint: "Paste branch/status/log output back for exact interpretation."
+    },
+    {
+      id: "pip_install_requirements_v326_a3",
+      command: "pip install",
+      group: "Python package",
+      risk: "caution",
+      pattern: /^\s*(?:python3?\s+-m\s+)?pip\s+install\b/i,
+      meaning: "Installs Python packages. With -r requirements.txt, it installs the package list from that file.",
+      fileImpact: "Changes the active Python environment and may write cache files.",
+      nextCheck: "python3 -m pip --version; head -n 40 requirements.txt",
+      pasteBackHint: "Paste pip version and requirements output back to confirm the environment and dependencies."
+    },
+    {
+      id: "pytest_v326_a3",
+      command: "pytest",
+      group: "Python test",
+      risk: "caution",
+      pattern: /^\s*(?:python3?\s+-m\s+)?pytest\b/i,
+      meaning: "Runs Python tests with pytest.",
+      fileImpact: "Usually reads code and may write test cache or coverage output.",
+      nextCheck: "pytest -q; git status --short",
+      pasteBackHint: "Paste the pytest failure summary back for explanation."
+    },
+    {
+      id: "uvicorn_v326_a3",
+      command: "uvicorn",
+      group: "Python web server",
+      risk: "caution",
+      pattern: /^\s*(?:python3?\s+-m\s+)?uvicorn\b/i,
+      meaning: "Starts an ASGI Python web server, commonly for FastAPI.",
+      fileImpact: "Usually starts a local server; startup code may still have side effects.",
+      nextCheck: "python3 -m pip show fastapi uvicorn; find . -maxdepth 3 -name app.py",
+      pasteBackHint: "Paste pip show and file listing output back to confirm the app entry point."
+    },
+    {
+      id: "find_v326_a3",
+      command: "find",
+      group: "File search",
+      risk: "safe",
+      pattern: /^\s*find\b/i,
+      meaning: "Searches for files or folders by name, depth, or other conditions.",
+      fileImpact: "Read-only when used without -delete or -exec that modifies files.",
+      nextCheck: "find . -maxdepth 3 -type f | head -n 40",
+      pasteBackHint: "Paste the file list back and I can explain the project layout."
+    },
     {
       id: "cd",
       command: "cd",
@@ -1057,7 +1225,14 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
         groups: groups,
         text: "PowerShell 명령 " + steps.length + "개를 작업 순서대로 분석했습니다. 위험 " + dangerous + "개, 주의 " + caution + "개, 미확인 " + unknown + "개입니다."
       },
-      nextChecks: nextChecks
+      nextChecks: nextChecks,
+      unknowns: steps.filter(function(step) { return step.risk === "unknown"; }).map(function(step) {
+        return { line: step.line, command: step.command, raw: step.raw, nextCheck: step.nextCheck };
+      }),
+      pasteBackHint: nextChecks.length
+        ? "Run safe read-only check commands when you need exact context, then paste the output back for a more precise explanation."
+        : "",
+      advisorMode: "explain_then_check_v326_a3"
     };
   }
 
@@ -1189,7 +1364,14 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
         groups: groups,
         text: "Bash/Shell 명령 " + steps.length + "개를 작업 순서대로 분석했습니다. 위험 " + danger + "개, 주의 " + caution + "개, 미확인 " + unknown + "개입니다."
       },
-      nextChecks: nextChecks
+      nextChecks: nextChecks,
+      unknowns: steps.filter(function(step) { return step.risk === "unknown"; }).map(function(step) {
+        return { line: step.line, command: step.command, raw: step.raw, nextCheck: step.nextCheck };
+      }),
+      pasteBackHint: nextChecks.length
+        ? "Run safe read-only check commands when you need exact context, then paste the output back for a more precise explanation."
+        : "",
+      advisorMode: "explain_then_check_v326_a3"
     };
   }
 

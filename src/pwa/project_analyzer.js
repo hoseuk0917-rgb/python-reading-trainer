@@ -1,6 +1,7 @@
 // === PROJECT ANALYZER V248-A1 START ===
+// PROJECT_CONFIG_SEMANTICS_V326_A3 package.json requirements.txt README wrangler Dockerfile GitHub Actions pyproject.toml
 (function() {
-  const PROJECT_ANALYZER_VERSION = "20260618_v323_a4";
+  const PROJECT_ANALYZER_VERSION = "20260619_v326_a3";
   const rootKey = "python-reading-trainer-project-root-v193";
   let lastCommand = "";
   let lastMermaid = "";
