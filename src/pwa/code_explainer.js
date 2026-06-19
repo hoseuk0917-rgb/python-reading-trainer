@@ -1,4 +1,5 @@
 // === CODE EXPLAINER UI V215-A1 START ===
+// CODE_EXPLAINER_UI_RENDER_FUNCTION_ADVISOR_V327_A3
 // === CODE EXPLAINER UI V212-A1 START ===
 (function() {
   "use strict";
@@ -397,6 +398,60 @@ port = 5432`
   }
 
 
+
+  // CODE_EXPLAINER_UI_RENDER_FUNCTION_ADVISOR_V327_A3
+  function renderFunctionFlowAdvisorV327A3(result) {
+    const target = el("codeFlowAnalysisReport");
+    if (!target) return;
+
+    const flows = Array.isArray(result && result.functionFlowV326A4) ? result.functionFlowV326A4 : [];
+    const advisors = Array.isArray(result && result.nextCheckAdvisorV326A4) ? result.nextCheckAdvisorV326A4 : [];
+
+    const oldBlocks = target.querySelectorAll ? target.querySelectorAll(".function-flow-advisor-v327-a3") : [];
+    Array.prototype.forEach.call(oldBlocks, function(block) {
+      if (block && block.parentNode) block.parentNode.removeChild(block);
+    });
+
+    if (!flows.length && !advisors.length) return;
+
+    const flowHtml = flows.slice(0, 4).map(function(flow, index) {
+      const ordered = Array.isArray(flow.orderedSteps) ? flow.orderedSteps : [];
+      const commands = Array.isArray(flow.nextCommands) ? flow.nextCommands : [];
+
+      return '<section class="function-flow-item-v327-a3">' +
+        '<h4>Function flow ' + (index + 1) + ': ' + escapeHtml(flow.name || "function") + '</h4>' +
+        '<p><strong>roleSummary:</strong> ' + escapeHtml(flow.roleSummary || "Function-level flow summary is available.") + '</p>' +
+        (ordered.length ? '<ol class="orderedSteps-v327-a3">' + ordered.slice(0, 8).map(function(step) {
+          return '<li>' + escapeHtml(step) + '</li>';
+        }).join("") + '</ol>' : '') +
+        (commands.length ? '<div class="function-flow-next-v327-a3"><strong>Next check command:</strong><pre class="code-block small-code">' +
+          escapeHtml(commands.join("\n")) + '</pre></div>' : '') +
+      '</section>';
+    }).join("");
+
+    const advisorHtml = advisors.slice(0, 5).map(function(advisor) {
+      const commands = Array.isArray(advisor.commands) ? advisor.commands : [];
+      return '<section class="next-check-advisor-v327-a3">' +
+        '<h4>Next check: safe read-only command (Select-String)</h4>' +
+        '<p>' + escapeHtml(advisor.reason || "More context is needed for exact interpretation.") + '</p>' +
+        (commands.length ? '<pre class="code-block small-code">' + escapeHtml(commands.join("\n")) + '</pre>' : '') +
+        '<p class="muted">Paste output back: ' + escapeHtml(advisor.pasteBackHint || "Paste the command output back for a more precise explanation.") + '</p>' +
+      '</section>';
+    }).join("");
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "function-flow-advisor-v327-a3";
+    wrapper.innerHTML =
+      '<details open class="function-flow-render-v327-a3">' +
+        '<summary>Function flow / Next check advisor</summary>' +
+        flowHtml +
+        advisorHtml +
+      '</details>';
+
+    target.className = String(target.className || "").replace(/\bmuted\b/g, "").trim() || "code-flow-analysis-report";
+    target.appendChild(wrapper);
+  }
+
   function normalizeSearchText(value) {
     return String(value || "").toLowerCase();
   }
@@ -500,7 +555,8 @@ port = 5432`
   }
 
   function renderRelatedCards(result) {
-    const box = el("codeRelatedCards");
+        renderFunctionFlowAdvisorV327A3(result);
+const box = el("codeRelatedCards");
     if (!box) return;
 
     const matches = findRelatedCards(result);

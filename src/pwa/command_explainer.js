@@ -27,8 +27,9 @@
 // COMMAND_EXPLAINER_NPM_NODE_SCRIPTS_V325_A2
 // COMMAND_EXPLAINER_POWERSHELL_ALIAS_PIPELINE_V326_A1
 // COMMAND_EXPLAINER_BROAD_ADVISOR_V326_A3
+// COMMAND_EXPLAINER_PASTE_BACK_RENDER_V327_A3
 (function() {
-  const COMMAND_EXPLAINER_VERSION = "20260619_v326_a3";
+  const COMMAND_EXPLAINER_VERSION = "20260619_v327_a3";
 
   const POWERSHELL_SAMPLE_V277 = `Set-Location "D:\\projects\\python-reading-trainer"
 
@@ -2177,20 +2178,54 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
     bindCommandSafetyChecklistCopyV290(box);
   }
 
+
+  // COMMAND_EXPLAINER_PASTE_BACK_RENDER_V327_A3
+  function renderCommandPasteBackHintV327A3(result) {
+    const hint = String(result && result.pasteBackHint || "").trim();
+    const unknowns = Array.isArray(result && result.unknowns) ? result.unknowns : [];
+
+    if (!hint && !unknowns.length) return "";
+
+    const unknownHtml = unknowns.length
+      ? '<div class="command-unknowns-v327-a3"><strong>Unknown commands:</strong><ul>' +
+        unknowns.slice(0, 6).map(function(item) {
+          return '<li>line ' + escapeHtmlV277(item.line || "") + ' 쨌 ' + escapeHtmlV277(item.command || "") +
+            (item.nextCheck ? '<pre class="code-block small-code">' + escapeHtmlV277(item.nextCheck) + '</pre>' : '') +
+          '</li>';
+        }).join("") + '</ul></div>'
+      : "";
+
+    return '<details open class="command-paste-back-advisor-v327-a3">' +
+      '<summary>Paste-back advisor</summary>' +
+      '<p>Run safe read-only next check commands when the exact context is unclear. Then paste output back for a more precise explanation.</p>' +
+      (hint ? '<p class="muted">' + escapeHtmlV277(hint) + '</p>' : '') +
+      unknownHtml +
+    '</details>';
+  }
+
   function renderCommandNextChecksV277(result) {
     const box = getCommandElV277("commandNextChecks");
     if (!box) return;
 
-    if (!result.nextChecks.length) {
+    const checks = Array.isArray(result && result.nextChecks) ? result.nextChecks : [];
+    const pasteBackHtml = renderCommandPasteBackHintV327A3(result);
+
+    if (!checks.length && !pasteBackHtml) {
       box.className = "code-related-cards muted";
-      box.textContent = "추천 확인 명령이 없습니다.";
+      box.textContent = "No recommended next check commands.";
       return;
     }
 
     box.className = "code-related-cards";
-    box.innerHTML = result.nextChecks.map(function(check) {
-      return '<pre class="code-block small-code">' + escapeHtmlV277(check) + '</pre>';
-    }).join("");
+    box.innerHTML =
+      (checks.length
+        ? '<div class="command-next-check-list-v327-a3">' +
+          checks.map(function(check) {
+            return '<pre class="code-block small-code">' + escapeHtmlV277(check) + '</pre>';
+          }).join("") +
+          '</div>'
+        : '') +
+      pasteBackHtml;
   }
 
   function renderCommandAnalysisV277(result) {
