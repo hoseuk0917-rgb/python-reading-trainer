@@ -1,4 +1,5 @@
 // === CODE EXPLAINER RULES V215-A1 START ===
+// FUNCTION_FLOW_ADVISOR_V326_A4 def return for if with open getattr globals importlib callback handler
 // === CODE EXPLAINER RULES V212-A1 START ===
 (function() {
   "use strict";
@@ -3024,6 +3025,186 @@
     return items;
   }
 
+
+  // FUNCTION_FLOW_ADVISOR_V326_A4
+  function pythonIndentV326A4(line) {
+    const match = String(line || "").match(/^ */);
+    return match ? match[0].length : 0;
+  }
+
+  function stripPythonCommentV326A4(line) {
+    return String(line || "").replace(/#.*/, "").trim();
+  }
+
+  function splitParamsV326A4(raw) {
+    return String(raw || "").split(",").map(function(item) {
+      return item.trim().replace(/=.*$/, "").trim();
+    }).filter(Boolean);
+  }
+
+  function compactV326A4(value) {
+    return String(value || "").replace(/\s+/g, " ").trim().slice(0, 160);
+  }
+
+  function collectFunctionFlowV326A4(raw, language) {
+    if (language !== "python") return [];
+    const lines = String(raw || "").split(/\r?\n/);
+    const flows = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const header = lines[i];
+      const match = header.match(/^(\s*)(async\s+def|def)\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*(?:->\s*([^:]+))?\s*:/);
+      if (!match) continue;
+
+      const baseIndent = match[1].length;
+      const body = [];
+      for (let j = i + 1; j < lines.length; j++) {
+        const rawLine = lines[j];
+        if (rawLine.trim() && pythonIndentV326A4(rawLine) <= baseIndent) break;
+        body.push({ lineNo: j + 1, raw: rawLine, text: stripPythonCommentV326A4(rawLine) });
+      }
+
+      const flow = {
+        name: match[3],
+        kind: match[2].indexOf("async") >= 0 ? "async_python_function" : "python_function",
+        lineNo: i + 1,
+        params: splitParamsV326A4(match[4]),
+        returnHint: compactV326A4(match[5] || ""),
+        variables: [],
+        loops: [],
+        conditions: [],
+        fileOps: [],
+        jsonOps: [],
+        dataOps: [],
+        dynamicCalls: [],
+        returns: [],
+        orderedSteps: [],
+        roleSummary: "",
+        nextCommands: []
+      };
+
+      body.forEach(function(row) {
+        const line = row.text;
+        let m;
+        if (!line) return;
+
+        m = line.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
+        if (m && !/[=!<>]=/.test(line)) flow.variables.push({ lineNo: row.lineNo, name: m[1], expr: compactV326A4(m[2]) });
+
+        m = line.match(/^for\s+(.+?)\s+in\s+(.+):$/);
+        if (m) flow.loops.push({ lineNo: row.lineNo, type: "for", summary: "loop " + compactV326A4(m[1]) + " in " + compactV326A4(m[2]) });
+
+        m = line.match(/^while\s+(.+):$/);
+        if (m) flow.loops.push({ lineNo: row.lineNo, type: "while", summary: "while " + compactV326A4(m[1]) });
+
+        m = line.match(/^(if|elif)\s+(.+):$/);
+        if (m) flow.conditions.push({ lineNo: row.lineNo, type: m[1], condition: compactV326A4(m[2]) });
+        if (/^else\s*:$/.test(line)) flow.conditions.push({ lineNo: row.lineNo, type: "else", condition: "fallback branch" });
+
+        if (/with\s+open\s*\(|\bopen\s*\(|Path\s*\(|read_text\s*\(|write_text\s*\(/.test(line)) {
+          flow.fileOps.push({ lineNo: row.lineNo, code: compactV326A4(line) });
+        }
+
+        if (/json\.(load|loads|dump|dumps)\s*\(/.test(line)) flow.jsonOps.push({ lineNo: row.lineNo, code: compactV326A4(line) });
+
+        if (/\.(append|extend|update|add)\s*\(/.test(line) || /\[[^\]]+\s+for\s+.+\s+in\s+.+\]|\{[^}]+\s+for\s+.+\s+in\s+.+\}/.test(line)) {
+          flow.dataOps.push({ lineNo: row.lineNo, code: compactV326A4(line) });
+        }
+
+        if (/\b(getattr|globals|locals|eval|exec)\s*\(|importlib\.|callback\s*\(|handler\s*\(|load_handler\s*\(|registry\s*\[|dispatch\s*\[/.test(line)) {
+          flow.dynamicCalls.push({ lineNo: row.lineNo, code: compactV326A4(line) });
+        }
+
+        m = line.match(/^return\s+(.+)$/);
+        if (m) flow.returns.push({ lineNo: row.lineNo, expr: compactV326A4(m[1]) });
+      });
+
+      if (flow.params.length) flow.orderedSteps.push("Input: receives " + flow.params.join(", ") + ".");
+      if (flow.variables.length) flow.orderedSteps.push("Prepare values: creates/stores " + flow.variables.slice(0, 4).map(function(v) { return v.name; }).join(", ") + ".");
+      if (flow.fileOps.length) flow.orderedSteps.push("File/path work: reads or writes files/paths.");
+      if (flow.jsonOps.length) flow.orderedSteps.push("JSON work: converts JSON and Python data.");
+      if (flow.loops.length) flow.orderedSteps.push("Loop: repeats over data or while a condition is true.");
+      if (flow.conditions.length) flow.orderedSteps.push("Condition: checks branches before deciding what to process.");
+      if (flow.dataOps.length) flow.orderedSteps.push("Collect/transform: appends, updates, or comprehends data.");
+      if (flow.dynamicCalls.length) flow.orderedSteps.push("Dynamic call: actual target depends on runtime values or external registry.");
+      if (flow.returns.length) flow.orderedSteps.push("Return: sends " + flow.returns.slice(0, 2).map(function(item) { return item.expr; }).join(", ") + " back to the caller.");
+
+      if (flow.loops.length && flow.conditions.length && flow.dataOps.length && flow.returns.length) {
+        flow.roleSummary = "Looks like a filter/collector function: it loops over input data, checks conditions, collects matching values, then returns the result.";
+      } else if (flow.fileOps.length && flow.jsonOps.length && flow.returns.length) {
+        flow.roleSummary = "Looks like a file/JSON loader: it reads a file, converts JSON, then returns Python data.";
+      } else if (flow.dynamicCalls.length) {
+        flow.roleSummary = "Looks like a dynamic dispatch function: it chooses or calls another function based on runtime values.";
+      } else if (flow.returns.length) {
+        flow.roleSummary = "Looks like a value-returning function: it prepares internal values and returns a result.";
+      } else {
+        flow.roleSummary = "Looks like a procedure-style function: it performs work through side effects or calls.";
+      }
+
+      if (flow.dynamicCalls.length) {
+        flow.nextCommands.push('Select-String -Path .\\*.py -Recurse -Pattern "def ' + flow.name + '|def load_handler|handlers|registry|callback|getattr|globals|importlib"');
+        flow.nextCommands.push("git status --short");
+      }
+
+      flows.push(flow);
+      if (flows.length >= 8) break;
+    }
+
+    return flows;
+  }
+
+  function buildNextCheckAdvisorV326A4(raw, language, functionFlow, unsupportedItems) {
+    const text = String(raw || "");
+    const advisors = [];
+
+    function add(reason, commands, pasteBackHint) {
+      advisors.push({
+        reason: reason,
+        commands: commands,
+        risk: "safe_read_only",
+        pasteBackHint: pasteBackHint || "Run the command, then paste the output back for a more precise explanation."
+      });
+    }
+
+    const dynamicDetected = /\b(getattr|globals|locals|eval|exec)\s*\(|importlib\.|callback\s*\(|handler\s*\(|load_handler\s*\(|registry\s*\[|dispatch\s*\[/.test(text) ||
+      (functionFlow || []).some(function(flow) { return flow.dynamicCalls && flow.dynamicCalls.length; });
+
+    if (language === "python" && dynamicDetected) {
+      add(
+        "Dynamic call or handler/registry pattern detected.",
+        [
+          'Select-String -Path .\\*.py -Recurse -Pattern "def load_handler|handlers|registry|callback|getattr|globals|importlib"',
+          "git status --short"
+        ],
+        "Paste matched definition/registry lines back so the real target function can be explained."
+      );
+    }
+
+    const unsupported = Array.isArray(unsupportedItems) ? unsupportedItems : [];
+    const tokens = unsupported.map(function(item) { return item && item.token; }).filter(Boolean).slice(0, 6);
+    if (language === "python" && tokens.length) {
+      add(
+        "Some function calls are not defined in this snippet.",
+        [
+          'Select-String -Path .\\*.py -Recurse -Pattern "' + tokens.join("|").replace(/"/g, "") + '"'
+        ],
+        "Paste the matched lines back so external definitions can be connected to this snippet."
+      );
+    }
+
+    if (language === "python" && /with\s+open\s*\(|read_text\s*\(|write_text\s*\(|Path\s*\(/.test(text)) {
+      add(
+        "File/path operation detected.",
+        [
+          "Get-ChildItem -Recurse -File | Select-Object -First 40 FullName"
+        ],
+        "Paste the file list or target path output back to confirm which files are read or written."
+      );
+    }
+
+    return advisors.slice(0, 6);
+  }
+
   function analyze(code, requestedLanguage) {
     const raw = stripFence(code);
     const language = requestedLanguage && requestedLanguage !== "auto" ? requestedLanguage : detectLanguage(raw);
@@ -3060,6 +3241,9 @@
 
     const dataFlow = collectDataFlow(refinedSteps, language);
     const callFlow = collectCallFlow(raw, language);
+    const unsupportedItems = collectUnsupportedItems(refinedSteps, language);
+    const functionFlowV326A4 = collectFunctionFlowV326A4(raw, language);
+    const nextCheckAdvisorV326A4 = buildNextCheckAdvisorV326A4(raw, language, functionFlowV326A4, unsupportedItems);
 
     return {
       language: language,
@@ -3067,7 +3251,9 @@
       summary: summarize(language, refinedSteps),
       flowSummary: summarizeFlow(refinedSteps),
       confidenceSummary: summarizeConfidence(refinedSteps),
-      unsupportedItems: collectUnsupportedItems(refinedSteps, language),
+      unsupportedItems: unsupportedItems,
+      functionFlowV326A4: functionFlowV326A4,
+      nextCheckAdvisorV326A4: nextCheckAdvisorV326A4,
       dataFlow: dataFlow,
       callFlow: callFlow,
       steps: refinedSteps,

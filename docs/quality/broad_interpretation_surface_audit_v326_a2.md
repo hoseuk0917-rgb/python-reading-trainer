@@ -10,9 +10,9 @@ Target capability: explain code/commands/project files when obvious, and when no
 
 - command explainer version: `20260619_v326_a3`
 - total checks: 22
-- status counts: `{"OK":19,"GAP":3}`
+- status counts: `{"OK":21,"GAP":1}`
 - priority counts: `{"A":16,"B":6}`
-- high-impact A gaps: 2
+- high-impact A gaps: 0
 
 ## Checks
 
@@ -33,8 +33,8 @@ Target capability: explain code/commands/project files when obvious, and when no
 | command_bash | bash_pytest | OK | B | commands=pytest; unknown=0; nextChecks=pytest -q; git status --short | Mirror pytest rule in Bash analyzer. |
 | command_bash | bash_grep_definition_search | OK | A | commands=grep; unknown=0; nextChecks=grep -n <검색어> <파일> | Add read-only grep/search rule for function tracing. |
 | command_bash | bash_find_config | OK | B | commands=find; unknown=0; nextChecks=find . -maxdepth 3 -type f \| head -n 40 | Add find/listing rule. |
-| code_surface | python_flow_tokens | GAP | A | Python basic function/flow surface should be visible. file=src/pwa/code_explainer_rules.js tokens=def , return, for , if , with open | Add function-flow summary audit/patch. |
-| code_surface | python_dynamic_unknown_tokens | GAP | A | Dynamic call uncertainty should trigger follow-up command suggestion. file=src/pwa/code_explainer_rules.js tokens=getattr, globals(), importlib, callback, handler | Add unknown-call advisor: search definition, inspect registry, paste output. |
+| code_surface | python_flow_tokens | OK | A | Python basic function/flow surface should be visible. file=src/pwa/code_explainer_rules.js tokens=def , return, for , if , with open |  |
+| code_surface | python_dynamic_unknown_tokens | OK | A | Dynamic call uncertainty should trigger follow-up command suggestion. file=src/pwa/code_explainer_rules.js tokens=getattr, globals(), importlib, callback, handler |  |
 | code_surface | python_data_io_tokens | OK | A | Common Python IO/API/data-library surface. file=src/pwa/code_explainer_rules.js tokens=json.load, json.dump, requests.get, pandas, read_csv, Path( |  |
 | code_surface | js_flow_tokens | GAP | B | Common browser/JS flow surface. file=src/pwa/code_explainer_rules.js tokens=addEventListener, fetch, JSON.parse, localStorage | Patch JS runtime/data flow rules. |
 | project_surface | project_config_tokens | OK | A | Project config file semantic coverage. file=src/pwa/project_analyzer.js tokens=package.json, requirements.txt, README, wrangler, Dockerfile |  |
@@ -43,9 +43,4 @@ Target capability: explain code/commands/project files when obvious, and when no
 
 ## Decision
 
-Next patch should be one broad closure, not many tiny patches:
-
-1. Add command-family coverage for git reset/restore/switch, pip, pytest, uvicorn, Select-String/grep/find.
-2. Add project config semantics for README/package/requirements/pyproject/wrangler/Dockerfile/GitHub Actions.
-3. Add an interactive advisor shape: unknowns + safe read-only next commands + paste-back hint.
-4. Add function-flow summary separately only after the advisor surface is stable.
+The broad audit did not find high-impact A gaps. Move to function-flow summary.
