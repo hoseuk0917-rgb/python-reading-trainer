@@ -8,7 +8,7 @@ It does not change app behavior. It expands the audit set to find the next expla
 ## Summary
 
 - Total samples: 31
-- Review-needed samples: 6
+- Review-needed samples: 5
 - Samples with generic step titles: 0
 - Samples with unsupported items: 0
 
@@ -30,7 +30,7 @@ It does not change app behavior. It expands the audit set to find the next expla
 | js_array_chain | javascript | OK | 4 | 0 | 0 | 0 | - |
 | cf_worker_fetch | javascript | OK | 4 | 0 | 0 | 0 | - |
 | java_loop_sum | java | OK | 5 | 0 | 0 | 0 | - |
-| py_list_comprehension | python | REVIEW | 2 | 0 | 0 | 0 | 반복문, 조건 검사 |
+| py_list_comprehension | python | OK | 4 | 0 | 0 | 0 | - |
 | py_dict_update | python | OK | 4 | 0 | 0 | 0 | - |
 | py_pathlib_glob | python | REVIEW | 3 | 0 | 0 | 0 | 값 돌려주기 |
 | py_requests_error_handling | python | OK | 5 | 0 | 0 | 0 | - |
@@ -230,14 +230,16 @@ It does not change app behavior. It expands the audit set to find the next expla
 
 ### py_list_comprehension — Python list comprehension filter transform
 
-- Status: REVIEW
+- Status: OK
 - Note: 한 줄 리스트 컴프리헨션 안의 반복/조건/변환을 충분히 설명하는지 확인.
-- Step titles: 함수 정의 / 값 돌려주기
-- Missing expected titles: 반복문, 조건 검사
+- Step titles: 함수 정의 / 값 돌려주기 / 반복문 / 조건 검사
+- Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
   - 1. 나중에 이름으로 불러서 실행할 수 있는 코드 묶음을 만듭니다. 이 줄만으로 함수 안쪽이 바로 실행되지는 않습니다.
   - 2. 함수 안에서 계산한 결과를 함수 밖으로 돌려줍니다.
+  - 3. 리스트 컴프리헨션 안의 for 부분은 원본 목록에서 값을 하나씩 꺼내 결과 리스트를 만드는 반복 흐름입니다.
+  - 4. 리스트 컴프리헨션 안의 if 부분은 조건에 맞는 항목만 결과 리스트에 포함하게 거르는 역할을 합니다.
 
 ### py_dict_update — Python dict update
 

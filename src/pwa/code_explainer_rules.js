@@ -2975,6 +2975,46 @@
     });
   }
 
+
+  // PYTHON_LIST_COMPREHENSION_EXPAND_V329_A4
+  function expandPythonListComprehensionStepsV329A4(steps, language) {
+    if (language !== "python") return steps;
+    if (!Array.isArray(steps)) return steps;
+
+    const expanded = [];
+
+    steps.forEach(function(step) {
+      expanded.push(step);
+
+      const code = String(step && step.code || "").trim();
+      const lineNo = step && step.lineNo ? step.lineNo : 0;
+
+      if (!/^return\s+\[.+\bfor\b.+\]$/.test(code)) return;
+
+      const risk = riskOf(code, "python");
+
+      expanded.push(makeStep(
+        lineNo,
+        code,
+        "반복문",
+        "리스트 컴프리헨션 안의 for 부분은 원본 목록에서 값을 하나씩 꺼내 결과 리스트를 만드는 반복 흐름입니다.",
+        risk
+      ));
+
+      if (/\bif\b/.test(code)) {
+        expanded.push(makeStep(
+          lineNo,
+          code,
+          "조건 검사",
+          "리스트 컴프리헨션 안의 if 부분은 조건에 맞는 항목만 결과 리스트에 포함하게 거르는 역할을 합니다.",
+          risk
+        ));
+      }
+    });
+
+    return expanded;
+  }
+
   // UNSUPPORTED_ITEMS_V202_A1
   function summarizeConfidence(steps) {
     const counts = {
@@ -3264,7 +3304,8 @@
     const enrichedSteps = steps.map(function(step) {
       return inferStepMeta(step, language);
     });
-    const refinedSteps = refineUnknownCallConfidence(enrichedSteps, raw, language);
+    let refinedSteps = refineUnknownCallConfidence(enrichedSteps, raw, language);
+    refinedSteps = expandPythonListComprehensionStepsV329A4(refinedSteps, language);
 
     const dataFlow = collectDataFlow(refinedSteps, language);
     const callFlow = collectCallFlow(raw, language);
