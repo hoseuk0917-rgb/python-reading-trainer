@@ -8,7 +8,7 @@ It does not change app behavior. It expands the audit set to find the next expla
 ## Summary
 
 - Total samples: 31
-- Review-needed samples: 1
+- Review-needed samples: 0
 - Samples with generic step titles: 0
 - Samples with unsupported items: 0
 
@@ -42,7 +42,7 @@ It does not change app behavior. It expands the audit set to find the next expla
 | js_async_event_handler | javascript | OK | 3 | 0 | 0 | 0 | - |
 | js_local_storage | javascript | OK | 3 | 0 | 0 | 0 | - |
 | java_stream_collect | java | OK | 5 | 0 | 0 | 0 | - |
-| java_try_catch_read | java | REVIEW | 5 | 0 | 0 | 0 | 오류 처리 |
+| java_try_catch_read | java | OK | 6 | 0 | 0 | 0 | - |
 | java_map_put_get | java | OK | 3 | 0 | 0 | 0 | - |
 | config_package_json | auto | OK | 4 | 0 | 0 | 0 | - |
 | config_wrangler_toml | toml | OK | 5 | 0 | 0 | 0 | - |
@@ -377,10 +377,10 @@ It does not change app behavior. It expands the audit set to find the next expla
 
 ### java_try_catch_read — Java try catch read
 
-- Status: REVIEW
+- Status: OK
 - Note: Java try/catch 파일 읽기 흐름 설명 품질 확인.
-- Step titles: 메서드 정의 / 오류 대비 시작 / 파일/경로 처리 / 입출력 예외 처리 / 값 돌려주기
-- Missing expected titles: 오류 처리
+- Step titles: 메서드 정의 / 오류 대비 시작 / 파일/경로 처리 / 입출력 예외 처리 / 오류 처리 / 값 돌려주기
+- Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
   - 1. 나중에 객체나 클래스 이름으로 호출할 수 있는 Java 코드 묶음을 정의합니다. 접근제어자가 없어도 같은 패키지 안에서 쓸 수 있는 package-private 메서드일 수 있습니다. 매개변수와 반환 타입을 함께 확인해야 합니다.

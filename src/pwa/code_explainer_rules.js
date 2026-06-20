@@ -3118,6 +3118,38 @@
     return expanded;
   }
 
+
+  // JAVA_CATCH_ERROR_HANDLING_EXPAND_V329_A9
+  function expandJavaCatchErrorHandlingStepsV329A9(steps, language) {
+    if (language !== "java") return steps;
+    if (!Array.isArray(steps)) return steps;
+
+    const expanded = [];
+
+    steps.forEach(function(step) {
+      expanded.push(step);
+
+      const code = String(step && step.code || "").trim();
+      const lineNo = step && step.lineNo ? step.lineNo : 0;
+      const title = String(step && step.title || "");
+
+      if (!/\bcatch\s*\(/.test(code)) return;
+      if (title === "오류 처리") return;
+
+      const risk = riskOf(code, "java");
+
+      expanded.push(makeStep(
+        lineNo,
+        code,
+        "오류 처리",
+        "try 안에서 문제가 생겼을 때 catch 블록으로 넘어와 프로그램이 바로 멈추지 않도록 처리합니다. 예외 객체에는 실패 원인 정보가 들어 있습니다.",
+        risk
+      ));
+    });
+
+    return expanded;
+  }
+
   // UNSUPPORTED_ITEMS_V202_A1
   function summarizeConfidence(steps) {
     const counts = {
@@ -3410,6 +3442,7 @@
     let refinedSteps = refineUnknownCallConfidence(enrichedSteps, raw, language);
     refinedSteps = expandPythonListComprehensionStepsV329A4(refinedSteps, language);
     refinedSteps = expandPythonPathlibGlobReturnStepsV329A8(refinedSteps, language);
+    refinedSteps = expandJavaCatchErrorHandlingStepsV329A9(refinedSteps, language);
     refinedSteps = expandJavaScriptEventHandlerStepsV329A6(refinedSteps, language);
     refinedSteps = expandJavaScriptLocalStorageAssignmentStepsV329A7(refinedSteps, language);
 
