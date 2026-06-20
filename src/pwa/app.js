@@ -1,5 +1,5 @@
 ﻿// === CACHE BUST START ===
-const APP_DATA_VERSION = "20260620_v331_a2";
+const APP_DATA_VERSION = "20260621_v332_a3";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -3355,5 +3355,3 @@ if (document.readyState === "loading") {
   });
 })();
 // === MOBILE STUDY TOOLS MICRO SUMMARY V27.4 END ===
-
-

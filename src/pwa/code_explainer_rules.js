@@ -3838,6 +3838,226 @@
     };
   }
 
+
+  // UNKNOWN_NEXT_ACTIONS_V332_A2
+  function toKebabPackageNameV332A2(name) {
+    return String(name || "")
+      .replace(/_/g, "-")
+      .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+      .toLowerCase();
+  }
+
+  function quoteForPowerShellV332A2(value) {
+    return String(value || "").replace(/"/g, '\\"');
+  }
+
+  function pushUnknownActionV332A2(actions, key, title, reason, commands) {
+    if (!key || actions.some(function(action) { return action.key === key; })) return;
+    actions.push({
+      key: key,
+      title: title,
+      reason: reason,
+      shell: "PowerShell",
+      commands: commands,
+      note: "모르는 항목이면 먼저 설치 여부, 도움말, 프로젝트 내 사용 위치를 확인한 뒤 실행하세요."
+    });
+  }
+
+  function buildUnknownNextActionsV332A2(sourceCode, language, steps, unsupportedItems) {
+    const src = String(sourceCode || "");
+    const lang = String(language || "").toLowerCase();
+    const actions = [];
+
+    const stepList = Array.isArray(steps) ? steps : [];
+    const unsupportedList = Array.isArray(unsupportedItems) ? unsupportedItems : [];
+
+    if (lang === "python") {
+      const importRegex = /(?:^|\n)\s*(?:from\s+([A-Za-z_][\w.]*)\s+import|import\s+([A-Za-z_][\w.]*))/g;
+      let match;
+      while ((match = importRegex.exec(src))) {
+        const moduleName = String(match[1] || match[2] || "").split(".")[0];
+        const ignored = {
+          os: true, sys: true, json: true, pathlib: true, typing: true, re: true, math: true,
+          datetime: true, collections: true, itertools: true, functools: true, subprocess: true,
+          logging: true, csv: true, random: true, time: true, traceback: true
+        };
+        if (!moduleName || ignored[moduleName]) continue;
+
+        const pipName = toKebabPackageNameV332A2(moduleName);
+        const escapedModule = quoteForPowerShellV332A2(moduleName);
+        const escapedPip = quoteForPowerShellV332A2(pipName);
+
+        pushUnknownActionV332A2(
+          actions,
+          "python-module:" + moduleName,
+          "Python 외부 모듈 확인",
+          moduleName + " 모듈이 설치되어 있는지, 어디서 쓰이는지 확인해야 합니다.",
+          [
+            "python -m pip show " + escapedPip,
+            "python -c \"import importlib.util; print(importlib.util.find_spec('" + escapedModule + "'))\"",
+            "Get-ChildItem -Recurse -File | Select-String \"" + escapedModule + "\""
+          ]
+        );
+      }
+
+      const methodRegex = /\b([A-Za-z_][\w]*)\.([A-Za-z_]\w*)\s*\(/g;
+      while ((match = methodRegex.exec(src))) {
+        const objectName = match[1];
+        const methodName = match[2];
+        const knownObjects = { Path: true, json: true, os: true, sys: true, re: true, pd: true, np: true };
+        if (knownObjects[objectName]) continue;
+        if (/^(append|extend|items|keys|values|get|read_text|write_text|exists|open)$/.test(methodName)) continue;
+
+        pushUnknownActionV332A2(
+          actions,
+          "python-method:" + objectName + "." + methodName,
+          "Python 미확인 메서드 추적",
+          objectName + "." + methodName + " 호출이 어떤 라이브러리 기능인지 프로젝트 안에서 확인해야 합니다.",
+          [
+            "Get-ChildItem -Recurse -File | Select-String \"" + quoteForPowerShellV332A2(methodName) + "\"",
+            "Get-ChildItem -Recurse -File | Select-String \"" + quoteForPowerShellV332A2(objectName) + "\"",
+            "python -m pip list"
+          ]
+        );
+      }
+    }
+
+    if (lang === "javascript" || lang === "workers") {
+      const packageRegexes = [
+        /import\s+[^'"]+\s+from\s+['"]([^'"]+)['"]/g,
+        /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g
+      ];
+
+      packageRegexes.forEach(function(regex) {
+        let match;
+        while ((match = regex.exec(src))) {
+          const pkg = String(match[1] || "");
+          if (!pkg || pkg.startsWith(".") || pkg.startsWith("/") || /^(fs|path|os|http|https|url|crypto|util)$/.test(pkg)) continue;
+
+          const escapedPkg = quoteForPowerShellV332A2(pkg);
+          pushUnknownActionV332A2(
+            actions,
+            "js-package:" + pkg,
+            "JavaScript 패키지 확인",
+            pkg + " 패키지가 package.json에 있는지, 설치되어 있는지 확인해야 합니다.",
+            [
+              "npm ls " + escapedPkg,
+              "npm view " + escapedPkg + " version",
+              "Get-Content package.json -ErrorAction SilentlyContinue | Select-String \"" + escapedPkg + "\""
+            ]
+          );
+        }
+      });
+
+      unsupportedList.forEach(function(item) {
+        const token = String((item && (item.token || item.name || item.title || item.code)) || "");
+        const fnMatch = token.match(/\b([A-Za-z_$][\w$]*)\s*\(/);
+        const fn = fnMatch ? fnMatch[1] : "";
+        if (!fn || /^(if|for|while|switch|fetch|console|JSON|Promise|setTimeout|require)$/.test(fn)) return;
+
+        pushUnknownActionV332A2(
+          actions,
+          "js-function:" + fn,
+          "JavaScript 미확인 함수 추적",
+          fn + " 함수가 직접 만든 함수인지 외부 패키지 함수인지 확인해야 합니다.",
+          [
+            "Get-ChildItem -Recurse -File | Select-String \"function " + quoteForPowerShellV332A2(fn) + "\"",
+            "Get-ChildItem -Recurse -File | Select-String \"" + quoteForPowerShellV332A2(fn) + "\"",
+            "Get-Content package.json -ErrorAction SilentlyContinue"
+          ]
+        );
+      });
+    }
+
+    if (lang === "powershell") {
+      const lines = src.split(/\r?\n/).map(function(line) { return line.trim(); }).filter(Boolean);
+      lines.forEach(function(line) {
+        if (/^[#]/.test(line)) return;
+        const command = (line.match(/^([A-Za-z0-9_.-]+)/) || [])[1] || "";
+        if (!command) return;
+        if (/^(git|npm|node|python|pip|Get-ChildItem|Get-Content|Set-Location|Remove-Item|Copy-Item|Move-Item|New-Item|Select-String|Where-Object|ForEach-Object|Test-Path|Invoke-WebRequest)$/i.test(command)) return;
+
+        const escapedCommand = quoteForPowerShellV332A2(command);
+        pushUnknownActionV332A2(
+          actions,
+          "ps-command:" + command,
+          "PowerShell/CLI 명령 확인",
+          command + " 명령이 설치된 도구인지, 스크립트인지, 위험한 옵션이 있는지 확인해야 합니다.",
+          [
+            "Get-Command " + escapedCommand + " -ErrorAction SilentlyContinue",
+            "Get-Help " + escapedCommand + " -Full",
+            "where.exe " + escapedCommand,
+            escapedCommand + " --help"
+          ]
+        );
+      });
+    }
+
+    if (lang === "json" || lang === "package_json") {
+      const keyRegex = /"([^"]+)"\s*:/g;
+      let match;
+      const knownJsonKeys = {
+        scripts: true, dependencies: true, devDependencies: true, compilerOptions: true,
+        target: true, module: true, strict: true, include: true, exclude: true,
+        name: true, version: true, private: true, type: true, main: true
+      };
+
+      while ((match = keyRegex.exec(src))) {
+        const key = String(match[1] || "");
+        if (!key || knownJsonKeys[key]) continue;
+        if (!/unknown|experimental|adapter|magic|plugin|provider|mode|config/i.test(key)) continue;
+
+        const escapedKey = quoteForPowerShellV332A2(key);
+        pushUnknownActionV332A2(
+          actions,
+          "json-key:" + key,
+          "JSON 설정 키 확인",
+          key + " 설정 키가 어느 도구에서 쓰이는 옵션인지 프로젝트 안에서 확인해야 합니다.",
+          [
+            "Get-ChildItem -Recurse -File | Select-String \"" + escapedKey + "\"",
+            "Get-ChildItem -Recurse -Include \"*.json\",\"*.config.*\",\"*.toml\",\"*.yml\",\"*.yaml\" -File",
+            "Get-Content package.json -ErrorAction SilentlyContinue"
+          ]
+        );
+      }
+    }
+
+    if (!actions.length && unsupportedList.length) {
+      pushUnknownActionV332A2(
+        actions,
+        "generic-unsupported",
+        "미지원 항목 확인",
+        "자동 규칙에 없는 항목이 있으므로 원문 문자열을 프로젝트 안에서 검색해 확인해야 합니다.",
+        [
+          "Get-ChildItem -Recurse -File | Select-String \"확인할_문자열\"",
+          "git status --short"
+        ]
+      );
+    }
+
+    return actions;
+  }
+
+  const analyzeBaseV332A2 = analyze;
+  analyze = function(sourceCode, language) {
+    const result = analyzeBaseV332A2(sourceCode, language);
+    try {
+      const resultLanguage = (result && result.language) || language;
+      const resultSteps = (result && result.steps) || [];
+      const resultUnsupported = (result && result.unsupportedItems) || [];
+      const actions = buildUnknownNextActionsV332A2(sourceCode, resultLanguage, resultSteps, resultUnsupported);
+      result.unknownNextActions = actions;
+      if (actions.length) {
+        result.hasUnknownNextActions = true;
+      }
+    } catch (err) {
+      result.unknownNextActions = [];
+      result.unknownNextActionsError = String(err && err.message ? err.message : err);
+    }
+    return result;
+  };
+
+
   window.CodeExplainerRules = {
     analyze: analyze,
     detectLanguage: detectLanguage

@@ -589,6 +589,71 @@ port = 5432`
     box.appendChild(detail);
   }
 
+
+  // UNKNOWN_NEXT_ACTION_UI_V332_A3
+  function renderUnknownNextActionsV332A3(box, result) {
+    const actions = Array.isArray(result && result.unknownNextActions) ? result.unknownNextActions : [];
+    if (!box || !actions.length) return 0;
+
+    const wrapper = document.createElement("details");
+    wrapper.className = "code-related-detail unknown-next-actions-v332-a3";
+    wrapper.open = true;
+
+    const summary = document.createElement("summary");
+    summary.textContent = "확인할 명령어 " + actions.length + "개 보기";
+
+    const intro = document.createElement("p");
+    intro.className = "muted";
+    intro.textContent = "모르는 라이브러리, 함수, 설정 키, CLI 명령이 있으면 아래 PowerShell 확인 명령을 먼저 실행하고 결과를 다시 붙여넣으면 더 정확히 해석할 수 있습니다.";
+
+    const list = document.createElement("div");
+    list.className = "code-related-card-list-v328-a3 unknown-next-action-list-v332-a3";
+
+    actions.slice(0, 8).forEach(function(action, index) {
+      const commands = Array.isArray(action.commands) ? action.commands.filter(Boolean) : [];
+      if (!commands.length) return;
+
+      const item = document.createElement("article");
+      item.className = "code-related-card unknown-next-action-card-v332-a3";
+
+      const title = document.createElement("div");
+      title.className = "code-related-title";
+      title.textContent = (index + 1) + ". " + (action.title || "미확인 항목 확인");
+
+      const reason = document.createElement("div");
+      reason.className = "code-related-body";
+      reason.textContent = action.reason || action.note || "실행 전 의미와 설치 여부를 확인해야 합니다.";
+
+      const shell = document.createElement("div");
+      shell.className = "code-step-meta";
+      shell.innerHTML = '<span class="code-step-tag">' + escapeHtml(action.shell || "PowerShell") + '</span>';
+
+      const pre = document.createElement("pre");
+      pre.className = "code-block small-code unknown-next-action-commands-v332-a3";
+      pre.textContent = commands.join("\n");
+
+      const note = document.createElement("p");
+      note.className = "muted";
+      note.textContent = action.note || "읽기/조회 명령 위주로 먼저 확인하세요.";
+
+      item.appendChild(title);
+      item.appendChild(reason);
+      item.appendChild(shell);
+      item.appendChild(pre);
+      item.appendChild(note);
+      list.appendChild(item);
+    });
+
+    if (!list.children.length) return 0;
+
+    wrapper.appendChild(summary);
+    wrapper.appendChild(intro);
+    wrapper.appendChild(list);
+    box.appendChild(wrapper);
+
+    return actions.length;
+  }
+
   function renderRelatedCards(result) {
         renderFunctionFlowAdvisorV327A3(result);
 const box = el("codeRelatedCards");
@@ -597,11 +662,13 @@ const box = el("codeRelatedCards");
     const matches = findRelatedCards(result);
     box.innerHTML = "";
 
-    if (!matches.length) {
-      box.className = "code-related-cards muted";
-      box.textContent = "관련 보충 카드가 아직 연결되지 않았습니다. 위의 단계별 해석만으로도 학습을 진행할 수 있습니다.";
-      return;
-    }
+const unknownNextActionCountV332A3 = renderUnknownNextActionsV332A3(box, result);
+
+if (!matches.length && !unknownNextActionCountV332A3) {
+  box.className = "code-related-cards muted";
+  box.textContent = "관련 보충 카드가 아직 연결되지 않았습니다. 위의 단계별 해석만으로도 학습을 진행할 수 있습니다.";
+  return;
+}
 
     box.className = "code-related-cards";
 
