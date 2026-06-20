@@ -8,9 +8,9 @@ It does not change app behavior. It expands the audit set to find the next expla
 ## Summary
 
 - Total samples: 31
-- Review-needed samples: 7
+- Review-needed samples: 6
 - Samples with generic step titles: 0
-- Samples with unsupported items: 1
+- Samples with unsupported items: 0
 
 ## Result table
 
@@ -44,7 +44,7 @@ It does not change app behavior. It expands the audit set to find the next expla
 | java_stream_collect | java | OK | 5 | 0 | 0 | 0 | - |
 | java_try_catch_read | java | REVIEW | 5 | 0 | 0 | 0 | 오류 처리 |
 | java_map_put_get | java | OK | 3 | 0 | 0 | 0 | - |
-| config_package_json | auto | REVIEW | 4 | 0 | 4 | 0 | 패키지 이름 설정, 패키지 버전 설정, npm 스크립트 목록, npm 스크립트 정의 |
+| config_package_json | auto | OK | 4 | 0 | 0 | 0 | - |
 | config_wrangler_toml | toml | OK | 5 | 0 | 0 | 0 | - |
 | config_github_actions | auto | OK | 8 | 0 | 0 | 0 | - |
 
@@ -397,16 +397,16 @@ It does not change app behavior. It expands the audit set to find the next expla
 
 ### config_package_json — package.json scripts
 
-- Status: REVIEW
+- Status: OK
 - Note: package.json 자동 감지와 scripts 설명 품질 확인.
-- Step titles: 명령 실행 / 명령 실행 / 명령 실행 / 명령 실행
-- Missing expected titles: 패키지 이름 설정, 패키지 버전 설정, npm 스크립트 목록, npm 스크립트 정의
+- Step titles: 패키지 이름 설정 / 패키지 버전 설정 / npm 스크립트 목록 / npm 스크립트 정의
+- Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
-  - 1. 이 줄은 PowerShell 명령입니다. 자동 규칙에 없는 명령이므로 원문, 경로, 옵션을 확인한 뒤 실행해야 합니다.
-  - 2. 이 줄은 PowerShell 명령입니다. 자동 규칙에 없는 명령이므로 원문, 경로, 옵션을 확인한 뒤 실행해야 합니다.
-  - 3. 이 줄은 PowerShell 명령입니다. 자동 규칙에 없는 명령이므로 원문, 경로, 옵션을 확인한 뒤 실행해야 합니다.
-  - 4. 이 줄은 PowerShell 명령입니다. 자동 규칙에 없는 명령이므로 원문, 경로, 옵션을 확인한 뒤 실행해야 합니다.
+  - 1. package.json에서 이 Node/npm 프로젝트의 이름을 정합니다.
+  - 2. package.json에서 현재 패키지의 버전 번호를 정합니다.
+  - 3. npm run build 같은 명령으로 실행할 스크립트들을 모아 둔 영역입니다.
+  - 4. 터미널에서 npm run 뒤에 붙여 실행할 작업을 정의합니다.
 
 ### config_wrangler_toml — wrangler.toml bindings
 

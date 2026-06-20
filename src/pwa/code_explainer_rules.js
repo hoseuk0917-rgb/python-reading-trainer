@@ -54,7 +54,9 @@
     const lower = text.toLowerCase();
 
     if (/^\s*\[project\]\s*$/m.test(text) || /^\s*\[build-system\]\s*$/m.test(text)) return "pyproject_toml";
-    if (/"scripts"\s*:\s*\{/.test(text) && /"(dependencies|devDependencies)"\s*:/.test(text)) return "package_json";
+    // PACKAGE_JSON_AUTO_DETECT_V329_A3
+    if (/"scripts"\s*:\s*\{/.test(text) && /"(name|version|dependencies|devDependencies)"\s*:/.test(text)) return "package_json";
+    if (/^\s*\{\s*$/m.test(text) && /"scripts"\s*:\s*\{/.test(text) && /"name"\s*:\s*"/.test(text)) return "package_json";
     if ((/^\s*name\s*:/m.test(text) && /^\s*on\s*:/m.test(text) && /^\s*jobs\s*:/m.test(text)) || /uses:\s*actions\//.test(text)) return "github_actions";
 
     if (/export\s+default/.test(text) && /fetch\s*\(\s*request\s*,\s*env/.test(text)) return "workers";
@@ -1415,6 +1417,18 @@
   function explainPackageJsonLine(line, lineNo) {
     const t = cleanLine(line);
     const risk = riskOf(t, "package_json");
+    // PACKAGE_JSON_FIELD_RULES_V329_A3
+    if (/^"name"\s*:/.test(t)) {
+      return makeStep(lineNo, t, "패키지 이름 설정", "package.json에서 이 Node/npm 프로젝트의 이름을 정합니다.", risk);
+    }
+    if (/^"version"\s*:/.test(t)) {
+      return makeStep(lineNo, t, "패키지 버전 설정", "package.json에서 현재 패키지의 버전 번호를 정합니다.", risk);
+    }
+    if (/^"(?:dev|start|build|test|lint|format|preview|deploy|smoke|check|typecheck|serve|pages:deploy)"\s*:/.test(t) || /^"[A-Za-z0-9:_-]+"\s*:\s*"(?:npm|npx|node|vite|vitest|jest|tsc|eslint|prettier|wrangler|next|react-scripts|webpack|rollup|astro|nuxt|pytest|python)\b/.test(t)) {
+      return makeStep(lineNo, t, "npm 스크립트 정의", "터미널에서 npm run 뒤에 붙여 실행할 작업을 정의합니다.", risk);
+    }
+
+
 
     if (/^"name"\s*:/.test(t)) {
       return makeStep(lineNo, t, "패키지 이름 설정", "이 프로젝트나 패키지의 이름을 정합니다.", risk);
