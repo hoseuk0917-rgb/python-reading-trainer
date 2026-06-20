@@ -3052,6 +3052,39 @@
     return expanded;
   }
 
+
+  // JS_LOCAL_STORAGE_ASSIGNMENT_EXPAND_V329_A7
+  function expandJavaScriptLocalStorageAssignmentStepsV329A7(steps, language) {
+    if (language !== "javascript" && language !== "workers") return steps;
+    if (!Array.isArray(steps)) return steps;
+
+    const expanded = [];
+
+    steps.forEach(function(step) {
+      expanded.push(step);
+
+      const code = String(step && step.code || "").trim();
+      const lineNo = step && step.lineNo ? step.lineNo : 0;
+      const title = String(step && step.title || "");
+
+      if (!/\b(const|let|var)\s+[A-Za-z_$][\w$]*\s*=/.test(code)) return;
+      if (!/\b(?:localStorage|sessionStorage)\.getItem\s*\(/.test(code)) return;
+      if (title === "변수에 값 저장") return;
+
+      const risk = riskOf(code, language);
+
+      expanded.push(makeStep(
+        lineNo,
+        code,
+        "변수에 값 저장",
+        "브라우저 저장소에서 꺼낸 값을 const, let, var 같은 변수 이름에 담습니다. 이후 코드에서 이 이름으로 저장된 값을 다시 사용할 수 있습니다.",
+        risk
+      ));
+    });
+
+    return expanded;
+  }
+
   // UNSUPPORTED_ITEMS_V202_A1
   function summarizeConfidence(steps) {
     const counts = {
@@ -3344,6 +3377,7 @@
     let refinedSteps = refineUnknownCallConfidence(enrichedSteps, raw, language);
     refinedSteps = expandPythonListComprehensionStepsV329A4(refinedSteps, language);
     refinedSteps = expandJavaScriptEventHandlerStepsV329A6(refinedSteps, language);
+    refinedSteps = expandJavaScriptLocalStorageAssignmentStepsV329A7(refinedSteps, language);
 
     const dataFlow = collectDataFlow(refinedSteps, language);
     const callFlow = collectCallFlow(raw, language);

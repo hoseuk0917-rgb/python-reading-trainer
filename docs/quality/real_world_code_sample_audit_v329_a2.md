@@ -8,7 +8,7 @@ It does not change app behavior. It expands the audit set to find the next expla
 ## Summary
 
 - Total samples: 31
-- Review-needed samples: 3
+- Review-needed samples: 2
 - Samples with generic step titles: 0
 - Samples with unsupported items: 0
 
@@ -40,7 +40,7 @@ It does not change app behavior. It expands the audit set to find the next expla
 | ps_foreach_object | powershell | OK | 1 | 0 | 0 | 0 | - |
 | js_fetch_try_catch | javascript | OK | 7 | 0 | 0 | 0 | - |
 | js_async_event_handler | javascript | OK | 3 | 0 | 0 | 0 | - |
-| js_local_storage | javascript | REVIEW | 2 | 0 | 0 | 0 | 변수에 값 저장 |
+| js_local_storage | javascript | OK | 3 | 0 | 0 | 0 | - |
 | java_stream_collect | java | OK | 5 | 0 | 0 | 0 | - |
 | java_try_catch_read | java | REVIEW | 5 | 0 | 0 | 0 | 오류 처리 |
 | java_map_put_get | java | OK | 3 | 0 | 0 | 0 | - |
@@ -351,14 +351,15 @@ It does not change app behavior. It expands the audit set to find the next expla
 
 ### js_local_storage — JavaScript localStorage
 
-- Status: REVIEW
+- Status: OK
 - Note: localStorage 저장/읽기 설명 품질 확인.
-- Step titles: 브라우저 저장소 사용 / 브라우저 저장소 사용
-- Missing expected titles: 변수에 값 저장
+- Step titles: 브라우저 저장소 사용 / 브라우저 저장소 사용 / 변수에 값 저장
+- Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
   - 1. 현재 브라우저에 작은 데이터를 저장하거나 다시 불러옵니다.
   - 2. 현재 브라우저에 작은 데이터를 저장하거나 다시 불러옵니다.
+  - 3. 브라우저 저장소에서 꺼낸 값을 const, let, var 같은 변수 이름에 담습니다. 이후 코드에서 이 이름으로 저장된 값을 다시 사용할 수 있습니다.
 
 ### java_stream_collect — Java stream filter map collect
 
