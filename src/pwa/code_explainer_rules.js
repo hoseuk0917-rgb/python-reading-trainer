@@ -282,6 +282,11 @@
     const t = cleanLine(line);
     const risk = riskOf(t, "powershell");
 
+    // POWERSHELL_FOREACH_PIPELINE_PRIORITY_V329_A5
+    if (/\|/.test(t) && /\bForEach-Object\b/i.test(t)) {
+      return makeStep(lineNo, t, "각 항목 반복 처리", "파이프라인으로 넘어온 항목을 하나씩 꺼내 같은 작업을 반복합니다. $_는 현재 처리 중인 항목입니다.", risk);
+    }
+
     if (/^Set-Location\b/i.test(t) || /^cd\b/i.test(t)) {
       return makeStep(lineNo, t, "작업 폴더 이동", "이후 명령들이 어느 폴더를 기준으로 실행될지 바꿉니다.", risk);
     }

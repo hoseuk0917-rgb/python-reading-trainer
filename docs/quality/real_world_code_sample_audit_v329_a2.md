@@ -8,7 +8,7 @@ It does not change app behavior. It expands the audit set to find the next expla
 ## Summary
 
 - Total samples: 31
-- Review-needed samples: 5
+- Review-needed samples: 4
 - Samples with generic step titles: 0
 - Samples with unsupported items: 0
 
@@ -37,7 +37,7 @@ It does not change app behavior. It expands the audit set to find the next expla
 | py_subprocess_run | python | OK | 4 | 1 | 0 | 0 | - |
 | ps_remove_item_danger | powershell | OK | 2 | 1 | 0 | 0 | - |
 | ps_git_clean_reset | powershell | OK | 2 | 2 | 0 | 0 | - |
-| ps_foreach_object | powershell | REVIEW | 1 | 0 | 0 | 0 | 각 항목 반복 처리 |
+| ps_foreach_object | powershell | OK | 1 | 0 | 0 | 0 | - |
 | js_fetch_try_catch | javascript | OK | 7 | 0 | 0 | 0 | - |
 | js_async_event_handler | javascript | REVIEW | 2 | 0 | 0 | 0 | 이벤트 처리 함수 정의 |
 | js_local_storage | javascript | REVIEW | 2 | 0 | 0 | 0 | 변수에 값 저장 |
@@ -316,13 +316,13 @@ It does not change app behavior. It expands the audit set to find the next expla
 
 ### ps_foreach_object — PowerShell ForEach-Object pipeline
 
-- Status: REVIEW
+- Status: OK
 - Note: 한 줄 파이프라인 안의 ForEach-Object를 별도 반복 처리로 잡는지 확인.
-- Step titles: 파이프라인 처리
-- Missing expected titles: 각 항목 반복 처리
+- Step titles: 각 항목 반복 처리
+- Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
-  - 1. 앞 명령의 결과를 뒤 명령으로 넘기며 필터링, 반복, 선택, 정렬, 집계, 표 표시 같은 처리를 이어서 수행합니다.
+  - 1. 파이프라인으로 넘어온 항목을 하나씩 꺼내 같은 작업을 반복합니다. $_는 현재 처리 중인 항목입니다.
 
 ### js_fetch_try_catch — JavaScript fetch try catch
 
