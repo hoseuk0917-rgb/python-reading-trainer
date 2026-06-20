@@ -3085,6 +3085,39 @@
     return expanded;
   }
 
+
+  // PYTHON_PATHLIB_GLOB_RETURN_EXPAND_V329_A8
+  function expandPythonPathlibGlobReturnStepsV329A8(steps, language) {
+    if (language !== "python") return steps;
+    if (!Array.isArray(steps)) return steps;
+
+    const expanded = [];
+
+    steps.forEach(function(step) {
+      expanded.push(step);
+
+      const code = String(step && step.code || "").trim();
+      const lineNo = step && step.lineNo ? step.lineNo : 0;
+      const title = String(step && step.title || "");
+
+      if (!/^return\s+/.test(code)) return;
+      if (!/\.(?:glob|rglob)\s*\(/.test(code)) return;
+      if (title === "값 돌려주기") return;
+
+      const risk = riskOf(code, "python");
+
+      expanded.push(makeStep(
+        lineNo,
+        code,
+        "값 돌려주기",
+        "찾은 파일 목록을 함수 밖으로 돌려줍니다. 호출한 쪽에서는 이 반환값을 받아서 후속 처리나 반복에 사용할 수 있습니다.",
+        risk
+      ));
+    });
+
+    return expanded;
+  }
+
   // UNSUPPORTED_ITEMS_V202_A1
   function summarizeConfidence(steps) {
     const counts = {
@@ -3376,6 +3409,7 @@
     });
     let refinedSteps = refineUnknownCallConfidence(enrichedSteps, raw, language);
     refinedSteps = expandPythonListComprehensionStepsV329A4(refinedSteps, language);
+    refinedSteps = expandPythonPathlibGlobReturnStepsV329A8(refinedSteps, language);
     refinedSteps = expandJavaScriptEventHandlerStepsV329A6(refinedSteps, language);
     refinedSteps = expandJavaScriptLocalStorageAssignmentStepsV329A7(refinedSteps, language);
 

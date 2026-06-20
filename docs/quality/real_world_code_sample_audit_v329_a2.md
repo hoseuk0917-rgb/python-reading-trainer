@@ -8,7 +8,7 @@ It does not change app behavior. It expands the audit set to find the next expla
 ## Summary
 
 - Total samples: 31
-- Review-needed samples: 2
+- Review-needed samples: 1
 - Samples with generic step titles: 0
 - Samples with unsupported items: 0
 
@@ -32,7 +32,7 @@ It does not change app behavior. It expands the audit set to find the next expla
 | java_loop_sum | java | OK | 5 | 0 | 0 | 0 | - |
 | py_list_comprehension | python | OK | 4 | 0 | 0 | 0 | - |
 | py_dict_update | python | OK | 4 | 0 | 0 | 0 | - |
-| py_pathlib_glob | python | REVIEW | 3 | 0 | 0 | 0 | 값 돌려주기 |
+| py_pathlib_glob | python | OK | 4 | 0 | 0 | 0 | - |
 | py_requests_error_handling | python | OK | 5 | 0 | 0 | 0 | - |
 | py_subprocess_run | python | OK | 4 | 1 | 0 | 0 | - |
 | ps_remove_item_danger | powershell | OK | 2 | 1 | 0 | 0 | - |
@@ -256,15 +256,16 @@ It does not change app behavior. It expands the audit set to find the next expla
 
 ### py_pathlib_glob — Python pathlib glob
 
-- Status: REVIEW
+- Status: OK
 - Note: Path.glob 파일 검색 흐름 설명 품질 확인.
-- Step titles: 라이브러리 불러오기 / 함수 정의 / 파일 목록 검색
-- Missing expected titles: 값 돌려주기
+- Step titles: 라이브러리 불러오기 / 함수 정의 / 파일 목록 검색 / 값 돌려주기
+- Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
   - 1. 이미 만들어진 기능을 현재 코드에서 사용할 수 있게 가져옵니다.
   - 2. 나중에 이름으로 불러서 실행할 수 있는 코드 묶음을 만듭니다. 이 줄만으로 함수 안쪽이 바로 실행되지는 않습니다.
   - 3. 폴더 안의 파일 목록을 패턴이나 반복으로 찾습니다. 처리 대상이 너무 넓지 않은지 확인해야 합니다.
+  - 4. 찾은 파일 목록을 함수 밖으로 돌려줍니다. 호출한 쪽에서는 이 반환값을 받아서 후속 처리나 반복에 사용할 수 있습니다.
 
 ### py_requests_error_handling — Python requests error handling
 
