@@ -8,8 +8,8 @@ It does not change app behavior. It identifies explanation gaps for V329 follow-
 ## Summary
 
 - Total samples: 14
-- Review-needed samples: 1
-- Samples with generic step titles: 1
+- Review-needed samples: 0
+- Samples with generic step titles: 0
 - Samples with unsupported items: 0
 
 ## Result table
@@ -29,7 +29,7 @@ It does not change app behavior. It identifies explanation gaps for V329 follow-
 | js_fetch_json | javascript | OK | 4 | 0 | 0 | 0 | - |
 | js_array_chain | javascript | OK | 4 | 0 | 0 | 0 | - |
 | cf_worker_fetch | javascript | OK | 4 | 0 | 0 | 0 | - |
-| java_loop_sum | java | REVIEW | 5 | 0 | 0 | 1 | - |
+| java_loop_sum | java | OK | 5 | 0 | 0 | 0 | - |
 
 ## Detailed findings
 
@@ -200,16 +200,16 @@ It does not change app behavior. It identifies explanation gaps for V329 follow-
 
 ### java_loop_sum — Java loop sum
 
-- Status: REVIEW
+- Status: OK
 - Note: Java 함수/반복/누적 설명 품질 확인.
-- Step titles: 메서드 정의 / 변수 선언과 값 저장 / 반복 실행 / Java 코드 실행 / 값 돌려주기
+- Step titles: 메서드 정의 / 변수 선언과 값 저장 / 반복 실행 / 누적 더하기 / 값 돌려주기
 - Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
   - 1. 나중에 객체나 클래스 이름으로 호출할 수 있는 Java 코드 묶음을 정의합니다. 접근제어자가 없어도 같은 패키지 안에서 쓸 수 있는 package-private 메서드일 수 있습니다. 매개변수와 반환 타입을 함께 확인해야 합니다.
   - 2. 변수의 종류를 정하고 값을 넣습니다.
   - 3. 정해진 조건이나 횟수에 따라 중괄호 안 코드를 반복합니다.
-  - 4. 이 줄은 Java 코드입니다. 중괄호 구조에 따라 실행 흐름이 정해집니다.
+  - 4. 왼쪽 변수에 오른쪽 값을 더해서 다시 저장합니다. 합계, 점수, 개수를 쌓아 갈 때 자주 씁니다.
 
 ## Next V329 candidates
 

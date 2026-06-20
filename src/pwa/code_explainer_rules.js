@@ -1810,6 +1810,11 @@
       return makeStep(lineNo, t, "변수 선언과 값 저장", "변수의 종류를 정하고 값을 넣습니다.", risk);
     }
 
+    // JAVA_PLUS_EQUALS_ACCUMULATOR_V329_A1
+    if (/^[A-Za-z_][A-Za-z0-9_]*(?:\[[^\]]+\]|\.[A-Za-z_][A-Za-z0-9_]*)?\s*\+=\s*.+;?$/.test(t)) {
+      return makeStep(lineNo, t, "누적 더하기", "왼쪽 변수에 오른쪽 값을 더해서 다시 저장합니다. 합계, 점수, 개수를 쌓아 갈 때 자주 씁니다.", risk);
+    }
+
     return makeStep(lineNo, t, "Java 코드 실행", "이 줄은 Java 코드입니다. 중괄호 구조에 따라 실행 흐름이 정해집니다.", risk);
   }
 
