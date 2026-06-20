@@ -3020,6 +3020,38 @@
     return expanded;
   }
 
+
+  // JS_ASYNC_EVENT_HANDLER_EXPAND_V329_A6
+  function expandJavaScriptEventHandlerStepsV329A6(steps, language) {
+    if (language !== "javascript" && language !== "workers") return steps;
+    if (!Array.isArray(steps)) return steps;
+
+    const expanded = [];
+
+    steps.forEach(function(step) {
+      expanded.push(step);
+
+      const code = String(step && step.code || "").trim();
+      const lineNo = step && step.lineNo ? step.lineNo : 0;
+      const title = String(step && step.title || "");
+
+      if (!/addEventListener\s*\(/.test(code)) return;
+      if (title === "이벤트 처리 함수 정의") return;
+
+      const risk = riskOf(code, language);
+
+      expanded.push(makeStep(
+        lineNo,
+        code,
+        "이벤트 처리 함수 정의",
+        "사용자가 클릭, 입력 같은 동작을 했을 때 실행할 함수를 화면 요소에 연결합니다. async 콜백이면 내부에서 await로 비동기 작업을 기다릴 수 있습니다.",
+        risk
+      ));
+    });
+
+    return expanded;
+  }
+
   // UNSUPPORTED_ITEMS_V202_A1
   function summarizeConfidence(steps) {
     const counts = {
@@ -3311,6 +3343,7 @@
     });
     let refinedSteps = refineUnknownCallConfidence(enrichedSteps, raw, language);
     refinedSteps = expandPythonListComprehensionStepsV329A4(refinedSteps, language);
+    refinedSteps = expandJavaScriptEventHandlerStepsV329A6(refinedSteps, language);
 
     const dataFlow = collectDataFlow(refinedSteps, language);
     const callFlow = collectCallFlow(raw, language);

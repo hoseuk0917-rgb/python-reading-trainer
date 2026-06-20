@@ -8,7 +8,7 @@ It does not change app behavior. It expands the audit set to find the next expla
 ## Summary
 
 - Total samples: 31
-- Review-needed samples: 4
+- Review-needed samples: 3
 - Samples with generic step titles: 0
 - Samples with unsupported items: 0
 
@@ -39,7 +39,7 @@ It does not change app behavior. It expands the audit set to find the next expla
 | ps_git_clean_reset | powershell | OK | 2 | 2 | 0 | 0 | - |
 | ps_foreach_object | powershell | OK | 1 | 0 | 0 | 0 | - |
 | js_fetch_try_catch | javascript | OK | 7 | 0 | 0 | 0 | - |
-| js_async_event_handler | javascript | REVIEW | 2 | 0 | 0 | 0 | 이벤트 처리 함수 정의 |
+| js_async_event_handler | javascript | OK | 3 | 0 | 0 | 0 | - |
 | js_local_storage | javascript | REVIEW | 2 | 0 | 0 | 0 | 변수에 값 저장 |
 | java_stream_collect | java | OK | 5 | 0 | 0 | 0 | - |
 | java_try_catch_read | java | REVIEW | 5 | 0 | 0 | 0 | 오류 처리 |
@@ -339,14 +339,15 @@ It does not change app behavior. It expands the audit set to find the next expla
 
 ### js_async_event_handler — JavaScript async event handler
 
-- Status: REVIEW
+- Status: OK
 - Note: 한 줄 DOM 선택 + 이벤트 연결 + async 콜백을 충분히 잡는지 확인.
-- Step titles: 화면 요소 찾기 / 비동기 작업 대기
-- Missing expected titles: 이벤트 처리 함수 정의
+- Step titles: 화면 요소 찾기 / 이벤트 처리 함수 정의 / 비동기 작업 대기
+- Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
   - 1. HTML 화면에서 특정 요소를 찾아 값을 읽거나 내용을 바꾸기 위해 준비합니다.
-  - 2. Promise가 끝날 때까지 기다린 뒤 다음 줄을 실행합니다. 실패하면 catch로 넘어갈 수 있습니다.
+  - 2. 사용자가 클릭, 입력 같은 동작을 했을 때 실행할 함수를 화면 요소에 연결합니다. async 콜백이면 내부에서 await로 비동기 작업을 기다릴 수 있습니다.
+  - 3. Promise가 끝날 때까지 기다린 뒤 다음 줄을 실행합니다. 실패하면 catch로 넘어갈 수 있습니다.
 
 ### js_local_storage — JavaScript localStorage
 
