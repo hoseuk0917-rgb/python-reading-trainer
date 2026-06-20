@@ -31,6 +31,10 @@
     if (language === "javascript" || language === "workers" || language === "java") {
       return t.startsWith("//") || t.startsWith("/*") || t.startsWith("*");
     }
+    if (language === "json") return t.startsWith("//") || t.startsWith("/*") || t.startsWith("*") || t.startsWith("*/");
+    if (language === "sql") return t.startsWith("--") || t.startsWith("/*") || t.startsWith("*") || t.startsWith("*/");
+    if (language === "css") return t.startsWith("/*") || t.startsWith("*") || t.startsWith("*/");
+    if (language === "html") return t.startsWith("<!--") || t.startsWith("-->");
     return false;
   }
 
@@ -57,6 +61,14 @@
     // PACKAGE_JSON_AUTO_DETECT_V329_A3
     if (/"scripts"\s*:\s*\{/.test(text) && /"(name|version|dependencies|devDependencies)"\s*:/.test(text)) return "package_json";
     if (/^\s*\{\s*$/m.test(text) && /"scripts"\s*:\s*\{/.test(text) && /"name"\s*:\s*"/.test(text)) return "package_json";
+
+    // JSON_CONFIG_DETECT_V330_A5
+    if (
+      /^\s*\{[\s\S]*\}\s*$/.test(text) &&
+      /^\s*"[^"]+"\s*:\s*/m.test(text) &&
+      !/"scripts"\s*:\s*\{/.test(text)
+    ) return "json";
+
     if ((/^\s*name\s*:/m.test(text) && /^\s*on\s*:/m.test(text) && /^\s*jobs\s*:/m.test(text)) || /uses:\s*actions\//.test(text)) return "github_actions";
 
     if (/export\s+default/.test(text) && /fetch\s*\(\s*request\s*,\s*env/.test(text)) return "workers";
@@ -64,6 +76,12 @@
 
     if (/Set-Location|Copy-Item|Remove-Item|Compress-Archive|Expand-Archive|Get-Date|New-Item|Test-Path|Select-String/i.test(text)) return "powershell";
     if (/^\s*\$[A-Za-z_][\w-]*\s*=/m.test(text) || /\bgit\s+(status|add|commit|push|tag|stash|reset|clean)\b/i.test(text)) return "powershell";
+
+    // HTML_BASIC_FORM_IMAGE_LINK_DETECT_V330_A2
+    if (
+      /<!doctype\s+html|<\s*html\b|<\s*body\b|<\s*form\b|<\s*input\b|<\s*button\b|<\s*label\b|<\s*a\b|<\s*img\b/i.test(text) &&
+      !/className=|onClick=|onChange=|onSubmit=|\{[\s\S]*\}/.test(text)
+    ) return "html";
 
     // REACT_JSX_DETECT_V232_A1
     if (
@@ -90,6 +108,20 @@
 
     // Dockerfile은 Python의 `from ... import ...`와 헷갈리지 않도록 대문자 명령 위주로 판단한다.
     if (/^\s*FROM\s+\S+/m.test(text) || /^\s*(RUN|COPY|ADD|WORKDIR|CMD|ENTRYPOINT|EXPOSE|ENV|ARG)\s+/m.test(text)) return "dockerfile";
+
+    // SQL_SELECT_JOIN_GROUP_DETECT_V330_A4
+    if (
+      /^\s*SELECT\b[\s\S]*^\s*FROM\b/im.test(text) ||
+      /^\s*(INSERT\s+INTO|UPDATE|DELETE\s+FROM|CREATE\s+TABLE|ALTER\s+TABLE|DROP\s+TABLE)\b/im.test(text)
+    ) return "sql";
+
+    // CSS_BASIC_LAYOUT_MEDIA_DETECT_V330_A3
+    if (
+      /\{[\s\S]*\}/.test(text) &&
+      /^\s*(?:[.#]?[A-Za-z][\w-]*|[A-Za-z][\w-]*\s+[.#]?[A-Za-z][\w-]*|@media\b|@supports\b)[^{]*\{/m.test(text) &&
+      /^\s*[A-Za-z-]+\s*:\s*[^;]+;?/m.test(text) &&
+      !/function\s+|=>|const\s+|let\s+|var\s+|className=|onClick=|Response\.json|export\s+default/.test(text)
+    ) return "css";
 
     const gitignoreLines = text.split(/\r?\n/).map(function(line) { return line.trim(); }).filter(Boolean);
     const gitignoreHits = gitignoreLines.filter(function(line) {
@@ -612,6 +644,11 @@
     const t = cleanLine(line);
     const risk = riskOf(t, "python");
 
+    // PYTHON_FLASK_ROUTE_DECORATOR_RULE_V330_A6
+    if (/^@[A-Za-z_][\w.]*\.route\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "Flask 라우트 등록", "Flask 앱에서 특정 URL 경로로 들어온 요청을 바로 아래 함수에 연결합니다. 괄호 안의 경로와 methods 옵션을 확인합니다.", risk);
+    }
+
     // FASTAPI_IMPORT_RULES_V230_A1
     if (/^from\s+fastapi\s+import\s+/.test(t)) {
       return makeStep(lineNo, t, "FastAPI 기능 불러오기", "FastAPI, APIRouter, Depends, HTTPException, Query, Body 같은 API 서버 구성 기능을 가져옵니다. 앱 생성, 라우트 연결, 요청값 검증, 오류 응답 처리에 쓰입니다.", risk);
@@ -964,6 +1001,17 @@
   function explainJavaScriptLine(line, lineNo, language) {
     const t = cleanLine(line);
     const risk = riskOf(t, language);
+
+    // JS_NODE_FS_READ_RULE_V330_A7
+    if (/\bfs\.readFileSync\s*\(/.test(t) || /\breadFileSync\s*\(/.test(t) || /\bfs\.promises\.readFile\s*\(/.test(t) || /\breadFile\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "파일 내용 읽기", "Node.js에서 파일 내용을 읽어 문자열이나 Buffer로 가져옵니다. 경로, 인코딩, 파일이 없을 때의 오류 처리를 확인해야 합니다.", risk);
+    }
+    if (/\bfs\.writeFileSync\s*\(/.test(t) || /\bwriteFileSync\s*\(/.test(t) || /\bfs\.promises\.writeFile\s*\(/.test(t) || /\bwriteFile\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "파일 내용 저장", "Node.js에서 파일에 내용을 저장합니다. 기존 파일을 덮어쓸 수 있으니 경로와 저장 내용을 확인해야 합니다.", risk);
+    }
+    if (/\bfs\.readdirSync\s*\(/.test(t) || /\breaddirSync\s*\(/.test(t) || /\bfs\.promises\.readdir\s*\(/.test(t) || /\breaddir\s*\(/.test(t)) {
+      return makeStep(lineNo, t, "폴더 목록 읽기", "Node.js에서 폴더 안의 파일과 하위 폴더 목록을 읽습니다. 대상 경로와 권한을 확인해야 합니다.", risk);
+    }
 
     // JAVASCRIPT_DATA_NODE_FILE_RULES_V218_A1
     if (/^["']use strict["'];?$/.test(t)) {
@@ -1417,6 +1465,257 @@
     }
 
     return makeStep(lineNo, t, language === "workers" ? "Worker/JavaScript 코드 실행" : "JavaScript 코드 실행", "이 줄은 위에서 아래로 실행되는 JavaScript 코드입니다.", risk);
+  }
+
+
+
+
+
+  // JSON_CONFIG_RULES_V330_A5
+  function explainJsonLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "json");
+
+    if (/^\{\s*$/.test(t)) {
+      return makeStep(lineNo, t, "JSON 객체 시작", "여러 설정 값을 key와 value 쌍으로 묶는 JSON 객체를 시작합니다.", risk);
+    }
+    if (/^\}\s*,?$/.test(t)) {
+      return makeStep(lineNo, t, "JSON 객체 닫기", "앞에서 시작한 JSON 객체 영역을 닫습니다. 쉼표 위치가 맞는지 확인합니다.", risk);
+    }
+    if (/^\[\s*$/.test(t)) {
+      return makeStep(lineNo, t, "JSON 배열 시작", "여러 값을 순서대로 담는 JSON 배열을 시작합니다.", risk);
+    }
+    if (/^\]\s*,?$/.test(t)) {
+      return makeStep(lineNo, t, "JSON 배열 닫기", "앞에서 시작한 JSON 배열 영역을 닫습니다.", risk);
+    }
+
+    const pair = t.match(/^"([^"]+)"\s*:\s*(.+?)(,)?$/);
+    if (pair) {
+      const key = pair[1];
+      const value = pair[2].trim();
+
+      if (value === "{") {
+        return makeStep(lineNo, t, "JSON 설정 그룹 시작", key + " 설정 묶음을 시작합니다. 아래 들여쓰기된 값들이 이 그룹에 속합니다.", risk);
+      }
+      if (value === "[") {
+        return makeStep(lineNo, t, "JSON 목록 설정 시작", key + " 항목에 여러 값을 배열로 넣기 시작합니다.", risk);
+      }
+      if (/^"(ES|ESNext|CommonJS|NodeNext|Node|DOM|react|react-jsx|preserve|bundler|strict)"?$/i.test(value) || /^"[^"]*"$/.test(value)) {
+        return makeStep(lineNo, t, "문자열 설정값", key + " 설정에 문자열 값을 지정합니다. 따옴표 안의 값이 실제 옵션 이름입니다.", risk);
+      }
+      if (/^(true|false)\s*,?$/i.test(value)) {
+        return makeStep(lineNo, t, "불리언 설정값", key + " 설정을 켜거나 끕니다. true는 사용, false는 사용하지 않음을 뜻합니다.", risk);
+      }
+      if (/^-?\d+(\.\d+)?\s*,?$/.test(value)) {
+        return makeStep(lineNo, t, "숫자 설정값", key + " 설정에 숫자 값을 지정합니다.", risk);
+      }
+      if (/^null\s*,?$/i.test(value)) {
+        return makeStep(lineNo, t, "빈 설정값", key + " 값을 null로 두어 값이 없음을 표시합니다.", risk);
+      }
+
+      return makeStep(lineNo, t, "JSON key-value 설정", key + " 이름의 설정값을 지정합니다. 콜론 오른쪽 값과 끝 쉼표를 확인합니다.", risk);
+    }
+
+    if (/^"[^"]+"\s*,?$/.test(t)) {
+      return makeStep(lineNo, t, "JSON 문자열 항목", "배열 안에 들어가는 문자열 항목입니다. 쉼표로 다음 항목과 구분합니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "JSON 설정 줄", "JSON 설정 파일의 한 줄입니다. key, value, 쉼표, 중괄호 구조가 맞는지 확인합니다.", risk);
+  }
+
+  // SQL_SELECT_JOIN_GROUP_RULES_V330_A4
+  function explainSqlLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "sql");
+
+    if (/^SELECT\b/i.test(t)) {
+      return makeStep(lineNo, t, "조회할 컬럼 선택", "데이터베이스에서 어떤 컬럼 값을 가져올지 정합니다. 별칭 AS가 있으면 결과 컬럼 이름을 바꿉니다.", risk);
+    }
+    if (/^FROM\b/i.test(t)) {
+      return makeStep(lineNo, t, "기준 테이블 선택", "조회의 기준이 되는 테이블을 지정합니다. 이 테이블에서 행을 읽기 시작합니다.", risk);
+    }
+    if (/^(INNER\s+|LEFT\s+|RIGHT\s+|FULL\s+|CROSS\s+)?JOIN\b/i.test(t)) {
+      return makeStep(lineNo, t, "테이블 조인", "다른 테이블을 함께 붙여서 조회합니다. JOIN 조건이 맞는 행끼리 연결됩니다.", risk);
+    }
+    if (/^ON\b/i.test(t)) {
+      return makeStep(lineNo, t, "조인 조건 지정", "두 테이블의 어떤 컬럼이 서로 대응되는지 정합니다. 보통 id와 외래키를 비교합니다.", risk);
+    }
+    if (/^WHERE\b/i.test(t)) {
+      return makeStep(lineNo, t, "조회 조건 필터", "조건에 맞는 행만 남깁니다. 상태값, 날짜, id 같은 기준으로 결과를 줄입니다.", risk);
+    }
+    if (/^GROUP\s+BY\b/i.test(t)) {
+      return makeStep(lineNo, t, "그룹으로 묶기", "같은 값을 가진 행들을 하나의 그룹으로 묶습니다. COUNT, SUM, AVG 같은 집계와 함께 자주 씁니다.", risk);
+    }
+    if (/^HAVING\b/i.test(t)) {
+      return makeStep(lineNo, t, "그룹 결과 조건 필터", "GROUP BY로 묶은 뒤의 집계 결과에 조건을 걸어 필요한 그룹만 남깁니다.", risk);
+    }
+    if (/^ORDER\s+BY\b/i.test(t)) {
+      return makeStep(lineNo, t, "결과 정렬", "조회 결과를 특정 컬럼 기준으로 오름차순 또는 내림차순 정렬합니다.", risk);
+    }
+    if (/^LIMIT\b/i.test(t)) {
+      return makeStep(lineNo, t, "결과 개수 제한", "조회 결과 중 가져올 행의 최대 개수를 제한합니다.", risk);
+    }
+    if (/^INSERT\s+INTO\b/i.test(t)) {
+      return makeStep(lineNo, t, "행 추가", "테이블에 새 데이터를 추가합니다. 컬럼 목록과 VALUES 값의 순서가 맞아야 합니다.", risk);
+    }
+    if (/^VALUES\b/i.test(t)) {
+      return makeStep(lineNo, t, "추가할 값 지정", "INSERT 문에서 테이블에 넣을 실제 값을 지정합니다.", risk);
+    }
+    if (/^UPDATE\b/i.test(t)) {
+      return makeStep(lineNo, t, "행 수정 대상 지정", "어떤 테이블의 기존 데이터를 수정할지 정합니다. WHERE 없이 쓰면 많은 행이 바뀔 수 있습니다.", risk);
+    }
+    if (/^SET\b/i.test(t)) {
+      return makeStep(lineNo, t, "수정할 값 지정", "UPDATE 문에서 어떤 컬럼 값을 새 값으로 바꿀지 정합니다.", risk);
+    }
+    if (/^DELETE\s+FROM\b/i.test(t)) {
+      return makeStep(lineNo, t, "행 삭제 대상 지정", "테이블에서 행을 삭제합니다. WHERE 조건이 없으면 많은 데이터가 삭제될 수 있습니다.", risk);
+    }
+    if (/^CREATE\s+TABLE\b/i.test(t)) {
+      return makeStep(lineNo, t, "테이블 생성", "새 테이블을 만들고 컬럼 구조를 정의합니다.", risk);
+    }
+    if (/^(COUNT|SUM|AVG|MIN|MAX)\s*\(/i.test(t) || /\b(COUNT|SUM|AVG|MIN|MAX)\s*\(/i.test(t)) {
+      return makeStep(lineNo, t, "집계 함수 사용", "여러 행을 세거나 합계, 평균, 최솟값, 최댓값으로 요약합니다.", risk);
+    }
+    if (/^[A-Za-z_][\w.]*\s*,?\s*$/i.test(t)) {
+      return makeStep(lineNo, t, "컬럼 이름", "조회하거나 그룹으로 묶을 컬럼 이름입니다. 테이블 별칭이 붙으면 어느 테이블의 컬럼인지 더 분명해집니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "SQL 줄 해석", "SQL 쿼리의 한 줄입니다. 데이터를 조회, 필터링, 묶기, 정렬하기 위한 문장인지 확인합니다.", risk);
+  }
+
+  // CSS_BASIC_LAYOUT_MEDIA_RULES_V330_A3
+  function explainCssLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "css");
+
+    if (/^@media\b/i.test(t)) {
+      return makeStep(lineNo, t, "반응형 조건 시작", "화면 너비나 기기 조건에 따라 다른 CSS 규칙을 적용하는 구간을 시작합니다.", risk);
+    }
+    if (/^@supports\b/i.test(t)) {
+      return makeStep(lineNo, t, "CSS 기능 지원 조건", "브라우저가 특정 CSS 기능을 지원할 때만 아래 스타일을 적용합니다.", risk);
+    }
+    if (/^@keyframes\b/i.test(t)) {
+      return makeStep(lineNo, t, "애니메이션 단계 정의", "CSS 애니메이션에서 시간 흐름에 따라 바뀔 스타일 단계를 정의합니다.", risk);
+    }
+    if (/^@import\b/i.test(t)) {
+      return makeStep(lineNo, t, "외부 CSS 불러오기", "다른 CSS 파일이나 글꼴 스타일을 현재 CSS로 불러옵니다.", risk);
+    }
+    if (/^[^{]+{\s*$/.test(t)) {
+      return makeStep(lineNo, t, "CSS 선택자 블록 시작", "어떤 HTML 요소에 스타일을 적용할지 선택하고, 중괄호 안에 스타일 규칙을 작성합니다.", risk);
+    }
+    if (/^display\s*:\s*flex\b/i.test(t)) {
+      return makeStep(lineNo, t, "Flex 레이아웃 설정", "자식 요소들을 가로/세로 방향으로 유연하게 배치하는 flex 레이아웃을 켭니다.", risk);
+    }
+    if (/^display\s*:\s*grid\b/i.test(t)) {
+      return makeStep(lineNo, t, "Grid 레이아웃 설정", "자식 요소들을 행과 열 격자 기준으로 배치하는 grid 레이아웃을 켭니다.", risk);
+    }
+    if (/^grid-template-(columns|rows)\s*:/i.test(t)) {
+      return makeStep(lineNo, t, "Grid 행열 크기 설정", "grid 레이아웃에서 열이나 행의 개수와 크기 비율을 정합니다.", risk);
+    }
+    if (/^(gap|row-gap|column-gap)\s*:/i.test(t)) {
+      return makeStep(lineNo, t, "요소 간격 설정", "flex나 grid 안의 자식 요소 사이 간격을 정합니다.", risk);
+    }
+    if (/^(padding|padding-[a-z]+)\s*:/i.test(t)) {
+      return makeStep(lineNo, t, "안쪽 여백 설정", "요소 테두리 안쪽의 여백을 정해서 내용이 가장자리에 붙지 않게 합니다.", risk);
+    }
+    if (/^(margin|margin-[a-z]+)\s*:/i.test(t)) {
+      return makeStep(lineNo, t, "바깥 여백 설정", "요소 바깥쪽 여백을 정해서 다른 요소와의 거리를 조절합니다.", risk);
+    }
+    if (/^(justify-content|align-items|align-content|place-items)\s*:/i.test(t)) {
+      return makeStep(lineNo, t, "정렬 방식 설정", "flex나 grid 안에서 자식 요소를 가로/세로 방향으로 어떻게 정렬할지 정합니다.", risk);
+    }
+    if (/^(flex-direction|flex-wrap|flex)\s*:/i.test(t)) {
+      return makeStep(lineNo, t, "Flex 배치 방식 설정", "flex 아이템의 방향, 줄바꿈, 크기 비율 같은 배치 방식을 정합니다.", risk);
+    }
+    if (/^(width|height|min-width|min-height|max-width|max-height)\s*:/i.test(t)) {
+      return makeStep(lineNo, t, "크기 설정", "요소의 너비나 높이, 최소/최대 크기를 정합니다.", risk);
+    }
+    if (/^(color|background|background-color)\s*:/i.test(t)) {
+      return makeStep(lineNo, t, "색상 설정", "글자색이나 배경색을 정해서 화면의 시각적 표현을 바꿉니다.", risk);
+    }
+    if (/^(font|font-size|font-weight|line-height|text-align)\s*:/i.test(t)) {
+      return makeStep(lineNo, t, "글자 스타일 설정", "글자 크기, 굵기, 줄간격, 정렬 같은 텍스트 표현을 정합니다.", risk);
+    }
+    if (/^(border|border-radius|box-shadow)\s*:/i.test(t)) {
+      return makeStep(lineNo, t, "테두리/그림자 설정", "요소의 테두리, 둥근 모서리, 그림자 효과를 정합니다.", risk);
+    }
+    if (/^(position|top|right|bottom|left|z-index)\s*:/i.test(t)) {
+      return makeStep(lineNo, t, "위치 배치 설정", "요소의 배치 방식과 화면 내 위치, 겹침 순서를 정합니다.", risk);
+    }
+    if (/^[A-Za-z-]+\s*:\s*[^;]+;?\s*$/.test(t)) {
+      return makeStep(lineNo, t, "CSS 속성 설정", "선택된 HTML 요소에 적용할 스타일 속성과 값을 정합니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "CSS 줄 해석", "CSS 스타일시트의 한 줄입니다. 어떤 화면 요소의 모양이나 배치를 바꾸는지 확인합니다.", risk);
+  }
+
+  // HTML_BASIC_FORM_IMAGE_LINK_RULES_V330_A2
+  function explainHtmlLine(line, lineNo) {
+    const t = cleanLine(line);
+    const risk = riskOf(t, "html");
+
+    if (/^<!doctype\s+html/i.test(t)) {
+      return makeStep(lineNo, t, "HTML 문서 타입 선언", "브라우저에게 이 파일이 최신 HTML 문서라는 것을 알려줍니다.", risk);
+    }
+    if (/^<html\b/i.test(t)) {
+      return makeStep(lineNo, t, "HTML 문서 시작", "페이지 전체를 감싸는 HTML 문서의 시작 영역입니다.", risk);
+    }
+    if (/^<head\b/i.test(t)) {
+      return makeStep(lineNo, t, "문서 정보 영역 시작", "화면에 직접 보이기보다 제목, 문자셋, 스타일 연결 같은 문서 정보를 담는 영역입니다.", risk);
+    }
+    if (/^<body\b/i.test(t)) {
+      return makeStep(lineNo, t, "화면 본문 시작", "사용자에게 실제로 보이는 화면 요소들을 담는 영역입니다.", risk);
+    }
+    if (/^<form\b/i.test(t)) {
+      return makeStep(lineNo, t, "입력 폼 정의", "사용자가 입력한 값을 제출할 수 있는 form 영역을 만듭니다. action, method, id 같은 속성을 확인합니다.", risk);
+    }
+    if (/^<label\b/i.test(t)) {
+      return makeStep(lineNo, t, "입력 라벨 정의", "입력 칸이 무엇을 의미하는지 사용자에게 보여주는 설명 문구를 만듭니다. for 속성은 input id와 맞아야 합니다.", risk);
+    }
+    if (/^<input\b/i.test(t)) {
+      return makeStep(lineNo, t, "입력 칸 정의", "사용자가 글자, 이메일, 체크박스 같은 값을 넣는 입력 칸을 만듭니다. type, name, required 속성을 확인합니다.", risk);
+    }
+    if (/^<button\b/i.test(t)) {
+      return makeStep(lineNo, t, "버튼 정의", "사용자가 클릭할 수 있는 버튼을 만듭니다. form 안에서는 type이 submit인지 button인지 확인해야 합니다.", risk);
+    }
+    if (/^<a\b/i.test(t)) {
+      return makeStep(lineNo, t, "링크 정의", "다른 페이지나 위치로 이동하는 링크를 만듭니다. href 주소와 새 창 여부를 확인합니다.", risk);
+    }
+    if (/^<img\b/i.test(t)) {
+      return makeStep(lineNo, t, "이미지 표시", "화면에 이미지를 보여줍니다. src 경로와 alt 대체 텍스트가 있는지 확인합니다.", risk);
+    }
+    if (/^<script\b/i.test(t)) {
+      return makeStep(lineNo, t, "스크립트 연결", "JavaScript 파일을 불러오거나 실행합니다. 외부 스크립트 주소와 실행 위치를 확인합니다.", risk);
+    }
+    if (/^<link\b/i.test(t)) {
+      return makeStep(lineNo, t, "외부 리소스 연결", "CSS 파일이나 아이콘 같은 외부 리소스를 HTML 문서에 연결합니다.", risk);
+    }
+    if (/^<meta\b/i.test(t)) {
+      return makeStep(lineNo, t, "메타 정보 설정", "문자셋, 화면 크기, 검색 정보처럼 브라우저가 참고하는 문서 정보를 설정합니다.", risk);
+    }
+    if (/^<h[1-6]\b/i.test(t)) {
+      return makeStep(lineNo, t, "제목 표시", "페이지나 구역의 제목을 화면에 표시합니다. h1에서 h6으로 갈수록 제목 단계가 낮아집니다.", risk);
+    }
+    if (/^<(div|section|main|header|footer|nav|article|aside)\b/i.test(t)) {
+      return makeStep(lineNo, t, "화면 구역 정의", "여러 화면 요소를 묶는 레이아웃 구역을 만듭니다. class나 id로 스타일과 스크립트 대상이 될 수 있습니다.", risk);
+    }
+    if (/^<(p|span|strong|em|small)\b/i.test(t)) {
+      return makeStep(lineNo, t, "텍스트 표시", "사용자에게 보여줄 문장이나 짧은 텍스트 조각을 화면에 배치합니다.", risk);
+    }
+    if (/^<(ul|ol)\b/i.test(t)) {
+      return makeStep(lineNo, t, "목록 영역 정의", "여러 항목을 순서 있는 목록이나 순서 없는 목록으로 묶습니다.", risk);
+    }
+    if (/^<li\b/i.test(t)) {
+      return makeStep(lineNo, t, "목록 항목 정의", "목록 안에 들어갈 개별 항목을 만듭니다.", risk);
+    }
+    if (/^<\/[A-Za-z][\w:-]*>\s*$/i.test(t)) {
+      return makeStep(lineNo, t, "HTML 영역 닫기", "앞에서 시작한 HTML 태그 영역을 닫습니다. 열린 태그와 닫는 태그가 맞는지 확인합니다.", risk);
+    }
+    if (/^<[A-Za-z][\w:-]*/.test(t)) {
+      return makeStep(lineNo, t, "HTML 요소 정의", "화면에 표시되거나 구조를 만드는 HTML 태그입니다. 태그 이름과 속성 값을 확인합니다.", risk);
+    }
+
+    return makeStep(lineNo, t, "HTML 줄 해석", "HTML 문서의 한 줄입니다. 화면 구조나 속성 설정에 어떤 역할을 하는지 확인합니다.", risk);
   }
 
   function explainPackageJsonLine(line, lineNo) {
@@ -3224,6 +3523,67 @@
       });
     });
 
+    // JS_NODE_FS_UNSUPPORTED_ALLOWLIST_V330_A7
+
+    if (language === "javascript" || language === "workers") {
+
+      const allowedNodeFsCallsV330A7 = {
+
+        fs: true,
+
+        "fs.readFileSync": true,
+
+        "fs.readFile": true,
+
+        "fs.writeFileSync": true,
+
+        "fs.writeFile": true,
+
+        "fs.readdirSync": true,
+
+        "fs.readdir": true,
+
+        readFileSync: true,
+
+        readFile: true,
+
+        writeFileSync: true,
+
+        writeFile: true,
+
+        readdirSync: true,
+
+        readdir: true,
+
+        statSync: true,
+
+        stat: true,
+
+        existsSync: true,
+
+        mkdirSync: true,
+
+        mkdir: true
+
+      };
+
+      const filteredUnsupportedItemsV330A7 = items.filter(function(item) {
+
+        const rawToken = String((item && (item.token || item.name || item.title)) || "");
+
+        const token = rawToken.replace(/\(.*/, "");
+
+        const tailToken = token.split(".").pop();
+
+        return !allowedNodeFsCallsV330A7[token] && !allowedNodeFsCallsV330A7[tailToken];
+
+      });
+
+      return filteredUnsupportedItemsV330A7;
+
+    }
+
+
     return items;
   }
 
@@ -3421,6 +3781,10 @@
       if (language === "powershell") steps.push(explainPowerShellLine(line, lineNo));
       else if (language === "python") steps.push(explainPythonLine(line, lineNo));
       else if (language === "javascript" || language === "workers") steps.push(explainJavaScriptLine(line, lineNo, language));
+      else if (language === "json") steps.push(explainJsonLine(line, lineNo));
+      else if (language === "sql") steps.push(explainSqlLine(line, lineNo));
+      else if (language === "css") steps.push(explainCssLine(line, lineNo));
+      else if (language === "html") steps.push(explainHtmlLine(line, lineNo));
       else if (language === "package_json") steps.push(explainPackageJsonLine(line, lineNo));
       else if (language === "github_actions") steps.push(explainGitHubActionsLine(line, lineNo));
       else if (language === "dockerfile") steps.push(explainDockerfileLine(line, lineNo));
