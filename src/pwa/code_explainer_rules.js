@@ -943,6 +943,14 @@
       return makeStep(lineNo, t, "변수에 값 저장", "왼쪽 이름에 오른쪽 값을 넣습니다. 이후 코드에서 이 이름으로 값을 다시 사용할 수 있습니다.", risk);
     }
 
+    // PYTHON_PLUS_EQUALS_ACCUMULATOR_V328_A3_2
+
+    if (/^[A-Za-z_][A-Za-z0-9_]*(?:\[[^\]]+\]|\.[A-Za-z_][A-Za-z0-9_]*)?\s*\+=\s*.+$/.test(t)) {
+
+      return makeStep(lineNo, t, "누적 더하기", "왼쪽 변수에 오른쪽 값을 더해서 다시 저장합니다. 합계, 점수, 개수를 쌓아 갈 때 자주 씁니다.", risk);
+
+    }
+
     return makeStep(lineNo, t, "Python 코드 실행", "이 줄은 Python 코드입니다. 위에서 아래로 순서대로 실행됩니다.", risk);
   }
 

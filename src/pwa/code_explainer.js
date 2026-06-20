@@ -555,6 +555,40 @@ port = 5432`
       });
   }
 
+  // RELATED_CARDS_COLLAPSED_V328_A3_2
+  function collapseRelatedCardsV328A3(box) {
+    if (!box) return;
+    if (box.querySelector(".code-related-cards-detail-v328-a3")) return;
+
+    const cards = Array.prototype.slice.call(box.children).filter(function(child) {
+      return child && child.classList && child.classList.contains("code-related-card");
+    });
+
+    if (!cards.length) return;
+
+    const detail = document.createElement("details");
+    detail.className = "code-related-cards-detail-v328-a3";
+
+    const summary = document.createElement("summary");
+    summary.textContent = "추천 카드 " + cards.length + "개 보기";
+
+    const hint = document.createElement("p");
+    hint.className = "muted";
+    hint.textContent = "필요할 때만 펼쳐서 보세요. 기본 설명을 먼저 읽는 흐름을 방해하지 않도록 접어 둡니다.";
+
+    const list = document.createElement("div");
+    list.className = "code-related-card-list-v328-a3";
+
+    cards.forEach(function(card) {
+      list.appendChild(card);
+    });
+
+    detail.appendChild(summary);
+    detail.appendChild(hint);
+    detail.appendChild(list);
+    box.appendChild(detail);
+  }
+
   function renderRelatedCards(result) {
         renderFunctionFlowAdvisorV327A3(result);
 const box = el("codeRelatedCards");
@@ -600,6 +634,8 @@ const box = el("codeRelatedCards");
       item.appendChild(detail);
       box.appendChild(item);
     });
+    collapseRelatedCardsV328A3(box);
+
   }
 
   function renderStepMeta(step) {
@@ -4711,8 +4747,13 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     const lowerName = String(block.name || "").toLowerCase();
 
     if (isCollectorFunctionV328A1(block)) score += 100;
+    if (isJsonLoaderFunctionV328A3(block)) score += 95;
+    if (isAccumulatorFunctionV328A3(block)) score += 92;
     if (isCountFunctionV328A1(block)) score += 90;
+    if (isTransformFunctionV328A3(block)) score += 88;
     if (/filter|select|collect|find|list|names?/.test(lowerName)) score += 20;
+    if (/load|read|parse|json|csv|file/.test(lowerName)) score += 20;
+    if (/sum|total|count|average|avg/.test(lowerName)) score += 20;
     if (/return\s+/.test(block.body || "")) score += 10;
     if (isDynamicFunctionV328A1(block)) score -= 35;
 
@@ -4730,6 +4771,31 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     return /\busers\b/.test(source) && /\buser\b/.test(source) && /\bactive\b/.test(source) && /\bname\b/.test(source);
   }
 
+  // BEGINNER_RESULT_PATTERNS_V328_A3
+  function isJsonLoaderFunctionV328A3(block) {
+    const body = String(block && block.body || "");
+    return /(json\.load|json\.loads|JSON\.parse|\.json\s*\(|read_text\s*\(|open\s*\(|Path\s*\()/.test(body) && /(return\s+|=)/.test(body);
+  }
+
+  function isAccumulatorFunctionV328A3(block) {
+    const body = String(block && block.body || "");
+    return /\b(total|sum_value|amount|score)\s*=\s*0\b/.test(body) || /\b(total|sum_value|amount|score)\s*\+=/.test(body) || /return\s+sum\s*\(/.test(body);
+  }
+
+  function isTransformFunctionV328A3(block) {
+    const body = String(block && block.body || "");
+    return (/\bfor\b/.test(body) && /\.append\s*\(/.test(body) && /return\s+/.test(body)) || /return\s+\[.+\bfor\b.+\]/s.test(body);
+  }
+
+  function isRecognizedBeginnerFunctionV328A3(block, source) {
+    return isCollectorFunctionV328A1(block) ||
+      isCountFunctionV328A1(block) ||
+      isDynamicFunctionV328A1(block) ||
+      isJsonLoaderFunctionV328A3(block) ||
+      isAccumulatorFunctionV328A3(block) ||
+      isTransformFunctionV328A3(block);
+  }
+
   function buildBeginnerResultTextV328A1(result, functions) {
     const source = String(result && result.sourceCode || "");
     const main = functions[0];
@@ -4742,8 +4808,20 @@ function renderFunctionInterpretationListV251(items, emptyText) {
       return "이 코드에서 가장 분명한 결과는 조건에 맞는 사람의 이름 목록을 만드는 것입니다. 그 결과를 만드는 핵심 함수는 " + signatureV328A1(main) + "입니다.";
     }
 
+    if (isJsonLoaderFunctionV328A3(main)) {
+      return "이 코드에서 가장 분명한 결과는 파일이나 JSON 값을 읽어서 코드에서 쓸 수 있는 데이터로 바꾸는 것입니다. 핵심 함수는 " + signatureV328A1(main) + "입니다.";
+    }
+
+    if (isAccumulatorFunctionV328A3(main)) {
+      return "이 코드에서 가장 분명한 결과는 여러 값을 돌면서 합계나 누적값을 계산하는 것입니다. 핵심 함수는 " + signatureV328A1(main) + "입니다.";
+    }
+
     if (isCollectorFunctionV328A1(main)) {
       return "이 코드에서 가장 분명한 결과는 조건에 맞는 값을 골라 목록으로 모으는 것입니다. 핵심 함수는 " + signatureV328A1(main) + "입니다.";
+    }
+
+    if (isTransformFunctionV328A3(main)) {
+      return "이 코드에서 가장 분명한 결과는 목록의 값을 하나씩 처리해서 새 목록을 만드는 것입니다. 핵심 함수는 " + signatureV328A1(main) + "입니다.";
     }
 
     if (isCountFunctionV328A1(main)) {
@@ -4754,7 +4832,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
       return "이 코드는 입력값을 보고 실제로 실행할 함수를 고르는 코드로 보입니다. 다만 외부 함수나 설정을 더 봐야 정확히 어떤 일을 실행하는지 알 수 있습니다.";
     }
 
-    return "이 코드는 " + signatureV328A1(main) + " 함수를 중심으로 입력값을 처리하고 결과를 돌려주는 코드입니다.";
+    return "";
   }
 
   function renderBeginnerExampleV328A1(result, functions) {
@@ -4805,6 +4883,31 @@ function renderFunctionInterpretationListV251(items, emptyText) {
         '</article>';
     }
 
+    if (isJsonLoaderFunctionV328A3(block)) {
+      return '<article class="code-beginner-function-card-v328-a1">' +
+        '<h4>' + escapeHtml(sig) + '</h4>' +
+        '<p><strong>무슨 일을 하나요?</strong><br>파일, 경로, JSON 문자열 같은 입력을 읽어서 코드에서 사용할 데이터로 바꿉니다.</p>' +
+        '<p><strong>주의할 점</strong><br>파일 경로나 JSON 형식이 틀리면 읽기 단계에서 오류가 날 수 있습니다.</p>' +
+        '<p><strong>최종 결과는?</strong><br>읽어 온 데이터 객체나 목록을 돌려줍니다.</p>' +
+        '</article>';
+    }
+
+    if (isAccumulatorFunctionV328A3(block)) {
+      return '<article class="code-beginner-function-card-v328-a1">' +
+        '<h4>' + escapeHtml(sig) + '</h4>' +
+        '<p><strong>무슨 일을 하나요?</strong><br>여러 값을 하나씩 보면서 total 같은 누적 변수에 더합니다.</p>' +
+        '<p><strong>최종 결과는?</strong><br>합계나 누적 계산 결과를 돌려줍니다.</p>' +
+        '</article>';
+    }
+
+    if (isTransformFunctionV328A3(block)) {
+      return '<article class="code-beginner-function-card-v328-a1">' +
+        '<h4>' + escapeHtml(sig) + '</h4>' +
+        '<p><strong>무슨 일을 하나요?</strong><br>목록의 값을 하나씩 처리해서 새 목록을 만듭니다.</p>' +
+        '<p><strong>최종 결과는?</strong><br>변환된 값들의 목록을 돌려줍니다.</p>' +
+        '</article>';
+    }
+
     if (isDynamicFunctionV328A1(block)) {
       return '<article class="code-beginner-function-card-v328-a1">' +
         '<h4>' + escapeHtml(sig) + '</h4>' +
@@ -4831,8 +4934,29 @@ function renderFunctionInterpretationListV251(items, emptyText) {
       handler: "실제로 일을 처리할 함수",
       type: "config 안에서 작업 종류를 가리키는 이름",
       count: "개수를 세기 위해 쓰는 숫자",
+      score: "현재 더하거나 계산에 쓰는 값 하나",
+      scores: "점수 여러 개가 들어 있는 목록",
       item: "목록에서 꺼낸 항목 하나",
-      items: "여러 항목이 들어 있는 목록"
+      items: "여러 항목이 들어 있는 목록",
+      data: "코드가 다루는 데이터 전체",
+      raw: "아직 정리되기 전의 원본 값",
+      text: "글자 데이터",
+      path: "파일이나 폴더 위치",
+      file: "읽거나 쓰는 파일",
+      filename: "파일 이름",
+      fp: "열어 둔 파일을 가리키는 이름",
+      rows: "표나 CSV에서 여러 줄 데이터",
+      row: "표나 CSV에서 한 줄 데이터",
+      records: "여러 기록이 들어 있는 목록",
+      record: "기록 하나",
+      payload: "API나 함수에 넘기는 데이터 묶음",
+      response: "요청을 보낸 뒤 돌아온 응답",
+      total: "값을 계속 더해 모은 합계",
+      value: "하나의 값",
+      values: "여러 값",
+      key: "딕셔너리에서 값을 찾을 때 쓰는 이름",
+      line: "파일에서 읽은 한 줄",
+      lines: "파일에서 읽은 여러 줄"
     };
 
     if (labels[name]) return labels[name];
@@ -4897,6 +5021,22 @@ function renderFunctionInterpretationListV251(items, emptyText) {
       steps.push("user의 active 값이 참인지 확인합니다.");
       steps.push("조건에 맞으면 user의 name을 result에 넣습니다.");
       steps.push("마지막에 result를 돌려줍니다.");
+    } else if (main && isJsonLoaderFunctionV328A3(main)) {
+      steps.push(signatureV328A1(main) + "가 파일 경로나 JSON 값을 받습니다.");
+      steps.push("파일을 열거나 문자열을 읽습니다.");
+      steps.push("JSON 파서를 사용해 코드에서 쓸 수 있는 데이터로 바꿉니다.");
+      steps.push("마지막에 읽어 온 데이터를 돌려줍니다.");
+    } else if (main && isAccumulatorFunctionV328A3(main)) {
+      steps.push(signatureV328A1(main) + "가 여러 값을 받습니다.");
+      steps.push("total 같은 누적 변수를 준비합니다.");
+      steps.push("값을 하나씩 보면서 누적 변수에 더합니다.");
+      steps.push("마지막에 합계나 누적 결과를 돌려줍니다.");
+    } else if (main && isTransformFunctionV328A3(main)) {
+      steps.push(signatureV328A1(main) + "가 목록을 받습니다.");
+      steps.push("새 결과 목록을 준비합니다.");
+      steps.push("원래 목록에서 값을 하나씩 꺼냅니다.");
+      steps.push("각 값을 필요한 형태로 바꿔 새 목록에 넣습니다.");
+      steps.push("마지막에 새 목록을 돌려줍니다.");
     }
 
     functions.forEach(function(block) {
@@ -4905,12 +5045,6 @@ function renderFunctionInterpretationListV251(items, emptyText) {
         steps.push("다만 외부 함수의 실제 내용은 이 코드만으로는 알 수 없습니다.");
       }
     });
-
-    if (!steps.length && main) {
-      steps.push(signatureV328A1(main) + "가 입력값을 받습니다.");
-      steps.push("함수 안의 줄들을 위에서 아래로 실행합니다.");
-      steps.push("return 줄에서 결과를 돌려줍니다.");
-    }
 
     if (!steps.length) return "";
 
@@ -5135,7 +5269,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
 
       guard.appendChild(button);
       diagram.appendChild(guard);
-      if (status) status.textContent = "긴 코드 흐름도 접힘";
+      if (status) status.textContent = "흐름도 대기 중";
       return;
     }
 

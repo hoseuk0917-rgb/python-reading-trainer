@@ -1,0 +1,31 @@
+"use strict";
+const fs = require("fs");
+const path = require("path");
+const ROOT = path.resolve(__dirname, "..");
+function read(rel) { return fs.readFileSync(path.join(ROOT, rel), "utf8"); }
+function pass(name, ok) { if (ok) { console.log("PASS", name); return; } console.error("FAIL", name); process.exitCode = 1; }
+const code = read("src/pwa/code_explainer.js");
+const rules = read("src/pwa/code_explainer_rules.js");
+const app = read("src/pwa/app.js");
+const pwa = read("src/pwa/index.html");
+const root = read("index.html");
+console.log("V328_A3_BEGINNER_RESULT_PATTERNS_SMOKE");
+pass("app_version", app.includes("20260619_v328_a3"));
+pass("pwa_version", pwa.includes("20260619_v328_a3"));
+pass("root_version", root.includes("20260619_v328_a3"));
+pass("pattern_marker", code.includes("BEGINNER_RESULT_PATTERNS_V328_A3"));
+pass("json_loader_pattern", code.includes("isJsonLoaderFunctionV328A3"));
+pass("accumulator_pattern", code.includes("isAccumulatorFunctionV328A3"));
+pass("transform_pattern", code.includes("isTransformFunctionV328A3"));
+pass("generic_result_removed", !code.includes("return \"이 코드는 \" + signatureV328A1(main)"));
+pass("json_user_text", code.includes("파일이나 JSON 값을 읽어서"));
+pass("total_label", code.includes("값을 계속 더해 모은 합계"));
+pass("score_label", code.includes("현재 더하거나 계산에 쓰는 값 하나"));
+pass("data_label", code.includes("코드가 다루는 데이터 전체"));
+pass("related_cards_collapsed", code.includes("RELATED_CARDS_COLLAPSED_V328_A3_2"));
+pass("plus_equals_rule", rules.includes("PYTHON_PLUS_EQUALS_ACCUMULATOR_V328_A3_2"));
+pass("plus_equals_title", rules.includes("누적 더하기"));
+pass("mermaid_wording_generic", code.includes("흐름도 대기 중"));
+pass("a2_preserved", code.includes("MERMAID_ALWAYS_REVEAL_BUTTON_V328_A2_2"));
+if (process.exitCode) process.exit(process.exitCode);
+console.log("TOTAL 17 PASS 17 FAIL 0");
