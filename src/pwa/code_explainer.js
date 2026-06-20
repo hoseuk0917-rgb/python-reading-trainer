@@ -1,4 +1,5 @@
-﻿// === CODE EXPLAINER UI V215-A1 START ===
+﻿  // ADVANCED_DETAILS_CLOSED_V328_A2_1
+// === CODE EXPLAINER UI V215-A1 START ===
 // CODE_EXPLAINER_UI_RENDER_FUNCTION_ADVISOR_V327_A3
 // === CODE EXPLAINER UI V212-A1 START ===
 (function() {
@@ -442,7 +443,7 @@ port = 5432`
     const wrapper = document.createElement("div");
     wrapper.className = "function-flow-advisor-v327-a3";
     wrapper.innerHTML =
-      '<details open class="function-flow-render-v327-a3">' +
+      '<details class="function-flow-render-v327-a3">' +
         '<summary>Function flow / Next check advisor</summary>' +
         flowHtml +
         advisorHtml +
@@ -3370,7 +3371,7 @@ function renderFunctionRelatedCardsV254(item) {
     return '<p class="muted function-ir-related-empty">이 함수와 직접 연결되는 학습 카드는 아직 찾지 못했습니다.</p>';
   }
 
-  return '<details open class="function-ir-related-detail"><summary>이 함수 이해에 도움 되는 카드</summary>' +
+  return '<details class="function-ir-related-detail"><summary>이 함수 이해에 도움 되는 카드</summary>' +
     '<div class="function-ir-related-grid">' +
     matches.map(function(match) {
       const card = match.card || {};
@@ -3685,7 +3686,7 @@ function renderFunctionSkeletonV259(result) {
     ? '<p class="code-report-categories">' + signalItems.map(escapeHtml).join(" · ") + '</p>'
     : '<p class="code-report-categories">주요 신호는 함수명과 내부 호출 기준으로 분류했습니다.</p>';
 
-  return '<details open class="code-flow-detail function-skeleton-v259"><summary>전체 코드 뼈대 요약 · 함수 ' +
+  return '<details class="code-flow-detail function-skeleton-v259"><summary>전체 코드 뼈대 요약 · 함수 ' +
     escapeHtml(String(skeleton.total)) + '개</summary>' +
     '<p class="code-report-categories">기본 해석은 앞쪽 함수 몇 개가 아니라, 전체 파일의 함수 역할 분포를 먼저 보여줍니다. 세부 흐름은 아래 함수 목록에서 하나를 선택해 확인합니다.</p>' +
     signalHtml +
@@ -4084,7 +4085,7 @@ function renderInternalCallGroupsV272(groups) {
     return '<p class="muted">내부 호출/API 신호가 뚜렷하지 않거나, 너무 일반적인 보조 호출만 있어 숨겼습니다.</p>';
   }
 
-  return '<details open class="function-internal-call-groups-v272"><summary>내부 호출/API 그룹</summary>' +
+  return '<details class="function-internal-call-groups-v272"><summary>내부 호출/API 그룹</summary>' +
     '<p class="code-report-categories">너무 흔한 보조 호출은 줄이고, 실제 읽기 순서에 도움이 되는 호출만 성격별로 묶었습니다.</p>' +
     list.map(function(group) {
       return '<section class="function-internal-call-group-v272">' +
@@ -4162,7 +4163,7 @@ function renderSelectedFunctionCallGraphV262(context) {
 
   if (!source) return "";
 
-  return '<details open class="code-flow-detail function-callgraph-v262"><summary>선택 함수 호출 관계 그래프</summary>' +
+  return '<details class="code-flow-detail function-callgraph-v262"><summary>선택 함수 호출 관계 그래프</summary>' +
     '<p class="code-report-categories">왼쪽은 이 함수를 호출하는 함수, 오른쪽은 이 함수 내부에서 호출하는 함수/API입니다.</p>' +
     '<div id="functionCallGraphDiagramV262" class="function-callgraph-diagram-v262">호출 관계 그래프 렌더링 대기</div>' +
     '<details class="code-flow-detail"><summary>Mermaid 코드 보기</summary><pre><code>' +
@@ -4208,7 +4209,7 @@ function renderSelectedFunctionContextV261(result) {
   const context = result && result.selectedFunctionContextV261;
   if (!context) return "";
 
-  return '<details open class="code-flow-detail function-context-v261"><summary>선택 함수 주변 문맥 · ' +
+  return '<details class="code-flow-detail function-context-v261"><summary>선택 함수 주변 문맥 · ' +
     escapeHtml(context.name) + '</summary>' +
     '<p class="code-report-categories">이 함수는 <strong>' + escapeHtml(context.roleLabel || context.role || "미분류") +
     '</strong> 역할군으로 보이며, 주변 함수/호출 관계를 함께 확인합니다.</p>' +
@@ -4250,7 +4251,7 @@ function renderFunctionPickerV259(result) {
     ? ""
     : '<p class="muted">검색/필터 조건에 맞는 함수가 없습니다.</p>';
 
-  return '<details open class="code-flow-detail function-picker-v259 function-picker-filter-v260"><summary>함수 목록 / 선택 해석 · 전체 ' +
+  return '<details class="code-flow-detail function-picker-v259 function-picker-filter-v260"><summary>함수 목록 / 선택 해석 · 전체 ' +
     escapeHtml(String(outline.length)) + '개 · 결과 ' + escapeHtml(String(filtered.length)) + '개</summary>' +
     selectedHtml +
     renderFunctionPickerControlsV260(result, outline, filtered) +
@@ -4340,7 +4341,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     const relatedCards = renderFunctionRelatedCardsV254(item);
 
     const mermaid = item.mermaid
-      ? '<details open class="code-flow-detail function-ir-mermaid-detail"><summary>함수 흐름도</summary>' +
+      ? '<details class="code-flow-detail function-ir-mermaid-detail"><summary>함수 흐름도</summary>' +
         '<div id="functionMermaidDiagramV253_' + index + '" class="function-ir-mermaid-diagram"><p class="muted">함수 흐름도 렌더링 준비 중...</p></div>' +
         '<details class="code-flow-detail function-ir-mermaid-source"><summary>Mermaid 코드 보기</summary><pre><code>' + escapeHtml(item.mermaid) + '</code></pre></details>' +
         '</details>'
@@ -4520,7 +4521,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
       '</div>' +
       '<p class="code-structure-categories">주요 분류: ' + escapeHtml(overview.topCategories || "분류 없음") + '</p>' +
       '<p class="code-structure-categories">주요 태그: ' + escapeHtml(overview.topTags || "태그 없음") + '</p>' +
-      '<details open class="code-structure-detail"><summary>주요 함수/구간</summary>' + outlineHtml + '</details>' +
+      '<details class="code-structure-detail"><summary>주요 함수/구간</summary>' + outlineHtml + '</details>' +
       '<details class="code-structure-detail"><summary>추천 읽는 순서</summary>' + orderHtml + '</details>' +
       warningHtml;
   }
@@ -5054,13 +5055,13 @@ function renderFunctionInterpretationListV251(items, emptyText) {
       renderFunctionSkeletonV259(result) +
       renderFunctionPickerV259(result) +
       renderSelectedFunctionContextV261(result) +
-      '<details open class="code-flow-detail"><summary>데이터 흐름</summary>' +
+      '<details class="code-flow-detail"><summary>데이터 흐름</summary>' +
       renderFlowList(dataFlow, "변수 저장, 가공, 출력 흐름이 뚜렷하게 감지되지 않았습니다.") +
       '</details>' +
       '<details class="code-flow-detail"><summary>호출 흐름</summary>' +
       renderFlowList(callFlow, "함수 정의/호출 흐름이 뚜렷하게 감지되지 않았습니다.") +
       '</details>' +
-      '<details open class="code-flow-detail"><summary>함수 단위 해석</summary>' +
+      '<details class="code-flow-detail"><summary>함수 단위 해석</summary>' +
       renderFunctionInterpretationListV251(functionInterpretations, "함수 단위 해석 대상이 아직 감지되지 않았습니다.") +
       '</details>';
   }
@@ -5113,18 +5114,19 @@ function renderFunctionInterpretationListV251(items, emptyText) {
       return;
     }
 
-    if (stepCount > MAX_MERMAID_RENDER_STEPS) {
+    // MERMAID_ALWAYS_REVEAL_BUTTON_V328_A2_2
+    if (true) {
       diagram.innerHTML = "";
       const guard = document.createElement("div");
       guard.className = "code-mermaid-render-guard";
       guard.innerHTML =
-        '<strong>긴 코드 흐름도 접기</strong>' +
-        '<p class="muted">감지된 단계가 ' + stepCount + '개라서 처음에는 그림 렌더링을 접어둡니다. Mermaid 원문은 이미 전체 보존되어 있고, 아래 버튼을 누르면 전체 흐름도 그림도 렌더링합니다.</p>';
+        '<strong>흐름도는 필요할 때 펼쳐서 봅니다</strong>' +
+        '<p class="muted">기본 화면에서는 그림을 바로 펼치지 않습니다. 코드를 먼저 읽고, 흐름이 필요할 때 아래 버튼으로 그림을 생성하세요. 감지된 단계는 ' + stepCount + '개입니다.</p>';
 
       const button = document.createElement("button");
       button.type = "button";
       button.className = "code-mermaid-render-button";
-      button.textContent = "전체 흐름도 그리기";
+      button.textContent = "흐름도 보기";
       button.addEventListener("click", function() {
         button.disabled = true;
         button.textContent = "전체 흐름도 그리는 중...";
@@ -5466,6 +5468,8 @@ function renderFunctionInterpretationListV251(items, emptyText) {
 })();
 // === CODE EXPLAINER UI V212-A1 END ===
 // === CODE EXPLAINER UI V215-A1 END ===
+
+
 
 
 
