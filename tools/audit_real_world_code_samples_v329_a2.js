@@ -45,7 +45,7 @@ const samples = [
       "            result.append(user[\"name\"])",
       "    return result"
     ]),
-    expectTitles: ["함수 정의", "반복문", "조건 검사", "목록에 항목 추가", "값 돌려주기"],
+    expectTitles: ["함수 정의", "for 반복문 실행", "조건 검사", "목록에 항목 추가", "값 돌려주기"],
     note: "A1/A3 대표 샘플. 초보자용 결과 설명이 떠야 하는 유형."
   },
   {
@@ -73,7 +73,7 @@ const samples = [
       "        total += score",
       "    return total"
     ]),
-    expectTitles: ["함수 정의", "변수에 값 저장", "반복문", "누적 더하기", "값 돌려주기"],
+    expectTitles: ["함수 정의", "변수에 값 저장", "for 반복문 실행", "누적 더하기", "값 돌려주기"],
     expectNoUnsupportedContains: ["total += score"],
     note: "A3-2에서 += 누적 더하기로 개선한 샘플."
   },
@@ -88,7 +88,7 @@ const samples = [
       "        result.append(name.strip().lower())",
       "    return result"
     ]),
-    expectTitles: ["함수 정의", "반복문", "목록에 항목 추가", "값 돌려주기"],
+    expectTitles: ["함수 정의", "for 반복문 실행", "목록에 항목 추가", "값 돌려주기"],
     note: "목록 변환 유형. name.strip().lower() 설명 품질 확인 필요."
   },
   {

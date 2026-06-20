@@ -73,13 +73,13 @@ It does not change app behavior. It extends the V329-A2 audit baseline from 31 s
 
 - Status: OK
 - Note: A1/A3 대표 샘플. 초보자용 결과 설명이 떠야 하는 유형.
-- Step titles: 함수 정의 / 변수에 값 저장 / 반복문 / 조건 검사 / 목록에 항목 추가 / 값 돌려주기
+- Step titles: 함수 정의 / 변수에 값 저장 / for 반복문 실행 / 조건 검사 / 목록에 항목 추가 / 값 돌려주기
 - Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
   - 1. 나중에 이름으로 불러서 실행할 수 있는 코드 묶음을 만듭니다. 이 줄만으로 함수 안쪽이 바로 실행되지는 않습니다.
   - 2. 왼쪽 이름에 오른쪽 값을 넣습니다. 이후 코드에서 이 이름으로 값을 다시 사용할 수 있습니다.
-  - 3. 목록이나 범위에서 값을 하나씩 꺼내며 아래 코드를 반복합니다.
+  - 3. 목록이나 범위에서 값을 하나씩 꺼내어 바로 아래 들여쓰기 블록을 반복 실행합니다. 반복 변수에 어떤 값이 들어가는지 따라가면 흐름을 이해하기 쉽습니다.
   - 4. 조건이 맞으면 바로 아래 들여쓰기된 코드가 실행됩니다.
 
 ### py_load_json — Python load JSON file
@@ -99,26 +99,26 @@ It does not change app behavior. It extends the V329-A2 audit baseline from 31 s
 
 - Status: OK
 - Note: A3-2에서 += 누적 더하기로 개선한 샘플.
-- Step titles: 함수 정의 / 변수에 값 저장 / 반복문 / 누적 더하기 / 값 돌려주기
+- Step titles: 함수 정의 / 변수에 값 저장 / for 반복문 실행 / 누적 더하기 / 값 돌려주기
 - Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
   - 1. 나중에 이름으로 불러서 실행할 수 있는 코드 묶음을 만듭니다. 이 줄만으로 함수 안쪽이 바로 실행되지는 않습니다.
   - 2. 왼쪽 이름에 오른쪽 값을 넣습니다. 이후 코드에서 이 이름으로 값을 다시 사용할 수 있습니다.
-  - 3. 목록이나 범위에서 값을 하나씩 꺼내며 아래 코드를 반복합니다.
+  - 3. 목록이나 범위에서 값을 하나씩 꺼내어 바로 아래 들여쓰기 블록을 반복 실행합니다. 반복 변수에 어떤 값이 들어가는지 따라가면 흐름을 이해하기 쉽습니다.
   - 4. 왼쪽 변수에 오른쪽 값을 더해서 다시 저장합니다. 합계, 점수, 개수를 쌓아 갈 때 자주 씁니다.
 
 ### py_transform_names — Python transform list
 
 - Status: OK
 - Note: 목록 변환 유형. name.strip().lower() 설명 품질 확인 필요.
-- Step titles: 함수 정의 / 변수에 값 저장 / 반복문 / 목록에 항목 추가 / 값 돌려주기
+- Step titles: 함수 정의 / 변수에 값 저장 / for 반복문 실행 / 목록에 항목 추가 / 값 돌려주기
 - Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
   - 1. 나중에 이름으로 불러서 실행할 수 있는 코드 묶음을 만듭니다. 이 줄만으로 함수 안쪽이 바로 실행되지는 않습니다.
   - 2. 왼쪽 이름에 오른쪽 값을 넣습니다. 이후 코드에서 이 이름으로 값을 다시 사용할 수 있습니다.
-  - 3. 목록이나 범위에서 값을 하나씩 꺼내며 아래 코드를 반복합니다.
+  - 3. 목록이나 범위에서 값을 하나씩 꺼내어 바로 아래 들여쓰기 블록을 반복 실행합니다. 반복 변수에 어떤 값이 들어가는지 따라가면 흐름을 이해하기 쉽습니다.
   - 4. 리스트 끝에 새 값을 하나 추가합니다. 반복문 안에서 결과를 모을 때 자주 씁니다.
 
 ### py_try_file_read — Python try except file read
@@ -156,8 +156,8 @@ It does not change app behavior. It extends the V329-A2 audit baseline from 31 s
 - Unsupported conflicts: -
 - First explanations:
   - 1. 현재 폴더에서 어떤 파일이 수정되었는지 확인합니다.
-  - 2. 수정한 파일을 다음 커밋에 포함하도록 준비합니다.
-  - 3. 준비된 변경사항을 하나의 기록으로 저장합니다.
+  - 2. 수정한 파일을 다음 커밋에 포함하도록 준비합니다. 아직 저장 기록이 만들어진 것은 아니고, 커밋 후보 목록에 올리는 단계입니다.
+  - 3. 준비된 변경사항을 하나의 기록으로 저장합니다. -m 뒤의 문장은 나중에 변경 이력을 볼 때 보이는 커밋 메시지입니다.
   - 4. 로컬 커밋이나 태그를 GitHub 같은 원격 저장소에 올립니다.
 
 ### ps_web_request — PowerShell Invoke-WebRequest
@@ -203,7 +203,7 @@ It does not change app behavior. It extends the V329-A2 audit baseline from 31 s
 - Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
-  - 1. 나중에 호출해서 실행할 코드 묶음을 만듭니다.
+  - 1. 나중에 호출해서 실행할 코드 묶음을 만듭니다. async가 붙으면 함수 안에서 await로 비동기 작업을 기다릴 수 있습니다.
   - 2. fetch 요청이 끝날 때까지 기다립니다. 네트워크 실패와 응답 상태 확인이 필요합니다.
   - 3. fetch 응답 본문을 JavaScript 객체로 변환합니다. 응답이 JSON이 아니면 오류가 날 수 있습니다.
   - 4. 함수 안에서 만든 값이나 계산 결과를 호출한 곳으로 돌려줍니다.
@@ -352,7 +352,7 @@ It does not change app behavior. It extends the V329-A2 audit baseline from 31 s
 - Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
-  - 1. 나중에 호출해서 실행할 코드 묶음을 만듭니다.
+  - 1. 나중에 호출해서 실행할 코드 묶음을 만듭니다. async가 붙으면 함수 안에서 await로 비동기 작업을 기다릴 수 있습니다.
   - 2. 아래 코드에서 오류가 나면 catch/finally로 넘어가 처리할 수 있게 준비합니다.
   - 3. fetch 요청이 끝날 때까지 기다립니다. 네트워크 실패와 응답 상태 확인이 필요합니다.
   - 4. fetch 응답 본문을 JavaScript 객체로 변환합니다. 응답이 JSON이 아니면 오류가 날 수 있습니다.
@@ -455,7 +455,7 @@ It does not change app behavior. It extends the V329-A2 audit baseline from 31 s
 - First explanations:
   - 1. GitHub Actions 화면에 표시될 자동화 작업 이름입니다.
   - 2. push, pull_request 같은 어떤 사건에서 자동화를 실행할지 정합니다.
-  - 3. 하나 이상의 job을 모아 정의하는 영역입니다.
+  - 3. 하나 이상의 job을 모아 정의하는 영역입니다. 각 job은 어떤 환경에서 어떤 steps를 순서대로 실행할지 담습니다.
   - 4. 앞에서 사용한 action이나 job에 필요한 옵션을 지정합니다.
 
 ### html_basic_form — HTML basic form
@@ -516,7 +516,7 @@ It does not change app behavior. It extends the V329-A2 audit baseline from 31 s
 - Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
-  - 1. 데이터베이스에서 어떤 컬럼 값을 가져올지 정합니다. 별칭 AS가 있으면 결과 컬럼 이름을 바꿉니다.
+  - 1. 데이터베이스에서 어떤 컬럼 값을 가져올지 정합니다. COUNT 같은 집계 함수가 있으면 여러 행을 묶어 요약한 값을 함께 조회합니다. 별칭 AS가 있으면 결과 컬럼 이름을 바꿉니다.
   - 2. 조회의 기준이 되는 테이블을 지정합니다. 이 테이블에서 행을 읽기 시작합니다.
   - 3. 조건에 맞는 행만 남깁니다. 상태값, 날짜, id 같은 기준으로 결과를 줄입니다.
   - 4. 같은 값을 가진 행들을 하나의 그룹으로 묶습니다. COUNT, SUM, AVG 같은 집계와 함께 자주 씁니다.
@@ -525,13 +525,13 @@ It does not change app behavior. It extends the V329-A2 audit baseline from 31 s
 
 - Status: OK
 - Note: SQL JOIN 조건과 필터 설명 가능 여부 확인.
-- Step titles: 조회할 컬럼 선택 / 기준 테이블 선택 / 테이블 조인 / 조회 조건 필터
+- Step titles: 조회할 컬럼 선택 / 기준 테이블 선택 / SQL 테이블 조인 / 조회 조건 필터
 - Missing expected titles: -
 - Unsupported conflicts: -
 - First explanations:
   - 1. 데이터베이스에서 어떤 컬럼 값을 가져올지 정합니다. 별칭 AS가 있으면 결과 컬럼 이름을 바꿉니다.
   - 2. 조회의 기준이 되는 테이블을 지정합니다. 이 테이블에서 행을 읽기 시작합니다.
-  - 3. 다른 테이블을 함께 붙여서 조회합니다. JOIN 조건이 맞는 행끼리 연결됩니다.
+  - 3. 다른 테이블을 함께 붙여서 조회합니다. JOIN 조건이 맞는 행끼리 연결되므로, 어떤 기준 컬럼으로 이어지는지 확인해야 합니다.
   - 4. 조건에 맞는 행만 남깁니다. 상태값, 날짜, id 같은 기준으로 결과를 줄입니다.
 
 ### yaml_github_actions_matrix — GitHub Actions matrix workflow

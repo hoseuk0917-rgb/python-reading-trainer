@@ -533,10 +533,10 @@
       return makeStep(lineNo, t, "Git 변경 상태 확인", "현재 폴더에서 어떤 파일이 수정되었는지 확인합니다.", risk);
     }
     if (/^git\s+add/i.test(t)) {
-      return makeStep(lineNo, t, "Git 커밋 준비", "수정한 파일을 다음 커밋에 포함하도록 준비합니다.", risk);
+      return makeStep(lineNo, t, "Git 커밋 준비", "수정한 파일을 다음 커밋에 포함하도록 준비합니다. 아직 저장 기록이 만들어진 것은 아니고, 커밋 후보 목록에 올리는 단계입니다.", risk);
     }
     if (/^git\s+commit/i.test(t)) {
-      return makeStep(lineNo, t, "Git 커밋 생성", "준비된 변경사항을 하나의 기록으로 저장합니다.", risk);
+      return makeStep(lineNo, t, "Git 커밋 생성", "준비된 변경사항을 하나의 기록으로 저장합니다. -m 뒤의 문장은 나중에 변경 이력을 볼 때 보이는 커밋 메시지입니다.", risk);
     }
     if (/^git\s+tag/i.test(t)) {
       return makeStep(lineNo, t, "Git 태그 생성", "현재 커밋에 버전 이름표를 붙입니다.", risk);
@@ -761,7 +761,8 @@
       return makeStep(lineNo, t, "enumerate 반복", "enumerate는 목록의 값과 함께 순서 번호를 같이 꺼내 반복합니다. 인덱스와 실제 값이 각각 어디에 들어가는지 확인해야 합니다.", risk);
     }
     if (/^for\s+.+\s+in\s+.+:\s*$/.test(t)) {
-      return makeStep(lineNo, t, "반복문", "목록이나 범위에서 값을 하나씩 꺼내며 아래 코드를 반복합니다.", risk);
+      // QUALITY_EXPLANATION_REFINEMENT_V331_A2
+      return makeStep(lineNo, t, "for 반복문 실행", "목록이나 범위에서 값을 하나씩 꺼내어 바로 아래 들여쓰기 블록을 반복 실행합니다. 반복 변수에 어떤 값이 들어가는지 따라가면 흐름을 이해하기 쉽습니다.", risk);
     }
     if (/^while\s+.+:\s*$/.test(t)) {
       return makeStep(lineNo, t, "조건 반복문", "조건이 참인 동안 아래 코드를 계속 반복합니다. 조건이 끝나는지 확인해야 합니다.", risk);
@@ -957,7 +958,7 @@
       return makeStep(lineNo, t, "값 돌려주기", "함수 안에서 계산한 결과를 함수 밖으로 돌려줍니다.", risk);
     }
     if (/^print\s*\(/.test(t)) {
-      return makeStep(lineNo, t, "화면에 출력", "괄호 안 값을 콘솔 화면에 보여줍니다.", risk);
+      return makeStep(lineNo, t, "화면에 출력", "괄호 안 값을 콘솔 화면에 보여줍니다. 중간 결과를 확인하거나 프로그램이 계산한 값을 사용자에게 보여줄 때 사용합니다.", risk);
     }
     if (/^(run|must|main)\s*\(/.test(t)) {
       return makeStep(lineNo, t, "검증 함수 호출", "검증 스크립트 안에서 미리 정의된 보조 함수를 실행합니다. 명령 실행, 조건 확인, 메인 흐름 시작처럼 검증 절차를 묶어 호출할 때 쓰입니다.", risk);
@@ -1449,7 +1450,7 @@
       return makeStep(lineNo, t, "변수에 값 저장", "값이나 객체를 이름에 담아서 이후 코드에서 다시 사용합니다.", risk);
     }
     if (/function\s*\w*\s*\(/.test(t) || /=>/.test(t)) {
-      return makeStep(lineNo, t, "함수 정의", "나중에 호출해서 실행할 코드 묶음을 만듭니다.", risk);
+      return makeStep(lineNo, t, "함수 정의", "나중에 호출해서 실행할 코드 묶음을 만듭니다. async가 붙으면 함수 안에서 await로 비동기 작업을 기다릴 수 있습니다.", risk);
     }
     if (/^if\s*\(/.test(t)) {
       return makeStep(lineNo, t, "조건 검사", "괄호 안 조건이 맞으면 중괄호 안 코드가 실행됩니다.", risk);
@@ -1529,13 +1530,17 @@
     const risk = riskOf(t, "sql");
 
     if (/^SELECT\b/i.test(t)) {
+      // QUALITY_EXPLANATION_REFINEMENT_V331_A2_SQL_AGGREGATE
+      if (/\b(COUNT|SUM|AVG|MIN|MAX)\s*\(/i.test(t)) {
+        return makeStep(lineNo, t, "조회할 컬럼 선택", "데이터베이스에서 어떤 컬럼 값을 가져올지 정합니다. COUNT 같은 집계 함수가 있으면 여러 행을 묶어 요약한 값을 함께 조회합니다. 별칭 AS가 있으면 결과 컬럼 이름을 바꿉니다.", risk);
+      }
       return makeStep(lineNo, t, "조회할 컬럼 선택", "데이터베이스에서 어떤 컬럼 값을 가져올지 정합니다. 별칭 AS가 있으면 결과 컬럼 이름을 바꿉니다.", risk);
     }
     if (/^FROM\b/i.test(t)) {
       return makeStep(lineNo, t, "기준 테이블 선택", "조회의 기준이 되는 테이블을 지정합니다. 이 테이블에서 행을 읽기 시작합니다.", risk);
     }
     if (/^(INNER\s+|LEFT\s+|RIGHT\s+|FULL\s+|CROSS\s+)?JOIN\b/i.test(t)) {
-      return makeStep(lineNo, t, "테이블 조인", "다른 테이블을 함께 붙여서 조회합니다. JOIN 조건이 맞는 행끼리 연결됩니다.", risk);
+      return makeStep(lineNo, t, "SQL 테이블 조인", "다른 테이블을 함께 붙여서 조회합니다. JOIN 조건이 맞는 행끼리 연결되므로, 어떤 기준 컬럼으로 이어지는지 확인해야 합니다.", risk);
     }
     if (/^ON\b/i.test(t)) {
       return makeStep(lineNo, t, "조인 조건 지정", "두 테이블의 어떤 컬럼이 서로 대응되는지 정합니다. 보통 id와 외래키를 비교합니다.", risk);
@@ -1776,7 +1781,7 @@
       return makeStep(lineNo, t, "브랜치 조건 설정", "main 같은 특정 브랜치에서만 실행되도록 제한합니다.", risk);
     }
     if (/^jobs\s*:/.test(t)) {
-      return makeStep(lineNo, t, "작업 묶음", "하나 이상의 job을 모아 정의하는 영역입니다.", risk);
+      return makeStep(lineNo, t, "작업 묶음", "하나 이상의 job을 모아 정의하는 영역입니다. 각 job은 어떤 환경에서 어떤 steps를 순서대로 실행할지 담습니다.", risk);
     }
     if (/^runs-on\s*:/.test(t)) {
       return makeStep(lineNo, t, "실행 환경 선택", "ubuntu-latest 같은 어떤 가상 환경에서 job을 실행할지 정합니다.", risk);
