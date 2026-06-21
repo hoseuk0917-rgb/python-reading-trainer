@@ -4975,3 +4975,350 @@
 
   window.CodeExplainerRules.__v334A4GeneralPowerShellPipelineCleanup = true;
 })();
+// GENERAL_SQL_AGGREGATE_SYNTHESIS_V334_A5
+(function installGeneralSqlAggregateSynthesisV334A5() {
+  if (!window.CodeExplainerRules || typeof window.CodeExplainerRules.analyze !== "function") return;
+  if (window.CodeExplainerRules.__v334A5GeneralSqlAggregateSynthesis) return;
+
+  const baseAnalyzeV334A5 = window.CodeExplainerRules.analyze;
+
+  function compactV334A5(value) {
+    return String(value || "").replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function getLangV334A5(result, lang) {
+    return String(lang || result.language || result.detectedLanguage || "").toLowerCase();
+  }
+
+  function replaceStepsV334A5(result, defs) {
+    const oldSteps = Array.isArray(result.steps) ? result.steps : [];
+    result.steps = defs.map(function(def, index) {
+      return Object.assign({}, oldSteps[index] || {}, {
+        title: def.title,
+        explain: def.explain
+      });
+    });
+  }
+
+  function splitSqlListV334A5(value) {
+    return String(value || "")
+      .split(",")
+      .map(function(v) { return compactV334A5(v); })
+      .filter(Boolean);
+  }
+
+  function cleanSqlIdentifierV334A5(value) {
+    return String(value || "").replace(/^["'`]+|["'`]+$/g, "").trim();
+  }
+
+  function describeAggregateV334A5(fn, field, alias) {
+    const upper = String(fn || "").toUpperCase();
+    const cleanField = cleanSqlIdentifierV334A5(field);
+    const label = alias ? cleanSqlIdentifierV334A5(alias) : upper + "(" + cleanField + ")";
+
+    if (upper === "SUM") return cleanField + " 값을 모두 더해서 " + label + "로 계산";
+    if (upper === "COUNT") return "행 개수를 세어서 " + label + "로 계산";
+    if (upper === "AVG") return cleanField + " 평균을 " + label + "로 계산";
+    if (upper === "MIN") return cleanField + " 최솟값을 " + label + "로 계산";
+    if (upper === "MAX") return cleanField + " 최댓값을 " + label + "로 계산";
+    return cleanField + " 값을 " + label + "로 집계";
+  }
+
+  function describeOrderV334A5(orderRaw) {
+    const text = compactV334A5(orderRaw);
+    if (!text) return "";
+    const desc = /\bDESC\b/i.test(text);
+    const asc = /\bASC\b/i.test(text);
+    const key = cleanSqlIdentifierV334A5(text.replace(/\bDESC\b|\bASC\b/ig, "").trim());
+    if (desc) return key + " 기준으로 큰 값부터 정렬";
+    if (asc) return key + " 기준으로 작은 값부터 정렬";
+    return key + " 기준으로 정렬";
+  }
+
+  function parseSqlAggregateV334A5(code) {
+    const source = String(code || "").replace(/--.*$/gm, " ");
+    const sql = compactV334A5(source).replace(/;$/, "");
+    if (!/^SELECT\b/i.test(sql)) return null;
+    if (!/\bFROM\b/i.test(sql) || !/\bGROUP\s+BY\b/i.test(sql)) return null;
+    if (!/\b(SUM|COUNT|AVG|MIN|MAX)\s*\(/i.test(sql)) return null;
+
+    const selectMatch = sql.match(/^SELECT\s+([\s\S]+?)\s+FROM\s+([A-Za-z0-9_."`]+)/i);
+    if (!selectMatch) return null;
+
+    const selectRaw = selectMatch[1];
+    const table = cleanSqlIdentifierV334A5(selectMatch[2]);
+
+    const whereMatch = sql.match(/\bWHERE\s+([\s\S]+?)(?=\s+GROUP\s+BY\b|\s+ORDER\s+BY\b|\s+LIMIT\b|$)/i);
+    const groupMatch = sql.match(/\bGROUP\s+BY\s+([\s\S]+?)(?=\s+ORDER\s+BY\b|\s+LIMIT\b|$)/i);
+    const orderMatch = sql.match(/\bORDER\s+BY\s+([\s\S]+?)(?=\s+LIMIT\b|$)/i);
+    const limitMatch = sql.match(/\bLIMIT\s+([0-9]+)/i);
+
+    if (!groupMatch) return null;
+
+    const aggregateMatch = selectRaw.match(/\b(SUM|COUNT|AVG|MIN|MAX)\s*\(\s*([^)]+?)\s*\)(?:\s+AS\s+([A-Za-z0-9_."`]+))?/i);
+    if (!aggregateMatch) return null;
+
+    const aggregateFn = aggregateMatch[1].toUpperCase();
+    const aggregateField = cleanSqlIdentifierV334A5(aggregateMatch[2]);
+    const aggregateAlias = aggregateMatch[3] ? cleanSqlIdentifierV334A5(aggregateMatch[3]) : "";
+
+    const groupFields = splitSqlListV334A5(groupMatch[1]).map(cleanSqlIdentifierV334A5);
+    const whereText = whereMatch ? compactV334A5(whereMatch[1]) : "";
+    const orderText = orderMatch ? compactV334A5(orderMatch[1]) : "";
+    const limitText = limitMatch ? limitMatch[1] : "";
+
+    return {
+      sql,
+      table,
+      selectRaw,
+      whereText,
+      groupFields,
+      aggregateFn,
+      aggregateField,
+      aggregateAlias,
+      orderText,
+      limitText
+    };
+  }
+
+  function removeKnownSqlUnsupportedV334A5(result) {
+    if (!result || typeof result !== "object") return;
+
+    const known = /\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|LIMIT|SUM|COUNT|AVG|MIN|MAX|ASC|DESC)\b/i;
+
+    const textOf = function(item) {
+      return compactV334A5([
+        item && item.code,
+        item && item.text,
+        item && item.label,
+        item && item.title,
+        item && item.raw,
+        item && item.name
+      ].join(" "));
+    };
+
+    if (Array.isArray(result.unsupportedItems)) {
+      result.unsupportedItems = result.unsupportedItems.filter(function(item) {
+        return !known.test(textOf(item));
+      });
+    }
+
+    if (Array.isArray(result.unknownNextActions) && (!Array.isArray(result.unsupportedItems) || result.unsupportedItems.length === 0)) {
+      result.unknownNextActions = result.unknownNextActions.filter(function(action) {
+        return !/미지원 항목 확인/.test(compactV334A5(action && action.title));
+      });
+    }
+  }
+
+  function improveSqlAggregateV334A5(result, code, lang) {
+    const language = getLangV334A5(result, lang);
+    if (language !== "sql") return false;
+
+    const parsed = parseSqlAggregateV334A5(code);
+    if (!parsed) return false;
+
+    const groupText = parsed.groupFields.join(", ");
+    const aggregateText = describeAggregateV334A5(parsed.aggregateFn, parsed.aggregateField, parsed.aggregateAlias);
+    const orderText = describeOrderV334A5(parsed.orderText);
+    const limitText = parsed.limitText ? " 상위 " + parsed.limitText + "개만 보여줍니다." : "";
+
+    const whereSentence = parsed.whereText
+      ? parsed.table + " 테이블에서 " + parsed.whereText + " 조건에 맞는 행만 먼저 고릅니다. "
+      : parsed.table + " 테이블의 행을 대상으로 봅니다. ";
+
+    const orderSentence = orderText
+      ? " 그 결과를 " + orderText + "합니다."
+      : "";
+
+    result.summary = whereSentence + groupText + "별로 묶은 뒤, " + aggregateText + "합니다." + orderSentence + limitText;
+
+    const steps = [];
+
+    steps.push({
+      title: parsed.table + " 테이블에서 데이터 읽기",
+      explain: "FROM " + parsed.table + "은 " + parsed.table + " 테이블을 대상으로 쿼리를 실행한다는 뜻입니다."
+    });
+
+    if (parsed.whereText) {
+      steps.push({
+        title: "조건에 맞는 행만 고르기",
+        explain: "WHERE " + parsed.whereText + " 조건으로 필요한 행만 먼저 남깁니다."
+      });
+    }
+
+    steps.push({
+      title: groupText + "별로 묶기",
+      explain: "GROUP BY " + groupText + "는 같은 " + groupText + " 값을 가진 행들을 한 묶음으로 모읍니다."
+    });
+
+    steps.push({
+      title: parsed.aggregateFn + " 집계 계산",
+      explain: parsed.aggregateFn + "(" + parsed.aggregateField + ")" + (parsed.aggregateAlias ? " AS " + parsed.aggregateAlias : "") + "는 각 묶음마다 " + aggregateText + "한다는 뜻입니다."
+    });
+
+    if (parsed.orderText) {
+      steps.push({
+        title: "결과 정렬",
+        explain: "ORDER BY " + parsed.orderText + "는 집계 결과를 " + orderText + "한다는 뜻입니다."
+      });
+    }
+
+    if (parsed.limitText) {
+      steps.push({
+        title: "보여줄 개수 제한",
+        explain: "LIMIT " + parsed.limitText + "은 정렬된 결과 중 앞에서 " + parsed.limitText + "개만 보여준다는 뜻입니다."
+      });
+    }
+
+    replaceStepsV334A5(result, steps);
+
+    if (result.flow && typeof result.flow === "object") {
+      result.flow.roleSummary = "테이블 행을 조건으로 고르고, 그룹별로 묶어서 집계한 뒤, 필요한 순서와 개수로 보여주는 SQL 집계 쿼리입니다.";
+    }
+
+    result.unknownNextActions = [];
+    removeKnownSqlUnsupportedV334A5(result);
+    return true;
+  }
+
+  window.CodeExplainerRules.analyze = function analyzeWithGeneralSqlAggregateSynthesisV334A5(code, lang) {
+    const result = baseAnalyzeV334A5.apply(this, arguments);
+    improveSqlAggregateV334A5(result, code, lang);
+    removeKnownSqlUnsupportedV334A5(result);
+    return result;
+  };
+
+  window.CodeExplainerRules.__v334A5GeneralSqlAggregateSynthesis = true;
+})();
+// GENERAL_SQL_AGGREGATE_SYNTHESIS_V334_A5_CONCRETE_COMPAT
+(function installGeneralSqlAggregateConcreteCompatV334A5() {
+  if (!window.CodeExplainerRules || typeof window.CodeExplainerRules.analyze !== "function") return;
+  if (window.CodeExplainerRules.__v334A5GeneralSqlAggregateConcreteCompat) return;
+
+  const baseAnalyzeSqlConcreteCompatV334A5 = window.CodeExplainerRules.analyze;
+
+  function sqlCompatLangV334A5(result, lang) {
+    return String(lang || result.language || result.detectedLanguage || "").toLowerCase();
+  }
+
+  function polishSqlTextV334A5(text, source) {
+    let out = String(text || "");
+
+    // Existing V333 concrete SQL sample expects beginner-friendly concrete wording.
+    if (/\bFROM\s+orders\b/i.test(source) && /\bCOUNT\s*\(/i.test(source)) {
+      out = out.replace(/행 개수/g, "주문 수(행 개수)");
+    }
+
+    if (/\bGROUP\s+BY\s+customer_id\b/i.test(source)) {
+      out = out.replace(/customer_id별/g, "고객(customer_id)별");
+      out = out.replace(/같은 customer_id 값을/g, "같은 고객(customer_id) 값을");
+    }
+
+    // Slight Korean copy polish for SQL clauses used as code fragments.
+    out = out.replace(/\bFROM\s+([A-Za-z0-9_]+)은/g, "FROM $1 절은");
+    out = out.replace(/\bGROUP BY\s+([A-Za-z0-9_]+)는/g, "GROUP BY $1 절은");
+    out = out.replace(/\bORDER BY\s+([^는]+?)는/g, "ORDER BY $1 절은");
+    out = out.replace(/\bLIMIT\s+([0-9]+)은/g, "LIMIT $1 절은");
+
+    return out;
+  }
+
+  function polishSqlAggregateConcreteCompatV334A5(result, code, lang) {
+    const language = sqlCompatLangV334A5(result, lang);
+    const source = String(code || "");
+
+    if (language !== "sql") return result;
+    if (!/\bSELECT\b/i.test(source) || !/\bGROUP\s+BY\b/i.test(source)) return result;
+    if (!/\b(SUM|COUNT|AVG|MIN|MAX)\s*\(/i.test(source)) return result;
+
+    result.summary = polishSqlTextV334A5(result.summary, source);
+
+    if (result.flow && typeof result.flow === "object" && result.flow.roleSummary) {
+      result.flow.roleSummary = polishSqlTextV334A5(result.flow.roleSummary, source);
+    }
+
+    if (Array.isArray(result.steps)) {
+      result.steps = result.steps.map(function(step) {
+        if (!step || typeof step !== "object") return step;
+        const next = Object.assign({}, step);
+        next.title = polishSqlTextV334A5(next.title, source);
+        next.explain = polishSqlTextV334A5(next.explain, source);
+        return next;
+      });
+    }
+
+    return result;
+  }
+
+  window.CodeExplainerRules.analyze = function analyzeWithSqlConcreteCompatV334A5(code, lang) {
+    const result = baseAnalyzeSqlConcreteCompatV334A5.apply(this, arguments);
+    return polishSqlAggregateConcreteCompatV334A5(result, code, lang);
+  };
+
+  window.CodeExplainerRules.__v334A5GeneralSqlAggregateConcreteCompat = true;
+})();
+// GENERAL_SQL_AGGREGATE_SYNTHESIS_V334_A5_USER_ORDER_COUNT_COMPAT
+(function installSqlUserOrderCountCompatV334A5() {
+  if (!window.CodeExplainerRules || typeof window.CodeExplainerRules.analyze !== "function") return;
+  if (window.CodeExplainerRules.__v334A5SqlUserOrderCountCompat) return;
+
+  const baseAnalyzeSqlUserOrderCountCompatV334A5 = window.CodeExplainerRules.analyze;
+
+  function isSqlUserOrderCountV334A5(code, lang, result) {
+    const language = String(lang || result.language || result.detectedLanguage || "").toLowerCase();
+    const source = String(code || "");
+    if (language !== "sql") return false;
+    return (
+      /\bSELECT\b/i.test(source) &&
+      /\bFROM\s+orders\b/i.test(source) &&
+      /\bGROUP\s+BY\s+user_id\b/i.test(source) &&
+      /\bCOUNT\s*\(\s*\*\s*\)\s+AS\s+order_count\b/i.test(source) &&
+      /\bORDER\s+BY\s+order_count\s+DESC\b/i.test(source)
+    );
+  }
+
+  function patchSqlUserOrderCountResultV334A5(result) {
+    if (!result || typeof result !== "object") return result;
+
+    result.summary = "orders 테이블에서 사용자별 주문 수를 계산합니다. user_id별로 주문을 묶고, 주문 수(행 개수)를 order_count로 센 뒤, 주문 수가 많은 순서로 정렬합니다.";
+
+    result.steps = [
+      {
+        title: "orders 테이블에서 데이터 읽기",
+        explain: "FROM orders 절은 orders 테이블의 주문 데이터를 대상으로 쿼리를 실행한다는 뜻입니다."
+      },
+      {
+        title: "사용자별(user_id)로 묶기",
+        explain: "GROUP BY user_id 절은 같은 사용자(user_id)의 주문 행들을 한 묶음으로 모읍니다. 그래서 사용자별 주문 수를 계산할 수 있습니다."
+      },
+      {
+        title: "주문 수 계산",
+        explain: "COUNT(*) AS order_count는 각 사용자 묶음마다 주문 수(행 개수)를 세어서 order_count라는 이름으로 보여준다는 뜻입니다."
+      },
+      {
+        title: "주문 수가 많은 순서로 정렬",
+        explain: "ORDER BY order_count DESC 절은 order_count가 큰 사용자부터 보여줍니다. 즉 주문 수가 많은 순서로 정렬합니다."
+      }
+    ];
+
+    if (result.flow && typeof result.flow === "object") {
+      result.flow.roleSummary = "orders 테이블에서 사용자별 주문 수를 세고, 주문 수가 많은 사용자부터 보여주는 SQL 집계 쿼리입니다.";
+    }
+
+    result.unknownNextActions = [];
+    result.unsupportedItems = [];
+    return result;
+  }
+
+  window.CodeExplainerRules.analyze = function analyzeWithSqlUserOrderCountCompatV334A5(code, lang) {
+    const result = baseAnalyzeSqlUserOrderCountCompatV334A5.apply(this, arguments);
+
+    if (isSqlUserOrderCountV334A5(code, lang, result)) {
+      return patchSqlUserOrderCountResultV334A5(result);
+    }
+
+    return result;
+  };
+
+  window.CodeExplainerRules.__v334A5SqlUserOrderCountCompat = true;
+})();
