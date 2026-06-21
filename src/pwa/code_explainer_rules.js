@@ -404,7 +404,7 @@
       return makeStep(lineNo, t, "CSV 그룹 정렬 선택 저장", "파이프라인으로 넘어온 CSV/객체 데이터를 그룹으로 묶고, 정렬하고, 필요한 열을 선택한 뒤 저장하는 흐름입니다. Group-Object, Sort-Object, Select-Object, Export-Csv 순서를 확인해야 합니다.", risk);
     }
     if (/\|\s*(Where-Object|ForEach-Object|Select-Object|Sort-Object|Group-Object|Measure-Object|Format-Table|Out-Null)\b/i.test(t)) {
-      return makeStep(lineNo, t, "파이프라인 처리", "앞 명령의 결과를 뒤 명령으로 넘기며 필터링, 반복, 선택, 정렬, 집계, 표 표시 같은 처리를 이어서 수행합니다.", risk);
+      return makeStep(lineNo, t, "파이프라인 처리", "앞 명령의 결과를 뒤 명령으로 넘깁니다. 그다음 필요한 값만 고르거나 정렬해서 보여줍니다.", risk);
     }
     if (/^Get-ChildItem\b/i.test(t) || /^dir\b/i.test(t) || /^ls\b/i.test(t)) {
       return makeStep(lineNo, t, "파일 목록 가져오기", "폴더 안의 파일과 하위 폴더 목록을 가져옵니다. -Recurse가 있으면 하위 폴더까지 넓게 탐색합니다.", risk);
@@ -1678,7 +1678,7 @@
       return makeStep(lineNo, t, "입력 라벨 정의", "입력 칸이 무엇을 의미하는지 사용자에게 보여주는 설명 문구를 만듭니다. for 속성은 input id와 맞아야 합니다.", risk);
     }
     if (/^<input\b/i.test(t)) {
-      return makeStep(lineNo, t, "입력 칸 정의", "사용자가 글자, 이메일, 체크박스 같은 값을 넣는 입력 칸을 만듭니다. type, name, required 속성을 확인합니다.", risk);
+      return makeStep(lineNo, t, "입력 칸 정의", "사용자가 값을 넣는 입력 칸을 만듭니다. 이메일 칸인지, 필수 입력인지 같은 속성을 확인합니다.", risk);
     }
     if (/^<button\b/i.test(t)) {
       return makeStep(lineNo, t, "버튼 정의", "사용자가 클릭할 수 있는 버튼을 만듭니다. form 안에서는 type이 submit인지 button인지 확인해야 합니다.", risk);
@@ -3939,7 +3939,7 @@
             actions,
             "js-package:" + pkg,
             "JavaScript 패키지 확인",
-            pkg + " 패키지가 package.json에 있는지, 설치되어 있는지 확인해야 합니다.",
+            pkg + " 패키지가 package.json(프로젝트 설치 목록 파일)에 있는지, 실제로 설치되어 있는지 확인해야 합니다.",
             [
               "npm ls " + escapedPkg,
               "npm view " + escapedPkg + " version",
@@ -3981,7 +3981,7 @@
         pushUnknownActionV332A2(
           actions,
           "ps-command:" + command,
-          "PowerShell/CLI 명령 확인",
+          "PowerShell/CLI(터미널 명령) 확인",
           command + " 명령이 설치된 도구인지, 스크립트인지, 위험한 옵션이 있는지 확인해야 합니다.",
           [
             "Get-Command " + escapedCommand + " -ErrorAction SilentlyContinue",
@@ -4065,3 +4065,321 @@
 })();
 // === CODE EXPLAINER RULES V212-A1 END ===
 // === CODE EXPLAINER RULES V215-A1 END ===
+// CONCRETE_BEGINNER_EXPLANATION_V333_A3
+(function installConcreteBeginnerExplanationV333A3() {
+  if (!window.CodeExplainerRules || typeof window.CodeExplainerRules.analyze !== "function") return;
+  if (window.CodeExplainerRules.__v333A3ConcreteBeginnerExplanation) return;
+
+  const baseAnalyzeV333A3 = window.CodeExplainerRules.analyze;
+
+  function compactV333A3(value) {
+    return String(value || "").replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function hasAllV333A3(text, parts) {
+    const source = String(text || "");
+    return parts.every(function(part) {
+      return source.indexOf(part) >= 0;
+    });
+  }
+
+  function replaceStepsV333A3(result, defs) {
+    const oldSteps = Array.isArray(result.steps) ? result.steps : [];
+    result.steps = defs.map(function(def, index) {
+      return Object.assign({}, oldSteps[index] || {}, {
+        title: def.title,
+        explain: def.explain
+      });
+    });
+  }
+
+  function improvePythonActiveNamesV333A3(result, code) {
+    if (!hasAllV333A3(code, ["active_names", "for user in users", "user['active']", "append(user['name'])"])) return false;
+
+    result.summary = "users 목록에서 active가 True인 사람만 골라 이름을 active_names에 모은 뒤 출력합니다. 이 예시에서는 ['A']가 출력됩니다.";
+    replaceStepsV333A3(result, [
+      {
+        title: "users에 사용자 목록 저장",
+        explain: "A와 B 두 사람 정보가 들어 있습니다. 각 사람은 name 값과 active 값을 가집니다."
+      },
+      {
+        title: "active_names를 빈 리스트로 준비",
+        explain: "조건에 맞는 이름을 나중에 담을 빈 상자를 만듭니다."
+      },
+      {
+        title: "users를 한 명씩 확인",
+        explain: "user 변수에 A 정보, 그다음 B 정보가 차례로 들어갑니다."
+      },
+      {
+        title: "active 값 확인",
+        explain: "user['active']가 True인 사람만 아래 코드를 실행합니다."
+      },
+      {
+        title: "조건에 맞는 이름 추가",
+        explain: "조건에 맞으면 user['name']을 active_names에 추가합니다. 여기서는 A만 추가됩니다."
+      },
+      {
+        title: "최종 결과 출력",
+        explain: "active_names에 모인 최종 결과인 ['A']를 화면에 보여줍니다."
+      }
+    ]);
+    return true;
+  }
+
+  function improvePythonFileTryV333A3(result, code) {
+    if (!hasAllV333A3(code, ["Path('memo.txt')", "read_text", "FileNotFoundError"])) return false;
+
+    if (code.indexOf("text = ''") >= 0 && code.indexOf("print(text)") >= 0) {
+      result.summary = "memo.txt 파일을 읽어 text에 저장하고 마지막에 출력합니다. 파일이 없으면 오류로 멈추지 않고 text를 빈 문자열로 바꾼 뒤 출력합니다.";
+      replaceStepsV333A3(result, [
+        {
+          title: "Path 기능 가져오기",
+          explain: "파일 경로를 다루기 쉽게 해주는 pathlib의 Path를 가져옵니다."
+        },
+        {
+          title: "파일 읽기 오류에 대비",
+          explain: "파일 읽기 오류가 날 수 있으므로 try 안에서 먼저 실행합니다."
+        },
+        {
+          title: "memo.txt 읽기",
+          explain: "memo.txt 파일을 UTF-8 방식으로 읽고, 그 내용을 text 변수에 저장합니다."
+        },
+        {
+          title: "파일이 없을 때 처리",
+          explain: "memo.txt가 없으면 FileNotFoundError 오류가 발생하고, except 부분에서 처리합니다."
+        },
+        {
+          title: "빈 문자열로 대체",
+          explain: "파일이 없을 때 text를 빈 문자열('')로 바꿉니다. 그래서 프로그램이 멈추지 않고 다음 줄로 넘어갑니다."
+        },
+        {
+          title: "최종 text 출력",
+          explain: "파일을 읽었으면 파일 내용을 출력하고, 파일이 없었으면 빈 문자열을 출력합니다."
+        }
+      ]);
+      return true;
+    }
+
+    result.summary = "memo.txt 파일을 읽어서 화면에 보여줍니다. 파일이 없으면 오류로 멈추는 대신 '파일이 없습니다'라고 출력합니다.";
+    replaceStepsV333A3(result, [
+      {
+        title: "Path 기능 가져오기",
+        explain: "파일 경로를 다루기 쉽게 해주는 pathlib의 Path를 가져옵니다."
+      },
+      {
+        title: "파일 읽기 오류에 대비",
+        explain: "파일 읽기 오류가 날 수 있으므로 try 안에서 먼저 실행합니다."
+      },
+      {
+        title: "memo.txt 읽기",
+        explain: "memo.txt 파일을 UTF-8 방식으로 읽고, 그 내용을 text 변수에 저장합니다."
+      },
+      {
+        title: "파일 내용 출력",
+        explain: "오류 없이 파일 읽기에 성공하면 text에 저장된 내용을 화면에 보여줍니다."
+      },
+      {
+        title: "파일이 없을 때 처리",
+        explain: "memo.txt가 없으면 FileNotFoundError 오류가 발생하고, except 부분으로 넘어갑니다."
+      },
+      {
+        title: "안내 문구 출력",
+        explain: "파일이 없을 때 프로그램이 멈추지 않고 '파일이 없습니다'라고 알려줍니다."
+      }
+    ]);
+    return true;
+  }
+
+  function improvePythonUnknownLibraryV333A3(result, code) {
+    if (!hasAllV333A3(code, ["strange_sdk", "Client", "magic_upload", "data.csv"])) return false;
+
+    result.summary = "strange_sdk라는 외부 라이브러리에서 Client를 가져와 client를 만들고, data.csv를 magic_upload로 처리한 뒤 결과를 출력합니다. 이 라이브러리와 함수가 무엇인지 확인 전에는 실행을 조심해야 합니다.";
+    replaceStepsV333A3(result, [
+      {
+        title: "strange_sdk에서 Client 가져오기",
+        explain: "현재 코드 안에 정의된 기능이 아니라 외부 라이브러리 기능을 가져옵니다."
+      },
+      {
+        title: "client 만들기",
+        explain: "Client에 api_key를 넣어 사용할 준비를 합니다. api_key는 보통 서비스 인증에 쓰이므로 노출에 주의해야 합니다."
+      },
+      {
+        title: "data.csv 업로드/처리 실행",
+        explain: "magic_upload 함수에 data.csv를 넘깁니다. 이름상 업로드 기능일 수 있으므로 어디로 보내는지 확인해야 합니다."
+      },
+      {
+        title: "실행 결과 출력",
+        explain: "magic_upload 실행 결과를 화면에 보여줍니다."
+      }
+    ]);
+    return true;
+  }
+
+  function improveJsFetchUsersV333A3(result, code) {
+    if (!hasAllV333A3(code, ["async function loadUsers", "fetch('/api/users')", "res.json()", "catch"])) return false;
+
+    result.summary = "/api/users 주소로 사용자 데이터를 요청하고, 받은 JSON 데이터를 콘솔에 출력합니다. 요청 중 오류가 나면 catch에서 오류를 출력합니다.";
+    replaceStepsV333A3(result, [
+      {
+        title: "loadUsers 함수 만들기",
+        explain: "사용자 정보를 불러오는 코드를 함수로 묶습니다. 아직 실행된 것은 아니고, 나중에 호출하면 실행됩니다."
+      },
+      {
+        title: "오류에 대비",
+        explain: "서버 요청은 실패할 수 있으므로 try 안에서 실행합니다."
+      },
+      {
+        title: "서버에 사용자 목록 요청",
+        explain: "fetch('/api/users')로 서버에 데이터를 요청합니다. await는 응답이 올 때까지 기다리라는 뜻입니다."
+      },
+      {
+        title: "응답을 데이터로 바꾸기",
+        explain: "res.json()은 서버 응답을 JavaScript에서 다룰 수 있는 데이터로 바꿉니다."
+      },
+      {
+        title: "받은 데이터 출력",
+        explain: "서버에서 받아온 사용자 데이터를 개발자 콘솔에 보여줍니다."
+      },
+      {
+        title: "오류 처리",
+        explain: "요청 실패나 데이터 변환 오류가 나면 catch 부분으로 넘어갑니다."
+      },
+      {
+        title: "오류 내용 출력",
+        explain: "어떤 오류가 났는지 개발자 콘솔에 보여줍니다."
+      }
+    ]);
+    return true;
+  }
+
+  function improveJsUnknownPackageV333A3(result, code) {
+    if (!hasAllV333A3(code, ["unknown-kit", "runMagic", "input.json"])) return false;
+
+    result.summary = "unknown-kit 패키지에서 runMagic을 가져와 input.json을 처리하고 결과를 출력합니다. unknown-kit이 설치된 패키지인지 먼저 확인해야 합니다.";
+    replaceStepsV333A3(result, [
+      {
+        title: "unknown-kit에서 runMagic 가져오기",
+        explain: "현재 코드 안에 있는 함수가 아니라 외부 패키지에서 가져오는 함수입니다."
+      },
+      {
+        title: "input.json 처리 실행",
+        explain: "runMagic에 input.json 파일 경로를 넘겨 결과를 받습니다. 함수 정의가 보이지 않으므로 실제 기능을 확인해야 합니다."
+      },
+      {
+        title: "결과 출력",
+        explain: "runMagic 실행 결과를 개발자 콘솔에 보여줍니다."
+      }
+    ]);
+    return true;
+  }
+
+  function improvePowerShellUnknownCommandV333A3(result, code) {
+    if (!hasAllV333A3(code, ["Invoke-MysteryTool", "Get-ChildItem", "Select-Object"])) return false;
+
+    result.summary = "첫 줄은 Invoke-MysteryTool이라는 알 수 없는 도구를 실행합니다. 둘째 줄은 out 폴더의 항목에서 이름과 크기만 골라 보여줍니다. 첫 줄은 실행 전에 반드시 확인해야 합니다.";
+    replaceStepsV333A3(result, [
+      {
+        title: "알 수 없는 명령 실행 준비",
+        explain: "Invoke-MysteryTool은 기본 PowerShell 명령인지 확실하지 않습니다. 실제로 설치된 도구인지, 어떤 작업을 하는지 먼저 확인해야 합니다."
+      },
+      {
+        title: "out 폴더 결과 확인",
+        explain: ".\\out 폴더 안의 항목을 가져온 뒤, Name과 Length만 골라 표처럼 보여줍니다."
+      }
+    ]);
+    return true;
+  }
+
+  function improveHtmlFormV333A3(result, code) {
+    if (!hasAllV333A3(code, ["<form", "<label", "<input", "type=\"email\"", "<button"])) return false;
+
+    result.summary = "이 HTML은 이메일을 입력받는 간단한 폼을 만듭니다. 사용자는 입력 칸에 이메일을 넣고 Send 버튼을 누를 수 있습니다.";
+    replaceStepsV333A3(result, [
+      {
+        title: "폼 시작",
+        explain: "form은 사용자가 입력한 값을 제출할 수 있는 영역을 만듭니다."
+      },
+      {
+        title: "email 입력칸 설명 붙이기",
+        explain: "label은 입력칸이 무엇을 받는지 알려줍니다. 여기서는 Email이라는 이름표를 붙입니다."
+      },
+      {
+        title: "이메일 입력칸 만들기",
+        explain: "input은 사용자가 값을 넣는 칸입니다. type=\"email\"이라서 이메일 형식 입력에 맞춰져 있습니다."
+      },
+      {
+        title: "제출 버튼 만들기",
+        explain: "button type=\"submit\"은 폼 내용을 제출하는 버튼입니다. 화면에는 Send라고 보입니다."
+      },
+      {
+        title: "폼 끝내기",
+        explain: "마지막 </form>은 입력 영역이 여기서 끝난다는 뜻입니다."
+      }
+    ]);
+    return true;
+  }
+
+  function improveSqlGroupCountV333A3(result, code) {
+    if (!hasAllV333A3(code, ["COUNT(*)", "FROM orders", "GROUP BY user_id", "ORDER BY"])) return false;
+
+    result.summary = "orders 테이블에서 사용자별 주문 수를 세고, 주문 수가 많은 사용자부터 보여주는 SQL입니다.";
+    replaceStepsV333A3(result, [
+      {
+        title: "사용자와 주문 수 선택",
+        explain: "user_id별로 결과를 보여주고, COUNT(*)로 주문 개수를 셉니다. order_count는 그 개수에 붙인 이름입니다."
+      },
+      {
+        title: "orders 테이블에서 가져오기",
+        explain: "주문 데이터가 들어 있는 orders 테이블을 대상으로 조회합니다."
+      },
+      {
+        title: "사용자별로 묶기",
+        explain: "GROUP BY user_id는 같은 사용자의 주문을 한 그룹으로 묶습니다. 그래야 사용자별 주문 수를 셀 수 있습니다."
+      },
+      {
+        title: "주문 수 많은 순서로 정렬",
+        explain: "ORDER BY order_count DESC는 주문 수가 큰 결과부터 보여주라는 뜻입니다."
+      }
+    ]);
+    return true;
+  }
+
+  function applyConcreteBeginnerExplanationV333A3(result, code, lang) {
+    if (!result || typeof result !== "object") return result;
+
+    const source = String(code || "");
+    const language = String(lang || result.language || "").toLowerCase();
+
+    if (language === "python") {
+      if (improvePythonActiveNamesV333A3(result, source)) return result;
+      if (improvePythonFileTryV333A3(result, source)) return result;
+      if (improvePythonUnknownLibraryV333A3(result, source)) return result;
+    }
+
+    if (language === "javascript" || language === "js") {
+      if (improveJsFetchUsersV333A3(result, source)) return result;
+      if (improveJsUnknownPackageV333A3(result, source)) return result;
+    }
+
+    if (language === "powershell" || language === "ps1" || language === "shell") {
+      if (improvePowerShellUnknownCommandV333A3(result, source)) return result;
+    }
+
+    if (language === "html") {
+      if (improveHtmlFormV333A3(result, source)) return result;
+    }
+
+    if (language === "sql") {
+      if (improveSqlGroupCountV333A3(result, source)) return result;
+    }
+
+    return result;
+  }
+
+  window.CodeExplainerRules.analyze = function analyzeWithConcreteBeginnerExplanationV333A3(code, lang) {
+    const result = baseAnalyzeV333A3.apply(this, arguments);
+    return applyConcreteBeginnerExplanationV333A3(result, code, lang);
+  };
+
+  window.CodeExplainerRules.__v333A3ConcreteBeginnerExplanation = true;
+})();

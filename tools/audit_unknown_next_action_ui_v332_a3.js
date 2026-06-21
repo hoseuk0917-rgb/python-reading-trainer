@@ -28,7 +28,7 @@ const checks = [
   },
   {
     id: "visible_user_wording",
-    ok: /확인할 명령어/.test(ui) && /PowerShell 확인 명령/.test(ui),
+    ok: /확인할 명령어/.test(ui) && /PowerShell 명령/.test(ui),
     focus: "Korean visible wording tells user what to run"
   },
   {

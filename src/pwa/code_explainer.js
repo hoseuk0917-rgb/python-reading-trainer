@@ -425,7 +425,7 @@ port = 5432`
         (ordered.length ? '<ol class="orderedSteps-v327-a3">' + ordered.slice(0, 8).map(function(step) {
           return '<li>' + escapeHtml(step) + '</li>';
         }).join("") + '</ol>' : '') +
-        (commands.length ? '<div class="function-flow-next-v327-a3"><strong>Next check command:</strong><pre class="code-block small-code">' +
+        (commands.length ? '<div class="function-flow-next-v327-a3"><strong>다음 확인 명령:</strong><pre class="code-block small-code">' +
           escapeHtml(commands.join("\n")) + '</pre></div>' : '') +
       '</section>';
     }).join("");
@@ -444,7 +444,7 @@ port = 5432`
     wrapper.className = "function-flow-advisor-v327-a3";
     wrapper.innerHTML =
       '<details class="function-flow-render-v327-a3">' +
-        '<summary>Function flow / Next check advisor</summary>' +
+        '<summary>함수 흐름 / 다음 확인</summary>' +
         flowHtml +
         advisorHtml +
       '</details>';
@@ -604,7 +604,7 @@ port = 5432`
 
     const intro = document.createElement("p");
     intro.className = "muted";
-    intro.textContent = "모르는 라이브러리, 함수, 설정 키, CLI 명령이 있으면 아래 PowerShell 확인 명령을 먼저 실행하고 결과를 다시 붙여넣으면 더 정확히 해석할 수 있습니다.";
+    intro.textContent = "모르는 항목이 있으면 아래 PowerShell 명령을 먼저 실행하세요. 결과를 붙여넣으면 더 정확히 해석할 수 있습니다.";
 
     const list = document.createElement("div");
     list.className = "code-related-card-list-v328-a3 unknown-next-action-list-v332-a3";
@@ -5669,8 +5669,3 @@ function renderFunctionInterpretationListV251(items, emptyText) {
 })();
 // === CODE EXPLAINER UI V212-A1 END ===
 // === CODE EXPLAINER UI V215-A1 END ===
-
-
-
-
-
