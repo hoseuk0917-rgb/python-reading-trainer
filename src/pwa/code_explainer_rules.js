@@ -4745,3 +4745,233 @@
 
   window.CodeExplainerRules.__v334A3GeneralJsSynthesis = true;
 })();
+// GENERAL_POWERSHELL_PIPELINE_SYNTHESIS_V334_A4
+(function installGeneralPowerShellPipelineSynthesisV334A4() {
+  if (!window.CodeExplainerRules || typeof window.CodeExplainerRules.analyze !== "function") return;
+  if (window.CodeExplainerRules.__v334A4GeneralPowerShellPipelineSynthesis) return;
+
+  const baseAnalyzeV334A4 = window.CodeExplainerRules.analyze;
+
+  function compactV334A4(value) {
+    return String(value || "").replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function getLangV334A4(result, lang) {
+    return String(lang || result.language || result.detectedLanguage || "").toLowerCase();
+  }
+
+  function replaceStepsV334A4(result, defs) {
+    const oldSteps = Array.isArray(result.steps) ? result.steps : [];
+    result.steps = defs.map(function(def, index) {
+      return Object.assign({}, oldSteps[index] || {}, {
+        title: def.title,
+        explain: def.explain
+      });
+    });
+  }
+
+  function splitFieldsV334A4(raw) {
+    return String(raw || "")
+      .split(",")
+      .map(function(v) { return compactV334A4(v); })
+      .filter(Boolean);
+  }
+
+  function describePsCompareV334A4(field, op, value) {
+    const label = String(field || "").replace(/^\$_\./, "");
+    if (op === "-gt") return label + "가 " + value + "보다 큰 항목";
+    if (op === "-ge") return label + "가 " + value + " 이상인 항목";
+    if (op === "-lt") return label + "가 " + value + "보다 작은 항목";
+    if (op === "-le") return label + "가 " + value + " 이하인 항목";
+    if (op === "-eq") return label + "가 " + value + "와 같은 항목";
+    if (op === "-ne") return label + "가 " + value + "와 다른 항목";
+    return label + " 조건을 만족하는 항목";
+  }
+
+  function removeKnownPowerShellUnsupportedV334A4(result) {
+    if (!result || typeof result !== "object") return;
+
+    const known = /(Get-ChildItem|Select-String|Select-Object|Where-Object|-Filter|-Recurse|-File|Path|LineNumber|Line|FullName|Length)/i;
+
+    const textOf = function(item) {
+      return compactV334A4([
+        item && item.code,
+        item && item.text,
+        item && item.label,
+        item && item.title,
+        item && item.raw,
+        item && item.name
+      ].join(" "));
+    };
+
+    if (Array.isArray(result.unsupportedItems)) {
+      result.unsupportedItems = result.unsupportedItems.filter(function(item) {
+        return !known.test(textOf(item));
+      });
+    }
+
+    if (Array.isArray(result.unknownNextActions) && (!Array.isArray(result.unsupportedItems) || result.unsupportedItems.length === 0)) {
+      result.unknownNextActions = result.unknownNextActions.filter(function(action) {
+        return !/미지원 항목 확인/.test(compactV334A4(action && action.title));
+      });
+    }
+  }
+
+  function improvePowerShellLogSearchPipelineV334A4(result, code, lang) {
+    const language = getLangV334A4(result, lang);
+    if (language !== "powershell" && language !== "ps1" && language !== "shell") return false;
+
+    const source = String(code || "");
+    if (!/Get-ChildItem/i.test(source) || !/Select-String/i.test(source) || !/Select-Object/i.test(source) || source.indexOf("|") < 0) return false;
+
+    const folderMatch = source.match(/Get-ChildItem\s+([^\s|]+)/i);
+    const filterMatch = source.match(/-Filter\s+["']([^"']+)["']/i);
+    const patternMatch = source.match(/Select-String\s+["']([^"']+)["']/i);
+    const selectMatch = source.match(/Select-Object\s+([A-Za-z0-9_,\s]+)/i);
+
+    if (!folderMatch || !patternMatch || !selectMatch) return false;
+
+    const folder = folderMatch[1];
+    const filter = filterMatch ? filterMatch[1] : "대상";
+    const pattern = patternMatch[1];
+    const fields = splitFieldsV334A4(selectMatch[1]);
+    const fieldText = fields.join(", ");
+
+    result.summary = folder + " 폴더에서 " + filter + " 파일을 찾고, 그 안에서 '" + pattern + "' 문자가 들어간 줄만 찾습니다. 마지막에는 " + fieldText + " 열만 골라 보여줍니다.";
+
+    replaceStepsV334A4(result, [
+      {
+        title: folder + "에서 파일 찾기",
+        explain: "Get-ChildItem이 " + folder + " 위치의 파일을 찾습니다. -Filter \"" + filter + "\" 조건이 있으면 " + filter + "에 맞는 파일만 대상으로 삼습니다."
+      },
+      {
+        title: "'" + pattern + "'가 들어간 줄 찾기",
+        explain: "Select-String \"" + pattern + "\"은 앞 단계에서 넘어온 파일 내용 중 '" + pattern + "' 문자가 들어간 줄만 찾습니다."
+      },
+      {
+        title: "보여줄 열 선택",
+        explain: "Select-Object " + fieldText + "는 결과에서 " + fieldText + " 정보만 골라 보여줍니다."
+      },
+      {
+        title: "파이프라인으로 순서대로 전달",
+        explain: "| 기호는 왼쪽 명령의 결과를 오른쪽 명령으로 넘깁니다. 그래서 파일 찾기 → 문자열 검색 → 필요한 열만 보기 순서로 처리됩니다."
+      }
+    ]);
+
+    if (result.flow && typeof result.flow === "object") {
+      result.flow.roleSummary = "파일 목록을 찾고, 특정 문자열이 있는 줄만 골라낸 뒤, 필요한 열만 보여주는 PowerShell 파이프라인입니다.";
+    }
+
+    removeKnownPowerShellUnsupportedV334A4(result);
+    return true;
+  }
+
+  function improvePowerShellFileSizePipelineV334A4(result, code, lang) {
+    const language = getLangV334A4(result, lang);
+    if (language !== "powershell" && language !== "ps1" && language !== "shell") return false;
+
+    const source = String(code || "");
+    if (!/Get-ChildItem/i.test(source) || !/Where-Object/i.test(source) || !/Select-Object/i.test(source) || source.indexOf("|") < 0) return false;
+
+    const folderMatch = source.match(/Get-ChildItem\s+([^\s|]+)/i);
+    const whereMatch = source.match(/Where-Object\s+\{\s*(\$_\.[A-Za-z0-9_]+)\s+(-gt|-ge|-lt|-le|-eq|-ne)\s+([0-9]+)\s*\}/i);
+    const selectMatch = source.match(/Select-Object\s+([A-Za-z0-9_,\s]+)/i);
+
+    if (!folderMatch || !whereMatch || !selectMatch) return false;
+
+    const folder = folderMatch[1];
+    const field = whereMatch[1];
+    const op = whereMatch[2];
+    const value = whereMatch[3];
+    const conditionText = describePsCompareV334A4(field, op, value);
+    const fields = splitFieldsV334A4(selectMatch[1]);
+    const fieldText = fields.join(", ");
+
+    result.summary = folder + " 폴더에서 파일을 찾고, " + conditionText + "만 남긴 뒤, " + fieldText + " 열만 골라 보여줍니다.";
+
+    replaceStepsV334A4(result, [
+      {
+        title: folder + "에서 파일 찾기",
+        explain: "Get-ChildItem이 " + folder + " 위치의 항목을 찾습니다. -Recurse가 있으면 하위 폴더까지 포함하고, -File이 있으면 파일만 대상으로 봅니다."
+      },
+      {
+        title: conditionText + "만 남기기",
+        explain: "Where-Object는 앞 단계 결과 중 조건에 맞는 항목만 통과시킵니다. 여기서는 " + field + " " + op + " " + value + " 조건을 봅니다."
+      },
+      {
+        title: "보여줄 열 선택",
+        explain: "Select-Object " + fieldText + "는 결과에서 " + fieldText + " 정보만 골라 보여줍니다."
+      },
+      {
+        title: "파이프라인으로 순서대로 전달",
+        explain: "| 기호 때문에 파일 찾기 → 조건 필터링 → 필요한 열만 보기 순서로 처리됩니다."
+      }
+    ]);
+
+    if (result.flow && typeof result.flow === "object") {
+      result.flow.roleSummary = "파일 목록에서 조건에 맞는 항목만 남기고 필요한 열만 보여주는 PowerShell 파이프라인입니다.";
+    }
+
+    removeKnownPowerShellUnsupportedV334A4(result);
+    return true;
+  }
+
+  window.CodeExplainerRules.analyze = function analyzeWithGeneralPowerShellPipelineSynthesisV334A4(code, lang) {
+    const result = baseAnalyzeV334A4.apply(this, arguments);
+    improvePowerShellLogSearchPipelineV334A4(result, code, lang);
+    improvePowerShellFileSizePipelineV334A4(result, code, lang);
+    removeKnownPowerShellUnsupportedV334A4(result);
+    return result;
+  };
+
+  window.CodeExplainerRules.__v334A4GeneralPowerShellPipelineSynthesis = true;
+})();
+// GENERAL_POWERSHELL_PIPELINE_SYNTHESIS_V334_A4_CLEANUP
+(function installGeneralPowerShellPipelineCleanupV334A4() {
+  if (!window.CodeExplainerRules || typeof window.CodeExplainerRules.analyze !== "function") return;
+  if (window.CodeExplainerRules.__v334A4GeneralPowerShellPipelineCleanup) return;
+
+  const baseAnalyzePowerShellCleanupV334A4 = window.CodeExplainerRules.analyze;
+
+  function isKnownPowerShellPipelineV334A4(code, lang, result) {
+    const language = String(lang || result.language || result.detectedLanguage || "").toLowerCase();
+    const source = String(code || "");
+    if (language !== "powershell" && language !== "ps1" && language !== "shell") return false;
+    if (source.indexOf("|") < 0) return false;
+    if (!/Get-ChildItem/i.test(source)) return false;
+    if (!/Select-Object/i.test(source)) return false;
+    return /Select-String|Where-Object/i.test(source);
+  }
+
+  function polishPowerShellPipelineCopyV334A4(result) {
+    if (!result || typeof result !== "object") return;
+
+    if (Array.isArray(result.steps)) {
+      result.steps = result.steps.map(function(step) {
+        if (!step || typeof step !== "object") return step;
+
+        const next = Object.assign({}, step);
+        let explain = String(next.explain || "");
+
+        explain = explain.replace(/(Select-String\s+"[^"]+")은/g, "$1 명령은");
+        explain = explain.replace(/^(Select-Object .+)는 결과에서/g, "$1 명령은 결과에서");
+
+        next.explain = explain;
+        return next;
+      });
+    }
+  }
+
+  window.CodeExplainerRules.analyze = function analyzeWithPowerShellPipelineCleanupV334A4(code, lang) {
+    const result = baseAnalyzePowerShellCleanupV334A4.apply(this, arguments);
+
+    if (isKnownPowerShellPipelineV334A4(code, lang, result)) {
+      result.unknownNextActions = [];
+      polishPowerShellPipelineCopyV334A4(result);
+    }
+
+    return result;
+  };
+
+  window.CodeExplainerRules.__v334A4GeneralPowerShellPipelineCleanup = true;
+})();
