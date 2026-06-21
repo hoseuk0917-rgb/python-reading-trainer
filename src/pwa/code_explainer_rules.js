@@ -4383,3 +4383,194 @@
 
   window.CodeExplainerRules.__v333A3ConcreteBeginnerExplanation = true;
 })();
+// GENERAL_BEGINNER_SYNTHESIS_V334_A2
+(function installGeneralBeginnerSynthesisV334A2() {
+  if (!window.CodeExplainerRules || typeof window.CodeExplainerRules.analyze !== "function") return;
+  if (window.CodeExplainerRules.__v334A2GeneralBeginnerSynthesis) return;
+
+  const baseAnalyzeV334A2 = window.CodeExplainerRules.analyze;
+
+  function compactV334A2(value) {
+    return String(value || "").replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function isGenericSummaryV334A2(summary) {
+    return /코드를 \d+단계로 나눠 해석했습니다|스크립트를 \d+단계로 나눠 해석했습니다/.test(String(summary || ""));
+  }
+
+  function parseValueV334A2(raw) {
+    const value = String(raw || "").trim().replace(/,$/, "");
+    const stringMatch = value.match(/^["']([^"']*)["']$/);
+    if (stringMatch) return stringMatch[1];
+    if (/^-?\d+(\.\d+)?$/.test(value)) return Number(value);
+    if (value === "True") return true;
+    if (value === "False") return false;
+    return value;
+  }
+
+  function parsePythonDictObjectsV334A2(code) {
+    const objects = [];
+    const objRe = /\{([^{}]+)\}/g;
+    let objMatch;
+    while ((objMatch = objRe.exec(String(code || "")))) {
+      const body = objMatch[1];
+      const item = {};
+      const pairRe = /["']([^"']+)["']\s*:\s*("[^"]*"|'[^']*'|-?\d+(?:\.\d+)?|True|False)/g;
+      let pairMatch;
+      while ((pairMatch = pairRe.exec(body))) {
+        item[pairMatch[1]] = parseValueV334A2(pairMatch[2]);
+      }
+      if (Object.keys(item).length) objects.push(item);
+    }
+    return objects;
+  }
+
+  function compareV334A2(left, op, right) {
+    if (op === ">=") return left >= right;
+    if (op === "<=") return left <= right;
+    if (op === ">") return left > right;
+    if (op === "<") return left < right;
+    if (op === "==" || op === "===") return left === right;
+    if (op === "!=" || op === "!==") return left !== right;
+    return false;
+  }
+
+
+  function describeConditionV334A2(field, op, value) {
+    const rhs = typeof value === "string" ? "'" + value + "'" : String(value);
+    if (op === ">=") return field + "가 " + rhs + " 이상인지";
+    if (op === "<=") return field + "가 " + rhs + " 이하인지";
+    if (op === ">") return field + "가 " + rhs + "보다 큰지";
+    if (op === "<") return field + "가 " + rhs + "보다 작은지";
+    if (op === "==" || op === "===") return field + "가 " + rhs + "와 같은지";
+    if (op === "!=" || op === "!==") return field + "가 " + rhs + "와 다른지";
+    return field + " 조건을 만족하는지";
+  }
+
+
+  function formatPythonListV334A2(values) {
+    return "[" + values.map(function(value) {
+      if (typeof value === "string") return "'" + value + "'";
+      return String(value);
+    }).join(", ") + "]";
+  }
+
+  function cleanUnsupportedDataLiteralsV334A2(result) {
+    if (!result || typeof result !== "object") return;
+    const looksLikeDataLiteral = function(item) {
+      const text = compactV334A2([
+        item && item.code,
+        item && item.text,
+        item && item.label,
+        item && item.title,
+        item && item.raw
+      ].join(" "));
+      return /^\{["'][^{}]+["']\s*:/.test(text) || /^\{[^{}]+["']\s*:/.test(text);
+    };
+
+    if (Array.isArray(result.unsupportedItems)) {
+      result.unsupportedItems = result.unsupportedItems.filter(function(item) {
+        return !looksLikeDataLiteral(item);
+      });
+    }
+
+    if (Array.isArray(result.unknownNextActions) && (!Array.isArray(result.unsupportedItems) || result.unsupportedItems.length === 0)) {
+      result.unknownNextActions = result.unknownNextActions.filter(function(action) {
+        return !/미지원 항목 확인/.test(compactV334A2(action && action.title));
+      });
+    }
+  }
+
+  function replaceStepsV334A2(result, defs) {
+    const oldSteps = Array.isArray(result.steps) ? result.steps : [];
+    result.steps = defs.map(function(def, index) {
+      return Object.assign({}, oldSteps[index] || {}, {
+        title: def.title,
+        explain: def.explain
+      });
+    });
+  }
+
+  function improvePythonListDictFilterV334A2(result, code, lang) {
+    const language = String(lang || result.language || "").toLowerCase();
+    if (language !== "python") return false;
+    if (!isGenericSummaryV334A2(result.summary)) return false;
+
+    const source = String(code || "");
+    const emptyListMatch = source.match(/^\s*(\w+)\s*=\s*\[\s*\]\s*$/m);
+    const forMatch = source.match(/for\s+(\w+)\s+in\s+(\w+)\s*:/);
+    if (!emptyListMatch || !forMatch) return false;
+
+    const resultVar = emptyListMatch[1];
+    const iterVar = forMatch[1];
+    const sourceVar = forMatch[2];
+
+    const ifRe = new RegExp("if\\s+" + iterVar + "\\[[\"']([^\"']+)[\"']\\]\\s*(>=|<=|==|!=|>|<)\\s*([^:]+)\\s*:");
+    const ifMatch = source.match(ifRe);
+    if (!ifMatch) return false;
+
+    const conditionField = ifMatch[1];
+    const op = ifMatch[2];
+    const compareValue = parseValueV334A2(ifMatch[3]);
+
+    const appendRe = new RegExp(resultVar + "\\.append\\(\\s*" + iterVar + "\\[[\"']([^\"']+)[\"']\\]\\s*\\)");
+    const appendMatch = source.match(appendRe);
+    if (!appendMatch) return false;
+
+    const appendField = appendMatch[1];
+    const objects = parsePythonDictObjectsV334A2(source);
+    const selected = objects
+      .filter(function(item) { return Object.prototype.hasOwnProperty.call(item, conditionField) && compareV334A2(item[conditionField], op, compareValue); })
+      .map(function(item) { return item[appendField]; })
+      .filter(function(value) { return value !== undefined; });
+
+    const outputText = selected.length ? formatPythonListV334A2(selected) : resultVar;
+    const selectedText = selected.length ? selected.join(", ") : "조건에 맞는 값";
+    const conditionText = describeConditionV334A2(conditionField, op, compareValue);
+
+    result.summary = sourceVar + " 목록에서 " + conditionText + " 확인하고, 조건을 만족하는 항목의 " + appendField + " 값을 " + resultVar + "에 모아 출력합니다. 출력 결과는 " + outputText + "입니다.";
+
+    replaceStepsV334A2(result, [
+      {
+        title: sourceVar + "에 데이터 목록 저장",
+        explain: sourceVar + "에는 여러 항목이 들어 있습니다. 각 항목은 " + conditionField + " 같은 값을 가진 데이터 묶음입니다."
+      },
+      {
+        title: resultVar + "를 빈 리스트로 준비",
+        explain: "조건을 통과한 " + appendField + " 값을 나중에 담기 위해 빈 리스트를 만듭니다."
+      },
+      {
+        title: sourceVar + "를 하나씩 확인",
+        explain: iterVar + " 변수에 목록의 항목이 하나씩 들어오고, 아래 들여쓰기 블록이 반복 실행됩니다."
+      },
+      {
+        title: conditionField + " 조건 검사",
+        explain: iterVar + "[\"" + conditionField + "\"] 값으로 " + conditionText + " 확인합니다."
+      },
+      {
+        title: "조건을 통과한 " + appendField + " 추가",
+        explain: "조건이 맞으면 " + iterVar + "[\"" + appendField + "\"] 값을 " + resultVar + "에 추가합니다. 이 예시에서는 다음 값이 들어갑니다: " + selectedText + "."
+      },
+      {
+        title: "최종 결과 출력",
+        explain: resultVar + "에 모인 값을 화면에 보여줍니다. 출력 결과는 " + outputText + "입니다."
+      }
+    ]);
+
+    if (result.flow && typeof result.flow === "object") {
+      result.flow.roleSummary = sourceVar + "를 반복하면서 조건에 맞는 " + appendField + "만 " + resultVar + "에 모으는 필터링 코드입니다.";
+    }
+
+    cleanUnsupportedDataLiteralsV334A2(result);
+    return true;
+  }
+
+  window.CodeExplainerRules.analyze = function analyzeWithGeneralBeginnerSynthesisV334A2(code, lang) {
+    const result = baseAnalyzeV334A2.apply(this, arguments);
+    improvePythonListDictFilterV334A2(result, code, lang);
+    cleanUnsupportedDataLiteralsV334A2(result);
+    return result;
+  };
+
+  window.CodeExplainerRules.__v334A2GeneralBeginnerSynthesis = true;
+})();

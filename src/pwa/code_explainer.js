@@ -4731,7 +4731,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     }
 
     lines.push("");
-    lines.push("[단계별 해설]");
+    lines.push("[각 부분별 해설]");
     steps.slice(0, 50).forEach(function(step, idx) {
       const tags = Array.isArray(step.tags) && step.tags.length ? " #" + step.tags.join(" #") : "";
       lines.push((idx + 1) + ". line " + step.lineNo + " · " + confidenceLabel(step.confidence) + " · " + step.title + " · " + step.explain + tags);
