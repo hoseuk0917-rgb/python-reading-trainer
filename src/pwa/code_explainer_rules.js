@@ -4574,3 +4574,174 @@
 
   window.CodeExplainerRules.__v334A2GeneralBeginnerSynthesis = true;
 })();
+// GENERAL_JS_SYNTHESIS_V334_A3
+(function installGeneralJsSynthesisV334A3() {
+  if (!window.CodeExplainerRules || typeof window.CodeExplainerRules.analyze !== "function") return;
+  if (window.CodeExplainerRules.__v334A3GeneralJsSynthesis) return;
+
+  const baseAnalyzeV334A3 = window.CodeExplainerRules.analyze;
+
+  function compactV334A3(value) {
+    return String(value || "").replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function getLangV334A3(result, lang) {
+    return String(lang || result.language || result.detectedLanguage || "").toLowerCase();
+  }
+
+  function replaceStepsV334A3(result, defs) {
+    const oldSteps = Array.isArray(result.steps) ? result.steps : [];
+    result.steps = defs.map(function(def, index) {
+      return Object.assign({}, oldSteps[index] || {}, {
+        title: def.title,
+        explain: def.explain
+      });
+    });
+  }
+
+  function removeKnownJsUnsupportedV334A3(result) {
+    if (!result || typeof result !== "object") return;
+
+    const known = /(document\.querySelector|addEventListener|textContent|localStorage\.getItem|document\.body\.dataset|dataset\.)/;
+
+    const textOf = function(item) {
+      return compactV334A3([
+        item && item.code,
+        item && item.text,
+        item && item.label,
+        item && item.title,
+        item && item.raw,
+        item && item.name
+      ].join(" "));
+    };
+
+    if (Array.isArray(result.unsupportedItems)) {
+      result.unsupportedItems = result.unsupportedItems.filter(function(item) {
+        return !known.test(textOf(item));
+      });
+    }
+
+    if (Array.isArray(result.unknownNextActions) && (!Array.isArray(result.unsupportedItems) || result.unsupportedItems.length === 0)) {
+      result.unknownNextActions = result.unknownNextActions.filter(function(action) {
+        return !/미지원 항목 확인/.test(compactV334A3(action && action.title));
+      });
+    }
+  }
+
+  function parseQuerySelectorsV334A3(source) {
+    const selectors = {};
+    const re = /\b(?:const|let|var)\s+(\w+)\s*=\s*document\.querySelector\(\s*["']([^"']+)["']\s*\)\s*;?/g;
+    let match;
+    while ((match = re.exec(source))) {
+      selectors[match[1]] = match[2];
+    }
+    return selectors;
+  }
+
+  function improveJsDomClickV334A3(result, code, lang) {
+    const language = getLangV334A3(result, lang);
+    if (language !== "javascript" && language !== "js") return false;
+
+    const source = String(code || "");
+    if (!/document\.querySelector/.test(source) || !/addEventListener\s*\(\s*["']click["']/.test(source)) return false;
+
+    const selectors = parseQuerySelectorsV334A3(source);
+
+    const eventMatch = source.match(/(\w+)\.addEventListener\(\s*["']click["']/);
+    const textMatch = source.match(/(\w+)\.textContent\s*=\s*["']([^"']+)["']/);
+
+    if (!eventMatch || !textMatch) return false;
+
+    const eventVar = eventMatch[1];
+    const targetVar = textMatch[1];
+    const textValue = textMatch[2];
+
+    const eventSelector = selectors[eventVar] || eventVar;
+    const targetSelector = selectors[targetVar] || targetVar;
+
+    result.summary = eventSelector + " 요소를 버튼처럼 찾아서 클릭 이벤트를 연결합니다. 사용자가 클릭하면 " + targetSelector + " 요소의 화면 문구가 '" + textValue + "'로 바뀝니다.";
+
+    replaceStepsV334A3(result, [
+      {
+        title: eventSelector + " 요소 찾기",
+        explain: "document.querySelector(\"" + eventSelector + "\")로 화면에서 " + eventSelector + "에 해당하는 요소를 찾습니다."
+      },
+      {
+        title: targetSelector + " 요소 찾기",
+        explain: "document.querySelector(\"" + targetSelector + "\")로 나중에 문구를 바꿀 화면 요소를 찾습니다."
+      },
+      {
+        title: "클릭 이벤트 연결",
+        explain: eventSelector + " 요소에 click 이벤트를 연결합니다. 사용자가 이 요소를 클릭하면 안쪽 코드가 실행됩니다."
+      },
+      {
+        title: "화면 문구 변경",
+        explain: targetSelector + " 요소의 textContent를 '" + textValue + "'로 바꿉니다. 즉 화면에 보이는 글자가 바뀝니다."
+      }
+    ]);
+
+    if (result.flow && typeof result.flow === "object") {
+      result.flow.roleSummary = eventSelector + " 클릭을 기다렸다가 " + targetSelector + "의 문구를 바꾸는 DOM 이벤트 코드입니다.";
+    }
+
+    removeKnownJsUnsupportedV334A3(result);
+    return true;
+  }
+
+  function improveJsLocalStorageThemeV334A3(result, code, lang) {
+    const language = getLangV334A3(result, lang);
+    if (language !== "javascript" && language !== "js") return false;
+
+    const source = String(code || "");
+    if (!/localStorage\.getItem/.test(source) || !/document\.body\.dataset/.test(source)) return false;
+
+    const storageMatch = source.match(/\b(?:const|let|var)\s+(\w+)\s*=\s*localStorage\.getItem\(\s*["']([^"']+)["']\s*\)/);
+    const datasetMatch = source.match(/document\.body\.dataset\.(\w+)\s*=\s*(\w+)/);
+    const defaultMatch = source.match(/else\s*\{[\s\S]*?document\.body\.dataset\.(\w+)\s*=\s*["']([^"']+)["']/);
+
+    if (!storageMatch || !datasetMatch) return false;
+
+    const valueVar = storageMatch[1];
+    const storageKey = storageMatch[2];
+    const datasetKey = datasetMatch[1];
+    const defaultValue = defaultMatch ? defaultMatch[2] : "기본값";
+
+    result.summary = "브라우저 저장소(localStorage)에서 '" + storageKey + "' 설정을 읽습니다. 값이 있으면 document.body.dataset." + datasetKey + "에 적용하고, 값이 없으면 기본값 '" + defaultValue + "'를 적용합니다.";
+
+    replaceStepsV334A3(result, [
+      {
+        title: "저장된 " + storageKey + " 설정 읽기",
+        explain: "localStorage.getItem(\"" + storageKey + "\")로 브라우저에 저장된 " + storageKey + " 값을 읽어 " + valueVar + "에 넣습니다."
+      },
+      {
+        title: "저장값이 있는지 확인",
+        explain: "if (" + valueVar + ") 조건으로 저장된 값이 비어 있지 않은지 확인합니다."
+      },
+      {
+        title: "저장된 값 적용",
+        explain: "값이 있으면 document.body.dataset." + datasetKey + "에 " + valueVar + " 값을 넣습니다. 화면의 테마나 스타일을 이 값으로 바꿀 때 쓰는 방식입니다."
+      },
+      {
+        title: "기본값 적용",
+        explain: "저장된 값이 없으면 else에서 기본값 '" + defaultValue + "'를 document.body.dataset." + datasetKey + "에 넣습니다."
+      }
+    ]);
+
+    if (result.flow && typeof result.flow === "object") {
+      result.flow.roleSummary = "브라우저 저장소에서 설정을 읽고, 있으면 저장값을 쓰고 없으면 기본값을 쓰는 설정 복원 코드입니다.";
+    }
+
+    removeKnownJsUnsupportedV334A3(result);
+    return true;
+  }
+
+  window.CodeExplainerRules.analyze = function analyzeWithGeneralJsSynthesisV334A3(code, lang) {
+    const result = baseAnalyzeV334A3.apply(this, arguments);
+    improveJsDomClickV334A3(result, code, lang);
+    improveJsLocalStorageThemeV334A3(result, code, lang);
+    removeKnownJsUnsupportedV334A3(result);
+    return result;
+  };
+
+  window.CodeExplainerRules.__v334A3GeneralJsSynthesis = true;
+})();
