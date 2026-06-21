@@ -5322,3 +5322,272 @@
 
   window.CodeExplainerRules.__v334A5SqlUserOrderCountCompat = true;
 })();
+// GENERAL_CSS_LAYOUT_SYNTHESIS_V334_A6
+(function installGeneralCssLayoutSynthesisV334A6() {
+  if (!window.CodeExplainerRules || typeof window.CodeExplainerRules.analyze !== "function") return;
+  if (window.CodeExplainerRules.__v334A6GeneralCssLayoutSynthesis) return;
+
+  const baseAnalyzeV334A6 = window.CodeExplainerRules.analyze;
+
+  function compactV334A6(value) {
+    return String(value || "").replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function getLangV334A6(result, lang) {
+    return String(lang || result.language || result.detectedLanguage || "").toLowerCase();
+  }
+
+  function replaceStepsV334A6(result, defs) {
+    const oldSteps = Array.isArray(result.steps) ? result.steps : [];
+    result.steps = defs.map(function(def, index) {
+      return Object.assign({}, oldSteps[index] || {}, {
+        title: def.title,
+        explain: def.explain
+      });
+    });
+  }
+
+  function parsePropsV334A6(body) {
+    const props = {};
+    String(body || "").split(";").forEach(function(part) {
+      const idx = part.indexOf(":");
+      if (idx < 0) return;
+      const key = compactV334A6(part.slice(0, idx)).toLowerCase();
+      const value = compactV334A6(part.slice(idx + 1));
+      if (key) props[key] = value;
+    });
+    return props;
+  }
+
+  function parseFirstCssRuleV334A6(code, displayValue) {
+    const source = String(code || "").replace(/\/\*[\s\S]*?\*\//g, " ");
+    const re = /([^{}@]+)\{([^{}]+)\}/g;
+    let m;
+    while ((m = re.exec(source))) {
+      const selector = compactV334A6(m[1]);
+      const props = parsePropsV334A6(m[2]);
+      if (String(props.display || "").toLowerCase() === displayValue) {
+        return { selector: selector, props: props };
+      }
+    }
+    return null;
+  }
+
+  function parseMediaRuleV334A6(code, selector) {
+    const source = String(code || "").replace(/\/\*[\s\S]*?\*\//g, " ");
+    const mediaRe = /@media\s*\(([^)]+)\)\s*\{\s*([^{}@]+)\{([^{}]+)\}\s*\}/ig;
+    let m;
+    while ((m = mediaRe.exec(source))) {
+      const condition = compactV334A6(m[1]);
+      const innerSelector = compactV334A6(m[2]);
+      const props = parsePropsV334A6(m[3]);
+      if (!selector || innerSelector === selector) {
+        return { condition: condition, selector: innerSelector, props: props };
+      }
+    }
+    return null;
+  }
+
+  function describeJustifyV334A6(value) {
+    const v = String(value || "").toLowerCase();
+    if (v === "center") return "가로 방향으로 가운데 정렬";
+    if (v === "space-between") return "첫 항목과 마지막 항목을 양끝으로 벌려 배치";
+    if (v === "space-around") return "항목 주변에 비슷한 여백을 두고 배치";
+    if (v === "space-evenly") return "항목 사이 여백을 균등하게 배치";
+    if (v === "flex-start") return "앞쪽부터 붙여 배치";
+    if (v === "flex-end") return "끝쪽으로 붙여 배치";
+    return "justify-content: " + value + " 기준으로 가로 배치";
+  }
+
+  function describeAlignV334A6(value) {
+    const v = String(value || "").toLowerCase();
+    if (v === "center") return "세로 방향으로 가운데 정렬";
+    if (v === "flex-start") return "세로 방향 앞쪽에 맞춤";
+    if (v === "flex-end") return "세로 방향 끝쪽에 맞춤";
+    if (v === "stretch") return "세로 방향으로 늘려 맞춤";
+    return "align-items: " + value + " 기준으로 세로 정렬";
+  }
+
+  function describeGridColumnsV334A6(value) {
+    const text = compactV334A6(value);
+    const repeat = text.match(/^repeat\(\s*([0-9]+)\s*,\s*1fr\s*\)$/i);
+    if (repeat) return repeat[1] + "칸 grid";
+    if (text === "1fr") return "1칸 grid";
+    return "grid-template-columns: " + text + " 구조";
+  }
+
+  function describeMediaConditionV334A6(value) {
+    const text = compactV334A6(value);
+    const max = text.match(/max-width\s*:\s*([0-9]+px)/i);
+    if (max) return "화면 폭이 " + max[1] + " 이하일 때";
+    const min = text.match(/min-width\s*:\s*([0-9]+px)/i);
+    if (min) return "화면 폭이 " + min[1] + " 이상일 때";
+    return "@media (" + text + ") 조건일 때";
+  }
+
+  function removeKnownCssUnsupportedV334A6(result) {
+    if (!result || typeof result !== "object") return;
+
+    const known = /\b(display|flex|grid|align-items|justify-content|gap|grid-template-columns|@media|max-width|min-width|repeat|1fr)\b/i;
+
+    const textOf = function(item) {
+      return compactV334A6([
+        item && item.code,
+        item && item.text,
+        item && item.label,
+        item && item.title,
+        item && item.raw,
+        item && item.name
+      ].join(" "));
+    };
+
+    if (Array.isArray(result.unsupportedItems)) {
+      result.unsupportedItems = result.unsupportedItems.filter(function(item) {
+        return !known.test(textOf(item));
+      });
+    }
+
+    if (Array.isArray(result.unknownNextActions) && (!Array.isArray(result.unsupportedItems) || result.unsupportedItems.length === 0)) {
+      result.unknownNextActions = result.unknownNextActions.filter(function(action) {
+        return !/미지원 항목 확인/.test(compactV334A6(action && action.title));
+      });
+    }
+  }
+
+  function improveCssFlexLayoutV334A6(result, code, lang) {
+    const language = getLangV334A6(result, lang);
+    if (language !== "css") return false;
+
+    const rule = parseFirstCssRuleV334A6(code, "flex");
+    if (!rule) return false;
+
+    const selector = rule.selector;
+    const props = rule.props;
+    const parts = [];
+
+    parts.push(selector + " 요소 안의 내용을 flex로 배치합니다.");
+
+    if (props["align-items"]) parts.push(describeAlignV334A6(props["align-items"]) + "합니다.");
+    if (props["justify-content"]) parts.push(describeJustifyV334A6(props["justify-content"]) + "합니다.");
+    if (props.gap) parts.push("항목 사이 간격은 " + props.gap + "로 둡니다.");
+
+    result.summary = parts.join(" ");
+
+    const steps = [
+      {
+        title: selector + "에 flex 배치 적용",
+        explain: "display: flex 설정은 " + selector + " 안의 자식 요소들을 한 줄 레이아웃으로 배치할 때 쓰는 설정입니다."
+      }
+    ];
+
+    if (props["align-items"]) {
+      steps.push({
+        title: "세로 정렬 설정",
+        explain: "align-items: " + props["align-items"] + " 설정은 " + describeAlignV334A6(props["align-items"]) + "한다는 뜻입니다."
+      });
+    }
+
+    if (props["justify-content"]) {
+      steps.push({
+        title: "가로 배치 방식 설정",
+        explain: "justify-content: " + props["justify-content"] + " 설정은 " + describeJustifyV334A6(props["justify-content"]) + "한다는 뜻입니다."
+      });
+    }
+
+    if (props.gap) {
+      steps.push({
+        title: "항목 사이 간격 설정",
+        explain: "gap: " + props.gap + " 설정은 flex 안의 항목들 사이에 " + props.gap + " 간격을 둔다는 뜻입니다."
+      });
+    }
+
+    replaceStepsV334A6(result, steps);
+
+    if (result.flow && typeof result.flow === "object") {
+      result.flow.roleSummary = "요소 안의 항목들을 flex 레이아웃으로 배치하고, 정렬과 간격을 조정하는 CSS입니다.";
+    }
+
+    result.unknownNextActions = [];
+    removeKnownCssUnsupportedV334A6(result);
+    return true;
+  }
+
+  function improveCssGridMediaLayoutV334A6(result, code, lang) {
+    const language = getLangV334A6(result, lang);
+    if (language !== "css") return false;
+
+    const rule = parseFirstCssRuleV334A6(code, "grid");
+    if (!rule) return false;
+
+    const selector = rule.selector;
+    const props = rule.props;
+    const media = parseMediaRuleV334A6(code, selector);
+
+    const baseGrid = props["grid-template-columns"] ? describeGridColumnsV334A6(props["grid-template-columns"]) : "grid";
+    const parts = [];
+
+    parts.push(selector + " 요소를 " + baseGrid + "로 배치합니다.");
+    if (props.gap) parts.push("항목 사이 간격은 " + props.gap + "로 둡니다.");
+
+    if (media && media.props["grid-template-columns"]) {
+      parts.push(describeMediaConditionV334A6(media.condition) + " " + selector + "를 " + describeGridColumnsV334A6(media.props["grid-template-columns"]) + "로 바꿉니다.");
+    }
+
+    result.summary = parts.join(" ");
+
+    const steps = [
+      {
+        title: selector + "에 grid 배치 적용",
+        explain: "display: grid 설정은 " + selector + " 안의 항목들을 행과 열이 있는 격자 형태로 배치한다는 뜻입니다."
+      }
+    ];
+
+    if (props["grid-template-columns"]) {
+      steps.push({
+        title: "기본 열 구조 설정",
+        explain: "grid-template-columns: " + props["grid-template-columns"] + " 설정은 기본 화면에서 " + baseGrid + "로 배치한다는 뜻입니다."
+      });
+    }
+
+    if (props.gap) {
+      steps.push({
+        title: "grid 항목 간격 설정",
+        explain: "gap: " + props.gap + " 설정은 grid 항목들 사이에 " + props.gap + " 간격을 둔다는 뜻입니다."
+      });
+    }
+
+    if (media) {
+      steps.push({
+        title: "반응형 조건 설정",
+        explain: "@media (" + media.condition + ") 조건은 " + describeMediaConditionV334A6(media.condition) + " 안쪽 CSS를 적용한다는 뜻입니다."
+      });
+
+      if (media.props["grid-template-columns"]) {
+        steps.push({
+          title: "작은 화면 열 구조 변경",
+          explain: media.selector + "의 grid-template-columns를 " + media.props["grid-template-columns"] + "로 바꿉니다. 즉 " + describeMediaConditionV334A6(media.condition) + " " + describeGridColumnsV334A6(media.props["grid-template-columns"]) + "가 됩니다."
+        });
+      }
+    }
+
+    replaceStepsV334A6(result, steps);
+
+    if (result.flow && typeof result.flow === "object") {
+      result.flow.roleSummary = "grid 레이아웃을 만들고, 화면 크기에 따라 열 개수를 바꾸는 반응형 CSS입니다.";
+    }
+
+    result.unknownNextActions = [];
+    removeKnownCssUnsupportedV334A6(result);
+    return true;
+  }
+
+  window.CodeExplainerRules.analyze = function analyzeWithGeneralCssLayoutSynthesisV334A6(code, lang) {
+    const result = baseAnalyzeV334A6.apply(this, arguments);
+    improveCssGridMediaLayoutV334A6(result, code, lang);
+    improveCssFlexLayoutV334A6(result, code, lang);
+    removeKnownCssUnsupportedV334A6(result);
+    return result;
+  };
+
+  window.CodeExplainerRules.__v334A6GeneralCssLayoutSynthesis = true;
+})();
