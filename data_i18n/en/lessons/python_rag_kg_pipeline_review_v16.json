@@ -1,0 +1,485 @@
+[
+  {
+    "id": "PY16_L08_manifest_load_001",
+    "level": 8,
+    "title": "Understanding the Document Manifest Loading Flow",
+    "concepts": [
+      "manifest",
+      "jsonl",
+      "file",
+      "pipeline"
+    ],
+    "reading_goal": "Read the code that parses a JSONL manifest line by line to create a list of documents.",
+    "code": "import json\nfrom pathlib import Path\n\nrows = []\nfor line in Path(\"manifest.jsonl\").read_text(encoding=\"utf-8\").splitlines():\n    if not line.strip():\n        continue\n    rows.append(json.loads(line))\n\nprint(len(rows))",
+    "question_type": "meaning_choice",
+    "question": "Which of the following best describes the purpose of this code?",
+    "choices": [
+      "Read each line of `manifest.jsonl` as a JSON object and collect them in `rows`",
+      "Delete the JSON file and create an empty file",
+      "Start the web server and open a browser",
+      "Train a new embedding model"
+    ],
+    "answer": "Read each line of `manifest.jsonl` as a JSON object and collect them in `rows`",
+    "explanation": "JSONL is a format in which each line contains a single JSON object. Use `splitlines` to split the lines and `json.loads` to convert each line into a dictionary. By reading the manifest line by line, you can process even large lists sequentially without loading the entire list into memory at once.",
+    "side_card_ids": [
+      "PYV158_A1_PIPELINE_FLOW"
+    ],
+    "project_context": "This is the basic pattern for reading the collection document list, chunk manifest, and node/edge candidate list."
+  },
+  {
+    "id": "PY16_L08_metadata_normalize_001",
+    "level": 8,
+    "title": "Reading the Metadata Normalization Function",
+    "concepts": [
+      "metadata",
+      "normalization",
+      "dict",
+      "get"
+    ],
+    "reading_goal": "I'm reading code that standardizes the different meta fields in each document into a single common schema.",
+    "code": "def normalize_doc(row):\n    return {\n        \"doc_id\": str(row.get(\"doc_id\") or row.get(\"id\")),\n        \"title\": (row.get(\"title\") or \"\").strip(),\n        \"source_url\": row.get(\"url\") or row.get(\"source_url\"),\n        \"lane\": row.get(\"lane\", \"B\"),\n    }",
+    "question_type": "meaning_choice",
+    "question": "What does `row.get('doc_id') or row.get('id')` mean?",
+    "choices": [
+      "If doc_id exists, use it; otherwise, use id instead.",
+      "Delete both doc_id and id",
+      "Always returns None",
+      "Download the URL"
+    ],
+    "answer": "If doc_id exists, use it; otherwise, use id instead.",
+    "explanation": "The `or` operator uses the value that follows if the preceding value is empty. It is frequently used to standardize field names from different sources. A metadata normalization function is one that formats fields such as `source`, `title`, `url`, and `date` into a consistent format. This directly impacts the quality of subsequent searches and deduplication.",
+    "side_card_ids": [
+      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+    ],
+    "project_context": "This is the code needed to incorporate A/B lane documents, collection sources, and PDF extracts into a single processing workflow."
+  },
+  {
+    "id": "PY16_L09_sentence_chunking_001",
+    "level": 9,
+    "title": "Reading by Chunking Sentences",
+    "concepts": [
+      "chunking",
+      "sentence",
+      "overlap",
+      "rag"
+    ],
+    "reading_goal": "Read the flow of creating chunks while maintaining sentence boundaries.",
+    "code": "def make_chunks(sentences, max_chars=900):\n    chunks = []\n    current = []\n    size = 0\n\n    for sent in sentences:\n        if size + len(sent) > max_chars and current:\n            chunks.append(\" \".join(current))\n            current = current[-2:]\n            size = sum(len(x) for x in current)\n        current.append(sent)\n        size += len(sent)\n\n    if current:\n        chunks.append(\" \".join(current))\n    return chunks",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of `current = current[-2:]`?",
+    "choices": [
+      "Ensure that the last two sentences of the previous chunk overlap with the next chunk",
+      "Delete all sentences",
+      "I always leave only the first sentence.",
+      "Shuffle the sentences randomly"
+    ],
+    "answer": "Ensure that the last two sentences of the previous chunk overlap with the next chunk",
+    "explanation": "Sentence chunking is a method of dividing text into chunks based on sentences. Introducing overlap can help reduce the problem of context being disrupted during a search. If the overlap is too small, the context is disrupted; if it is too large, there is excessive duplication, which can reduce search efficiency. Therefore, the return/call result is “the last two sentences of the previous chunk should overlap into the next chunk.”",
+    "side_card_ids": [
+      "PYV159_A1_RAG_SEARCH_LLM_FLOW"
+    ],
+    "project_context": "This is directly related to your revised chunking principle—the prohibition against splitting in the middle of a sentence or in the middle of a word."
+  },
+  {
+    "id": "PY16_L09_chunk_id_001",
+    "level": 9,
+    "title": "Read the rules for generating chunk_id",
+    "concepts": [
+      "chunk_id",
+      "stable_id",
+      "provenance"
+    ],
+    "reading_goal": "Read the code that generates a reproducible `chunk_id` using the document ID and sequence number.",
+    "code": "def make_chunk_id(doc_id, index):\n    return f\"{doc_id}::chunk::{index:04d}\"\n\nprint(make_chunk_id(\"doc_17\", 3))",
+    "question_type": "output_prediction",
+    "question": "What's the output?",
+    "choices": [
+      "doc_17::chunk::0003",
+      "doc_17::chunk::3",
+      "chunk::doc_17",
+      "0003::doc_17"
+    ],
+    "answer": "doc_17::chunk::0003",
+    "explanation": "chunk_id is an identifier that distinguishes individual text chunks. {index:04d} pads the number to four digits, leading with zeros, to make it easier to sort. Including both the document ID and the sequence number makes it easy to track which document a given search result belongs to and what its sequence number is. Therefore, the output is ‘doc_17::chunk::0003’.",
+    "side_card_ids": [
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
+      "PYV102_A7_AI_ML_TOOLCHAIN"
+    ],
+    "project_context": "If the chunk_id fluctuates, the embeddings, evidence, and candidate node/edge connections all become distorted."
+  },
+  {
+    "id": "PY16_L09_embedding_batch_001",
+    "level": 9,
+    "title": "Reading About Batch Processing of Embeddings",
+    "concepts": [
+      "embedding",
+      "batch",
+      "vector",
+      "gpu"
+    ],
+    "reading_goal": "I am reading code that divides text into blocks of a certain size and embeds them.",
+    "code": "def embed_in_batches(texts, model, batch_size=32):\n    vectors = []\n    for start in range(0, len(texts), batch_size):\n        batch = texts[start:start + batch_size]\n        vectors.extend(model.encode(batch))\n    return vectors",
+    "question_type": "meaning_choice",
+    "question": "What does `range(0, len(texts), batch_size)` mean?",
+    "choices": [
+      "Create start positions at intervals of `batch_size` starting from 0",
+      "Ensure that only one \"0\" is repeated.",
+      "Sort the list of texts in alphabetical order.",
+      "Force the GPU to turn off"
+    ],
+    "answer": "Create start positions at intervals of `batch_size` starting from 0",
+    "explanation": "`start` serves as the starting index for each batch. A small batch is created using `texts[start:start+batch_size]`. Batch processing of embeddings involves grouping multiple texts together and converting them into vectors. If the batch size is too large, it can cause memory issues; if it is too small, it can slow down processing.",
+    "side_card_ids": [
+      "PYV159_A1_GPU_TORCH_TRAINING_FLOW",
+      "PYV159_A1_RAG_SEARCH_LLM_FLOW"
+    ],
+    "project_context": "This is a pattern where, instead of processing a 70k+ chunk all at once, it is divided into batches to manage memory usage and speed."
+  },
+  {
+    "id": "PY16_L09_vector_topk_001",
+    "level": 9,
+    "title": "Reading Top-K Results from a Vector Search",
+    "concepts": [
+      "vector_search",
+      "top_k",
+      "similarity",
+      "rag"
+    ],
+    "reading_goal": "Read the code that retrieves the chunk candidates closest to the query vector.",
+    "code": "def retrieve(question, embedder, index, top_k=5):\n    qvec = embedder.encode(question)\n    hits = index.search(qvec, top_k=top_k)\n    return [hit[\"chunk_id\"] for hit in hits]",
+    "question_type": "meaning_choice",
+    "question": "What does `return [hit['chunk_id'] for hit in hits]` return?",
+    "choices": [
+      "List of found chunk_ids",
+      "Original Question",
+      "Model Parameters",
+      "Full contents of the file"
+    ],
+    "answer": "List of found chunk_ids",
+    "explanation": "Vector top-k is the process of selecting only a few high-scoring candidates from the embedding search results. If you extract only the chunk_ids from the hits, you can use them for subsequent document retrieval. By isolating the list of chunk_ids, it becomes easier to retrieve the actual document chunks in the next step.",
+    "side_card_ids": [
+      "PYV159_A1_RAG_SEARCH_LLM_FLOW"
+    ],
+    "project_context": "This code checks which candidates the RAG search identified before proceeding to generate an answer."
+  },
+  {
+    "id": "PY16_L09_rerank_001",
+    "level": 9,
+    "title": "Read \"Reranking Candidates\"",
+    "concepts": [
+      "rerank",
+      "score",
+      "retrieval",
+      "ranking"
+    ],
+    "reading_goal": "Read the code that re-sorts the initial search candidates based on a different score.",
+    "code": "def rerank(question, candidates, scorer):\n    scored = []\n    for chunk in candidates:\n        score = scorer(question, chunk[\"text\"])\n        scored.append({\"chunk\": chunk, \"score\": score})\n    return sorted(scored, key=lambda x: x[\"score\"], reverse=True)",
+    "question_type": "meaning_choice",
+    "question": "What does \"reverse=True\" mean?",
+    "choices": [
+      "Place the candidate with the highest score at the top",
+      "Place the candidate with the lower score at the top",
+      "Delete the candidate",
+      "Changing the question"
+    ],
+    "answer": "Place the candidate with the highest score at the top",
+    "explanation": "Reranking is the step in which the results from the first-pass search are re-scored and reordered. In descending order, candidates with higher scores appear first. Reranking is the step of re-scoring the candidates from the initial search to sort them in order of relevance. While it improves the quality of search results, it can incur additional costs and latency.",
+    "side_card_ids": [
+      "PYV159_A1_RAG_SEARCH_LLM_FLOW"
+    ],
+    "project_context": "This is an advanced RAG workflow that does not simply use the vector search results as-is, but instead reorders them based on more precise criteria."
+  },
+  {
+    "id": "PY16_L10_evidence_pack_001",
+    "level": 10,
+    "title": "Reading the Evidence Pack Assembly Instructions",
+    "concepts": [
+      "evidence",
+      "citation",
+      "chunk",
+      "grounding"
+    ],
+    "reading_goal": "Read the code that converts the searched chunks into a set of supporting evidence for the answer.",
+    "code": "def build_evidence_pack(hits):\n    pack = []\n    for hit in hits:\n        pack.append({\n            \"doc_id\": hit[\"doc_id\"],\n            \"chunk_id\": hit[\"chunk_id\"],\n            \"quote\": hit[\"text\"][:300],\n            \"score\": hit.get(\"score\", 0),\n        })\n    return pack",
+    "question_type": "meaning_choice",
+    "question": "What does `hit['text'][:300]` mean?",
+    "choices": [
+      "Save only the first 300 characters of the source text as a quote.",
+      "Reads 300 files",
+      "Change the score to 300",
+      "Delete the document"
+    ],
+    "answer": "Save only the first 300 characters of the source text as a quote.",
+    "explanation": "An \"evidence pack\" is a collection of evidence used in a response. Instead of including long chunks of text in their entirety, including only selected quotes can reduce the prompt size. Therefore, the return/call result is \"Save only the first 300 characters of the evidence text as a quote.\"",
+    "side_card_ids": [
+      "PYV161_A1_EVIDENCE_LINEAGE_FLOW"
+    ],
+    "project_context": "In evidence-based RAG, this is the part that reliably establishes the evidence structure before generating the answer."
+  },
+  {
+    "id": "PY16_L10_prompt_with_citations_001",
+    "level": 10,
+    "title": "Creating Prompts That Include Justifications",
+    "concepts": [
+      "prompt",
+      "citation",
+      "rag",
+      "grounding"
+    ],
+    "reading_goal": "Read the code that assembles a list of sources into an LLM prompt string.",
+    "code": "def make_prompt(question, evidence):\n    lines = [\"Answer using only the evidence below.\"]\n    for i, ev in enumerate(evidence, start=1):\n        lines.append(f\"[{i}] {ev['quote']}\")\n    lines.append(\"Question: \" + question)\n    return \"\\n\".join(lines)",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of `enumerate(evidence, start=1)`?",
+    "choices": [
+      "Number the evidence items starting with 1.",
+      "Delete the evidence",
+      "Translate the question",
+      "Create a filename"
+    ],
+    "answer": "Number the evidence items starting with 1.",
+    "explanation": "`enumerate` returns both the index and the value. Since `start=1`, the index starts at 1. A prompt that includes sources is an instruction to include the sources used in the answer. The citation format must be standardized so that users can verify the reliability of the answer. Therefore, the return/call result is “number the sources starting from 1.”",
+    "side_card_ids": [
+      "PYV159_A1_RAG_SEARCH_LLM_FLOW"
+    ],
+    "project_context": "This is a key pattern for tracking the basis on which a response was generated."
+  },
+  {
+    "id": "PY16_L10_llm_retry_timeout_001",
+    "level": 10,
+    "title": "Understanding the LLM Call Retry Flow",
+    "concepts": [
+      "retry",
+      "timeout",
+      "llm",
+      "api"
+    ],
+    "reading_goal": "I'm reading code that retries LLM calls that might fail.",
+    "code": "def call_with_retry(client, prompt, max_attempts=3):\n    last_error = None\n    for attempt in range(max_attempts):\n        try:\n            return client.generate(prompt, timeout=60)\n        except TimeoutError as e:\n            last_error = e\n    raise last_error",
+    "question_type": "meaning_choice",
+    "question": "Why doesn't this function terminate immediately when it encounters a TimeoutError?",
+    "choices": [
+      "To retry up to max_attempts times",
+      "Because I've always been successful",
+      "To delete the prompt",
+      "To initialize the GPU"
+    ],
+    "answer": "To retry up to max_attempts times",
+    "explanation": "Since the `try/except` block is nested inside a loop, the system can proceed to the next attempt even if a timeout occurs. The LLM retry flow is designed to resend requests when a timeout or temporary error occurs. Limiting the number of retries and the wait time is essential for controlling costs and latency. Therefore, the return/call result is “to retry up to a maximum of max_attempts times.”",
+    "side_card_ids": [
+      "PYV158_A1_API_FLOW"
+    ],
+    "project_context": "This is a training session on failure recovery in Bedrock, local LLM, and external API call automation."
+  },
+  {
+    "id": "PY16_L10_grounding_guard_001",
+    "level": 10,
+    "title": "Reading the Guard Due to Lack of Evidence",
+    "concepts": [
+      "grounding",
+      "evidence",
+      "guardrail",
+      "rag"
+    ],
+    "reading_goal": "If there is insufficient evidence, it reads the conditional statement that prevents the generation of a response.",
+    "code": "def answer_question(question, evidence, llm):\n    if len(evidence) < 2:\n        return {\n            \"answer\": \"근거가 부족해 확답할 수 없습니다.\",\n            \"confidence\": \"low\"\n        }\n    prompt = make_prompt(question, evidence)\n    return {\"answer\": llm(prompt), \"confidence\": \"normal\"}",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of the condition `len(evidence) < 2`?",
+    "choices": [
+      "If there is too little evidence, it returns a low-confidence response.",
+      "Always calls the LLM",
+      "Double the evidence",
+      "Questions are not saved"
+    ],
+    "answer": "If there is too little evidence, it returns a low-confidence response.",
+    "explanation": "A grounding guard is a safety mechanism that limits the model's responses when there is insufficient evidence. It helps reduce \"hallucinations,\" where the model generates plausible statements without any basis.",
+    "side_card_ids": [
+      "PYV159_A1_RAG_SEARCH_LLM_FLOW"
+    ],
+    "project_context": "This is a code analysis that connects to the soft guard in the evidence-first verification pipeline."
+  },
+  {
+    "id": "PY16_L10_node_pass_001",
+    "level": 10,
+    "title": "Creating a Node Pass Input",
+    "concepts": [
+      "node_pass",
+      "candidate",
+      "chunk",
+      "kg"
+    ],
+    "reading_goal": "Read the code that generates input for extracting node candidates from a chunk.",
+    "code": "def make_node_pass_input(chunk, node_catalog):\n    return {\n        \"chunk_id\": chunk[\"chunk_id\"],\n        \"text\": chunk[\"text\"],\n        \"known_nodes\": node_catalog,\n        \"task\": \"extract candidate nodes\"\n    }",
+    "question_type": "meaning_choice",
+    "question": "Why is `node_catalog` added to `known_nodes`?",
+    "choices": [
+      "To improve recall when extracting candidates by referring to the list of existing nodes,",
+      "To delete the text",
+      "To convert JSON to CSV",
+      "To change the server port"
+    ],
+    "answer": "To improve recall when extracting candidates by referring to the list of existing nodes,",
+    "explanation": "The \"node pass\" is the stage in the document where candidate nodes are identified broadly. By referring to the existing catalog, you can compare the new candidates with already defined concepts. If `known_nodes` is available, it is easy to determine whether a new node candidate is an alias for an existing node or a completely new concept.",
+    "side_card_ids": [],
+    "project_context": "This falls under the \"Node pass\" category of the separation principle between Node pass and Edge pass that you established."
+  },
+  {
+    "id": "PY16_L10_edge_pass_001",
+    "level": 10,
+    "title": "Creating an Edge Pass Input",
+    "concepts": [
+      "edge_pass",
+      "relation",
+      "promoted_node",
+      "kg"
+    ],
+    "reading_goal": "Read the code that uses promoted nodes to generate relationship extraction inputs.",
+    "code": "def make_edge_pass_input(chunk, promoted_nodes):\n    return {\n        \"chunk_id\": chunk[\"chunk_id\"],\n        \"text\": chunk[\"text\"],\n        \"allowed_nodes\": promoted_nodes,\n        \"task\": \"extract relations only between allowed nodes\"\n    }",
+    "question_type": "meaning_choice",
+    "question": "Why are only `promoted_nodes` included in `allowed_nodes`?",
+    "choices": [
+      "To improve the accuracy of relationship extraction,",
+      "To turn every word into a node,",
+      "To compress a document",
+      "To delete an embedding"
+    ],
+    "answer": "To improve the accuracy of relationship extraction,",
+    "explanation": "Since precision is crucial in the edge pass, it is restricted to extracting only the relationships between promoted nodes. The edge pass is a step that extracts relationships between already selected nodes based on evidence. Do not connect just any nodes; only promote relationships that are found together within the document. Therefore, the return/call result is “to increase the precision of relationship extraction.”",
+    "side_card_ids": [],
+    "project_context": "This is directly linked to your fixed workflow, which strictly separates the Node pass and the Edge pass."
+  },
+  {
+    "id": "PY16_L10_provenance_lineage_001",
+    "level": 10,
+    "title": "Reading Provenance/Lineage Records",
+    "concepts": [
+      "provenance",
+      "lineage",
+      "evidence",
+      "audit"
+    ],
+    "reading_goal": "Read the code that records which inputs and models produced the results.",
+    "code": "def attach_lineage(result, run_id, model_name, input_ids):\n    result[\"lineage\"] = {\n        \"run_id\": run_id,\n        \"model\": model_name,\n        \"input_ids\": input_ids,\n    }\n    return result",
+    "question_type": "meaning_choice",
+    "question": "What is the main purpose of the \"lineage\" field?",
+    "choices": [
+      "Trace the source and generation process of the results",
+      "Randomly changes the results",
+      "Train the model",
+      "Hide the file"
+    ],
+    "answer": "Trace the source and generation process of the results",
+    "explanation": "Keeping track of `run_id`, `model`, and `input_ids` makes it easier to audit and reproduce results later. Provenance and lineage refer to information that tracks where data or answers came from and the processes they underwent. In RAG and KG, this is crucial for verifying the reliability of sources. Therefore, the return/call result is “tracing the source and generation process of the result.”",
+    "side_card_ids": [
+      "PYV161_A1_EVIDENCE_LINEAGE_FLOW"
+    ],
+    "project_context": "This is necessary for tracking which results came from which shards and models during KG/LoRA dataset generation."
+  },
+  {
+    "id": "PY16_L10_rag_test_harness_001",
+    "level": 10,
+    "title": "Reading the RAG Test Harness",
+    "concepts": [
+      "test_harness",
+      "rag",
+      "evaluation",
+      "assert"
+    ],
+    "reading_goal": "I read the code that runs a set of questions to check whether the RAG output meets the minimum criteria.",
+    "code": "def run_eval(cases, rag):\n    failures = []\n    for case in cases:\n        result = rag(case[\"question\"])\n        if case[\"must_cite\"] and not result.get(\"citations\"):\n            failures.append(case[\"id\"])\n    return failures",
+    "question_type": "meaning_choice",
+    "question": "When is a case ID included in \"failures\"?",
+    "choices": [
+      "When a case requires citations but there are none",
+      "When all answers are successful",
+      "When a question is too short",
+      "Whenever it's my first case"
+    ],
+    "answer": "When a case requires citations but there are none",
+    "explanation": "If `must_cite` is True but there are no citations in the result, add it to the failure list. The RAG test harness is a framework that verifies the results of search, evidence selection, and response generation all at once. Recording the expected evidence and failure cases for each question makes it easier to catch regression issues. Therefore, the return/call result is “a case where citations are required but are missing.”",
+    "side_card_ids": [
+      "PYV159_A1_RAG_SEARCH_LLM_FLOW"
+    ],
+    "project_context": "This is a basic framework for verifying RAG quality using test cases rather than relying on intuition."
+  },
+  {
+    "id": "PY16_L09_cache_ttl_001",
+    "level": 9,
+    "title": "Reading Cache and TTL Conditions",
+    "concepts": [
+      "cache",
+      "ttl",
+      "time",
+      "api"
+    ],
+    "reading_goal": "I'm reading the code that skips the API call if the cache is still valid.",
+    "code": "import time\n\ndef get_or_fetch(key, cache, fetch, ttl=3600):\n    item = cache.get(key)\n    if item and time.time() - item[\"saved_at\"] < ttl:\n        return item[\"value\"]\n    value = fetch(key)\n    cache[key] = {\"value\": value, \"saved_at\": time.time()}\n    return value",
+    "question_type": "meaning_choice",
+    "question": "What does `time.time() - item['saved_at'] < ttl` mean?",
+    "choices": [
+      "If the time elapsed since the cache was saved is less than the TTL, the cache is valid.",
+      "Always clear the cache",
+      "Always call `fetch`",
+      "Convert time to a string"
+    ],
+    "answer": "If the time elapsed since the cache was saved is less than the TTL, the cache is valid.",
+    "explanation": "Cache TTL refers to the time during which a cached result remains valid. It compares the current time with the time the result was cached to determine whether to recalculate an outdated cache entry. If the condition is true, it means the cache can still be used; if false, it must be recalculated or reloaded. Therefore, the return/call result is: “If the time elapsed since caching is less than the TTL, the cache is valid.”",
+    "side_card_ids": [
+      "PYV158_A1_API_FLOW"
+    ],
+    "project_context": "This is a common pattern seen in production code designed to reduce API costs and latency."
+  },
+  {
+    "id": "PY16_L09_dedup_hash_001",
+    "level": 9,
+    "title": "Reading the Claim/Hash Deduplication Workflow",
+    "concepts": [
+      "dedup",
+      "hash",
+      "claim",
+      "canonicalization"
+    ],
+    "reading_goal": "I'm reading some code that generates hashes from normalized text to detect duplicates.",
+    "code": "import hashlib\n\ndef claim_hash(text):\n    norm = \" \".join(text.lower().split())\n    return hashlib.sha256(norm.encode(\"utf-8\")).hexdigest()",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of ' '.join(text.lower().split())?",
+    "choices": [
+      "Normalize by ignoring differences in uppercase and lowercase letters and spaces",
+      "Encrypt the text",
+      "Translate the sentence",
+      "Delete the hash"
+    ],
+    "answer": "Normalize by ignoring differences in uppercase and lowercase letters and spaces",
+    "explanation": "A dedup hash is a hash generated from normalized text for the purpose of detecting duplicates. It is created by using the `lower` and `split/join` functions to eliminate differences in case and spacing before comparison. Standardizing the normalization rules first is essential to minimize instances where the same sentence results in different hashes due to minor differences in spacing.",
+    "side_card_ids": [
+      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+    ],
+    "project_context": "This is the basic idea behind claim-based deduplication, the removal of duplicate articles, and the grouping of articles with the same claims."
+  },
+  {
+    "id": "PY16_L10_pipeline_status_001",
+    "level": 10,
+    "title": "Reading the pipeline status log",
+    "concepts": [
+      "pipeline",
+      "status",
+      "logging",
+      "run_id"
+    ],
+    "reading_goal": "Read the code that logs the execution success/failure status along with the run_id.",
+    "code": "def finalize_run(db, run_id, ok, stats, error=None):\n    status = \"ok\" if ok else \"error\"\n    db.update(\"runs\", run_id, {\n        \"status\": status,\n        \"stats\": stats,\n        \"error_message\": str(error) if error else None,\n    })",
+    "question_type": "meaning_choice",
+    "question": "If `ok` is `False`, what is the value of `status`?",
+    "choices": [
+      "error",
+      "ok",
+      "running",
+      "None"
+    ],
+    "answer": "error",
+    "explanation": "The \"pipeline status\" is a value that indicates whether a processing step succeeded or failed. In a ternary expression, if `ok` is `False`, the \"error\" status is selected. Logging the status value to a file or log allows you to quickly identify where a batch job failed.",
+    "side_card_ids": [
+      "PYV158_A1_PIPELINE_FLOW"
+    ],
+    "project_context": "home-curator/D1 runs code that links to table consistency and batch job audit logs."
+  }
+]

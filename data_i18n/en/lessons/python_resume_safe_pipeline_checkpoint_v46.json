@@ -1,0 +1,426 @@
+[
+  {
+    "id": "PY46_L06_resume_safe_pipeline_001",
+    "level": 6,
+    "title": "Read \"Resume-Safe Pipeline\"",
+    "concepts": [
+      "resume_safe",
+      "pipeline",
+      "restart"
+    ],
+    "reading_goal": "Understand the pipeline structure that allows you to resume execution even if it is paused.",
+    "code": "for shard in shards:\n    if is_done(shard):\n        continue\n    run_shard(shard)",
+    "question_type": "meaning_choice",
+    "question": "What is the key feature of the resume-safe pipeline?",
+    "choices": [
+      "Skipping tasks that have already been completed and continuing with only the remaining tasks",
+      "Always starting over from the beginning",
+      "Deleting completed files without exception",
+      "Marking something as complete without verification"
+    ],
+    "answer": "Skipping tasks that have already been completed and continuing with only the remaining tasks",
+    "explanation": "Since long-running tasks may be interrupted, it is important to record their completion status so they can be resumed later. A resume-safe pipeline is designed so that, even if interrupted, the task can continue from where it left off rather than restarting from the beginning. Both the completion status and the checkpoint file must be verified.",
+    "side_card_ids": [
+      "PYV158_A1_PIPELINE_FLOW"
+    ],
+    "project_context": "It is required for time-consuming tasks such as creating KG node_pass shards or large-capacity cards."
+  },
+  {
+    "id": "PY46_L06_checkpoint_file_001",
+    "level": 6,
+    "title": "Reading the checkpoint file",
+    "concepts": [
+      "checkpoint",
+      "state_file",
+      "progress"
+    ],
+    "reading_goal": "Understand the concept of a checkpoint, which saves the progress of a task to a file.",
+    "code": "checkpoint.json\n{\n  \"last_done\": \"shard_0042\",\n  \"updated_at\": \"2026-05-31\"\n}",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of a checkpoint file?",
+    "choices": [
+      "Record how far you've gotten in your work",
+      "Delete all results",
+      "Create a GitHub account",
+      "Clear the browser cache"
+    ],
+    "answer": "Record how far you've gotten in your work",
+    "explanation": "If a checkpoint exists, the process can resume from the checkpoint rather than starting from the beginning. A checkpoint file is a file that saves the progress of a long task. When the process restarts, it reads this file to skip the parts that have already been completed and continue from the remaining work. Therefore, the correct answer is “It records how far the task has progressed.”",
+    "side_card_ids": [
+      "PYV159_A1_LEARNING_UX_FLOW",
+      "PYV159_A1_CHECKPOINT_RESUME_FLOW"
+    ],
+    "project_context": "If you keep track of the shard range, the number of completed operations, and the last processed ID, recovery after a failure will be easier."
+  },
+  {
+    "id": "PY46_L07_done_marker_001",
+    "level": 7,
+    "title": "Read the \"done\" marker",
+    "concepts": [
+      "done_marker",
+      "completion_flag",
+      "job_status"
+    ],
+    "reading_goal": "Understand why a separate marker is used to indicate that a task is complete.",
+    "code": "output.jsonl\noutput.done",
+    "question_type": "meaning_choice",
+    "question": "Why is there a separate \"done\" marker like `output.done`?",
+    "choices": [
+      "To distinguish between the presence of an output file and successful completion,",
+      "To always hide the output file",
+      "To ensure that the task is marked as a failure without exception",
+      "To reduce the Git log"
+    ],
+    "answer": "To distinguish between the presence of an output file and successful completion,",
+    "explanation": "Even if a file exists, it may have been cut off partway through and only partially written, so it is safer to have a completion marker. A completion marker is a small file or record that indicates a specific task has been completed. It serves as a basis for safely skipping shards or items that have already been completed when the process is rerun. Therefore, the correct answer is “to distinguish between the existence of an output file and successful completion.”",
+    "side_card_ids": [
+      "PYV102_A7_ASYNC_CONCURRENCY",
+      "PYV102_A7_RESILIENCE_RECOVERY"
+    ],
+    "project_context": "If you assume the process is complete just because a `node_pass` output exists, you run the risk of a partial output."
+  },
+  {
+    "id": "PY46_L07_partial_output_001",
+    "level": 7,
+    "title": "Reading partial output",
+    "concepts": [
+      "partial_output",
+      "incomplete_file",
+      "crash"
+    ],
+    "reading_goal": "I understand that an output file that was cut off midway may appear to be a normal result.",
+    "code": "result.jsonl exists\nbut only 57 / 200 rows written",
+    "question_type": "meaning_choice",
+    "question": "Why is partial output dangerous?",
+    "choices": [
+      "This is because, even if the file exists, the results may not have been written to the end of the file.",
+      "Because the files are always too large",
+      "Because JSONL can never be validated",
+      "Because PowerShell cannot read it"
+    ],
+    "answer": "This is because, even if the file exists, the results may not have been written to the end of the file.",
+    "explanation": "A partial output is an output that was saved only partially because the process was interrupted. Since simply checking whether the file exists might lead one to mistakenly believe it is a complete file, the content must be verified. Storing a completion flag or a record of successful verification makes it easy to distinguish between intermediate and final outputs. Therefore, the correct answer is “Because even if the file exists, the results may not have been written to the end.”",
+    "side_card_ids": [
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
+      "PYV102_A7_RESILIENCE_RECOVERY"
+    ],
+    "project_context": "If an AWS or local shard stops in the middle, using only `output exists skip` may result in data being missed."
+  },
+  {
+    "id": "PY46_L07_output_exists_skip_risk_001",
+    "level": 7,
+    "title": "output exists skip dangerous read",
+    "concepts": [
+      "output_exists",
+      "skip_risk",
+      "validation"
+    ],
+    "reading_goal": "I understand the risks associated with a method that skips a file simply because it exists.",
+    "code": "if output_path.exists():\n    skip_job()  # risky",
+    "question_type": "meaning_choice",
+    "question": "Why is this \"skip\" method dangerous?",
+    "choices": [
+      "This is because you might mistake a corrupted output or a partial output for a completed one",
+      "Because it runs only when the file is missing",
+      "Because the Python syntax is incorrect",
+      "Because Git pushes are done automatically"
+    ],
+    "answer": "This is because you might mistake a corrupted output or a partial output for a completed one",
+    "explanation": "For safety, the skip condition should be based on passing validation or a \"done\" marker, rather than the existence of a file. \"Output exists skip\" refers to the risk of skipping a task simply because a result file exists. You must verify whether the file is a final version or a corrupted intermediate output. Therefore, the correct answer is “because corrupted or partial output could be mistaken for a completed result.”",
+    "side_card_ids": [
+      "PYV158_A1_VALIDATION_FLOW"
+    ],
+    "project_context": "This ties in with the issue we previously identified: \"You shouldn't skip this just because there's already an output.\""
+  },
+  {
+    "id": "PY46_L08_validate_before_done_001",
+    "level": 8,
+    "title": "Read \"Validate Before Marking as Done\"",
+    "concepts": [
+      "validation",
+      "done_marker",
+      "quality_gate"
+    ],
+    "reading_goal": "Understand why results must be verified before marking the task as complete.",
+    "code": "run_job()\nvalidate_output()\nwrite_done_marker()",
+    "question_type": "meaning_choice",
+    "question": "When is the safest time to use the \"done\" marker?",
+    "choices": [
+      "After the output verification is passed,",
+      "Before you begin",
+      "Before viewing the input file",
+      "Whenever I failed"
+    ],
+    "answer": "After the output verification is passed,",
+    "explanation": "\"Validate before done\" is the principle of verifying that the results are correct before marking the task as complete. Simply finishing the execution is different from completing the verification. Applying the \"done\" marker only after verification reduces the risk of mistaking a broken result for a successful one in the next run. Therefore, the correct answer is \"after the output has passed verification.\"",
+    "side_card_ids": [
+      "PYV158_A1_VALIDATION_FLOW"
+    ],
+    "project_context": "For the lesson card extension as well, I generated the JSON, verified that there were no duplicate IDs, answers, or side_card references, and then committed the changes."
+  },
+  {
+    "id": "PY46_L08_atomic_write_001",
+    "level": 8,
+    "title": "Atomic Write and Read",
+    "concepts": [
+      "atomic_write",
+      "temp_file",
+      "rename"
+    ],
+    "reading_goal": "Understand the pattern of writing to a temporary file first and then renaming it to the final filename after a successful operation.",
+    "code": "tmp = output.with_suffix('.tmp')\nwrite_result(tmp)\ntmp.replace(output)",
+    "question_type": "meaning_choice",
+    "question": "What are the advantages of the \"create a temp file, then rename it\" pattern?",
+    "choices": [
+      "Reduces the risk of a file that was interrupted midway being saved under the final output name",
+      "Always hide the file",
+      "makes verification impossible",
+      "It always causes Git conflicts."
+    ],
+    "answer": "Reduces the risk of a file that was interrupted midway being saved under the final output name",
+    "explanation": "If you do not create the final filename until the operation is successful, you can minimize the risk of partial output. An atomic write is a storage method in which data is first written to a temporary file and then replaced in the original file once the operation is complete. This helps reduce the problem of corrupted results left behind due to intermediate failures.",
+    "side_card_ids": [
+      "PYV102_A7_FILE_SAFE_WRITE",
+      "PYV102_A7_RESILIENCE_RECOVERY"
+    ],
+    "project_context": "This is a safe output pattern when writing large JSONL, manifest, and audit TSV files."
+  },
+  {
+    "id": "PY46_L08_idempotent_job_001",
+    "level": 8,
+    "title": "Reading an idempotent job",
+    "concepts": [
+      "idempotent",
+      "rerun_safe",
+      "automation"
+    ],
+    "reading_goal": "Understand the concept of idempotence, whereby repeating the same operation does not produce inconsistent results.",
+    "code": "upsert(item)\n# run once or twice -> final state is same",
+    "question_type": "meaning_choice",
+    "question": "What does \"idempotent job\" mean?",
+    "choices": [
+      "Even if it is run multiple times, the final state does not unnecessarily duplicate itself.",
+      "This means it can only be executed once",
+      "This means the results are always random.",
+      "It means you shouldn't verify it"
+    ],
+    "answer": "Even if it is run multiple times, the final state does not unnecessarily duplicate itself.",
+    "explanation": "Since automation can be re-run, you must prevent duplicate creation, duplicate links, and duplicate saves. An idempotent job is one designed so that even if the same task is run again, the results will not be unexpectedly duplicated. In restartable pipelines, you must ensure that items that have already been processed are skipped.",
+    "side_card_ids": [
+      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
+    ],
+    "project_context": "The \"already exists\" and \"already linked\" guards in scripts v41 through v45 serve as idempotent safeguards."
+  },
+  {
+    "id": "PY46_L08_retry_queue_001",
+    "level": 8,
+    "title": "Reading the retry queue",
+    "concepts": [
+      "retry_queue",
+      "failed_items",
+      "rerun"
+    ],
+    "reading_goal": "Understand the retry queue, which collects only the failed items and processes them again.",
+    "code": "if job_failed(item):\n    retry_queue.append(item_id)",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of the retry queue?",
+    "choices": [
+      "To rerun only the failed items",
+      "To delete a successful entry",
+      "In order to start over from scratch on every item, without exception",
+      "To automatically undo a Git commit"
+    ],
+    "answer": "To rerun only the failed items",
+    "explanation": "In a long pipeline, retrying only the failed items is less costly and time-consuming than re-running the entire pipeline. A retry queue is a list of failed tasks set aside for retries. You need to determine how many times to retry and what state to set the task to if it continues to fail.",
+    "side_card_ids": [
+      "PYV102_A7_ASYNC_CONCURRENCY",
+      "PYV102_A7_RESILIENCE_RECOVERY"
+    ],
+    "project_context": "Only the list of failures in node extraction, edge promotion, and lesson validation can be reprocessed."
+  },
+  {
+    "id": "PY46_L09_failed_only_rerun_001",
+    "level": 9,
+    "title": "Read \"Rerun only failed items\"",
+    "concepts": [
+      "failed_only_rerun",
+      "selective_retry",
+      "cost_saving"
+    ],
+    "reading_goal": "Understand the advantages of a method that re-runs only the failed items.",
+    "code": "failed_ids = load_failed_ids('audit.tsv')\nfor item_id in failed_ids:\n    rerun(item_id)",
+    "question_type": "meaning_choice",
+    "question": "What are the advantages of \"failed only rerun\"?",
+    "choices": [
+      "We reduce time and costs by not repeating tasks that have already been successfully completed",
+      "Hiding the cause of failure",
+      "Delete the verification log",
+      "It always creates more duplicates"
+    ],
+    "answer": "We reduce time and costs by not repeating tasks that have already been successfully completed",
+    "explanation": "If you have an `audit.tsv` file or a validation report, you can extract only the failed IDs and rerun them. “Failed items only rerun” is a method that selects and reruns only the failed items without rerunning the entire process. The list of failures must be accurate to minimize duplicate processing and omissions. Therefore, the correct answer is “It reduces time and costs by avoiding the repetition of successful tasks.”",
+    "side_card_ids": [
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
+      "PYV102_A7_RESILIENCE_RECOVERY"
+    ],
+    "project_context": "To save on AWS GPU costs or LLM call costs, it’s important to have a system that only reruns failed runs."
+  },
+  {
+    "id": "PY46_L09_shard_status_001",
+    "level": 9,
+    "title": "Read shard status",
+    "concepts": [
+      "shard",
+      "status",
+      "batch_job"
+    ],
+    "reading_goal": "Understand how to manage the progress of multiple shards using a table.",
+    "code": "shard_id | total | done | status\n0031     | 200   | 200  | DONE\n0067     | 200   | 154  | RUNNING",
+    "question_type": "meaning_choice",
+    "question": "Why do we need a shard status table?",
+    "choices": [
+      "To see at a glance which pieces are complete, in progress, or failed",
+      "To delete all shards",
+      "To prevent the use of the GPU",
+      "To change the file encoding"
+    ],
+    "answer": "To see at a glance which pieces are complete, in progress, or failed",
+    "explanation": "\"Shard status\" is a table that aggregates the progress status of tasks executed across shards. It is necessary for determining the overall progress, identifying failed segments, and pinpointing bottlenecks. If the status is broken down by shard—such as DONE, FAILED, and PENDING—you can calculate the remaining workload and identify which tasks need to be restarted.",
+    "side_card_ids": [
+      "CS_batch_shard_001",
+      "PYV102_A7_RESILIENCE_RECOVERY"
+    ],
+    "project_context": "This ties in with the method used to manage the progress of shards 0031 through 0100 in AWS node_pass."
+  },
+  {
+    "id": "PY46_L09_progress_log_001",
+    "level": 9,
+    "title": "Read the progress log",
+    "concepts": [
+      "progress_log",
+      "observability",
+      "long_running_job"
+    ],
+    "reading_goal": "I understand why it's important to keep a progress log for tasks that take a long time.",
+    "code": "print(f'DONE {done}/{total} shard={shard_id}')",
+    "question_type": "meaning_choice",
+    "question": "Why is a progress log important?",
+    "choices": [
+      "Because it allows you to determine whether the task has stopped or is still in progress",
+      "Because the verification of results can be omitted",
+      "Because the speed is always getting faster",
+      "Because GitHub repositories are created automatically"
+    ],
+    "answer": "Because it allows you to determine whether the task has stopped or is still in progress",
+    "explanation": "A progress log is a record kept periodically to track the progress of a long-running task. Without a log, the task appears to have stalled, making it difficult to assess its status. It also allows you to identify the point where the task last succeeded when restarting it, serving as the basis for a resume-safe pipeline.",
+    "side_card_ids": [],
+    "project_context": "Log entries such as \"done,\" \"running_processes,\" and \"GPU util\" in the `node_pass status` message fall into this category."
+  },
+  {
+    "id": "PY46_L09_heartbeat_001",
+    "level": 9,
+    "title": "Reading the heartbeat",
+    "concepts": [
+      "heartbeat",
+      "liveness",
+      "watchdog"
+    ],
+    "reading_goal": "Understand the heartbeat, which periodically indicates that a process is still running.",
+    "code": "while running:\n    write_heartbeat(now())\n    sleep(60)",
+    "question_type": "meaning_choice",
+    "question": "What does \"heartbeat\" tell us?",
+    "choices": [
+      "Is the workflow still active?",
+      "Is the correct answer always right?",
+      "Is the file compressed?",
+      "Has the Git remote address changed?"
+    ],
+    "answer": "Is the workflow still active?",
+    "explanation": "If a heartbeat hasn't been updated for a long time, you can suspect that the job has either died or stalled. A heartbeat is a signal that a long-running job periodically sends to indicate it is still active. If a significant amount of time has passed since the last heartbeat, you can assume the job has stalled.",
+    "side_card_ids": [
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
+      "PYV102_A7_RESILIENCE_RECOVERY"
+    ],
+    "project_context": "This can be used to monitor the status when running LoRA/node_pass on a server for an extended period of time."
+  },
+  {
+    "id": "PY46_L10_crash_recovery_001",
+    "level": 10,
+    "title": "Read about crash recovery",
+    "concepts": [
+      "crash_recovery",
+      "restart",
+      "checkpoint"
+    ],
+    "reading_goal": "Understand the process of recovering from a program crash by verifying the checkpoint and output.",
+    "code": "on_start:\n  load checkpoint\n  scan outputs\n  validate done markers\n  resume pending jobs",
+    "question_type": "meaning_choice",
+    "question": "What should you do first during crash recovery?",
+    "choices": [
+      "Verify the checkpoint and the previous output state again.",
+      "Delete all results without exception",
+      "Mark as complete without verification",
+      "Let's start with a Git push"
+    ],
+    "answer": "Verify the checkpoint and the previous output state again.",
+    "explanation": "Crash recovery is a procedure for safely resuming processing after a task has been terminated prematurely. Before identifying the remaining tasks, you must first verify that the existing outputs are valid. By separating valid outputs from corrupted ones and re-executing only the remaining tasks, you can minimize duplicate processing.",
+    "side_card_ids": [
+      "PYV159_A1_CHECKPOINT_RESUME_FLOW"
+    ],
+    "project_context": "This routine checks for truncated shards, partial JSONL, and missing \"done\" markers."
+  },
+  {
+    "id": "PY46_L10_final_manifest_001",
+    "level": 10,
+    "title": "Reading the final manifest",
+    "concepts": [
+      "final_manifest",
+      "audit",
+      "reproducibility"
+    ],
+    "reading_goal": "Understand why the list of final deliverables and the verification results are recorded in a manifest.",
+    "code": "final_manifest.tsv\noutput_path\trows\tsha256\tstatus\tvalidated_at",
+    "question_type": "meaning_choice",
+    "question": "What are the benefits of having a final manifest?",
+    "choices": [
+      "You can double-check the path, size, and validation status of the final output.",
+      "Delete all temporary files without exception",
+      "It automatically ensures model performance",
+      "It can be submitted without verification."
+    ],
+    "answer": "You can double-check the path, size, and validation status of the final output.",
+    "explanation": "A manifest serves as a reference for reproducing the same results later or identifying missing files. A final manifest is the final list that organizes the result files and status after the task is complete. It can be used as a reference to verify which deliverables were created and passed validation.",
+    "side_card_ids": [
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
+      "PYV102_A7_RESILIENCE_RECOVERY"
+    ],
+    "project_context": "A final manifest is required when bundling KG pack, clean text, lesson files, and shard outputs."
+  },
+  {
+    "id": "PY46_L10_resume_safe_nodepass_001",
+    "level": 10,
+    "title": "Reading the \"resume-safe\" node_pass",
+    "concepts": [
+      "node_pass",
+      "resume_safe",
+      "shard_pipeline"
+    ],
+    "reading_goal": "Apply the \"resume-safe\" principle to actual long-running tasks, such as the KG node_pass.",
+    "code": "for shard in pending_shards:\n    run_node_pass(shard)\n    validate_jsonl(shard.output)\n    mark_done(shard)",
+    "question_type": "meaning_choice",
+    "question": "When should `mark_done` be called in the `resume-safe` `node_pass`?",
+    "choices": [
+      "After the jsonl output passes validation,",
+      "Before running shard",
+      "Immediately after creating the output file name",
+      "Before checking the GPU usage"
+    ],
+    "answer": "After the jsonl output passes validation,",
+    "explanation": "Since running models for long periods is costly, strict criteria for determining completion are necessary to minimize omissions and duplicates. The “resume-safe” node_pass is an execution flow designed to allow node processing to resume even after it has been interrupted. You must check both the completion files and the failure lists for each shard. Therefore, the correct answer is “after the jsonl output verification passes.”",
+    "side_card_ids": [
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
+      "PYV102_A7_RESILIENCE_RECOVERY"
+    ],
+    "project_context": "These are key habits for stabilizing the node extraction, node promotion, and edge promotion pipelines."
+  }
+]

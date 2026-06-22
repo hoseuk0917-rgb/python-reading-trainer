@@ -1,0 +1,469 @@
+[
+  {
+    "id": "PY17_L06_http_server_001",
+    "level": 6,
+    "title": "Reading Local Static Server Commands",
+    "concepts": [
+      "http_server",
+      "localhost",
+      "port",
+      "static_file"
+    ],
+    "reading_goal": "Understand what kind of server the `python -m http.server` command launches.",
+    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\npython -m http.server 8790 --bind 127.0.0.1",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of this command?",
+    "choices": [
+      "Delete GitHub Pages",
+      "Install the Python package",
+      "Opens the current folder as a local static server on port 8790",
+      "Merge JSON files"
+    ],
+    "answer": "Opens the current folder as a local static server on port 8790",
+    "explanation": "`python -m http.server` makes the current folder accessible via a web browser. The `--bind 127.0.0.1` option restricts access to the local machine only. This allows you to quickly check if there are any file path issues when testing a static PWA locally.",
+    "side_card_ids": [
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "This is the fixed local execution method I've included in `run_local_server.ps1`."
+  },
+  {
+    "id": "PY17_L06_localhost_vs_ip_001",
+    "level": 6,
+    "title": "Distinguishing Between \"localhost\" and Internal IP Addresses",
+    "concepts": [
+      "localhost",
+      "ip_address",
+      "network",
+      "mobile_test"
+    ],
+    "reading_goal": "Understand why the URLs are different between PC browsers and mobile browsers.",
+    "code": "# PC에서 보기\nhttp://localhost:8790/src/pwa/index.html\n\n# 폰에서 PC 서버 보기\nhttp://192.168.0.23:8790/src/pwa/index.html",
+    "question_type": "meaning_choice",
+    "question": "Why doesn't the \"localhost\" address usually work on a phone?",
+    "choices": [
+      "Port 8790 is always blocked, so",
+      "Since I can't open HTML on my phone,",
+      "Since \"localhost\" on a phone refers to the phone itself, not the PC,",
+      "Since Git isn't installed,"
+    ],
+    "answer": "Since \"localhost\" on a phone refers to the phone itself, not the PC,",
+    "explanation": "\"localhost\" refers to the device you're connecting from. To access a PC server from a phone, you need the PC's internal IP address. \"localhost\" refers to your own computer, while the internal IP address is used when accessing the PC from another device on the same network. You must use the appropriate address depending on what you're testing.",
+    "side_card_ids": [
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "This is a practical concept for distinguishing between GitHub Pages URLs and local test URLs."
+  },
+  {
+    "id": "PY17_L07_http_log_200_304_001",
+    "level": 7,
+    "title": "Reading Server Logs 200 and 304",
+    "concepts": [
+      "http_status",
+      "200",
+      "304",
+      "cache"
+    ],
+    "reading_goal": "Learn the difference between 200 and 304 in static server logs.",
+    "code": "127.0.0.1 - - [29/May/2026] \"GET /src/pwa/index.html HTTP/1.1\" 200 -\n127.0.0.1 - - [29/May/2026] \"GET /src/pwa/style.css HTTP/1.1\" 304 -",
+    "question_type": "meaning_choice",
+    "question": "What is 304 closest to?",
+    "choices": [
+      "A response stating that the file has been permanently deleted",
+      "A response indicating that the server is down",
+      "Responses indicating that it is acceptable to use the browser cache",
+      "A message stating that the password is incorrect"
+    ],
+    "answer": "Responses indicating that it is acceptable to use the browser cache",
+    "explanation": "A 200 indicates that a new file was received, while a 304 means that the previously received cached file is still valid. In server logs, a 200 indicates a successful response, and a 304 means the cached file can be used as is. Since neither of these is a failure, they must be distinguished from 404 and 500 errors.",
+    "side_card_ids": [
+      "PL_cache_001",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "Loading... This is used to determine whether index/app.js and style.css were actually reloaded when viewing the issue."
+  },
+  {
+    "id": "PY17_L07_query_cache_bust_001",
+    "level": 7,
+    "title": "Reading About Clearing the Query String Cache",
+    "concepts": [
+      "cache_bust",
+      "query_string",
+      "url",
+      "browser_cache"
+    ],
+    "reading_goal": "I understand why the \"?v=\" part at the end of a URL bypasses the cache.",
+    "code": "app.js?v=20260529_v16\nstyle.css?v=20260529_force1\nindex.html?sidefix=1",
+    "question_type": "meaning_choice",
+    "question": "What is the main reason for adding “?v=20260529_v16”?",
+    "choices": [
+      "To permanently change the file name",
+      "I want to compress JSON",
+      "To make the browser recognize it as a different URL from the previous file",
+      "I want to change the port"
+    ],
+    "answer": "To make the browser recognize it as a different URL from the previous file",
+    "explanation": "Query cache busting is a method of bypassing the browser cache by appending a version query to the end of a URL. If the value changes, the browser treats it as a new resource and makes a new request. Including the app version in the query can reduce the problem of users seeing outdated JS or JSON files after a deployment. Therefore, the correct answer is “to make the browser recognize it as a different URL from the previous file.”",
+    "side_card_ids": [
+      "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
+    ],
+    "project_context": "This ties in with my experience of using `force`, `restore`, and `sidefix` during the v15.1 recovery to work around cache issues."
+  },
+  {
+    "id": "PY17_L08_app_data_version_001",
+    "level": 8,
+    "title": "Reading the APP_DATA_VERSION Function",
+    "concepts": [
+      "cache_bust",
+      "function",
+      "string",
+      "fetch"
+    ],
+    "reading_goal": "Read the function that automatically appends a version to the data file fetch URL.",
+    "code": "const APP_DATA_VERSION = \"20260529_v16\";\nfunction withDataVersion(path) {\n  if (path.indexOf(\"?\") >= 0) return path + \"&v=\" + APP_DATA_VERSION;\n  return path + \"?v=\" + APP_DATA_VERSION;\n}",
+    "question_type": "meaning_choice",
+    "question": "APP_DATA_VERSION: Why does Cache Buster append \"&v=\" if the path already contains a \"?\"?",
+    "choices": [
+      "Just to throw an error all the time",
+      "To delete a file",
+      "Since the second and subsequent parameters in a URL must be separated by &,",
+      "To change the port"
+    ],
+    "answer": "Since the second and subsequent parameters in a URL must be separated by &,",
+    "explanation": "APP_DATA_VERSION is the version value appended to data file requests. The first query parameter begins with a ?, and additional parameters are appended using &. Since adding another “?” to a URL that already contains a query will break the format, new parameters are appended using “&”. Therefore, the result of the return/call is “because the second and subsequent parameters in the URL must be separated by ‘&’.”",
+    "side_card_ids": [
+      "PYV159_A1_FUNCTION_IO_FLOW"
+    ],
+    "project_context": "This is the current app structure, which forces the JSON for `lesson/side_card` to load the new version."
+  },
+  {
+    "id": "PY17_L08_fetch_log_sequence_001",
+    "level": 8,
+    "title": "Reading the fetch log in order",
+    "concepts": [
+      "fetch",
+      "json",
+      "static_server",
+      "debugging"
+    ],
+    "reading_goal": "Read the server logs to see which files the app requested and in what order.",
+    "code": "GET /src/pwa/index.html 200\nGET /src/pwa/app.js?v=20260529_force1 200\nGET /data/curriculum/curriculum_v1.json?v=20260529_v16 200\nGET /data/lessons/python_rag_kg_pipeline_review_v16.json?v=20260529_v16 200",
+    "question_type": "meaning_choice",
+    "question": "Was the v16 lesson file loaded in this log?",
+    "choices": [
+      "No, it's a 404.",
+      "Cannot be verified",
+      "Yes, the response was 200.",
+      "The browser closed."
+    ],
+    "answer": "Yes, the response was 200.",
+    "explanation": "The fetch log sequence shows which files the browser requested and in what order. If the JSON request returns a 200 status code, it means the server successfully served the file. By examining the request order, you can quickly narrow down whether loading has stalled on a specific file or if it’s a caching issue. Therefore, the correct answer is “Yes, it returned a 200 response.”",
+    "side_card_ids": [
+      "PYV158_A1_DEBUGGING_FLOW",
+      "PYV158_A1_JSON_FLOW"
+    ],
+    "project_context": "This is the method we used to verify that all lesson and side cards were set to 200 after applying v16."
+  },
+  {
+    "id": "PY17_L08_json_parse_check_001",
+    "level": 8,
+    "title": "Reading the JSON Parsing Validation Loop",
+    "concepts": [
+      "json",
+      "validation",
+      "try_except",
+      "powershell"
+    ],
+    "reading_goal": "Read the PowerShell workflow that opens multiple JSON files to verify whether they can be parsed.",
+    "code": "Get-ChildItem \".\\data\\lessons\" -File -Filter \"*.json\" | ForEach-Object {\n  try {\n    Get-Content $_.FullName -Raw -Encoding UTF8 | ConvertFrom-Json | Out-Null\n    \"OK  $($_.Name)\"\n  } catch {\n    \"BAD $($_.Name) :: $($_.Exception.Message)\"\n  }\n}",
+    "question_type": "meaning_choice",
+    "question": "If `ConvertFrom-Json` fails, which one runs?",
+    "choices": [
+      "Always prints \"OK\"",
+      "git push",
+      "catch block",
+      "Running the Server"
+    ],
+    "answer": "catch block",
+    "explanation": "The JSON parse check verifies whether a string is valid JSON. If a parsing error occurs within the `try` block, control flows to the `catch` block, which outputs a \"BAD\" message. Automating this validation prevents broken JSON files from making it through to the app loading stage. Therefore, the correct answer is “catch block.”",
+    "side_card_ids": [
+      "PYV158_A1_VALIDATION_FLOW",
+      "PYV158_A1_JSON_FLOW"
+    ],
+    "project_context": "This is a validation routine that checks the JSON first, as a corrupted JSON file could cause the app to stop loading."
+  },
+  {
+    "id": "PY17_L08_select_string_001",
+    "level": 8,
+    "title": "Finding a Code Location Using Select-String",
+    "concepts": [
+      "search",
+      "regex",
+      "powershell",
+      "debugging"
+    ],
+    "reading_goal": "Reads the command to search for function names or configuration names within a file.",
+    "code": "Select-String -Path \".\\src\\pwa\\app.js\" `\n  -Pattern \"APP_DATA_VERSION|lessonFiles|renderSideCards\" `\n  -Context 0,3",
+    "question_type": "meaning_choice",
+    "question": "-What does \"Context 0,3\" mean?",
+    "choices": [
+      "Search only these 3 files",
+      "Wait 3 seconds",
+      "Displays the three lines following the matching line together",
+      "Commit #3"
+    ],
+    "answer": "Displays the three lines following the matching line together",
+    "explanation": "Context is an option that displays the lines surrounding a search result. It shows the 0 lines before and 3 lines after the result. Select-String is a PowerShell command used to find a specific string within a file. It is useful for quickly checking code locations, version strings, and file references.",
+    "side_card_ids": [
+      "PYV158_A1_DEBUGGING_FLOW"
+    ],
+    "project_context": "I used it to locate the renderSideCards and identify the SWAP-IN replacement points."
+  },
+  {
+    "id": "PY17_L09_regex_replace_block_001",
+    "level": 9,
+    "title": "Reading and Replacing Regular Expression Blocks",
+    "concepts": [
+      "regex",
+      "replace",
+      "swap_in",
+      "function"
+    ],
+    "reading_goal": "Reads a pattern that uses a regular expression to find and replace an entire function.",
+    "code": "$pattern = '(?s)function renderSideCards\\(card\\) \\{[\\s\\S]*?\\r?\\n\\}\\r?\\n\\r?\\nfunction markSeen'\n$app = [regex]::Replace($app, $pattern, $newRenderSideCards + \"`r`n`r`nfunction markSeen\")",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of this code?",
+    "choices": [
+      "Delete all JSON",
+      "Changing the GitHub Pages URL",
+      "Find only the `renderSideCards` function and replace it with a new block",
+      "Open the server port"
+    ],
+    "answer": "Find only the `renderSideCards` function and replace it with a new block",
+    "explanation": "Find the section from the `function renderSideCards` function to just before the next `function markSeen` function, and replace it with a new function block. When using regular expressions to replace code blocks, if you don't specify the start and end boundaries precisely, other functions may be deleted as well.",
+    "side_card_ids": [
+      "PYV159_A1_FUNCTION_IO_FLOW"
+    ],
+    "project_context": "After failing earlier when I tried adding a watcher at the end of the entire `app.js` file, I switched to a safer approach of replacing it on a per-function basis."
+  },
+  {
+    "id": "PY17_L09_git_status_001",
+    "level": 9,
+    "title": "Reading the `git status` Output",
+    "concepts": [
+      "git",
+      "status",
+      "modified",
+      "untracked"
+    ],
+    "reading_goal": "It distinguishes between files that Git tracks and those it does not.",
+    "code": "Changes not staged for commit:\n        modified:   src/pwa/app.js\n\nUntracked files:\n        run_local_server.ps1",
+    "question_type": "meaning_choice",
+    "question": "What does it mean when \"run_local_server.ps1\" is marked as \"Untracked\"?",
+    "choices": [
+      "It has already been pushed to the remote.",
+      "The file was deleted.",
+      "This is a new file that Git hasn't tracked yet.",
+      "That's a Python syntax error."
+    ],
+    "answer": "This is a new file that Git hasn't tracked yet.",
+    "explanation": "`git status` shows the status of changes in the working directory. \"Untracked files\" are new files that Git does not yet track, so they cannot be committed until they are added.",
+    "side_card_ids": [
+      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
+    ],
+    "project_context": "I created a script, and you must read this when deciding whether to include it in a commit."
+  },
+  {
+    "id": "PY17_L09_git_add_commit_push_001",
+    "level": 9,
+    "title": "Understanding the git add/commit/push workflow",
+    "concepts": [
+      "git",
+      "commit",
+      "push",
+      "workflow"
+    ],
+    "reading_goal": "Read about the basic process for pushing local changes to a remote GitHub repository.",
+    "code": "git add src/pwa/app.js data/lessons/python_debug_logs_cache_git_v17.json\ngit commit -m \"Add debug log and cache reading cards\"\ngit push",
+    "question_type": "meaning_choice",
+    "question": "What is the role of `git add` in the commit/push workflow?",
+    "choices": [
+      "Delete the remote repository",
+      "Clear the browser cache",
+      "Stage the files to be included in the commit",
+      "Start the server"
+    ],
+    "answer": "Stage the files to be included in the commit",
+    "explanation": "Local changes are pushed to the remote repository in the following order: `git add` → `git commit` → `git push`. The `git add`, `commit`, and `push` workflow involves staging the changed files, committing them, and then sending them to the remote repository. These changes should be grouped into meaningful units after verification. Therefore, the correct answer is “Stage the files to be included in the commit.”",
+    "side_card_ids": [
+      "PYV103_ENV_GIT_STATUS_DIFF_ADD_COMMIT",
+      "PYV103_ENV_GIT_TAG_PUSH_PULL"
+    ],
+    "project_context": "This is a routine for establishing a stable point after each reinforcement."
+  },
+  {
+    "id": "PY17_L09_gitignore_reports_001",
+    "level": 9,
+    "title": "Adding \"reports\" to .gitignore",
+    "concepts": [
+      "gitignore",
+      "reports",
+      "untracked",
+      "git"
+    ],
+    "reading_goal": "Understand why the temporary output folder is excluded from Git tracking.",
+    "code": "Add-Content .gitignore \"`nreports/\"\ngit add .gitignore\ngit commit -m \"Ignore local reports directory\"",
+    "question_type": "meaning_choice",
+    "question": "Why is the \"reports/\" directory added to .gitignore?",
+    "choices": [
+      "To prevent the app from running",
+      "To delete the HTML",
+      "To avoid pushing local files, such as verification outputs, to Git",
+      "To secure the port"
+    ],
+    "answer": "To avoid pushing local files, such as verification outputs, to Git",
+    "explanation": ".gitignore is a file that lists patterns for files or folders that Git should ignore. It is used to exclude output folders, such as \"reports,\" from commits. Output files, such as validation reports, change every time the code is run and can clutter the repository history, so they are excluded.",
+    "side_card_ids": [
+      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
+    ],
+    "project_context": "This is the actual work I did to resolve the issue where \"reports/\" kept appearing as \"untracked.\""
+  },
+  {
+    "id": "PY17_L10_loading_stuck_debug_001",
+    "level": 10,
+    "title": "Loading... Reading the branch causing the freeze",
+    "concepts": [
+      "debugging",
+      "loading",
+      "fetch",
+      "browser_cache"
+    ],
+    "reading_goal": "Learn to categorize the causes of the app getting stuck in the \"Loading\" state based on the logs.",
+    "code": "if index_requested and not app_js_requested:\n    cause = \"HTML은 열렸지만 JS 로딩이 안 됨: 캐시/PWA/스크립트 태그 의심\"\nelif app_js_requested and data_json_failed:\n    cause = \"JS는 실행됐지만 데이터 JSON 로딩 실패\"\nelse:\n    cause = \"브라우저 콘솔 오류 확인 필요\"",
+    "question_type": "meaning_choice",
+    "question": "If only the index page is requested and there are no requests for app.js, what should you suspect first?",
+    "choices": [
+      "Duplicate IDs in all lesson JSON files",
+      "Deleting a GitHub Account",
+      "HTML Cache/PWA/Script Tag Issues",
+      "Python List Syntax"
+    ],
+    "answer": "HTML Cache/PWA/Script Tag Issues",
+    "explanation": "If there is no request for `app.js` in the server logs, you should check the HTML, cache, and browser first, rather than the data files. If the loading process stops, check the following in order: console errors, Network 404 errors, JSON parsing failures, and cache versions. It’s important to get into the habit of identifying where the process has stalled.",
+    "side_card_ids": [
+      "PYV158_A1_DEBUGGING_FLOW"
+    ],
+    "project_context": "After the v15.1 test, when \"Loading...\" got stuck, only the index log was recorded, so I bypassed the cache."
+  },
+  {
+    "id": "PY17_L10_side_card_field_bug_001",
+    "level": 10,
+    "title": "Reading the \"Side Card Field Mismatch\" Bug",
+    "concepts": [
+      "field_mismatch",
+      "rendering",
+      "summary",
+      "detail"
+    ],
+    "reading_goal": "I'm reading about a bug where field names don't match—the data exists, but it doesn't appear on the screen.",
+    "code": "const body = document.createElement(\"div\");\nbody.className = \"side-card-body\";\nbody.textContent = sc.body;",
+    "question_type": "meaning_choice",
+    "question": "If the side card data focuses on summary and detail, what is the problem with this code?",
+    "choices": [
+      "Always automatically display all fields on the screen",
+      "An issue occurs that immediately terminates the server",
+      "Since only `sc.body` is read, the `summary` and `detail` elements may not appear on the screen.",
+      "Automatically modifies and saves the JSON file"
+    ],
+    "answer": "Since only `sc.body` is read, the `summary` and `detail` elements may not appear on the screen.",
+    "explanation": "A \"side card field bug\" occurs when the data field name and the rendering code do not match. Even if the value is present in the JSON, it will not be displayed if the screen code reads a different name. Therefore, the correct answer is, \"Since only `sc.body` is read, `summary` and `detail` may not appear on the screen.\"",
+    "side_card_ids": [
+      "PYV102_A9_RUNTIME_PERFORMANCE_LIST",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "The \"Sensor Fusion/State Estimation\" card—which was only visible by its title—is the actual cause."
+  },
+  {
+    "id": "PY17_L10_safe_render_fallback_001",
+    "level": 10,
+    "title": "Reading the Rendering Fallback Function",
+    "concepts": [
+      "fallback",
+      "rendering",
+      "or",
+      "side_card"
+    ],
+    "reading_goal": "Read the code that selects values in order from among several candidate fields.",
+    "code": "function getSideText(sc) {\n  return sc.body || sc.summary || sc.description || \"\";\n}",
+    "question_type": "meaning_choice",
+    "question": "When does this function use `sc.summary`?",
+    "choices": [
+      "When `sc.body` is always present",
+      "When the \"description\" comes first",
+      "When sc.body is empty and sc.summary is present",
+      "When all values are empty"
+    ],
+    "answer": "When sc.body is empty and sc.summary is present",
+    "explanation": "|| evaluates the value on the right if the value on the left is empty. If there is no `body`, `summary` is used as a fallback. The rendering fallback function is defensive code that prevents the screen from freezing completely even if data is missing or partially corrupted. It requires handling of default text and empty lists.",
+    "side_card_ids": [
+      "PYV102_A9_RUNTIME_PERFORMANCE_LIST",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "This is the core pattern used in the v15.2 side card rendering fix."
+  },
+  {
+    "id": "PY17_L10_pwa_deploy_address_001",
+    "level": 10,
+    "title": "Distinguishing Between GitHub Pages URLs and Local URLs",
+    "concepts": [
+      "github_pages",
+      "local_server",
+      "deployment",
+      "url"
+    ],
+    "reading_goal": "Understand why the public deployment URL and the local test URL are different.",
+    "code": "# 공개 배포 주소: push 후에도 주소는 고정\nhttps://hoseuk0917-rgb.github.io/python-reading-trainer/\n\n# 로컬 테스트 주소: 내 PC에서만 실행\nhttp://localhost:8790/src/pwa/index.html",
+    "question_type": "meaning_choice",
+    "question": "Does the GitHub Pages URL change every time I push?",
+    "choices": [
+      "Yes, the URL changes completely with every commit.",
+      "It only exists when the local server is running",
+      "No, the Pages repository URL remains the same; only the content is updated.",
+      "It is always the same as localhost"
+    ],
+    "answer": "No, the Pages repository URL remains the same; only the content is updated.",
+    "explanation": "The public URL for GitHub Pages is fixed; only the contents of the files deployed after a push are updated. The GitHub Pages URL and the local URL represent different deployment environments. Even if the local response is a 200, the Pages path and cache may differ, so you must check them separately.",
+    "side_card_ids": [
+      "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
+    ],
+    "project_context": "I've decided to use the GitHub Pages URL on my phone and the local server URL when developing on my PC."
+  },
+  {
+    "id": "PY17_L10_service_recovery_habit_001",
+    "level": 10,
+    "title": "Reading About Recovery Habits After an Experimental Patch",
+    "concepts": [
+      "rollback",
+      "recovery",
+      "commit",
+      "debugging"
+    ],
+    "reading_goal": "Understand the procedure for establishing a stable point when an experimental patch fails.",
+    "code": "# 1. 실험 블록 제거\n# 2. 캐시 버전 올림\n# 3. JSON parse와 lessonFiles 확인\n# 4. 로컬 서버에서 200 로그 확인\n# 5. 정상 상태 커밋",
+    "question_type": "order_choice",
+    "question": "What should you do first if an experimental patch causes the app to fail to load?",
+    "choices": [
+      "Just adding new features indiscriminately",
+      "Delete all lesson files",
+      "Remove the test block and restore normal loading.",
+      "Changing the GitHub Pages URL"
+    ],
+    "answer": "Remove the test block and restore normal loading.",
+    "explanation": "Before expanding functionality, you must first restore the system to its normal state, and then reapply the patch to the correct location. The practice of restoring the system after an experimental patch ensures that you know the state before the change and can revert it if verification fails. Checking `git status` and reviewing the most recent commit is essential.",
+    "side_card_ids": [
+      "PYV158_A1_DEBUGGING_FLOW"
+    ],
+    "project_context": "This is the workflow where a recovery commit was created after the v15.1 failure, and v15.2 was reapplied on a per-function basis."
+  }
+]

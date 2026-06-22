@@ -1,0 +1,70 @@
+[
+  {
+    "id": "PYV127_A1_SUFFIX_DISPATCH",
+    "title": "Grouping Handlers by File Extension",
+    "body": "By checking `Path.suffix`, you can determine whether the input file is a .json or a .csv file. Thanks to this branching logic, you can clearly define the processing flow: JSON is read using `json.loads`, and CSV is read using `csv.DictReader`.",
+    "detail": "The file-processing CLI cannot read all input in the same way. JSON is a structured string, while CSV is a table format with rows and columns. Therefore, if you first check `input_path.suffix` and use different functions—such as `load_json()` for `.json` and `load_csv()` for `.csv`—the code becomes easier to read. For unsupported file extensions, returning a SystemExit with a clear error message allows users to quickly identify the problem.",
+    "examples": [
+      "if input_path.suffix == '.json': data = load_json(input_path)",
+      "elif input_path.suffix == '.csv': data = load_csv(input_path)"
+    ],
+    "related_concepts": [
+      "Path.suffix",
+      "dispatch",
+      "JSON",
+      "CSV",
+      "SystemExit"
+    ]
+  },
+  {
+    "id": "PYV127_A1_JSON_READ_WRITE",
+    "title": "Reading and Writing JSON",
+    "body": "You can read a string from a JSON file using `read_text()` and convert it to Python data using `json.loads()`. Conversely, when saving the result, you can convert Python data to a JSON string using `json.dumps()`.",
+    "detail": "It’s easy to understand the JSON processing flow as a process that moves back and forth between strings and Python data. `input_path.read_text(encoding='utf-8')` reads the file contents as a string, and `json.loads(text)` converts that string into a dictionary or list. To save the processed results, use `json.dumps(data, ensure_ascii=False, indent=2)` to create a human-readable JSON string, then save it using `write_text()`. If the data contains Korean characters, using `ensure_ascii=False` makes the output easier to read.",
+    "examples": [
+      "data = json.loads(input_path.read_text(encoding='utf-8'))",
+      "output_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')"
+    ],
+    "related_concepts": [
+      "json.loads",
+      "json.dumps",
+      "ensure_ascii",
+      "read_text",
+      "write_text"
+    ]
+  },
+  {
+    "id": "PYV127_A1_CSV_DICTREADER_WRITER",
+    "title": "CSV DictReader and DictWriter",
+    "body": "csv.DictReader allows you to read CSV rows as a dictionary organized by column names. csv.DictWriter is used to save a list of dictionaries back to CSV, and you use `fieldnames` to specify the column names and their order.",
+    "detail": "If the first line of a CSV file is a header, beginners will find it easier to read the file using `DictReader`. This is because each row can be accessed by its column name, such as `row['name']`. When saving, use `DictWriter` and specify the column names in `fieldnames`. `writeheader()` writes the header row, and `writerows(rows)` saves multiple rows. It’s also a good idea to learn how to use `newline=''` and `encoding='utf-8'` together to handle CSV files safely.",
+    "examples": [
+      "rows = list(csv.DictReader(f))",
+      "writer = csv.DictWriter(f, fieldnames=['name', 'score'])"
+    ],
+    "related_concepts": [
+      "csv.DictReader",
+      "csv.DictWriter",
+      "fieldnames",
+      "writeheader",
+      "writerows"
+    ]
+  },
+  {
+    "id": "PYV127_A1_SUMMARY_OUTPUT",
+    "title": "Creating a Data Summary",
+    "body": "File-processing CLIs often generate summary results—such as the number of rows, a list of columns, a list of keys, and the number of errors—rather than simply copying the original data. If you store the summary in a dictionary, it’s easy to use for both saving as JSON and displaying on the screen.",
+    "detail": "For example, if you’ve read a CSV file, you can store the number of rows and a list of columns in a `summary` dictionary. If the JSON is a list, you can count the number of items; if it’s a dictionary, you can create a list of keys. A summary created this way is easy to save using `json.dumps()` and can be easily expanded into logs or reports later. The key point is to separate reading, processing, and saving—rather than mixing them all into a single line—by using a function like `make_summary()`.",
+    "examples": [
+      "summary = {'rows': len(rows), 'columns': list(rows[0].keys())}",
+      "summary = {'type': type(data).__name__, 'count': len(data)}"
+    ],
+    "related_concepts": [
+      "summary",
+      "dict",
+      "len",
+      "columns",
+      "json.dumps"
+    ]
+  }
+]

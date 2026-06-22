@@ -1,0 +1,399 @@
+[
+  {
+    "id": "PY25_L07_logging_basic_001",
+    "level": 7,
+    "title": "Reading the Default Logging Level",
+    "concepts": [
+      "logging",
+      "info",
+      "warning",
+      "error"
+    ],
+    "reading_goal": "Read the code that logs operational messages at the logging level instead of using `print`.",
+    "code": "import logging\n\nlogging.basicConfig(level=logging.INFO)\nlogging.info(\"harvest started\")\nlogging.warning(\"source returned empty feed\")\nlogging.error(\"curation failed\")",
+    "question_type": "meaning_choice",
+    "question": "Which of the following best matches the meaning of \"warning\" in the log?",
+    "choices": [
+      "Not an immediate concern, but a situation that requires caution",
+      "Always Success",
+      "Detailed Values for Debugging Only",
+      "Command to Install the Program"
+    ],
+    "answer": "Not an immediate concern, but a situation that requires caution",
+    "explanation": "\"INFO\" indicates normal flow, \"WARNING\" indicates a cautionary state, and \"ERROR\" indicates a failure. Logging is a method of recording events that occur during execution. Categorizing logs by severity level—such as debug, info, warning, and error—makes it easier to identify the root cause of a problem. Therefore, the return/call result represents a \"state that does not require immediate termination but does require attention.\"",
+    "side_card_ids": [],
+    "project_context": "When reading the status of collection, curation, and learning batches, it is important to distinguish between log levels."
+  },
+  {
+    "id": "PY25_L07_try_except_log_001",
+    "level": 7,
+    "title": "Reading try/except logs",
+    "concepts": [
+      "try_except",
+      "logging",
+      "error_handling"
+    ],
+    "reading_goal": "Understand the structure for logging and rethrowing errors when an exception occurs.",
+    "code": "try:\n    run_job()\nexcept Exception as e:\n    logging.error(\"job failed: %s\", e)\n    raise",
+    "question_type": "meaning_choice",
+    "question": "Why rewrite `raise`?",
+    "choices": [
+      "To record the error and report the failure to higher-ups,",
+      "To completely hide the error",
+      "To ensure success every time",
+      "To delete the log files"
+    ],
+    "answer": "To record the error and report the failure to higher-ups,",
+    "explanation": "If you simply log the error in the `except` block and exit, the failure may be hidden. `raise` re-throws the exception. Logging in a `try/except` block is a way to record the cause and location of an exception when it occurs. Instead of simply hiding the error, you should log which input and at which step the failure occurred. Therefore, the correct answer is “to log the error and then propagate the failure to the parent block.”",
+    "side_card_ids": [
+      "DEV_logging_001",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "This is a basic pattern that prevents you from quietly ignoring deployment failures."
+  },
+  {
+    "id": "PY25_L08_traceback_reading_001",
+    "level": 8,
+    "title": "Reading traceback line numbers",
+    "concepts": [
+      "traceback",
+      "debugging",
+      "line_number"
+    ],
+    "reading_goal": "Learn how to locate the filename and line number in the error log and navigate to the source of the problem.",
+    "code": "Traceback (most recent call last):\n  File \"jobs/curate.py\", line 42, in run_curate\n    rows = load_items()\n  File \"jobs/curate.py\", line 18, in load_items\n    return json.loads(raw)\njson.decoder.JSONDecodeError: Expecting value",
+    "question_type": "meaning_choice",
+    "question": "Where exactly did the error occur?",
+    "choices": [
+      "json.loads(raw) on line 18 of jobs/curate.py",
+      "The function definition on line 42 of jobs/curate.py",
+      "Location of the import statement on the very first line of the file",
+      "Where to Configure the GitHub Pages URL"
+    ],
+    "answer": "json.loads(raw) on line 18 of jobs/curate.py",
+    "explanation": "The further down the traceback you go, the closer you are to the actual location where the exception occurred. A traceback is a log that shows where an error originated and which functions it passed through before occurring. Start by checking the error message, filename, and line number at the very bottom. Therefore, the return/call result is “json.loads(raw) at line 18 of jobs/curate.py.”",
+    "side_card_ids": [
+      "PYV158_A1_DEBUGGING_FLOW"
+    ],
+    "project_context": "This exercise involves identifying the line of code causing the error in the pasted error log."
+  },
+  {
+    "id": "PY25_L08_structured_log_001",
+    "level": 8,
+    "title": "Reading About Structured Logging",
+    "concepts": [
+      "structured_logging",
+      "json_log",
+      "run_id"
+    ],
+    "reading_goal": "Understand the structure that stores state in a key-value format instead of as string logs.",
+    "code": "log = {\n    \"event\": \"curate_done\",\n    \"run_id\": run_id,\n    \"items_seen\": 120,\n    \"items_written\": 20,\n}\nprint(json.dumps(log, ensure_ascii=False))",
+    "question_type": "meaning_choice",
+    "question": "Which of the following best describes the advantages of a structured log?",
+    "choices": [
+      "This makes it easy to search later using fields like event/run_id/items_written",
+      "It's always written in a way that makes it hard for people to read.",
+      "This feature automatically deletes files.",
+      "This method completes the entire authentication process without using a database."
+    ],
+    "answer": "This makes it easy to search later using fields like event/run_id/items_written",
+    "explanation": "A structured log is a log recorded in a key-value format. It is easier to filter, aggregate, and search than simple string logs, making it ideal for analyzing operational status. By including fields such as `run_id`, `card_id`, and `status`, you can select and analyze specific runs or cards.",
+    "side_card_ids": [
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "It is linked to the run_id, stats, and status summary of home-curator."
+  },
+  {
+    "id": "PY25_L08_run_id_trace_001",
+    "level": 8,
+    "title": "Reading the run_id",
+    "concepts": [
+      "run_id",
+      "trace",
+      "pipeline",
+      "audit"
+    ],
+    "reading_goal": "Understand the structure that links multiple levels of logs by grouping them under a single run_id.",
+    "code": "run_id = \"run_20260529_001\"\nlogging.info(\"start harvest run_id=%s\", run_id)\nitems = harvest(run_id=run_id)\nlogging.info(\"finish harvest run_id=%s count=%s\", run_id, len(items))",
+    "question_type": "meaning_choice",
+    "question": "Why is `run_id` included in multiple logs?",
+    "choices": [
+      "To group logs from the same execution for later reference",
+      "To ensure that the execution fails without fail",
+      "To delete a card ID",
+      "To clear your browser cache"
+    ],
+    "answer": "To group logs from the same execution for later reference",
+    "explanation": "As pipelines get longer, having a `run_id` makes it easier to track the input, processing, and output of a given execution. `run_id` tracking is a method of grouping the flow of a single execution under a single identifier. It is useful for linking multiple logs to determine whether they originated from the same task.",
+    "side_card_ids": [
+      "PYV158_A1_PIPELINE_FLOW"
+    ],
+    "project_context": "It is linked to the audit logs for the collection→refinement→curation→serving process."
+  },
+  {
+    "id": "PY25_L09_retry_backoff_001",
+    "level": 9,
+    "title": "Reading the retry/backoff loop",
+    "concepts": [
+      "retry",
+      "backoff",
+      "timeout",
+      "resilience"
+    ],
+    "reading_goal": "I'm reading some code that waits briefly and then retries in the event of a temporary failure.",
+    "code": "import time\n\nfor attempt in range(3):\n    try:\n        return call_api()\n    except TimeoutError:\n        wait = 2 ** attempt\n        time.sleep(wait)\nraise RuntimeError(\"api failed after retries\")",
+    "question_type": "meaning_choice",
+    "question": "When `attempt` is 2, what is the value of `wait`?",
+    "choices": [
+      "4",
+      "2",
+      "3",
+      "8"
+    ],
+    "answer": "4",
+    "explanation": "Retry backoff is a method in which a failed request is not retried immediately, but rather after waiting for progressively longer intervals. This reduces the load on the server during temporary outages. As the wait time increases with each attempt, the system can recover more reliably when temporary network or API limitations occur. Therefore, the return/call result is “4.”",
+    "side_card_ids": [
+      "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
+    ],
+    "project_context": "This pattern is used when external APIs, RSS feeds, model calls, or GitHub calls temporarily fail."
+  },
+  {
+    "id": "PY25_L09_timeout_guard_001",
+    "level": 9,
+    "title": "Reading the timeout protection code",
+    "concepts": [
+      "timeout",
+      "requests",
+      "network",
+      "ops"
+    ],
+    "reading_goal": "I am reading about a structure that sets a timeout to prevent network requests from waiting indefinitely.",
+    "code": "import requests\n\nresponse = requests.get(url, timeout=10)\nresponse.raise_for_status()",
+    "question_type": "meaning_choice",
+    "question": "What does \"timeout=10\" mean in a timeout guard?",
+    "choices": [
+      "Set a limit so you don't have to wait too long for a response",
+      "10. Be sure to try again.",
+      "Delete 10 files",
+      "Always set the status code to 10"
+    ],
+    "answer": "Set a limit so you don't have to wait too long for a response",
+    "explanation": "A timeout guard is a mechanism that sets a time limit to prevent external requests or tasks from stalling for too long. It reduces overall task congestion when network issues arise. Without a timeout, if one request stalls, subsequent batches or screen flows may also be blocked.",
+    "side_card_ids": [
+      "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
+    ],
+    "project_context": "This is the default defense mechanism in collector/validator/external API call code."
+  },
+  {
+    "id": "PY25_L09_health_check_001",
+    "level": 9,
+    "title": "Reading the health check endpoint",
+    "concepts": [
+      "health_check",
+      "api",
+      "monitoring"
+    ],
+    "reading_goal": "Understand the endpoint for quickly checking if the server is up.",
+    "code": "@app.get(\"/health\")\ndef health():\n    return {\"ok\": True, \"version\": APP_VERSION}",
+    "question_type": "meaning_choice",
+    "question": "/What is the main purpose of the health endpoint?",
+    "choices": [
+      "Quickly check the server's current status",
+      "Delete all data from the database",
+      "Prints the user's password",
+      "Perform a Git push"
+    ],
+    "answer": "Quickly check the server's current status",
+    "explanation": "A health check is a simple API that verifies whether a server is responsive during deployment or operation. A health check endpoint is an address used to quickly verify whether a service is active. It is important to distinguish whether it simply checks for a 200 response or also verifies database and external connections.",
+    "side_card_ids": [
+      "PYV158_A1_API_FLOW"
+    ],
+    "project_context": "This is a good way to test things out after launching a FastAPI search API or serving API."
+  },
+  {
+    "id": "PY25_L09_metrics_counter_001",
+    "level": 9,
+    "title": "Reading the metrics counter",
+    "concepts": [
+      "metrics",
+      "counter",
+      "monitoring",
+      "requests"
+    ],
+    "reading_goal": "Read the basic structure for counting the number of requests and failures.",
+    "code": "metrics = {\"requests\": 0, \"errors\": 0}\n\ndef handle_request():\n    metrics[\"requests\"] += 1\n    try:\n        return run()\n    except Exception:\n        metrics[\"errors\"] += 1\n        raise",
+    "question_type": "meaning_choice",
+    "question": "What happens to `errors` if an exception occurs in `run()`?",
+    "choices": [
+      "1 increases",
+      "It is initialized to 0",
+      "The number of requests is decreasing",
+      "It never changes"
+    ],
+    "answer": "1 increases",
+    "explanation": "A metrics counter is a metric that tracks the cumulative number of events—such as successes, failures, and errors—to monitor operational status. Raising `errors` within an `except` block makes it easier to track failures. Therefore, the return/call result is “increased by 1.”",
+    "side_card_ids": [],
+    "project_context": "This is the most basic way to track request volume, error rate, and failure rate."
+  },
+  {
+    "id": "PY25_L10_alert_condition_001",
+    "level": 10,
+    "title": "Reading the alert condition",
+    "concepts": [
+      "alert",
+      "error_rate",
+      "monitoring"
+    ],
+    "reading_goal": "Reads the conditions under which a notification is triggered when the error rate exceeds the threshold.",
+    "code": "error_rate = errors / max(total_requests, 1)\nif error_rate > 0.05:\n    send_alert(f\"high error rate: {error_rate:.2%}\")",
+    "question_type": "meaning_choice",
+    "question": "Why use `max(total_requests, 1)` when `total_requests` is 0?",
+    "choices": [
+      "To avoid a division-by-zero error",
+      "To ensure the error rate is always 100%",
+      "To turn off notifications completely",
+      "To delete the number of requests"
+    ],
+    "answer": "To avoid a division-by-zero error",
+    "explanation": "An \"alert condition\" is a criterion for determining whether a situation is problematic based on numerical values. If you implement safeguards to prevent the denominator from becoming zero, you can calculate the ratio without errors. When calculating operational metrics, exceptions such as division by zero can lead to service outages, so safeguards are necessary. Therefore, the correct answer is “to avoid division-by-zero errors.”",
+    "side_card_ids": [
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "This is the basic approach to monitoring error rates in serving APIs or collection batches."
+  },
+  {
+    "id": "PY25_L10_audit_log_001",
+    "level": 10,
+    "title": "Reading the audit log",
+    "concepts": [
+      "audit_log",
+      "security",
+      "traceability",
+      "database"
+    ],
+    "reading_goal": "Understand the structure of an audit log that records who performed which important tasks.",
+    "code": "def write_audit(user_id, action, target_id):\n    repo.insert_audit_log({\n        \"user_id\": user_id,\n        \"action\": action,\n        \"target_id\": target_id,\n        \"created_at\": now_iso(),\n    })",
+    "question_type": "meaning_choice",
+    "question": "Which of the following best reflects the purpose of an audit log?",
+    "choices": [
+      "To track the subject, action, and object of important tasks",
+      "To allow all logins",
+      "To force the cache to be retained",
+      "To compress JSON"
+    ],
+    "answer": "To track the subject, action, and object of important tasks",
+    "explanation": "An audit log is a record that documents who performed what action and when. It is necessary for identifying the cause and scope of responsibility in the event of security incidents, operational issues, and post-incident analysis. Recording the run_id, user, action type, and result makes it easier to track the same incident later. Therefore, the correct answer is “to track the actor, action, and target of critical operations.”",
+    "side_card_ids": [
+      "PYV158_A1_DATABASE_FLOW"
+    ],
+    "project_context": "It is linked to the management of private assets, API keys, and the history of prompt and scoring changes."
+  },
+  {
+    "id": "PY25_L10_stale_job_reaper_001",
+    "level": 10,
+    "title": "Read \"Stale Job Reaper\"",
+    "concepts": [
+      "stale_job",
+      "reaper",
+      "cron",
+      "run_status"
+    ],
+    "reading_goal": "I am reading the operational code that resolves tasks that have remained in the \"running\" state for a long time as errors.",
+    "code": "def reap_stale_runs(db, cutoff_time):\n    db.execute(\"\"\"\n        UPDATE runs\n        SET status = 'error', error_message = 'stale run reaped'\n        WHERE status = 'running' AND started_at < ?\n    \"\"\", (cutoff_time,))",
+    "question_type": "meaning_choice",
+    "question": "Which runs does this code clean up?",
+    "choices": [
+      "Runs that have remained in the \"running\" state for a long time",
+      "All successful runs",
+      "Files that haven't been started yet",
+      "All items"
+    ],
+    "answer": "Runs that have remained in the \"running\" state for a long time",
+    "explanation": "If a job terminates prematurely, it may remain in the \"running\" state, so it is cleared based on a cutoff criterion. The \"stale job reaper\" is a mechanism that identifies jobs that have been paused for an extended period and marks them as failed or expired. You need to verify the cutoff time and determine which status the job is changed to.",
+    "side_card_ids": [
+      "PL_cron_001",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "home-curator D1 is directly linked to the table reaper logic."
+  },
+  {
+    "id": "PY25_L10_cron_log_001",
+    "level": 10,
+    "title": "Reading the worker cron log",
+    "concepts": [
+      "cron",
+      "worker",
+      "scheduled_job",
+      "log"
+    ],
+    "reading_goal": "Read the structure that allows you to check the logs to see which tasks the scheduler executed and when.",
+    "code": "export default {\n  async scheduled(event, env, ctx) {\n    console.log(\"cron fired\", event.cron)\n    ctx.waitUntil(runCurate(env))\n  }\n}",
+    "question_type": "meaning_choice",
+    "question": "Which of the following best describes the meaning of `ctx.waitUntil(runCurate(env))`?",
+    "choices": [
+      "Register an asynchronous task in a schedule event so that it runs to completion",
+      "Delete the cron schedule",
+      "Hide all log output",
+      "Restore the DB table to its initial state"
+    ],
+    "answer": "Register an asynchronous task in a schedule event so that it runs to completion",
+    "explanation": "This is a pattern used when passing asynchronous tasks to a Cloudflare Workers scheduled handler. The worker cron log shows when the scheduled job started and ended, as well as how many items were processed. It’s easier to track issues if the failure time and job name are recorded together.",
+    "side_card_ids": [],
+    "project_context": "This ties in with the workflow of checking cron execution logs using `wrangler tail`."
+  },
+  {
+    "id": "PY25_L10_cost_quota_monitor_001",
+    "level": 10,
+    "title": "Reading Cost/Quota Monitoring Code",
+    "concepts": [
+      "quota",
+      "cost",
+      "rate_limit",
+      "monitoring"
+    ],
+    "reading_goal": "I'm reading the code that issues a warning when usage approaches the budget or limit.",
+    "code": "usage_ratio = used_credits / max(total_credits, 1)\nif usage_ratio > 0.8:\n    logging.warning(\"credit usage high: %.1f%%\", usage_ratio * 100)",
+    "question_type": "meaning_choice",
+    "question": "If the usage_ratio is 0.85, what kind of log is generated?",
+    "choices": [
+      "Warning log",
+      "\"debug\" only",
+      "No logs",
+      "Always an error"
+    ],
+    "answer": "Warning log",
+    "explanation": "A cost quota monitor is a tool that tracks whether usage or costs are approaching a set limit. If the ratio exceeds the threshold, it displays a warning to prevent excessive charges. By logging these warnings, you can adjust the model, batch size, and number of runs before exceeding the limit.",
+    "side_card_ids": [],
+    "project_context": "These are operational practices for safely using AWS credits, LLM API usage, and free quotas."
+  },
+  {
+    "id": "PY25_L10_incident_summary_001",
+    "level": 10,
+    "title": "Reading a Fault Summary Object",
+    "concepts": [
+      "incident",
+      "summary",
+      "ops",
+      "postmortem"
+    ],
+    "reading_goal": "Understand the method of structuring the cause, impact, action, and next steps when a problem arises.",
+    "code": "incident = {\n    \"symptom\": \"Loading screen stuck\",\n    \"impact\": \"cards not visible\",\n    \"root_cause\": \"old app.js cache\",\n    \"fix\": \"bump asset query version\",\n    \"next_action\": \"add cache-bust validation\"\n}",
+    "question_type": "meaning_choice",
+    "question": "What does the \"root_cause\" field contain?",
+    "choices": [
+      "The Root Cause of the Problem",
+      "Username",
+      "Correct Answer on the Card",
+      "CSS File Size"
+    ],
+    "answer": "The Root Cause of the Problem",
+    "explanation": "Organizing an incident summary into sections such as symptoms, impact, cause, actions taken, and recurrence prevention is helpful for subsequent tasks. An incident summary object is a structure that consolidates the time the problem occurred, its cause, the scope of its impact, and the recovery measures taken in one place. It is used to convert logs into a human-readable report format. Therefore, the correct answer is “the root cause of the problem.”",
+    "side_card_ids": [
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "This ties into the habit of summarizing the current situation, next steps, and related commands whenever you move on to the next dialogue window."
+  }
+]

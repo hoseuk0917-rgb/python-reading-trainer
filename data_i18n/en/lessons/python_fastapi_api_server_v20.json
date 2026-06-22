@@ -1,0 +1,489 @@
+[
+  {
+    "id": "PY20_L07_fastapi_app_001",
+    "level": 7,
+    "title": "Read: Creating a FastAPI App",
+    "concepts": [
+      "fastapi",
+      "app",
+      "api_server"
+    ],
+    "reading_goal": "Read about the basic structure for creating a FastAPI app object and attaching an endpoint.",
+    "code": "from fastapi import FastAPI\n\napp = FastAPI()\n\n@app.get(\"/health\")\ndef health():\n    return {\"ok\": True}",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of @app.get('/health')?",
+    "choices": [
+      "Delete the `health` function",
+      "Compress HTML files",
+      "Map the GET /health request to the health function",
+      "Initialize the database"
+    ],
+    "answer": "Map the GET /health request to the health function",
+    "explanation": "A FastAPI decorator maps a specific HTTP route to a Python function. When a browser or frontend calls that route, the associated function is executed. The health endpoint is also frequently used to quickly check whether the server is up and running.",
+    "side_card_ids": [
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "This is the most basic structure of the Local RAG API, Search API, and Learning App API servers."
+  },
+  {
+    "id": "PY20_L07_get_query_param_001",
+    "level": 7,
+    "title": "Reading GET Query Parameters",
+    "concepts": [
+      "fastapi",
+      "query_parameter",
+      "get"
+    ],
+    "reading_goal": "Understand the structure in which URL query parameters are passed as function arguments.",
+    "code": "@app.get(\"/search\")\ndef search(q: str, limit: int = 5):\n    return {\"query\": q, \"limit\": limit}",
+    "question_type": "meaning_choice",
+    "question": "If I call it using /search?q=lidar and omit the limit, what is the limit value?",
+    "choices": [
+      "0",
+      "None",
+      "5",
+      "lidar"
+    ],
+    "answer": "5",
+    "explanation": "A query parameter is a value appended to the end of a URL. If you specify a default value, such as `limit: int = 5`, the value 5 is automatically inserted when the user omits it. Query parameters are often used for optional values passed via the URL, such as search terms, page size, and filters.",
+    "side_card_ids": [
+      "PYV159_A1_FASTAPI_SERVER_FLOW"
+    ],
+    "project_context": "This is the standard pattern for sending search bar input via an API."
+  },
+  {
+    "id": "PY20_L08_path_param_001",
+    "level": 8,
+    "title": "Reading path parameters",
+    "concepts": [
+      "fastapi",
+      "path_parameter",
+      "endpoint"
+    ],
+    "reading_goal": "Reads a structure in which a portion of the URL path is passed as a function argument.",
+    "code": "@app.get(\"/cards/{card_id}\")\ndef get_card(card_id: str):\n    return {\"card_id\": card_id}",
+    "question_type": "meaning_choice",
+    "question": "If I make a request to /cards/PY20_001, what is the card_id?",
+    "choices": [
+      "cards",
+      "card_id",
+      "PY20_001",
+      "None"
+    ],
+    "answer": "PY20_001",
+    "explanation": "The URL value at the {card_id} position is passed as the function argument `card_id`. A path parameter is a value included in the URL path. For example, this is used when retrieving data based on a specific ID from the path, and you must verify how it is mapped to the function argument. Therefore, the return/call result is ‘PY20_001’.",
+    "side_card_ids": [
+      "PYV159_A1_FASTAPI_SERVER_FLOW"
+    ],
+    "project_context": "This is a common pattern in the Card Details, Document Details, and Node Details APIs."
+  },
+  {
+    "id": "PY20_L08_post_body_pydantic_001",
+    "level": 8,
+    "title": "Reading POST Body and PyDantic Models",
+    "concepts": [
+      "post",
+      "request_body",
+      "pydantic",
+      "validation"
+    ],
+    "reading_goal": "Reads the structure of the JSON request body, which is validated against a PyDantic model.",
+    "code": "from pydantic import BaseModel\n\nclass SearchRequest(BaseModel):\n    query: str\n    top_k: int = 5\n\n@app.post(\"/search\")\ndef search(req: SearchRequest):\n    return {\"query\": req.query, \"top_k\": req.top_k}",
+    "question_type": "meaning_choice",
+    "question": "If \"top_k\" is not included in the request JSON, what value is used?",
+    "choices": [
+      "0",
+      "Error",
+      "5",
+      "query"
+    ],
+    "answer": "5",
+    "explanation": "This is because the default value for `top_k` in the Pydantic model is set to `int = 5`. The POST body and the Pydantic model work together to convert the JSON sent by the user into a validated object. You can see where the required fields, types, and default values are defined.",
+    "side_card_ids": [
+      "PYV158_A1_VALIDATION_FLOW"
+    ],
+    "project_context": "This is the structure used when designing the body of RAG search requests, node extraction requests, and training question requests."
+  },
+  {
+    "id": "PY20_L08_response_model_001",
+    "level": 8,
+    "title": "Reading the response_model",
+    "concepts": [
+      "fastapi",
+      "response_model",
+      "pydantic",
+      "schema"
+    ],
+    "reading_goal": "Reads a structure that restricts the API response format to Pydantic models.",
+    "code": "class SearchResponse(BaseModel):\n    answer: str\n    citations: list[str]\n\n@app.post(\"/answer\", response_model=SearchResponse)\ndef answer(req: SearchRequest):\n    return {\"answer\": \"...\", \"citations\": [\"doc1\"]}",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of `response_model=SearchResponse`?",
+    "choices": [
+      "Delete the request",
+      "Change the server port",
+      "Adapt the response format to match the SearchResponse schema",
+      "Automatically generates HTML"
+    ],
+    "answer": "Adapt the response format to match the SearchResponse schema",
+    "explanation": "The `response_model` clearly defines the format of the API’s response. It serves to constrain and document the structure of the API response. You can verify which specific fields from the actual internal data are exposed to the user. Therefore, the result of the call is that “the response format conforms to the SearchResponse schema.”",
+    "side_card_ids": [
+      "DATA_schema_001",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "It is important to consistently maintain the response structure expected by the front-end app."
+  },
+  {
+    "id": "PY20_L08_http_exception_001",
+    "level": 8,
+    "title": "Reading HTTPExceptions",
+    "concepts": [
+      "http_exception",
+      "status_code",
+      "error_response"
+    ],
+    "reading_goal": "Read the code that returns an HTTP error when the conditions are not met.",
+    "code": "from fastapi import HTTPException\n\n@app.get(\"/items/{item_id}\")\ndef get_item(item_id: str):\n    item = db.get(item_id)\n    if item is None:\n        raise HTTPException(status_code=404, detail=\"item not found\")\n    return item",
+    "question_type": "meaning_choice",
+    "question": "If there is no item, what HTTP status is returned?",
+    "choices": [
+      "200",
+      "304",
+      "404",
+      "500"
+    ],
+    "answer": "404",
+    "explanation": "An HTTPException (status_code=404) returns a \"Not Found\" response. An HTTPException is an exception used in FastAPI to intentionally return an error response. You should check what the status code and detail message indicate to the user.",
+    "side_card_ids": [],
+    "project_context": "This is the method for explicitly handling missing items in the Card/Document/Node Lookup API."
+  },
+  {
+    "id": "PY20_L09_status_code_001",
+    "level": 9,
+    "title": "Reading HTTP Status Code Branches",
+    "concepts": [
+      "http_status",
+      "200",
+      "400",
+      "500",
+      "api"
+    ],
+    "reading_goal": "Understand the meaning of the different HTTP status codes returned depending on the situation.",
+    "code": "if not query:\n    raise HTTPException(status_code=400, detail=\"query required\")\n\ntry:\n    result = run_search(query)\nexcept Exception:\n    raise HTTPException(status_code=500, detail=\"server error\")\n\nreturn result",
+    "question_type": "meaning_choice",
+    "question": "Why does it return a 400 error if the query is empty?",
+    "choices": [
+      "Since the server file is missing,",
+      "Since the cache is valid,",
+      "Because the client request was incorrect,",
+      "Because it was a success"
+    ],
+    "answer": "Because the client request was incorrect,",
+    "explanation": "A 400 is typically used when a client sends an invalid request. A 500 is more closely associated with an internal server error. The HTTP status code system classifies request results using numerical codes. The meanings of 200, 400, 401, 404, and 500 must be distinguished and handled accordingly. Therefore, the result of the call is “because the client’s request was invalid.”",
+    "side_card_ids": [
+      "PYV158_A1_API_FLOW"
+    ],
+    "project_context": "This is the basics of distinguishing between 400, 404, and 500 errors when debugging APIs."
+  },
+  {
+    "id": "PY20_L09_cors_001",
+    "level": 9,
+    "title": "Reading CORS Middleware",
+    "concepts": [
+      "cors",
+      "middleware",
+      "frontend",
+      "api"
+    ],
+    "reading_goal": "Reads the CORS settings required when the front end calls an API located at a different address.",
+    "code": "from fastapi.middleware.cors import CORSMiddleware\n\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=[\"http://localhost:8790\"],\n    allow_methods=[\"*\"],\n    allow_headers=[\"*\"],\n)",
+    "question_type": "meaning_choice",
+    "question": "Why is `localhost:8790` included in `allow_origins`?",
+    "choices": [
+      "I want to block that address",
+      "I want to change the server port to 8790",
+      "To allow API calls from that address's frontend,",
+      "I'm trying to delete a JSON file"
+    ],
+    "answer": "To allow API calls from that address's frontend,",
+    "explanation": "Since browsers restrict API calls to different origins, you may need to configure CORS permissions. CORS middleware controls whether the browser can call APIs from different origins. The allowed origin, method, and header settings must match the actual front-end URL.",
+    "side_card_ids": [
+      "PYV158_A1_API_FLOW"
+    ],
+    "project_context": "This is a common issue encountered when connecting a static PWA to a local FastAPI server."
+  },
+  {
+    "id": "PY20_L09_dependency_injection_001",
+    "level": 9,
+    "title": "Depends: Reading About Dependency Injection",
+    "concepts": [
+      "depends",
+      "dependency_injection",
+      "fastapi"
+    ],
+    "reading_goal": "Read the structure that prepares common dependencies before processing the request.",
+    "code": "from fastapi import Depends\n\ndef get_db():\n    return db\n\n@app.get(\"/items\")\ndef list_items(db=Depends(get_db)):\n    return db.list_items()",
+    "question_type": "meaning_choice",
+    "question": "What is the role of Depends(get_db)?",
+    "choices": [
+      "Delete the database connection information",
+      "It blocks the HTTP request itself",
+      "Pass the result of `get_db` as an argument before running the endpoint.",
+      "Change it to return an HTML page"
+    ],
+    "answer": "Pass the result of `get_db` as an argument before running the endpoint.",
+    "explanation": "FastAPI's `Depends` is a way to inject common setup logic into an endpoint. `Depends` dependency injection automatically connects the necessary objects or validation logic before a request is processed. You need to verify where authentication, database connections, and common checks are injected.",
+    "side_card_ids": [
+      "PYV102_A7_ARCHITECTURE_DESIGN",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "You can avoid having to repeat database connections, user authentication, and configuration loading for each endpoint."
+  },
+  {
+    "id": "PY20_L09_background_task_001",
+    "level": 9,
+    "title": "Reading BackgroundTasks",
+    "concepts": [
+      "background_task",
+      "fastapi",
+      "async_job"
+    ],
+    "reading_goal": "It reads the structure that executes the task in the background after a response.",
+    "code": "from fastapi import BackgroundTasks\n\ndef save_log(query: str):\n    logs.append(query)\n\n@app.post(\"/search\")\ndef search(req: SearchRequest, background_tasks: BackgroundTasks):\n    background_tasks.add_task(save_log, req.query)\n    return {\"ok\": True}",
+    "question_type": "meaning_choice",
+    "question": "What does `background_tasks.add_task(save_log, req.query)` mean?",
+    "choices": [
+      "Delete `save_log`",
+      "Fails the request",
+      "Register `save_log` as a background job",
+      "Shut down the server"
+    ],
+    "answer": "Register `save_log` as a background job",
+    "explanation": "A background task is a method of first sending a response and then scheduling a task to be processed later. It is useful for tasks that do not take long to complete, such as logging or sending notifications. It improves the user experience by allowing additional tasks to be processed while keeping response times short. Therefore, the return/call result is “register save_log as a background task.”",
+    "side_card_ids": [
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
+      "PYV102_A7_ASYNC_CONCURRENCY"
+    ],
+    "project_context": "This pattern can be used to store query logs, usage history, and analytics events."
+  },
+  {
+    "id": "PY20_L09_uvicorn_run_001",
+    "level": 9,
+    "title": "Reading the uvicorn execution command",
+    "concepts": [
+      "uvicorn",
+      "fastapi",
+      "host",
+      "port"
+    ],
+    "reading_goal": "Reads information about which module, app, and port the FastAPI server is running on.",
+    "code": "uvicorn search_api:app --host 127.0.0.1 --port 8000 --reload",
+    "question_type": "meaning_choice",
+    "question": "What does \"search_api:app\" mean?",
+    "choices": [
+      "Delete app.py",
+      "Open file number 8000",
+      "Run the `app` object in `search_api.py`",
+      "Clear the browser cache"
+    ],
+    "answer": "Run the `app` object in `search_api.py`",
+    "explanation": "uvicorn uses a module:object format. It runs the `app` variable inside the `search_api` module as an ASGI app. uvicorn is an ASGI server that runs FastAPI apps. The app path, host, port, and reload options must be correct in order to call the API from a browser or frontend.",
+    "side_card_ids": [
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "It is directly linked to the structure for running LLM_Lora search_api.py as a local API."
+  },
+  {
+    "id": "PY20_L10_async_endpoint_001",
+    "level": 10,
+    "title": "Reading an async endpoint",
+    "concepts": [
+      "async",
+      "await",
+      "endpoint",
+      "fastapi"
+    ],
+    "reading_goal": "I'm reading about the structure of using `await` to wait for operations on asynchronous endpoints.",
+    "code": "@app.get(\"/health\")\nasync def health():\n    status = await check_database()\n    return {\"db\": status}",
+    "question_type": "meaning_choice",
+    "question": "What does `await check_database()` mean?",
+    "choices": [
+      "Delete `check_database`",
+      "It always fails immediately.",
+      "Wait until the asynchronous task `check_database` finishes",
+      "Create a new database"
+    ],
+    "answer": "Wait until the asynchronous task `check_database` finishes",
+    "explanation": "An async endpoint is an API function capable of asynchronous processing. The `await` keyword allows the server to handle other tasks while waiting for the results of external requests or I/O operations.",
+    "side_card_ids": [
+      "PYV159_A1_FASTAPI_SERVER_FLOW"
+    ],
+    "project_context": "This often occurs in server code that involves a mix of external APIs, databases, and file I/O."
+  },
+  {
+    "id": "PY20_L10_frontend_fetch_001",
+    "level": 10,
+    "title": "Understanding Front-End Fetch API Calls",
+    "concepts": [
+      "fetch",
+      "frontend",
+      "api",
+      "json"
+    ],
+    "reading_goal": "Understand the process of calling the Local API and reading JSON in browser JavaScript.",
+    "code": "async function search(q) {\n  const res = await fetch(\"http://127.0.0.1:8000/search?q=\" + encodeURIComponent(q));\n  const data = await res.json();\n  return data;\n}",
+    "question_type": "meaning_choice",
+    "question": "Why use `encodeURIComponent(q)`?",
+    "choices": [
+      "To encrypt search terms so they cannot be recovered",
+      "I'm trying to shut down the API server",
+      "To safely include spaces and special characters from search terms in the URL",
+      "I want to convert JSON to CSV"
+    ],
+    "answer": "To safely include spaces and special characters from search terms in the URL",
+    "explanation": "Frontend fetch is code that sends requests from the browser to the API server. Strings included in URL queries must be safely encoded to account for spaces and special characters. If they are not encoded, Korean characters, spaces, and special characters can corrupt the URL, leading to a failed request.",
+    "side_card_ids": [
+      "PYV158_A1_JSON_FLOW",
+      "PYV158_A1_API_FLOW"
+    ],
+    "project_context": "This is the process for integrating the local RAG API into a static PWA."
+  },
+  {
+    "id": "PY20_L10_fetch_error_handling_001",
+    "level": 10,
+    "title": "Read About Handling Fetch Errors",
+    "concepts": [
+      "fetch",
+      "error_handling",
+      "http_status",
+      "frontend"
+    ],
+    "reading_goal": "I'm reading code that clearly throws an error when an HTTP response fails.",
+    "code": "const res = await fetch(\"/api/search?q=lidar\");\nif (!res.ok) {\n  throw new Error(\"API failed: \" + res.status);\n}\nconst data = await res.json();",
+    "question_type": "meaning_choice",
+    "question": "What happens if `res.ok` is false?",
+    "choices": [
+      "It always parses the data correctly.",
+      "Automatically restart the server",
+      "It throws an error and does not proceed to data parsing.",
+      "Change the response to 200"
+    ],
+    "answer": "It throws an error and does not proceed to data parsing.",
+    "explanation": "res.ok indicates whether the response falls within the HTTP 2xx success range. If it fails, it is clearly treated as an error. Fetch error handling is code designed to prevent the screen from freezing when a server request fails. You must consider the entire flow, including status code verification, exception handling, and displaying user messages. Therefore, the correct answer is “Throw an ‘Error’ and do not proceed to data parsing.”",
+    "side_card_ids": [
+      "WEB_frontend_backend_001",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "This is a practical pattern that prevents the front end from silently ignoring API failures."
+  },
+  {
+    "id": "PY20_L10_api_timeout_retry_001",
+    "level": 10,
+    "title": "Understanding the API Timeout/Retry Flow",
+    "concepts": [
+      "timeout",
+      "retry",
+      "fetch",
+      "AbortController"
+    ],
+    "reading_goal": "I'm reading about a system that completes slow API requests within a timeout and retries them if they fail.",
+    "code": "async function fetchWithTimeout(url, ms = 10000) {\n  const controller = new AbortController();\n  const timer = setTimeout(() => controller.abort(), ms);\n  try {\n    return await fetch(url, { signal: controller.signal });\n  } finally {\n    clearTimeout(timer);\n  }\n}",
+    "question_type": "meaning_choice",
+    "question": "When is `controller.abort()` called?",
+    "choices": [
+      "As soon as the request is successful, always",
+      "After parsing the JSON",
+      "ms When a timeout occurs as time passes",
+      "Before the page loads for the first time"
+    ],
+    "answer": "ms When a timeout occurs as time passes",
+    "explanation": "An API timeout is a mechanism that terminates a request if it takes too long. Calling `abort` via `setTimeout` allows you to stop the fetch after a specified time. After the request is aborted, a workflow is needed to either prompt the user to retry or safely resend the request. Therefore, the return/call result is “when a timeout occurs after a specified number of milliseconds.”",
+    "side_card_ids": [
+      "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
+    ],
+    "project_context": "This code prevents the frontend from waiting indefinitely when the local RAG API is slow."
+  },
+  {
+    "id": "PY20_L10_static_plus_api_001",
+    "level": 10,
+    "title": "Distinguishing Between Static PWAs and API Servers",
+    "concepts": [
+      "static_app",
+      "api_server",
+      "architecture",
+      "pwa"
+    ],
+    "reading_goal": "Understand that static file servers and API servers perform different functions.",
+    "code": "# 정적 PWA 서버\npython -m http.server 8790\n# HTML/CSS/JS/JSON 파일 제공\n\n# API 서버\nuvicorn search_api:app --port 8000\n# 검색/질문/DB 조회 처리",
+    "question_type": "meaning_choice",
+    "question": "Which of the following most closely matches the role of the uvicorn server?",
+    "choices": [
+      "Provide only the HTML files as-is",
+      "Git 커밋 생성",
+      "Handling dynamic requests such as searches, queries, and database lookups",
+      "Managing Browser Bookmarks"
+    ],
+    "answer": "Handling dynamic requests such as searches, queries, and database lookups",
+    "explanation": "The HTTP server serves static files, while FastAPI and Uvicorn handle dynamic API requests. The static PWA and the API server have different roles. HTML, JS, and CSS are served statically, while dynamic tasks such as login and data storage are handled by the API.",
+    "side_card_ids": [
+      "PYV160_A1_PWA_STATE_STORAGE_FLOW",
+      "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
+    ],
+    "project_context": "This outlines the structure required when integrating the LLM_Lora search API into the \"Reading Trainer\" static app."
+  },
+  {
+    "id": "PY20_L10_api_service_repository_001",
+    "level": 10,
+    "title": "Understanding the API-Service-Repository Flow",
+    "concepts": [
+      "api",
+      "service",
+      "repository",
+      "architecture"
+    ],
+    "reading_goal": "I understand the structure in which the endpoint does not handle everything itself but delegates tasks to services and repositories.",
+    "code": "@app.get(\"/search\")\ndef search(q: str):\n    return search_service.search(q)\n\nclass SearchService:\n    def search(self, q):\n        chunks = self.repo.find_chunks(q)\n        return self.answer_builder.build(q, chunks)",
+    "question_type": "meaning_choice",
+    "question": "Which of the following best explains why the endpoint calls `search_service.search(q)`?",
+    "choices": [
+      "To eliminate the search logic",
+      "To ensure that q is always an empty string,",
+      "To separate the API layer from the search logic,",
+      "To render HTML directly,"
+    ],
+    "answer": "To separate the API layer from the search logic,",
+    "explanation": "It is easier to maintain the system if the endpoint focuses on requests and responses, while the service handles the actual search logic. The API-Service-Repository flow is a structure in which the endpoint receives requests, the service processes the rules, and the repository handles the database. This structure is advantageous for testing and maintenance.",
+    "side_card_ids": [
+      "PYV158_A1_API_FLOW"
+    ],
+    "project_context": "This is the structure needed to develop the Education Service/RAG Service MVP in a more streamlined way."
+  },
+  {
+    "id": "PY20_L10_request_logging_001",
+    "level": 10,
+    "title": "Reading Request Log Middleware",
+    "concepts": [
+      "middleware",
+      "logging",
+      "request",
+      "api"
+    ],
+    "reading_goal": "Read about the middleware architecture that logs the path and processing time of every request.",
+    "code": "import time\n\n@app.middleware(\"http\")\nasync def log_requests(request, call_next):\n    start = time.time()\n    response = await call_next(request)\n    elapsed = time.time() - start\n    print(request.url.path, response.status_code, elapsed)\n    return response",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of `call_next(request)`?",
+    "choices": [
+      "Block the request unconditionally",
+      "Shut down the server",
+      "Pass the request to the next processing step and receive a response",
+      "Delete the database"
+    ],
+    "answer": "Pass the request to the next processing step and receive a response",
+    "explanation": "Middleware contains common logic that runs before and after a request, and uses `call_next` to proceed with processing at the actual endpoint. Request logging middleware is a mechanism that records the process of incoming and outgoing API requests. Logging the method, path, status code, and processing time makes it easier to trace the cause of issues.",
+    "side_card_ids": [
+      "PYV158_A1_API_FLOW"
+    ],
+    "project_context": "This is the foundation of operational code that tracks API usage, response times, and error statuses."
+  }
+]

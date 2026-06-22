@@ -1,0 +1,461 @@
+[
+  {
+    "id": "PY21_L07_sqlite_connect_001",
+    "level": 7,
+    "title": "SQLite3 Connection and Query Reading",
+    "concepts": [
+      "sqlite",
+      "connect",
+      "execute",
+      "fetchall"
+    ],
+    "reading_goal": "Read the process of connecting to an SQLite database and retrieving the results of a SELECT query.",
+    "code": "import sqlite3\n\nconn = sqlite3.connect(\"app.db\")\nrows = conn.execute(\"SELECT id, title FROM items LIMIT 10\").fetchall()\nprint(len(rows))\nconn.close()",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of `fetchall()`?",
+    "choices": [
+      "Delete the DB file",
+      "It simply stores SQL as a string",
+      "Retrieves all rows from the query results",
+      "Start the server"
+    ],
+    "answer": "Retrieves all rows from the query results",
+    "explanation": "The results of the SELECT statement executed with `execute` are retrieved as a list using `fetchall`. The SQLite3 connection code opens the database file and prepares to execute the query. Just look at the order in which the connection object, cursor, commit, and close are used.",
+    "side_card_ids": [
+      "PYV102_A7_DATAFRAME_CSV_CLEANING",
+      "PYV102_A7_ARCHITECTURE_DESIGN"
+    ],
+    "project_context": "This is the basic code for reading a local meta database or a test SQLite database."
+  },
+  {
+    "id": "PY21_L07_parameterized_query_001",
+    "level": 7,
+    "title": "Reading SQL with Parameter Binding",
+    "concepts": [
+      "sql",
+      "parameterized_query",
+      "security",
+      "sqlite"
+    ],
+    "reading_goal": "Read about SQL patterns for safely passing parameters instead of concatenating strings.",
+    "code": "item_id = \"item_001\"\nrow = conn.execute(\n    \"SELECT title FROM items WHERE id = ?\",\n    (item_id,)\n).fetchone()",
+    "question_type": "meaning_choice",
+    "question": "In the statement \"WHERE id = ?,\" what does \"?\" mean?",
+    "choices": [
+      "Find only the ID \"question mark\"",
+      "Delete All Rows",
+      "A placeholder for a parameter that will be safely bound later",
+      "Query Comments"
+    ],
+    "answer": "A placeholder for a parameter that will be safely bound later",
+    "explanation": "Passing user input as parameters rather than embedding it directly into an SQL string reduces the risk of SQL injection. Parameter-bound SQL is a method of passing values as separate arguments rather than concatenating them directly into a string. This is a fundamental practice for reducing the risk of SQL injection. Therefore, the correct answer is “a placeholder for a parameter that will be safely bound later.”",
+    "side_card_ids": [
+      "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
+    ],
+    "project_context": "This is the standard security pattern for including search terms, item_id, and user_id in a database query."
+  },
+  {
+    "id": "PY21_L08_insert_commit_001",
+    "level": 8,
+    "title": "Reading INSERT and COMMIT Statements",
+    "concepts": [
+      "insert",
+      "commit",
+      "transaction",
+      "sqlite"
+    ],
+    "reading_goal": "Understand the process of inserting a new row into the database and confirming the save with a commit.",
+    "code": "conn.execute(\n    \"INSERT INTO items(id, title) VALUES (?, ?)\",\n    (\"item_001\", \"LiDAR basics\")\n)\nconn.commit()",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of `conn.commit()`?",
+    "choices": [
+      "Cancel the query",
+      "Delete the table",
+      "Save the changes to the database.",
+      "Compress the file"
+    ],
+    "answer": "Save the changes to the database.",
+    "explanation": "Modification operations such as INSERT or UPDATE generate write operations to the database. Changes are only finalized after a commit, ensuring they appear reliably in subsequent queries. If an error occurs before the commit, a rollback is possible, allowing multiple changes to be treated as a single transaction. Therefore, the correct answer is “to permanently save the changes to the database.”",
+    "side_card_ids": [
+      "DEV_git_001",
+      "PYV102_A7_RESILIENCE_RECOVERY"
+    ],
+    "project_context": "It is important to read the code that handles collecting items, running logs, and saving progress."
+  },
+  {
+    "id": "PY21_L08_rollback_001",
+    "level": 8,
+    "title": "Read About Rollback Exception Handling",
+    "concepts": [
+      "rollback",
+      "transaction",
+      "try_except",
+      "database"
+    ],
+    "reading_goal": "I'm reading about a pattern for rolling back changes when a database operation fails.",
+    "code": "try:\n    conn.execute(\"INSERT INTO items(id, title) VALUES (?, ?)\", (id, title))\n    conn.commit()\nexcept Exception:\n    conn.rollback()\n    raise",
+    "question_type": "meaning_choice",
+    "question": "Why is a rollback performed in the `except` block?",
+    "choices": [
+      "To save the successful result twice",
+      "To delete the database",
+      "To roll back a failed transaction change",
+      "To hide the error"
+    ],
+    "answer": "To roll back a failed transaction change",
+    "explanation": "A rollback is performed to minimize the risk of the database ending up in an inconsistent state due to an intermediate failure. A rollback is a process that reverts changes when an error occurs during a database operation. It ensures that no intermediate failed state remains when multiple queries are executed as a batch.",
+    "side_card_ids": [
+      "PYV158_A1_DATABASE_FLOW"
+    ],
+    "project_context": "This is a defense pattern required when performing write operations on tables such as `runs`, `items`, and `curations`."
+  },
+  {
+    "id": "PY21_L08_schema_create_table_001",
+    "level": 8,
+    "title": "Reading the CREATE TABLE schema",
+    "concepts": [
+      "schema",
+      "create_table",
+      "primary_key",
+      "sql"
+    ],
+    "reading_goal": "Read the columns and primary key from the SQL statement that creates the table.",
+    "code": "CREATE TABLE IF NOT EXISTS items (\n  id TEXT PRIMARY KEY,\n  title TEXT NOT NULL,\n  source_url TEXT,\n  created_at TEXT NOT NULL\n);",
+    "question_type": "meaning_choice",
+    "question": "Which of the following best describes the meaning of an `id` column marked as a PRIMARY KEY?",
+    "choices": [
+      "A value that is always empty",
+      "Long Explanatory Text",
+      "A unique identifier that distinguishes each row",
+      "External file path"
+    ],
+    "answer": "A unique identifier that distinguishes each row",
+    "explanation": "The `CREATE TABLE` statement is used to create the structure of a database table. A primary key serves as the primary identifier for each row in the table. By examining the schema, you can determine which columns are required and how to locate rows based on specific values. Therefore, the correct answer is “a unique identifier that distinguishes each row.”",
+    "side_card_ids": [
+      "PYV158_A1_SCHEMA_FLOW"
+    ],
+    "project_context": "This is a basic exercise in reading D1/Supabase/SQLite schema.sql."
+  },
+  {
+    "id": "PY21_L08_not_null_001",
+    "level": 8,
+    "title": "Reading the NOT NULL Constraint",
+    "concepts": [
+      "not_null",
+      "constraint",
+      "schema",
+      "sql"
+    ],
+    "reading_goal": "Understand the constraint that a DB column must not be empty.",
+    "code": "CREATE TABLE runs (\n  id TEXT PRIMARY KEY,\n  job_name TEXT NOT NULL,\n  status TEXT NOT NULL\n);",
+    "question_type": "meaning_choice",
+    "question": "What does \"job_name TEXT NOT NULL\" mean?",
+    "choices": [
+      "`job_name` must be a number",
+      "\"job_name\" is automatically deleted",
+      "\"job_name\" must have a value.",
+      "\"job_name\" is the primary key."
+    ],
+    "answer": "\"job_name\" must have a value.",
+    "explanation": "NOT NULL is a constraint that prevents the column from containing a NULL value. It is used to prevent required fields from being omitted. Fields that identify execution records, such as `job_name`, are often subject to this constraint because it is difficult to track them if they are left blank.",
+    "side_card_ids": [
+      "PYV158_A1_SCHEMA_FLOW"
+    ],
+    "project_context": "This is a database constraint that prevents required fields from being omitted in the run status log."
+  },
+  {
+    "id": "PY21_L09_foreign_key_001",
+    "level": 9,
+    "title": "Reading FOREIGN KEY Relationships",
+    "concepts": [
+      "foreign_key",
+      "relationship",
+      "schema",
+      "sql"
+    ],
+    "reading_goal": "Read a structure in which values in one table reference the IDs in another table.",
+    "code": "CREATE TABLE curations (\n  id TEXT PRIMARY KEY,\n  item_id TEXT NOT NULL,\n  FOREIGN KEY (item_id) REFERENCES items(id)\n);",
+    "question_type": "meaning_choice",
+    "question": "What does \"FOREIGN KEY (item_id) REFERENCES items(id)\" mean?",
+    "choices": [
+      "Delete the \"items\" table",
+      "item_id is always empty.",
+      "`curations.item_id` references `items.id`",
+      "\"curations\" is a file folder"
+    ],
+    "answer": "`curations.item_id` references `items.id`",
+    "explanation": "A foreign key means that a value in one table references a row in another table. It is used to represent relationships between tables and ensure data consistency. By enforcing the rule that an `item_id` must correspond to an actual ID in the `items` table, you can reduce the occurrence of orphaned data.",
+    "side_card_ids": [
+      "PYV158_A1_SCHEMA_FLOW"
+    ],
+    "project_context": "This concept prevents the \"orphan\" problem, where curations point to items that do not exist."
+  },
+  {
+    "id": "PY21_L09_join_001",
+    "level": 9,
+    "title": "Reading JOIN Queries",
+    "concepts": [
+      "join",
+      "sql",
+      "relationship",
+      "select"
+    ],
+    "reading_goal": "Read the SQL query that joins two tables to retrieve the necessary fields together.",
+    "code": "SELECT c.position, i.title, i.source_url\nFROM curations c\nJOIN items i ON c.item_id = i.id\nWHERE c.page = 'home'\nORDER BY c.position;",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of the JOIN clause \"JOIN items i ON c.item_id = i.id\"?",
+    "choices": [
+      "Delete all items",
+      "Randomly changes the position",
+      "Link \"curations\" and \"items\" based on \"item_id\" and \"id\"",
+      "Hide the source_url"
+    ],
+    "answer": "Link \"curations\" and \"items\" based on \"item_id\" and \"id\"",
+    "explanation": "JOIN is an SQL feature that combines rows from multiple related tables and retrieves them together. It allows you to view data that is separated—such as user information and order information—as a single result set. The ON condition determines which columns from the two tables to match for the join, thereby determining the meaning of the resulting rows. Therefore, the correct answer is “Join the ‘curations’ and ‘items’ tables based on the ‘item_id’ and ‘id’ columns.”",
+    "side_card_ids": [
+      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+    ],
+    "project_context": "This is the structure used when retrieving both card and source item information from the Home Curation API."
+  },
+  {
+    "id": "PY21_L09_index_001",
+    "level": 9,
+    "title": "CREATE INDEX: Read",
+    "concepts": [
+      "index",
+      "query_performance",
+      "sql"
+    ],
+    "reading_goal": "Understand why indexes are created on columns that are frequently queried.",
+    "code": "CREATE INDEX IF NOT EXISTS idx_items_source\nON items(source_url);",
+    "question_type": "meaning_choice",
+    "question": "Which of the following best reflects the purpose of this index?",
+    "choices": [
+      "To delete source_url",
+      "To encrypt all URLs",
+      "To speed up searches using the `source_url` condition",
+      "To rename a table"
+    ],
+    "answer": "To speed up searches using the `source_url` condition",
+    "explanation": "An index is a secondary structure designed to help find data more quickly based on specific column conditions. While it can speed up queries, it may increase write overhead and storage space. Just like an index in a book, an index helps you find a location quickly, but it must be updated whenever the data changes.",
+    "side_card_ids": [
+      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+    ],
+    "project_context": "This is related to the performance of duplicate URL checks, claim hash lookups, and date-based lookups."
+  },
+  {
+    "id": "PY21_L09_upsert_001",
+    "level": 9,
+    "title": "UPSERT Read",
+    "concepts": [
+      "upsert",
+      "insert",
+      "update",
+      "conflict"
+    ],
+    "reading_goal": "Read the SQL pattern that updates the table if the record exists and inserts it if it doesn't.",
+    "code": "INSERT INTO items(id, title, source_url)\nVALUES (?, ?, ?)\nON CONFLICT(id) DO UPDATE SET\n  title = excluded.title,\n  source_url = excluded.source_url;",
+    "question_type": "meaning_choice",
+    "question": "What does \"ON CONFLICT(id) DO UPDATE\" mean?",
+    "choices": [
+      "If the same ID exists, delete the record from the database.",
+      "It always performs INSERT operations",
+      "If the same ID already exists, update it.",
+      "Ignore the ID"
+    ],
+    "answer": "If the same ID already exists, update it.",
+    "explanation": "\"UPSERT\" is an operational pattern that combines \"INSERT\" and \"UPDATE.\" It is used in a workflow where a new row is inserted if it doesn't exist, and the existing row is updated if it does. \"ON CONFLICT(id)\" means that if the ID already exists, it is treated as a conflict, and in that case, the logic for \"DO UPDATE\" is executed.",
+    "side_card_ids": [],
+    "project_context": "It reliably handles duplicates when reloading collection items or source metadata."
+  },
+  {
+    "id": "PY21_L10_pagination_001",
+    "level": 10,
+    "title": "Reading LIMIT/OFFSET Pagination",
+    "concepts": [
+      "pagination",
+      "limit",
+      "offset",
+      "sql"
+    ],
+    "reading_goal": "Read the SQL query that retrieves data in pages from the List API.",
+    "code": "def list_items(conn, page: int, page_size: int = 20):\n    offset = (page - 1) * page_size\n    return conn.execute(\n        \"SELECT id, title FROM items ORDER BY created_at DESC LIMIT ? OFFSET ?\",\n        (page_size, offset)\n    ).fetchall()",
+    "question_type": "meaning_choice",
+    "question": "If page=3 and page_size=20, what is the offset?",
+    "choices": [
+      "20",
+      "60",
+      "40",
+      "3"
+    ],
+    "answer": "40",
+    "explanation": "(3 - 1) * 20 = 40. Skip the first 40 records and retrieve the next 20. LIMIT and OFFSET pagination is a method of retrieving a large number of results in pages. You must specify both how many records to retrieve and where to start retrieving them from.",
+    "side_card_ids": [
+      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+    ],
+    "project_context": "This is the basic pagination required for the Card/Document/Search Results List API."
+  },
+  {
+    "id": "PY21_L10_repository_pattern_001",
+    "level": 10,
+    "title": "Reading About the Repository Function Pattern",
+    "concepts": [
+      "repository",
+      "database",
+      "architecture"
+    ],
+    "reading_goal": "Understand the structure of separating DB access code into repository functions.",
+    "code": "class ItemRepository:\n    def __init__(self, conn):\n        self.conn = conn\n\n    def find_by_id(self, item_id: str):\n        return self.conn.execute(\n            \"SELECT * FROM items WHERE id = ?\",\n            (item_id,)\n        ).fetchone()",
+    "question_type": "meaning_choice",
+    "question": "Which of the following most closely resembles the role of an ItemRepository?",
+    "choices": [
+      "Rendering an HTML page",
+      "Clear the browser cache",
+      "Groups the logic for accessing the `items` table",
+      "Execute `git push`"
+    ],
+    "answer": "Groups the logic for accessing the `items` table",
+    "explanation": "A repository consolidates database access code in one place, separating it from service and API code. The repository pattern is a method of grouping database access code into a single layer. This facilitates maintenance by ensuring that service logic does not need to be directly aware of SQL details. Therefore, the result of this approach is that “the logic for accessing the `items` table is consolidated.”",
+    "side_card_ids": [
+      "PYV158_A1_DATABASE_FLOW"
+    ],
+    "project_context": "This design ensures that FastAPI endpoints do not contain a large amount of SQL code."
+  },
+  {
+    "id": "PY21_L10_migration_001",
+    "level": 10,
+    "title": "Reading Migration SQL",
+    "concepts": [
+      "migration",
+      "alter_table",
+      "schema_change"
+    ],
+    "reading_goal": "Read the SQL code that adds a new column to an existing table.",
+    "code": "ALTER TABLE items\nADD COLUMN summary TEXT;",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of this SQL statement?",
+    "choices": [
+      "Delete the \"items\" table",
+      "Create a \"summary\" table",
+      "Add a \"summary\" column to the \"items\" table",
+      "Delete all rows"
+    ],
+    "answer": "Add a \"summary\" column to the \"items\" table",
+    "explanation": "A migration is a procedure for recording and applying changes to a database structure. The `ALTER TABLE` statement is used to add columns to an existing table or modify its structure. By managing migration files in the correct order, you can ensure that the database structures across multiple environments are kept in sync.",
+    "side_card_ids": [
+      "PYV102_A7_DATAFRAME_CSV_CLEANING",
+      "PYV102_A7_ARCHITECTURE_DESIGN"
+    ],
+    "project_context": "This is the foundation for understanding migrations as the D1/Supabase schema continues to expand."
+  },
+  {
+    "id": "PY21_L10_d1_prepare_bind_001",
+    "level": 10,
+    "title": "Reading Cloudflare D1 prepare/bind",
+    "concepts": [
+      "d1",
+      "prepare",
+      "bind",
+      "cloudflare"
+    ],
+    "reading_goal": "In D1, I'm reading about a structure that executes SQL and parameters separately.",
+    "code": "const row = await env.DB.prepare(\n  \"SELECT id, title FROM items WHERE id = ?\"\n).bind(itemId).first();",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of `bind(itemId)`?",
+    "choices": [
+      "Delete the database",
+      "Hide the title",
+      "Bind the value of `itemId` to the `?` placeholder in the SQL statement.",
+      "Create the \"items\" table"
+    ],
+    "answer": "Bind the value of `itemId` to the `?` placeholder in the SQL statement.",
+    "explanation": "In D1, the pattern of separating SQL from input values using `prepare` and `bind` is also used. `prepare` and `bind` are a process that separates SQL strings from actual values to ensure safe execution. This reduces the risk of SQL injection compared to embedding values directly into a string. Therefore, the correct answer is “Bind the `itemId` value to the `?` placeholder in the SQL.”",
+    "side_card_ids": [
+      "PYV102_A7_DATAFRAME_CSV_CLEANING",
+      "PYV102_A7_ARCHITECTURE_DESIGN"
+    ],
+    "project_context": "It links directly to the code in home-curator that accesses the D1 database."
+  },
+  {
+    "id": "PY21_L10_supabase_select_001",
+    "level": 10,
+    "title": "Reading the Supabase SELECT Chain",
+    "concepts": [
+      "supabase",
+      "select",
+      "database",
+      "api_client"
+    ],
+    "reading_goal": "Reading the `from/select/eq` chain in the Supabase JS client.",
+    "code": "const { data, error } = await supabase\n  .from(\"items\")\n  .select(\"id,title,source_url\")\n  .eq(\"id\", itemId)\n  .single();",
+    "question_type": "meaning_choice",
+    "question": "What does .eq('id', itemId) mean?",
+    "choices": [
+      "Delete the 'id' column",
+      "Retrieve all rows",
+      "Filter only rows where the id is equal to itemId",
+      "Encrypt the itemId"
+    ],
+    "answer": "Filter only rows where the id is equal to itemId",
+    "explanation": "In the Supabase chain, `eq` is a filter similar to the SQL `WHERE id = itemId`. The Supabase `select` chain is a query flow that retrieves the necessary rows and columns from a table. You just need to check the order in which the filter, sort, and `LIMIT` are applied. Therefore, the correct answer is “It filters only rows where `id` equals `itemId`.”",
+    "side_card_ids": [
+      "PYV158_A1_DATABASE_FLOW"
+    ],
+    "project_context": "This is necessary for reading the Supabase serving layer/publishing layer access code."
+  },
+  {
+    "id": "PY21_L10_orphan_check_001",
+    "level": 10,
+    "title": "Read the query for checking orphan rows",
+    "concepts": [
+      "orphan",
+      "left_join",
+      "integrity",
+      "sql"
+    ],
+    "reading_goal": "Read the SQL query that finds rows with no references.",
+    "code": "SELECT c.id, c.item_id\nFROM curations c\nLEFT JOIN items i ON c.item_id = i.id\nWHERE i.id IS NULL;",
+    "question_type": "meaning_choice",
+    "question": "What does \"WHERE i.id IS NULL\" look for?",
+    "choices": [
+      "All normal operations",
+      "All rows in `items`",
+      "Curations rows that do not match any items",
+      "\"curations\" table name"
+    ],
+    "answer": "Curations rows that do not match any items",
+    "explanation": "If a value in the right table is NULL after a LEFT JOIN, it means there is no corresponding record. An orphan row check is a process of identifying rows that have no parent data to which they should be linked. You must check the foreign key relationships and join conditions to see if there are any missing references. Therefore, the correct answer is “curations rows that do not match any items.”",
+    "side_card_ids": [
+      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+    ],
+    "project_context": "It is used to check data consistency, such as in the verification of \"curations → items orphan.\""
+  },
+  {
+    "id": "PY21_L10_repository_api_flow_001",
+    "level": 10,
+    "title": "Understanding the API-Service-Repository-DB Workflow",
+    "concepts": [
+      "api",
+      "service",
+      "repository",
+      "database"
+    ],
+    "reading_goal": "Understand the flow of a request from the endpoint through the service and repository to the database.",
+    "code": "@app.get(\"/items/{item_id}\")\ndef get_item(item_id: str):\n    return item_service.get_item(item_id)\n\nclass ItemService:\n    def get_item(self, item_id):\n        row = self.repo.find_by_id(item_id)\n        if row is None:\n            raise NotFound()\n        return to_response(row)",
+    "question_type": "meaning_choice",
+    "question": "What is the role of `repo.find_by_id` in this structure?",
+    "choices": [
+      "Create an HTTP route",
+      "Change the browser's CSS",
+      "Find the \"item\" row in the database",
+      "Create a Git commit"
+    ],
+    "answer": "Find the \"item\" row in the database",
+    "explanation": "The API receives requests, the service handles business logic, and the repository manages database access. The API-Service-Repository-DB flow is a structure in which a request travels from the API through the service logic to the repository layer and then to the database. The responsibilities of each layer must be clearly defined. Therefore, the result of the call is “finding an item row in the database.”",
+    "side_card_ids": [
+      "PYV158_A1_API_FLOW",
+      "PYV158_A1_DATABASE_FLOW"
+    ],
+    "project_context": "This is the required architectural structure as the code base grows in the Education Service/RAG Service MVP."
+  }
+]

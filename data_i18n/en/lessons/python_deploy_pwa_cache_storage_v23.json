@@ -1,0 +1,439 @@
+[
+  {
+    "id": "PY23_L07_github_pages_url_001",
+    "level": 7,
+    "title": "Understanding GitHub Pages Fixed URLs",
+    "concepts": [
+      "github_pages",
+      "deploy",
+      "static_site",
+      "url"
+    ],
+    "reading_goal": "I understand that the GitHub Pages URL is fixed and that only the content is updated after a push.",
+    "code": "# repository\nhttps://github.com/hoseuk0917-rgb/python-reading-trainer\n\n# public site\nhttps://hoseuk0917-rgb.github.io/python-reading-trainer/",
+    "question_type": "meaning_choice",
+    "question": "What happens to the GitHub Pages URL every time I run `git push`?",
+    "choices": [
+      "A completely new address is generated every time.",
+      "It changes to the \"localhost\" address",
+      "The address remains the same; only the contents of the distributed files are updated.",
+      "It is always deleted"
+    ],
+    "answer": "The address remains the same; only the contents of the distributed files are updated.",
+    "explanation": "The public URL for GitHub Pages is fixed based on the repository settings. When a commit changes, only the content at that address is redeployed. The fixed GitHub Pages URL is the public address where static files are actually deployed. Since it may differ from the local path, you must check both the relative path and the base path.",
+    "side_card_ids": [
+      "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
+    ],
+    "project_context": "The distinction is that I use a fixed GitHub Pages URL on my phone and localhost when developing on my PC."
+  },
+  {
+    "id": "PY23_L07_static_loading_order_001",
+    "level": 7,
+    "title": "Understanding the Loading Order of Static Apps",
+    "concepts": [
+      "html",
+      "css",
+      "javascript",
+      "static_loading"
+    ],
+    "reading_goal": "Understand the process by which the browser loads CSS and JavaScript from index.html.",
+    "code": "<link rel=\"stylesheet\" href=\"style.css?v=20260529_force1\" />\n<script src=\"app.js?v=20260529_force1\" defer></script>",
+    "question_type": "meaning_choice",
+    "question": "How is app.js loaded in this HTML snippet?",
+    "choices": [
+      "It is automatically generated within CSS",
+      "It loads from the Git commit message",
+      "It is loaded via the `src` attribute of the `script` tag",
+      "The browser always ignores it"
+    ],
+    "answer": "It is loaded via the `src` attribute of the `script` tag",
+    "explanation": "HTML uses `link` tags to load CSS and `script` tags to load JavaScript. The `defer` attribute allows the JavaScript to run later without blocking HTML parsing. When `defer` is used, the JavaScript file is downloaded, but it is executed only after the document structure has been built, so it does not interfere with the initial display of the page. Therefore, the output is loaded from the `src` path specified in the `script` tag.",
+    "side_card_ids": [
+      "PYV161_A1_ROLLBACK_SEPARATION_UI_FLOW"
+    ],
+    "project_context": "This is why we check whether the index page has opened and whether app.js has been requested when \"Loading...\" stops."
+  },
+  {
+    "id": "PY23_L08_cache_bust_asset_001",
+    "level": 8,
+    "title": "Reading About Static Resource Cache Busting",
+    "concepts": [
+      "cache_bust",
+      "query_string",
+      "browser_cache",
+      "asset"
+    ],
+    "reading_goal": "Understand the mechanism of bypassing the cache by appending a version query to CSS/JS URLs.",
+    "code": "style.css?v=20260529_force1\napp.js?v=20260529_force1",
+    "question_type": "meaning_choice",
+    "question": "Why is “?v=20260529_force1” added?",
+    "choices": [
+      "To permanently change the file name",
+      "I want to change the server port",
+      "To make the browser recognize it as a different URL from the previous file",
+      "I want to delete the HTML"
+    ],
+    "answer": "To make the browser recognize it as a different URL from the previous file",
+    "explanation": "Cache-busting is a method of refreshing the cache by appending a version number to the URL of a static file. If the query string changes, the browser treats it as a new file. If old files remain after deployment, it may appear as though the changes have not been applied. Therefore, the correct answer is “to make the browser recognize it as a different URL from the previous file.”",
+    "side_card_ids": [
+      "PYV102_A7_PWA_OFFLINE_UPDATE",
+      "PYV102_A9_RUNTIME_STORAGE_STATE"
+    ],
+    "project_context": "This is how I fixed the issue where the old app.js kept running, preventing the v15 recovery from appearing."
+  },
+  {
+    "id": "PY23_L08_data_version_fetch_001",
+    "level": 8,
+    "title": "Adding a version number to data fetches",
+    "concepts": [
+      "fetch",
+      "data_version",
+      "json",
+      "cache_bust"
+    ],
+    "reading_goal": "Read the function that appends APP_DATA_VERSION to the JSON requests for \"lesson\" and \"side card.\"",
+    "code": "const APP_DATA_VERSION = \"20260529_v22\";\nfunction withDataVersion(path) {\n  if (path.indexOf(\"?\") >= 0) return path + \"&v=\" + APP_DATA_VERSION;\n  return path + \"?v=\" + APP_DATA_VERSION;\n}",
+    "question_type": "meaning_choice",
+    "question": "If the path in the data fetch URL already contains a \"?\", why do we add \"&v=\"?",
+    "choices": [
+      "Just to trigger an error",
+      "To compress a file",
+      "Since the second query parameter and all subsequent ones must be separated by &,",
+      "To close the browser"
+    ],
+    "answer": "Since the second query parameter and all subsequent ones must be separated by &,",
+    "explanation": "Data version fetch is a method of appending a version number to a JSON data request to retrieve the latest data. The first parameter begins with a question mark (?), and subsequent parameters are separated by an ampersand (&). You must use the correct query separator to add the version value without disrupting existing parameters. Therefore, the result is that “the second and subsequent query parameters must be separated by an ampersand (&).”",
+    "side_card_ids": [
+      "PYV158_A1_JSON_FLOW"
+    ],
+    "project_context": "This is the current app structure, which ensures that the JSON for lessons v1 through v22 loads in the new version."
+  },
+  {
+    "id": "PY23_L08_http_log_304_001",
+    "level": 8,
+    "title": "Interpreting the 304 Log",
+    "concepts": [
+      "http_status",
+      "304",
+      "cache",
+      "network_log"
+    ],
+    "reading_goal": "Understand that a 304 in the server logs is not an error but a cache-related response.",
+    "code": "127.0.0.1 \"GET /src/pwa/index.html HTTP/1.1\" 304 -\n127.0.0.1 \"GET /src/pwa/app.js?v=20260529_force1 HTTP/1.1\" 200 -",
+    "question_type": "meaning_choice",
+    "question": "What is a 304 in index.html?",
+    "choices": [
+      "A response indicating that the file was deleted",
+      "A response indicating that the server is down",
+      "Responses indicating that it is acceptable to use the browser cache",
+      "Response indicating lack of authority"
+    ],
+    "answer": "Responses indicating that it is acceptable to use the browser cache",
+    "explanation": "A 304 Not Modified response means that the previously received cache is still valid. This is different from a 404 or 500 error. A 304 response indicates that the browser can reuse the existing cache. While this is not an error, you should also check the cache status when a new version is not reflected.",
+    "side_card_ids": [
+      "PL_cache_001",
+      "PYV102_A7_PWA_OFFLINE_UPDATE"
+    ],
+    "project_context": "This is a practical exercise in distinguishing between 304 and 200 errors in local server validation logs."
+  },
+  {
+    "id": "PY23_L09_fetch_json_fail_001",
+    "level": 9,
+    "title": "Reading About Handling JSON Fetch Failures",
+    "concepts": [
+      "fetch",
+      "json",
+      "error_handling",
+      "http_status"
+    ],
+    "reading_goal": "Read the code that throws a clear error if the fetch response fails.",
+    "code": "async function loadJson(path) {\n  const res = await fetch(withDataVersion(path));\n  if (!res.ok) throw new Error(\"failed to load \" + path + \": \" + res.status);\n  return await res.json();\n}",
+    "question_type": "meaning_choice",
+    "question": "What happens if `res.ok` is false?",
+    "choices": [
+      "Always returns an empty array",
+      "Automatically generates a file",
+      "It throws an error and does not proceed to JSON parsing",
+      "Clear the browser cache"
+    ],
+    "answer": "It throws an error and does not proceed to JSON parsing",
+    "explanation": "If you simply try to parse failure responses such as HTTP 404 or 500 as JSON, it can be difficult to identify the cause. A JSON fetch failure could be due to a file path issue, a server response issue, or a JSON syntax error. You should review both the status code in the Network tab and the errors in the Console. Therefore, the result of the call is that “an error is thrown, and JSON parsing does not proceed.”",
+    "side_card_ids": [
+      "PYV158_A1_JSON_FLOW"
+    ],
+    "project_context": "This is necessary to identify the cause of the entire app's loading process stopping when a single JSON file returns a 404 error."
+  },
+  {
+    "id": "PY23_L09_promise_all_001",
+    "level": 9,
+    "title": "Reading the \"Promise.all\" Lesson",
+    "concepts": [
+      "promise_all",
+      "fetch",
+      "async",
+      "json"
+    ],
+    "reading_goal": "Understand the structure for loading multiple lesson files in parallel and the characteristics of failures.",
+    "code": "const lessonArrays = await Promise.all(\n  lessonFiles.map((path) => loadJson(path))\n);\nconst cards = lessonArrays.flat();",
+    "question_type": "meaning_choice",
+    "question": "What are the features of `Promise.all`?",
+    "choices": [
+      "I always ignore failure",
+      "Commit the array to the auto-save",
+      "If even one of the requests fails, the entire process may fail.",
+      "Deletes files in no particular order"
+    ],
+    "answer": "If even one of the requests fails, the entire process may fail.",
+    "explanation": "`Promise.all` returns an array of results only if all Promises succeed. If even one is rejected, the entire `await` statement fails. `Promise.all` is a mechanism for waiting for multiple asynchronous operations at once. Since the entire operation can fail if even one fails, error handling and fallbacks are crucial.",
+    "side_card_ids": [
+      "PYV158_A1_JSON_FLOW"
+    ],
+    "project_context": "This is why the app may get stuck on \"Loading\" if you add a file that isn't in `lessonFiles`."
+  },
+  {
+    "id": "PY23_L09_localstorage_progress_001",
+    "level": 9,
+    "title": "Saving and Reading Progress in localStorage",
+    "concepts": [
+      "localStorage",
+      "progress",
+      "json",
+      "browser_storage"
+    ],
+    "reading_goal": "Read the structure that saves learning progress in the browser.",
+    "code": "const progress = { seen: [\"PY1_001\"], unknown: [] };\nlocalStorage.setItem(\"ptr_progress\", JSON.stringify(progress));",
+    "question_type": "meaning_choice",
+    "question": "Why use `JSON.stringify(progress)`?",
+    "choices": [
+      "To compress an object into a file",
+      "To delete the progress",
+      "To convert an object into a string that can be stored in localStorage,",
+      "To install a new browser"
+    ],
+    "answer": "To convert an object into a string that can be stored in localStorage,",
+    "explanation": "Since localStorage stores string values, objects must be converted to JSON strings. Saving progress in localStorage is a way to store the user's learning status in the browser. You need to verify which keys are used to store the card ID, score, and completion status.",
+    "side_card_ids": [
+      "PYV158_A1_JSON_FLOW"
+    ],
+    "project_context": "This is how the \"Study,\" \"Don't Know,\" \"Note,\" and \"Today's Queue\" statuses are saved in the browser."
+  },
+  {
+    "id": "PY23_L09_localstorage_load_001",
+    "level": 9,
+    "title": "Loading localStorage: Fallback Reading",
+    "concepts": [
+      "localStorage",
+      "fallback",
+      "JSON.parse",
+      "browser_storage"
+    ],
+    "reading_goal": "Reads a structure that uses a default value when no value is stored.",
+    "code": "const raw = localStorage.getItem(\"ptr_progress\");\nconst progress = raw ? JSON.parse(raw) : { seen: [], unknown: [] };",
+    "question_type": "meaning_choice",
+    "question": "If there is no \"raw,\" what is \"progress\"?",
+    "choices": [
+      "null",
+      "\"ptr_progress\"",
+      "{ seen: [], unknown: [] }",
+      "Error"
+    ],
+    "answer": "{ seen: [], unknown: [] }",
+    "explanation": "The ternary operator ensures that `JSON.parse` is called only if a value is stored; otherwise, it uses the default object. The fallback for loading from `localStorage` is a mechanism that safely reverts to the default value if no value is stored or if the stored value is corrupted. JSON parsing failures and empty value handling must be considered together. Therefore, the correct answer is ‘{ seen: [], unknown: [] }’.",
+    "side_card_ids": [
+      "WEB_localstorage_001",
+      "PYV102_A7_PWA_OFFLINE_UPDATE"
+    ],
+    "project_context": "This code ensures that even users opening the app for the first time start with an empty progress bar."
+  },
+  {
+    "id": "PY23_L10_manifest_json_001",
+    "level": 10,
+    "title": "Reading the PWA manifest.json File",
+    "concepts": [
+      "pwa",
+      "manifest",
+      "install",
+      "web_app"
+    ],
+    "reading_goal": "I understand that PWA installation information is contained in `manifest.json`.",
+    "code": "{\n  \"name\": \"Python Reading Trainer\",\n  \"short_name\": \"PyReader\",\n  \"start_url\": \"./index.html\",\n  \"display\": \"standalone\"\n}",
+    "question_type": "meaning_choice",
+    "question": "Which of the following most closely matches the meaning of \"display: standalone\"?",
+    "choices": [
+      "Always run it only on the server",
+      "Delete the JSON",
+      "Makes the browser run like an app with a less visible UI",
+      "Disable all caching"
+    ],
+    "answer": "Makes the browser run like an app with a less visible UI",
+    "explanation": "The manifest contains PWA metadata such as the app name, launch URL, icon, and display mode. The PWA `manifest.json` file defines the app name, icon, launch URL, and display mode. To make the app look like a native app, you must ensure that all required fields are included.",
+    "side_card_ids": [
+      "WEB_pwa_001",
+      "PYV102_A7_PWA_OFFLINE_UPDATE"
+    ],
+    "project_context": "It’s designed to be pinned to the phone’s home screen just like a learning app."
+  },
+  {
+    "id": "PY23_L10_service_worker_concept_001",
+    "level": 10,
+    "title": "Understanding the Service Worker Cache Concept",
+    "concepts": [
+      "service_worker",
+      "cache",
+      "offline",
+      "pwa"
+    ],
+    "reading_goal": "I understand that a service worker can act as an intermediary between network requests and the cache.",
+    "code": "self.addEventListener(\"fetch\", (event) => {\n  event.respondWith(\n    caches.match(event.request).then((cached) => cached || fetch(event.request))\n  );\n});",
+    "question_type": "meaning_choice",
+    "question": "What happens if there is a cache?",
+    "choices": [
+      "It always returns a 404.",
+      "Clear all cache",
+      "It can return a cached response instead of accessing the network.",
+      "Shutting Down GitHub Pages"
+    ],
+    "answer": "It can return a cached response instead of accessing the network.",
+    "explanation": "Service workers are useful for offline and PWA caching, but they can also cause outdated files to remain visible. A service worker is a script that controls caching and offline behavior between a web app and the network. It is also closely related to the issue of previous files remaining after deployment.",
+    "side_card_ids": [
+      "PYV160_A1_PWA_STATE_STORAGE_FLOW"
+    ],
+    "project_context": "If the PWA cache is strong, you may still see the old code even after changing app.js."
+  },
+  {
+    "id": "PY23_L10_devtools_network_001",
+    "level": 10,
+    "title": "DevTools Network Checkpoints",
+    "concepts": [
+      "devtools",
+      "network",
+      "debugging",
+      "http_status"
+    ],
+    "reading_goal": "Learn how to use the browser's Network tab to see which files were actually loaded.",
+    "code": "Network tab check:\n- index.html status\n- app.js status and query version\n- style.css status\n- lesson JSON status\n- side_cards JSON status",
+    "question_type": "meaning_choice",
+    "question": "If the app gets stuck on \"Loading...,\" what should you check first in the Network tab?",
+    "choices": [
+      "Is the monitor brightness set high enough?",
+      "Can you see my GitHub profile picture?",
+      "Did the app.js and lesson JSON files load with a 200 status code?",
+      "Is the keyboard input language correct?"
+    ],
+    "answer": "Did the app.js and lesson JSON files load with a 200 status code?",
+    "explanation": "The DevTools Network tab shows whether the browser’s requests for JS, CSS, and JSON files were successful. In a static app, even if a single core file fails to load, the page may stop refreshing. Therefore, the correct answer is “whether app.js and the lesson JSON files loaded with a 200 status code.”",
+    "side_card_ids": [
+      "PYV158_A1_DEBUGGING_FLOW"
+    ],
+    "project_context": "By checking the server logs and the browser's Network tab at the same time, you can quickly narrow down the cause of cache, 404, and JavaScript errors."
+  },
+  {
+    "id": "PY23_L10_devtools_console_001",
+    "level": 10,
+    "title": "Reading Errors in the DevTools Console",
+    "concepts": [
+      "devtools",
+      "console",
+      "javascript_error",
+      "debugging"
+    ],
+    "reading_goal": "I understand that console errors provide the filename, line number, and message.",
+    "code": "Uncaught SyntaxError: Unexpected token '}'\n    at app.js?v=20260529_force1:312:5",
+    "question_type": "meaning_choice",
+    "question": "Where should I check first for this error?",
+    "choices": [
+      "The first line of style.css",
+      "GitHub README",
+      "Around line 312 in app.js",
+      "manifest icon"
+    ],
+    "answer": "Around line 312 in app.js",
+    "explanation": "Console errors usually provide the filename and line number. Check the parentheses, curly braces, and strings around that location. The DevTools Console is a screen in the browser where you can view JavaScript errors and logs. It’s the first place to check when an app freezes or data doesn’t display. Therefore, the correct answer is “near line 312 in app.js.”",
+    "side_card_ids": [
+      "PYV158_A1_DEBUGGING_FLOW"
+    ],
+    "project_context": "It is important to check whether the parentheses are broken after replacing a function block."
+  },
+  {
+    "id": "PY23_L10_mobile_layout_001",
+    "level": 10,
+    "title": "Reading CSS for Mobile Screens",
+    "concepts": [
+      "responsive",
+      "css",
+      "media_query",
+      "mobile"
+    ],
+    "reading_goal": "I'm reading about CSS that changes the layout when the screen width is narrow.",
+    "code": "@media (max-width: 720px) {\n  .app-shell {\n    grid-template-columns: 1fr;\n  }\n}",
+    "question_type": "meaning_choice",
+    "question": "When is the `max-width: 720px` rule applied?",
+    "choices": [
+      "Always on the desktop only",
+      "When the server is on port 720",
+      "When the screen width is 720px or less",
+      "When there are 720 cards"
+    ],
+    "answer": "When the screen width is 720px or less",
+    "explanation": "A mobile layout is a way of arranging buttons and text so that they are clearly visible even on small screens. By using media queries, you can apply different CSS styles depending on the screen size. Therefore, the correct answer is “when the screen width is 720px or less.”",
+    "side_card_ids": [
+      "PYV161_A1_ROLLBACK_SEPARATION_UI_FLOW"
+    ],
+    "project_context": "This is a way to reduce the problem of the right panel or code block becoming too wide on a phone."
+  },
+  {
+    "id": "PY23_L10_static_api_connection_001",
+    "level": 10,
+    "title": "Architecture for Connecting Static Apps to an API Server",
+    "concepts": [
+      "static_app",
+      "api_server",
+      "fetch",
+      "architecture"
+    ],
+    "reading_goal": "Understand the structure in which a static PWA calls a separate API server using the `fetch` method.",
+    "code": "# static app\nhttp://localhost:8790/src/pwa/index.html\n\n# API server\nhttp://127.0.0.1:8000/search?q=lidar\n\n# browser JS\nfetch(\"http://127.0.0.1:8000/search?q=\" + encodeURIComponent(q))",
+    "question_type": "meaning_choice",
+    "question": "What is the role of the 8790 server in this architecture?",
+    "choices": [
+      "Direct Query of the Search Database",
+      "Token Encryption",
+      "Serving static files such as HTML, CSS, and JS",
+      "Model Training"
+    ],
+    "answer": "Serving static files such as HTML, CSS, and JS",
+    "explanation": "The static server serves app files, while the API server handles dynamic processing such as search, database operations, and LLM. The architecture connecting the static app and the API server involves serving screen files statically and sending data requests to the API. You must verify how the deployment URL and the API URL are separated.",
+    "side_card_ids": [
+      "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
+    ],
+    "project_context": "This is the structure required when integrating the LLM_Lora search API with the reading trainer."
+  },
+  {
+    "id": "PY23_L10_deploy_verify_checklist_001",
+    "level": 10,
+    "title": "Read the Post-Deployment Verification Checklist",
+    "concepts": [
+      "deploy",
+      "verification",
+      "checklist",
+      "github_pages"
+    ],
+    "reading_goal": "Learn the steps to verify that the app is actually displaying the latest files after a push.",
+    "code": "# 1. git status clean\n# 2. git log --oneline -3\n# 3. local server에서 v23 JSON 200 확인\n# 4. GitHub Pages에서 새 카드 검색\n# 5. DevTools Network에서 app.js/data version 확인",
+    "question_type": "order_choice",
+    "question": "If the latest changes aren't reflected after a push, what should you check in particular?",
+    "choices": [
+      "It only checks the keyboard battery status",
+      "Just check the monitor resolution settings",
+      "Browser/Pages cache and app.js/data version",
+      "Just check the GitHub username display"
+    ],
+    "answer": "Browser/Pages cache and app.js/data version",
+    "explanation": "If the deployment was successful but the screen remains unchanged, you may be viewing a cached version or an outdated app.js/data JSON file. The post-deployment verification checklist involves confirming that the app files, data JSON, and resource cards load with a 200 status code from their actual URLs. You should also verify the version string.",
+    "side_card_ids": [
+      "PYV161_A1_DEPLOY_VERSION_URL_FLOW",
+      "PYV161_A1_ENV_MAIN_CHECKLIST_FLOW"
+    ],
+    "project_context": "This is a routine for verifying a structure in which only the content is updated on a GitHub Pages permalink."
+  }
+]

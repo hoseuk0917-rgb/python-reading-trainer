@@ -1,0 +1,434 @@
+[
+  {
+    "id": "PY19_L06_csv_dictreader_001",
+    "level": 6,
+    "title": "Reading with CSV DictReader",
+    "concepts": [
+      "csv",
+      "DictReader",
+      "file",
+      "row"
+    ],
+    "reading_goal": "Understand the code that reads a CSV file as a row-based dictionary.",
+    "code": "import csv\n\nwith open(\"items.csv\", \"r\", encoding=\"utf-8\", newline=\"\") as f:\n    reader = csv.DictReader(f)\n    for row in reader:\n        print(row[\"title\"])",
+    "question_type": "meaning_choice",
+    "question": "What are the features of `csv.DictReader`?",
+    "choices": [
+      "Compress the file into a ZIP file",
+      "Reads only JSONL",
+      "Reads each row as if it were a dictionary based on column names",
+      "Convert images to text"
+    ],
+    "answer": "Reads each row as if it were a dictionary based on column names",
+    "explanation": "DictReader reads each line as a dictionary, using the header in the first row as the key. CSV DictReader is a tool that reads each line of a CSV file as a dictionary. Since the column names serve as the keys and the values in each cell serve as the values, you must verify which column you are referring to in your code.",
+    "side_card_ids": [
+      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+    ],
+    "project_context": "This is the default pattern used when reading doc_master.csv, registry, and audit TSV/CSV files."
+  },
+  {
+    "id": "PY19_L06_tsv_delimiter_001",
+    "level": 6,
+    "title": "Reading the TSV Delimiter",
+    "concepts": [
+      "tsv",
+      "delimiter",
+      "csv",
+      "file"
+    ],
+    "reading_goal": "Understand how to read a tab-delimited TSV file using the csv module.",
+    "code": "import csv\n\nwith open(\"nodes.tsv\", \"r\", encoding=\"utf-8\", newline=\"\") as f:\n    reader = csv.DictReader(f, delimiter=\"\\t\")\n    rows = list(reader)\n\nprint(len(rows))",
+    "question_type": "meaning_choice",
+    "question": "What does `delimiter='\\t'` mean?",
+    "choices": [
+      "Use a comma as the column separator.",
+      "Delete the file",
+      "Use a tab character as the column separator",
+      "Remove all tabs"
+    ],
+    "answer": "Use a tab character as the column separator",
+    "explanation": "TSV stands for \"tab-separated values,\" meaning that values are separated by tab characters. It is similar to CSV, but uses tabs instead of commas as the delimiter. The advantage of using tabs as delimiters is that they make it less confusing to distinguish columns even when commas appear within the values. Therefore, the output is “uses tabs as column delimiters.”",
+    "side_card_ids": [
+      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+    ],
+    "project_context": "This is a piece of code that frequently appears when reading KG candidate/review/mapping TSV files."
+  },
+  {
+    "id": "PY19_L07_jsonl_stream_001",
+    "level": 7,
+    "title": "Reading JSONL Line by Line",
+    "concepts": [
+      "jsonl",
+      "streaming",
+      "json",
+      "large_file"
+    ],
+    "reading_goal": "I'm reading some code that processes large JSONL files without loading them all into memory at once.",
+    "code": "import json\n\nwith open(\"chunks.jsonl\", \"r\", encoding=\"utf-8\") as f:\n    for line in f:\n        if not line.strip():\n            continue\n        item = json.loads(line)\n        print(item[\"chunk_id\"])",
+    "question_type": "meaning_choice",
+    "question": "What are the advantages of the \"for line in f\" approach?",
+    "choices": [
+      "Always reads the entire file at once",
+      "Automatically corrects JSON",
+      "Reads the file line by line to reduce memory usage",
+      "Block the network"
+    ],
+    "answer": "Reads the file line by line to reduce memory usage",
+    "explanation": "JSONL is a format that stores one JSON object per line. It reduces the memory load by processing large files line by line rather than reading the entire file at once. Since each line is processed independently, it is easy to locate the source of an error and resume processing even if an error occurs in a single line.",
+    "side_card_ids": [
+      "PYV158_A1_JSON_FLOW"
+    ],
+    "project_context": "These are practical patterns needed when processing JSONL files containing 70k+ chunks or node/edge candidates."
+  },
+  {
+    "id": "PY19_L07_write_jsonl_001",
+    "level": 7,
+    "title": "Reading a JSONL Storage Loop",
+    "concepts": [
+      "jsonl",
+      "write",
+      "ensure_ascii",
+      "file"
+    ],
+    "reading_goal": "Read the code that saves a list of dictionaries to a JSONL file.",
+    "code": "import json\n\nrows = [{\"id\": \"a1\", \"label\": \"LiDAR\"}, {\"id\": \"a2\", \"label\": \"Radar\"}]\n\nwith open(\"nodes.jsonl\", \"w\", encoding=\"utf-8\") as f:\n    for row in rows:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")",
+    "question_type": "meaning_choice",
+    "question": "Which of the following is the closest reason for using `ensure_ascii=False`?",
+    "choices": [
+      "I want to compress a file",
+      "I always try to translate into English",
+      "To store non-ASCII characters, such as Hangul, in a way that is easy to read,",
+      "To remove line breaks"
+    ],
+    "answer": "To store non-ASCII characters, such as Hangul, in a way that is easy to read,",
+    "explanation": "If `ensure_ascii=False`, Korean characters are stored as actual characters rather than Unicode escapes. The JSONL storage loop is structured to convert a single object into a single line of JSON and save it iteratively. Since each line can be read independently, this is advantageous for processing large amounts of data. Therefore, the correct answer is “to store non-ASCII characters, such as Korean, in a way that is easy to read.”",
+    "side_card_ids": [
+      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+    ],
+    "project_context": "When saving Korean technical documents, the \"chunk,\" \"node label,\" and \"evidence snippet\" are important."
+  },
+  {
+    "id": "PY19_L08_encoding_fallback_001",
+    "level": 8,
+    "title": "Reading Encoding Fallback",
+    "concepts": [
+      "encoding",
+      "utf8",
+      "cp949",
+      "try_except"
+    ],
+    "reading_goal": "Understand the code that re-reads the data in CP949 if the UTF-8 conversion fails.",
+    "code": "def read_text_fallback(path):\n    try:\n        return path.read_text(encoding=\"utf-8\")\n    except UnicodeDecodeError:\n        return path.read_text(encoding=\"cp949\")",
+    "question_type": "meaning_choice",
+    "question": "What should you do if a UnicodeDecodeError occurs?",
+    "choices": [
+      "Delete the file",
+      "It always returns an empty string.",
+      "Reread using CP949 encoding",
+      "Start the server"
+    ],
+    "answer": "Reread using CP949 encoding",
+    "explanation": "Since some older files in a Korean Windows environment may be encoded in cp949, a fallback is provided. Encoding fallback is a method that attempts a different encoding when reading the first character fails. This helps reduce garbled text in the text collection code.",
+    "side_card_ids": [
+      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+    ],
+    "project_context": "Encoding issues frequently occur in data from public institutions, as well as in text extracted from CSV, HWP, and PDF files."
+  },
+  {
+    "id": "PY19_L08_path_join_mkdir_001",
+    "level": 8,
+    "title": "Reading About Path Concatenation and Folder Creation",
+    "concepts": [
+      "pathlib",
+      "mkdir",
+      "path_join",
+      "directory"
+    ],
+    "reading_goal": "Read the code that creates an output folder and constructs the file path.",
+    "code": "from pathlib import Path\n\nout_dir = Path(\"derived\") / \"clean\" / \"inbox\"\nout_dir.mkdir(parents=True, exist_ok=True)\nout_file = out_dir / \"manifest.jsonl\"",
+    "question_type": "meaning_choice",
+    "question": "What does \"parents=True\" mean?",
+    "choices": [
+      "Delete the parent folder",
+      "Set the file to read-only",
+      "They are created together even without an intermediate folder",
+      "Convert the path to a string only"
+    ],
+    "answer": "They are created together even without an intermediate folder",
+    "explanation": "Setting `parents=True` causes the command to create intermediate folders, such as `derived/clean`. Path concatenation creates a path appropriate for the operating system, and `mkdir` creates the necessary folders. When reading the code, you should look at the option to create parent folders and how the code handles cases where they already exist. Therefore, the correct answer is “It creates them even if the intermediate folders do not exist.”",
+    "side_card_ids": [
+      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+    ],
+    "project_context": "It is often used when automatically creating output folders such as \"derived,\" \"tmp,\" and \"reports.\""
+  },
+  {
+    "id": "PY19_L08_glob_sort_001",
+    "level": 8,
+    "title": "Reading and Sorting the Results of `glob`",
+    "concepts": [
+      "glob",
+      "sort",
+      "pathlib",
+      "deterministic"
+    ],
+    "reading_goal": "I'm reading some code that sorts a list of files so that they are always processed in the same order.",
+    "code": "from pathlib import Path\n\nfiles = sorted(Path(\"data/lessons\").glob(\"*.json\"))\nfor path in files:\n    print(path.name)",
+    "question_type": "meaning_choice",
+    "question": "Why add \"sorted\"?",
+    "choices": [
+      "To sort and modify the contents of the file",
+      "To delete the JSON",
+      "To ensure a consistent processing order,",
+      "To change the file extension"
+    ],
+    "answer": "To ensure a consistent processing order,",
+    "explanation": "Since the order provided by the file system is not always guaranteed to be as intended, sorting can be useful. `glob` finds a list of files that match a pattern, and `sort` fixes the order of that list. Because the results of file-processing code can vary depending on the order, whether or not to sort is important.",
+    "side_card_ids": [
+      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+    ],
+    "project_context": "It is important to standardize the sequence of verifying lesson files, merging chunk parts, and performing clean pack processing."
+  },
+  {
+    "id": "PY19_L09_sha256_file_001",
+    "level": 9,
+    "title": "Reading a File's SHA256 Hash",
+    "concepts": [
+      "sha256",
+      "hash",
+      "file",
+      "integrity"
+    ],
+    "reading_goal": "Understand the code that reads a file in chunks and calculates its hash.",
+    "code": "import hashlib\n\nh = hashlib.sha256()\nwith open(\"pack.zip\", \"rb\") as f:\n    for block in iter(lambda: f.read(1024 * 1024), b\"\"):\n        h.update(block)\n\nprint(h.hexdigest())",
+    "question_type": "meaning_choice",
+    "question": "Why open the file with rb?",
+    "choices": [
+      "To automatically translate Korean",
+      "I want to read the file as text only",
+      "I'm trying to read it in binary mode to calculate the exact byte hash",
+      "I want to convert it to JSON"
+    ],
+    "answer": "I'm trying to read it in binary mode to calculate the exact byte hash",
+    "explanation": "SHA-256 is a hashing algorithm used to verify whether a file's contents have changed. Since the calculation is based on actual bytes rather than text, the file is read in rb mode. By comparing the hash values, you can reliably determine whether the contents are the same or different, even if the filenames are identical.",
+    "side_card_ids": [
+      "PYV160_A1_FILE_PATH_ENCODING_FLOW",
+      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+    ],
+    "project_context": "It is used to verify file integrity when splitting, moving, or removing duplicates from ZIP files."
+  },
+  {
+    "id": "PY19_L09_zip_extract_001",
+    "level": 9,
+    "title": "Reading the ZIP extraction code",
+    "concepts": [
+      "zipfile",
+      "extract",
+      "archive",
+      "path"
+    ],
+    "reading_goal": "Read the code that extracts a ZIP file to a specified folder.",
+    "code": "from pathlib import Path\nfrom zipfile import ZipFile\n\nzip_path = Path(\"pack.clean.zip\")\nout_dir = Path(\"tmp/unpacked\")\nout_dir.mkdir(parents=True, exist_ok=True)\n\nwith ZipFile(zip_path) as zf:\n    zf.extractall(out_dir)",
+    "question_type": "meaning_choice",
+    "question": "What does `extractall(out_dir)` mean?",
+    "choices": [
+      "Compress the `out_dir` directory into a ZIP file",
+      "Delete the zip file",
+      "Extract the files in the zip file to out_dir",
+      "Change the file name to a hash"
+    ],
+    "answer": "Extract the files in the zip file to out_dir",
+    "explanation": "ZipFile.extractall extracts all contents of a compressed file into a specified folder. It is used to extract downloaded files or bundled data into a working folder. Before extracting, you should check for file name conflicts with the destination folder to ensure that existing files are not overwritten.",
+    "side_card_ids": [
+      "PYF95_A4_PATHLIB_PATH",
+      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+    ],
+    "project_context": "This is the basic code needed to check the clean pack, upload pack, and split archives."
+  },
+  {
+    "id": "PY19_L09_manifest_create_001",
+    "level": 9,
+    "title": "Reading the Manifest File",
+    "concepts": [
+      "manifest",
+      "metadata",
+      "file",
+      "jsonl"
+    ],
+    "reading_goal": "Read the workflow for saving the list of files in a folder as JSONL metadata.",
+    "code": "import json\nfrom pathlib import Path\n\nroot = Path(\"data/raw\")\nwith open(\"manifest.jsonl\", \"w\", encoding=\"utf-8\") as out:\n    for path in sorted(root.rglob(\"*.pdf\")):\n        row = {\"path\": str(path), \"name\": path.name, \"size\": path.stat().st_size}\n        out.write(json.dumps(row, ensure_ascii=False) + \"\\n\")",
+    "question_type": "meaning_choice",
+    "question": "What does `path.stat().st_size` return?",
+    "choices": [
+      "Entire file contents",
+      "File extension",
+      "File size",
+      "Parent Folder Name"
+    ],
+    "answer": "File size",
+    "explanation": "`stat()` provides file metadata, and `st_size` represents the file size in bytes. The manifest can be viewed as a table that records the list of files and their metadata. Checking which files are included and how their paths and statuses are stored makes reprocessing easier.",
+    "side_card_ids": [
+      "PYV160_A1_FILE_PATH_ENCODING_FLOW",
+      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+    ],
+    "project_context": "This is a basic manifest pattern for cataloging collected files so they can be reprocessed later."
+  },
+  {
+    "id": "PY19_L09_safe_filename_001",
+    "level": 9,
+    "title": "Reading the File Name Normalization Function",
+    "concepts": [
+      "filename",
+      "normalization",
+      "regex",
+      "safe_path"
+    ],
+    "reading_goal": "Read the code that replaces dangerous characters in filenames with safe ones.",
+    "code": "import re\n\ndef safe_name(name):\n    name = name.strip()\n    name = re.sub(r\"[\\\\/:*?\\\"<>|]\", \"_\", name)\n    return name[:120]",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of `return name[:120]`?",
+    "choices": [
+      "Delete the first 120 files",
+      "Convert a string to a number",
+      "Prevents file names from becoming too long",
+      "Remove the file extension"
+    ],
+    "answer": "Prevents file names from becoming too long",
+    "explanation": "\"Safe filename\" is a method for reducing issues caused by dangerous characters or excessively long strings in filenames. It can also help mitigate the problem of Windows path length limits. Filename normalization is a defensive measure that is particularly necessary when creating files from downloaded data or user input. Therefore, the expected outcome is to “prevent filenames from becoming too long.”",
+    "side_card_ids": [],
+    "project_context": "This is the defense code required when changing the PDF title, web title, or institutional resource name to a file name."
+  },
+  {
+    "id": "PY19_L10_resume_done_set_001",
+    "level": 10,
+    "title": "Reading a processing loop that can be resumed",
+    "concepts": [
+      "resume",
+      "checkpoint",
+      "set",
+      "batch"
+    ],
+    "reading_goal": "I read the code that skips over IDs that have already been processed and continues from the breakpoint.",
+    "code": "done_ids = set(load_done_ids(\"done.txt\"))\n\nfor row in rows:\n    if row[\"id\"] in done_ids:\n        continue\n    process(row)\n    append_done_id(\"done.txt\", row[\"id\"])",
+    "question_type": "meaning_choice",
+    "question": "What does \"if row['id'] in done_ids: continue\" mean?",
+    "choices": [
+      "Only reprocess items that have already been processed",
+      "Delete all items",
+      "Skip items that have already been processed",
+      "Clear the contents of done.txt"
+    ],
+    "answer": "Skip items that have already been processed",
+    "explanation": "The \"resume done set\" is a method of recording items that have already been processed as a set. It prevents duplicate processing when resuming a batch job that was interrupted. Since set lookups are fast, this method is well-suited for skipping IDs that have already been processed when handling a large number of items.",
+    "side_card_ids": [
+      "PYV159_A1_CHECKPOINT_RESUME_FLOW"
+    ],
+    "project_context": "This pattern is necessary for time-consuming routines such as sharding, node passing, and file extraction."
+  },
+  {
+    "id": "PY19_L10_failed_list_001",
+    "level": 10,
+    "title": "Reading the Failure List Collection Pattern",
+    "concepts": [
+      "error_handling",
+      "failed_list",
+      "try_except",
+      "batch"
+    ],
+    "reading_goal": "I'm reading some code that collects only the files that failed during batch processing.",
+    "code": "failed = []\n\nfor path in files:\n    try:\n        convert(path)\n    except Exception as e:\n        failed.append({\"path\": str(path), \"error\": str(e)})\n\nprint(\"failed\", len(failed))",
+    "question_type": "meaning_choice",
+    "question": "Why can the entire loop continue even if this code fails?",
+    "choices": [
+      "Since errors never occur,",
+      "Since the \"files\" field is always empty,",
+      "Since we use try/except to catch errors in each file,",
+      "Since `convert` does not run,"
+    ],
+    "answer": "Since we use try/except to catch errors in each file,",
+    "explanation": "The \"failed list\" is a list that collects files or items that failed to process. If an error is logged in the `except` block and the program moves on to the next file, the entire process does not stop. Therefore, the output is \"because errors for each file are handled using `try/except`.\"",
+    "side_card_ids": [
+      "PYV161_A1_BATCH_MEMORY_FLOW"
+    ],
+    "project_context": "These are essential operational patterns for PDF extraction, ZIP extraction, JSON parsing, and processing collected files."
+  },
+  {
+    "id": "PY19_L10_atomic_write_001",
+    "level": 10,
+    "title": "Read, Save, and Replace Temporary File",
+    "concepts": [
+      "atomic_write",
+      "temp_file",
+      "replace",
+      "safe_write"
+    ],
+    "reading_goal": "Understand the approach that minimizes damage to the original file even if a save operation fails.",
+    "code": "from pathlib import Path\n\npath = Path(\"result.json\")\ntmp = path.with_suffix(\".tmp\")\n\ntmp.write_text(\"{\\\"ok\\\": true}\", encoding=\"utf-8\")\ntmp.replace(path)",
+    "question_type": "meaning_choice",
+    "question": "What does `tmp.replace(path)` mean?",
+    "choices": [
+      "Delete the final file and finish up.",
+      "Just print the contents of tmp",
+      "Replace the temporary file with the final file location",
+      "Change the file extension to .jsonl"
+    ],
+    "answer": "Replace the temporary file with the final file location",
+    "explanation": "First, writing the entire file to a temporary file and then replacing the original file can reduce the risk of file corruption caused by a save interruption. An atomic write is a method that first saves the data to a temporary file and then replaces the original file once the process is complete. This reduces the risk of corrupting the original file even if the process fails partway through.",
+    "side_card_ids": [],
+    "project_context": "It can be used to securely store important manifests, progress reports, and verification results."
+  },
+  {
+    "id": "PY19_L10_large_file_count_001",
+    "level": 10,
+    "title": "Counting Lines in Large Files",
+    "concepts": [
+      "large_file",
+      "streaming",
+      "count",
+      "memory"
+    ],
+    "reading_goal": "I'm reading some code that counts the number of lines without loading the entire large file.",
+    "code": "count = 0\nwith open(\"chunks.jsonl\", \"r\", encoding=\"utf-8\") as f:\n    for _ in f:\n        count += 1\n\nprint(count)",
+    "question_type": "meaning_choice",
+    "question": "What is the advantage of this approach over `read_text().splitlines()`?",
+    "choices": [
+      "It always produces smaller results",
+      "Automatically compresses files",
+      "Do not load the entire file into memory",
+      "No encoding is required"
+    ],
+    "answer": "Do not load the entire file into memory",
+    "explanation": "Reading a large file all at once can consume a lot of memory. Processing it line by line, such as with `for _ in f`, allows you to count the number of lines more reliably. The streaming method keeps memory usage relatively constant even as the file size increases, making it suitable for batch processing. Therefore, the conclusion is: “Do not load the entire file into memory.”",
+    "side_card_ids": [
+      "PYV161_A1_BATCH_MEMORY_FLOW",
+      "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
+    ],
+    "project_context": "This is the kind of reading comprehension you need when reviewing large files, such as JSONL chunks that are several GB in size."
+  },
+  {
+    "id": "PY19_L10_file_exists_guard_001",
+    "level": 10,
+    "title": "Checking if a file exists (read)",
+    "concepts": [
+      "exists",
+      "guard",
+      "file",
+      "error_handling"
+    ],
+    "reading_goal": "Read the code that returns a clear error when there is no input file.",
+    "code": "from pathlib import Path\n\ninput_path = Path(\"input.jsonl\")\nif not input_path.exists():\n    raise FileNotFoundError(f\"missing input: {input_path}\")",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of this guard?",
+    "choices": [
+      "If the file does not exist, create it automatically",
+      "Always Mark as Successful",
+      "Fail early and clearly when there is no input file",
+      "Changing the File Extension"
+    ],
+    "answer": "Fail early and clearly when there is no input file",
+    "explanation": "A \"file exists\" guard is a defensive piece of code that first checks whether the required file exists. It clearly identifies the cause of the problem before any strange errors occur in subsequent steps. By placing the guard at the beginning, you can safely halt the process while guiding the user to the correct filename and path.",
+    "side_card_ids": [
+      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+    ],
+    "project_context": "It's a habit of quickly identifying incorrect paths in a long pipeline."
+  }
+]

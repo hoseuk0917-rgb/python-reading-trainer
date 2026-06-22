@@ -1,0 +1,438 @@
+[
+  {
+    "id": "PY22_L07_env_api_key_001",
+    "level": 7,
+    "title": "Reading the API Key from Environment Variables",
+    "concepts": [
+      "env",
+      "api_key",
+      "secret",
+      "os.getenv"
+    ],
+    "reading_goal": "Understand the structure that reads API keys from environment variables rather than hard-coding them directly into the code.",
+    "code": "import os\n\napi_key = os.getenv(\"OPENAI_API_KEY\")\nif not api_key:\n    raise RuntimeError(\"missing OPENAI_API_KEY\")",
+    "question_type": "meaning_choice",
+    "question": "What happens if there is no api_key?",
+    "choices": [
+      "Continue running with an empty key",
+      "Automatically issues keys",
+      "Upload the key to GitHub",
+      "A RuntimeError occurs"
+    ],
+    "answer": "A RuntimeError occurs",
+    "explanation": "Environment variables are a way to inject sensitive values, such as API keys, from outside the code. If a key is missing, the process can fail early on, clearly indicating the cause. If the code proceeds silently when a secret is missing, it will result in an unexplained authentication error later on, so it is better to cause a failure early on. Therefore, the correct answer is “A RuntimeError occurs.”",
+    "side_card_ids": [
+      "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
+    ],
+    "project_context": "This is the standard security pattern for handling LLM APIs, Supabase, Cloudflare, and AWS keys."
+  },
+  {
+    "id": "PY22_L07_gitignore_env_001",
+    "level": 7,
+    "title": "Reading .env and .gitignore",
+    "concepts": [
+      "env",
+      "gitignore",
+      "secret",
+      "security"
+    ],
+    "reading_goal": "Understand the settings that prevent secret files from being pushed to Git.",
+    "code": "# .gitignore\n.env\n.env.local\nsecrets.json",
+    "question_type": "meaning_choice",
+    "question": "Why is .env added to .gitignore?",
+    "choices": [
+      "To prevent the app from running",
+      "I'm trying to delete a Python file",
+      "To force the browser to use its cache",
+      "To prevent sensitive information, such as API keys, from being uploaded to Git,"
+    ],
+    "answer": "To prevent sensitive information, such as API keys, from being uploaded to Git,",
+    "explanation": "Since the .env file may contain keys, tokens, and DB URLs, the default practice is not to commit it to the repository. The .env file stores sensitive settings, and .gitignore specifies which files should not be added to Git. These files must be managed together to ensure that API keys are not uploaded to the repository.",
+    "side_card_ids": [
+      "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
+    ],
+    "project_context": "Even a personal project can become vulnerable as soon as the key is uploaded to a public GitHub repository."
+  },
+  {
+    "id": "PY22_L08_bearer_header_001",
+    "level": 8,
+    "title": "Reading the Bearer Token Header",
+    "concepts": [
+      "bearer_token",
+      "authorization_header",
+      "api_auth"
+    ],
+    "reading_goal": "It reads the structure for sending a token in the Authorization header of an API request.",
+    "code": "headers = {\n    \"Authorization\": f\"Bearer {access_token}\",\n    \"Content-Type\": \"application/json\",\n}",
+    "question_type": "meaning_choice",
+    "question": "Authorization: Bearer ... What is the purpose of this header?",
+    "choices": [
+      "Convert the response to CSV",
+      "Secure the port",
+      "Initialize the database",
+      "Sends the access token held by the requester to the server"
+    ],
+    "answer": "Sends the access token held by the requester to the server",
+    "explanation": "Bearer tokens are used by API servers to verify a requester's authentication and authorization. The Bearer token header is a method of including an authentication token in a request. You must verify the format of the Authorization header and how the token is validated by the server.",
+    "side_card_ids": [
+      "PYV102_A7_AUTH_SECURITY",
+      "PYV102_A7_PRIVACY_ANALYTICS"
+    ],
+    "project_context": "This often comes up when calling FastAPI or external APIs from the front end."
+  },
+  {
+    "id": "PY22_L08_fastapi_header_token_001",
+    "level": 8,
+    "title": "Reading the FastAPI Authorization Header",
+    "concepts": [
+      "fastapi",
+      "header",
+      "authorization",
+      "token"
+    ],
+    "reading_goal": "Understand the structure for reading the Authorization header in a FastAPI endpoint.",
+    "code": "from fastapi import Header, HTTPException\n\n@app.get(\"/me\")\ndef me(authorization: str | None = Header(default=None)):\n    if authorization is None:\n        raise HTTPException(status_code=401, detail=\"missing token\")\n    return {\"auth\": authorization}",
+    "question_type": "meaning_choice",
+    "question": "If `authorization` is `None`, what status code is returned?",
+    "choices": [
+      "200",
+      "304",
+      "404",
+      "401"
+    ],
+    "answer": "401",
+    "explanation": "A header token is authentication information included in the API request header. A 401 status code is typically used when authentication is required or when authentication information is missing. Since header-based authentication verifies the token with each request, it serves as a starting point for determining who is calling the API.",
+    "side_card_ids": [
+      "PYV159_A1_FASTAPI_SERVER_FLOW"
+    ],
+    "project_context": "This is the basic structure for creating an API that is accessible only to logged-in users."
+  },
+  {
+    "id": "PY22_L08_jwt_parts_001",
+    "level": 8,
+    "title": "Understanding the Three-Part Structure of JWT",
+    "concepts": [
+      "jwt",
+      "header",
+      "payload",
+      "signature"
+    ],
+    "reading_goal": "I understand that a JWT consists of three parts separated by periods (.).",
+    "code": "token = \"header.payload.signature\"\nparts = token.split(\".\")\nprint(len(parts))",
+    "question_type": "output_prediction",
+    "question": "What's the output?",
+    "choices": [
+      "2",
+      "1",
+      "header",
+      "3"
+    ],
+    "answer": "3",
+    "explanation": "A JWT is typically a string consisting of three parts—header, payload, and signature—separated by dots. A JWT consists of three parts: header, payload, and signature. While the payload is readable, signature verification is essential to prevent forgery. Therefore, the output is “3.”",
+    "side_card_ids": [
+      "WEB_auth_001",
+      "PYV102_A7_AUTH_SECURITY"
+    ],
+    "project_context": "When looking at a token, this exercise focuses on understanding its structure first, rather than memorizing the entire original text."
+  },
+  {
+    "id": "PY22_L09_jwt_payload_claims_001",
+    "level": 9,
+    "title": "Reading JWT Payload Claims",
+    "concepts": [
+      "jwt",
+      "claim",
+      "exp",
+      "sub",
+      "payload"
+    ],
+    "reading_goal": "Understand the meaning of claims such as \"sub\" and \"exp\" within the token payload.",
+    "code": "payload = {\n    \"sub\": \"user_123\",\n    \"role\": \"admin\",\n    \"exp\": 1893456000\n}",
+    "question_type": "meaning_choice",
+    "question": "What does a \"sub-claim\" typically refer to?",
+    "choices": [
+      "Server Port",
+      "File size",
+      "Number of query results",
+      "User identifier as the token holder"
+    ],
+    "answer": "User identifier as the token holder",
+    "explanation": "\"sub\" is short for \"subject\" and is often used as a claim that identifies who the token represents. A JWT payload claim refers to information contained within the token, such as the user ID, permissions, and expiration time. You should not trust the contents without verifying the signature. Therefore, the correct answer is \"the user identifier, which is the subject of the token.\"",
+    "side_card_ids": [
+      "WEB_auth_001",
+      "PYV102_A7_AUTH_SECURITY"
+    ],
+    "project_context": "This is linked to the storage and retrieval of API keys by user, as well as the separation and linking of individual learning records."
+  },
+  {
+    "id": "PY22_L09_permission_check_001",
+    "level": 9,
+    "title": "Reading the Authorization Check Code",
+    "concepts": [
+      "permission",
+      "role",
+      "authorization",
+      "403"
+    ],
+    "reading_goal": "I'm reading about a system that returns a 403 error when authentication is successful but the user lacks sufficient permissions.",
+    "code": "def require_admin(user):\n    if user[\"role\"] != \"admin\":\n        raise HTTPException(status_code=403, detail=\"forbidden\")",
+    "question_type": "meaning_choice",
+    "question": "If the role is not \"admin,\" what status code is returned?",
+    "choices": [
+      "401",
+      "200",
+      "304",
+      "403"
+    ],
+    "answer": "403",
+    "explanation": "A permission check is a procedure to verify whether a user has the necessary permissions to perform a specific action. A 401 error typically indicates an authentication issue, while a 403 error usually indicates a lack of permissions. Permission checks must be performed before the actual action is executed to prevent data modifications or the exposure of sensitive information.",
+    "side_card_ids": [
+      "PL_sudo_001",
+      "PYV102_A7_AUTH_SECURITY"
+    ],
+    "project_context": "This is necessary to distinguish between the data modification API for administrators and the API for general users."
+  },
+  {
+    "id": "PY22_L09_password_hash_001",
+    "level": 9,
+    "title": "Reading Password Hash Verification",
+    "concepts": [
+      "password_hash",
+      "verify",
+      "security"
+    ],
+    "reading_goal": "Understand the structure that verifies hashes without storing the plaintext passwords.",
+    "code": "def login(email, password):\n    user = repo.find_user_by_email(email)\n    if not verify_password(password, user.password_hash):\n        raise HTTPException(status_code=401, detail=\"invalid login\")\n    return create_access_token(user.id)",
+    "question_type": "meaning_choice",
+    "question": "Which of the following best explains why `user.password_hash` is used?",
+    "choices": [
+      "To print the password to the log",
+      "To always allow login,",
+      "To delete an email",
+      "To store and verify hashes instead of plaintext passwords"
+    ],
+    "answer": "To store and verify hashes instead of plaintext passwords",
+    "explanation": "It is safer for a server to store hashes of passwords rather than the plaintext passwords themselves, and then verify them against the entered password. Password hashing is a process that converts the original password into a value that is difficult to reverse. When logging in, the entered password is hashed again and compared to the stored hash.",
+    "side_card_ids": [
+      "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
+    ],
+    "project_context": "This is an important security concept to keep in mind when implementing custom login functionality in educational services or API apps."
+  },
+  {
+    "id": "PY22_L09_refresh_token_001",
+    "level": 9,
+    "title": "Understanding the Access Token and Refresh Token Flow",
+    "concepts": [
+      "access_token",
+      "refresh_token",
+      "session",
+      "auth"
+    ],
+    "reading_goal": "Distinguish between short-lived access tokens and long-lived refresh tokens.",
+    "code": "if access_token_expired:\n    access_token = refresh_access_token(refresh_token)",
+    "question_type": "meaning_choice",
+    "question": "Which of the following best describes the role of a refresh token?",
+    "choices": [
+      "All permissions will be made public permanently.",
+      "Create a database table",
+      "Renders the browser screen",
+      "Used to obtain a new access token to replace an expired one"
+    ],
+    "answer": "Used to obtain a new access token to replace an expired one",
+    "explanation": "The access token is short, while the refresh token is longer, allowing them to be used for automatic login and session renewal. The refresh token is used to obtain a new access token after the original one expires. Because it has a long lifespan and is therefore at high risk of being compromised, it is important to manage where it is stored and how it is disposed of.",
+    "side_card_ids": [],
+    "project_context": "This is linked to the app architecture that retrieves user API keys on a per-account basis."
+  },
+  {
+    "id": "PY22_L10_session_cookie_001",
+    "level": 10,
+    "title": "Reading Session Cookie Settings",
+    "concepts": [
+      "cookie",
+      "session",
+      "httponly",
+      "secure"
+    ],
+    "reading_goal": "When storing session values in browser cookies, it checks the security options.",
+    "code": "response.set_cookie(\n    key=\"session\",\n    value=session_id,\n    httponly=True,\n    secure=True,\n    samesite=\"lax\"\n)",
+    "question_type": "meaning_choice",
+    "question": "Which of the following best describes the meaning of `httponly=True`?",
+    "choices": [
+      "Saves cookies as plaintext files",
+      "Always delete the session",
+      "Allow only HTTP and block HTTPS",
+      "Makes it difficult to read cookies directly in browser JavaScript"
+    ],
+    "answer": "Makes it difficult to read cookies directly in browser JavaScript",
+    "explanation": "A session cookie is a method of storing login status in the browser. The `HttpOnly` option prevents JavaScript from reading the cookie, thereby reducing the risk of XSS. It is safer to protect sensitive session values using the browser's cookie policy rather than relying on client-side scripts.",
+    "side_card_ids": [
+      "WEB_auth_001",
+      "PYV102_A7_AUTH_SECURITY"
+    ],
+    "project_context": "This is necessary to determine where to store the token when attaching the login session to the front end."
+  },
+  {
+    "id": "PY22_L10_oauth_callback_001",
+    "level": 10,
+    "title": "Understanding the OAuth Callback Flow",
+    "concepts": [
+      "oauth",
+      "callback",
+      "code",
+      "token_exchange"
+    ],
+    "reading_goal": "Understand the process of exchanging a code for a token after logging in via OAuth.",
+    "code": "@app.get(\"/auth/callback\")\ndef callback(code: str):\n    token = exchange_code_for_token(code)\n    user = fetch_user_profile(token)\n    return create_session(user)",
+    "question_type": "order_choice",
+    "question": "Which of the following correctly describes the flow of this code?",
+    "choices": [
+      "Create session → Exchange code → Delete user",
+      "View Profile → Delete from Database → Session Expires",
+      "Exit without saving tokens",
+      "Code exchange → View user profile → Create session"
+    ],
+    "answer": "Code exchange → View user profile → Create session",
+    "explanation": "In the OAuth callback, the code provided by the provider is exchanged for a token, and that token is used to verify the user's information. In other words, the callback URL is where the login results are received; it is not where the code itself is stored as the final login information.",
+    "side_card_ids": [
+      "WEB_auth_001",
+      "PYV102_A7_AUTH_SECURITY"
+    ],
+    "project_context": "It integrates with an app architecture that allows API keys to be retrieved from anywhere using a Google OAuth account."
+  },
+  {
+    "id": "PY22_L10_rate_limit_001",
+    "level": 10,
+    "title": "Reading the Rate Limit Check",
+    "concepts": [
+      "rate_limit",
+      "quota",
+      "abuse_prevention",
+      "api"
+    ],
+    "reading_goal": "Read about the basic structure for limiting the number of requests per user.",
+    "code": "def check_rate_limit(user_id):\n    count = cache.incr(f\"rate:{user_id}\")\n    if count > 100:\n        raise HTTPException(status_code=429, detail=\"too many requests\")",
+    "question_type": "meaning_choice",
+    "question": "If `count` exceeds 100, what status code is returned?",
+    "choices": [
+      "200",
+      "401",
+      "404",
+      "429"
+    ],
+    "answer": "429",
+    "explanation": "429 Too Many Requests is a status code used when there are too many requests. A rate limit is a restriction designed to prevent an excessive number of requests. Since the criteria may vary by user, IP address, or token, you should check both the limit units and the response when the limit is exceeded.",
+    "side_card_ids": [
+      "PYV158_A1_API_FLOW"
+    ],
+    "project_context": "These are server defense patterns necessary to prevent skyrocketing costs or abuse of the LLM API."
+  },
+  {
+    "id": "PY22_L10_secret_rotation_001",
+    "level": 10,
+    "title": "Understanding the \"Secret Rotation\" Mindset",
+    "concepts": [
+      "secret_rotation",
+      "api_key",
+      "security",
+      "version"
+    ],
+    "reading_goal": "Understand the operational process for replacing keys when they are exposed or have become outdated.",
+    "code": "ACTIVE_KEY_VERSION = \"v2\"\n\nif request.key_version != ACTIVE_KEY_VERSION:\n    raise HTTPException(status_code=401, detail=\"old key disabled\")",
+    "question_type": "meaning_choice",
+    "question": "Which of the following best describes what “old key disabled” means?",
+    "choices": [
+      "All keys are allowed",
+      "Ignore the key version",
+      "Initialize the database",
+      "Previous version keys are no longer accepted."
+    ],
+    "answer": "Previous version keys are no longer accepted.",
+    "explanation": "Secret rotation is an operational concept that involves replacing keys with new versions and gradually deactivating old ones. Secret rotation is the process of replacing compromised or outdated API keys and tokens with new values. In addition to code changes, you must also check the repository history and the deployment environment. Therefore, the correct answer is “Older keys are no longer accepted.”",
+    "side_card_ids": [
+      "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
+    ],
+    "project_context": "This is a concept that is necessary when designing a structure for storing, encrypting, and renewing API keys."
+  },
+  {
+    "id": "PY22_L10_prompt_injection_guard_001",
+    "level": 10,
+    "title": "Reading: Defending Against Prompt Injection",
+    "concepts": [
+      "prompt_injection",
+      "input_validation",
+      "security",
+      "llm"
+    ],
+    "reading_goal": "I'm reading code that isolates user input so that it isn't treated as a system command.",
+    "code": "def build_prompt(user_query: str):\n    safe_query = user_query[:2000]\n    return {\n        \"system\": \"Answer only from retrieved evidence.\",\n        \"user\": safe_query,\n    }",
+    "question_type": "meaning_choice",
+    "question": "Which of the following best describes the purpose of `user_query[:2000]`?",
+    "choices": [
+      "Elevate user input to an administrator command",
+      "Delete all evidence.",
+      "Issue tokens",
+      "Limit the length of user input"
+    ],
+    "answer": "Limit the length of user input",
+    "explanation": "Input length limits, separation of duties, and \"evidence-first\" instructions can be part of LLM app security measures. A prompt injection guard is a mechanism that defends against users entering input intended to bypass model rules. System rules, evidence limits, and output validation must be used together.",
+    "side_card_ids": [
+      "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW",
+      "PYV159_A1_RAG_SEARCH_LLM_FLOW"
+    ],
+    "project_context": "This is an approach to safely handling user input in the Cross-Verified RAG/Evidence-first pipeline."
+  },
+  {
+    "id": "PY22_L10_encrypted_secret_storage_001",
+    "level": 10,
+    "title": "Reading the Encrypted Secret Storage Flow",
+    "concepts": [
+      "encryption",
+      "secret_storage",
+      "api_key",
+      "database"
+    ],
+    "reading_goal": "Understand the process of storing user API keys in the database in encrypted form rather than in plain text.",
+    "code": "def save_user_api_key(user_id, api_key):\n    encrypted = encrypt(api_key)\n    repo.upsert_secret(user_id=user_id, encrypted_value=encrypted)",
+    "question_type": "meaning_choice",
+    "question": "Why is `encrypted_value` stored?",
+    "choices": [
+      "To display the API key on the screen",
+      "To push the key to Git",
+      "To delete a user ID",
+      "To avoid storing API keys in plain text directly in the database,"
+    ],
+    "answer": "To avoid storing API keys in plain text directly in the database,",
+    "explanation": "Encrypted secret storage is a method of storing sensitive keys in an encrypted form on the server side. Decrypting them only when needed helps minimize the risk of exposure. Encrypted storage reduces the risk of the plaintext secret being immediately exposed even if the database is compromised. Therefore, the correct answer is “to avoid storing API keys in plaintext directly in the database.”",
+    "side_card_ids": [
+      "PYV158_A1_DATABASE_FLOW"
+    ],
+    "project_context": "It is directly linked to a system that securely stores user API keys on the server side and retrieves them using OAuth accounts."
+  },
+  {
+    "id": "PY22_L10_auth_dependency_001",
+    "level": 10,
+    "title": "Reading the FastAPI Authentication Dependency",
+    "concepts": [
+      "fastapi",
+      "depends",
+      "auth",
+      "current_user"
+    ],
+    "reading_goal": "I understand the structure that separates the authentication logic, which is repeated for each endpoint, into a dependency.",
+    "code": "def get_current_user(authorization: str = Header()):\n    token = authorization.removeprefix(\"Bearer \").strip()\n    return verify_token(token)\n\n@app.get(\"/private\")\ndef private(user = Depends(get_current_user)):\n    return {\"user_id\": user.id}",
+    "question_type": "meaning_choice",
+    "question": "What is the purpose of `Depends(get_current_user)`?",
+    "choices": [
+      "Set all users as admins",
+      "Save the token as a file",
+      "Set the API to public",
+      "Verify the token before making the request and pass the user to the endpoint."
+    ],
+    "answer": "Verify the token before making the request and pass the user to the endpoint.",
+    "explanation": "By separating authentication into a dependency, you can reuse the same validation logic across multiple endpoints. The FastAPI authentication dependency is designed to perform token validation or user lookups before an endpoint is executed. This is useful when applying common authentication rules to multiple APIs.",
+    "side_card_ids": [
+      "PYV159_A1_FASTAPI_SERVER_FLOW"
+    ],
+    "project_context": "This is the structure required for the private API, personal notes/study logs, and the user-specific key lookup API."
+  }
+]

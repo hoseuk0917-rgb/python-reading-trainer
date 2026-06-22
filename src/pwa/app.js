@@ -1,5 +1,5 @@
 ﻿// === CACHE BUST START ===
-const APP_DATA_VERSION = "20260621_v334_a7";
+const APP_DATA_VERSION = "20260622_v334_a9";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -9,6 +9,184 @@ function withDataVersion(path) {
 let curriculum = null;
 let cards = [];
 let sideCards = [];
+
+// === LANGUAGE_TOGGLE_I18N_V334_A9 START ===
+const LANGUAGE_STORAGE_KEY_V334_A9 = "pythonReadingTrainer.language";
+const SUPPORTED_LANGUAGES_V334_A9 = ["ko", "en"];
+let currentLanguage = readStoredLanguageV334A9();
+
+function readStoredLanguageV334A9() {
+  try {
+    const params = new URLSearchParams(window.location.search || "");
+    const queryLang = params.get("lang");
+    if (SUPPORTED_LANGUAGES_V334_A9.includes(queryLang)) {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY_V334_A9, queryLang);
+      return queryLang;
+    }
+
+    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY_V334_A9);
+    if (SUPPORTED_LANGUAGES_V334_A9.includes(stored)) {
+      return stored;
+    }
+  } catch (err) {
+    console.warn("Language preference unavailable:", err);
+  }
+
+  return "ko";
+}
+
+function getLocalizedDataRootV334A9() {
+  return currentLanguage === "en" ? "../../data_i18n/en" : "../../data";
+}
+
+function localizedDataPath(path) {
+  return String(path || "").replace("../../data/", getLocalizedDataRootV334A9() + "/");
+}
+
+function setLanguageAndReloadV334A9(lang) {
+  if (!SUPPORTED_LANGUAGES_V334_A9.includes(lang) || lang === currentLanguage) {
+    return;
+  }
+
+  try {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY_V334_A9, lang);
+  } catch (err) {
+    console.warn("Could not save language preference:", err);
+  }
+
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", lang);
+    url.searchParams.set("b", String(Date.now()));
+    window.location.assign(url.toString());
+    return;
+  } catch (err) {
+    console.warn("Could not update language URL:", err);
+  }
+
+  window.location.reload();
+}
+
+function findProgressResetButtonV334A9() {
+  const candidates = Array.from(document.querySelectorAll("button, a, [role='button'], input, span, div"))
+    .filter(function(el) {
+      if (!el || el.closest("#languageToggleV334A9")) {
+        return false;
+      }
+
+      const label = ((el.value || el.textContent || "") + "").replace(/\s+/g, " ").trim();
+      if (!(label === "진도 초기화" || label === "Reset progress")) {
+        return false;
+      }
+
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    })
+    .sort(function(a, b) {
+      const ar = a.getBoundingClientRect();
+      const br = b.getBoundingClientRect();
+      const aScore = Math.abs(ar.top) + Math.abs(window.innerWidth - ar.right);
+      const bScore = Math.abs(br.top) + Math.abs(window.innerWidth - br.right);
+      return aScore - bScore;
+    });
+
+  return candidates[0] || null;
+}
+
+function dockLanguageToggleV334A9() {
+  const wrap = document.getElementById("languageToggleV334A9");
+  if (!wrap) {
+    return false;
+  }
+
+  const resetButton = findProgressResetButtonV334A9();
+  if (resetButton && resetButton.parentElement) {
+    let actions = document.getElementById("headerActionsV334A9");
+
+    if (!actions) {
+      actions = document.createElement("div");
+      actions.id = "headerActionsV334A9";
+      actions.style.display = "inline-flex";
+      actions.style.alignItems = "center";
+      actions.style.justifyContent = "flex-end";
+      actions.style.gap = "8px";
+      actions.style.marginLeft = "auto";
+
+      resetButton.insertAdjacentElement("beforebegin", actions);
+      actions.appendChild(resetButton);
+    }
+
+    wrap.style.display = "inline-flex";
+    wrap.style.marginRight = "0";
+    wrap.style.marginLeft = "0";
+    wrap.style.position = "static";
+    wrap.style.transform = "none";
+
+    if (wrap.parentElement !== actions) {
+      actions.insertBefore(wrap, resetButton);
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
+function renderLanguageToggleV334A9() {
+  if (document.getElementById("languageToggleV334A9")) {
+    dockLanguageToggleV334A9();
+    return;
+  }
+
+  document.documentElement.lang = currentLanguage === "en" ? "en" : "ko";
+
+  const wrap = document.createElement("div");
+  wrap.id = "languageToggleV334A9";
+  wrap.setAttribute("aria-label", "Language switcher");
+  wrap.style.display = "none";
+  wrap.style.alignItems = "center";
+  wrap.style.gap = "4px";
+  wrap.style.marginRight = "8px";
+  wrap.style.padding = "3px";
+  wrap.style.border = "1px solid #d8e1f0";
+  wrap.style.borderRadius = "999px";
+  wrap.style.background = "#ffffff";
+  wrap.style.boxShadow = "0 1px 3px rgba(15, 23, 42, 0.08)";
+  wrap.style.verticalAlign = "middle";
+
+  function makeButton(lang, label) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = label;
+    btn.dataset.lang = lang;
+    btn.setAttribute("aria-pressed", currentLanguage === lang ? "true" : "false");
+    btn.title = lang === "ko" ? "한국어 데이터로 보기" : "View English data";
+    btn.style.border = "0";
+    btn.style.borderRadius = "999px";
+    btn.style.padding = "5px 9px";
+    btn.style.cursor = "pointer";
+    btn.style.fontSize = "12px";
+    btn.style.fontWeight = "800";
+    btn.style.lineHeight = "1";
+    btn.style.color = currentLanguage === lang ? "#ffffff" : "#334155";
+    btn.style.background = currentLanguage === lang ? "#2563eb" : "transparent";
+    btn.addEventListener("click", function() {
+      setLanguageAndReloadV334A9(lang);
+    });
+    return btn;
+  }
+
+  wrap.appendChild(makeButton("ko", "KO"));
+  wrap.appendChild(makeButton("en", "EN"));
+
+  document.body.appendChild(wrap);
+
+  dockLanguageToggleV334A9();
+  [50, 150, 300, 700, 1200, 2000].forEach(function(delay) {
+    window.setTimeout(dockLanguageToggleV334A9, delay);
+  });
+}
+// === LANGUAGE_TOGGLE_I18N_V334_A9 END ===
 let resourceCards = [];
 let currentIndex = 0;
 let selectedChoice = null;
@@ -1375,7 +1553,8 @@ function renderProgress() {
 }
 
 async function init() {
-  const curriculumRes = await fetch(withDataVersion("../../data/curriculum/curriculum_v1.json"));
+  renderLanguageToggleV334A9();
+  const curriculumRes = await fetch(withDataVersion(localizedDataPath("../../data/curriculum/curriculum_v1.json")));
   const lessonFiles = [
     "../../data/lessons/cards_seed_v1.json",
     "../../data/lessons/python_core_expansion_v1.json",
@@ -1478,7 +1657,7 @@ async function init() {
   ];
 
   const lessonResults = await Promise.all(lessonFiles.map(function(path) {
-    return fetch(withDataVersion(path)).then(function(res) {
+    return fetch(withDataVersion(localizedDataPath(path))).then(function(res) {
       if (!res.ok) {
         return [];
       }
@@ -1539,7 +1718,7 @@ async function init() {
   ];
 
   const sideResults = await Promise.all(sideFiles.map(function(path) {
-    return fetch(withDataVersion(path)).then(function(res) {
+    return fetch(withDataVersion(localizedDataPath(path))).then(function(res) {
       if (!res.ok) {
         return [];
       }
@@ -1553,7 +1732,7 @@ async function init() {
   ];
 
   const resourceResults = await Promise.all(resourceFiles.map(function(path) {
-    return fetch(withDataVersion(path)).then(function(res) {
+    return fetch(withDataVersion(localizedDataPath(path))).then(function(res) {
       if (!res.ok) {
         return [];
       }

@@ -1,0 +1,1057 @@
+[
+  {
+    "id": "PY9_REVIEW_AI_API_001",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "ai_api_call_v1",
+    "review_step": 1,
+    "review_total": 6,
+    "review_focus": "전체 목적",
+    "title": "[Today's Code Review 1/6] Overall Purpose of the AI API Call Code",
+    "concepts": [
+      "api",
+      "llm",
+      "requests",
+      "review"
+    ],
+    "reading_goal": "First, read through the entire flow of the long AI API call code.",
+    "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
+    "question_type": "review_choice",
+    "question": "Which of the following best describes the overall purpose of this code?",
+    "choices": [
+      "Compress local files",
+      "Modify the CSS of a web page",
+      "Delete the DB table",
+      "Send the prompt to the LLM API and save the response to a file"
+    ],
+    "answer": "Send the prompt to the LLM API and save the response to a file",
+    "explanation": "The workflow is: build_payload → requests.post → response.json → save to outputs/run_id.json. In other words, this can be viewed as automation code that turns the input into the body of an API request, receives the JSON response, and saves it as an execution result file. Therefore, the result of the call is “sending a prompt to the LLM API and saving the response to a file.”",
+    "side_card_ids": [
+      "AI_prompt_001",
+      "WEB_auth_001"
+    ],
+    "project_context": "This is a daily review focused on understanding the overall structure of API-based LLM code."
+  },
+  {
+    "id": "PY9_REVIEW_AI_API_002",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "ai_api_call_v1",
+    "review_step": 2,
+    "review_total": 6,
+    "review_focus": "인증/키",
+    "title": "[Today's Code Review 2/6] Finding the API Key Location",
+    "concepts": [
+      "api",
+      "auth",
+      "env",
+      "security"
+    ],
+    "reading_goal": "Find a structure where the API key is read from an environment variable.",
+    "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
+    "question_type": "review_choice",
+    "question": "Where is the part that reads the API key?",
+    "choices": [
+      "OUT_DIR.mkdir(exist_ok=True)",
+      "json.dumps(...)",
+      "temperature: 0.2",
+      "os.environ.get(\"LLM_API_KEY\")"
+    ],
+    "answer": "os.environ.get(\"LLM_API_KEY\")",
+    "explanation": "It is safer to read API tokens from environment variables rather than hard-coding them directly into the code. If a token is missing, a `RuntimeError` is raised, allowing you to immediately detect incorrect configuration. Using environment variables separates the code from sensitive values, reducing the risk of keys being exposed on GitHub. Therefore, the return value is `os.environ.get(\"LLM_API_KEY\")`.",
+    "side_card_ids": [
+      "WEB_auth_001",
+      "DEV_security_001"
+    ],
+    "project_context": "I’m getting into the habit of not hard-coding keys in LLM/API code."
+  },
+  {
+    "id": "PY9_REVIEW_AI_API_003",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "ai_api_call_v1",
+    "review_step": 3,
+    "review_total": 6,
+    "review_focus": "호출 지점",
+    "title": "[Today's Code Review 3/6] Actual API Call Points",
+    "concepts": [
+      "requests",
+      "post",
+      "timeout",
+      "api"
+    ],
+    "reading_goal": "Find the line in a long block of code where the actual external call occurs.",
+    "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
+    "question_type": "review_choice",
+    "question": "What does the code that actually sends external API requests look like?",
+    "choices": [
+      "build_payload(prompt)",
+      "OUT_DIR.mkdir(exist_ok=True)",
+      "out_path.write_text(...)",
+      "requests.post(API_URL, headers=headers, json=payload, timeout=30)"
+    ],
+    "answer": "requests.post(API_URL, headers=headers, json=payload, timeout=30)",
+    "explanation": "`requests.post` is a network request. `timeout=30` sets the time limit for waiting for a response. The actual point where the API call is made is the part of the code that sends a request to an external service or server. You should examine how the URL, request method, headers, and body are constructed.",
+    "side_card_ids": [
+      "AI_latency_001",
+      "WEB_api_001"
+    ],
+    "project_context": "This is an exercise to quickly locate network call points during code reviews."
+  },
+  {
+    "id": "PY9_REVIEW_AI_API_004",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "ai_api_call_v1",
+    "review_step": 4,
+    "review_total": 6,
+    "review_focus": "재시도",
+    "title": "[Today's Code Review 4/6] 429 Retry Flow",
+    "concepts": [
+      "retry",
+      "rate_limit",
+      "api",
+      "backoff"
+    ],
+    "reading_goal": "Read the conditions for retries and the wait time in the event of a rate limit.",
+    "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
+    "question_type": "review_choice",
+    "question": "If the response code is 429, what does this code mean?",
+    "choices": [
+      "Process as a success immediately",
+      "Delete the output file",
+      "Clear the prompt",
+      "2 ** Wait a few seconds and try again."
+    ],
+    "answer": "2 ** Wait a few seconds and try again.",
+    "explanation": "HTTP 429 indicates that there are too many requests. In such cases, instead of immediately retrying the call, we use exponential backoff to gradually increase the wait time before retrying. Backoff is a mechanism that gradually increases the wait time after a failure, rather than sending repeated requests immediately, to handle API rate limits and temporary outages.",
+    "side_card_ids": [
+      "AI_cost_001",
+      "DEV_debugging_001"
+    ],
+    "project_context": "It is important to read about LLM API limits and retry logic."
+  },
+  {
+    "id": "PY9_REVIEW_AI_API_005",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "ai_api_call_v1",
+    "review_step": 5,
+    "review_total": 6,
+    "review_focus": "응답 파싱",
+    "title": "[Today's Code Review 5/6] Parsing and Storing Responses",
+    "concepts": [
+      "json",
+      "response",
+      "file",
+      "save"
+    ],
+    "reading_goal": "Read the section that extracts and saves the response text from the API response JSON.",
+    "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
+    "question_type": "review_choice",
+    "question": "What is the code to extract the LLM response text?",
+    "choices": [
+      "response.raise_for_status()",
+      "build_payload(prompt)",
+      "headers = {...}",
+      "data[\"choices\"][0][\"message\"][\"content\"]"
+    ],
+    "answer": "data[\"choices\"][0][\"message\"][\"content\"]",
+    "explanation": "Use `message.content` from the `choices` array in the response JSON as the answer. Parsing and saving the response involves extracting the necessary values from the API response and storing them. You must verify the JSON structure, default values in case of failure, and the file location where the data will be saved.",
+    "side_card_ids": [
+      "CS_json_jsonl_001",
+      "DATA_schema_001"
+    ],
+    "project_context": "This is a training exercise that follows the structure of an LLM API response."
+  },
+  {
+    "id": "PY9_REVIEW_AI_API_006",
+    "level": 10,
+    "card_type": "daily_review",
+    "review_group": "ai_api_call_v1",
+    "review_step": 6,
+    "review_total": 6,
+    "review_focus": "개선점",
+    "title": "[Today's Code Review 6/6] Prioritizing Improvements to This Code",
+    "concepts": [
+      "logging",
+      "cost",
+      "security",
+      "review"
+    ],
+    "reading_goal": "Read through the lengthy code and identify areas for improvement from an operational perspective.",
+    "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
+    "question_type": "review_choice",
+    "question": "What is the highest priority when improving production code?",
+    "choices": [
+      "Set the temperature to 9",
+      "Write the API key directly into the code",
+      "Remove the timeout",
+      "Provide clearer records of run_id, cost estimates, request/response sizes, and failure logs"
+    ],
+    "answer": "Provide clearer records of run_id, cost estimates, request/response sizes, and failure logs",
+    "explanation": "When operating an LLM API, managing costs, retries, logs, and security is just as important as generating responses. To ensure stable operation in a production environment, you must account for failure scenarios. Your operational code must handle not only successful responses but also failure responses, rate spikes, and secret key exposure.",
+    "side_card_ids": [
+      "AI_cost_001",
+      "DEV_logging_001"
+    ],
+    "project_context": "This is directly linked to an LLM batch operation incident."
+  },
+  {
+    "id": "PY9_REVIEW_RAG_001",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "rag_pipeline_v1",
+    "review_step": 1,
+    "review_total": 6,
+    "review_focus": "전체 흐름",
+    "title": "[Today's Code Review 1/6] Overall Flow of the RAG Code",
+    "concepts": [
+      "rag",
+      "retrieval",
+      "llm",
+      "review"
+    ],
+    "reading_goal": "Read the entire sequence of steps: searching, generating prompts, calling the LLM, and saving citations.",
+    "code": "from pathlib import Path\nimport json\n\nCHUNK_PATH = Path(\"chunks.jsonl\")\nOUT_PATH = Path(\"answers.jsonl\")\n\ndef load_chunks():\n    chunks = []\n    with CHUNK_PATH.open(\"r\", encoding=\"utf-8\") as f:\n        for line in f:\n            chunks.append(json.loads(line))\n    return chunks\n\ndef retrieve(query, chunks, top_k=3):\n    terms = query.lower().split()\n    scored = []\n    for chunk in chunks:\n        text = chunk[\"text\"].lower()\n        score = sum(1 for term in terms if term in text)\n        if score > 0:\n            scored.append((score, chunk))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [chunk for score, chunk in scored[:top_k]]\n\ndef build_prompt(query, hits):\n    context = \"\\n\\n\".join(f\"[{hit['doc_id']}:{hit['chunk_id']}] {hit['text']}\" for hit in hits)\n    return f\"Use only the context below.\\n\\n{context}\\n\\nQuestion: {query}\"\n\ndef answer_with_rag(query):\n    chunks = load_chunks()\n    hits = retrieve(query, chunks)\n    if not hits:\n        return {\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}\n    prompt = build_prompt(query, hits)\n    answer = call_llm(prompt)\n    citations = [{\"doc_id\": h[\"doc_id\"], \"chunk_id\": h[\"chunk_id\"]} for h in hits]\n    row = {\"query\": query, \"answer\": answer, \"citations\": citations}\n    with OUT_PATH.open(\"a\", encoding=\"utf-8\") as f:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")\n    return row",
+    "question_type": "review_choice",
+    "question": "Which of the following best describes the overall flow of this code?",
+    "choices": [
+      "Sequence: Generate image → Compress → Delete",
+      "Git commit → push → deploy sequence",
+      "A flow that only downloads CSV files",
+      "Load chunks → retrieve → generate prompt → call LLM → save citation"
+    ],
+    "answer": "Load chunks → retrieve → generate prompt → call LLM → save citation",
+    "explanation": "The `answer_with_rag` function combines search, evidence construction, model invocation, and response return into a single process. Therefore, it can be viewed as the entry point for assembling the entire RAG workflow. By breaking each step down into separate functions, you can debug issues related to search quality, prompts, and model invocation independently. Therefore, the return/invocation sequence is “load chunks → retrieve → generate prompt → invoke LLM → save citation.”",
+    "side_card_ids": [
+      "AI_rag_001",
+      "AI_hallucination_001"
+    ],
+    "project_context": "A One-Day Review of the Evidence-First RAG Architecture."
+  },
+  {
+    "id": "PY9_REVIEW_RAG_002",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "rag_pipeline_v1",
+    "review_step": 2,
+    "review_total": 6,
+    "review_focus": "입력 로딩",
+    "title": "[Today's Code Review 2/6] JSONL Chunk Loading",
+    "concepts": [
+      "jsonl",
+      "file",
+      "chunks"
+    ],
+    "reading_goal": "Find the section that reads the JSONL file line by line and creates a list of chunks.",
+    "code": "from pathlib import Path\nimport json\n\nCHUNK_PATH = Path(\"chunks.jsonl\")\nOUT_PATH = Path(\"answers.jsonl\")\n\ndef load_chunks():\n    chunks = []\n    with CHUNK_PATH.open(\"r\", encoding=\"utf-8\") as f:\n        for line in f:\n            chunks.append(json.loads(line))\n    return chunks\n\ndef retrieve(query, chunks, top_k=3):\n    terms = query.lower().split()\n    scored = []\n    for chunk in chunks:\n        text = chunk[\"text\"].lower()\n        score = sum(1 for term in terms if term in text)\n        if score > 0:\n            scored.append((score, chunk))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [chunk for score, chunk in scored[:top_k]]\n\ndef build_prompt(query, hits):\n    context = \"\\n\\n\".join(f\"[{hit['doc_id']}:{hit['chunk_id']}] {hit['text']}\" for hit in hits)\n    return f\"Use only the context below.\\n\\n{context}\\n\\nQuestion: {query}\"\n\ndef answer_with_rag(query):\n    chunks = load_chunks()\n    hits = retrieve(query, chunks)\n    if not hits:\n        return {\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}\n    prompt = build_prompt(query, hits)\n    answer = call_llm(prompt)\n    citations = [{\"doc_id\": h[\"doc_id\"], \"chunk_id\": h[\"chunk_id\"]} for h in hits]\n    row = {\"query\": query, \"answer\": answer, \"citations\": citations}\n    with OUT_PATH.open(\"a\", encoding=\"utf-8\") as f:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")\n    return row",
+    "question_type": "review_choice",
+    "question": "What is the function that reads a chunk?",
+    "choices": [
+      "retrieve()",
+      "build_prompt()",
+      "answer_with_rag()",
+      "load_chunks()"
+    ],
+    "answer": "load_chunks()",
+    "explanation": "`load_chunks` opens `chunks.jsonl` and parses each line using `json.loads`. Loading JSONL chunks involves reading JSON objects stored line by line and using them as search fragments. It is necessary to verify whether each line is a standalone JSON object and to handle empty or corrupted lines.",
+    "side_card_ids": [
+      "CS_json_jsonl_001"
+    ],
+    "project_context": "This is the default pattern for reading JSONL output from aggregation/chunking."
+  },
+  {
+    "id": "PY9_REVIEW_RAG_003",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "rag_pipeline_v1",
+    "review_step": 3,
+    "review_total": 6,
+    "review_focus": "검색",
+    "title": "[Today's Code Review 3/6] Calculating Search Scores",
+    "concepts": [
+      "retrieval",
+      "score",
+      "filter"
+    ],
+    "reading_goal": "Read about a simple search that assigns a score based on whether a query term is contained in the chunk text.",
+    "code": "from pathlib import Path\nimport json\n\nCHUNK_PATH = Path(\"chunks.jsonl\")\nOUT_PATH = Path(\"answers.jsonl\")\n\ndef load_chunks():\n    chunks = []\n    with CHUNK_PATH.open(\"r\", encoding=\"utf-8\") as f:\n        for line in f:\n            chunks.append(json.loads(line))\n    return chunks\n\ndef retrieve(query, chunks, top_k=3):\n    terms = query.lower().split()\n    scored = []\n    for chunk in chunks:\n        text = chunk[\"text\"].lower()\n        score = sum(1 for term in terms if term in text)\n        if score > 0:\n            scored.append((score, chunk))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [chunk for score, chunk in scored[:top_k]]\n\ndef build_prompt(query, hits):\n    context = \"\\n\\n\".join(f\"[{hit['doc_id']}:{hit['chunk_id']}] {hit['text']}\" for hit in hits)\n    return f\"Use only the context below.\\n\\n{context}\\n\\nQuestion: {query}\"\n\ndef answer_with_rag(query):\n    chunks = load_chunks()\n    hits = retrieve(query, chunks)\n    if not hits:\n        return {\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}\n    prompt = build_prompt(query, hits)\n    answer = call_llm(prompt)\n    citations = [{\"doc_id\": h[\"doc_id\"], \"chunk_id\": h[\"chunk_id\"]} for h in hits]\n    row = {\"query\": query, \"answer\": answer, \"citations\": citations}\n    with OUT_PATH.open(\"a\", encoding=\"utf-8\") as f:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")\n    return row",
+    "question_type": "review_choice",
+    "question": "How is the score calculated in the `retrieve` function?",
+    "choices": [
+      "Always set it to 1",
+      "Calculate based on file size",
+      "The LLM decides directly",
+      "Counts the number of times the word \"query\" appears in the text"
+    ],
+    "answer": "Counts the number of times the word \"query\" appears in the text",
+    "explanation": "`sum(1 for term in terms if term in text)` counts the number of times a word appears. Calculating the search score determines how document candidates are ranked. We need to verify how signals such as keyword match, similarity, and recency are combined. Therefore, the return/call result is “counts the number of times the query words appear in the text.”",
+    "side_card_ids": [
+      "AI_retrieval_001",
+      "DATA_index_001"
+    ],
+    "project_context": "It's also helpful for understanding the basic search process even before diving into vector search."
+  },
+  {
+    "id": "PY9_REVIEW_RAG_004",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "rag_pipeline_v1",
+    "review_step": 4,
+    "review_total": 6,
+    "review_focus": "프롬프트",
+    "title": "[Today's Code Review 4/6] Prompts with Evidence Constraints",
+    "concepts": [
+      "prompt",
+      "evidence",
+      "citation"
+    ],
+    "reading_goal": "Find the part where the evidence chunk is grouped into the prompt context.",
+    "code": "from pathlib import Path\nimport json\n\nCHUNK_PATH = Path(\"chunks.jsonl\")\nOUT_PATH = Path(\"answers.jsonl\")\n\ndef load_chunks():\n    chunks = []\n    with CHUNK_PATH.open(\"r\", encoding=\"utf-8\") as f:\n        for line in f:\n            chunks.append(json.loads(line))\n    return chunks\n\ndef retrieve(query, chunks, top_k=3):\n    terms = query.lower().split()\n    scored = []\n    for chunk in chunks:\n        text = chunk[\"text\"].lower()\n        score = sum(1 for term in terms if term in text)\n        if score > 0:\n            scored.append((score, chunk))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [chunk for score, chunk in scored[:top_k]]\n\ndef build_prompt(query, hits):\n    context = \"\\n\\n\".join(f\"[{hit['doc_id']}:{hit['chunk_id']}] {hit['text']}\" for hit in hits)\n    return f\"Use only the context below.\\n\\n{context}\\n\\nQuestion: {query}\"\n\ndef answer_with_rag(query):\n    chunks = load_chunks()\n    hits = retrieve(query, chunks)\n    if not hits:\n        return {\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}\n    prompt = build_prompt(query, hits)\n    answer = call_llm(prompt)\n    citations = [{\"doc_id\": h[\"doc_id\"], \"chunk_id\": h[\"chunk_id\"]} for h in hits]\n    row = {\"query\": query, \"answer\": answer, \"citations\": citations}\n    with OUT_PATH.open(\"a\", encoding=\"utf-8\") as f:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")\n    return row",
+    "question_type": "review_choice",
+    "question": "What information is included in a prompt to distinguish evidence?",
+    "choices": [
+      "CSS Class",
+      "Git branch",
+      "API token",
+      "doc_id and chunk_id"
+    ],
+    "answer": "doc_id and chunk_id",
+    "explanation": "Prepend a source identifier to the context in the format [{doc_id}:{chunk_id}]. A source-restricted prompt is an instruction that ensures the answer comes only from the provided document or search results. To prevent unsubstantiated speculation, you must verify which sources are permitted. Therefore, the return/call result is ‘doc_id and chunk_id’.",
+    "side_card_ids": [
+      "AI_prompt_001",
+      "AI_hallucination_001"
+    ],
+    "project_context": "It is a thinking exercise that involves linking answers to the source text."
+  },
+  {
+    "id": "PY9_REVIEW_RAG_005",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "rag_pipeline_v1",
+    "review_step": 5,
+    "review_total": 6,
+    "review_focus": "방어 코드",
+    "title": "[Today's Code Review 5/6] Defending When There Is No Evidence",
+    "concepts": [
+      "evidence",
+      "guard_clause",
+      "rag"
+    ],
+    "reading_goal": "Read the fallback flow that does not invoke the LLM when there are no search results.",
+    "code": "from pathlib import Path\nimport json\n\nCHUNK_PATH = Path(\"chunks.jsonl\")\nOUT_PATH = Path(\"answers.jsonl\")\n\ndef load_chunks():\n    chunks = []\n    with CHUNK_PATH.open(\"r\", encoding=\"utf-8\") as f:\n        for line in f:\n            chunks.append(json.loads(line))\n    return chunks\n\ndef retrieve(query, chunks, top_k=3):\n    terms = query.lower().split()\n    scored = []\n    for chunk in chunks:\n        text = chunk[\"text\"].lower()\n        score = sum(1 for term in terms if term in text)\n        if score > 0:\n            scored.append((score, chunk))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [chunk for score, chunk in scored[:top_k]]\n\ndef build_prompt(query, hits):\n    context = \"\\n\\n\".join(f\"[{hit['doc_id']}:{hit['chunk_id']}] {hit['text']}\" for hit in hits)\n    return f\"Use only the context below.\\n\\n{context}\\n\\nQuestion: {query}\"\n\ndef answer_with_rag(query):\n    chunks = load_chunks()\n    hits = retrieve(query, chunks)\n    if not hits:\n        return {\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}\n    prompt = build_prompt(query, hits)\n    answer = call_llm(prompt)\n    citations = [{\"doc_id\": h[\"doc_id\"], \"chunk_id\": h[\"chunk_id\"]} for h in hits]\n    row = {\"query\": query, \"answer\": answer, \"citations\": citations}\n    with OUT_PATH.open(\"a\", encoding=\"utf-8\") as f:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")\n    return row",
+    "question_type": "review_choice",
+    "question": "What happens if `hits` is empty?",
+    "choices": [
+      "Always call `call_llm`",
+      "Delete chunks.jsonl",
+      "Set top_k to 100",
+      "It returns a response stating that there is insufficient supporting documentation, along with empty citations."
+    ],
+    "answer": "It returns a response stating that there is insufficient supporting documentation, along with empty citations.",
+    "explanation": "When there are no search results, it is safer not to let the model make guesses. If the process follows the “if no hits” path, it may return a response indicating insufficient evidence. In RAG code, the branch that refrains from generating an answer when there is no evidence serves as a crucial safety mechanism for reducing hallucinations. Therefore, the return/call result is “returns a response stating that there is insufficient supporting documentation, along with empty citations.”",
+    "side_card_ids": [
+      "AI_hallucination_001"
+    ],
+    "project_context": "This is a key pattern for preventing speculation when evidence is lacking in verification-based RAG."
+  },
+  {
+    "id": "PY9_REVIEW_RAG_006",
+    "level": 10,
+    "card_type": "daily_review",
+    "review_group": "rag_pipeline_v1",
+    "review_step": 6,
+    "review_total": 6,
+    "review_focus": "개선점",
+    "title": "[Today's Code Review 6/6] Improvements to the RAG Code",
+    "concepts": [
+      "rag",
+      "rerank",
+      "embedding",
+      "quality"
+    ],
+    "reading_goal": "Identify areas for quality improvement in the simple search RAG code.",
+    "code": "from pathlib import Path\nimport json\n\nCHUNK_PATH = Path(\"chunks.jsonl\")\nOUT_PATH = Path(\"answers.jsonl\")\n\ndef load_chunks():\n    chunks = []\n    with CHUNK_PATH.open(\"r\", encoding=\"utf-8\") as f:\n        for line in f:\n            chunks.append(json.loads(line))\n    return chunks\n\ndef retrieve(query, chunks, top_k=3):\n    terms = query.lower().split()\n    scored = []\n    for chunk in chunks:\n        text = chunk[\"text\"].lower()\n        score = sum(1 for term in terms if term in text)\n        if score > 0:\n            scored.append((score, chunk))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [chunk for score, chunk in scored[:top_k]]\n\ndef build_prompt(query, hits):\n    context = \"\\n\\n\".join(f\"[{hit['doc_id']}:{hit['chunk_id']}] {hit['text']}\" for hit in hits)\n    return f\"Use only the context below.\\n\\n{context}\\n\\nQuestion: {query}\"\n\ndef answer_with_rag(query):\n    chunks = load_chunks()\n    hits = retrieve(query, chunks)\n    if not hits:\n        return {\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}\n    prompt = build_prompt(query, hits)\n    answer = call_llm(prompt)\n    citations = [{\"doc_id\": h[\"doc_id\"], \"chunk_id\": h[\"chunk_id\"]} for h in hits]\n    row = {\"query\": query, \"answer\": answer, \"citations\": citations}\n    with OUT_PATH.open(\"a\", encoding=\"utf-8\") as f:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")\n    return row",
+    "question_type": "review_choice",
+    "question": "Which of the following improvements to this RAG code would be the most natural?",
+    "choices": [
+      "Change it so that answers are given without justification",
+      "Remove the chunk_id",
+      "Turn off all file saving",
+      "Add embedding search or reranking, and strengthen citation verification"
+    ],
+    "answer": "Add embedding search or reranking, and strengthen citation verification",
+    "explanation": "Currently, Retrieve is based on word inclusion, so adding semantic search, re-ranking, and evidence verification will improve quality. Improvements to the RAG code involve reviewing search quality, evidence constraints, failure handling, and evaluation logs together. Instead of focusing solely on response generation, we must also examine the search queries and candidate evidence. Therefore, the recommended action is to “add embedding search or reranking and strengthen citation verification.”",
+    "side_card_ids": [
+      "AI_embedding_001",
+      "AI_vector_db_001"
+    ],
+    "project_context": "This is directly linked to the Cross-Verified RAG approach."
+  },
+  {
+    "id": "PY9_REVIEW_KALMAN_001",
+    "level": 10,
+    "card_type": "daily_review",
+    "review_group": "kalman_filter_1d_v1",
+    "review_step": 1,
+    "review_total": 6,
+    "review_focus": "전체 목적",
+    "title": "[Today's Code Review 1/6] Overall Purpose of the Kalman Filter",
+    "concepts": [
+      "kalman_filter",
+      "state",
+      "prediction",
+      "review"
+    ],
+    "reading_goal": "I read Kalman filter code by following the flow of the code rather than by memorizing the math.",
+    "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
+    "question_type": "review_choice",
+    "question": "What is the overall purpose of this code?",
+    "choices": [
+      "Convert a string to JSON",
+      "Call the API",
+      "Deploying GitHub Pages",
+      "Predict and correct the one-dimensional position state using the measured values."
+    ],
+    "answer": "Predict and correct the one-dimensional position state using the measured values.",
+    "explanation": "A Kalman filter operates by repeatedly performing prediction and correction. The “predict” step first estimates the next state, and the “update” step then refines the estimate by incorporating actual measurements. You can think of it as code that does not simply trust noisy measurements but instead considers both the previous estimate and the new observation together.",
+    "side_card_ids": [
+      "AI_state_estimation_001",
+      "CS_matrix_001"
+    ],
+    "project_context": "This ties into reading code for sensor estimation in autonomous driving, UAM, and robotics."
+  },
+  {
+    "id": "PY9_REVIEW_KALMAN_002",
+    "level": 10,
+    "card_type": "daily_review",
+    "review_group": "kalman_filter_1d_v1",
+    "review_step": 2,
+    "review_total": 6,
+    "review_focus": "상태",
+    "title": "[Today's Code Review 2/6] Understanding \"state\"",
+    "concepts": [
+      "kalman_filter",
+      "state",
+      "numpy"
+    ],
+    "reading_goal": "Read from the code to determine what the state vector contains.",
+    "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
+    "question_type": "review_choice",
+    "question": "What does `self.state = [[x], [v]]` contain?",
+    "choices": [
+      "Document ID and chunk ID",
+      "API URL and token",
+      "Correct Answer and Choices",
+      "Position x and velocity v"
+    ],
+    "answer": "Position x and velocity v",
+    "explanation": "A state vector contains a set of values to be estimated. A two-dimensional state vector can be understood as a structure that estimates both position and velocity. When working with Kalman filter code, you need to know what is included in the state to understand the logic behind the prediction and correction calculations.",
+    "side_card_ids": [
+      "AI_state_estimation_001"
+    ],
+    "project_context": "This exercise trains you to look for the definition of `state` first when reading state estimation code."
+  },
+  {
+    "id": "PY9_REVIEW_KALMAN_003",
+    "level": 10,
+    "card_type": "daily_review",
+    "review_group": "kalman_filter_1d_v1",
+    "review_step": 3,
+    "review_total": 6,
+    "review_focus": "예측",
+    "title": "[Today's Code Review 3/6] Finding the \"predict\" step",
+    "concepts": [
+      "kalman_filter",
+      "predict",
+      "matrix"
+    ],
+    "reading_goal": "Find the prediction step that advances the previous state by dt.",
+    "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
+    "question_type": "review_choice",
+    "question": "Which line in `predict` forecasts the state going forward?",
+    "choices": [
+      "z = np.array([[measured_x]])",
+      "K = ...",
+      "print(...)",
+      "self.state = F @ self.state"
+    ],
+    "answer": "self.state = F @ self.state",
+    "explanation": "F is the state transition matrix that describes how the current state transitions to the next state. The next state is generated by computing F @ state. Since the prediction made in the `predict` step is an estimate that does not yet reflect new measurements, it should be distinguished from the `update` step.",
+    "side_card_ids": [
+      "CS_matrix_001"
+    ],
+    "project_context": "This is a training exercise on the separation of predict and update in sensor fusion code."
+  },
+  {
+    "id": "PY9_REVIEW_KALMAN_004",
+    "level": 10,
+    "card_type": "daily_review",
+    "review_group": "kalman_filter_1d_v1",
+    "review_step": 4,
+    "review_total": 6,
+    "review_focus": "측정 보정",
+    "title": "[Today's Code Review 4/6] Finding \"measurement update\"",
+    "concepts": [
+      "kalman_filter",
+      "measurement",
+      "update"
+    ],
+    "reading_goal": "Read where the measured value `measured_x` is used in the calibration.",
+    "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
+    "question_type": "review_choice",
+    "question": "Which line converts the measured values into a matrix?",
+    "choices": [
+      "self.Q = np.eye(2) * 0.01",
+      "F = np.array(...)",
+      "return self.state[0, 0]",
+      "z = np.array([[measured_x]])"
+    ],
+    "answer": "z = np.array([[measured_x]])",
+    "explanation": "The measured value z is the actual input obtained from a sensor or observation. We set `measured_x` to z and then check how much it differs from the predicted value. In a Kalman filter, the state is updated using the difference between the predicted value and the measured value; therefore, the line that creates `z` marks the starting point of the update step. Consequently, the return/call result is `z = np.array([[measured_x]])`.",
+    "side_card_ids": [
+      "AI_sensor_fusion_001"
+    ],
+    "project_context": "This is an exercise to identify where the sensor readings enter the filter."
+  },
+  {
+    "id": "PY9_REVIEW_KALMAN_005",
+    "level": 10,
+    "card_type": "daily_review",
+    "review_group": "kalman_filter_1d_v1",
+    "review_step": 5,
+    "review_total": 6,
+    "review_focus": "잡음",
+    "title": "[Today's Code Review 5/6] The Roles of Q and R in the Code",
+    "concepts": [
+      "kalman_filter",
+      "noise",
+      "uncertainty"
+    ],
+    "reading_goal": "Read which calculations the noise variables, such as Q and R, are used in.",
+    "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
+    "question_type": "review_choice",
+    "question": "Where is R used?",
+    "choices": [
+      "파일 저장",
+      "API Headers",
+      "for the number of iterations",
+      "Calculation of S = H @ P @ H.T + R"
+    ],
+    "answer": "Calculation of S = H @ P @ H.T + R",
+    "explanation": "R represents the magnitude of measurement noise. It influences how much weight is given to the measurement when calculating S during the update step. Q and R are parameters in the Kalman filter that control prediction uncertainty and observation uncertainty, respectively. In the code, they determine the extent to which the prediction is trusted and the extent to which the observation is reflected.",
+    "side_card_ids": [
+      "AI_state_estimation_001"
+    ],
+    "project_context": "This is an exercise in training yourself to recognize where noise appears in the code, even without memorizing all the formulas."
+  },
+  {
+    "id": "PY9_REVIEW_KALMAN_006",
+    "level": 10,
+    "card_type": "daily_review",
+    "review_group": "kalman_filter_1d_v1",
+    "review_step": 6,
+    "review_total": 6,
+    "review_focus": "읽는 순서",
+    "title": "[Today's Code Review 6/6] Order for Reading the Kalman Code",
+    "concepts": [
+      "kalman_filter",
+      "review",
+      "debugging"
+    ],
+    "reading_goal": "Here is a summary of the order in which to read long mathematical expressions.",
+    "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
+    "question_type": "review_choice",
+    "question": "What's the best order to read this filter code in when you're looking at it for the first time?",
+    "choices": [
+      "It only looks at the `print` statement first and ignores the calculations.",
+      "Memorize all the matrix names, then run the program.",
+      "Delete R and Q, then read it again.",
+      "How to use the \"state definition → predict → update → loop\" process"
+    ],
+    "answer": "How to use the \"state definition → predict → update → loop\" process",
+    "explanation": "Kalman filter code is easier to understand if you focus on the flow first rather than the equations. If you distinguish between the state, the prediction, and the correction, the code appears less complex. By defining variable names and step names first, you can understand the code structure before delving into the detailed mathematical formulas of matrix calculations. Therefore, the sequence of return/call results is “state definition → predict → update → usage within the loop.”",
+    "side_card_ids": [
+      "AI_state_estimation_001",
+      "DEV_debugging_001"
+    ],
+    "project_context": "This is a key habit for understanding autonomous system code."
+  },
+  {
+    "id": "PY9_REVIEW_SHARD_001",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "batch_shard_resume_v1",
+    "review_step": 1,
+    "review_total": 5,
+    "review_focus": "전체 목적",
+    "title": "[Today's Code Review 1/5] The Overall Purpose of Running shard",
+    "concepts": [
+      "batch",
+      "shard",
+      "resume",
+      "review"
+    ],
+    "reading_goal": "Read through the entire batch shard code.",
+    "code": "import json\nfrom pathlib import Path\n\nINPUT_PATH = Path(\"tasks.jsonl\")\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef shard_slice(tasks, shard_id, shard_size):\n    start = shard_id * shard_size\n    end = start + shard_size\n    return tasks[start:end]\n\ndef output_path(task):\n    return OUT_DIR / f\"{task['id']}.json\"\n\ndef run_shard(tasks, shard_id, shard_size=200):\n    selected = shard_slice(tasks, shard_id, shard_size)\n    done = 0\n    skipped = 0\n    failed = []\n    for task in selected:\n        if output_path(task).exists():\n            skipped += 1\n            continue\n        try:\n            answer = call_llm(task[\"prompt\"])\n            output_path(task).write_text(json.dumps({\"id\": task[\"id\"], \"answer\": answer}, ensure_ascii=False), encoding=\"utf-8\")\n            done += 1\n        except Exception as error:\n            failed.append({\"id\": task[\"id\"], \"error\": str(error)})\n    return {\"shard_id\": shard_id, \"done\": done, \"skipped\": skipped, \"failed\": failed}",
+    "question_type": "review_choice",
+    "question": "What is the overall purpose of this code?",
+    "choices": [
+      "Build CSS",
+      "Clear the browser cache",
+      "Convert PDF to Image",
+      "Process tasks by shard and store the results"
+    ],
+    "answer": "Process tasks by shard and store the results",
+    "explanation": "The flow is: shard_slice → output exists skip → call_llm → return summary. Shard execution is a process that divides a large task into multiple pieces for processing. If you check the input range, output file, and failure status for each shard separately, it becomes easier to retry. Therefore, the result of the call/return is “process tasks by dividing them into shards and store the results.”",
+    "side_card_ids": [
+      "CS_batch_shard_001"
+    ],
+    "project_context": "It connects directly to read NodePass/LLM batch jobs."
+  },
+  {
+    "id": "PY9_REVIEW_SHARD_002",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "batch_shard_resume_v1",
+    "review_step": 2,
+    "review_total": 5,
+    "review_focus": "범위",
+    "title": "[Today's Code Review 2/5] Calculating Shard Ranges",
+    "concepts": [
+      "shard",
+      "slice",
+      "range"
+    ],
+    "reading_goal": "Read the code that selects the processing range based on `shard_id` and `shard_size`.",
+    "code": "import json\nfrom pathlib import Path\n\nINPUT_PATH = Path(\"tasks.jsonl\")\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef shard_slice(tasks, shard_id, shard_size):\n    start = shard_id * shard_size\n    end = start + shard_size\n    return tasks[start:end]\n\ndef output_path(task):\n    return OUT_DIR / f\"{task['id']}.json\"\n\ndef run_shard(tasks, shard_id, shard_size=200):\n    selected = shard_slice(tasks, shard_id, shard_size)\n    done = 0\n    skipped = 0\n    failed = []\n    for task in selected:\n        if output_path(task).exists():\n            skipped += 1\n            continue\n        try:\n            answer = call_llm(task[\"prompt\"])\n            output_path(task).write_text(json.dumps({\"id\": task[\"id\"], \"answer\": answer}, ensure_ascii=False), encoding=\"utf-8\")\n            done += 1\n        except Exception as error:\n            failed.append({\"id\": task[\"id\"], \"error\": str(error)})\n    return {\"shard_id\": shard_id, \"done\": done, \"skipped\": skipped, \"failed\": failed}",
+    "question_type": "review_choice",
+    "question": "If shard_id=2 and shard_size=200, what is the selection range?",
+    "choices": [
+      "From 0 to 199",
+      "From the 2nd to the 200th",
+      "From the 200th to the 399th",
+      "From the 400th to the 599th"
+    ],
+    "answer": "From the 400th to the 599th",
+    "explanation": "start=2*200=400, end=600, and a Python slice extends up to but not including the end value. Calculating the shard range is the step of determining the criteria for dividing a large task into multiple pieces. You must verify that the start and end indices do not overlap or omit any values. Therefore, the result returned by the function is “from the 400th to the 599th.”",
+    "side_card_ids": [
+      "CS_batch_shard_001"
+    ],
+    "project_context": "This is an exercise to check whether shard partitioning is working properly."
+  },
+  {
+    "id": "PY9_REVIEW_SHARD_003",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "batch_shard_resume_v1",
+    "review_step": 3,
+    "review_total": 5,
+    "review_focus": "resume",
+    "title": "[Today's Code Review 3/5] Skipping Tasks That Have Already Been Processed",
+    "concepts": [
+      "resume",
+      "exists",
+      "skip"
+    ],
+    "reading_goal": "If a result file exists, it reads the resume pattern to prevent duplicate execution.",
+    "code": "import json\nfrom pathlib import Path\n\nINPUT_PATH = Path(\"tasks.jsonl\")\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef shard_slice(tasks, shard_id, shard_size):\n    start = shard_id * shard_size\n    end = start + shard_size\n    return tasks[start:end]\n\ndef output_path(task):\n    return OUT_DIR / f\"{task['id']}.json\"\n\ndef run_shard(tasks, shard_id, shard_size=200):\n    selected = shard_slice(tasks, shard_id, shard_size)\n    done = 0\n    skipped = 0\n    failed = []\n    for task in selected:\n        if output_path(task).exists():\n            skipped += 1\n            continue\n        try:\n            answer = call_llm(task[\"prompt\"])\n            output_path(task).write_text(json.dumps({\"id\": task[\"id\"], \"answer\": answer}, ensure_ascii=False), encoding=\"utf-8\")\n            done += 1\n        except Exception as error:\n            failed.append({\"id\": task[\"id\"], \"error\": str(error)})\n    return {\"shard_id\": shard_id, \"done\": done, \"skipped\": skipped, \"failed\": failed}",
+    "question_type": "review_choice",
+    "question": "What happens if `output_path(task).exists()` returns true?",
+    "choices": [
+      "It always restarts",
+      "Delete the task",
+      "Change the shard_size",
+      "Increment `skipped` by 1 and continue"
+    ],
+    "answer": "Increment `skipped` by 1 and continue",
+    "explanation": "In shard processing, it is important not to reprocess shards that have already produced results. Checking whether a result file exists helps avoid duplicate API calls and wasted resources. Therefore, the return/call result is to “increment `skipped` by 1 and continue.”",
+    "side_card_ids": [
+      "DATA_dedup_001",
+      "AI_cost_001"
+    ],
+    "project_context": "This is a very important structure in resource-intensive LLM batches."
+  },
+  {
+    "id": "PY9_REVIEW_SHARD_004",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "batch_shard_resume_v1",
+    "review_step": 4,
+    "review_total": 5,
+    "review_focus": "실패 처리",
+    "title": "[Today's Code Review 4/5] Collecting a List of Failures",
+    "concepts": [
+      "try_except",
+      "error",
+      "logging"
+    ],
+    "reading_goal": "I'm reading about the process of adding failed tasks to the \"failed\" list without terminating them.",
+    "code": "import json\nfrom pathlib import Path\n\nINPUT_PATH = Path(\"tasks.jsonl\")\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef shard_slice(tasks, shard_id, shard_size):\n    start = shard_id * shard_size\n    end = start + shard_size\n    return tasks[start:end]\n\ndef output_path(task):\n    return OUT_DIR / f\"{task['id']}.json\"\n\ndef run_shard(tasks, shard_id, shard_size=200):\n    selected = shard_slice(tasks, shard_id, shard_size)\n    done = 0\n    skipped = 0\n    failed = []\n    for task in selected:\n        if output_path(task).exists():\n            skipped += 1\n            continue\n        try:\n            answer = call_llm(task[\"prompt\"])\n            output_path(task).write_text(json.dumps({\"id\": task[\"id\"], \"answer\": answer}, ensure_ascii=False), encoding=\"utf-8\")\n            done += 1\n        except Exception as error:\n            failed.append({\"id\": task[\"id\"], \"error\": str(error)})\n    return {\"shard_id\": shard_id, \"done\": done, \"skipped\": skipped, \"failed\": failed}",
+    "question_type": "review_choice",
+    "question": "If an error occurs in `run_task`, what is saved?",
+    "choices": [
+      "Complete tasks.jsonl",
+      "API Key",
+      "CSS file",
+      "Task ID and error string"
+    ],
+    "answer": "Task ID and error string",
+    "explanation": "In batch processing, failed items must also be collected separately. Storing them in the format `failed.append({id, error})` allows you to review later which items failed and why. Therefore, the return value is the “task ID and error string.”",
+    "side_card_ids": [
+      "DEV_debugging_001",
+      "DEV_logging_001"
+    ],
+    "project_context": "This is a standard operational pattern for tracking some failures in a batch run."
+  },
+  {
+    "id": "PY9_REVIEW_SHARD_005",
+    "level": 10,
+    "card_type": "daily_review",
+    "review_group": "batch_shard_resume_v1",
+    "review_step": 5,
+    "review_total": 5,
+    "review_focus": "요약",
+    "title": "[Today's Code Review 5/5] Returning a shard summary",
+    "concepts": [
+      "summary",
+      "json",
+      "monitoring"
+    ],
+    "reading_goal": "Read the reason for using \"done/skipped/failed\" as the summary.",
+    "code": "import json\nfrom pathlib import Path\n\nINPUT_PATH = Path(\"tasks.jsonl\")\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef shard_slice(tasks, shard_id, shard_size):\n    start = shard_id * shard_size\n    end = start + shard_size\n    return tasks[start:end]\n\ndef output_path(task):\n    return OUT_DIR / f\"{task['id']}.json\"\n\ndef run_shard(tasks, shard_id, shard_size=200):\n    selected = shard_slice(tasks, shard_id, shard_size)\n    done = 0\n    skipped = 0\n    failed = []\n    for task in selected:\n        if output_path(task).exists():\n            skipped += 1\n            continue\n        try:\n            answer = call_llm(task[\"prompt\"])\n            output_path(task).write_text(json.dumps({\"id\": task[\"id\"], \"answer\": answer}, ensure_ascii=False), encoding=\"utf-8\")\n            done += 1\n        except Exception as error:\n            failed.append({\"id\": task[\"id\"], \"error\": str(error)})\n    return {\"shard_id\": shard_id, \"done\": done, \"skipped\": skipped, \"failed\": failed}",
+    "question_type": "review_choice",
+    "question": "What is the main reason for returning a summary?",
+    "choices": [
+      "To make the code run slower",
+      "To clear the \"correct answers\" choices",
+      "To create a browser favicon",
+      "To check the shard's progress and any failures later,"
+    ],
+    "answer": "To check the shard's progress and any failures later,",
+    "explanation": "The batch execution summary is a record that provides an at-a-glance view of the number of completions, the number of failures, the cost, and the restart criteria. It serves as a reference point for resumption and review. Structured return values, such as `summary`, are particularly useful when results need to be rechecked outside the function or logged. Therefore, the purpose of the return/call result is “to check the shard progress and failures later.”",
+    "side_card_ids": [
+      "CS_batch_shard_001",
+      "DEV_logging_001"
+    ],
+    "project_context": "It is directly linked to the LLM shard operation logs."
+  },
+  {
+    "id": "PY9_REVIEW_FASTAPI_001",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "fastapi_search_endpoint_v1",
+    "review_step": 1,
+    "review_total": 5,
+    "review_focus": "전체 목적",
+    "title": "[Today's Code Review 1/5] The Overall Purpose of the FastAPI Search Endpoint",
+    "concepts": [
+      "fastapi",
+      "endpoint",
+      "api",
+      "review"
+    ],
+    "reading_goal": "Review the entire flow of the API request model, validation, search, and response model.",
+    "code": "from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass SearchRequest(BaseModel):\n    query: str\n    top_k: int = 5\n\nclass SearchHit(BaseModel):\n    doc_id: str\n    title: str\n    score: float\n\nclass SearchResponse(BaseModel):\n    query: str\n    hits: list[SearchHit]\n\n@app.post(\"/api/search\", response_model=SearchResponse)\ndef search(req: SearchRequest):\n    if not req.query.strip():\n        raise HTTPException(status_code=400, detail=\"query is empty\")\n    if req.top_k < 1 or req.top_k > 20:\n        raise HTTPException(status_code=400, detail=\"top_k out of range\")\n    rows = search_index(req.query, limit=req.top_k)\n    hits = [SearchHit(doc_id=row[\"doc_id\"], title=row[\"title\"], score=row[\"score\"]) for row in rows]\n    return SearchResponse(query=req.query, hits=hits)",
+    "question_type": "review_choice",
+    "question": "What is the purpose of this endpoint?",
+    "choices": [
+      "Create a PWA manifest",
+      "Generate an image",
+      "Execute `git push`",
+      "Receives a search request and returns the results from the search_index"
+    ],
+    "answer": "Receives a search request and returns the results from the search_index",
+    "explanation": "It receives a `SearchRequest`, calls `search_index`, and returns a `SearchResponse`. The FastAPI search endpoint is an API that accepts a user's search query, finds relevant data, and returns a response. You should review the query parameters, the search function call, and the JSON structure of the response.",
+    "side_card_ids": [
+      "PL_endpoint_001",
+      "DATA_schema_001"
+    ],
+    "project_context": "It connects to the Search API and Local RAG API architecture."
+  },
+  {
+    "id": "PY9_REVIEW_FASTAPI_002",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "fastapi_search_endpoint_v1",
+    "review_step": 2,
+    "review_total": 5,
+    "review_focus": "요청",
+    "title": "[Today's Code Review 2/5] Reading the Request Schema",
+    "concepts": [
+      "pydantic",
+      "schema",
+      "request"
+    ],
+    "reading_goal": "Determine the input structure that the client must send.",
+    "code": "from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass SearchRequest(BaseModel):\n    query: str\n    top_k: int = 5\n\nclass SearchHit(BaseModel):\n    doc_id: str\n    title: str\n    score: float\n\nclass SearchResponse(BaseModel):\n    query: str\n    hits: list[SearchHit]\n\n@app.post(\"/api/search\", response_model=SearchResponse)\ndef search(req: SearchRequest):\n    if not req.query.strip():\n        raise HTTPException(status_code=400, detail=\"query is empty\")\n    if req.top_k < 1 or req.top_k > 20:\n        raise HTTPException(status_code=400, detail=\"top_k out of range\")\n    rows = search_index(req.query, limit=req.top_k)\n    hits = [SearchHit(doc_id=row[\"doc_id\"], title=row[\"title\"], score=row[\"score\"]) for row in rows]\n    return SearchResponse(query=req.query, hits=hits)",
+    "question_type": "review_choice",
+    "question": "What are the key inputs required for a SearchRequest?",
+    "choices": [
+      "doc_id and title",
+      "score and hits",
+      "CSS and HTML",
+      "query and top_k"
+    ],
+    "answer": "query and top_k",
+    "explanation": "FastAPI function arguments can be interpreted as request parameters. `query` is a required string, and `top_k` is an integer that uses the default value of 5 if no value is provided. By reading the request schema first, you can understand what input the API requires and how it applies default values. Therefore, the return/call result is “query and top_k.”",
+    "side_card_ids": [
+      "DATA_schema_001"
+    ],
+    "project_context": "I have a habit of reading the request model first when looking at API code."
+  },
+  {
+    "id": "PY9_REVIEW_FASTAPI_003",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "fastapi_search_endpoint_v1",
+    "review_step": 3,
+    "review_total": 5,
+    "review_focus": "검증",
+    "title": "[Today's Code Review 3/5] Reading Input Validation",
+    "concepts": [
+      "validation",
+      "http",
+      "error"
+    ],
+    "reading_goal": "Read the defense code that validates empty queries and the top_k range.",
+    "code": "from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass SearchRequest(BaseModel):\n    query: str\n    top_k: int = 5\n\nclass SearchHit(BaseModel):\n    doc_id: str\n    title: str\n    score: float\n\nclass SearchResponse(BaseModel):\n    query: str\n    hits: list[SearchHit]\n\n@app.post(\"/api/search\", response_model=SearchResponse)\ndef search(req: SearchRequest):\n    if not req.query.strip():\n        raise HTTPException(status_code=400, detail=\"query is empty\")\n    if req.top_k < 1 or req.top_k > 20:\n        raise HTTPException(status_code=400, detail=\"top_k out of range\")\n    rows = search_index(req.query, limit=req.top_k)\n    hits = [SearchHit(doc_id=row[\"doc_id\"], title=row[\"title\"], score=row[\"score\"]) for row in rows]\n    return SearchResponse(query=req.query, hits=hits)",
+    "question_type": "review_choice",
+    "question": "What happens if `top_k` is 30?",
+    "choices": [
+      "It always returns 30.",
+      "Delete the query",
+      "The server shuts down automatically",
+      "It returns a 400 error"
+    ],
+    "answer": "It returns a 400 error",
+    "explanation": "If `top_k` is less than 1 or greater than 20, an HTTPException 400 is thrown. The input validation code is the first step in verifying that the value submitted by the user is in the expected format. We need to examine where the process is blocked and what response is returned when an invalid value is entered.",
+    "side_card_ids": [
+      "DEV_debugging_001"
+    ],
+    "project_context": "This validation is related to API security and cost limits."
+  },
+  {
+    "id": "PY9_REVIEW_FASTAPI_004",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "fastapi_search_endpoint_v1",
+    "review_step": 4,
+    "review_total": 5,
+    "review_focus": "호출 지점",
+    "title": "[Today's Code Review 4/5] Actual Search Call Points",
+    "concepts": [
+      "search",
+      "function",
+      "api"
+    ],
+    "reading_goal": "Find the line within the endpoint that calls the actual search engine.",
+    "code": "from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass SearchRequest(BaseModel):\n    query: str\n    top_k: int = 5\n\nclass SearchHit(BaseModel):\n    doc_id: str\n    title: str\n    score: float\n\nclass SearchResponse(BaseModel):\n    query: str\n    hits: list[SearchHit]\n\n@app.post(\"/api/search\", response_model=SearchResponse)\ndef search(req: SearchRequest):\n    if not req.query.strip():\n        raise HTTPException(status_code=400, detail=\"query is empty\")\n    if req.top_k < 1 or req.top_k > 20:\n        raise HTTPException(status_code=400, detail=\"top_k out of range\")\n    rows = search_index(req.query, limit=req.top_k)\n    hits = [SearchHit(doc_id=row[\"doc_id\"], title=row[\"title\"], score=row[\"score\"]) for row in rows]\n    return SearchResponse(query=req.query, hits=hits)",
+    "question_type": "review_choice",
+    "question": "Which line actually performs the search?",
+    "choices": [
+      "app = FastAPI()",
+      "class SearchHit(BaseModel)",
+      "return SearchResponse(...)",
+      "rows = search_index(req.query, limit=req.top_k)"
+    ],
+    "answer": "rows = search_index(req.query, limit=req.top_k)",
+    "explanation": "`search_index` is the point where the actual search engine or index is called. The API function receives a request and returns the search results in the response. By locating the search call point, you can determine where the request-handling code connects to the actual search logic. Therefore, the return/call result is `rows = search_index(req.query, limit=req.top_k)`.",
+    "side_card_ids": [
+      "AI_retrieval_001",
+      "PL_endpoint_001"
+    ],
+    "project_context": "Identify the boundary between the API wrapper and the actual search function."
+  },
+  {
+    "id": "PY9_REVIEW_FASTAPI_005",
+    "level": 10,
+    "card_type": "daily_review",
+    "review_group": "fastapi_search_endpoint_v1",
+    "review_step": 5,
+    "review_total": 5,
+    "review_focus": "응답",
+    "title": "[Today's Code Review 5/5] Advantages of the Response Model",
+    "concepts": [
+      "response_model",
+      "schema",
+      "api"
+    ],
+    "reading_goal": "Read about why using `response_model` makes the API response structure clearer.",
+    "code": "from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass SearchRequest(BaseModel):\n    query: str\n    top_k: int = 5\n\nclass SearchHit(BaseModel):\n    doc_id: str\n    title: str\n    score: float\n\nclass SearchResponse(BaseModel):\n    query: str\n    hits: list[SearchHit]\n\n@app.post(\"/api/search\", response_model=SearchResponse)\ndef search(req: SearchRequest):\n    if not req.query.strip():\n        raise HTTPException(status_code=400, detail=\"query is empty\")\n    if req.top_k < 1 or req.top_k > 20:\n        raise HTTPException(status_code=400, detail=\"top_k out of range\")\n    rows = search_index(req.query, limit=req.top_k)\n    hits = [SearchHit(doc_id=row[\"doc_id\"], title=row[\"title\"], score=row[\"score\"]) for row in rows]\n    return SearchResponse(query=req.query, hits=hits)",
+    "question_type": "review_choice",
+    "question": "What are the advantages of `response_model=SearchResponse`?",
+    "choices": [
+      "Always increases search speed 100-fold",
+      "API keys are issued automatically",
+      "Clear the browser cache",
+      "It clarifies the response structure and helps with verification and documentation."
+    ],
+    "answer": "It clarifies the response structure and helps with verification and documentation.",
+    "explanation": "FastAPI/Pydantic excels at defining clear request and response schemas. The advantage of response models is that they clearly define the format of the data returned by the API. This prevents internal values from being exposed and also aids in documentation.",
+    "side_card_ids": [
+      "DATA_schema_001",
+      "PL_endpoint_001"
+    ],
+    "project_context": "It ties into the intuition needed to design a reliable local search API."
+  },
+  {
+    "id": "PY9_REVIEW_PSPATCH_001",
+    "level": 8,
+    "card_type": "daily_review",
+    "review_group": "powershell_patch_v1",
+    "review_step": 1,
+    "review_total": 5,
+    "review_focus": "전체 목적",
+    "title": "[Today's Code Review 1/5] Overall Purpose of the PowerShell Patch Script",
+    "concepts": [
+      "powershell",
+      "patch",
+      "marker",
+      "review"
+    ],
+    "reading_goal": "Read the script flow for replacing or adding functional blocks in app.js using markers.",
+    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\n$ErrorActionPreference = \"Stop\"\n$appPath = \".\\src\\pwa\\app.js\"\n$app = Get-Content $appPath -Raw -Encoding UTF8\n$markerStart = \"// === FEATURE START ===\"\n$markerEnd = \"// === FEATURE END ===\"\n$featureBlock = \"// === FEATURE START ===\nfunction sayHello() {\n  console.log('hello');\n}\n// === FEATURE END ===\"\nif ($app.Contains($markerStart)) {\n  $pattern = [regex]::Escape($markerStart) + \"[\\s\\S]*?\" + [regex]::Escape($markerEnd)\n  $app = [regex]::Replace($app, $pattern, $featureBlock.Trim())\n} else {\n  $app = $app.TrimEnd() + \"`r`n\" + $featureBlock\n}\nSet-Content $appPath -Value $app -Encoding UTF8\nSelect-String -Path $appPath -Pattern \"FEATURE START|sayHello\" -Context 0,2",
+    "question_type": "review_choice",
+    "question": "What is the overall purpose of this script?",
+    "choices": [
+      "Convert a JSONL file into embedding vectors",
+      "Deploy the web server to the production server",
+      "Create a new image and save it",
+      "Add a FEATURE block to app.js or replace an existing block"
+    ],
+    "answer": "Add a FEATURE block to app.js or replace an existing block",
+    "explanation": "If `markerStart` is present in the PowerShell patch, it searches for the existing block and replaces it. If there is no marker, it appends a new `featureBlock` to the end.",
+    "side_card_ids": [
+      "LANG_powershell_001",
+      "DEV_debugging_001"
+    ],
+    "project_context": "This is directly related to understanding SWAP-IN and patch scripts."
+  },
+  {
+    "id": "PY9_REVIEW_PSPATCH_002",
+    "level": 8,
+    "card_type": "daily_review",
+    "review_group": "powershell_patch_v1",
+    "review_step": 2,
+    "review_total": 5,
+    "review_focus": "에러 처리",
+    "title": "[Today's Code Review 2/5] Meaning of ErrorActionPreference",
+    "concepts": [
+      "powershell",
+      "error",
+      "script"
+    ],
+    "reading_goal": "Reads the setting that prevents the script from ignoring errors that occur midway through execution.",
+    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\n$ErrorActionPreference = \"Stop\"\n$appPath = \".\\src\\pwa\\app.js\"\n$app = Get-Content $appPath -Raw -Encoding UTF8\n$markerStart = \"// === FEATURE START ===\"\n$markerEnd = \"// === FEATURE END ===\"\n$featureBlock = \"// === FEATURE START ===\nfunction sayHello() {\n  console.log('hello');\n}\n// === FEATURE END ===\"\nif ($app.Contains($markerStart)) {\n  $pattern = [regex]::Escape($markerStart) + \"[\\s\\S]*?\" + [regex]::Escape($markerEnd)\n  $app = [regex]::Replace($app, $pattern, $featureBlock.Trim())\n} else {\n  $app = $app.TrimEnd() + \"`r`n\" + $featureBlock\n}\nSet-Content $appPath -Value $app -Encoding UTF8\nSelect-String -Path $appPath -Pattern \"FEATURE START|sayHello\" -Context 0,2",
+    "question_type": "review_choice",
+    "question": "What is the purpose of ErrorActionPreference = Stop?",
+    "choices": [
+      "It always indicates success",
+      "Compress the file",
+      "Open the browser",
+      "If an error occurs, stop the script."
+    ],
+    "answer": "If an error occurs, stop the script.",
+    "explanation": "If you miss an error during the process, the file may be updated only partially. If you enable the safety setting, you can quickly stop the process upon failure and investigate the cause. In a patch script, you must stop the process even at the first sign of an error—no matter how minor—to prevent incorrect file saves. Therefore, the correct answer is “Stop the script if an error occurs.”",
+    "side_card_ids": [
+      "LANG_powershell_001"
+    ],
+    "project_context": "Reduces the risk of code continuing to execute after a line that failed in a bulk patch."
+  },
+  {
+    "id": "PY9_REVIEW_PSPATCH_003",
+    "level": 8,
+    "card_type": "daily_review",
+    "review_group": "powershell_patch_v1",
+    "review_step": 3,
+    "review_total": 5,
+    "review_focus": "분기",
+    "title": "[Today's Code Review 3/5] Marker Detection Branch",
+    "concepts": [
+      "powershell",
+      "if",
+      "marker"
+    ],
+    "reading_goal": "Read the conditional statement that checks for the existing block and stops if it is not found.",
+    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\n$ErrorActionPreference = \"Stop\"\n$appPath = \".\\src\\pwa\\app.js\"\n$app = Get-Content $appPath -Raw -Encoding UTF8\n$markerStart = \"// === FEATURE START ===\"\n$markerEnd = \"// === FEATURE END ===\"\n$featureBlock = \"// === FEATURE START ===\nfunction sayHello() {\n  console.log('hello');\n}\n// === FEATURE END ===\"\nif ($app.Contains($markerStart)) {\n  $pattern = [regex]::Escape($markerStart) + \"[\\s\\S]*?\" + [regex]::Escape($markerEnd)\n  $app = [regex]::Replace($app, $pattern, $featureBlock.Trim())\n} else {\n  $app = $app.TrimEnd() + \"`r`n\" + $featureBlock\n}\nSet-Content $appPath -Value $app -Encoding UTF8\nSelect-String -Path $appPath -Pattern \"FEATURE START|sayHello\" -Context 0,2",
+    "question_type": "review_choice",
+    "question": "If \"FEATURE START\" already exists, which path is taken?",
+    "choices": [
+      "Just add it at the end, no matter what",
+      "Delete the file",
+      "Push to Git",
+      "Replace the existing block using a regex"
+    ],
+    "answer": "Replace the existing block using a regex",
+    "explanation": "If app.Contains(markerStart) is true, the flow proceeds to the Replace path. The marker detection branch searches for a specified string within the text and branches the processing path based on the result. Comparing the difference in output between when the condition is true and when it is false reveals the flow. Therefore, the correct answer is “Replace the existing block using a regex.”",
+    "side_card_ids": [
+      "DEV_debugging_001"
+    ],
+    "project_context": "The structure is designed so that duplicate blocks do not accumulate even if the same patch is run multiple times."
+  },
+  {
+    "id": "PY9_REVIEW_PSPATCH_004",
+    "level": 8,
+    "card_type": "daily_review",
+    "review_group": "powershell_patch_v1",
+    "review_step": 4,
+    "review_total": 5,
+    "review_focus": "추가",
+    "title": "[Today's Code Review 4/5] If it doesn't exist, append",
+    "concepts": [
+      "powershell",
+      "append",
+      "string"
+    ],
+    "reading_goal": "Reads the code that appends a new block to the end of the file when there is no existing marker.",
+    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\n$ErrorActionPreference = \"Stop\"\n$appPath = \".\\src\\pwa\\app.js\"\n$app = Get-Content $appPath -Raw -Encoding UTF8\n$markerStart = \"// === FEATURE START ===\"\n$markerEnd = \"// === FEATURE END ===\"\n$featureBlock = \"// === FEATURE START ===\nfunction sayHello() {\n  console.log('hello');\n}\n// === FEATURE END ===\"\nif ($app.Contains($markerStart)) {\n  $pattern = [regex]::Escape($markerStart) + \"[\\s\\S]*?\" + [regex]::Escape($markerEnd)\n  $app = [regex]::Replace($app, $pattern, $featureBlock.Trim())\n} else {\n  $app = $app.TrimEnd() + \"`r`n\" + $featureBlock\n}\nSet-Content $appPath -Value $app -Encoding UTF8\nSelect-String -Path $appPath -Pattern \"FEATURE START|sayHello\" -Context 0,2",
+    "question_type": "review_choice",
+    "question": "What happens if there is no `markerStart`?",
+    "choices": [
+      "Do nothing",
+      "Parses JSON",
+      "Clear the browser cache",
+      "Append a `featureBlock` to the end of the file"
+    ],
+    "answer": "Append a `featureBlock` to the end of the file",
+    "explanation": "If there is no existing marker, append the new block to the end of the file. In the `else` block, use `TrimEnd` to remove trailing whitespace, then append the newline and `featureBlock`. Separating the paths for replacing existing blocks and adding new blocks makes the README patch more reliable.",
+    "side_card_ids": [
+      "LANG_powershell_001"
+    ],
+    "project_context": "This is the patch flow when adding a new feature for the first time."
+  },
+  {
+    "id": "PY9_REVIEW_PSPATCH_005",
+    "level": 9,
+    "card_type": "daily_review",
+    "review_group": "powershell_patch_v1",
+    "review_step": 5,
+    "review_total": 5,
+    "review_focus": "검증",
+    "title": "[Today's Code Review 5/5] Post-Patch Verification",
+    "concepts": [
+      "powershell",
+      "verification",
+      "select_string"
+    ],
+    "reading_goal": "Read the line that uses `Select-String` to verify that the patch was applied correctly.",
+    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\n$ErrorActionPreference = \"Stop\"\n$appPath = \".\\src\\pwa\\app.js\"\n$app = Get-Content $appPath -Raw -Encoding UTF8\n$markerStart = \"// === FEATURE START ===\"\n$markerEnd = \"// === FEATURE END ===\"\n$featureBlock = \"// === FEATURE START ===\nfunction sayHello() {\n  console.log('hello');\n}\n// === FEATURE END ===\"\nif ($app.Contains($markerStart)) {\n  $pattern = [regex]::Escape($markerStart) + \"[\\s\\S]*?\" + [regex]::Escape($markerEnd)\n  $app = [regex]::Replace($app, $pattern, $featureBlock.Trim())\n} else {\n  $app = $app.TrimEnd() + \"`r`n\" + $featureBlock\n}\nSet-Content $appPath -Value $app -Encoding UTF8\nSelect-String -Path $appPath -Pattern \"FEATURE START|sayHello\" -Context 0,2",
+    "question_type": "review_choice",
+    "question": "What is the purpose of the `Select-String` line?",
+    "choices": [
+      "Upload the file to the server",
+      "Compress JSON",
+      "It automatically generates the correct answer",
+      "Check whether the patch string is present in the actual file"
+    ],
+    "answer": "Check whether the patch string is present in the actual file",
+    "explanation": "After applying a patch, it is essential to verify that it has been applied correctly. You should use file content searches, validation scripts, and `git diff` to ensure that only the intended changes have been applied. Think of `Select-String` as a tool for quickly checking whether a specific string is actually present in the file.",
+    "side_card_ids": [
+      "LANG_powershell_001",
+      "DEV_debugging_001"
+    ],
+    "project_context": "This connects to the verification phase following the application of the SWAP-IN principle."
+  }
+]
