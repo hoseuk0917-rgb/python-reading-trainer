@@ -5591,3 +5591,326 @@
 
   window.CodeExplainerRules.__v334A6GeneralCssLayoutSynthesis = true;
 })();
+// GENERAL_DEVOPS_CONFIG_SYNTHESIS_V334_A7
+(function installGeneralDevopsConfigSynthesisV334A7() {
+  if (!window.CodeExplainerRules || typeof window.CodeExplainerRules.analyze !== "function") return;
+  if (window.CodeExplainerRules.__v334A7GeneralDevopsConfigSynthesis) return;
+
+  const baseAnalyzeV334A7 = window.CodeExplainerRules.analyze;
+
+  function compactV334A7(value) {
+    return String(value || "").replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function getLangV334A7(result, lang) {
+    return String(lang || result.language || result.detectedLanguage || "").toLowerCase();
+  }
+
+  function replaceStepsV334A7(result, defs) {
+    const oldSteps = Array.isArray(result.steps) ? result.steps : [];
+    result.steps = defs.map(function(def, index) {
+      return Object.assign({}, oldSteps[index] || {}, {
+        title: def.title,
+        explain: def.explain
+      });
+    });
+  }
+
+  function parseDockerfileV334A7(code) {
+    const lines = String(code || "")
+      .split(/\r?\n/)
+      .map(function(line) { return line.replace(/#.*$/, "").trim(); })
+      .filter(Boolean);
+
+    const instructions = [];
+    lines.forEach(function(line) {
+      const m = line.match(/^([A-Za-z]+)\s+([\s\S]+)$/);
+      if (!m) return;
+      instructions.push({
+        op: m[1].toUpperCase(),
+        arg: compactV334A7(m[2]),
+        raw: line
+      });
+    });
+
+    if (!instructions.some(function(x) { return x.op === "FROM"; })) return null;
+
+    function first(op) {
+      return instructions.find(function(x) { return x.op === op; });
+    }
+
+    function all(op) {
+      return instructions.filter(function(x) { return x.op === op; });
+    }
+
+    return {
+      instructions: instructions,
+      from: first("FROM"),
+      workdir: first("WORKDIR"),
+      copy: all("COPY"),
+      run: all("RUN"),
+      expose: first("EXPOSE"),
+      cmd: first("CMD"),
+      entrypoint: first("ENTRYPOINT")
+    };
+  }
+
+  function describeDockerCmdV334A7(value) {
+    const text = compactV334A7(value);
+    if (/npm["'\s,]+start/i.test(text)) return "컨테이너가 시작될 때 npm start를 실행";
+    if (/node\s+/i.test(text)) return "컨테이너가 시작될 때 Node.js 실행 명령을 실행";
+    return "컨테이너가 시작될 때 " + text + " 명령을 실행";
+  }
+
+  function removeKnownDevopsUnsupportedV334A7(result) {
+    if (!result || typeof result !== "object") return;
+
+    const known = /\b(FROM|WORKDIR|COPY|RUN|EXPOSE|CMD|ENTRYPOINT|jobs|steps|runs-on|uses|run|actions\/checkout|actions\/setup-node|npm ci|npm test|push|pull_request|ubuntu-latest|node)\b/i;
+
+    const textOf = function(item) {
+      return compactV334A7([
+        item && item.code,
+        item && item.text,
+        item && item.label,
+        item && item.title,
+        item && item.raw,
+        item && item.name
+      ].join(" "));
+    };
+
+    if (Array.isArray(result.unsupportedItems)) {
+      result.unsupportedItems = result.unsupportedItems.filter(function(item) {
+        return !known.test(textOf(item));
+      });
+    }
+
+    if (Array.isArray(result.unknownNextActions) && (!Array.isArray(result.unsupportedItems) || result.unsupportedItems.length === 0)) {
+      result.unknownNextActions = result.unknownNextActions.filter(function(action) {
+        return !/미지원 항목 확인/.test(compactV334A7(action && action.title));
+      });
+    }
+  }
+
+  function improveDockerfileV334A7(result, code, lang) {
+    const language = getLangV334A7(result, lang);
+    if (language !== "dockerfile" && language !== "docker") return false;
+
+    const parsed = parseDockerfileV334A7(code);
+    if (!parsed || !parsed.from) return false;
+
+    const image = parsed.from.arg;
+    const workdir = parsed.workdir ? parsed.workdir.arg : "";
+    const port = parsed.expose ? parsed.expose.arg : "";
+    const cmdText = parsed.cmd ? describeDockerCmdV334A7(parsed.cmd.arg) : (parsed.entrypoint ? describeDockerCmdV334A7(parsed.entrypoint.arg) : "");
+
+    const summaryParts = [];
+    summaryParts.push(image + " 이미지를 기반으로 컨테이너를 만듭니다.");
+    if (workdir) summaryParts.push("작업 폴더를 " + workdir + "로 정합니다.");
+    if (parsed.run.some(function(x) { return /npm\s+ci/i.test(x.arg); })) summaryParts.push("npm ci로 의존성을 설치합니다.");
+    if (parsed.copy.length) summaryParts.push("필요한 파일을 컨테이너 안으로 복사합니다.");
+    if (port) summaryParts.push(port + " 포트를 사용할 앱임을 표시합니다.");
+    if (cmdText) summaryParts.push(cmdText + "합니다.");
+
+    result.summary = summaryParts.join(" ");
+
+    const steps = [];
+
+    steps.push({
+      title: "기반 이미지 선택",
+      explain: "FROM 명령은 컨테이너의 기반 환경을 고릅니다. 여기서는 " + image + " 이미지를 사용해 Node.js 앱을 담을 가벼운 실행 환경을 준비합니다."
+    });
+
+    if (workdir) {
+      steps.push({
+        title: "작업 폴더 설정",
+        explain: "WORKDIR 명령은 컨테이너 안에서 기준이 되는 작업 폴더를 정합니다. 여기서는 " + workdir + " 폴더를 기준으로 이후 설치와 실행 명령을 처리합니다."
+      });
+    }
+
+    const packageCopy = parsed.copy.find(function(x) { return /package.*json/i.test(x.arg); });
+    if (packageCopy) {
+      steps.push({
+        title: "의존성 파일 먼저 복사",
+        explain: "COPY 명령으로 package.json과 package-lock.json 같은 의존성 파일을 먼저 컨테이너에 넣습니다. 이렇게 하면 소스 코드만 바뀐 경우 의존성 설치 단계를 다시 하지 않아도 될 가능성이 커집니다."
+      });
+    }
+
+    const npmCi = parsed.run.find(function(x) { return /npm\s+ci/i.test(x.arg); });
+    if (npmCi) {
+      steps.push({
+        title: "의존성 설치",
+        explain: "RUN 명령은 이미지를 만드는 중에 설치 명령을 실행합니다. 여기서는 npm ci로 package-lock.json 기준의 npm 패키지를 깨끗하고 재현 가능하게 설치합니다."
+      });
+    }
+
+    const copyAll = parsed.copy.find(function(x) { return /^\.\s+\.$/.test(x.arg) || /^\. \.$/.test(x.arg); });
+    if (copyAll) {
+      steps.push({
+        title: "프로젝트 파일 복사",
+        explain: "두 번째 COPY 명령은 애플리케이션 소스 파일을 컨테이너 안의 작업 폴더로 옮깁니다. 의존성 설치 뒤에 복사하면 Docker 캐시를 더 잘 활용할 수 있습니다."
+      });
+    }
+
+    if (port) {
+      steps.push({
+        title: "앱 포트 표시",
+        explain: "EXPOSE 명령은 컨테이너 안의 앱이 사용할 포트를 문서처럼 표시합니다. 여기서는 " + port + " 포트를 쓰는 앱이라는 뜻이고, 실제 외부 연결은 docker run의 포트 매핑에서 정합니다."
+      });
+    }
+
+    if (parsed.cmd) {
+      steps.push({
+        title: "컨테이너 시작 명령 설정",
+        explain: "CMD 명령은 컨테이너가 시작될 때 기본으로 실행할 작업을 정합니다. 여기서는 " + cmdText + "한다는 뜻입니다."
+      });
+    } else if (parsed.entrypoint) {
+      steps.push({
+        title: "컨테이너 시작 명령 설정",
+        explain: "ENTRYPOINT 명령은 컨테이너가 시작될 때 항상 실행할 작업을 정합니다. 여기서는 " + cmdText + "한다는 뜻입니다."
+      });
+    }
+
+    replaceStepsV334A7(result, steps);
+
+    if (result.flow && typeof result.flow === "object") {
+      result.flow.roleSummary = "Node.js 앱을 컨테이너 이미지로 만들고, 의존성 설치와 실행 명령을 정하는 Dockerfile입니다.";
+    }
+
+    result.unknownNextActions = [];
+    removeKnownDevopsUnsupportedV334A7(result);
+    return true;
+  }
+
+  function parseGithubActionsV334A7(code) {
+    const source = String(code || "");
+    if (!/\bjobs\s*:/i.test(source) || !/\bsteps\s*:/i.test(source)) return null;
+
+    const nameMatch = source.match(/^name\s*:\s*(.+)$/mi);
+    const runsOnMatch = source.match(/runs-on\s*:\s*([^\r\n]+)/i);
+    const jobMatch = source.match(/\njobs\s*:\s*\n\s+([A-Za-z0-9_-]+)\s*:/i);
+
+    const events = [];
+    if (/^\s*push\s*:/mi.test(source) || /on\s*:\s*\[?[^\r\n]*push/i.test(source)) events.push("push");
+    if (/^\s*pull_request\s*:/mi.test(source) || /on\s*:\s*\[?[^\r\n]*pull_request/i.test(source)) events.push("pull_request");
+
+    const uses = [];
+    source.replace(/uses\s*:\s*([^\r\n]+)/ig, function(_, value) {
+      uses.push(compactV334A7(value));
+      return "";
+    });
+
+    const runs = [];
+    source.replace(/run\s*:\s*([^\r\n]+)/ig, function(_, value) {
+      runs.push(compactV334A7(value));
+      return "";
+    });
+
+    return {
+      name: nameMatch ? compactV334A7(nameMatch[1]) : "workflow",
+      job: jobMatch ? compactV334A7(jobMatch[1]) : "job",
+      events: events,
+      runsOn: runsOnMatch ? compactV334A7(runsOnMatch[1]) : "",
+      uses: uses,
+      runs: runs
+    };
+  }
+
+  function describeGithubEventV334A7(events) {
+    if (!events || !events.length) return "지정된 GitHub 이벤트";
+    if (events.includes("push") && events.includes("pull_request")) return "push나 pull_request가 발생할 때";
+    if (events.includes("push")) return "push가 발생할 때";
+    if (events.includes("pull_request")) return "pull request가 발생할 때";
+    return events.join(", ") + " 이벤트가 발생할 때";
+  }
+
+  function improveGithubActionsV334A7(result, code, lang) {
+    const language = getLangV334A7(result, lang);
+    if (language !== "github_actions" && language !== "github-actions" && language !== "yaml" && language !== "yml") return false;
+
+    const parsed = parseGithubActionsV334A7(code);
+    if (!parsed) return false;
+
+    const eventText = describeGithubEventV334A7(parsed.events);
+    const hasCheckout = parsed.uses.some(function(x) { return /actions\/checkout/i.test(x); });
+    const hasSetupNode = parsed.uses.some(function(x) { return /actions\/setup-node/i.test(x); });
+    const hasNpmCi = parsed.runs.some(function(x) { return /npm\s+ci/i.test(x); });
+    const hasNpmTest = parsed.runs.some(function(x) { return /npm\s+test/i.test(x); });
+
+    const summaryParts = [];
+    summaryParts.push(parsed.name + " 워크플로우는 " + eventText + " 실행됩니다.");
+    if (parsed.runsOn) summaryParts.push(parsed.job + " 작업은 " + parsed.runsOn + " 환경에서 실행됩니다.");
+    if (hasCheckout) summaryParts.push("코드를 체크아웃합니다.");
+    if (hasSetupNode) summaryParts.push("Node.js 실행 환경을 준비합니다.");
+    if (hasNpmCi) summaryParts.push("npm ci로 의존성을 설치합니다.");
+    if (hasNpmTest) summaryParts.push("npm test로 테스트를 실행합니다.");
+
+    result.summary = summaryParts.join(" ");
+
+    const steps = [];
+
+    steps.push({
+      title: "워크플로우 이름 확인",
+      explain: "name: " + parsed.name + "은 GitHub Actions 화면에 표시될 자동화 이름입니다."
+    });
+
+    steps.push({
+      title: "실행 조건 설정",
+      explain: "on 설정은 언제 이 자동화가 실행되는지 정합니다. 여기서는 " + eventText + " 실행됩니다."
+    });
+
+    if (parsed.runsOn) {
+      steps.push({
+        title: "실행 환경 선택",
+        explain: "runs-on: " + parsed.runsOn + "은 " + parsed.job + " 작업을 " + parsed.runsOn + " 가상 머신에서 실행한다는 뜻입니다."
+      });
+    }
+
+    if (hasCheckout) {
+      steps.push({
+        title: "저장소 코드 가져오기",
+        explain: "actions/checkout은 GitHub 저장소의 코드를 워크플로우 실행 환경으로 내려받는 단계입니다."
+      });
+    }
+
+    if (hasSetupNode) {
+      steps.push({
+        title: "Node.js 환경 준비",
+        explain: "actions/setup-node는 npm 명령을 실행할 수 있도록 Node.js 환경을 준비하는 단계입니다."
+      });
+    }
+
+    if (hasNpmCi) {
+      steps.push({
+        title: "의존성 설치",
+        explain: "npm ci는 package-lock.json 기준으로 필요한 패키지를 깨끗하게 설치합니다."
+      });
+    }
+
+    if (hasNpmTest) {
+      steps.push({
+        title: "테스트 실행",
+        explain: "npm test는 프로젝트의 테스트 스크립트를 실행해서 코드가 기대대로 동작하는지 확인합니다."
+      });
+    }
+
+    replaceStepsV334A7(result, steps);
+
+    if (result.flow && typeof result.flow === "object") {
+      result.flow.roleSummary = "GitHub에 push 또는 pull request가 생겼을 때 의존성을 설치하고 테스트를 실행하는 CI 자동화 설정입니다.";
+    }
+
+    result.unknownNextActions = [];
+    removeKnownDevopsUnsupportedV334A7(result);
+    return true;
+  }
+
+  window.CodeExplainerRules.analyze = function analyzeWithGeneralDevopsConfigSynthesisV334A7(code, lang) {
+    const result = baseAnalyzeV334A7.apply(this, arguments);
+    improveDockerfileV334A7(result, code, lang);
+    improveGithubActionsV334A7(result, code, lang);
+    removeKnownDevopsUnsupportedV334A7(result);
+    return result;
+  };
+
+  window.CodeExplainerRules.__v334A7GeneralDevopsConfigSynthesis = true;
+})();
