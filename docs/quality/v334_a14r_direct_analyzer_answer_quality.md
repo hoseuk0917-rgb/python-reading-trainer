@@ -7,7 +7,7 @@
 | metric | value |
 |---|---:|
 | cases | 7 |
-| average | 17.4 / 20 |
+| average | 17.6 / 20 |
 | A | 6 |
 | B | 0 |
 | C | 1 |
@@ -23,7 +23,7 @@
 | A | 17 | command | ko | Dangerous cleanup command | 큰 품질 문제 없음 |
 | A | 18 | command | ko | Validation routine command | 큰 품질 문제 없음 |
 | A | 17 | command | en | Dangerous cleanup command EN | 큰 품질 문제 없음 |
-| C | 10 | project | ko | Project probe command generation | 출력이 길어 가독성이 떨어질 수 있음; 핵심 동작 설명 일부 부족; 종합요약 신호 부족 |
+| C | 11 | project | ko | Project probe command generation | 출력이 길어 가독성이 떨어질 수 있음; 종합요약 신호 부족 |
 
 ## Direct output samples
 
@@ -83,10 +83,10 @@ summary: Analyzed 4 PowerShell commands in execution order. Danger: 3, caution: 
 
 ### C · project · ko · Project probe command generation
 
-- score: 10 / 20
-- issues: 출력이 길어 가독성이 떨어질 수 있음; 핵심 동작 설명 일부 부족; 종합요약 신호 부족
+- score: 11 / 20
+- issues: 출력이 길어 가독성이 떨어질 수 있음; 종합요약 신호 부족
 
 ```text
-$ErrorActionPreference = "Stop" $ProjectRoot = 'D:\projects\python-reading-trainer' Set-Location $ProjectRoot if (-not (Test-Path .\.tmp)) { New-Item -ItemType Directory -Force .\.tmp | Out-Null } # ENV_AUDIT_V194_A1 $PythonCmd = Get-Command python -ErrorAction SilentlyContinue if (-not $PythonCmd) { throw 'PYTHON_NOT_FOUND: Python을 설치하거나 PATH에 추가한 뒤 다시 실행하세요.' } $GitCmd = Get-Command git -ErrorAction SilentlyContinue $NodeCmd = Get-Command node -ErrorAction SilentlyContinue $PipCmd = python -m pip --version 2>$null $RequiredPipPackages = @() Write-Host 'ENV_AUDIT_V194_A1' Write-Host ('ENV_PYTHON ' + $PythonCmd.Source) Write-Host ('ENV_GIT ' + $(if ($GitCmd) { $GitCmd.Source } else { 'missing_optional' })) Write-Host ('ENV_NODE ' + $(if ($NodeCmd) { $NodeCmd.Source } else { 'missing_optional' })) Write-Host ('ENV_PIP ' + $(if ($PipCmd) { $PipCmd } else { 'missing_optional' })) if ($RequiredPipPackages.Count -eq 0) { Write-Host 'ENV_PIP_PACKAGES none' } else { foreach ($pkg in $RequiredPipPackages) { python -m pip show $pkg *> $null if ($LASTEXITCODE -ne 0) { Write-Host ('ENV_INSTALLING_PIP_PACKAGE ' + $pkg) python -m pip install $pkg } else { Write-Host ('ENV_PIP_PACKAGE_OK ' + $pkg) } } } @' from pathlib import Path from collections import Counter import ast import json import re import subprocess import sys from shutil import which from datetime import datetime ROOT = Path('.').resolve() OUT_DIR = ROOT / '.tmp' OUT_JSON = OUT_DIR / 'project_probe_v199.json' OUT_MD = OUT_DIR / 'project_probe_v199_report.md' OUT_JSON_LATEST = OUT_DIR / 'project_probe_latest.json' OUT_MD_LATEST = OUT_DIR / 'project_probe_latest_report.md' SKIP_DIRS = {'.git', '.tmp', 'node_modules', '.venv', '.venv_lora_infer', '__pycache__', '.pytest_cache', 'dist', 'build', '.next'} TEXT_EXTS = {'.js',
+# === PROJECT ANALYZER PROBE GUIDE V334-A14U === # 이 명령은 앱을 실행하는 명령이 아니라, 프로젝트 구조를 점검하기 위한 분석용 스크립트입니다. # 하는 일: # 1. Python/Git/Node 설치 여부를 확인합니다. # 2. 프로젝트 파일 구조와 주요 파일을 스캔합니다. # 3. JS/Python/JSON/Markdown 파일 수와 주요 코드 패턴을 집계합니다. # 4. 함수/클래스/호출 후보와 Mermaid 구조도 후보를 추출합니다. # 5. 결과를 .tmp/project_probe_latest.json 및 .tmp/project_probe_latest_report.md에 저장합니다. # 실행 전 확인: # - ProjectRoot가 맞는지 확인: D:\projects\python-reading-trainer # - .tmp 폴더와 project_probe_* 산출물이 생기는 것은 정상입니다. # - 이 probe 명령은 분석 산출물을 만드는 용도이며, 삭제/초기화 계열 작업을 의도하지 않습니다. # - 출력이 길면 REPORT PREVIEW 아래 일부만 보여도 정상입니다. # - 더 자세히 보려면 .tmp/project_probe_latest.json 전체를 프로젝트분석 입력창에 붙여넣으세요. # ================================================ $ErrorActionPreference = "Stop" $ProjectRoot = 'D:\projects\python-reading-trainer' Set-Location $ProjectRoot if (-not (Test-Path .\.tmp)) { New-Item -ItemType Directory -Force .\.tmp | Out-Null } # ENV_AUDIT_V194_A1 $PythonCmd = Get-Command python -ErrorAction SilentlyContinue if (-not $PythonCmd) { throw 'PYTHON_NOT_FOUND: Python을 설치하거나 PATH에 추가한 뒤 다시 실행하세요.' } $GitCmd = Get-Command git -ErrorAction SilentlyContinue $NodeCmd = Get-Command node -ErrorAction SilentlyContinue $PipCmd = python -m pip --version 2>$null $RequiredPipPackages = @() Write-Host 'ENV_AUDIT_V194_A1' Write-Host ('ENV_PYTHON ' + $PythonCmd.Source) Write-Host ('ENV_GIT ' + $(if ($GitCmd) { $GitCmd.Source } else { 'missing_optional' })) Write-Host ('ENV_NODE ' + $(if ($NodeCmd) { $NodeCmd.Source } else { 'missing_optional' })) Write-Host ('ENV_PIP ' + $(if ($PipCmd) { $PipCmd } else { 'missing_optional' })) if ($RequiredPipPackages.Count -eq 0) { Write-Host 'ENV_PIP_PACKAGES none' } else { foreach ($pkg in $RequiredPipPackages) { python -m pip show $pkg *> $null if ($LASTEXITCODE -ne 0) { Write-Host ('ENV_INSTALLI
 ```
 

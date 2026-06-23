@@ -2404,3 +2404,86 @@ if (typeof document !== "undefined") {
 
   document.addEventListener("focusin", projectAnalyzerScheduleVisiblePolishV334A13A, true);
 }
+
+// V334_A14U_PROJECT_PROBE_COMMAND_GUIDE_APPEND_WRAPPER
+(function() {
+  if (typeof window === "undefined" || !window.ProjectAnalyzer) return;
+
+  const api = window.ProjectAnalyzer;
+  const originalBuildProbeCommand = api.buildProbeCommand;
+
+  if (typeof originalBuildProbeCommand !== "function") return;
+  if (originalBuildProbeCommand.__v334A14UGuideWrapped) return;
+
+  function isEnglishV334A14U() {
+    try {
+      if (typeof document !== "undefined") {
+        const lang = String(document.documentElement.getAttribute("lang") || "").toLowerCase();
+        if (lang.indexOf("en") === 0) return true;
+      }
+
+      if (typeof location !== "undefined" && /[?&]lang=en\b/i.test(location.search || "")) {
+        return true;
+      }
+    } catch (error) {}
+
+    return false;
+  }
+
+  function buildProbeCommandGuideLinesV334A14U(projectRoot) {
+    const root = String(projectRoot || "").trim() || "project root";
+
+    if (isEnglishV334A14U()) {
+      return [
+        "# === PROJECT ANALYZER PROBE GUIDE V334-A14U ===",
+        "# This command does not run the app. It inspects the project structure.",
+        "# What it does:",
+        "# 1. Checks whether Python, Git, and Node are available.",
+        "# 2. Scans the project file tree and key files.",
+        "# 3. Counts JS, Python, JSON, Markdown, and lesson-related files.",
+        "# 4. Collects function/class/call candidates and Mermaid diagram hints.",
+        "# 5. Saves results to .tmp/project_probe_latest.json and .tmp/project_probe_latest_report.md.",
+        "# Before running:",
+        "# - Confirm ProjectRoot: " + root,
+        "# - It is normal for .tmp/project_probe_* output files to be created.",
+        "# - This probe is for analysis output and is not intended to reset or delete project files.",
+        "# - If the terminal output is long, a partial REPORT PREVIEW is normal.",
+        "# - For deeper analysis, paste the full .tmp/project_probe_latest.json into Project Analyzer.",
+        "# ================================================",
+        ""
+      ];
+    }
+
+    return [
+      "# === PROJECT ANALYZER PROBE GUIDE V334-A14U ===",
+      "# 이 명령은 앱을 실행하는 명령이 아니라, 프로젝트 구조를 점검하기 위한 분석용 스크립트입니다.",
+      "# 하는 일:",
+      "# 1. Python/Git/Node 설치 여부를 확인합니다.",
+      "# 2. 프로젝트 파일 구조와 주요 파일을 스캔합니다.",
+      "# 3. JS/Python/JSON/Markdown 파일 수와 주요 코드 패턴을 집계합니다.",
+      "# 4. 함수/클래스/호출 후보와 Mermaid 구조도 후보를 추출합니다.",
+      "# 5. 결과를 .tmp/project_probe_latest.json 및 .tmp/project_probe_latest_report.md에 저장합니다.",
+      "# 실행 전 확인:",
+      "# - ProjectRoot가 맞는지 확인: " + root,
+      "# - .tmp 폴더와 project_probe_* 산출물이 생기는 것은 정상입니다.",
+      "# - 이 probe 명령은 분석 산출물을 만드는 용도이며, 삭제/초기화 계열 작업을 의도하지 않습니다.",
+      "# - 출력이 길면 REPORT PREVIEW 아래 일부만 보여도 정상입니다.",
+      "# - 더 자세히 보려면 .tmp/project_probe_latest.json 전체를 프로젝트분석 입력창에 붙여넣으세요.",
+      "# ================================================",
+      ""
+    ];
+  }
+
+  const wrappedBuildProbeCommand = function(projectRoot) {
+    const command = String(originalBuildProbeCommand.apply(this, arguments) || "");
+
+    if (!command.trim()) return command;
+    if (/PROJECT ANALYZER PROBE GUIDE V334-A14U/.test(command)) return command;
+
+    return buildProbeCommandGuideLinesV334A14U(projectRoot).join("\n") + command;
+  };
+
+  wrappedBuildProbeCommand.__v334A14UGuideWrapped = true;
+  api.buildProbeCommand = wrappedBuildProbeCommand;
+  api.__v334A14UBuildProbeCommandGuideLines = buildProbeCommandGuideLinesV334A14U;
+})();
