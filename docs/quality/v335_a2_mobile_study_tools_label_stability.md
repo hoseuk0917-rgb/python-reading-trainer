@@ -55,3 +55,27 @@ Expected Korean labels:
 - `설정 접기`
 
 This is a mobile study-tools UX stabilization patch, separate from the V335-A1 Project Analyzer digest/raw command smoke.
+
+## Live verification
+
+Live verification completed after GitHub Pages propagation.
+
+PowerShell live check:
+
+- `root has v335_a2`: PASS
+- `pwa has v335_a2`: PASS
+- `app has v335_a2`: PASS
+- `old short setter removed`: PASS
+- `LIVE_V335_A2_OK`: PASS
+
+Real-phone check:
+
+- Public root URL was used for verification.
+- The app routed into the latest PWA runtime.
+- The study-tools settings toggle no longer flickered while scrolling.
+- The previous `설정` / `설정 펼치기` label instability was not reproduced.
+
+Final result:
+
+- V335-A2: PASS
+- Mobile study-tools settings label stability issue: CLOSED
