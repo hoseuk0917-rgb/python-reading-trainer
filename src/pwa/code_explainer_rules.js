@@ -2836,9 +2836,100 @@ function codeRuleTextV334A11B(ko, en) {
     return codeRuleIsEnglishV334A11B() ? "Main flow: " + ordered.map(codeRuleTranslateCountItemV334A11D).join(" · ") : "주요 흐름: " + ordered.join(" · ");
   }
 
+
+  function summarizePowerShellNarrativeV334A14A(language, steps, risky) {
+    if (String(language || "").toLowerCase() !== "powershell") return "";
+    if (!Array.isArray(steps) || !steps.length) return "";
+
+    const isEnglish = codeRuleIsEnglishV334A11B();
+
+    function has(re) {
+      return steps.some(function(step) {
+        return re.test([
+          step && step.code,
+          step && step.title,
+          step && step.explain,
+          step && step.category,
+          Array.isArray(step && step.tags) ? step.tags.join(" ") : ""
+        ].join(" "));
+      });
+    }
+
+    const ko = [];
+    const en = [];
+
+    function add(koText, enText) {
+      ko.push(koText);
+      en.push(enText);
+    }
+
+    if (has(/\bSet-Location\b/i)) {
+      add("작업 폴더를 프로젝트 위치로 옮기고", "changes to the project folder");
+    }
+
+    if (has(/\bGet-Date\b/i)) {
+      add("현재 시각으로 겹치지 않는 실행 이름이나 백업 이름을 만들고", "creates a timestamp for a unique run or backup name");
+    }
+
+    if (has(/backup|백업|backupRoot/i)) {
+      add("백업 경로를 변수에 저장해 뒤의 명령에서 재사용하고", "stores the backup path in a variable for reuse");
+    }
+
+    if (has(/\bNew-Item\b/i) && has(/Directory|-ItemType\s+Directory/i)) {
+      add("필요한 백업 폴더를 만들고", "creates the backup folder");
+    }
+
+    if (has(/\bCopy-Item\b/i)) {
+      add("원본 파일이나 폴더를 백업 위치로 복사하고", "copies the source files or folders to the backup location");
+    }
+
+    if (has(/\bCompress-Archive\b/i) || has(/\.zip\b/i)) {
+      add("백업 내용을 ZIP 파일로 묶고", "compresses the backup content into a ZIP file");
+    }
+
+    if (has(/\bgit\s+status\b/i)) {
+      add("마지막으로 Git 변경 상태를 확인합니다", "then checks the Git working-tree status");
+    }
+
+    if (ko.length < 2) return "";
+
+    const cautionKo = [];
+    const cautionEn = [];
+
+    if (has(/\bCopy-Item\b/i) && has(/-Force\b/i)) {
+      cautionKo.push("-Force 옵션 때문에 기존 대상이 덮이거나 강제로 처리될 수 있는지 확인해야 합니다");
+      cautionEn.push("check whether -Force could overwrite or force-handle an existing target");
+    }
+
+    if (has(/\bRemove-Item\b|\bgit\s+clean\b|\bgit\s+reset\s+--hard\b/i)) {
+      cautionKo.push("삭제나 되돌리기 명령은 실행 전에 대상 경로와 Git 상태를 확인해야 합니다");
+      cautionEn.push("deletion or rollback commands require checking the target path and Git status before running");
+    }
+
+    if (has(/\bCompress-Archive\b/i)) {
+      cautionKo.push("Compress-Archive가 현재 PowerShell 환경에서 사용 가능한 명령인지 확인하면 안전합니다");
+      cautionEn.push("confirm that Compress-Archive is available in the current PowerShell environment");
+    }
+
+    const koSentence = "전체적으로 이 PowerShell 스크립트는 " + ko.join(" ") + ".";
+    const enSentence = "Overall, this PowerShell script " + en.join(", ") + ".";
+
+    if (cautionKo.length) {
+      return isEnglish
+        ? enSentence + " Before running it, " + cautionEn.join("; ") + "."
+        : koSentence + " 실행 전에는 " + cautionKo.join("; ") + ".";
+    }
+
+    return isEnglish
+      ? enSentence + " Read this overview first, then check each step below."
+      : koSentence + " 먼저 이 큰 흐름을 이해한 뒤, 아래에서 줄별 역할을 확인하면 됩니다.";
+  }
+
   function summarize(language, steps) {
     if (!steps.length) return "분석할 코드가 없습니다.";
     const risky = steps.filter(function(step) { return step.risk === "high" || step.risk === "medium"; }).length;
+    const powershellNarrativeV334A14A = summarizePowerShellNarrativeV334A14A(language, steps, risky);
+    if (powershellNarrativeV334A14A) return powershellNarrativeV334A14A;
     const names = {
       powershell: "PowerShell 스크립트",
       python: "Python 코드",
@@ -6127,4 +6218,79 @@ function codeRuleTextV334A11B(ko, en) {
   };
 
   window.CodeExplainerRules.__v334A7GeneralDevopsConfigSynthesis = true;
+})();
+
+// V334_A14S_PYTHON_AUTO_DETECT_GUARD
+(function() {
+  if (typeof window === "undefined" || !window.CodeExplainerRules) return;
+
+  const api = window.CodeExplainerRules;
+  const originalAnalyze = api.analyze;
+  const originalDetectLanguage = api.detectLanguage;
+
+  if (typeof originalAnalyze !== "function" || typeof originalDetectLanguage !== "function") return;
+
+  function looksLikePythonV334A14S(source) {
+    const text = String(source || "");
+    const lines = text.split(/\r?\n/).map(function(line) {
+      return line.replace(/\s+$/g, "");
+    });
+
+    const nonEmpty = lines.filter(function(line) {
+      return line.trim();
+    });
+
+    if (nonEmpty.length < 2) return false;
+
+    const joined = nonEmpty.join("\n");
+
+    const powerShellSignals = [
+      /\bSet-Location\b/i,
+      /\bGet-ChildItem\b/i,
+      /\bGet-Date\b/i,
+      /\bNew-Item\b/i,
+      /\bCopy-Item\b/i,
+      /\bRemove-Item\b/i,
+      /\bCompress-Archive\b/i,
+      /\bInvoke-\w+\b/i,
+      /\$[A-Za-z_][\w-]*\s*=/
+    ];
+
+    const strongPowerShell = powerShellSignals.some(function(re) {
+      return re.test(joined);
+    });
+
+    if (strongPowerShell) return false;
+
+    let score = 0;
+
+    if (/^\s*[A-Za-z_][\w]*\s*=\s*\[/m.test(joined)) score += 2;
+    if (/^\s*[A-Za-z_][\w]*\s*=\s*\{/m.test(joined)) score += 2;
+    if (/^\s*for\s+[A-Za-z_][\w]*\s+in\s+[^:]+:\s*$/m.test(joined)) score += 3;
+    if (/^\s*if\s+.+:\s*$/m.test(joined)) score += 2;
+    if (/\bprint\s*\(/.test(joined)) score += 2;
+    if (/\.append\s*\(/.test(joined)) score += 2;
+    if (/\bTrue\b|\bFalse\b|\bNone\b/.test(joined)) score += 1;
+    if (/['"][A-Za-z_][\w-]*['"]\s*:/.test(joined)) score += 2;
+    if (/^\s{4,}\S/m.test(joined)) score += 1;
+
+    return score >= 5;
+  }
+
+  api.detectLanguage = function(source) {
+    if (looksLikePythonV334A14S(source)) return "python";
+    return originalDetectLanguage.apply(this, arguments);
+  };
+
+  api.analyze = function(source, requestedLanguage) {
+    const requested = String(requestedLanguage || "auto").toLowerCase();
+
+    if ((requested === "auto" || requested === "") && looksLikePythonV334A14S(source)) {
+      return originalAnalyze.call(this, source, "python");
+    }
+
+    return originalAnalyze.apply(this, arguments);
+  };
+
+  api.__v334A14SPythonAutoDetectGuard = looksLikePythonV334A14S;
 })();

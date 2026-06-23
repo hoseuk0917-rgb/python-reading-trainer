@@ -2973,3 +2973,58 @@ if (typeof document !== "undefined") {
 
   document.addEventListener("focusin", commandExplainerScheduleResidualPolishV334A12B, true);
 }
+
+// V334_A14S_COMMAND_SUMMARY_TEXT_NORMALIZER
+(function() {
+  if (typeof window === "undefined" || !window.CommandExplainer) return;
+
+  const api = window.CommandExplainer;
+
+  function normalizeSummaryObjectV334A14S(result) {
+    if (!result || typeof result !== "object") return result;
+
+    const summary = result.summary;
+    if (summary && typeof summary === "object") {
+      const text = String(summary.text || "").trim();
+
+      if (text) {
+        result.summaryText = text;
+
+        try {
+          Object.defineProperty(summary, "toString", {
+            value: function() {
+              return text;
+            },
+            configurable: true,
+            enumerable: false
+          });
+        } catch (error) {
+          summary.toString = function() {
+            return text;
+          };
+        }
+      }
+    }
+
+    return result;
+  }
+
+  function wrapAnalyzerV334A14S(name) {
+    if (typeof api[name] !== "function") return;
+
+    const original = api[name];
+    if (original.__v334A14SWrapped) return;
+
+    const wrapped = function() {
+      return normalizeSummaryObjectV334A14S(original.apply(this, arguments));
+    };
+
+    wrapped.__v334A14SWrapped = true;
+    api[name] = wrapped;
+  }
+
+  wrapAnalyzerV334A14S("analyzePowerShellV277");
+  wrapAnalyzerV334A14S("analyzeBashV278");
+
+  api.__v334A14SNormalizeSummaryObject = normalizeSummaryObjectV334A14S;
+})();
