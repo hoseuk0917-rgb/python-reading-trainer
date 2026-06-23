@@ -4,6 +4,198 @@
 // === CODE EXPLAINER UI V212-A1 START ===
 (function() {
   "use strict";
+function codeExplainerIsEnglishV334A11B() {
+  try {
+    const params = new URLSearchParams(window.location.search || "");
+    const queryLang = params.get("lang") || params.get("locale") || "";
+    const htmlLang = (document.documentElement.getAttribute("lang") || "").toLowerCase();
+    const storedLang =
+      (window.localStorage && (
+        localStorage.getItem("pythonTrainerLang") ||
+        localStorage.getItem("language") ||
+        localStorage.getItem("lang") ||
+        ""
+      )) || "";
+    return /^en/i.test(queryLang) || /^en/i.test(htmlLang) || /^en/i.test(storedLang);
+  } catch (_) {
+    return false;
+  }
+}
+
+function codeExplainerTextV334A11B(ko, en) {
+  return codeExplainerIsEnglishV334A11B() ? en : ko;
+}
+
+function codeExplainerHasKoreanV334A11C(value) {
+  return /[가-힣]/.test(String(value || ""));
+}
+
+
+function codeExplainerVisibleDomPolishV334A11F() {
+  if (!codeExplainerIsEnglishV334A11B()) return;
+
+  const root =
+    document.querySelector("#codeExplainer") ||
+    document.querySelector("[data-code-explainer]") ||
+    document.body;
+
+  if (!root) return;
+
+  const replacements = [
+    ["PowerShell 스크립트", "PowerShell script"],
+    ["Auto detect는 코드 모양을 보고 언어를 추정합니다. 예제는 기본 PowerShell 예제가 들어갑니다.", "Auto detect estimates the language from the code shape. The example uses a basic PowerShell sample."],
+    ["PowerShell variable($이름) 사용이 보입니다.", "A PowerShell variable ($name) appears to be used."],
+    ["PowerShell 변수($이름) 사용이 보입니다.", "A PowerShell variable ($name) appears to be used."],
+    ["자동 감지", "Auto detect"],
+    ["자동감지", "Auto detect"],
+    ["파일/경로", "file/path"],
+    ["변수/값", "variable/value"],
+    ["버전관리", "version control"],
+    ["파이프라인", "pipeline"],
+    ["검증", "validation"],
+    ["파일", "file"],
+    ["변수", "variable"],
+    ["프로세스", "process"],
+    ["PowerShell/CLI(터미널 명령) 확인", "PowerShell/CLI terminal command check"],
+    ["Compress-Archive 명령이 설치된 도구인지, 스크립트인지, 위험한 옵션이 있는지 확인해야 합니다.", "Check whether Compress-Archive is an installed command, script, or command with risky options."],
+    ["명령이 설치된 도구인지, 스크립트인지, 위험한 옵션이 있는지 확인해야 합니다.", "Check whether the command is an installed tool, a script, or has risky options."]
+  ];
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: function(node) {
+      const parent = node && node.parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      const tag = parent.tagName ? parent.tagName.toLowerCase() : "";
+      if (tag === "textarea" || tag === "input" || tag === "script" || tag === "style") {
+        return NodeFilter.FILTER_REJECT;
+      }
+      if (!/[가-힣]/.test(node.nodeValue || "")) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+
+  nodes.forEach(function(node) {
+    let text = node.nodeValue || "";
+    replacements.forEach(function(pair) {
+      text = text.split(pair[0]).join(pair[1]);
+    });
+    node.nodeValue = text;
+  });
+}
+
+function codeExplainerScheduleVisibleDomPolishV334A11F() {
+  if (!codeExplainerIsEnglishV334A11B()) return;
+  [0, 60, 180, 500, 1000].forEach(function(delay) {
+    window.setTimeout(codeExplainerVisibleDomPolishV334A11F, delay);
+  });
+}
+
+if (typeof document !== "undefined") {
+  document.addEventListener("DOMContentLoaded", codeExplainerScheduleVisibleDomPolishV334A11F);
+  document.addEventListener("click", function(event) {
+    const text = String(event && event.target && event.target.textContent || "");
+    if (/Analyze|Show flowchart|Load selected language sample|Copy text report|Copy flowchart code/.test(text)) {
+      codeExplainerScheduleVisibleDomPolishV334A11F();
+    }
+  }, true);
+}
+
+
+function codeExplainerDisplayTextV334A11C(value) {
+  const raw = String(value || "");
+  if (!codeExplainerIsEnglishV334A11B()) return raw;
+
+  const exact = {
+      "자동 감지": "Auto detect",
+      "자동감지": "Auto detect",
+      "PowerShell/CLI terminal command check": "PowerShell/CLI terminal command check",
+      "터미널 명령": "terminal command",
+      "파일": "file",
+      "변수": "variable",
+      "파이프라인": "pipeline",
+      "프로세스": "process",
+      "검증": "validation",
+      "버전관리": "version control",
+    "처리": "process",
+    "분류 없음": "none",
+    "태그 없음": "none",
+    "흐름": "flow",
+    "값": "value",
+    "생성": "produces",
+    "사용": "uses",
+    "파일/경로": "file/path",
+    "버전관리": "version control",
+    "변수/값": "variable/value",
+    "파이프라인": "pipeline",
+    "검증": "validation",
+    "파일": "file",
+    "변수": "variable",
+    "주의": "caution",
+    "확인필요": "needs check",
+    "단계": "steps",
+    "함수 단위 해석": "Function-level explanation",
+    "함수 단위 해석 대상이 아직 감지되지 않았습니다.": "No function-level explanation target has been detected yet.",
+    "변수 저장, 가공, 출력 흐름이 뚜렷하게 감지되지 않았습니다.": "No clear variable storage, processing, or output flow was detected.",
+    "함수/클래스/섹션 같은 큰 구조는 뚜렷하게 감지되지 않았습니다.": "No large structure such as a function, class, or section was clearly detected.",
+    "분석 후 표시됩니다.": "Shown after analysis."
+  };
+
+  if (exact[raw]) return exact[raw];
+
+  let out = raw;
+  const replacements = [
+    ["파일/경로", "file/path"],
+    ["버전관리", "version control"],
+    ["변수/값", "variable/value"],
+    ["파이프라인", "pipeline"],
+    ["데이터 흐름", "data flow"],
+    ["호출 흐름", "call flow"],
+    ["함수 해석", "function explanation"],
+    ["함수 목록", "function list"],
+    ["함수 단위 해석", "function-level explanation"],
+    ["주요 분류", "main categories"],
+    ["주요 태그", "main tags"],
+    ["주요 함수/구간", "main functions/sections"],
+    ["추천 읽는 순서", "recommended reading order"],
+    ["주의/위험", "caution/risk"],
+    ["확인필요", "needs check"],
+    ["미지원", "unsupported"],
+    ["확실", "exact"],
+    ["추정", "inferred"],
+    ["검증", "validation"],
+    ["파일", "file"],
+    ["폴더", "folder"],
+    ["변수", "variable"],
+    ["값", "value"],
+    ["흐름", "flow"],
+    ["생성:", "produces:"],
+    ["사용:", "uses:"],
+    ["생성", "produces"],
+    ["사용", "uses"],
+    ["단계", "steps"],
+    ["내용 줄", "content lines"],
+    ["주석/문서 줄", "comment/doc lines"],
+    ["글자", "characters"],
+    ["줄", "lines"],
+    ["개", ""],
+    ["분류 없음", "none"],
+    ["태그 없음", "none"]
+  ];
+
+  replacements.forEach(function(pair) {
+    out = out.split(pair[0]).join(pair[1]);
+  });
+
+  out = out.replace(/(\d+)items/g, "$1 items");
+  out = out.replace(/(\d+)lines/g, "$1 lines");
+
+  return codeExplainerHasKoreanV334A11C(out) ? "Translated summary" : out;
+}
+
+
 
   const samples = {
     powershell: `Set-Location "D:\\projects\\python-reading-trainer"
@@ -201,7 +393,7 @@ port = 5432`
 
     const value = select.value;
     const messages = {
-      auto: "자동 감지는 코드 모양을 보고 언어를 추정합니다. 예제는 기본 PowerShell 예제가 들어갑니다.",
+      auto: codeExplainerTextV334A11B("자동 감지는 코드 모양을 보고 언어를 추정합니다. 예제는 기본 PowerShell 예제가 들어갑니다.", "Auto detect estimates the language from the code shape. The example uses a basic PowerShell sample."),
       powershell: "PowerShell은 로컬 작업, Git, 파일 복사, 백업, 압축 명령을 쉽게 풀어 설명합니다.",
       python: "Python은 변수, 조건문, 반복문, 함수, 파일/JSON/CSV/API 흐름을 중심으로 설명합니다.",
       javascript: "JavaScript는 웹페이지 동작, DOM, localStorage, fetch 흐름을 중심으로 설명합니다.",
@@ -259,12 +451,12 @@ port = 5432`
     if (requested && requested !== "auto") {
       add("사용자가 언어를 직접 선택했습니다.");
     } else {
-      add("자동감지로 코드 모양을 판별했습니다.");
+      add(codeExplainerTextV334A11B("자동감지로 코드 모양을 판별했습니다.", "Automatic detection identified the code shape."));
     }
 
     if (language === "powershell") {
       if (/Set-Location|Copy-Item|Remove-Item|Test-Path|Invoke-WebRequest/i.test(text)) add("PowerShell 명령어 패턴이 보입니다.");
-      if (/\$[A-Za-z_][\w-]*\s*=/.test(text)) add("PowerShell 변수($이름) 사용이 보입니다.");
+      if (/\$[A-Za-z_][\w-]*\s*=/.test(text)) add("A PowerShell variable ($name) appears to be used.");
       if (/\bgit\s+(status|add|commit|push|tag|stash|reset|clean)\b/i.test(text)) add("Git 작업 명령이 포함되어 있습니다.");
     }
 
@@ -347,7 +539,7 @@ port = 5432`
       if (/^\s*[A-Za-z0-9_.-]+\s*=\s*("|\[|true|false|\d)/m.test(text)) add("TOML 값 형식이 보입니다.");
     }
 
-    add("감지가 애매하면 언어 드롭다운에서 직접 선택해 다시 분석하세요.");
+    add(codeExplainerTextV334A11B("감지가 애매하면 언어 드롭다운에서 직접 선택해 다시 분석하세요.", "If detection seems uncertain, choose the language manually from the dropdown and analyze again."));
 
     return reasons.slice(0, 5);
   }
@@ -362,8 +554,8 @@ port = 5432`
 
     box.className = "code-detection-details";
     box.innerHTML = '<div class="code-detection-head">' +
-      '<span class="code-detection-chip">선택: ' + escapeHtml(requestedLabel) + '</span>' +
-      '<span class="code-detection-chip strong">감지: ' + escapeHtml(detectedLabel) + '</span>' +
+      '<span class="code-detection-chip">' + codeExplainerTextV334A11B("선택: ", "Selected: ") + escapeHtml(codeExplainerDisplayTextV334A11C(requestedLabel)) + '</span>' +
+      '<span class="code-detection-chip strong">' + codeExplainerTextV334A11B("감지: ", "Detected: ") + escapeHtml(codeExplainerDisplayTextV334A11C(detectedLabel)) + '</span>' +
       '</div>' +
       '<ul>' + reasons.map(function(reason) {
         return '<li>' + escapeHtml(reason) + '</li>';
@@ -372,16 +564,16 @@ port = 5432`
 
   function riskLabel(risk) {
     if (risk === "high") return "위험";
-    if (risk === "medium") return "주의";
-    return "낮음";
+    if (risk === "medium") return codeExplainerTextV334A11B("주의", "Caution");
+    return codeExplainerTextV334A11B("낮음", "Low");
   }
 
   // CONFIDENCE_UI_V202_A1
   function confidenceLabel(confidence) {
-    if (confidence === "exact") return "규칙 일치";
-    if (confidence === "inferred") return "추정 해석";
+    if (confidence === "exact") return codeExplainerTextV334A11B("규칙 일치", "Rule matched");
+    if (confidence === "inferred") return codeExplainerTextV334A11B("추정 해석", "Inferred");
     if (confidence === "unsupported") return "일반 설명";
-    return "추정 해석";
+    return codeExplainerTextV334A11B("추정 해석", "Inferred");
   }
 
   function confidenceClass(confidence) {
@@ -570,7 +762,7 @@ port = 5432`
     detail.className = "code-related-cards-detail-v328-a3";
 
     const summary = document.createElement("summary");
-    summary.textContent = "추천 카드 " + cards.length + "개 보기";
+    summary.textContent = codeExplainerIsEnglishV334A11B() ? "Show " + cards.length + " recommended cards" : "추천 카드 " + cards.length + "개 보기";
 
     const hint = document.createElement("p");
     hint.className = "muted";
@@ -600,7 +792,7 @@ port = 5432`
     wrapper.open = true;
 
     const summary = document.createElement("summary");
-    summary.textContent = "확인할 명령어 " + actions.length + "개 보기";
+    summary.textContent = codeExplainerIsEnglishV334A11B() ? "Show " + actions.length + " check commands" : "확인할 명령어 " + actions.length + "개 보기";
 
     const intro = document.createElement("p");
     intro.className = "muted";
@@ -711,7 +903,7 @@ if (!matches.length && !unknownNextActionCountV332A3) {
     const confidence = step.confidence || "inferred";
 
     const tagHtml = tags.slice(0, 4).map(function(tag) {
-      return '<span class="code-step-tag">' + escapeHtml(tag) + '</span>';
+      return '<span class="code-step-tag">' + escapeHtml(codeExplainerDisplayTextV334A11C(tag)) + '</span>';
     }).join("");
 
     return '<div class="code-step-meta">' +
@@ -741,7 +933,7 @@ if (!matches.length && !unknownNextActionCountV332A3) {
 
     const hiddenCount = Math.max(0, visibleSteps.length - renderedSteps.length);
     const filterText = shouldShowRiskOnly()
-      ? "현재 위험/주의 필터가 켜져 있어 해당 단계만 보여줍니다."
+      ? codeExplainerTextV334A11B("현재 위험/주의 필터가 켜져 있어 해당 단계만 보여줍니다.", "The caution/risk filter is on, so only those steps are shown.")
       : "전체 단계 중 앞부분을 우선 렌더링합니다.";
 
     const notice = document.createElement("div");
@@ -797,7 +989,7 @@ if (!matches.length && !unknownNextActionCountV332A3) {
 
     if (!visibleSteps.length) {
       box.innerHTML = shouldShowRiskOnly()
-        ? '<p class="muted">현재 필터에서 위험/주의 단계가 없습니다. 전체 해석을 보려면 필터를 끄세요.</p>'
+        ? '<p class="muted">' + codeExplainerTextV334A11B("현재 필터에서 위험/주의 단계가 없습니다. 전체 해석을 보려면 필터를 끄세요.", "No caution/risk steps match the current filter. Turn off the filter to see the full explanation.") + '</p>'
         : '<p class="muted">표시할 해석 단계가 없습니다. 언어 선택이나 코드 범위를 확인한 뒤 다시 분석해 보세요.</p>';
       return;
     }
@@ -831,7 +1023,7 @@ if (!matches.length && !unknownNextActionCountV332A3) {
 
     if (!warnings.length) {
       box.className = "code-warnings muted";
-      box.textContent = "위험/주의 명령은 감지되지 않았습니다.";
+      box.textContent = codeExplainerTextV334A11B("위험/주의 명령은 감지되지 않았습니다.", "No caution/risky commands were detected.");
       return;
     }
 
@@ -4342,20 +4534,20 @@ function renderFunctionPickerV259(result) {
   if (!outline.length) return "";
 
   const selectedHtml = selected
-    ? '<p class="code-report-categories">선택 해석 중: <strong>' + escapeHtml(selected.name) + '</strong> · line ' + escapeHtml(String(selected.lineNo)) + '</p>'
-    : '<p class="code-report-categories">대형 파일에서는 전체 뼈대를 먼저 보고, 검색/필터로 함수를 찾은 뒤 하나를 골라 단독 해석할 수 있습니다.</p>';
+    ? '<p class="code-report-categories">' + codeExplainerTextV334A11B("선택 해석 중: ", "Selected for explanation: ") + '<strong>' + escapeHtml(selected.name) + '</strong> · line ' + escapeHtml(String(selected.lineNo)) + '</p>'
+    : '<p class="code-report-categories">' + codeExplainerTextV334A11B("대형 파일에서는 전체 뼈대를 먼저 보고, 검색/필터로 함수를 찾은 뒤 하나를 골라 단독 해석할 수 있습니다.", "For large files, first review the overall skeleton, then search/filter functions and choose one for focused explanation.") + '</p>';
 
   const hiddenCount = Math.max(0, filtered.length - shown.length);
   const hiddenHtml = hiddenCount
-    ? '<p class="muted">검색 결과가 길어 처음 ' + shown.length + '개만 표시합니다. 검색어나 역할군 필터로 더 좁혀보세요.</p>'
+    ? '<p class="muted">' + (codeExplainerIsEnglishV334A11B() ? "The result list is long, so only the first " + shown.length + " items are shown. Narrow it with a search term or role filter." : "검색 결과가 길어 처음 " + shown.length + "개만 표시합니다. 검색어나 역할군 필터로 더 좁혀보세요.") + '</p>'
     : "";
 
   const emptyHtml = filtered.length
     ? ""
-    : '<p class="muted">검색/필터 조건에 맞는 함수가 없습니다.</p>';
+    : '<p class="muted">' + codeExplainerTextV334A11B("검색/필터 조건에 맞는 함수가 없습니다.", "No function matches the current search/filter conditions.") + '</p>';
 
-  return '<details class="code-flow-detail function-picker-v259 function-picker-filter-v260"><summary>함수 목록 / 선택 해석 · 전체 ' +
-    escapeHtml(String(outline.length)) + '개 · 결과 ' + escapeHtml(String(filtered.length)) + '개</summary>' +
+  return '<details class="code-flow-detail function-picker-v259 function-picker-filter-v260"><summary>' + codeExplainerTextV334A11B("함수 목록 / 선택 해석 · 전체 ", "Function list / selected explanation · total ") +
+    escapeHtml(String(outline.length)) + codeExplainerTextV334A11B("개 · 결과 ", " · results ") + escapeHtml(String(filtered.length)) + codeExplainerTextV334A11B("개", "") + '</summary>' +
     selectedHtml +
     renderFunctionPickerControlsV260(result, outline, filtered) +
     emptyHtml +
@@ -4546,7 +4738,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
 
   function buildReadingOrder(result) {
     const steps = Array.isArray(result.steps) ? result.steps : [];
-    const categories = countByValue(steps, function(step) { return step.category || "처리"; });
+    const categories = countByValue(steps, function(step) { return codeExplainerDisplayTextV334A11C(step.category || "처리"); });
     const order = [];
 
     function has(category) {
@@ -4572,7 +4764,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     const warnings = Array.isArray(result.warnings) ? result.warnings : [];
     const source = String(result.sourceCode || "");
     const stats = getSourceStats(source);
-    const categories = countByValue(steps, function(step) { return step.category || "처리"; });
+    const categories = countByValue(steps, function(step) { return codeExplainerDisplayTextV334A11C(step.category || "처리"); });
     const tags = countByValue(steps, function(step) {
       if (!Array.isArray(step.tags) || !step.tags.length) return "";
       return step.tags[0];
@@ -4605,27 +4797,27 @@ function renderFunctionInterpretationListV251(items, emptyText) {
       ? '<ul>' + outline.map(function(item) {
           return '<li><strong>' + escapeHtml(item.type) + '</strong> · line ' + item.lineNo + ' · ' + escapeHtml(item.name) + (item.detail ? ' <span class="muted">(' + escapeHtml(item.detail) + ')</span>' : '') + '</li>';
         }).join("") + '</ul>'
-      : '<p class="muted">함수/클래스/섹션 같은 큰 구조는 뚜렷하게 감지되지 않았습니다.</p>';
+      : '<p class="muted">' + codeExplainerDisplayTextV334A11C("함수/클래스/섹션 같은 큰 구조는 뚜렷하게 감지되지 않았습니다.") + '</p>';
 
     const orderHtml = '<ol>' + readingOrder.map(function(item) {
-      return '<li>' + escapeHtml(item.replace(/^\d+\.\s*/, "")) + '</li>';
+      return '<li>' + escapeHtml(codeExplainerDisplayTextV334A11C(item.replace(/^\d+\.\s*/, ""))) + '</li>';
     }).join("") + '</ol>';
 
     const warningHtml = warningLines.length
-      ? '<p class="code-structure-warning">주의 구간: ' + escapeHtml(warningLines.join(" / ")) + '</p>'
-      : '<p class="muted">주의/위험 구간은 별도로 감지되지 않았습니다.</p>';
+      ? '<p class="code-structure-warning">' + codeExplainerTextV334A11B("주의 구간: ", "Caution section: ") + escapeHtml(warningLines.join(" / ")) + '</p>'
+      : '<p class="muted">' + codeExplainerTextV334A11B("주의/위험 구간은 별도로 감지되지 않았습니다.", "No separate caution/risk section was detected.") + '</p>';
 
     box.className = "code-structure-overview";
     box.innerHTML = '<div class="code-structure-stats">' +
-      '<span><strong>' + stats.lineCount + '</strong><small>줄</small></span>' +
-      '<span><strong>' + stats.nonEmptyCount + '</strong><small>내용 줄</small></span>' +
-      '<span><strong>' + stats.commentLikeCount + '</strong><small>주석/문서 줄</small></span>' +
-      '<span><strong>' + stats.charCount + '</strong><small>글자</small></span>' +
+      '<span><strong>' + stats.lineCount + '</strong><small>' + codeExplainerTextV334A11B("줄", "lines") + '</small></span>' +
+      '<span><strong>' + stats.nonEmptyCount + '</strong><small>' + codeExplainerTextV334A11B("내용 줄", "content lines") + '</small></span>' +
+      '<span><strong>' + stats.commentLikeCount + '</strong><small>' + codeExplainerTextV334A11B("주석/문서 줄", "comment/doc lines") + '</small></span>' +
+      '<span><strong>' + stats.charCount + '</strong><small>' + codeExplainerTextV334A11B("글자", "characters") + '</small></span>' +
       '</div>' +
-      '<p class="code-structure-categories">주요 분류: ' + escapeHtml(overview.topCategories || "분류 없음") + '</p>' +
-      '<p class="code-structure-categories">주요 태그: ' + escapeHtml(overview.topTags || "태그 없음") + '</p>' +
-      '<details class="code-structure-detail"><summary>주요 함수/구간</summary>' + outlineHtml + '</details>' +
-      '<details class="code-structure-detail"><summary>추천 읽는 순서</summary>' + orderHtml + '</details>' +
+      '<p class="code-structure-categories">' + codeExplainerTextV334A11B("주요 분류: ", "Main categories: ") + escapeHtml(codeExplainerDisplayTextV334A11C(overview.topCategories || codeExplainerTextV334A11B("분류 없음", "none"))) + '</p>' +
+      '<p class="code-structure-categories">' + codeExplainerTextV334A11B("주요 태그: ", "Main tags: ") + escapeHtml(codeExplainerDisplayTextV334A11C(overview.topTags || codeExplainerTextV334A11B("태그 없음", "none"))) + '</p>' +
+      '<details class="code-structure-detail"><summary>' + codeExplainerTextV334A11B("주요 함수/구간", "Main functions/sections") + '</summary>' + outlineHtml + '</details>' +
+      '<details class="code-structure-detail"><summary>' + codeExplainerTextV334A11B("추천 읽는 순서", "Recommended reading order") + '</summary>' + orderHtml + '</details>' +
       warningHtml;
   }
 
@@ -4733,7 +4925,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     lines.push("");
     lines.push("[각 부분별 해설]");
     steps.slice(0, 50).forEach(function(step, idx) {
-      const tags = Array.isArray(step.tags) && step.tags.length ? " #" + step.tags.join(" #") : "";
+      const tags = Array.isArray(step.tags) && step.tags.length ? " #" + step.tags.map(codeExplainerDisplayTextV334A11C).join(" #") : "";
       lines.push((idx + 1) + ". line " + step.lineNo + " · " + confidenceLabel(step.confidence) + " · " + step.title + " · " + step.explain + tags);
       lines.push("   코드: " + step.code);
     });
@@ -5156,25 +5348,25 @@ function renderFunctionInterpretationListV251(items, emptyText) {
 
     const steps = Array.isArray(result.steps) ? result.steps : [];
     const warnings = Array.isArray(result.warnings) ? result.warnings : [];
-    const categories = countByValue(steps, function(step) { return step.category || "처리"; });
+    const categories = countByValue(steps, function(step) { return codeExplainerDisplayTextV334A11C(step.category || "처리"); });
     const confidence = result.confidenceSummary || {};
     const unsupportedItems = Array.isArray(result.unsupportedItems) ? result.unsupportedItems : [];
     const source = result.sourceCode || "";
     const lineCount = source ? source.split(/\r?\n/).length : 0;
     const longCodeHtml = steps.length > LONG_CODE_STEP_THRESHOLD
-      ? '<p class="code-report-categories">긴 코드 모드: ' + steps.length + '개 단계 / ' + lineCount + '줄. 화면에는 핵심 앞부분을 우선 보여주고, 전체 흐름은 리포트와 Mermaid 원문으로 확인합니다.</p>'
+      ? '<p class="code-report-categories">' + (codeExplainerIsEnglishV334A11B() ? "Long-code mode: " + steps.length + " steps / " + lineCount + " lines. The screen shows the key first part first; use the report and Mermaid source for the full flow." : "긴 코드 모드: " + steps.length + "개 단계 / " + lineCount + "줄. 화면에는 핵심 앞부분을 우선 보여주고, 전체 흐름은 리포트와 Mermaid 원문으로 확인합니다.") + '</p>'
       : "";
 
     box.className = "code-quick-report code-quick-report-v328-a1";
     box.innerHTML = renderBeginnerFirstPanelV328A1(result) +
-      '<details class="code-detail-legacy-summary-v328-a1"><summary>기존 숫자 요약 보기</summary>' +
+      '<details class="code-detail-legacy-summary-v328-a1"><summary>' + codeExplainerTextV334A11B("기존 숫자 요약 보기", "Show previous numeric summary") + '</summary>' +
       '<div class="code-report-mini-grid">' +
-      '<span class="code-report-chip"><strong>' + steps.length + '</strong><small>단계</small></span>' +
-      '<span class="code-report-chip"><strong>' + warnings.length + '</strong><small>위험/주의</small></span>' +
-      '<span class="code-report-chip"><strong>' + (confidence.unsupported || 0) + '</strong><small>미지원</small></span>' +
-      '<span class="code-report-chip"><strong>' + unsupportedItems.length + '</strong><small>확인필요</small></span>' +
+      '<span class="code-report-chip"><strong>' + steps.length + '</strong><small>' + codeExplainerTextV334A11B("단계", "steps") + '</small></span>' +
+      '<span class="code-report-chip"><strong>' + warnings.length + '</strong><small>' + codeExplainerTextV334A11B("위험/주의", "caution/risk") + '</small></span>' +
+      '<span class="code-report-chip"><strong>' + (confidence.unsupported || 0) + '</strong><small>' + codeExplainerTextV334A11B("미지원", "unsupported") + '</small></span>' +
+      '<span class="code-report-chip"><strong>' + unsupportedItems.length + '</strong><small>' + codeExplainerTextV334A11B("확인필요", "needs check") + '</small></span>' +
       '</div>' +
-      '<p class="code-report-categories">' + escapeHtml(formatCountSummary(categories) || "분류 없음") + '</p>' +
+      '<p class="code-report-categories">' + escapeHtml(codeExplainerDisplayTextV334A11C(formatCountSummary(categories) || "분류 없음")) + '</p>' +
       longCodeHtml +
       '</details>';
   }
@@ -5190,16 +5382,16 @@ function renderFunctionInterpretationListV251(items, emptyText) {
       ? '<ul>' + unsupportedItems.slice(0, 10).map(function(item) {
           return '<li>line ' + item.lineNo + ' · <strong>' + escapeHtml(item.token) + '</strong> · ' + escapeHtml(item.code) + '</li>';
         }).join("") + '</ul>'
-      : '<p class="muted">미지원 함수/명령은 따로 감지되지 않았습니다.</p>';
+      : '<p class="muted">' + codeExplainerTextV334A11B("미지원 함수/명령은 따로 감지되지 않았습니다.", "No unsupported functions/commands were detected.") + '</p>';
 
     box.className = "code-confidence-report";
     box.innerHTML = '<div class="code-confidence-grid">' +
-      '<span class="code-confidence-chip confidence-exact"><strong>' + (confidence.exact || 0) + '</strong><small>확실</small></span>' +
-      '<span class="code-confidence-chip confidence-inferred"><strong>' + (confidence.inferred || 0) + '</strong><small>추정</small></span>' +
-      '<span class="code-confidence-chip confidence-unsupported"><strong>' + (confidence.unsupported || 0) + '</strong><small>미지원</small></span>' +
+      '<span class="code-confidence-chip confidence-exact"><strong>' + (confidence.exact || 0) + '</strong><small>' + codeExplainerTextV334A11B("확실", "exact") + '</small></span>' +
+      '<span class="code-confidence-chip confidence-inferred"><strong>' + (confidence.inferred || 0) + '</strong><small>' + codeExplainerTextV334A11B("추정", "inferred") + '</small></span>' +
+      '<span class="code-confidence-chip confidence-unsupported"><strong>' + (confidence.unsupported || 0) + '</strong><small>' + codeExplainerTextV334A11B("미지원", "unsupported") + '</small></span>' +
       '</div>' +
       '<details class="code-unsupported-detail" ' + (unsupportedItems.length ? 'open' : '') + '>' +
-      '<summary>미지원/확인필요 함수·명령</summary>' +
+      '<summary>' + codeExplainerTextV334A11B("미지원/확인필요 함수·명령", "Unsupported / needs-check functions or commands") + '</summary>' +
       unsupportedHtml +
       '</details>';
   }
@@ -5212,11 +5404,11 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     const parts = [];
 
     if (produces.length) {
-      parts.push('<span class="code-flow-pill produce">생성: ' + escapeHtml(produces.join(", ")) + '</span>');
+      parts.push('<span class="code-flow-pill produce">' + codeExplainerTextV334A11B("생성: ", "Produces: ") + escapeHtml(produces.join(", ")) + '</span>');
     }
 
     if (consumes.length) {
-      parts.push('<span class="code-flow-pill consume">사용: ' + escapeHtml(consumes.join(", ")) + '</span>');
+      parts.push('<span class="code-flow-pill consume">' + codeExplainerTextV334A11B("사용: ", "Uses: ") + escapeHtml(consumes.join(", ")) + '</span>');
     }
 
     return parts.length ? '<div class="code-flow-pills">' + parts.join("") + '</div>' : "";
@@ -5228,11 +5420,11 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     }
 
     return '<ul>' + items.slice(0, 12).map(function(item) {
-      const summary = item.summary ? ' <span class="muted">· ' + escapeHtml(item.summary) + '</span>' : "";
+      const summary = item.summary ? ' <span class="muted">· ' + escapeHtml(codeExplainerDisplayTextV334A11C(item.summary)) + '</span>' : "";
       const target = item.target ? ' <span class="muted">→ ' + escapeHtml(item.target) + '</span>' : "";
       return '<li><strong>line ' + item.lineNo + '</strong> · ' +
-        escapeHtml(item.kind || item.type || "흐름") + ' · ' +
-        escapeHtml(item.name || "값") + target + summary +
+        escapeHtml(codeExplainerDisplayTextV334A11C(item.kind || item.type || "흐름")) + ' · ' +
+        escapeHtml(item.name || codeExplainerDisplayTextV334A11C("값")) + target + summary +
         renderFlowPills(item) +
         '</li>';
     }).join("") + '</ul>';
@@ -5248,36 +5440,36 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     const functionOutlineV259 = Array.isArray(result.functionOutlineV259) ? result.functionOutlineV259 : [];
     box.className = "code-flow-analysis-report";
     box.innerHTML = '<div class="code-flow-mini-grid">' +
-      '<span class="code-report-chip"><strong>' + dataFlow.length + '</strong><small>데이터 흐름</small></span>' +
-      '<span class="code-report-chip"><strong>' + callFlow.length + '</strong><small>호출 흐름</small></span>' +
-      '<span class="code-report-chip"><strong>' + functionInterpretations.length + '</strong><small>함수 해석</small></span>' +
-      '<span class="code-report-chip"><strong>' + functionOutlineV259.length + '</strong><small>함수 목록</small></span>' +
+      '<span class="code-report-chip"><strong>' + dataFlow.length + '</strong><small>' + codeExplainerTextV334A11B("데이터 흐름", "data flow") + '</small></span>' +
+      '<span class="code-report-chip"><strong>' + callFlow.length + '</strong><small>' + codeExplainerTextV334A11B("호출 흐름", "call flow") + '</small></span>' +
+      '<span class="code-report-chip"><strong>' + functionInterpretations.length + '</strong><small>' + codeExplainerTextV334A11B("함수 해석", "function explanations") + '</small></span>' +
+      '<span class="code-report-chip"><strong>' + functionOutlineV259.length + '</strong><small>' + codeExplainerTextV334A11B("함수 목록", "function list") + '</small></span>' +
       '</div>' +
       renderFunctionSkeletonV259(result) +
       renderFunctionPickerV259(result) +
       renderSelectedFunctionContextV261(result) +
-      '<details class="code-flow-detail"><summary>데이터 흐름</summary>' +
-      renderFlowList(dataFlow, "변수 저장, 가공, 출력 흐름이 뚜렷하게 감지되지 않았습니다.") +
+      '<details class="code-flow-detail"><summary>' + codeExplainerTextV334A11B("데이터 흐름", "Data flow") + '</summary>' +
+      renderFlowList(dataFlow, codeExplainerDisplayTextV334A11C("변수 저장, 가공, 출력 흐름이 뚜렷하게 감지되지 않았습니다.")) +
       '</details>' +
-      '<details class="code-flow-detail"><summary>호출 흐름</summary>' +
-      renderFlowList(callFlow, "함수 정의/호출 흐름이 뚜렷하게 감지되지 않았습니다.") +
+      '<details class="code-flow-detail"><summary>' + codeExplainerTextV334A11B("호출 흐름", "Call flow") + '</summary>' +
+      renderFlowList(callFlow, codeExplainerTextV334A11B("함수 정의/호출 흐름이 뚜렷하게 감지되지 않았습니다.", "No clear function definition/call flow was detected.")) +
       '</details>' +
-      '<details class="code-flow-detail"><summary>함수 단위 해석</summary>' +
-      renderFunctionInterpretationListV251(functionInterpretations, "함수 단위 해석 대상이 아직 감지되지 않았습니다.") +
+      '<details class="code-flow-detail"><summary>' + codeExplainerTextV334A11B("함수 단위 해석", "Function-level explanation") + '</summary>' +
+      renderFunctionInterpretationListV251(functionInterpretations, codeExplainerDisplayTextV334A11C("함수 단위 해석 대상이 아직 감지되지 않았습니다.")) +
       '</details>';
   }
 
   async function copyCodeReport() {
     if (!lastReport) {
-      alert("복사할 코드 해석 리포트가 없습니다. 먼저 분석하기를 눌러주세요.");
+      alert(codeExplainerTextV334A11B("복사할 코드 해석 리포트가 없습니다. 먼저 분석하기를 눌러주세요.", "There is no code explanation report to copy. Analyze code first."));
       return;
     }
 
     try {
       await navigator.clipboard.writeText(lastReport);
-      alert("코드 해석 리포트를 복사했습니다.");
+      alert(codeExplainerTextV334A11B("코드 해석 리포트를 복사했습니다.", "Copied the code explanation report."));
     } catch (error) {
-      alert("리포트 복사 실패: " + String(error));
+      alert(codeExplainerTextV334A11B("리포트 복사 실패: ", "Failed to copy report: ") + String(error));
     }
   }
 
@@ -5321,13 +5513,13 @@ function renderFunctionInterpretationListV251(items, emptyText) {
       const guard = document.createElement("div");
       guard.className = "code-mermaid-render-guard";
       guard.innerHTML =
-        '<strong>흐름도는 필요할 때 펼쳐서 봅니다</strong>' +
-        '<p class="muted">기본 화면에서는 그림을 바로 펼치지 않습니다. 코드를 먼저 읽고, 흐름이 필요할 때 아래 버튼으로 그림을 생성하세요. 감지된 단계는 ' + stepCount + '개입니다.</p>';
+        '<strong>' + codeExplainerTextV334A11B("흐름도는 필요할 때 펼쳐서 봅니다", "Open the flowchart only when needed") + '</strong>' +
+        '<p class="muted">' + (codeExplainerIsEnglishV334A11B() ? "The diagram is not expanded by default. Read the code first, then generate the diagram below when you need the flow. Detected steps: " + stepCount + "." : "기본 화면에서는 그림을 바로 펼치지 않습니다. 코드를 먼저 읽고, 흐름이 필요할 때 아래 버튼으로 그림을 생성하세요. 감지된 단계는 " + stepCount + "개입니다.") + '</p>';
 
       const button = document.createElement("button");
       button.type = "button";
       button.className = "code-mermaid-render-button";
-      button.textContent = "흐름도 보기";
+      button.textContent = codeExplainerTextV334A11B("흐름도 보기", "Show flowchart");
       button.addEventListener("click", function() {
         button.disabled = true;
         button.textContent = "전체 흐름도 그리는 중...";
@@ -5336,7 +5528,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
 
       guard.appendChild(button);
       diagram.appendChild(guard);
-      if (status) status.textContent = "흐름도 대기 중";
+      if (status) status.textContent = codeExplainerTextV334A11B("흐름도 대기 중", "Flowchart waiting");
       return;
     }
 
@@ -5465,19 +5657,19 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     }
     if (quick) {
       quick.className = "code-quick-report muted";
-      quick.textContent = "분석하면 단계 수, 위험 줄, 주요 분류가 요약됩니다.";
+      quick.textContent = codeExplainerTextV334A11B("분석하면 단계 수, 위험 줄, 주요 분류가 요약됩니다.", "After analysis, step count, risky lines, and main categories will be summarized.");
     }
     if (confidence) {
       confidence.className = "code-confidence-report muted";
-      confidence.textContent = "분석하면 확실/추정/미지원 단계가 표시됩니다.";
+      confidence.textContent = codeExplainerTextV334A11B("분석하면 확실/추정/미지원 단계가 표시됩니다.", "After analysis, exact, inferred, and unsupported steps will be shown.");
     }
     if (flowAnalysis) {
       flowAnalysis.className = "code-flow-analysis-report muted";
-      flowAnalysis.textContent = "분석하면 데이터 흐름과 함수 호출 흐름이 표시됩니다.";
+      flowAnalysis.textContent = codeExplainerTextV334A11B("분석하면 데이터 흐름과 함수 호출 흐름이 표시됩니다.", "After analysis, data flow and function call flow will be shown.");
     }
     if (structure) {
       structure.className = "code-structure-overview muted";
-      structure.textContent = "긴 코드를 분석하면 전체 구조, 주요 함수/구간, 읽는 순서가 표시됩니다.";
+      structure.textContent = codeExplainerTextV334A11B("긴 코드를 분석하면 전체 구조, 주요 함수/구간, 읽는 순서가 표시됩니다.", "After analyzing long code, the overall structure, main functions/sections, and reading order will be shown.");
     }
     if (detection) {
       detection.className = "code-detection-details muted";

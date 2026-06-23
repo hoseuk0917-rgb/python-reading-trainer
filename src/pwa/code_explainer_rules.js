@@ -3,6 +3,28 @@
 // === CODE EXPLAINER RULES V212-A1 START ===
 (function() {
   "use strict";
+function codeRuleIsEnglishV334A11B() {
+  try {
+    const params = new URLSearchParams(window.location.search || "");
+    const queryLang = params.get("lang") || params.get("locale") || "";
+    const htmlLang = (document.documentElement.getAttribute("lang") || "").toLowerCase();
+    const storedLang =
+      (window.localStorage && (
+        localStorage.getItem("pythonTrainerLang") ||
+        localStorage.getItem("language") ||
+        localStorage.getItem("lang") ||
+        ""
+      )) || "";
+    return /^en/i.test(queryLang) || /^en/i.test(htmlLang) || /^en/i.test(storedLang);
+  } catch (_) {
+    return false;
+  }
+}
+
+function codeRuleTextV334A11B(ko, en) {
+  return codeRuleIsEnglishV334A11B() ? en : ko;
+}
+
 
   function stripFence(input) {
     const raw = String(input || "").trim();
@@ -255,19 +277,208 @@
   }
 
   function confidenceLabel(confidence) {
-    if (confidence === "exact") return "확실";
-    if (confidence === "inferred") return "추정";
-    if (confidence === "unsupported") return "미지원";
-    return "추정";
+    if (confidence === "exact") return codeRuleTextV334A11B("확실", "exact");
+    if (confidence === "inferred") return codeRuleTextV334A11B("추정", "inferred");
+    if (confidence === "unsupported") return codeRuleTextV334A11B("미지원", "unsupported");
+    return codeRuleTextV334A11B("추정", "inferred");
   }
 
+
+  const CODE_RULE_TITLE_MAP_V334_A11C = {
+    "각 항목 반복 처리": "Process each item",
+    "환경변수 설정": "Set environment variable",
+    "오류 시 즉시 중단 설정": "Stop immediately on errors",
+    "경로 확인 결과 저장": "Store path-check result",
+    "웹 요청 결과 저장": "Store web request result",
+    "경로 조합 결과 저장": "Store combined path result",
+    "CSV 읽기 결과 저장": "Store CSV read result",
+    "CSV 파이프라인 요약 저장": "Store CSV pipeline summary",
+    "JSON 처리 결과 저장": "Store JSON processing result",
+    "파일 내용 읽기 결과 저장": "Store file-read result",
+    "파이프라인 결과 저장": "Store pipeline result",
+    "프로세스 실행 결과 저장": "Store process result",
+    "현재 시간 만들기": "Create current timestamp",
+    "입력 파라미터 정의": "Define input parameters",
+    "입력 파라미터 기본값": "Set input parameter defaults",
+    "PowerShell 객체 만들기": "Create PowerShell object",
+    "객체 속성 값 설정": "Set object property value",
+    "함수 정의": "Define function",
+    "여러 줄 문자열 경계": "Here-string boundary",
+    "CSV 그룹 정렬 선택 저장": "Group, sort, select, and save CSV data",
+    "파일 목록 가져오기": "Get file list",
+    "파일 내용 읽기": "Read file contents",
+    "파일로 출력 저장": "Save output to file",
+    "객체를 JSON으로 변환 후 파일 저장": "Convert object to JSON and save",
+    "파일에 내용 저장": "Save content to file",
+    "파일에 내용 추가": "Append content to file",
+    "조건으로 필터링": "Filter by condition",
+    "필요한 속성 선택": "Select needed properties",
+    "정렬": "Sort data",
+    "그룹별 묶기": "Group items",
+    "개수/합계 측정": "Measure count or total",
+    "JSON을 객체로 변환": "Convert JSON to object",
+    "객체를 JSON으로 변환": "Convert object to JSON",
+    "CSV 읽기": "Read CSV",
+    "CSV 저장": "Save CSV",
+    "CSV 문자열 변환": "Convert CSV string",
+    "REST API 호출": "Call REST API",
+    "외부 프로그램 실행": "Run external program",
+    "프로세스 조회": "Check process",
+    "프로세스 종료": "Stop process",
+    "작업 완료 대기": "Wait for job completion",
+    "작업 결과 받기": "Receive job result",
+    "오류 발생시키기": "Raise an error",
+    "스크립트 종료": "Exit script",
+    "값 반환": "Return value",
+    "새 항목 생성": "Create new item",
+    "파일/폴더 이동": "Move file/folder",
+    "파일/폴더 삭제": "Delete file/folder",
+    "ZIP 압축 해제": "Extract ZIP archive",
+    "경로 존재 확인": "Check path existence",
+    "조건 확인": "Check condition",
+    "반복 실행": "Run loop",
+    "Node 문법 검사": "Check Node.js syntax",
+    "npm 의존성 설치": "Install npm dependencies",
+    "npm 스크립트 실행": "Run npm script",
+    "Python 검증 실행": "Run Python validation",
+    "Python 실행": "Run Python",
+    "Git 변경 상태 확인": "Check Git status",
+    "Git 커밋 준비": "Stage Git changes",
+    "Git 커밋 생성": "Create Git commit",
+    "Git 태그 생성": "Create Git tag",
+    "원격 저장소로 업로드": "Push to remote repository",
+    "임시 보관": "Stash changes",
+    "변경량 요약 확인": "Check diff summary",
+    "변경 내용 확인": "Review code changes",
+    "커밋 기록 확인": "Check commit history",
+    "변경사항 강제 되돌리기": "Force-discard changes",
+    "추적되지 않는 파일 삭제": "Delete untracked files",
+    "Node.js 실행": "Run Node.js",
+    "파일에서 문자열 검색": "Search text in files",
+    "스크립트블록 실행": "Run script block",
+    "검증 단계 실행": "Run validation step",
+    "문자열 포함 검증": "Check whether text contains a string",
+    "스크립트 실행 정책 변경": "Change script execution policy",
+    "표 형태로 출력": "Display as table",
+    "명령 실행": "Run command",
+    "FastAPI 기능 불러오기": "Import FastAPI features",
+    "Pydantic 모델 기능 불러오기": "Import Pydantic model features",
+    "친절한 종료": "Exit with a helpful message",
+    "조건 검증": "Validate condition",
+    "next 값 꺼내기": "Get next value",
+    "CSV 딕셔너리 읽기": "Read CSV as dictionaries",
+    "CSV 헤더 쓰기": "Write CSV header",
+    "파일/경로 처리": "Handle file/path",
+    "FastAPI 의존성 주입": "Use FastAPI dependency injection",
+    "FastAPI 요청값 검증 설정": "Configure FastAPI request validation",
+    "딕셔너리 항목 설정": "Set dictionary item",
+    "화면에 출력": "Print to screen",
+    "검증 함수 호출": "Call validation function",
+    "JavaScript 코드 실행": "Run JavaScript code",
+    "Worker/JavaScript 코드 실행": "Run Worker/JavaScript code",
+    "JSON 설정 줄": "JSON configuration line",
+    "조회 조건 필터": "Filter query condition",
+    "SQL 줄 해석": "SQL line",
+    "Flex 배치 방식 설정": "Set flex layout",
+    "색상 설정": "Set color",
+    "글자 스타일 설정": "Set text style",
+    "CSS 줄 해석": "CSS line",
+    "텍스트 표시": "Display text",
+    "HTML 줄 해석": "HTML line",
+    "package.json 설정": "package.json setting",
+    "쉘 명령 실행": "Run shell command",
+    "GitHub Actions YAML 설정": "GitHub Actions YAML setting",
+    "이미지 빌드 중 명령 실행": "Run command while building image",
+    "Dockerfile 설정": "Dockerfile setting",
+    ".env 설정": ".env setting",
+    "Python 패키지 의존성": "Python package dependency",
+    "pyproject.toml 설정": "pyproject.toml setting",
+    "YAML 설정": "YAML setting",
+    "변수에 값 저장": "Store a value in a variable",
+    "작업 폴더 이동": "Change working directory",
+    "시간값을 변수에 저장": "Store current time in a variable",
+    "파이프라인 처리": "Pipeline processing",
+    "파일/폴더 복사": "Copying files/folders",
+    "ZIP 압축 생성": "Create ZIP archive"
+  };
+
+  function codeRuleHasKoreanV334A11C(value) {
+    return /[가-힣]/.test(String(value || ""));
+  }
+
+  function codeRuleTranslateTitleV334A11C(title) {
+    if (!codeRuleIsEnglishV334A11B()) return title;
+    const raw = String(title || "");
+    if (CODE_RULE_TITLE_MAP_V334_A11C[raw]) return CODE_RULE_TITLE_MAP_V334_A11C[raw];
+
+    let out = raw;
+    const replacements = [
+      ["파일/경로", "file/path"],
+      ["버전관리", "version control"],
+      ["변수/값", "variable/value"],
+      ["파이프라인", "pipeline"],
+      ["검증", "validation"],
+      ["주의", "caution"],
+      ["조건", "condition"],
+      ["반복", "loop"],
+      ["함수", "function"],
+      ["파일", "file"],
+      ["폴더", "folder"],
+      ["문자열", "string"],
+      ["객체", "object"],
+      ["배열", "array"],
+      ["값", "value"],
+      ["줄", "line"],
+      ["설정", "setting"],
+      ["실행", "run"],
+      ["저장", "save"],
+      ["읽기", "read"],
+      ["쓰기", "write"],
+      ["생성", "create"],
+      ["확인", "check"],
+      ["처리", "process"],
+      ["변환", "convert"],
+      ["출력", "output"]
+    ];
+
+    replacements.forEach(function(pair) {
+      out = out.split(pair[0]).join(pair[1]);
+    });
+
+    return codeRuleHasKoreanV334A11C(out) ? "Interpreted code step" : out;
+  }
+
+  function codeRuleTranslateExplainV334A11C(title, explain) {
+    if (!codeRuleIsEnglishV334A11B()) return explain;
+
+    const raw = String(explain || "");
+    if (!codeRuleHasKoreanV334A11C(raw)) return raw;
+
+    const enTitle = codeRuleTranslateTitleV334A11C(title);
+    return "This line is interpreted as: " + enTitle + ". Review the original line, paths, options, and surrounding context before running it.";
+  }
+
+  function codeRuleTranslateCountItemV334A11D(item) {
+    const raw = String(item || "");
+    return raw.replace(/^(.+?)\s+(\d+)개$/, function(_, label, count) {
+      return codeRuleTranslateTitleV334A11C(label) + " " + count;
+    });
+  }
+
+
   function makeStep(lineNo, code, title, explain, risk) {
-    const confidence = confidenceForStep(title, explain);
+    const originalTitle = title;
+    const originalExplain = explain;
+    const displayTitle = codeRuleTranslateTitleV334A11C(originalTitle);
+    const displayExplain = codeRuleTranslateExplainV334A11C(originalTitle, originalExplain);
+    const confidence = confidenceForStep(originalTitle, originalExplain);
     return {
       lineNo: lineNo,
       code: code,
-      title: title,
-      explain: explain,
+      title: displayTitle,
+      explain: displayExplain,
+      titleKo: originalTitle,
+      explainKo: originalExplain,
       risk: risk || "low",
       confidence: confidence,
       confidenceLabel: confidenceLabel(confidence)
@@ -320,7 +531,7 @@
     }
 
     if (/^Set-Location\b/i.test(t) || /^cd\b/i.test(t)) {
-      return makeStep(lineNo, t, "작업 폴더 이동", "이후 명령들이 어느 폴더를 기준으로 실행될지 바꿉니다.", risk);
+      return makeStep(lineNo, t, codeRuleTextV334A11B("작업 폴더 이동", "Change working directory"), codeRuleTextV334A11B("이후 명령들이 어느 폴더를 기준으로 실행될지 바꿉니다.", "This changes the working directory from which later commands will run."), risk);
     }
     if (/^\$env:[A-Za-z_][\w-]*\s*=/.test(t)) {
       return makeStep(lineNo, t, "환경변수 설정", "현재 PowerShell 세션에서 사용할 임시 설정값을 저장합니다. API 키 같은 민감값은 코드에 직접 쓰지 않고 환경변수로 넣는 방식이 안전합니다.", risk);
@@ -337,7 +548,7 @@
       const value = varMatch[2];
 
       if (/Get-Date/i.test(value)) {
-        return makeStep(lineNo, t, "시간값을 변수에 저장", "$" + name + " 변수에 현재 날짜/시간 문자열을 넣습니다. 백업 파일명이나 실행 기록 이름을 겹치지 않게 만들 때 씁니다.", risk);
+        return makeStep(lineNo, t, codeRuleTextV334A11B("시간값을 변수에 저장", "Store current time in a variable"), codeRuleTextV334A11B("$" + name + " 변수에 현재 날짜/시간 문자열을 넣습니다. 백업 파일명이나 실행 기록 이름을 겹치지 않게 만들 때 씁니다.", "$" + name + " stores the current date/time string. It is useful for unique backup names or run IDs."), risk);
       }
       if (/Test-Path/i.test(value)) {
         return makeStep(lineNo, t, "경로 확인 결과 저장", "$" + name + " 변수에 파일이나 폴더가 존재하는지 검사한 결과를 저장합니다.", risk);
@@ -371,7 +582,7 @@
         return makeStep(lineNo, t, "프로세스 실행 결과 저장", "$" + name + " 변수에 실행한 외부 프로그램의 프로세스 정보를 저장합니다. 나중에 종료하거나 상태를 확인할 때 씁니다.", risk);
       }
 
-      return makeStep(lineNo, t, "변수에 값 저장", "$" + name + " 변수에 값을 넣습니다. 이후 줄에서 $" + name + "을 쓰면 이 값을 다시 사용합니다.", risk);
+      return makeStep(lineNo, t, codeRuleTextV334A11B("변수에 값 저장", "Store a value in a variable"), codeRuleTextV334A11B("$" + name + " 변수에 값을 넣습니다. 이후 줄에서 $" + name + "을 쓰면 이 값을 다시 사용합니다.", "$" + name + " stores a value. Later lines can reuse that value by referring to $" + name + "."), risk);
     }
 
     if (/Get-Date/i.test(t)) {
@@ -404,7 +615,7 @@
       return makeStep(lineNo, t, "CSV 그룹 정렬 선택 저장", "파이프라인으로 넘어온 CSV/객체 데이터를 그룹으로 묶고, 정렬하고, 필요한 열을 선택한 뒤 저장하는 흐름입니다. Group-Object, Sort-Object, Select-Object, Export-Csv 순서를 확인해야 합니다.", risk);
     }
     if (/\|\s*(Where-Object|ForEach-Object|Select-Object|Sort-Object|Group-Object|Measure-Object|Format-Table|Out-Null)\b/i.test(t)) {
-      return makeStep(lineNo, t, "파이프라인 처리", "앞 명령의 결과를 뒤 명령으로 넘깁니다. 그다음 필요한 값만 고르거나 정렬해서 보여줍니다.", risk);
+      return makeStep(lineNo, t, codeRuleTextV334A11B("파이프라인 처리", "Pipeline processing"), codeRuleTextV334A11B("앞 명령의 결과를 뒤 명령으로 넘깁니다. 그다음 필요한 값만 고르거나 정렬해서 보여줍니다.", "The result of the previous command is passed to the next command, then selected, sorted, or displayed as needed."), risk);
     }
     if (/^Get-ChildItem\b/i.test(t) || /^dir\b/i.test(t) || /^ls\b/i.test(t)) {
       return makeStep(lineNo, t, "파일 목록 가져오기", "폴더 안의 파일과 하위 폴더 목록을 가져옵니다. -Recurse가 있으면 하위 폴더까지 넓게 탐색합니다.", risk);
@@ -491,7 +702,7 @@
       return makeStep(lineNo, t, "새 항목 생성", "폴더나 파일을 만듭니다. -ItemType Directory가 있으면 폴더를 만드는 명령입니다.", risk);
     }
     if (/^Copy-Item\b/i.test(t)) {
-      return makeStep(lineNo, t, "파일/폴더 복사", "원본 파일이나 폴더를 다른 위치로 복사합니다. -Recurse가 있으면 폴더 안의 내용까지 포함합니다.", risk);
+      return makeStep(lineNo, t, codeRuleTextV334A11B("파일/폴더 복사", "Copying files/folders"), codeRuleTextV334A11B("원본 파일이나 폴더를 다른 위치로 복사합니다. -Recurse가 있으면 폴더 안의 내용까지 포함합니다.", "Copies the original file or folder to another location. With -Recurse, folder contents are included."), risk);
     }
     if (/^Move-Item\b/i.test(t)) {
       return makeStep(lineNo, t, "파일/폴더 이동", "파일이나 폴더의 위치를 옮깁니다. 원래 위치에서 사라질 수 있으므로 대상 경로를 확인해야 합니다.", risk);
@@ -500,7 +711,7 @@
       return makeStep(lineNo, t, "파일/폴더 삭제", "지정한 파일이나 폴더를 삭제합니다. -Recurse와 -Force가 함께 있으면 강하게 삭제하므로 실행 전 경로 확인이 필요합니다.", risk);
     }
     if (/^Compress-Archive\b/i.test(t)) {
-      return makeStep(lineNo, t, "ZIP 압축 생성", "지정한 파일이나 폴더를 zip 파일로 묶습니다.", risk);
+      return makeStep(lineNo, t, codeRuleTextV334A11B("ZIP 압축 생성", "Create ZIP archive"), codeRuleTextV334A11B("지정한 파일이나 폴더를 zip 파일로 묶습니다.", "Creates a ZIP archive from the specified files or folders."), risk);
     }
     if (/^Expand-Archive\b/i.test(t)) {
       return makeStep(lineNo, t, "ZIP 압축 해제", "zip 파일을 지정한 폴더로 풉니다.", risk);
@@ -2622,7 +2833,7 @@
         return key + " " + counts[key] + "개";
       });
 
-    return "주요 흐름: " + ordered.join(" · ");
+    return codeRuleIsEnglishV334A11B() ? "Main flow: " + ordered.map(codeRuleTranslateCountItemV334A11D).join(" · ") : "주요 흐름: " + ordered.join(" · ");
   }
 
   function summarize(language, steps) {
@@ -2646,7 +2857,10 @@
       ini_file: "INI 설정",
       toml: "TOML 설정"
     };
-    return (names[language] || "코드") + "를 " + steps.length + "단계로 나눠 해석했습니다." + (risky ? " 주의가 필요한 단계가 " + risky + "개 있습니다." : " 특별히 높은 위험 명령은 감지되지 않았습니다.");
+    const enNames = { powershell: "PowerShell script", python: "Python code", javascript: "JavaScript code", workers: "Cloudflare Workers code", java: "Java code", json: "JSON", yaml: "YAML", html: "HTML", css: "CSS" };
+    return codeRuleIsEnglishV334A11B()
+      ? (enNames[language] || names[language] || "Code") + " was explained in " + steps.length + " steps." + (risky ? " " + risky + " caution/risk step(s) were found." : " No high-risk commands were detected.")
+      : (names[language] || "코드") + "를 " + steps.length + "단계로 나눠 해석했습니다." + (risky ? " 주의가 필요한 단계가 " + risky + "개 있습니다." : " 특별히 높은 위험 명령은 감지되지 않았습니다.");
   }
 
   function mermaidLabel(text) {
