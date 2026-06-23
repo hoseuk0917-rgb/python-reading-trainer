@@ -3028,3 +3028,199 @@ if (typeof document !== "undefined") {
 
   api.__v334A14SNormalizeSummaryObject = normalizeSummaryObjectV334A14S;
 })();
+
+// V334_A14T_EN_RESIDUAL_COMMAND_POLISH
+(function() {
+  if (typeof window === "undefined" || !window.CommandExplainer) return;
+
+  const api = window.CommandExplainer;
+
+  function isEnglishV334A14TEN() {
+    try {
+      if (typeof document !== "undefined") {
+        const lang = String(document.documentElement.getAttribute("lang") || "").toLowerCase();
+        if (lang.indexOf("en") === 0) return true;
+      }
+
+      if (typeof location !== "undefined" && /[?&]lang=en\b/i.test(location.search || "")) {
+        return true;
+      }
+    } catch (error) {}
+
+    return false;
+  }
+
+  function translateSummaryTextV334A14TEN(text) {
+    const raw = String(text || "");
+
+    const match = raw.match(/PowerShell 명령 (\d+)개를 작업 순서대로 분석했습니다\. 위험 (\d+)개, 주의 (\d+)개, 미확인 (\d+)개입니다\./);
+    if (match) {
+      return "Analyzed " + match[1] + " PowerShell commands in execution order. Danger: " + match[2] + ", caution: " + match[3] + ", unknown: " + match[4] + ".";
+    }
+
+    return raw
+      .replace(/PowerShell 명령/g, "PowerShell commands")
+      .replace(/작업 순서대로 분석했습니다/g, "were analyzed in execution order")
+      .replace(/위험/g, "danger")
+      .replace(/주의/g, "caution")
+      .replace(/미확인/g, "unknown")
+      .replace(/개/g, "");
+  }
+
+  function translateGroupV334A14TEN(text) {
+    return String(text || "")
+      .replace(/^작업 위치$/, "Working directory")
+      .replace(/^파일 삭제$/, "File deletion")
+      .replace(/^Git 위험 정리$/, "Dangerous Git cleanup")
+      .replace(/^JS 스크립트 실행$/, "JavaScript script execution")
+      .replace(/^스크립트 실행$/, "Script execution")
+      .replace(/^Git danger$/, "Git danger");
+  }
+
+  function translateMeaningV334A14TEN(text) {
+    const raw = String(text || "");
+
+    if (/파일이나 폴더를 삭제합니다/.test(raw)) {
+      return "Deletes a file or folder.";
+    }
+
+    if (/git clean은 Git이 추적하지 않는/.test(raw)) {
+      return "git clean removes untracked files or folders from the working tree. With -fd, it can delete files and directories.";
+    }
+
+    if (/Node\.js로 JavaScript/.test(raw)) {
+      return "Runs a JavaScript file or inline JavaScript code with Node.js.";
+    }
+
+    if (/Python 스크립트나 Python 명령/.test(raw)) {
+      return "Runs a Python script or Python command.";
+    }
+
+    return raw;
+  }
+
+  function translateFileImpactV334A14TEN(text) {
+    const raw = String(text || "");
+
+    if (/대상 파일\/폴더가 사라질 수 있습니다/.test(raw)) {
+      return "The target file or folder can be deleted. -Recurse includes child items, and -Force forces the operation, so the deletion scope can become larger than expected.";
+    }
+
+    if (/untracked 파일\/폴더를 삭제할 수 있고/.test(raw)) {
+      return "Untracked files or folders can be deleted, and they may be difficult to recover with Git afterward. If -x is used, ignored files may also be included. Preview first with git clean -fdn.";
+    }
+
+    if (/실행하는 JS 스크립트 내용에 따라/.test(raw)) {
+      return "Depending on the JavaScript script, it may create, modify, or delete files.";
+    }
+
+    if (/실행하는 스크립트 내용에 따라/.test(raw)) {
+      return "Depending on the script, it may create, modify, or delete files.";
+    }
+
+    return raw;
+  }
+
+  function translateNextCheckV334A14TEN(text) {
+    return String(text || "")
+      .replace(/<삭제 대상 경로>/g, "<target path>")
+      .replace(/스크립트 실행 후 git status --short/g, "After running the script, check git status --short");
+  }
+
+  function translateWarningV334A14TEN(warning) {
+    if (!warning || typeof warning !== "object") return warning;
+
+    warning.group = translateGroupV334A14TEN(warning.group);
+    warning.meaning = translateMeaningV334A14TEN(warning.meaning);
+    warning.fileImpact = translateFileImpactV334A14TEN(warning.fileImpact);
+    warning.nextCheck = translateNextCheckV334A14TEN(warning.nextCheck);
+
+    return warning;
+  }
+
+  function translateSummaryGroupsV334A14TEN(summary) {
+    if (!summary || typeof summary !== "object" || !summary.groups) return summary;
+
+    const nextGroups = {};
+    Object.keys(summary.groups).forEach(function(key) {
+      nextGroups[translateGroupV334A14TEN(key)] = summary.groups[key];
+    });
+
+    summary.groups = nextGroups;
+    return summary;
+  }
+
+  function normalizeEnglishCommandResultV334A14TEN(result) {
+    if (!result || typeof result !== "object") return result;
+
+    if (result.summary && typeof result.summary === "object") {
+      result.summary = translateSummaryGroupsV334A14TEN(result.summary);
+
+      if (result.summary.text) {
+        result.summary.text = translateSummaryTextV334A14TEN(result.summary.text);
+        result.summaryText = result.summary.text;
+
+        try {
+          Object.defineProperty(result.summary, "toString", {
+            value: function() {
+              return result.summary.text;
+            },
+            configurable: true,
+            enumerable: false
+          });
+        } catch (error) {
+          result.summary.toString = function() {
+            return result.summary.text;
+          };
+        }
+      }
+    } else if (result.summary) {
+      result.summary = translateSummaryTextV334A14TEN(result.summary);
+      result.summaryText = result.summary;
+    }
+
+    if (result.summaryText) {
+      result.summaryText = translateSummaryTextV334A14TEN(result.summaryText);
+    }
+
+    if (Array.isArray(result.warnings)) {
+      result.warnings = result.warnings.map(translateWarningV334A14TEN);
+    }
+
+    if (Array.isArray(result.steps)) {
+      result.steps.forEach(function(step) {
+        if (step && step.group) step.group = translateGroupV334A14TEN(step.group);
+        if (step && step.meaning) step.meaning = translateMeaningV334A14TEN(step.meaning);
+        if (step && step.fileImpact) step.fileImpact = translateFileImpactV334A14TEN(step.fileImpact);
+        if (step && step.nextCheck) step.nextCheck = translateNextCheckV334A14TEN(step.nextCheck);
+      });
+    }
+
+    return result;
+  }
+
+  function wrapAnalyzerV334A14TEN(name) {
+    if (typeof api[name] !== "function") return;
+
+    const original = api[name];
+    if (original.__v334A14TENResidualWrapped) return;
+
+    const wrapped = function() {
+      const result = original.apply(this, arguments);
+
+      if (isEnglishV334A14TEN()) {
+        return normalizeEnglishCommandResultV334A14TEN(result);
+      }
+
+      return result;
+    };
+
+    wrapped.__v334A14TENResidualWrapped = true;
+    api[name] = wrapped;
+  }
+
+  wrapAnalyzerV334A14TEN("analyzePowerShellV277");
+  wrapAnalyzerV334A14TEN("analyzeBashV278");
+
+  api.__v334A14TENResidualCommandPolish = normalizeEnglishCommandResultV334A14TEN;
+})();

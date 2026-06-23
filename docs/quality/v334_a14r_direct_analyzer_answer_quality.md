@@ -7,7 +7,7 @@
 | metric | value |
 |---|---:|
 | cases | 7 |
-| average | 17.3 / 20 |
+| average | 17.4 / 20 |
 | A | 6 |
 | B | 0 |
 | C | 1 |
@@ -22,7 +22,7 @@
 | A | 20 | code | en | PowerShell backup script EN | 큰 품질 문제 없음 |
 | A | 17 | command | ko | Dangerous cleanup command | 큰 품질 문제 없음 |
 | A | 18 | command | ko | Validation routine command | 큰 품질 문제 없음 |
-| A | 16 | command | en | Dangerous cleanup command EN | generic/빈약한 요약 표현 남음 |
+| A | 17 | command | en | Dangerous cleanup command EN | 큰 품질 문제 없음 |
 | C | 10 | project | ko | Project probe command generation | 출력이 길어 가독성이 떨어질 수 있음; 핵심 동작 설명 일부 부족; 종합요약 신호 부족 |
 
 ## Direct output samples
@@ -33,7 +33,7 @@
 - issues: 큰 품질 문제 없음
 
 ```text
-summary: 전체적으로 이 PowerShell 스크립트는 작업 폴더를 프로젝트 위치로 옮기고 현재 시각으로 겹치지 않는 실행 이름이나 백업 이름을 만들고 백업 경로를 변수에 저장해 뒤의 명령에서 재사용하고 필요한 백업 폴더를 만들고 원본 파일이나 폴더를 백업 위치로 복사하고 백업 내용을 ZIP 파일로 묶고 마지막으로 Git 변경 상태를 확인합니다. 실행 전에는 -Force 옵션 때문에 기존 대상이 덮이거나 강제로 처리될 수 있는지 확인해야 합니다; Compress-Archive가 현재 PowerShell 환경에서 사용 가능한 명령인지 확인하면 안전합니다. flowSummary: 주요 흐름: 파일/경로 4개 · 버전관리 1개 · 변수/값 1개 · 파이프라인 1개 confidence: {"exact":6,"inferred":1,"unsupported":0} warnings: 7 · 파일/폴더 복사 · 원본 파일이나 폴더를 다른 위치로 복사합니다. -Recurse가 있으면 폴더 안의 내용까지 포함합니다. · medium steps: 1. line 1 · 작업 폴더 이동 · 이후 명령들이 어느 폴더를 기준으로 실행될지 바꿉니다. · risk=low 2. line 3 · 시간값을 변수에 저장 · $stamp 변수에 현재 날짜/시간 문자열을 넣습니다. 백업 파일명이나 실행 기록 이름을 겹치지 않게 만들 때 씁니다. · risk=low 3. line 4 · 변수에 값 저장 · $backupRoot 변수에 값을 넣습니다. 이후 줄에서 $backupRoot을 쓰면 이 값을 다시 사용합니다. · risk=low 4. line 6 · 파이프라인 처리 · 앞 명령의 결과를 뒤 명령으로 넘깁니다. 그다음 필요한 값만 고르거나 정렬해서 보여줍니다. · risk=low 5. line 7 · 파일/폴더 복사 · 원본 파일이나 폴더를 다른 위치로 복사합니다. -Recurse가 있으면 폴더 안의 내용까지 포함합니다. · risk=medium 6. line 8 · ZIP 압축 생성 · 지정한 파일이나 폴더를 zip 파일로 묶습니다. · risk=low 7. line 10 · Git 변경 상태 확인 · 현재 폴더에서 어떤 파일이 수정되었는지 확인합니다. · risk=low
+summary: 무슨 작업: 프로젝트 파일이나 폴더를 백업 위치로 복사하고 ZIP으로 묶은 뒤 Git 변경 상태를 확인하는 절차입니다. 실행 흐름: 1. 작업 폴더 이동 2. 시간값을 변수에 저장 3. 변수에 값 저장 4. 파이프라인 처리 5. 파일/폴더 복사 6. ZIP 압축 생성 7. Git 변경 상태 확인 실행 전 확인: - -Force 옵션 때문에 기존 대상이 덮이거나 강제로 처리될 수 있는지 확인 - 복사 원본과 백업 대상 경로가 맞는지 확인 - Compress-Archive 명령이 현재 PowerShell 환경에서 사용 가능한지 확인 - 실행 후 git status --short로 변경 파일을 확인 flowSummary: 주요 흐름: 파일/경로 4개 · 버전관리 1개 · 변수/값 1개 · 파이프라인 1개 confidence: {"exact":6,"inferred":1,"unsupported":0} warnings: 7 · 파일/폴더 복사 · 원본 파일이나 폴더를 다른 위치로 복사합니다. -Recurse가 있으면 폴더 안의 내용까지 포함합니다. · medium steps: 1. line 1 · 작업 폴더 이동 · 이후 명령들이 어느 폴더를 기준으로 실행될지 바꿉니다. · risk=low 2. line 3 · 시간값을 변수에 저장 · $stamp 변수에 현재 날짜/시간 문자열을 넣습니다. 백업 파일명이나 실행 기록 이름을 겹치지 않게 만들 때 씁니다. · risk=low 3. line 4 · 변수에 값 저장 · $backupRoot 변수에 값을 넣습니다. 이후 줄에서 $backupRoot을 쓰면 이 값을 다시 사용합니다. · risk=low 4. line 6 · 파이프라인 처리 · 앞 명령의 결과를 뒤 명령으로 넘깁니다. 그다음 필요한 값만 고르거나 정렬해서 보여줍니다. · risk=low 5. line 7 · 파일/폴더 복사 · 원본 파일이나 폴더를 다른 위치로 복사합니다. -Recurse가 있으면 폴더 안의 내용까지 포함합니다. · risk=medium 6. line 8 · ZIP 압축 생성 · 지정한 파일이나 폴더를 zip 파일로 묶습니다. · risk=low 7. line 10 · Git 변경 상태 확인 · 현재 폴더에서 어떤 파일이 수정되었는지 확인합니다. · risk=low
 ```
 
 ### A · code · ko · Python active_names filter
@@ -51,7 +51,7 @@ summary: users 목록에서 active가 True인 사람만 골라 이름을 active_
 - issues: 큰 품질 문제 없음
 
 ```text
-summary: Overall, this PowerShell script changes to the project folder, creates a timestamp for a unique run or backup name, stores the backup path in a variable for reuse, creates the backup folder, copies the source files or folders to the backup location, compresses the backup content into a ZIP file, then checks the Git working-tree status. Before running it, check whether -Force could overwrite or force-handle an existing target; confirm that Compress-Archive is available in the current PowerShell environment. flowSummary: Main flow: file/path 3 · variable/value 2 · version control 1 · DB 1 confidence: {"exact":7,"inferred":0,"unsupported":0} warnings: 7 · Copying files/folders · Copies the original file or folder to another location. With -Recurse, folder contents are included. · medium steps: 1. line 1 · Change working directory · This changes the working directory from which later commands will run. · risk=low 2. line 3 · Store current time in a variable · $stamp stores the current date/time string. It is useful for unique backup names or run IDs. · risk=low 3. line 4 · Store a value in a variable · $backupRoot stores a value. Later lines can reuse that value by referring to $backupRoot. · risk=low 4. line 6 · Pipeline processing · The result of the previous command is passed to the next command, then selected, sorted, or displayed as needed. · risk=low 5. line 7 · Copying files/folders · Copies the original file or folder to another location. With -Recurse, folder contents are included. · risk=medium 6. line 8 · Create ZIP archive · Creates a ZIP archive from the specified files or folders. · risk=low 7. line 10 · Check Git status · This line is interpreted as: Check Git status. Review the original line, paths, options, and surrounding context before running it
+summary: What it does: This script backs up project files or folders, compresses the backup into a ZIP file, then checks the Git working-tree status. Flow: 1. Change working directory 2. Store current time in a variable 3. Store a value in a variable 4. Pipeline processing 5. Copying files/folders 6. Create ZIP archive 7. Check Git status Before running: - Check whether -Force could overwrite or force-handle an existing target. - Confirm the source and destination paths before copying. - Confirm that Compress-Archive is available in the current PowerShell environment. - Use git status --short after the run to confirm what changed. flowSummary: Main flow: file/path 3 · variable/value 2 · version control 1 · DB 1 confidence: {"exact":7,"inferred":0,"unsupported":0} warnings: 7 · Copying files/folders · Copies the original file or folder to another location. With -Recurse, folder contents are included. · medium steps: 1. line 1 · Change working directory · This changes the working directory from which later commands will run. · risk=low 2. line 3 · Store current time in a variable · $stamp stores the current date/time string. It is useful for unique backup names or run IDs. · risk=low 3. line 4 · Store a value in a variable · $backupRoot stores a value. Later lines can reuse that value by referring to $backupRoot. · risk=low 4. line 6 · Pipeline processing · The result of the previous command is passed to the next command, then selected, sorted, or displayed as needed. · risk=low 5. line 7 · Copying files/folders · Copies the original file or folder to another location. With -Recurse, folder contents are included. · risk=medium 6. line 8 · Create ZIP archive · Creates a ZIP archive from the specified files or folders. · risk=low 7. line 10 · Check Git status · This line is
 ```
 
 ### A · command · ko · Dangerous cleanup command
@@ -74,11 +74,11 @@ summary: PowerShell 명령 6개를 작업 순서대로 분석했습니다. 위�
 
 ### A · command · en · Dangerous cleanup command EN
 
-- score: 16 / 20
-- issues: generic/빈약한 요약 표현 남음
+- score: 17 / 20
+- issues: 큰 품질 문제 없음
 
 ```text
-summary: PowerShell 명령 4개를 작업 순서대로 분석했습니다. 위험 3개, 주의 0개, 미확인 0개입니다. language: powershell steps: 1. safe · Set-Location "D:\projects\python-reading-trainer" 2. danger · Remove-Item ".tmp\old_probe" -Recurse -Force 3. danger · git clean -fd 4. danger · git reset --hard HEAD warnings: - {"line":2,"command":"Remove-Item","group":"파일 삭제","risk":"danger","raw":"Remove-Item \".tmp\\old_probe\" -Recurse -Force","meaning":"파일이나 폴더를 삭제합니다.","fileImpact":"대상 파일/폴더가 사라질 수 있습니다. -Recurse는 하위 항목까지, -Force는 강제로 처리한다는 뜻입니다. 현재 줄에는 -Recurse 또는 -Force가 있어 삭제 범위가 커질 수 있습니다.","nextCheck":"Test-Path <삭제 대상 경로>"} - {"line":3,"command":"git clean","group":"Git 위험 정리","risk":"danger","raw":"git clean -fd","meaning":"git clean은 Git이 추적하지 않는 untracked 파일/폴더를 작업 폴더에서 정리하는 명령입니다. -fd는 파일과 폴더 삭제를 실행할 수 있습니다.","fileImpact":"untracked 파일/폴더를 삭제할 수 있고, 삭제 후 Git으로 복구하기 어려울 수 있습니다. -x 옵션이 있으면 ignored 파일까지 포함될 수 있습니다. 실행 전에는 반드시 dry-run인 git clean -fdn으로 미리보기하세요.","nextCheck":"git clean -fdn; git status --short"} - {"line":4,"command":"git reset","group":"Git danger","risk":"danger","raw":"git reset --hard HEAD","meaning":"Moves Git state. With --hard, local tracked file changes can be discarded. Treat this as a recovery/destructive command, not a normal save command.","fileImpact":"Can change Git history pointers and can discard local file changes when --hard is used.","nextCheck":"git status --short; git --no-pager log --oneline -5"}
+summary: Analyzed 4 PowerShell commands in execution order. Danger: 3, caution: 0, unknown: 0. language: powershell steps: 1. safe · Set-Location "D:\projects\python-reading-trainer" 2. danger · Remove-Item ".tmp\old_probe" -Recurse -Force 3. danger · git clean -fd 4. danger · git reset --hard HEAD warnings: - {"line":2,"command":"Remove-Item","group":"File deletion","risk":"danger","raw":"Remove-Item \".tmp\\old_probe\" -Recurse -Force","meaning":"Deletes a file or folder.","fileImpact":"The target file or folder can be deleted. -Recurse includes child items, and -Force forces the operation, so the deletion scope can become larger than expected.","nextCheck":"Test-Path <target path>"} - {"line":3,"command":"git clean","group":"Dangerous Git cleanup","risk":"danger","raw":"git clean -fd","meaning":"git clean removes untracked files or folders from the working tree. With -fd, it can delete files and directories.","fileImpact":"Untracked files or folders can be deleted, and they may be difficult to recover with Git afterward. If -x is used, ignored files may also be included. Preview first with git clean -fdn.","nextCheck":"git clean -fdn; git status --short"} - {"line":4,"command":"git reset","group":"Git danger","risk":"danger","raw":"git reset --hard HEAD","meaning":"Moves Git state. With --hard, local tracked file changes can be discarded. Treat this as a recovery/destructive command, not a normal save command.","fileImpact":"Can change Git history pointers and can discard local file changes when --hard is used.","nextCheck":"git status --short; git --no-pager log --oneline -5"}
 ```
 
 ### C · project · ko · Project probe command generation

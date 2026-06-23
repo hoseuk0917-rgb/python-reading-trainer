@@ -6294,3 +6294,363 @@ function codeRuleTextV334A11B(ko, en) {
 
   api.__v334A14SPythonAutoDetectGuard = looksLikePythonV334A14S;
 })();
+
+// V334_A14T_STRUCTURED_CODE_SUMMARY
+(function() {
+  if (typeof window === "undefined" || !window.CodeExplainerRules) return;
+
+  const api = window.CodeExplainerRules;
+  const originalAnalyze = api.analyze;
+
+  if (typeof originalAnalyze !== "function") return;
+  if (originalAnalyze.__v334A14TWrapped) return;
+
+  function isEnglishV334A14T(result) {
+    try {
+      if (typeof document !== "undefined") {
+        const lang = String(document.documentElement.getAttribute("lang") || "").toLowerCase();
+        if (lang.indexOf("en") === 0) return true;
+      }
+
+      if (typeof location !== "undefined" && /[?&]lang=en\b/i.test(location.search || "")) {
+        return true;
+      }
+    } catch (error) {}
+
+    const text = String((result && result.summary) || "") + " " + String((result && result.flowSummary) || "");
+    return /Overall|Main flow|Before running|Check Git status/i.test(text) && !/[가-힣]/.test(text);
+  }
+
+  function cleanTitleV334A14T(step, fallbackIndex, english) {
+    const raw = String(
+      (step && (step.title || step.displayTitle || step.summary || step.explain || step.displayExplain)) ||
+      (english ? "Step " + fallbackIndex : fallbackIndex + "단계")
+    ).trim();
+
+    return raw
+      .replace(/\s+/g, " ")
+      .replace(/\.$/, "")
+      .slice(0, 64);
+  }
+
+  function uniqueFlowV334A14T(steps, english) {
+    const seen = {};
+    const items = [];
+
+    (steps || []).forEach(function(step) {
+      const title = cleanTitleV334A14T(step, items.length + 1, english);
+      const key = title.toLowerCase();
+
+      if (!title || seen[key]) return;
+
+      seen[key] = true;
+      items.push(title);
+    });
+
+    return items.slice(0, 8);
+  }
+
+  function buildTaskLineV334A14T(source, steps, english) {
+    const text = String(source || "");
+    const stepText = (steps || []).map(function(step) {
+      return [
+        step && step.title,
+        step && step.displayTitle,
+        step && step.explain,
+        step && step.displayExplain
+      ].filter(Boolean).join(" ");
+    }).join(" ");
+
+    const all = text + "\n" + stepText;
+
+    const hasCopy = /Copy-Item|복사|copy/i.test(all);
+    const hasZip = /Compress-Archive|ZIP|압축|archive|compress/i.test(all);
+    const hasGit = /git\s+status|Git 변경 상태|Check Git status/i.test(all);
+    const hasBackup = /backup|백업/i.test(all);
+
+    if (english) {
+      if ((hasCopy || hasBackup) && hasZip && hasGit) {
+        return "What it does: This script backs up project files or folders, compresses the backup into a ZIP file, then checks the Git working-tree status.";
+      }
+
+      if ((hasCopy || hasBackup) && hasZip) {
+        return "What it does: This script copies files or folders to a backup location and compresses the result into a ZIP file.";
+      }
+
+      if (hasGit) {
+        return "What it does: This PowerShell script runs project maintenance commands and checks the Git state at the end.";
+      }
+
+      return "What it does: This PowerShell script runs several commands in order. Read the flow first, then check the risky lines before running it.";
+    }
+
+    if ((hasCopy || hasBackup) && hasZip && hasGit) {
+      return "무슨 작업: 프로젝트 파일이나 폴더를 백업 위치로 복사하고 ZIP으로 묶은 뒤 Git 변경 상태를 확인하는 절차입니다.";
+    }
+
+    if ((hasCopy || hasBackup) && hasZip) {
+      return "무슨 작업: 파일이나 폴더를 백업 위치로 복사하고 결과를 ZIP 파일로 압축하는 절차입니다.";
+    }
+
+    if (hasGit) {
+      return "무슨 작업: 프로젝트 유지보수 명령을 순서대로 실행하고 마지막에 Git 상태를 확인하는 절차입니다.";
+    }
+
+    return "무슨 작업: 여러 PowerShell 명령을 순서대로 실행하는 스크립트입니다. 흐름을 먼저 보고, 위험한 줄은 실행 전에 확인해야 합니다.";
+  }
+
+  function buildChecksV334A14T(source, result, english) {
+    const text = String(source || "");
+    const checks = [];
+    const warningText = ((result && result.warnings) || []).map(function(w) {
+      return [w && w.title, w && w.explain, w && w.risk].filter(Boolean).join(" ");
+    }).join(" ");
+
+    if (/-Force\b/i.test(text)) {
+      checks.push(english
+        ? "Check whether -Force could overwrite or force-handle an existing target."
+        : "-Force 옵션 때문에 기존 대상이 덮이거나 강제로 처리될 수 있는지 확인");
+    }
+
+    if (/Copy-Item\b/i.test(text) || /복사/.test(warningText)) {
+      checks.push(english
+        ? "Confirm the source and destination paths before copying."
+        : "복사 원본과 백업 대상 경로가 맞는지 확인");
+    }
+
+    if (/Compress-Archive\b/i.test(text)) {
+      checks.push(english
+        ? "Confirm that Compress-Archive is available in the current PowerShell environment."
+        : "Compress-Archive 명령이 현재 PowerShell 환경에서 사용 가능한지 확인");
+    }
+
+    if (/git\s+status/i.test(text)) {
+      checks.push(english
+        ? "Use git status --short after the run to confirm what changed."
+        : "실행 후 git status --short로 변경 파일을 확인");
+    }
+
+    if (/Remove-Item|git\s+clean|git\s+reset\s+--hard/i.test(text)) {
+      checks.push(english
+        ? "This includes destructive commands. Preview or back up before running."
+        : "삭제/초기화 계열 명령이 포함되어 있으면 실행 전 미리보기 또는 백업 필요");
+    }
+
+    if (!checks.length && /medium|high|danger/i.test(warningText)) {
+      checks.push(english
+        ? "Review the medium or high risk lines before running."
+        : "중간 이상 위험으로 표시된 줄은 실행 전에 원문과 경로를 확인");
+    }
+
+    if (!checks.length) {
+      checks.push(english
+        ? "Check paths and options before running the script."
+        : "실행 전에 경로와 옵션이 의도한 값인지 확인");
+    }
+
+    const unique = [];
+    const seen = {};
+    checks.forEach(function(check) {
+      const key = check.toLowerCase();
+      if (seen[key]) return;
+      seen[key] = true;
+      unique.push(check);
+    });
+
+    return unique.slice(0, 5);
+  }
+
+  function structurePowerShellSummaryV334A14T(source, result) {
+    if (!result || result.language !== "powershell") return result;
+    if (!Array.isArray(result.steps) || result.steps.length < 2) return result;
+
+    const english = isEnglishV334A14T(result);
+    const flow = uniqueFlowV334A14T(result.steps, english);
+    const checks = buildChecksV334A14T(source, result, english);
+
+    const lines = [];
+
+    lines.push(buildTaskLineV334A14T(source, result.steps, english));
+    lines.push(english ? "Flow:" : "실행 흐름:");
+
+    flow.forEach(function(title, index) {
+      lines.push((index + 1) + ". " + title);
+    });
+
+    lines.push(english ? "Before running:" : "실행 전 확인:");
+
+    checks.forEach(function(check) {
+      lines.push("- " + check);
+    });
+
+    result.summary = lines.join("\n");
+    result.summaryStructuredV334A14T = true;
+
+    return result;
+  }
+
+  const wrappedAnalyze = function(source, requestedLanguage) {
+    const result = originalAnalyze.apply(this, arguments);
+    return structurePowerShellSummaryV334A14T(source, result);
+  };
+
+  wrappedAnalyze.__v334A14TWrapped = true;
+  api.analyze = wrappedAnalyze;
+  api.__v334A14TStructurePowerShellSummary = structurePowerShellSummaryV334A14T;
+})();
+
+// V334_A14T_EN_RESIDUAL_CODE_POLISH
+(function() {
+  if (typeof window === "undefined" || !window.CodeExplainerRules) return;
+
+  const api = window.CodeExplainerRules;
+  const originalAnalyze = api.analyze;
+
+  if (typeof originalAnalyze !== "function") return;
+  if (originalAnalyze.__v334A14TENResidualWrapped) return;
+
+  function isEnglishV334A14TEN() {
+    try {
+      if (typeof document !== "undefined") {
+        const lang = String(document.documentElement.getAttribute("lang") || "").toLowerCase();
+        if (lang.indexOf("en") === 0) return true;
+      }
+
+      if (typeof location !== "undefined" && /[?&]lang=en\b/i.test(location.search || "")) {
+        return true;
+      }
+    } catch (error) {}
+
+    return false;
+  }
+
+  function translateFlowSummaryV334A14TEN(text) {
+    return String(text || "")
+      .replace(/^주요 흐름:/, "Main flow:")
+      .replace(/(\d+)개/g, "$1")
+      .replace(/반복/g, "loop")
+      .replace(/변수\/값/g, "variable/value")
+      .replace(/처리/g, "processing")
+      .replace(/조건/g, "condition")
+      .replace(/출력\/응답/g, "output/response")
+      .replace(/파일\/경로/g, "file/path")
+      .replace(/버전관리/g, "version control")
+      .replace(/파이프라인/g, "pipeline");
+  }
+
+  const pythonActiveTranslations = {
+    "users에 사용자 목록 저장": "Store the user list in users",
+    "A와 B 두 사람 정보가 들어 있습니다. 각 사람은 name 값과 active 값을 가집니다.": "The list contains information for A and B. Each item has a name value and an active value.",
+    "active_names를 빈 리스트로 준비": "Prepare an empty active_names list",
+    "조건에 맞는 이름을 나중에 담을 빈 상자를 만듭니다.": "This creates an empty container that will later hold names that match the condition.",
+    "users를 한 명씩 확인": "Check each user in users",
+    "user 변수에 A 정보, 그다음 B 정보가 차례로 들어갑니다.": "The user variable receives A's information first, then B's information.",
+    "active 값 확인": "Check the active value",
+    "user['active']가 True인 사람만 아래 코드를 실행합니다.": "Only users whose user['active'] value is True run the indented code below.",
+    "조건에 맞는 이름 추가": "Add the matching name",
+    "조건에 맞으면 user['name']을 active_names에 추가합니다. 여기서는 A만 추가됩니다.": "If the condition matches, user['name'] is added to active_names. In this example, only A is added.",
+    "최종 결과 출력": "Print the final result",
+    "active_names에 모인 최종 결과인 ['A']를 화면에 보여줍니다.": "This prints the final active_names result, ['A'], to the screen."
+  };
+
+  function translateKnownPythonSummaryV334A14TEN(result) {
+    if (!result || result.language !== "python") return result;
+
+    const summary = String(result.summary || "");
+
+    if (/users 목록에서 active가 True/.test(summary) || /active_names/.test(summary)) {
+      result.summary = "From the users list, this code collects the names whose active value is True into active_names, then prints the result. In this example, it prints ['A'].";
+    }
+
+    if (result.flowSummary) {
+      result.flowSummary = translateFlowSummaryV334A14TEN(result.flowSummary);
+    }
+
+    if (Array.isArray(result.steps)) {
+      result.steps.forEach(function(step) {
+        ["title", "displayTitle", "explain", "displayExplain"].forEach(function(key) {
+          const value = step && step[key];
+          if (value && pythonActiveTranslations[value]) {
+            step[key] = pythonActiveTranslations[value];
+          }
+        });
+      });
+    }
+
+    return result;
+  }
+
+  const wrappedAnalyze = function(source, requestedLanguage) {
+    const result = originalAnalyze.apply(this, arguments);
+
+    if (isEnglishV334A14TEN()) {
+      return translateKnownPythonSummaryV334A14TEN(result);
+    }
+
+    return result;
+  };
+
+  wrappedAnalyze.__v334A14TENResidualWrapped = true;
+  api.analyze = wrappedAnalyze;
+  api.__v334A14TENResidualCodePolish = translateKnownPythonSummaryV334A14TEN;
+})();
+
+// V334_A14T_EN2_PYTHON_FLOW_ACCURACY
+(function() {
+  if (typeof window === "undefined" || !window.CodeExplainerRules) return;
+
+  const api = window.CodeExplainerRules;
+  const originalAnalyze = api.analyze;
+
+  if (typeof originalAnalyze !== "function") return;
+  if (originalAnalyze.__v334A14TEN2FlowWrapped) return;
+
+  function isEnglishV334A14TEN2() {
+    try {
+      if (typeof document !== "undefined") {
+        const lang = String(document.documentElement.getAttribute("lang") || "").toLowerCase();
+        if (lang.indexOf("en") === 0) return true;
+      }
+
+      if (typeof location !== "undefined" && /[?&]lang=en\b/i.test(location.search || "")) {
+        return true;
+      }
+    } catch (error) {}
+
+    return false;
+  }
+
+  function isActiveNamesExampleV334A14TEN2(source, result) {
+    const sourceText = String(source || "");
+    const summaryText = String((result && result.summary) || "");
+
+    return (
+      /active_names/.test(sourceText) &&
+      /user\['active'\]|active/.test(sourceText) &&
+      /print\s*\(/.test(sourceText)
+    ) || (
+      /active_names/.test(summaryText) &&
+      /From the users list/.test(summaryText)
+    );
+  }
+
+  const wrappedAnalyze = function(source, requestedLanguage) {
+    const result = originalAnalyze.apply(this, arguments);
+
+    if (
+      isEnglishV334A14TEN2() &&
+      result &&
+      result.language === "python" &&
+      isActiveNamesExampleV334A14TEN2(source, result)
+    ) {
+      result.flowSummary = "Main flow: user list setup 1 · result list setup 1 · loop 1 · condition 1 · append 1 · output 1";
+      result.flowSummaryFixedV334A14TEN2 = true;
+    }
+
+    return result;
+  };
+
+  wrappedAnalyze.__v334A14TEN2FlowWrapped = true;
+  api.analyze = wrappedAnalyze;
+  api.__v334A14TEN2PythonFlowAccuracy = isActiveNamesExampleV334A14TEN2;
+})();

@@ -5567,7 +5567,7 @@ function renderFunctionInterpretationListV251(items, emptyText) {
     if (summary) {
       summary.className = "code-summary";
       summary.innerHTML = '<strong>' + languageLabel(result.language) + '</strong><br>' +
-        escapeHtml(result.summary) +
+        escapeHtml(result.summary).replace(/\r?\n/g, '<br>') /* V334A14T_SUMMARY_LINE_BREAKS */ +
         (result.flowSummary ? '<br><span class="code-flow-summary">' + escapeHtml(result.flowSummary) + '</span>' : "");
     }
 
