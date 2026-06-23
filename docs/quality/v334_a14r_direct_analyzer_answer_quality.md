@@ -7,10 +7,10 @@
 | metric | value |
 |---|---:|
 | cases | 7 |
-| average | 17.6 / 20 |
+| average | 18 / 20 |
 | A | 6 |
-| B | 0 |
-| C | 1 |
+| B | 1 |
+| C | 0 |
 | D | 0 |
 
 ## Case scores
@@ -23,7 +23,7 @@
 | A | 17 | command | ko | Dangerous cleanup command | 큰 품질 문제 없음 |
 | A | 18 | command | ko | Validation routine command | 큰 품질 문제 없음 |
 | A | 17 | command | en | Dangerous cleanup command EN | 큰 품질 문제 없음 |
-| C | 11 | project | ko | Project probe command generation | 출력이 길어 가독성이 떨어질 수 있음; 종합요약 신호 부족 |
+| B | 14 | project | ko | Project probe command generation | 출력이 길어 가독성이 떨어질 수 있음 |
 
 ## Direct output samples
 
@@ -81,12 +81,12 @@ summary: PowerShell 명령 6개를 작업 순서대로 분석했습니다. 위�
 summary: Analyzed 4 PowerShell commands in execution order. Danger: 3, caution: 0, unknown: 0. language: powershell steps: 1. safe · Set-Location "D:\projects\python-reading-trainer" 2. danger · Remove-Item ".tmp\old_probe" -Recurse -Force 3. danger · git clean -fd 4. danger · git reset --hard HEAD warnings: - {"line":2,"command":"Remove-Item","group":"File deletion","risk":"danger","raw":"Remove-Item \".tmp\\old_probe\" -Recurse -Force","meaning":"Deletes a file or folder.","fileImpact":"The target file or folder can be deleted. -Recurse includes child items, and -Force forces the operation, so the deletion scope can become larger than expected.","nextCheck":"Test-Path <target path>"} - {"line":3,"command":"git clean","group":"Dangerous Git cleanup","risk":"danger","raw":"git clean -fd","meaning":"git clean removes untracked files or folders from the working tree. With -fd, it can delete files and directories.","fileImpact":"Untracked files or folders can be deleted, and they may be difficult to recover with Git afterward. If -x is used, ignored files may also be included. Preview first with git clean -fdn.","nextCheck":"git clean -fdn; git status --short"} - {"line":4,"command":"git reset","group":"Git danger","risk":"danger","raw":"git reset --hard HEAD","meaning":"Moves Git state. With --hard, local tracked file changes can be discarded. Treat this as a recovery/destructive command, not a normal save command.","fileImpact":"Can change Git history pointers and can discard local file changes when --hard is used.","nextCheck":"git status --short; git --no-pager log --oneline -5"}
 ```
 
-### C · project · ko · Project probe command generation
+### B · project · ko · Project probe command generation
 
-- score: 11 / 20
-- issues: 출력이 길어 가독성이 떨어질 수 있음; 종합요약 신호 부족
+- score: 14 / 20
+- issues: 출력이 길어 가독성이 떨어질 수 있음
 
 ```text
-# === PROJECT ANALYZER PROBE GUIDE V334-A14U === # 이 명령은 앱을 실행하는 명령이 아니라, 프로젝트 구조를 점검하기 위한 분석용 스크립트입니다. # 하는 일: # 1. Python/Git/Node 설치 여부를 확인합니다. # 2. 프로젝트 파일 구조와 주요 파일을 스캔합니다. # 3. JS/Python/JSON/Markdown 파일 수와 주요 코드 패턴을 집계합니다. # 4. 함수/클래스/호출 후보와 Mermaid 구조도 후보를 추출합니다. # 5. 결과를 .tmp/project_probe_latest.json 및 .tmp/project_probe_latest_report.md에 저장합니다. # 실행 전 확인: # - ProjectRoot가 맞는지 확인: D:\projects\python-reading-trainer # - .tmp 폴더와 project_probe_* 산출물이 생기는 것은 정상입니다. # - 이 probe 명령은 분석 산출물을 만드는 용도이며, 삭제/초기화 계열 작업을 의도하지 않습니다. # - 출력이 길면 REPORT PREVIEW 아래 일부만 보여도 정상입니다. # - 더 자세히 보려면 .tmp/project_probe_latest.json 전체를 프로젝트분석 입력창에 붙여넣으세요. # ================================================ $ErrorActionPreference = "Stop" $ProjectRoot = 'D:\projects\python-reading-trainer' Set-Location $ProjectRoot if (-not (Test-Path .\.tmp)) { New-Item -ItemType Directory -Force .\.tmp | Out-Null } # ENV_AUDIT_V194_A1 $PythonCmd = Get-Command python -ErrorAction SilentlyContinue if (-not $PythonCmd) { throw 'PYTHON_NOT_FOUND: Python을 설치하거나 PATH에 추가한 뒤 다시 실행하세요.' } $GitCmd = Get-Command git -ErrorAction SilentlyContinue $NodeCmd = Get-Command node -ErrorAction SilentlyContinue $PipCmd = python -m pip --version 2>$null $RequiredPipPackages = @() Write-Host 'ENV_AUDIT_V194_A1' Write-Host ('ENV_PYTHON ' + $PythonCmd.Source) Write-Host ('ENV_GIT ' + $(if ($GitCmd) { $GitCmd.Source } else { 'missing_optional' })) Write-Host ('ENV_NODE ' + $(if ($NodeCmd) { $NodeCmd.Source } else { 'missing_optional' })) Write-Host ('ENV_PIP ' + $(if ($PipCmd) { $PipCmd } else { 'missing_optional' })) if ($RequiredPipPackages.Count -eq 0) { Write-Host 'ENV_PIP_PACKAGES none' } else { foreach ($pkg in $RequiredPipPackages) { python -m pip show $pkg *> $null if ($LASTEXITCODE -ne 0) { Write-Host ('ENV_INSTALLI
+# === PROJECT ANALYZER DIGEST V334-A14V === # 종합요약: 프로젝트를 실행하지 않고, 환경 확인·파일 스캔·구조 후보 추출·probe 리포트 생성을 수행하는 읽기 전용 분석 명령입니다. # 무슨 명령: 앱 실행 명령이 아니라 프로젝트 구조 점검 명령입니다. # 실행 흐름: Python/Git/Node 확인 -> 파일 트리 스캔 -> 프로젝트 자산 수 집계 -> 함수/클래스/호출/참조 후보 추출 -> .tmp 리포트 저장. # 실행 전 확인: ProjectRoot 경로가 맞는지 확인: D:\projects\python-reading-trainer # 산출물: .tmp/project_probe_latest.json, .tmp/project_probe_latest_report.md, 터미널 preview. # 원문 명령: 아래부터 그대로 복사 가능한 PowerShell 명령입니다. # === RAW POWERSHELL COMMAND BELOW === # === PROJECT ANALYZER PROBE GUIDE V334-A14U === # 이 명령은 앱을 실행하는 명령이 아니라, 프로젝트 구조를 점검하기 위한 분석용 스크립트입니다. # 하는 일: # 1. Python/Git/Node 설치 여부를 확인합니다. # 2. 프로젝트 파일 구조와 주요 파일을 스캔합니다. # 3. JS/Python/JSON/Markdown 파일 수와 주요 코드 패턴을 집계합니다. # 4. 함수/클래스/호출 후보와 Mermaid 구조도 후보를 추출합니다. # 5. 결과를 .tmp/project_probe_latest.json 및 .tmp/project_probe_latest_report.md에 저장합니다. # 실행 전 확인: # - ProjectRoot가 맞는지 확인: D:\projects\python-reading-trainer # - .tmp 폴더와 project_probe_* 산출물이 생기는 것은 정상입니다. # - 이 probe 명령은 분석 산출물을 만드는 용도이며, 삭제/초기화 계열 작업을 의도하지 않습니다. # - 출력이 길면 REPORT PREVIEW 아래 일부만 보여도 정상입니다. # - 더 자세히 보려면 .tmp/project_probe_latest.json 전체를 프로젝트분석 입력창에 붙여넣으세요. # ================================================ $ErrorActionPreference = "Stop" $ProjectRoot = 'D:\projects\python-reading-trainer' Set-Location $ProjectRoot if (-not (Test-Path .\.tmp)) { New-Item -ItemType Directory -Force .\.tmp | Out-Null } # ENV_AUDIT_V194_A1 $PythonCmd = Get-Command python -ErrorAction SilentlyContinue if (-not $PythonCmd) { throw 'PYTHON_NOT_FOUND: Python을 설치하거나 PATH에 추가한 뒤 다시 실행하세요.' } $GitCmd = Get-Command git -ErrorAction SilentlyContinue $NodeCmd = Get-Command node -ErrorAction SilentlyContinue $PipCmd = python -m pip --version 2>$null $RequiredPipPackages = @() Write-Host 'ENV_AUDIT_V194_A1' Write-Host ('ENV_PYTHO
 ```
 
