@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 const fs = require("fs");
 const http = require("http");
@@ -7,7 +7,7 @@ const path = require("path");
 const vm = require("vm");
 
 const SERVICE = "local-prt-server";
-const VERSION = "v337_a2b";
+const VERSION = "v337_a3";
 const RUNTIME_VERSION = "20260623_v335_a2";
 const ROOT = path.resolve(__dirname, "..");
 
@@ -120,7 +120,8 @@ function getHealthPayload() {
     },
     endpoints: [
       "GET /health",
-      "POST /analyze-code"
+      "POST /analyze-code",
+      "POST /proofy/explain"
     ],
     privacy: {
       localhostOnly: host === "127.0.0.1" || host === "localhost",
@@ -129,7 +130,7 @@ function getHealthPayload() {
       backgroundFileScanning: false,
       persistOriginalInputByDefault: false
     },
-    next: "V337-A3 will add a Proofy response adapter over analyzer output."
+    next: "V337-A3 implements POST /proofy/explain as a localhost Proofy response adapter over analyzer output."
   };
 }
 
@@ -392,6 +393,61 @@ function compactAnalyzeCode(source, requestedLanguage, mode) {
   };
 }
 
+function buildProofyExplainPayload(source, requestedLanguage, mode) {
+  const analysis = compactAnalyzeCode(source, requestedLanguage, mode || "proofy_explain");
+
+  return {
+    ok: true,
+    service: SERVICE,
+    version: VERSION,
+    kind: "proofy_explain",
+    route: "POST /proofy/explain",
+    proofy: {
+      name: "Proofy",
+      message: analysis.proofyMessage,
+      mood: analysis.proofyMood,
+      beginnerFocus: analysis.beginnerFocus,
+      mainFlow: analysis.mainFlow,
+      warnings: analysis.warnings,
+      nextChecks: analysis.nextChecks
+    },
+    analysis: {
+      kind: analysis.kind,
+      mode: analysis.mode,
+      language: analysis.language,
+      sourceMeta: analysis.sourceMeta,
+      summary: analysis.summary,
+      flowSummary: analysis.flowSummary,
+      detail: analysis.detail
+    },
+    privacy: {
+      localhostOnly: host === "127.0.0.1" || host === "localhost",
+      externalApiUsed: false,
+      originalInputPersisted: false
+    }
+  };
+}
+
+async function handleProofyExplain(req, res) {
+  const body = await readJsonBody(req);
+  const source = body.source || body.code || body.text || "";
+  const language = body.language || body.requestedLanguage || "auto";
+  const mode = body.mode || "proofy_explain";
+
+  if (!String(source).trim()) {
+    sendJson(req, res, 400, {
+      ok: false,
+      service: SERVICE,
+      version: VERSION,
+      error: "missing_source",
+      message: "POST /proofy/explain requires a non-empty source, code, or text field."
+    });
+    return;
+  }
+
+  const payload = buildProofyExplainPayload(String(source), String(language), String(mode));
+  sendJson(req, res, 200, payload);
+}
 async function handleAnalyzeCode(req, res) {
   const body = await readJsonBody(req);
   const source = body.source || body.code || body.text || "";
@@ -429,6 +485,11 @@ async function handleRequest(req, res) {
 
   if (req.method === "POST" && url.pathname === "/analyze-code") {
     await handleAnalyzeCode(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/proofy/explain") {
+    await handleProofyExplain(req, res);
     return;
   }
 
@@ -478,7 +539,8 @@ server.listen(port, host, () => {
     listening: "http://" + host + ":" + port,
     endpoints: [
       "http://" + host + ":" + port + "/health",
-      "http://" + host + ":" + port + "/analyze-code"
+      "http://" + host + ":" + port + "/analyze-code",
+      "http://" + host + ":" + port + "/proofy/explain"
     ]
   }, null, 2));
 });
