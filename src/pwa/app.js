@@ -1,5 +1,5 @@
 ﻿// === CACHE BUST START ===
-const APP_DATA_VERSION = "20260622_v334_a10r";
+const APP_DATA_VERSION = "20260623_v334_a10s";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -1106,7 +1106,7 @@ function renderSideCards(card, excludedIntroSideCardIdV306) {
     );
 
     bonusCards.forEach(function(sc) {
-      makeSideCard(sc, "연관 추천");
+      makeSideCard(sc, studyToolsTextV334A10N("연관 추천", "Related suggestion"));
     });
   }
 
@@ -1596,6 +1596,8 @@ function getStaticUiEnglishMapV334A10() {
     "학습 도구 · 현재 필터 기준으로 검색/오늘 큐 생성": "Study tools · Search and build today's queue from current filters",
     "추천 진도로 오늘 10장": "Today 10 from recommended level",
     "추천만 적용": "Apply recommendation",
+    "다음 확인 명령어": "Next check commands",
+    "분석 후 추천 확인 명령이 표시됩니다.": "Recommended follow-up check commands will appear after analysis.",
     "설정 접기": "Collapse settings",
     "설정 열기": "Open settings",
     "조건 적용": "Apply filters",
@@ -3229,7 +3231,9 @@ if (document.readyState === "loading") {
     const confused = targetCards.filter(function(card) { return progress.confused[card.id]; }).length;
     const correct = targetCards.filter(function(card) { return progress.correct[card.id]; }).length;
 
-    return "추천 L" + level + " · 안 본 " + unseen + " · 모르겠음 " + confused + " · 맞힘 " + correct + " / " + total;
+    return isEnglishLocaleV334A10N()
+  ? "Recommended L" + level + " · unseen " + unseen + " · not sure " + confused + " · correct " + correct + " / " + total
+  : "추천 L" + level + " · 안 본 " + unseen + " · 모르겠음 " + confused + " · 맞힘 " + correct + " / " + total;
   }
 
   function applyRecommendedProgress(startQueue) {
@@ -3290,10 +3294,17 @@ if (document.readyState === "loading") {
     const currentLevel = levelEl ? levelEl.value : getRecommendedLevel();
     const recommended = getRecommendedLevel();
 
-    summary.textContent =
-      "현재 " + (currentLevel === "all" ? "전체 레벨" : "L" + currentLevel) +
-      " · 추천 " + (recommended === "all" ? "전체" : "L" + recommended) +
-      " · " + getRecommendSummary(recommended);
+    if (isEnglishLocaleV334A10N()) {
+      summary.textContent =
+        "Current " + (currentLevel === "all" ? "All levels" : "L" + currentLevel) +
+        " · recommended " + (recommended === "all" ? "All" : "L" + recommended) +
+        " · " + getRecommendSummary(recommended);
+    } else {
+      summary.textContent =
+        "현재 " + (currentLevel === "all" ? "전체 레벨" : "L" + currentLevel) +
+        " · 추천 " + (recommended === "all" ? "전체" : "L" + recommended) +
+        " · " + getRecommendSummary(recommended);
+    }
   }
 
   function enhanceStudyToolsPanel() {
@@ -3316,9 +3327,9 @@ if (document.readyState === "loading") {
       quick.className = "study-tools-quick-v272";
       quick.innerHTML = `
         <div class="study-tools-quick-main-v272">
-          <button type="button" id="studyToolsRecommendStartV272">추천 진도로 오늘 10장</button>
-          <button type="button" id="studyToolsRecommendApplyV272" class="secondary">추천만 적용</button>
-          <button type="button" id="studyToolsToggleV272" class="secondary">설정 펼치기</button>
+          <button type="button" id="studyToolsRecommendStartV272">${studyToolsTextV334A10N("추천 진도로 오늘 10장", "Today 10 from recommended level")}</button>
+          <button type="button" id="studyToolsRecommendApplyV272" class="secondary">${studyToolsTextV334A10N("추천만 적용", "Apply recommendation")}</button>
+          <button type="button" id="studyToolsToggleV272" class="secondary">${studyToolsTextV334A10N("설정 펼치기", "Open settings")}</button>
         </div>
         <div id="studyToolsRecommendSummaryV272" class="study-tools-recommend-summary-v272"></div>
       `;
@@ -3538,7 +3549,9 @@ if (document.readyState === "loading") {
     const queueLen = Array.isArray(state.queueIds) ? state.queueIds.length : 0;
 
     const levelText = recommended === "all" ? "전체" : "L" + recommended;
-    return "추천 " + levelText + " · 남은 " + remaining + " · 큐 " + queueLen + "/10";
+    return isEnglishLocaleV334A10N()
+  ? "Recommended " + (recommended === "all" ? "All" : "L" + recommended) + " · remaining " + remaining + " · queue " + queueLen + "/10"
+  : "추천 " + levelText + " · 남은 " + remaining + " · 큐 " + queueLen + "/10";
   }
 
   function applyMicroUi() {
@@ -3560,12 +3573,12 @@ if (document.readyState === "loading") {
 
     const startBtn = document.getElementById("studyToolsRecommendStartV272");
     if (startBtn && isSmallScreen()) {
-      startBtn.textContent = "추천 10장";
+      startBtn.textContent = studyToolsTextV334A10N("추천 10장", "Recommended 10");
     }
 
     const applyBtn = document.getElementById("studyToolsRecommendApplyV272");
     if (applyBtn && isSmallScreen()) {
-      applyBtn.textContent = "추천 적용";
+      applyBtn.textContent = studyToolsTextV334A10N("추천 적용", "Apply recommendation");
     }
 
     const toggleBtn = document.getElementById("studyToolsToggleV272");
