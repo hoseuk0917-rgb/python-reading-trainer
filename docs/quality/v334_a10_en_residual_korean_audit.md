@@ -10,7 +10,7 @@ Purpose: identify why English mode still shows Korean copy after A9.
 | parse failed | 0 |
 | residual Korean values in data_i18n/en | 253 |
 | residual Korean chars in data_i18n/en | 3681 |
-| app/static Korean lines | 360 |
+| app/static Korean lines | 362 |
 
 ## Top EN files with remaining Korean
 
