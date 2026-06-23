@@ -1,4 +1,4 @@
-﻿# V337-A0 Local PRT Server + Froopy Bridge Architecture
+﻿# V337-A0 Local PRT Server + Proofy Bridge Architecture
 
 Date: 2026-06-23
 Base tag: quality-v336-json-parse-sample-a4-20260623
@@ -6,7 +6,7 @@ Runtime version: 20260623_v335_a2
 
 ## Purpose
 
-Start V337 by defining a local-server architecture that allows Froopy, the PWA, and future tools to reuse the existing python-reading-trainer analysis engines.
+Start V337 by defining a local-server architecture that allows Proofy, the PWA, and future tools to reuse the existing python-reading-trainer analysis engines.
 
 The goal is not clipboard monitoring, PowerShell interception, or a separate patch-review product.
 
@@ -14,7 +14,7 @@ The goal is:
 
 - user provides long code, pasted GPT code, command text, or selected file content
 - local server analyzes it using existing PWA analyzer logic
-- Froopy receives a short beginner-friendly explanation
+- Proofy receives a short beginner-friendly explanation
 - detailed results remain available to the PWA or local report files
 
 ## Current baseline
@@ -41,7 +41,7 @@ V337 should not start with:
 - automatic clipboard monitoring
 - PowerShell command interception
 - VS Code extension-first implementation
-- PC-wide Froopy overlay
+- PC-wide Proofy overlay
 - external API/LLM dependency
 
 V337 should start with:
@@ -50,7 +50,7 @@ V337 should start with:
 - existing analyzer reuse
 - explicit user-provided input
 - long-code understanding support
-- Froopy-ready short explanation output
+- Proofy-ready short explanation output
 
 ## Target architecture
 
@@ -59,7 +59,7 @@ User
   |
   | paste long code / provide file text / type question
   v
-Froopy UI or PWA
+Proofy UI or PWA
   |
   | HTTP POST localhost
   v
@@ -80,11 +80,11 @@ Structured JSON result
   - beginnerFocus
   - warnings
   - nextChecks
-  - froopyMessage
-  - froopyMood
+  - proofyMessage
+  - proofyMood
   |
   v
-Froopy speech bubble / PWA result panel / local report
+Proofy speech bubble / PWA result panel / local report
 ```
 
 ## Important distinction
@@ -94,19 +94,19 @@ This architecture should not require an open browser PWA tab.
 Preferred approach:
 
 - Local PRT Server loads reusable PWA JavaScript analysis files directly through Node or a small adapter.
-- Froopy calls the local server.
+- Proofy calls the local server.
 - PWA can also call the same local server later if needed.
 
 Non-preferred approach:
 
-- Froopy sends input to a browser tab running the PWA.
+- Proofy sends input to a browser tab running the PWA.
 - Browser PWA returns output through WebSocket.
 
 Reason:
 
 - browser-tab dependency is fragile
 - local server is easier to test
-- local server can later support Froopy, PWA, VS Code, and PowerShell clients
+- local server can later support Proofy, PWA, VS Code, and PowerShell clients
 
 ## Initial endpoints
 
@@ -115,7 +115,7 @@ Planned local server:
 - `GET /health`
 - `POST /analyze-code`
 - `POST /analyze-command`
-- `POST /froopy/explain`
+- `POST /proofy/explain`
 - `POST /mask-secrets`
 - later: `POST /analyze-project`
 
@@ -137,7 +137,7 @@ Example response:
     "code": true,
     "command": false,
     "project": false,
-    "froopy": true
+    "proofy": true
   }
 }
 ```
@@ -181,16 +181,16 @@ Example response shape:
     "Check whether the input string is valid JSON.",
     "Run node --check on the target file after applying changes."
   ],
-  "froopyMessage": "핵심은 JSON.parse가 문자열을 객체로 바꾸는 부분이야. 먼저 rawUser와 user의 차이를 보면 쉬워!",
-  "froopyMood": "thinking"
+  "proofyMessage": "핵심은 JSON.parse가 문자열을 객체로 바꾸는 부분이야. 먼저 rawUser와 user의 차이를 보면 쉬워!",
+  "proofyMood": "thinking"
 }
 ```
 
-### POST /froopy/explain
+### POST /proofy/explain
 
 Purpose:
 
-- accept general Froopy input
+- accept general Proofy input
 - internally classify whether the input looks like code, command, error, project output, or plain question
 - call the correct analyzer
 - return a short speech-bubble answer plus optional detailed payload
@@ -201,8 +201,8 @@ Example response shape:
 {
   "ok": true,
   "intent": "code_explain",
-  "froopyMood": "thinking",
-  "froopyMessage": "이 코드는 버튼을 누르면 분석 함수를 실행하게 연결하는 부분이야.",
+  "proofyMood": "thinking",
+  "proofyMessage": "이 코드는 버튼을 누르면 분석 함수를 실행하게 연결하는 부분이야.",
   "detail": {
     "summary": "...",
     "mainFlow": [],
@@ -224,7 +224,7 @@ Required rules:
 - original input is not persisted by default
 - `.tmp/` reports may store derived summaries, not secrets
 - API keys, tokens, passwords, JWTs, private keys, and authorization headers must be masked before logging
-- if a secret-like value is detected, Froopy should explain the situation without repeating the secret
+- if a secret-like value is detected, Proofy should explain the situation without repeating the secret
 
 Secret-like patterns to consider:
 
@@ -263,13 +263,13 @@ Typical warnings should be practical, not security-heavy:
 - full-file replacement may drop existing patches
 - syntax check is needed after applying code
 
-## Froopy role
+## Proofy role
 
-Froopy should not be the analyzer itself.
+Proofy should not be the analyzer itself.
 
-Froopy should be a friendly output layer over structured analyzer results.
+Proofy should be a friendly output layer over structured analyzer results.
 
-Froopy responsibilities:
+Proofy responsibilities:
 
 - show one short message
 - choose mood/pose
@@ -318,12 +318,12 @@ Validation sample:
 - browser `addEventListener`
 - localStorage/theme snippet
 
-### V337-A3: Froopy response adapter
+### V337-A3: Proofy response adapter
 
 Add a function that converts analyzer output into:
 
-- `froopyMessage`
-- `froopyMood`
+- `proofyMessage`
+- `proofyMood`
 - `beginnerFocus`
 - `nextChecks`
 
@@ -338,11 +338,11 @@ Add optional PWA setting or test button:
 - checks whether local server is running
 - does not require it for normal PWA operation
 
-### V337-A6: Froopy UI/client prototype
+### V337-A6: Proofy UI/client prototype
 
-Later connect Froopy input to:
+Later connect Proofy input to:
 
-- `POST /froopy/explain`
+- `POST /proofy/explain`
 - speech bubble output
 - mood/pose selection
 
@@ -365,7 +365,7 @@ These can be later extensions after the local server boundary is stable.
 V337 starts as:
 
 - Local PRT Server
-- Froopy Bridge
+- Proofy Bridge
 - long-code understanding support
 - privacy-first localhost architecture
 
@@ -380,3 +380,4 @@ Status:
 - Architecture selected
 - Immediate code patch: NONE
 - Next implementation: V337-A1 `tools/local_prt_server.js` health endpoint
+

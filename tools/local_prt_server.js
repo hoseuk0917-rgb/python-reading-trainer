@@ -7,7 +7,7 @@ const path = require("path");
 const vm = require("vm");
 
 const SERVICE = "local-prt-server";
-const VERSION = "v337_a2";
+const VERSION = "v337_a2b";
 const RUNTIME_VERSION = "20260623_v335_a2";
 const ROOT = path.resolve(__dirname, "..");
 
@@ -116,7 +116,7 @@ function getHealthPayload() {
       code: true,
       command: false,
       project: false,
-      froopy: true
+      proofy: true
     },
     endpoints: [
       "GET /health",
@@ -129,7 +129,7 @@ function getHealthPayload() {
       backgroundFileScanning: false,
       persistOriginalInputByDefault: false
     },
-    next: "V337-A3 will add a Froopy response adapter over analyzer output."
+    next: "V337-A3 will add a Proofy response adapter over analyzer output."
   };
 }
 
@@ -328,7 +328,7 @@ function buildNextChecks(source, language) {
   return uniqueStrings(checks, 6);
 }
 
-function buildFroopyMessage(source, result, language, beginnerFocus) {
+function buildProofyMessage(source, result, language, beginnerFocus) {
   const text = String(source || "");
   const lang = String(language || (result && result.language) || "").toLowerCase();
 
@@ -362,7 +362,7 @@ function compactAnalyzeCode(source, requestedLanguage, mode) {
   const warnings = extractWarnings(result);
   const beginnerFocus = buildBeginnerFocus(source, result, language);
   const nextChecks = buildNextChecks(source, language);
-  const froopyMessage = buildFroopyMessage(source, result, language, beginnerFocus);
+  const proofyMessage = buildProofyMessage(source, result, language, beginnerFocus);
 
   return {
     ok: true,
@@ -381,8 +381,8 @@ function compactAnalyzeCode(source, requestedLanguage, mode) {
     beginnerFocus,
     warnings,
     nextChecks,
-    froopyMessage,
-    froopyMood: warnings.length ? "warning" : "thinking",
+    proofyMessage,
+    proofyMood: warnings.length ? "warning" : "thinking",
     detail: {
       analyzerPath: path.relative(ROOT, analyzer.rulesPath),
       stepCount: Array.isArray(result.steps) ? result.steps.length : 0,
@@ -503,3 +503,5 @@ function shutdown(signal) {
 
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+
