@@ -2292,7 +2292,7 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
     }
     if (warnings) {
       warnings.className = "code-warnings muted";
-      warnings.textContent = "위험 명령이 감지되면 여기에 표시됩니다.";
+      warnings.textContent = "If a dangerous command is detected, it will be displayed here.";
     }
     if (steps) steps.innerHTML = "";
     if (next) {
@@ -2767,3 +2767,209 @@ python3 tools/validate_lessons.py --expected-app-version 20260611_v297_a1 --expe
     initCommandExplainerV277();
   }
 })();
+
+
+function commandExplainerIsEnglishV334A12A() {
+  try {
+    const params = new URLSearchParams(window.location.search || "");
+    const fromQuery = String(params.get("lang") || params.get("locale") || "").toLowerCase();
+    if (fromQuery === "en" || fromQuery === "english") return true;
+
+    const htmlLang = String(document.documentElement && document.documentElement.lang || "").toLowerCase();
+    if (htmlLang.indexOf("en") === 0) return true;
+
+    const bodyLang = String(document.body && (document.body.getAttribute("data-lang") || document.body.getAttribute("data-locale")) || "").toLowerCase();
+    if (bodyLang === "en" || bodyLang === "english") return true;
+
+    const keys = ["ptr_lang", "ptr_locale", "ptr_locale_v334_a10n", "language", "locale"];
+    for (const key of keys) {
+      const value = String(window.localStorage && window.localStorage.getItem(key) || "").toLowerCase();
+      if (value === "en" || value === "english") return true;
+    }
+  } catch (error) {
+    return false;
+  }
+
+  return false;
+}
+
+function commandExplainerVisibleDomPolishV334A12A() {
+  if (!commandExplainerIsEnglishV334A12A()) return;
+
+  const root =
+    document.querySelector("#commandExplainer") ||
+    document.querySelector("[data-command-explainer]") ||
+    document.body;
+
+  if (!root) return;
+
+  const replacements = [
+    ["현재 셸 기본 PowerShell 예제", "Current shell default PowerShell example"],
+    ["현재 PowerShell 선택에 맞춘 기본 예제입니다.", "Default example matched to the current PowerShell selection."],
+    ["분석하면 먼저 보여줄 안전 확인 그룹", "Safety check groups shown first after analysis"],
+    ["공통 확인", "Common checks"],
+    ["삭제 계열", "Deletion-related commands"],
+    ["예제를 불러와 분석하면 결과 위쪽에 이 안전 확인 그룹들이 표시됩니다.", "When you load and analyze an example, these safety check groups appear at the top of the result."],
+    ["Paste PowerShell commands here. Example: Set-Location, Remove-Item, git status", "Paste PowerShell commands here. Example: Set-Location, Remove-Item, git status"],
+    ["Paste Bash commands here.", "Paste Bash commands here."],
+    ["위험/주의 명령", "Dangerous/caution commands"],
+    ["주의 명령", "Caution commands"],
+    ["위험 명령", "Dangerous commands"],
+    ["현재 셸 기본 Bash 예제", "Current shell default Bash example"],
+    ["현재 Bash 선택에 맞춘 기본 예제입니다.", "Default example matched to the current Bash selection."],
+    ["명령 요약", "Command summary"],
+    ["작업 순서", "Work order"],
+    ["다음 확인 명령", "Next check commands"]
+  ];
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: function(node) {
+      const parent = node && node.parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      const tag = parent.tagName ? parent.tagName.toLowerCase() : "";
+      if (tag === "textarea" || tag === "input" || tag === "script" || tag === "style") {
+        return NodeFilter.FILTER_REJECT;
+      }
+      if (!/[가-힣]/.test(node.nodeValue || "")) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+
+  nodes.forEach(function(node) {
+    let text = node.nodeValue || "";
+    replacements.forEach(function(pair) {
+      text = text.split(pair[0]).join(pair[1]);
+    });
+    node.nodeValue = text;
+  });
+}
+
+function commandExplainerScheduleVisibleDomPolishV334A12A() {
+  if (!commandExplainerIsEnglishV334A12A()) return;
+  [0, 60, 180, 500, 1000].forEach(function(delay) {
+    window.setTimeout(commandExplainerVisibleDomPolishV334A12A, delay);
+  });
+}
+
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", commandExplainerScheduleVisibleDomPolishV334A12A);
+  } else {
+    commandExplainerScheduleVisibleDomPolishV334A12A();
+  }
+
+  document.addEventListener("click", function(event) {
+    const text = String(event && event.target && event.target.textContent || "");
+    if (/Command explainer|Load selected example|Analyze command|Clear input|PowerShell|Bash/.test(text)) {
+      commandExplainerScheduleVisibleDomPolishV334A12A();
+    }
+  }, true);
+}
+
+function commandExplainerEnglishModeV334A12B() {
+  try {
+    const params = new URLSearchParams(window.location.search || "");
+    const queryLang = String(params.get("lang") || params.get("locale") || "").toLowerCase();
+    if (queryLang === "en" || queryLang === "english") return true;
+
+    const htmlLang = String(document.documentElement && document.documentElement.lang || "").toLowerCase();
+    if (htmlLang.indexOf("en") === 0) return true;
+
+    const bodyLang = String(document.body && (document.body.getAttribute("data-lang") || document.body.getAttribute("data-locale")) || "").toLowerCase();
+    if (bodyLang === "en" || bodyLang === "english") return true;
+
+    const keys = ["ptr_lang", "ptr_locale", "ptr_locale_v334_a10n", "language", "locale"];
+    for (const key of keys) {
+      const value = String(window.localStorage && window.localStorage.getItem(key) || "").toLowerCase();
+      if (value === "en" || value === "english") return true;
+    }
+  } catch (error) {
+    return false;
+  }
+
+  return false;
+}
+
+function commandExplainerResidualPolishV334A12B() {
+  if (!commandExplainerEnglishModeV334A12B()) return;
+
+  const root =
+    document.querySelector("#commandExplainer") ||
+    document.querySelector("[data-command-explainer]") ||
+    document.body;
+
+  if (!root) return;
+
+  const replacements = [
+    ["여기에 PowerShell 명령을 붙여넣으세요. 예: Set-Location, Remove-Item, git status", "Paste PowerShell commands here. Example: Set-Location, Remove-Item, git status"],
+    ["여기에 Bash 명령을 붙여넣으세요.", "Paste Bash commands here."],
+    ["Dangerous commands이 감지되면 여기에 표시됩니다.", "If a dangerous command is detected, it will be displayed here."],
+    ["Dangerous/caution commands이 감지되면 여기에 표시됩니다.", "If a dangerous or caution command is detected, it will be displayed here."],
+    ["위험 명령이 감지되면 여기에 표시됩니다.", "If a dangerous command is detected, it will be displayed here."],
+    ["위험/주의 명령이 감지되면 여기에 표시됩니다.", "If a dangerous or caution command is detected, it will be displayed here."]
+  ];
+
+  const elements = root.querySelectorAll("textarea, input, button, select, option, [placeholder], [title], [aria-label]");
+  Array.prototype.forEach.call(elements, function(element) {
+    ["placeholder", "title", "aria-label", "value"].forEach(function(attr) {
+      if (!element.hasAttribute || !element.hasAttribute(attr)) return;
+      let value = element.getAttribute(attr) || "";
+      replacements.forEach(function(pair) {
+        value = value.split(pair[0]).join(pair[1]);
+      });
+      element.setAttribute(attr, value);
+    });
+  });
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: function(node) {
+      const parent = node && node.parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      const tag = parent.tagName ? parent.tagName.toLowerCase() : "";
+      if (tag === "textarea" || tag === "input" || tag === "script" || tag === "style") {
+        return NodeFilter.FILTER_REJECT;
+      }
+      const value = node.nodeValue || "";
+      if (!/[가-힣]/.test(value)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+
+  nodes.forEach(function(node) {
+    let text = node.nodeValue || "";
+    replacements.forEach(function(pair) {
+      text = text.split(pair[0]).join(pair[1]);
+    });
+    node.nodeValue = text;
+  });
+}
+
+function commandExplainerScheduleResidualPolishV334A12B() {
+  if (!commandExplainerEnglishModeV334A12B()) return;
+  [0, 60, 180, 500, 1000].forEach(function(delay) {
+    window.setTimeout(commandExplainerResidualPolishV334A12B, delay);
+  });
+}
+
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", commandExplainerScheduleResidualPolishV334A12B);
+  } else {
+    commandExplainerScheduleResidualPolishV334A12B();
+  }
+
+  document.addEventListener("click", function(event) {
+    const text = String(event && event.target && event.target.textContent || "");
+    if (/Command explainer|Load selected example|Analyze command|Clear input|PowerShell|Bash/.test(text)) {
+      commandExplainerScheduleResidualPolishV334A12B();
+    }
+  }, true);
+
+  document.addEventListener("focusin", commandExplainerScheduleResidualPolishV334A12B, true);
+}

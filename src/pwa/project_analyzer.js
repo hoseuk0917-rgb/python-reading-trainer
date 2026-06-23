@@ -2216,7 +2216,7 @@
     lastParsedReport = null;
     lastHandoffText = "";
 
-    if (command) command.textContent = "프로젝트 루트를 입력하고 “명령 생성”을 누르세요.";
+    if (command) command.textContent = "Enter a project root and click “Generate command”.";
     if (output) output.value = "";
     if (summary) {
       summary.classList.add("muted");
@@ -2225,7 +2225,7 @@
     if (details) details.innerHTML = "";
     if (diagram) diagram.innerHTML = "";
     if (source) source.textContent = "";
-    if (status) status.textContent = "분석 후 표시됩니다.";
+    if (status) status.textContent = "Shown after analysis.";
   }
 
   function refresh() {
@@ -2292,3 +2292,115 @@
   }
 })();
  // === PROJECT ANALYZER V248-A1 END ===
+
+function projectAnalyzerEnglishModeV334A13A() {
+  try {
+    const params = new URLSearchParams(window.location.search || "");
+    const queryLang = String(params.get("lang") || params.get("locale") || "").toLowerCase();
+    if (queryLang === "en" || queryLang === "english") return true;
+
+    const htmlLang = String(document.documentElement && document.documentElement.lang || "").toLowerCase();
+    if (htmlLang.indexOf("en") === 0) return true;
+
+    const bodyLang = String(document.body && (document.body.getAttribute("data-lang") || document.body.getAttribute("data-locale")) || "").toLowerCase();
+    if (bodyLang === "en" || bodyLang === "english") return true;
+
+    const keys = ["ptr_lang", "ptr_locale", "ptr_locale_v334_a10n", "language", "locale"];
+    for (const key of keys) {
+      const value = String(window.localStorage && window.localStorage.getItem(key) || "").toLowerCase();
+      if (value === "en" || value === "english") return true;
+    }
+  } catch (error) {
+    return false;
+  }
+
+  return false;
+}
+
+function projectAnalyzerVisiblePolishV334A13A() {
+  if (!projectAnalyzerEnglishModeV334A13A()) return;
+
+  const root =
+    document.querySelector("#projectAnalyzer") ||
+    document.querySelector("[data-project-analyzer]") ||
+    document.body;
+
+  if (!root) return;
+
+  const replacements = [
+    ["예: D:\\projects\\python-reading-trainer", "Example: D:\\projects\\python-reading-trainer"],
+    ["프로젝트 루트를 입력하고 “명령 생성”을 누르세요.", "Enter a project root and click “Generate command”."],
+    ['프로젝트 루트를 입력하고 "명령 생성"을 누르세요.', 'Enter a project root and click "Generate command".'],
+    ["최신 probe 터미널 출력(PROJECT_PROBE_V248_OK 또는 PROJECT_PROBE_V199_OK), project_probe_latest_report.md / project_probe_v199_report.md, 또는 JSON 전체 내용을 붙여넣으세요.", "Paste the latest probe terminal output (PROJECT_PROBE_V248_OK or PROJECT_PROBE_V199_OK), project_probe_latest_report.md / project_probe_v199_report.md, or the full JSON content."],
+    ["4. 구조도", "4. Structure diagram"],
+    ["구조도", "Structure diagram"],
+    ["분석 후 표시됩니다.", "Shown after analysis."],
+    ["명령 생성", "Generate command"],
+    ["최신", "latest"],
+    ["터미널 출력", "terminal output"],
+    ["또는", "or"],
+    ["전체 내용", "full content"]
+  ];
+
+  const elements = root.querySelectorAll("textarea, input, button, select, option, [placeholder], [title], [aria-label]");
+  Array.prototype.forEach.call(elements, function(element) {
+    ["placeholder", "title", "aria-label", "value"].forEach(function(attr) {
+      if (!element.hasAttribute || !element.hasAttribute(attr)) return;
+      let value = element.getAttribute(attr) || "";
+      if (!/[가-힣]/.test(value)) return;
+      replacements.forEach(function(pair) {
+        value = value.split(pair[0]).join(pair[1]);
+      });
+      element.setAttribute(attr, value);
+    });
+  });
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: function(node) {
+      const parent = node && node.parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      const tag = parent.tagName ? parent.tagName.toLowerCase() : "";
+      if (tag === "textarea" || tag === "input" || tag === "script" || tag === "style") {
+        return NodeFilter.FILTER_REJECT;
+      }
+      const value = node.nodeValue || "";
+      if (!/[가-힣]/.test(value)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+
+  nodes.forEach(function(node) {
+    let text = node.nodeValue || "";
+    replacements.forEach(function(pair) {
+      text = text.split(pair[0]).join(pair[1]);
+    });
+    node.nodeValue = text;
+  });
+}
+
+function projectAnalyzerScheduleVisiblePolishV334A13A() {
+  if (!projectAnalyzerEnglishModeV334A13A()) return;
+  [0, 60, 180, 500, 1000].forEach(function(delay) {
+    window.setTimeout(projectAnalyzerVisiblePolishV334A13A, delay);
+  });
+}
+
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", projectAnalyzerScheduleVisiblePolishV334A13A);
+  } else {
+    projectAnalyzerScheduleVisiblePolishV334A13A();
+  }
+
+  document.addEventListener("click", function(event) {
+    const text = String(event && event.target && event.target.textContent || "");
+    if (/Project analyzer|Generate command|Analyze pasted output|Reset|Copy command/.test(text)) {
+      projectAnalyzerScheduleVisiblePolishV334A13A();
+    }
+  }, true);
+
+  document.addEventListener("focusin", projectAnalyzerScheduleVisiblePolishV334A13A, true);
+}
