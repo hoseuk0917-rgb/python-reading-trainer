@@ -1,5 +1,5 @@
 ﻿// === CACHE BUST START ===
-const APP_DATA_VERSION = "20260623_v334_a14v";
+const APP_DATA_VERSION = "20260623_v335_a2";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -3633,7 +3633,7 @@ if (document.readyState === "loading") {
     const toggleBtn = document.getElementById("studyToolsToggleV272");
     if (toggleBtn && isSmallScreen()) {
       const collapsed = panel.classList.contains("study-tools-collapsed-v272");
-      toggleBtn.textContent = collapsed ? "설정" : "접기";
+      toggleBtn.textContent = collapsed ? studyToolsTextV334A10N("설정 펼치기", "Open settings") : studyToolsTextV334A10N("설정 접기", "Collapse settings");
     }
 
     const status = document.getElementById("studyToolsStatus");
@@ -3676,3 +3676,5 @@ if (document.readyState === "loading") {
   });
 })();
 // === MOBILE STUDY TOOLS MICRO SUMMARY V27.4 END ===
+
+
