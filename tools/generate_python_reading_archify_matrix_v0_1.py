@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from audit_python_reading_graph_ir_v0_1 import CASES
-from export_python_reading_archify_v0_1 import build_archify_workflow
+from export_python_reading_archify_layoutsafe_v0_1 import build_archify_workflow
 from python_reading_archify_contract_v0_1 import (
     assert_workflow_ids_archify_safe,
     normalize_workflow_ids,
@@ -82,6 +82,7 @@ def main() -> None:
     print(f"WORKFLOW_COUNT={len(rows)}")
     print(f"MANIFEST={manifest_path}")
     print("ARCHIFY_ID_CONTRACT=PASS")
+    print("ARCHIFY_LAYOUT_POLICY=LAYOUTSAFE_V0_1")
     print("RESULT=PASS_PYTHON_READING_ARCHIFY_MATRIX_GENERATION_V0_1")
 
 
