@@ -12,10 +12,10 @@ from python_reading_archify_layout_v0_1 import (
     SAFE_CORRIDOR_X,
     alternate_left_corridor_route,
     apply_label_role_policy,
-    branch_gap_route,
     compact_node_label,
     compact_node_sublabel,
     cross_lane_corridor_route,
+    outer_left_branch_route,
     outside_right_row_blocked,
 )
 
@@ -69,8 +69,9 @@ def apply_layout_policy(workflow: dict, ir: dict, scope_id: str | None, locale: 
             f"ARCHIFY_LAYOUT_PATH_EDGE_COUNT_MISMATCH={len(path_rows)}:{len(edges)}"
         )
 
-    # Pass 1: semantic label spacing, adjacent false-branch separation, and
-    # blocked long-route correction onto the dedicated right corridor.
+    # Pass 1: semantic label spacing and blocked long-route correction onto a
+    # dedicated right corridor. Keep branch geometry untouched until we know a
+    # long route really occupies the shared lane gap.
     for edge, path_row in zip(edges, path_rows):
         role = role_for_path(path_row)
         apply_label_role_policy(edge, role)
@@ -79,24 +80,8 @@ def apply_layout_policy(workflow: dict, ir: dict, scope_id: str | None, locale: 
         target = node_by_id.get(edge.get("to"))
         if not source or not target:
             continue
-
         source_lane_index = lane_index[source["lane"]]
         target_lane_index = lane_index[target["lane"]]
-
-        if role == "false" and abs(target_lane_index - source_lane_index) == 1:
-            _clear_authored_route(edge)
-            edge.update(
-                branch_gap_route(
-                    source_lane_index,
-                    target_lane_index,
-                    int(source["col"]),
-                    int(target["col"]),
-                )
-            )
-            if edge.get("label"):
-                edge["labelSegment"] = 1
-                edge["labelDy"] = FALSE_BRANCH_LABEL_DY
-            continue
 
         if (
             edge.get("route") == "outside-right"
@@ -122,36 +107,52 @@ def apply_layout_policy(workflow: dict, ir: dict, scope_id: str | None, locale: 
                 edge["labelSegment"] = 1
                 edge["labelDy"] = 10
 
-    # Pass 2: when a corrective right corridor exists, place any other long
-    # outside-right relationship on the opposite outer corridor. This prevents
-    # two long paths from crossing at the target-side gap in showcase mode.
     has_right_corridor = any(
         any(point[0] == SAFE_CORRIDOR_X for point in (edge.get("via") or []))
         for edge in edges
     )
 
+    # Pass 2: only workflows that actually needed the long corrective corridor
+    # receive the extra separation policy. Adjacent false branches detour around
+    # the occupied shared gap; any second long outside route uses the left side.
     if has_right_corridor:
-        for edge in edges:
-            if edge.get("route") != "outside-right":
-                continue
+        for edge, path_row in zip(edges, path_rows):
+            role = role_for_path(path_row)
             source = node_by_id.get(edge.get("from"))
             target = node_by_id.get(edge.get("to"))
             if not source or not target:
                 continue
             source_lane_index = lane_index[source["lane"]]
             target_lane_index = lane_index[target["lane"]]
-            _clear_authored_route(edge)
-            edge.update(
-                alternate_left_corridor_route(
-                    source_lane_index,
-                    target_lane_index,
-                    int(source["col"]),
-                    int(target["col"]),
+
+            if role == "false" and abs(target_lane_index - source_lane_index) == 1:
+                _clear_authored_route(edge)
+                edge.update(
+                    outer_left_branch_route(
+                        source_lane_index,
+                        target_lane_index,
+                        int(source["col"]),
+                        int(target["col"]),
+                    )
                 )
-            )
-            if edge.get("label"):
-                edge["labelSegment"] = 1
-                edge["labelDy"] = 10
+                if edge.get("label"):
+                    edge["labelSegment"] = 2
+                    edge["labelDy"] = FALSE_BRANCH_LABEL_DY
+                continue
+
+            if edge.get("route") == "outside-right":
+                _clear_authored_route(edge)
+                edge.update(
+                    alternate_left_corridor_route(
+                        source_lane_index,
+                        target_lane_index,
+                        int(source["col"]),
+                        int(target["col"]),
+                    )
+                )
+                if edge.get("label"):
+                    edge["labelSegment"] = 1
+                    edge["labelDy"] = 10
 
     return workflow
 
