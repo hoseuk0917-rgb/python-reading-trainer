@@ -6,9 +6,10 @@ const http = require("http");
 const os = require("os");
 const path = require("path");
 const vm = require("vm");
+const { renderPythonExecution } = require("./local_prt_python_archify_execution_renderer_v0_1.js");
 
 const SERVICE = "local-prt-server";
-const VERSION = "v338_reconcile_a1";
+const VERSION = "v338_archify_b2a";
 const RUNTIME_VERSION = "20260623_v335_a2";
 const ROOT = path.resolve(__dirname, "..");
 
@@ -127,12 +128,14 @@ function getHealthPayload() {
       project: false,
       proofy: true,
       pythonAst: true,
-      pythonReconciliation: true
+      pythonReconciliation: true,
+      pythonArchifyExecution: true
     },
     endpoints: [
       "GET /health",
       "POST /analyze-code",
       "POST /analyze-python-structure",
+      "POST /render-python-execution",
       "POST /proofy/explain"
     ],
     privacy: {
@@ -143,7 +146,7 @@ function getHealthPayload() {
       persistOriginalInputByDefault: false,
       pythonProcessLocalOnly: true
     },
-    next: "V338 reconciliation A1 adds a localhost Python AST + rule-analyzer structural endpoint without replacing /analyze-code."
+    next: "V338 Archify B2A adds verified localhost Archify execution rendering over canonical Python reconciliation output."
   };
 }
 
@@ -610,6 +613,43 @@ async function handleAnalyzePythonStructure(req, res) {
   sendJson(req, res, 200, payload);
 }
 
+async function handleRenderPythonExecution(req, res) {
+  const body = await readJsonBody(req);
+  const source = body.source || body.code || body.text || "";
+  const language = body.language || body.requestedLanguage || "auto";
+  const sourceName = body.sourceName || body.source_name || "<memory>.py";
+  const locale = body.locale || "ko";
+
+  if (!String(source).trim()) {
+    sendJson(req, res, 400, {
+      ok: false,
+      service: SERVICE,
+      version: VERSION,
+      error: "missing_source",
+      message: "POST /render-python-execution requires a non-empty source, code, or text field."
+    });
+    return;
+  }
+
+  const structurePayload = await buildPythonStructurePayload(
+    String(source),
+    String(language),
+    String(sourceName)
+  );
+  const payload = await renderPythonExecution({
+    repoRoot: ROOT,
+    structurePayload,
+    locale: String(locale)
+  });
+  payload.service = SERVICE;
+  payload.version = VERSION;
+  payload.route = "POST /render-python-execution";
+  payload.privacy = Object.assign({}, payload.privacy || {}, {
+    localhostOnly: host === "127.0.0.1" || host === "localhost"
+  });
+  sendJson(req, res, 200, payload);
+}
+
 async function handleAnalyzeCode(req, res) {
   const body = await readJsonBody(req);
   const source = body.source || body.code || body.text || "";
@@ -655,6 +695,11 @@ async function handleRequest(req, res) {
     return;
   }
 
+  if (req.method === "POST" && url.pathname === "/render-python-execution") {
+    await handleRenderPythonExecution(req, res);
+    return;
+  }
+
   if (req.method === "POST" && url.pathname === "/proofy/explain") {
     await handleProofyExplain(req, res);
     return;
@@ -671,6 +716,7 @@ async function handleRequest(req, res) {
       "GET /health",
       "POST /analyze-code",
       "POST /analyze-python-structure",
+      "POST /render-python-execution",
       "POST /proofy/explain"
     ]
   });
@@ -710,6 +756,7 @@ server.listen(port, host, () => {
       "http://" + host + ":" + port + "/health",
       "http://" + host + ":" + port + "/analyze-code",
       "http://" + host + ":" + port + "/analyze-python-structure",
+      "http://" + host + ":" + port + "/render-python-execution",
       "http://" + host + ":" + port + "/proofy/explain"
     ]
   }, null, 2));
