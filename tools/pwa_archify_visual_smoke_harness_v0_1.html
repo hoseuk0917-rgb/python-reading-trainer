@@ -81,8 +81,34 @@
     const pathname=doc&&doc.location?String(doc.location.pathname||""):"";
     check("PWA_LOAD", !!loadedDoc, loadedDoc?"pathname="+pathname:"timeout pathname="+pathname, results);
 
-    const codeTab=doc && doc.querySelector('.tab-btn[data-view="code"]');
-    if(codeTab) codeTab.click();
+    const tabHandlerReady=await waitFor(()=>{
+      const tab=doc&&doc.querySelector('.tab-btn[data-view="code"]');
+      return tab&&typeof tab.onclick==="function" ? tab : null;
+    },12000);
+    check("CODE_TAB_HANDLER_READY", !!tabHandlerReady, tabHandlerReady?"onclick=ready":"timeout", results);
+    if(tabHandlerReady) tabHandlerReady.click();
+
+    const codeViewReady=await waitFor(()=>{
+      const tab=doc&&doc.querySelector('.tab-btn[data-view="code"]');
+      const view=doc&&doc.getElementById("codeView");
+      if(tab&&typeof tab.onclick==="function"&&view){
+        const rect=view.getBoundingClientRect();
+        if(!view.classList.contains("active-view")||rect.width<=0||rect.height<=0){
+          tab.click();
+        }
+      }
+      if(!view||!view.classList.contains("active-view")) return null;
+      const rect=view.getBoundingClientRect();
+      return rect.width>0&&rect.height>0 ? view : null;
+    },12000);
+    const codeViewRect=codeViewReady?codeViewReady.getBoundingClientRect():null;
+    check(
+      "CODE_VIEW_VISIBLE",
+      !!codeViewReady,
+      codeViewRect?"width="+Math.round(codeViewRect.width)+" height="+Math.round(codeViewRect.height):"timeout/hidden",
+      results
+    );
+
     const input=doc && doc.getElementById("codeInput");
     const lang=doc && doc.getElementById("codeLangSelect");
     const analyze=doc && doc.getElementById("analyzeCodeBtn");
@@ -113,7 +139,7 @@
 
     if(card){
       const rect=card.getBoundingClientRect();
-      check("CARD_WITHIN_VIEWPORT", rect.left>=-1 && rect.right<=doc.documentElement.clientWidth+1, "left="+Math.round(rect.left)+" right="+Math.round(rect.right)+" viewport="+doc.documentElement.clientWidth, results);
+      check("CARD_WITHIN_VIEWPORT", rect.width>0 && rect.height>0 && rect.left>=-1 && rect.right<=doc.documentElement.clientWidth+1, "left="+Math.round(rect.left)+" right="+Math.round(rect.right)+" width="+Math.round(rect.width)+" viewport="+doc.documentElement.clientWidth, results);
     } else check("CARD_WITHIN_VIEWPORT", false, "card missing", results);
 
     const root=doc && doc.documentElement;
@@ -121,7 +147,7 @@
 
     if(archifyFrame && card){
       const fr=archifyFrame.getBoundingClientRect(); const cr=card.getBoundingClientRect();
-      check("IFRAME_FITS_CARD", fr.width<=cr.width+1 && fr.left>=cr.left-1 && fr.right<=cr.right+1, "iframe="+Math.round(fr.width)+" card="+Math.round(cr.width), results);
+      check("IFRAME_FITS_CARD", fr.width>0 && cr.width>0 && fr.width<=cr.width+1 && fr.left>=cr.left-1 && fr.right<=cr.right+1, "iframe="+Math.round(fr.width)+" card="+Math.round(cr.width), results);
       check("VIEWPORT_HEIGHT_POLICY", Math.abs(fr.height-spec.expectedFrameHeight)<=2, "height="+Math.round(fr.height)+" expected="+spec.expectedFrameHeight, results);
       check("SANDBOX_STATIC", archifyFrame.getAttribute("sandbox")==="", "sandbox=\""+(archifyFrame.getAttribute("sandbox")||"")+"\"", results);
       const srcdoc=String(archifyFrame.srcdoc||"");
