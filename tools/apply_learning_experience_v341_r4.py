@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 UI = ROOT / "src" / "pwa" / "learning_experience_v341.js"
-VERSION = "v341_r4_release2"
+VERSION = "v341_r4_release3"
 MARKER = "LEARNING_EXPERIENCE_V341_R4_STABLE_ACTIONS_RESET"
 
 OLD_CHECKPOINT_BIND = '        button.onclick = function() { openMission(firstPending); };'
@@ -41,6 +41,17 @@ NEW_RESET_BODY = '''    resetProgress = function() {
       }
       return result;
     };'''
+RESET_CONTRACT_PARTS = (
+    "resetProgress = function() {",
+    "const result = original.apply(this, arguments);",
+    "const progress = safeProgress();",
+    "const remainingAttempts = engine() && Array.isArray(cards)",
+    "? engine().attemptedCount(cards, progress)",
+    "if (remainingAttempts === 0) {",
+    "localStorage.removeItem(STORAGE_KEY);",
+    "renderLearningSummary();",
+    "renderPractice();",
+)
 
 DELEGATE_FN = '''
   function bindMissionDelegation() {
@@ -78,11 +89,16 @@ def replace_once(text: str, old: str, new: str, label: str) -> str:
     return text.replace(old, new, 1)
 
 
+def has_reset_contract(text: str) -> bool:
+    return all(part in text for part in RESET_CONTRACT_PARTS)
+
+
 def patch(text: str) -> str:
     out = text
     out = replace_once(out, OLD_CHECKPOINT_BIND, NEW_CHECKPOINT_BIND, "checkpoint mission bind")
     out = replace_once(out, OLD_MODULE_BIND, NEW_MODULE_BIND, "module mission bind")
-    out = replace_once(out, OLD_RESET_BODY, NEW_RESET_BODY, "reset")
+    if not has_reset_contract(out):
+        out = replace_once(out, OLD_RESET_BODY, NEW_RESET_BODY, "reset")
     if "function bindMissionDelegation()" not in out:
         anchor = "\n  function patchAttemptHandlers() {"
         if anchor not in out:
@@ -104,7 +120,6 @@ def audit(text: str) -> list[str]:
     required = [
         NEW_CHECKPOINT_BIND,
         NEW_MODULE_BIND,
-        NEW_RESET_BODY,
         "function bindMissionDelegation()",
         "bindMissionDelegation();",
         MARKER,
@@ -112,6 +127,8 @@ def audit(text: str) -> list[str]:
     for value in required:
         if value not in text:
             errors.append("missing: " + value[:80])
+    if not has_reset_contract(text):
+        errors.append("functional reset contract missing")
     if OLD_RESET_BODY in text:
         errors.append("old null-key reset logic remains")
     if "window.openPracticeMissionV341" in text:
