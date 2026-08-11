@@ -2,6 +2,7 @@
   "use strict";
 
   const VERSION = "v0.1";
+  const BROWSER_MODE = "b3_v0.1";
   const ENDPOINT = "http://127.0.0.1:3377/render-python-execution";
   const STRUCTURE_EVENT = "python-reading-structure-ready";
   const TIMEOUT_MS = 18000;
@@ -17,7 +18,8 @@
     status: "idle",
     usable: false,
     payload: null,
-    error: null
+    error: null,
+    runtime: null
   };
 
   function isEnglish() {
@@ -101,8 +103,8 @@
     const hint = document.createElement("p");
     hint.className = "code-diagram-hint python-execution-lens-hint";
     hint.textContent = text(
-      "Python AST를 구조 기준으로 사용한 실행 흐름입니다. 로컬 Archify를 사용할 수 없으면 기존 Mermaid 분석을 그대로 유지합니다.",
-      "Execution flow projected from Python AST authority. If local Archify is unavailable, the existing Mermaid analysis remains available."
+      "Python AST를 구조 기준으로 사용한 실행 흐름입니다. 브라우저에서 직접 렌더링하며, 불가능한 환경에서는 로컬 Archify 또는 기존 Mermaid로 안전하게 전환합니다.",
+      "Execution flow projected from Python AST authority. It renders in the browser first, with safe local Archify or Mermaid fallback when needed."
     );
 
     const body = document.createElement("div");
@@ -158,7 +160,8 @@
       status: status || "idle",
       usable: false,
       payload: null,
-      error: null
+      error: null,
+      runtime: null
     };
   }
 
@@ -329,12 +332,6 @@
         "A structural interpretation conflict blocks the Archify execution view. Use the existing Mermaid analysis."
       );
     }
-    if (reason === "renderer_unavailable") {
-      return text(
-        "로컬 Archify 렌더러를 사용할 수 없어 기존 Mermaid 분석을 유지합니다.",
-        "Local Archify renderer is unavailable; keeping the existing Mermaid analysis."
-      );
-    }
     if (reason === "render_not_supported") {
       return text(
         "이 코드 범위는 현재 Archify 실행 흐름으로 표시할 수 없어 기존 Mermaid 분석을 유지합니다.",
@@ -342,8 +339,8 @@
       );
     }
     return text(
-      "로컬 실행 흐름 렌더링을 사용할 수 없어 기존 Mermaid 분석을 유지합니다.",
-      "Local execution rendering is unavailable; keeping the existing Mermaid analysis."
+      "브라우저와 로컬 Archify 렌더링을 사용할 수 없어 기존 Mermaid 분석을 유지합니다.",
+      "Browser and local Archify rendering are unavailable; keeping the existing Mermaid analysis."
     );
   }
 
@@ -352,7 +349,8 @@
       status: reason === "semantic_conflict" ? "conflict" : "fallback",
       usable: false,
       payload: null,
-      error: reason || "fallback"
+      error: reason || "fallback",
+      runtime: null
     };
     renderPlaceholder(
       fallbackMessage(reason),
@@ -361,7 +359,7 @@
     );
   }
 
-  function renderReady(payload, validation) {
+  function renderReady(payload, validation, runtime) {
     const card = ensurePanel();
     const body = byId("pythonExecutionLensBody");
     if (!card || !body) {
@@ -384,48 +382,79 @@
       status: "ready",
       usable: true,
       payload: payload,
-      error: null
+      error: null,
+      runtime: runtime || payload.rendererRuntime || "local"
     };
 
+    const runtimeLabel = state.runtime === "browser"
+      ? text("브라우저", "browser")
+      : text("로컬", "local");
     setStatus(
       "ready",
       text(
-        "AST 기준 · Archify · " + validation.sourceIds.length + "개 실행 노드",
-        "AST authority · Archify · " + validation.sourceIds.length + " execution nodes"
+        "AST 기준 · Archify · " + runtimeLabel + " · " + validation.sourceIds.length + "개 실행 노드",
+        "AST authority · Archify · " + runtimeLabel + " · " + validation.sourceIds.length + " execution nodes"
       )
     );
   }
 
-  async function requestRender(structurePayload, source, requestedLanguage, sourceName) {
-    const structureValidation = validateStructureResult(structurePayload);
-    if (!structureValidation.ok) {
-      setFallback(structureValidation.reason);
-      return null;
+  function sourceStillCurrent(serial, sourceSnapshot) {
+    if (serial !== requestSerial) return false;
+    const currentInput = byId("codeInput");
+    return !currentInput || String(currentInput.value || "") === sourceSnapshot;
+  }
+
+  async function tryBrowserRender(structurePayload, serial, sourceSnapshot) {
+    const runtime = window.PythonBrowserRuntime;
+    const renderer = window.PythonArchifyBrowserRenderer;
+    if (
+      !runtime || typeof runtime.project !== "function" ||
+      !renderer || typeof renderer.render !== "function"
+    ) {
+      return { handled: false, reason: "browser_renderer_unavailable" };
     }
 
-    const raw = String(source || "");
-    if (!raw.trim()) {
-      reset();
-      return null;
-    }
+    renderPlaceholder(
+      text(
+        "브라우저에서 AST 구조를 Archify 실행 흐름으로 렌더링하는 중…",
+        "Rendering the AST structure as an Archify execution flow in the browser…"
+      ),
+      "rendering",
+      false
+    );
 
-    cancelActiveRender();
-    clearSettleTimer();
-    const serial = requestSerial;
-    const sourceSnapshot = raw;
+    try {
+      const locale = isEnglish() ? "en" : "ko";
+      const projection = await runtime.project(structurePayload, locale);
+      if (!sourceStillCurrent(serial, sourceSnapshot)) return { handled: true, stale: true };
+      const payload = await renderer.render(projection, structurePayload, locale);
+      if (!sourceStillCurrent(serial, sourceSnapshot)) return { handled: true, stale: true };
+
+      const validation = validateRenderPayload(payload, structurePayload);
+      if (!validation.ok) {
+        return { handled: false, reason: "invalid_browser_render:" + validation.reason };
+      }
+      renderReady(payload, validation, "browser");
+      return { handled: true, payload: payload };
+    } catch (error) {
+      if (!sourceStillCurrent(serial, sourceSnapshot)) return { handled: true, stale: true };
+      return {
+        handled: false,
+        reason: "browser_render_failed",
+        error: error
+      };
+    }
+  }
+
+  async function requestLocalRender(structurePayload, raw, requestedLanguage, sourceName, serial, sourceSnapshot) {
     const controller = typeof AbortController === "function" ? new AbortController() : null;
     activeController = controller;
 
-    const card = ensurePanel();
-    if (card) card.hidden = false;
-    state = {
-      status: "rendering",
-      usable: false,
-      payload: null,
-      error: null
-    };
     renderPlaceholder(
-      text("AST 구조를 Archify 실행 흐름으로 렌더링하는 중…", "Rendering the AST structure as an Archify execution flow…"),
+      text(
+        "브라우저 렌더링을 사용할 수 없어 로컬 Archify로 다시 시도하는 중…",
+        "Browser rendering is unavailable; retrying with local Archify…"
+      ),
       "rendering",
       false
     );
@@ -452,9 +481,7 @@
         signal: controller ? controller.signal : undefined
       });
 
-      if (serial !== requestSerial) return null;
-      const currentInput = byId("codeInput");
-      if (currentInput && String(currentInput.value || "") !== sourceSnapshot) return null;
+      if (!sourceStillCurrent(serial, sourceSnapshot)) return null;
 
       if (!response.ok) {
         let errorCode = "";
@@ -463,10 +490,10 @@
           errorCode = String(errorPayload && errorPayload.error || "");
         } catch (_) {}
 
-        if (response.status === 503 || /runtime_unavailable|checker_unavailable/.test(errorCode)) {
-          setFallback("renderer_unavailable");
-        } else if (response.status === 422) {
+        if (response.status === 422) {
           setFallback("render_not_supported");
+        } else if (response.status === 503 || /runtime_unavailable|checker_unavailable/.test(errorCode)) {
+          setFallback("renderer_unavailable");
         } else {
           setFallback("render_http_" + response.status);
         }
@@ -474,17 +501,17 @@
       }
 
       const payload = await response.json();
-      if (serial !== requestSerial) return null;
+      if (!sourceStillCurrent(serial, sourceSnapshot)) return null;
       const validation = validateRenderPayload(payload, structurePayload);
       if (!validation.ok) {
         setFallback("invalid_render_payload:" + validation.reason);
         return null;
       }
 
-      renderReady(payload, validation);
+      renderReady(payload, validation, "local");
       return payload;
     } catch (error) {
-      if (serial !== requestSerial) return null;
+      if (!sourceStillCurrent(serial, sourceSnapshot)) return null;
       const reason = error && error.name === "AbortError"
         ? "render_timeout_or_abort"
         : "renderer_unavailable";
@@ -494,6 +521,48 @@
       if (timer !== null) window.clearTimeout(timer);
       if (activeController === controller) activeController = null;
     }
+  }
+
+  async function requestRender(structurePayload, source, requestedLanguage, sourceName) {
+    const structureValidation = validateStructureResult(structurePayload);
+    if (!structureValidation.ok) {
+      setFallback(structureValidation.reason);
+      return null;
+    }
+
+    const raw = String(source || "");
+    if (!raw.trim()) {
+      reset();
+      return null;
+    }
+
+    cancelActiveRender();
+    clearSettleTimer();
+    const serial = requestSerial;
+    const sourceSnapshot = raw;
+
+    const card = ensurePanel();
+    if (card) card.hidden = false;
+    state = {
+      status: "rendering",
+      usable: false,
+      payload: null,
+      error: null,
+      runtime: null
+    };
+
+    const browser = await tryBrowserRender(structurePayload, serial, sourceSnapshot);
+    if (!sourceStillCurrent(serial, sourceSnapshot)) return null;
+    if (browser.handled) return browser.payload || null;
+
+    return requestLocalRender(
+      structurePayload,
+      raw,
+      requestedLanguage,
+      sourceName,
+      serial,
+      sourceSnapshot
+    );
   }
 
   function currentSourceContext() {
@@ -595,7 +664,8 @@
       status: "checking",
       usable: false,
       payload: null,
-      error: null
+      error: null,
+      runtime: null
     };
 
     settleTimer = window.setTimeout(function() {
@@ -643,7 +713,9 @@
 
   const api = {
     version: VERSION,
+    browserMode: BROWSER_MODE,
     endpoint: ENDPOINT,
+    preferredRuntime: "browser",
     bind: bind,
     reset: reset,
     requestRender: requestRender,
@@ -656,7 +728,8 @@
         status: state.status,
         usable: state.usable,
         payload: state.payload,
-        error: state.error
+        error: state.error,
+        runtime: state.runtime
       };
     }
   };
