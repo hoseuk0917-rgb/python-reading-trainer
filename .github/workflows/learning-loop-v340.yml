@@ -1,0 +1,79 @@
+name: Learning loop V340 gate
+
+on:
+  push:
+    branches:
+      - feat/learning-loop-v340
+
+permissions:
+  contents: write
+
+jobs:
+  learning-loop-v340:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout learning branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: feat/learning-loop-v340
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Apply V340 integration patch
+        run: python tools/apply_learning_loop_v340.py --apply
+
+      - name: Confirm V340 patch is idempotent
+        run: python tools/apply_learning_loop_v340.py --check
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check src/pwa/learning_engine_v340.js
+          node --check src/pwa/learning_loop_v340.js
+
+      - name: Run V340 learning engine audit
+        run: node tools/audit_learning_loop_v340.js
+
+      - name: Check script integration order
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('src/pwa/index.html').read_text(encoding='utf-8')
+          app = text.index('./app.js?')
+          engine = text.index('./learning_engine_v340.js?')
+          loop = text.index('./learning_loop_v340.js?')
+          assert app < engine < loop, (app, engine, loop)
+          print('V340_SCRIPT_ORDER=PASS')
+          PY
+
+      - name: Run existing lesson validation
+        run: python tools/validate_lessons.py
+
+      - name: Run existing content quality gates
+        run: |
+          python tools/content_quality_final_pass_v339.py --check
+          python tools/content_quality_final_pass_v339_r2.py --check
+          python tools/content_quality_final_pass_v339_r4.py --check
+          node tools/audit_content_semantic_alignment_v339_r4.js
+
+      - name: Check patch integrity
+        run: git diff --check
+
+      - name: Commit integration patch if needed
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "V340_INTEGRATION_ALREADY_CLEAN=True"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pwa/index.html src/pwa/learning_engine_v340.js
+          git commit -m "Integrate V340 learning loop into PWA"
+          git push origin HEAD:feat/learning-loop-v340
+          echo "V340_INTEGRATION_COMMIT_PUSHED=True"
