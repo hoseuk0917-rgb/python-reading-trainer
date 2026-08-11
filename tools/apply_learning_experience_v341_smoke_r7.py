@@ -21,7 +21,7 @@ NEW_CHECKPOINT = '''    doc = frame.contentDocument;
     win = frame.contentWindow;
     const checkpointButton = await waitFor(() => {
       const currentDoc = frame.contentDocument;
-      const button = currentDoc && currentDoc.querySelector(".practice-v341-primary[data-mission-checkpoint-v341=\"1\"]");
+      const button = currentDoc && currentDoc.querySelector(`.practice-v341-primary[data-mission-checkpoint-v341="1"]`);
       return button || null;
     }, 4000);
     doc = frame.contentDocument;
@@ -43,12 +43,12 @@ NEW_REGRESSION = '''    doc = frame.contentDocument;
     const regressionOpen = await waitFor(() => {
       const currentDoc = frame.contentDocument;
       const item = currentDoc ? moduleByTitle(currentDoc, "회귀 테스트") : null;
-      const button = item && item.querySelector("button[data-mission-checkpoint-v341=\"2\"]");
+      const button = item && item.querySelector(`button[data-mission-checkpoint-v341="2"]`);
       return item && !item.classList.contains("locked") && button && !button.disabled ? item : null;
     }, 4000);
     doc = frame.contentDocument;
     win = frame.contentWindow;
-    const regressionButton = regressionOpen && regressionOpen.querySelector("button[data-mission-checkpoint-v341=\"2\"]");
+    const regressionButton = regressionOpen && regressionOpen.querySelector(`button[data-mission-checkpoint-v341="2"]`);
     check("REGRESSION_MODULE_OPENS_AT_60", !!regressionOpen && !!regressionButton, regressionOpen ? regressionOpen.className : "missing");
     if (regressionButton) regressionButton.click();'''
 
@@ -81,6 +81,8 @@ def audit(text: str) -> list[str]:
         'checkpointButton.dataset.missionCheckpointV341 === "1"',
         "const regressionButton = regressionOpen",
         "if (regressionButton) regressionButton.click();",
+        "querySelector(`.practice-v341-primary[data-mission-checkpoint-v341=\"1\"]`)",
+        "querySelector(`button[data-mission-checkpoint-v341=\"2\"]`)",
         MARKER,
     ]
     for value in required:
