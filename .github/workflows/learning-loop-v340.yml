@@ -24,11 +24,15 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Apply V340 integration patch
-        run: python tools/apply_learning_loop_v340.py --apply
+      - name: Apply V340 integration patches
+        run: |
+          python tools/apply_learning_loop_v340.py --apply
+          python tools/apply_learning_loop_v340_r2.py --apply
 
-      - name: Confirm V340 patch is idempotent
-        run: python tools/apply_learning_loop_v340.py --check
+      - name: Confirm V340 patches are idempotent
+        run: |
+          python tools/apply_learning_loop_v340.py --check
+          python tools/apply_learning_loop_v340_r2.py --check
 
       - name: Check JavaScript syntax
         run: |
@@ -83,7 +87,7 @@ jobs:
             sleep 0.1
           done
 
-          curl -fsS http://127.0.0.1:3377/tools/learning_loop_v340_browser_smoke_harness.html > /dev/null
+          curl -fsS http://127.0.0.1:3377/tools/learning_loop_v340_browser_case.html > /dev/null
           node tools/run_learning_loop_v340_browser_smoke.js
 
       - name: Commit integration patch if needed
@@ -95,7 +99,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/pwa/index.html src/pwa/learning_engine_v340.js
-          git commit -m "Integrate V340 learning loop into PWA"
+          git add src/pwa/index.html src/pwa/learning_engine_v340.js src/pwa/learning_loop_v340.js
+          git commit -m "Integrate V340 learning loop runtime fixes"
           git push origin HEAD:feat/learning-loop-v340
           echo "V340_INTEGRATION_COMMIT_PUSHED=True"
