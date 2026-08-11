@@ -1,5 +1,5 @@
-﻿// === CACHE BUST START ===
-const APP_DATA_VERSION = "20260811_v338_a1";
+// === CACHE BUST START ===
+const APP_DATA_VERSION = "20260812_v339_quality1";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
   if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
@@ -299,6 +299,61 @@ const conceptInfo = {
   }
 };
 
+// === CONTENT_QUALITY_FINAL_PASS_V339 BEGIN ===
+Object.assign(conceptInfo, {
+  "comment": {definition: "주석은 코드에 설명을 남기는 글이다. Python에서 # 뒤의 내용은 실행되지 않으므로 출력이나 계산 결과를 직접 바꾸지 않는다.", example: "# 설명\nprint(\"hello\")"},
+  "output": {definition: "출력은 프로그램이 계산한 결과를 화면이나 터미널에 보여 주는 것이다. Python에서는 보통 print()로 확인한다.", example: "print(\"hello\")"},
+  "execution_order": {definition: "Python 코드는 보통 위에서 아래로 한 줄씩 실행된다. 값을 바꾸는 줄이 있다면 마지막 출력 전에 어떤 값이 되었는지 순서대로 따라간다.", example: "x = 1\nx = 2\nprint(x)"},
+  "assignment": {definition: "대입은 오른쪽에서 만든 값을 왼쪽 이름에 저장하는 동작이다. x = 3은 x라는 이름으로 3을 다시 사용할 수 있게 한다.", example: "x = 3\nprint(x)"},
+  "str": {definition: "문자열(str)은 글자를 다루는 값이다. 따옴표로 감싼 \"3\"은 숫자처럼 보여도 문자열이라서 정수 3과 다르게 동작한다.", example: "text = \"3\"\nprint(text)"},
+  "int": {definition: "정수(int)는 1, 2, 100처럼 소수점이 없는 숫자다. int(\"3\")처럼 숫자 모양의 문자열을 정수로 바꿀 수도 있다.", example: "number = int(\"3\")\nprint(number + 2)"},
+  "float": {definition: "실수(float)는 3.5처럼 소수점이 있는 숫자를 다룬다. float(\"3.5\")처럼 문자열을 실수로 바꿀 수 있다.", example: "value = float(\"3.5\")"},
+  "type": {definition: "자료형(type)은 값의 종류다. 3은 int, \"3\"은 str처럼 겉보기와 실제 종류가 다를 수 있다.", example: "print(type(\"3\"))"},
+  "bool": {definition: "bool은 True 또는 False 두 값으로 참과 거짓을 나타낸다. 조건문은 이 판단을 이용해 실행할 코드를 고른다.", example: "active = True"},
+  "comparison": {definition: "비교식은 두 값을 비교해 True 또는 False를 만든다. ==, !=, <, >, <=, >= 같은 기호를 사용한다.", example: "print(3 < 5)"},
+  "operator": {definition: "연산자는 값으로 계산이나 비교를 하는 기호다. +는 숫자에서는 덧셈, 문자열에서는 이어 붙이기로 동작할 수 있다.", example: "print(2 + 3)"},
+  "else": {definition: "else는 앞의 if 조건이 거짓일 때 실행할 코드를 적는 부분이다.", example: "if ready:\n    print(\"go\")\nelse:\n    print(\"wait\")"},
+  "while": {definition: "while은 조건이 참인 동안 같은 코드 묶음을 반복한다. 반복 안에서 조건에 쓰는 값이 어떻게 바뀌는지 확인해야 한다.", example: "i = 0\nwhile i < 3:\n    i += 1"},
+  "range": {definition: "range()는 반복할 숫자의 흐름을 만든다. range(3)은 0, 1, 2를 차례로 만든다.", example: "for i in range(3):\n    print(i)"},
+  "break": {definition: "break는 현재 반복문을 바로 끝낸다. 반복 뒤의 코드는 계속 실행된다.", example: "for x in items:\n    if x == target:\n        break"},
+  "continue": {definition: "continue는 현재 반복의 남은 줄을 건너뛰고 다음 반복으로 넘어간다.", example: "for x in items:\n    if not x:\n        continue"},
+  "tuple": {definition: "tuple은 여러 값을 순서대로 묶는 자료형이다. list와 비슷하지만 만든 뒤 항목을 바꿀 수 없다.", example: "point = (10, 20)"},
+  "index": {definition: "인덱스는 순서가 있는 자료에서 항목의 위치를 나타내는 번호다. Python의 첫 번째 위치는 0이다.", example: "items = [\"a\", \"b\"]\nprint(items[0])"},
+  "key": {definition: "dict의 key는 값을 찾기 위한 이름표다. data[\"name\"]에서 \"name\"이 key다.", example: "data = {\"name\": \"Mina\"}"},
+  "value": {definition: "value는 변수나 자료구조에 실제로 들어 있는 값이다. dict에서는 key를 이용해 연결된 value를 꺼낸다.", example: "data = {\"name\": \"Mina\"}"},
+  "function": {definition: "함수는 여러 줄의 작업을 이름 하나로 묶어 다시 사용할 수 있게 한 코드다. 함수를 호출할 때 안의 코드가 실행된다.", example: "def greet():\n    print(\"hi\")\ngreet()"},
+  "parameter": {definition: "매개변수(parameter)는 함수를 만들 때 입력값을 받을 자리에 붙이는 이름이다.", example: "def greet(name):\n    print(name)"},
+  "argument": {definition: "인자(argument)는 함수를 호출할 때 실제로 넘기는 값이다.", example: "greet(\"Mina\")"},
+  "scope": {definition: "스코프는 변수 이름을 사용할 수 있는 범위다. 함수 안에서 만든 변수는 보통 그 함수 안에서 사용한다.", example: "def f():\n    x = 1"},
+  "import": {definition: "import는 다른 모듈에 있는 기능을 현재 코드에서 사용할 수 있게 불러오는 문장이다.", example: "import json"},
+  "module": {definition: "모듈은 관련 기능을 모아 둔 Python 파일이나 라이브러리 단위다. import로 불러와 사용한다.", example: "import json"},
+  "file": {definition: "파일은 데이터를 저장해 두는 단위다. 코드를 읽을 때는 어떤 파일을 읽는지, 쓰는지, 닫는지를 확인한다.", example: "with open(\"a.txt\") as f:\n    text = f.read()"},
+  "path": {definition: "경로(path)는 파일이나 폴더가 어디에 있는지 나타내는 주소다.", example: "path = \"data/input.txt\""},
+  "exception": {definition: "예외는 코드를 실행하다 정상적으로 계속할 수 없는 상황을 나타내는 오류 신호다. try/except로 일부 예외를 처리할 수 있다.", example: "try:\n    int(\"x\")\nexcept ValueError:\n    print(\"bad\")"},
+  "json": {definition: "JSON은 데이터를 글자 형태로 저장하거나 주고받을 때 많이 쓰는 형식이다. { }는 객체, [ ]는 목록을 나타낸다.", example: "{\"name\":\"Mina\"}"},
+  "csv": {definition: "CSV는 값을 쉼표로 나누어 표처럼 저장하는 텍스트 파일 형식이다. 한 줄이 보통 한 행을 뜻한다.", example: "name,score\nMina,90"},
+  "input": {definition: "input()은 사용자가 입력한 내용을 문자열로 돌려준다. 숫자 계산을 하려면 필요에 따라 int()나 float()로 바꾼다.", example: "age = int(input())"},
+  "indentation": {definition: "들여쓰기는 줄 앞의 공백이다. Python에서는 if, for, 함수 안에 어떤 줄이 속하는지 들여쓰기로 표시한다.", example: "if ready:\n    print(\"go\")"},
+  "class": {definition: "class는 관련된 값과 기능을 한 종류로 묶는 설계도다. 그 설계도로 실제 객체를 만들 수 있다.", example: "class Dog:\n    pass"},
+  "object": {definition: "객체(object)는 값과 기능을 함께 가진 실제 데이터다. class로 만든 값도 객체다.", example: "dog = Dog()"},
+  "method": {definition: "메서드는 객체에 연결되어 그 객체의 값을 사용하거나 바꾸는 함수다.", example: "items.append(\"a\")"},
+  "self": {definition: "self는 메서드 안에서 지금 사용 중인 객체 자신을 가리키는 관례적인 이름이다.", example: "def show(self):\n    print(self.name)"},
+  "None": {definition: "None은 '값이 아직 없거나 특별히 돌려줄 값이 없음'을 나타내는 Python의 특별한 값이다.", example: "result = None"},
+  "mutable": {definition: "mutable은 만든 뒤에도 내용이 바뀔 수 있다는 뜻이다. list와 dict는 대표적인 mutable 자료형이다.", example: "items = []\nitems.append(1)"},
+  "print": {definition: "print()는 괄호 안의 값을 화면이나 터미널에 보여 주는 함수다. 변수 이름을 넣으면 그 변수에 들어 있는 값이 출력된다.", example: "name = \"Mina\"\nprint(name)"},
+  "variable": {definition: "변수는 값을 나중에 다시 쓰기 위해 붙여 둔 이름이다. x = 3이라고 쓰면 이후에 x를 사용해 3을 다시 꺼내 쓸 수 있다.", example: "x = 3\nprint(x)"},
+  "list": {definition: "list는 여러 값을 순서대로 담는 자료다. 첫 번째 항목의 위치 번호는 0이고 append()로 값을 뒤에 추가할 수 있다.", example: "items = [\"a\", \"b\"]\nprint(items[0])"},
+  "dict": {definition: "dict는 key라는 이름표와 value라는 값을 짝지어 저장하는 자료다. key를 사용해 원하는 값을 찾는다.", example: "data = {\"name\": \"Mina\"}\nprint(data[\"name\"])"},
+  "for": {definition: "for는 여러 항목을 하나씩 꺼내 같은 코드 묶음을 반복한다. 반복할 때마다 현재 항목이 변수에 들어간다.", example: "for item in [\"a\", \"b\"]:\n    print(item)"},
+  "if": {definition: "if는 조건이 True일 때만 들여쓴 코드 묶음을 실행한다. 조건이 False면 그 부분을 건너뛴다.", example: "if score >= 60:\n    print(\"pass\")"},
+  "def": {definition: "def는 함수에 이름을 붙여 만드는 문장이다. 함수 안의 코드는 함수를 실제로 호출할 때 실행된다.", example: "def greet():\n    print(\"hi\")"},
+  "return": {definition: "return은 함수 실행을 끝내고 호출한 곳으로 값을 돌려준다.", example: "def add(a, b):\n    return a + b"},
+  "open": {definition: "open()은 파일을 읽거나 쓰기 위해 여는 함수다. 어떤 파일을 어떤 방식으로 여는지 인자를 확인한다.", example: "open(\"data.txt\", \"r\")"},
+  "with": {definition: "with는 파일처럼 사용 후 정리가 필요한 대상을 안전하게 쓰는 문법이다. with open(...) 블록이 끝나면 파일이 자동으로 닫힌다.", example: "with open(\"a.txt\") as f:\n    text = f.read()"},
+  "try_except": {definition: "try/except는 실행 중 특정 오류가 나면 프로그램을 바로 끝내지 않고 정해 둔 다른 코드를 실행하게 한다.", example: "try:\n    int(text)\nexcept ValueError:\n    print(\"bad\")"}
+});
+// === CONTENT_QUALITY_FINAL_PASS_V339 END ===
+
 function loadProgress() {
   const raw = localStorage.getItem(progressKey);
   if (!raw) {
@@ -364,21 +419,10 @@ function getCardConceptsV306(card) {
 
 function getPrimaryConceptV306(card, sourceCard) {
   const concepts = getCardConceptsV306(card);
-
   for (let i = 0; i < concepts.length; i += 1) {
-    if (conceptInfo[concepts[i]]) {
-      return concepts[i];
-    }
+    if (conceptInfo[concepts[i]]) return concepts[i];
   }
-
-  const related = Array.isArray(sourceCard && sourceCard.related_concepts) ? sourceCard.related_concepts : [];
-  for (let j = 0; j < related.length; j += 1) {
-    if (conceptInfo[related[j]]) {
-      return related[j];
-    }
-  }
-
-  return concepts[0] || (related[0] || "");
+  return concepts[0] || "";
 }
 
 function pickConceptIntroSideCardV306(card) {
@@ -426,22 +470,23 @@ function buildConceptIntroV306(card) {
   const sourceCard = pickConceptIntroSideCardV306(card);
   const primaryConcept = getPrimaryConceptV306(card, sourceCard);
   const concept = primaryConcept && conceptInfo[primaryConcept] ? conceptInfo[primaryConcept] : null;
-
   const conceptText = concept ? trimConceptIntroTextV306(concept.definition, 220) : "";
-  const sideText = buildSafeSideCardIntroTextV306(sourceCard);
-
-  const body = conceptText || sideText;
-  if (!body) {
-    return null;
+  if (conceptText) {
+    return {sourceSideCardId:"", concept:primaryConcept || "", title:primaryConcept ? primaryConcept + " 기본 개념" : "개념 안내", body:conceptText, sourceTitle:""};
   }
-
-  return {
-    sourceSideCardId: sourceCard && sourceCard.id ? sourceCard.id : "",
-    concept: primaryConcept || "",
-    title: primaryConcept ? primaryConcept + " 기본 개념" : (sourceCard && sourceCard.title ? sourceCard.title : "개념 안내"),
-    body: body,
-    sourceTitle: sourceCard && sourceCard.title ? sourceCard.title : ""
-  };
+  const concepts = getCardConceptsV306(card);
+  const related = Array.isArray(sourceCard && sourceCard.related_concepts) ? sourceCard.related_concepts.filter(Boolean) : [];
+  const meaningful = related.some(function(value) {
+    const key = String(value || "").toLowerCase();
+    return concepts.indexOf(value) >= 0 && !["python","code","programming","basic"].includes(key);
+  });
+  if (sourceCard && meaningful) {
+    const sideText = buildSafeSideCardIntroTextV306(sourceCard);
+    if (sideText) return {sourceSideCardId:sourceCard.id || "", concept:primaryConcept || "", title:sourceCard.title || "개념 안내", body:sideText, sourceTitle:sourceCard.title || ""};
+  }
+  const goal = trimConceptIntroTextV306(card && card.reading_goal ? card.reading_goal : "", 200);
+  if (!goal) return null;
+  return {sourceSideCardId:"", concept:primaryConcept || "", title:primaryConcept ? primaryConcept + " 읽기 포인트" : "이 문제의 읽기 포인트", body:goal, sourceTitle:""};
 }
 
 function renderConceptIntroV306(card) {
@@ -540,32 +585,20 @@ function markSideSeen(cardId) {
 function getBonusSideCards(card, alreadyIds) {
   const seen = loadSideSeen();
   const concepts = card.concepts || [];
-
+  const generic = new Set(["python","code","coding","programming","basic","language","syntax"]);
   const pool = sideCards.filter(function(sc) {
-    if (alreadyIds.includes(sc.id)) {
-      return false;
-    }
-
-    const related = sc.related_concepts || [];
-    const hasOverlap = related.some(function(concept) {
-      return concepts.includes(concept);
+    if (!sc || !sc.id || alreadyIds.includes(sc.id)) return false;
+    const related = Array.isArray(sc.related_concepts) ? sc.related_concepts : [];
+    const overlap = related.some(function(concept) {
+      return concepts.includes(concept) && !generic.has(String(concept || "").toLowerCase());
     });
-
-    const isGeneral = ["language", "cs_basic", "ai_basic", "platform_basic", "web_app_basic", "ai_architecture", "data_system", "dev_environment"].includes(sc.type);
-    const seenCount = seen[sc.id] || 0;
-
-    return seenCount < 3 && (hasOverlap || isGeneral);
+    return overlap && (seen[sc.id] || 0) < 3;
   });
-
-  pool.sort(function(a, b) {
-    const ac = seen[a.id] || 0;
-    const bc = seen[b.id] || 0;
-    if (ac !== bc) {
-      return ac - bc;
-    }
+  pool.sort(function(a,b) {
+    const ac = seen[a.id] || 0, bc = seen[b.id] || 0;
+    if (ac !== bc) return ac - bc;
     return a.id.localeCompare(b.id);
   });
-
   return pool.slice(0, 2);
 }
 
