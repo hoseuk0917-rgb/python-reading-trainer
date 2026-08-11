@@ -18,6 +18,7 @@ SAFE_CORRIDOR_X = LANE_X + LANE_W + 24
 SAFE_LEFT_CORRIDOR_X = LANE_X - 12
 GAP_CORRIDOR_OFFSET = 4
 ALT_GAP_CORRIDOR_OFFSET = LANE_GAP - GAP_CORRIDOR_OFFSET
+OUTER_APPROACH_OFFSET = 8
 
 LABEL_DX_BY_ROLE = {
     "loop_exit": 24,
@@ -25,7 +26,7 @@ LABEL_DX_BY_ROLE = {
 LABEL_DY_BY_ROLE = {
     "continue": 20,
 }
-FALSE_BRANCH_LABEL_DY = 20
+FALSE_BRANCH_LABEL_DY = 10
 
 _FULLWIDTH_RANGES = (
     (0x1100, 0x115F),
@@ -201,12 +202,7 @@ def alternate_left_corridor_route(
     source_col: int,
     target_col: int,
 ) -> dict:
-    """Separate a second long route onto the opposite outer corridor.
-
-    The route uses the opposite side of each 20px lane gap from the corrective
-    right corridor so showcase mode sees neither a shared corridor nor a proper
-    crossing between the two long relationships.
-    """
+    """Separate a second long route onto the opposite outer corridor."""
     source_x = COL_XS[source_col]
     target_x = COL_XS[target_col]
 
@@ -238,34 +234,52 @@ def alternate_left_corridor_route(
     }
 
 
-def branch_gap_route(
+def outer_left_branch_route(
     source_lane_index: int,
     target_lane_index: int,
     source_col: int,
     target_col: int,
 ) -> dict:
-    """Route an adjacent branch through the gap band opposite long corridors."""
+    """Detour an adjacent branch around a long relationship occupying their shared gap.
+
+    The branch first exits on the side of the source lane opposite the target,
+    travels on the clear left exterior, then approaches the target from its
+    far side. It therefore never has to cross the long route's horizontal band
+    in the shared source/target lane gap.
+    """
     if abs(target_lane_index - source_lane_index) != 1:
         raise ValueError(
-            f"ARCHIFY_BRANCH_GAP_REQUIRES_ADJACENT_LANES={source_lane_index}:{target_lane_index}"
+            f"ARCHIFY_OUTER_BRANCH_REQUIRES_ADJACENT_LANES={source_lane_index}:{target_lane_index}"
         )
 
     source_x = COL_XS[source_col]
     target_x = COL_XS[target_col]
 
     if target_lane_index > source_lane_index:
-        gap_y = lane_top(target_lane_index) - GAP_CORRIDOR_OFFSET
+        source_outer_y = lane_top(source_lane_index) - GAP_CORRIDOR_OFFSET
+        target_outer_y = lane_bottom(target_lane_index) + OUTER_APPROACH_OFFSET
         return {
-            "fromSide": "bottom",
-            "toSide": "top",
-            "via": [[source_x, gap_y], [target_x, gap_y]],
+            "fromSide": "top",
+            "toSide": "bottom",
+            "via": [
+                [source_x, source_outer_y],
+                [SAFE_LEFT_CORRIDOR_X, source_outer_y],
+                [SAFE_LEFT_CORRIDOR_X, target_outer_y],
+                [target_x, target_outer_y],
+            ],
         }
 
-    gap_y = lane_top(source_lane_index) - GAP_CORRIDOR_OFFSET
+    source_outer_y = lane_bottom(source_lane_index) + GAP_CORRIDOR_OFFSET
+    target_outer_y = lane_top(target_lane_index) - OUTER_APPROACH_OFFSET
     return {
-        "fromSide": "top",
-        "toSide": "bottom",
-        "via": [[source_x, gap_y], [target_x, gap_y]],
+        "fromSide": "bottom",
+        "toSide": "top",
+        "via": [
+            [source_x, source_outer_y],
+            [SAFE_LEFT_CORRIDOR_X, source_outer_y],
+            [SAFE_LEFT_CORRIDOR_X, target_outer_y],
+            [target_x, target_outer_y],
+        ],
     }
 
 
