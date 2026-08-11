@@ -5,15 +5,21 @@ import json
 import sys
 from typing import Any
 
-from export_python_reading_archify_layoutsafe_v0_1 import build_archify_workflow
-from export_python_reading_archify_v0_1 import hidden
+from export_python_reading_archify_layoutsafe_v0_1 import (
+    apply_layout_policy,
+    build_archify_workflow as build_layoutsafe_archify_workflow,
+)
+from export_python_reading_archify_v0_1 import (
+    build_archify_workflow as build_base_archify_workflow,
+    hidden,
+)
 from python_reading_archify_contract_v0_1 import (
     archify_safe_id,
     assert_workflow_ids_archify_safe,
     normalize_workflow_ids,
 )
 
-VERSION = "v0.3"
+VERSION = "v0.4"
 
 
 def load_envelope() -> dict[str, Any]:
@@ -66,6 +72,63 @@ def prepare_renderer_ir(
     return renderer_ir, collapsed
 
 
+def build_canonical_workflow_preserving_r7_layout(
+    source_ir: dict[str, Any],
+    renderer_ir: dict[str, Any],
+    *,
+    scope_id: str | None,
+    locale: str,
+    output_name: str,
+) -> tuple[dict[str, Any], dict[str, int]]:
+    """Reuse the frozen R7 column allocation while hiding non-canonical helpers.
+
+    R7 was validated with the original Graph IR, where renderer-visible helper
+    nodes such as ``loop_source`` can consume a column. If those helpers are
+    collapsed before layout, later canonical nodes shift left and can violate
+    Archify's minimum node/edge spacing. Build one layout-safe reference from the
+    untouched IR, then project the canonical-only renderer copy while preserving
+    each surviving node's R7 column. No source IR or global R7 geometry is changed.
+    """
+
+    reference = build_layoutsafe_archify_workflow(
+        source_ir,
+        scope_id=scope_id,
+        locale=locale,
+        output_name=output_name,
+    )
+    reference_columns = {
+        str(node.get("id") or ""): int(node.get("col"))
+        for node in (reference.get("nodes") or [])
+        if str(node.get("id") or "")
+    }
+
+    workflow = build_base_archify_workflow(
+        renderer_ir,
+        scope_id=scope_id,
+        locale=locale,
+        output_name=output_name,
+    )
+
+    preserved_columns: dict[str, int] = {}
+    for node in workflow.get("nodes") or []:
+        node_id = str(node.get("id") or "")
+        if node_id not in reference_columns:
+            raise ValueError(f"ARCHIFY_R7_LAYOUT_REFERENCE_NODE_MISSING={node_id}")
+        node["col"] = reference_columns[node_id]
+        preserved_columns[node_id] = reference_columns[node_id]
+
+    workflow = apply_layout_policy(workflow, renderer_ir, scope_id, locale)
+
+    actual_columns = {
+        str(node.get("id") or ""): int(node.get("col"))
+        for node in (workflow.get("nodes") or [])
+    }
+    if actual_columns != preserved_columns:
+        raise ValueError("ARCHIFY_R7_LAYOUT_COLUMN_PRESERVATION_FAILED")
+
+    return workflow, preserved_columns
+
+
 def main() -> None:
     envelope = load_envelope()
     reconciliation = envelope.get("reconciliation") or envelope.get("structure") or {}
@@ -103,7 +166,8 @@ def main() -> None:
 
     renderer_ir, collapsed_auxiliary_node_ids = prepare_renderer_ir(ir, projection_ids)
 
-    workflow = build_archify_workflow(
+    workflow, r7_layout_columns = build_canonical_workflow_preserving_r7_layout(
+        ir,
         renderer_ir,
         scope_id=scope_id,
         locale=locale,
@@ -132,6 +196,9 @@ def main() -> None:
         raise ValueError(
             "collapsed auxiliary nodes leaked into workflow: " + ",".join(leaked_auxiliary)
         )
+
+    if set(r7_layout_columns) != set(workflow_source_node_ids):
+        raise ValueError("R7 layout column map does not match workflow source nodes")
 
     workflow_id_map = [
         {
@@ -166,6 +233,7 @@ def main() -> None:
         "workflow_source_node_ids": workflow_source_node_ids,
         "workflow_node_ids": workflow_node_ids,
         "workflow_id_map": workflow_id_map,
+        "r7_layout_columns": r7_layout_columns,
         "collapsed_auxiliary_node_ids": collapsed_auxiliary_node_ids,
         "workflow": workflow,
     }
