@@ -1036,7 +1036,12 @@ function renderSideCards(card, excludedIntroSideCardIdV306) {
   const directIds = rawDirectIds.filter(function(id) {
     return !excludedIntroIdsV306.has(id);
   });
-  const directCards = directIds.map(getSideCardById).filter(Boolean);
+  const directCards = directIds.map(getSideCardById).filter(Boolean).filter(function(sc) {
+    const semantics = typeof window !== "undefined" ? window.ContentQualitySemantics : null;
+    return semantics && typeof semantics.isSideCardRelevant === "function"
+      ? semantics.isSideCardRelevant(card || {}, sc)
+      : false;
+  });
   const bonusCards = getBonusSideCards(card, rawDirectIds.concat(Array.from(excludedIntroIdsV306)));
   renderMobileSideTeaser(card, directCards, bonusCards);
 
