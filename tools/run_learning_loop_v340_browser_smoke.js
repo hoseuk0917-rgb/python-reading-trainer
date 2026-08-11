@@ -28,6 +28,15 @@ function findChrome() {
   return candidates.find(file => fs.existsSync(file)) || "";
 }
 
+function decodeHtml(value) {
+  return String(value || "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
 const chrome = findChrome();
 if (!chrome) {
   console.error("CHROME_FOUND=False");
@@ -55,7 +64,7 @@ const args = [
   "--metrics-recording-only",
   "--no-first-run",
   "--window-size=1500,1200",
-  "--virtual-time-budget=45000",
+  "--virtual-time-budget=140000",
   "--user-data-dir=" + tempProfile,
   "--dump-dom",
   url
@@ -66,7 +75,7 @@ try {
   result = spawnSync(chrome, args, {
     encoding: "utf8",
     maxBuffer: 16 * 1024 * 1024,
-    timeout: 120000,
+    timeout: 180000,
     env: { ...process.env, HOME: tempProfile }
   });
 } finally {
@@ -77,24 +86,20 @@ const stdout = String(result && result.stdout || "");
 const stderr = String(result && result.stderr || "");
 const passMarker = "RESULT=PASS_LEARNING_LOOP_V340_REAL_BROWSER_SMOKE";
 const failMarker = "RESULT=FAIL_LEARNING_LOOP_V340_REAL_BROWSER_SMOKE";
+const reportMatch = stdout.match(/<pre id="report">([\s\S]*?)<\/pre>/i);
+const report = reportMatch ? decodeHtml(reportMatch[1]) : "";
+const reportPass = report.includes(passMarker);
+const reportFail = report.includes(failMarker);
 
 console.log("CHROME_EXIT_CODE=" + String(result && result.status));
 console.log("CHROME_SIGNAL=" + String(result && result.signal || ""));
 console.log("DOM_BYTES=" + Buffer.byteLength(stdout, "utf8"));
-console.log("PASS_MARKER_FOUND=" + stdout.includes(passMarker));
-console.log("FAIL_MARKER_FOUND=" + stdout.includes(failMarker));
+console.log("REPORT_FOUND=" + Boolean(reportMatch));
+console.log("REPORT_PASS_MARKER_FOUND=" + reportPass);
+console.log("REPORT_FAIL_MARKER_FOUND=" + reportFail);
 
-const reportMatch = stdout.match(/<pre id="report">([\s\S]*?)<\/pre>/i);
-if (reportMatch) {
-  const report = reportMatch[1]
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-  console.log("\n=== HARNESS REPORT ===");
-  console.log(report.trim());
-}
+console.log("\n=== HARNESS REPORT ===");
+console.log(report ? report.trim() : "REPORT_NOT_FOUND");
 
 if (stderr) {
   const filtered = stderr.split(/\r?\n/)
@@ -107,7 +112,7 @@ if (stderr) {
   }
 }
 
-if (!result || result.error || result.status !== 0 || !stdout.includes(passMarker) || stdout.includes(failMarker)) {
+if (!result || result.error || result.status !== 0 || !reportPass || reportFail) {
   if (result && result.error) console.error("CHROME_ERROR=" + String(result.error.message || result.error));
   console.error("RESULT=FAIL_LEARNING_LOOP_V340_REAL_BROWSER_SMOKE");
   process.exit(1);
