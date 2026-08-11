@@ -40,9 +40,11 @@
   }
 
   function firstUnseenIndex(cards, progress) {
-    const seen = progress && progress.seen ? progress.seen : {};
+    const correct = progress && progress.correct ? progress.correct : {};
+    const confused = progress && progress.confused ? progress.confused : {};
     for (let i = 0; i < cards.length; i += 1) {
-      if (!seen[cards[i].id]) return i;
+      const id = cards[i].id;
+      if (!correct[id] && !confused[id]) return i;
     }
     return cards.length;
   }
