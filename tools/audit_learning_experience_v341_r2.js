@@ -33,7 +33,14 @@ engine.PRACTICE_MODULES.forEach(module => {
 });
 
 const ui = fs.readFileSync(path.join(__dirname, "..", "src", "pwa", "learning_experience_v341.js"), "utf8");
-check("UI_USES_EXACT_MISSION_FIELD", ui.includes("openMission(Number(module.missionCheckpoint || 1))"), "missionCheckpoint");
+const delegatedContract =
+  ui.includes("button.dataset.missionCheckpointV341") &&
+  ui.includes("[data-mission-checkpoint-v341]") &&
+  ui.includes("const number = Number(button.dataset.missionCheckpointV341 || 0)") &&
+  ui.includes("if (number > 0) openMission(number)") &&
+  ui.includes("window.openPracticeMissionV341 = openMission");
+check("UI_USES_EXACT_MISSION_FIELD", delegatedContract, "missionCheckpoint via delegated click");
+check("UI_DELEGATED_MISSION_ROUTING", ui.includes("function bindMissionDelegation()") && ui.includes("bindMissionDelegation();"), "single delegated handler");
 check("NO_USER_BADGE_WORD_KO", !ui.includes("배지"), "badge wording absent");
 check("NO_USER_BADGE_WORD_EN", !/\bbadges?\b/i.test(ui), "badge wording absent");
 check("NO_USER_XP_WORD", !/\bXP\b|experience points|coins?|loot/i.test(ui), "gamified currency absent");
