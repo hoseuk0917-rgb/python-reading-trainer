@@ -1,5 +1,6 @@
 "use strict";
 
+const childProcess = require("child_process");
 const fs = require("fs");
 const http = require("http");
 const os = require("os");
@@ -7,13 +8,21 @@ const path = require("path");
 const vm = require("vm");
 
 const SERVICE = "local-prt-server";
-const VERSION = "v337_a3";
+const VERSION = "v338_reconcile_a1";
 const RUNTIME_VERSION = "20260623_v335_a2";
 const ROOT = path.resolve(__dirname, "..");
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 3377;
 const MAX_BODY_BYTES = 1024 * 1024;
+const MAX_RECONCILIATION_OUTPUT_BYTES = 8 * 1024 * 1024;
+const MAX_RECONCILIATION_STDERR_BYTES = 64 * 1024;
+const PYTHON_COMMAND = process.env.PRT_PYTHON_COMMAND || "python";
+const PYTHON_RECONCILIATION_BRIDGE = path.join(
+  ROOT,
+  "tools",
+  "python_reading_reconciliation_server_bridge_v0_1.py"
+);
 
 const host = process.env.PRT_LOCAL_HOST || DEFAULT_HOST;
 const portRaw = process.env.PRT_LOCAL_PORT || String(DEFAULT_PORT);
@@ -116,11 +125,14 @@ function getHealthPayload() {
       code: true,
       command: false,
       project: false,
-      proofy: true
+      proofy: true,
+      pythonAst: true,
+      pythonReconciliation: true
     },
     endpoints: [
       "GET /health",
       "POST /analyze-code",
+      "POST /analyze-python-structure",
       "POST /proofy/explain"
     ],
     privacy: {
@@ -128,9 +140,10 @@ function getHealthPayload() {
       externalApiByDefault: false,
       automaticClipboardMonitoring: false,
       backgroundFileScanning: false,
-      persistOriginalInputByDefault: false
+      persistOriginalInputByDefault: false,
+      pythonProcessLocalOnly: true
     },
-    next: "V337-A3 implements POST /proofy/explain as a localhost Proofy response adapter over analyzer output."
+    next: "V338 reconciliation A1 adds a localhost Python AST + rule-analyzer structural endpoint without replacing /analyze-code."
   };
 }
 
@@ -195,6 +208,129 @@ function loadCodeAnalyzer() {
   };
 
   return cachedCodeAnalyzer;
+}
+
+function runPythonReconciliation(source, ruleAnalysis, sourceName) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let stdout = "";
+    let stderr = "";
+    let stdoutBytes = 0;
+    let stderrBytes = 0;
+
+    function fail(message, statusCode) {
+      if (settled) return;
+      settled = true;
+      reject(Object.assign(new Error(message), { statusCode }));
+    }
+
+    function succeed(value) {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    }
+
+    const child = childProcess.spawn(
+      PYTHON_COMMAND,
+      [PYTHON_RECONCILIATION_BRIDGE],
+      {
+        cwd: ROOT,
+        windowsHide: true,
+        stdio: ["pipe", "pipe", "pipe"]
+      }
+    );
+
+    child.stdout.on("data", (chunk) => {
+      stdoutBytes += chunk.length;
+      if (stdoutBytes > MAX_RECONCILIATION_OUTPUT_BYTES) {
+        child.kill();
+        fail("python_reconciliation_output_too_large", 500);
+        return;
+      }
+      stdout += chunk.toString("utf8");
+    });
+
+    child.stderr.on("data", (chunk) => {
+      if (stderrBytes >= MAX_RECONCILIATION_STDERR_BYTES) return;
+      stderrBytes += chunk.length;
+      stderr += chunk.toString("utf8");
+      if (stderr.length > MAX_RECONCILIATION_STDERR_BYTES) {
+        stderr = stderr.slice(0, MAX_RECONCILIATION_STDERR_BYTES);
+      }
+    });
+
+    child.on("error", (error) => {
+      if (error && error.code === "ENOENT") {
+        fail("python_runtime_unavailable", 503);
+        return;
+      }
+      fail("python_reconciliation_spawn_failed", 500);
+    });
+
+    child.on("close", (code) => {
+      if (settled) return;
+      if (code !== 0) {
+        fail(/SyntaxError/.test(stderr) ? "python_parse_failed" : "python_reconciliation_failed", /SyntaxError/.test(stderr) ? 422 : 500);
+        return;
+      }
+
+      try {
+        succeed(JSON.parse(stdout));
+      } catch (_) {
+        fail("python_reconciliation_invalid_json", 500);
+      }
+    });
+
+    const envelope = {
+      source: String(source || ""),
+      source_name: String(sourceName || "<memory>.py"),
+      rule_analysis: ruleAnalysis || {}
+    };
+
+    child.stdin.on("error", () => {
+      if (!settled) fail("python_reconciliation_stdin_failed", 500);
+    });
+    child.stdin.end(JSON.stringify(envelope));
+  });
+}
+
+async function buildPythonStructurePayload(source, requestedLanguage, sourceName) {
+  const analyzer = loadCodeAnalyzer();
+  const ruleAnalysis = analyzer.analyze(source, requestedLanguage || "auto") || {};
+  const language = ruleAnalysis.language || ruleAnalysis.detectedLanguage || requestedLanguage || "unknown";
+
+  if (language !== "python") {
+    throw Object.assign(new Error("python_source_required"), { statusCode: 422 });
+  }
+
+  const reconciliation = await runPythonReconciliation(source, ruleAnalysis, sourceName);
+
+  return {
+    ok: true,
+    service: SERVICE,
+    version: VERSION,
+    kind: "python_structure_reconciliation",
+    language: "python",
+    sourceMeta: {
+      characters: String(source || "").length,
+      lines: lineCount(source),
+      sourceName: String(sourceName || "<memory>.py")
+    },
+    authority: reconciliation.authority,
+    summary: reconciliation.summary,
+    canonicalFindings: reconciliation.canonical_findings,
+    diagnostics: reconciliation.diagnostics,
+    astAuxiliary: reconciliation.ast_auxiliary,
+    executionProjectionNodeIds: reconciliation.execution_projection_node_ids,
+    graphIr: reconciliation.graph_ir,
+    ruleAnalysis,
+    privacy: {
+      localhostOnly: host === "127.0.0.1" || host === "localhost",
+      externalApiUsed: false,
+      originalInputPersisted: false,
+      pythonProcessLocalOnly: true
+    }
+  };
 }
 
 function lineCount(text) {
@@ -448,6 +584,32 @@ async function handleProofyExplain(req, res) {
   const payload = buildProofyExplainPayload(String(source), String(language), String(mode));
   sendJson(req, res, 200, payload);
 }
+
+async function handleAnalyzePythonStructure(req, res) {
+  const body = await readJsonBody(req);
+  const source = body.source || body.code || body.text || "";
+  const language = body.language || body.requestedLanguage || "auto";
+  const sourceName = body.sourceName || body.source_name || "<memory>.py";
+
+  if (!String(source).trim()) {
+    sendJson(req, res, 400, {
+      ok: false,
+      service: SERVICE,
+      version: VERSION,
+      error: "missing_source",
+      message: "POST /analyze-python-structure requires a non-empty source, code, or text field."
+    });
+    return;
+  }
+
+  const payload = await buildPythonStructurePayload(
+    String(source),
+    String(language),
+    String(sourceName)
+  );
+  sendJson(req, res, 200, payload);
+}
+
 async function handleAnalyzeCode(req, res) {
   const body = await readJsonBody(req);
   const source = body.source || body.code || body.text || "";
@@ -488,6 +650,11 @@ async function handleRequest(req, res) {
     return;
   }
 
+  if (req.method === "POST" && url.pathname === "/analyze-python-structure") {
+    await handleAnalyzePythonStructure(req, res);
+    return;
+  }
+
   if (req.method === "POST" && url.pathname === "/proofy/explain") {
     await handleProofyExplain(req, res);
     return;
@@ -502,7 +669,9 @@ async function handleRequest(req, res) {
     path: url.pathname,
     availableEndpoints: [
       "GET /health",
-      "POST /analyze-code"
+      "POST /analyze-code",
+      "POST /analyze-python-structure",
+      "POST /proofy/explain"
     ]
   });
 }
@@ -540,6 +709,7 @@ server.listen(port, host, () => {
     endpoints: [
       "http://" + host + ":" + port + "/health",
       "http://" + host + ":" + port + "/analyze-code",
+      "http://" + host + ":" + port + "/analyze-python-structure",
       "http://" + host + ":" + port + "/proofy/explain"
     ]
   }, null, 2));
@@ -565,5 +735,4 @@ function shutdown(signal) {
 
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
-
 
