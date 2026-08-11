@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from export_python_reading_archify_v0_1 import (
     build_archify_workflow as build_base_archify_workflow,
+    hidden,
+    projected_paths,
+    role_for_path,
     select_scope,
 )
 from python_reading_archify_layout_v0_1 import (
+    apply_label_role_policy,
     compact_node_label,
     compact_node_sublabel,
     cross_lane_corridor_route,
@@ -40,7 +44,22 @@ def apply_layout_policy(workflow: dict, ir: dict, scope_id: str | None, locale: 
         for index, lane in enumerate(workflow.get("lanes") or [])
     }
 
-    for edge in workflow.get("edges") or []:
+    visible_ids = {
+        node["id"]
+        for node in scope["nodes"]
+        if not hidden(node)
+    }
+    path_rows = projected_paths(scope, visible_ids)
+    edges = workflow.get("edges") or []
+    if len(path_rows) != len(edges):
+        raise ValueError(
+            f"ARCHIFY_LAYOUT_PATH_EDGE_COUNT_MISMATCH={len(path_rows)}:{len(edges)}"
+        )
+
+    for edge, path_row in zip(edges, path_rows):
+        role = role_for_path(path_row)
+        apply_label_role_policy(edge, role)
+
         source = node_by_id.get(edge.get("from"))
         target = node_by_id.get(edge.get("to"))
         if not source or not target:
