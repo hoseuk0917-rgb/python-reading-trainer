@@ -45,7 +45,7 @@ function Replace-ExactOnce {
     return $Text.Replace($Old, $New)
 }
 
-Write-Host "=== LOCAL PRT PYTHON ARCHIFY EXECUTION ENDPOINT B2A R1 ==="
+Write-Host "=== LOCAL PRT PYTHON ARCHIFY EXECUTION ENDPOINT B2A R2 ==="
 Write-Host "EXPECTED_BASE=$ExpectedBase"
 Write-Host "ARCHIFY_ROOT=$ArchifyRoot"
 Write-Host "FEATURE_BRANCH=$FeatureBranch"
@@ -221,10 +221,26 @@ async function handleAnalyzeCode(req, res) {
 
     $EndpointPairCount = ([regex]::Matches($Text, [regex]::Escape($EndpointPairOld))).Count
     Write-Host "ENDPOINT_ARRAY_PAIR_ANCHOR_COUNT=$EndpointPairCount"
-    if ($EndpointPairCount -ne 3) {
+    if ($EndpointPairCount -ne 2) {
         throw "ABORT=ENDPOINT_ARRAY_PAIR_ANCHOR_COUNT_$EndpointPairCount"
     }
     $Text = $Text.Replace($EndpointPairOld, $EndpointPairNew)
+
+    $ListenPairOld = @'
+      "http://" + host + ":" + port + "/analyze-python-structure",
+      "http://" + host + ":" + port + "/proofy/explain"
+'@.TrimEnd()
+    $ListenPairNew = @'
+      "http://" + host + ":" + port + "/analyze-python-structure",
+      "http://" + host + ":" + port + "/render-python-execution",
+      "http://" + host + ":" + port + "/proofy/explain"
+'@.TrimEnd()
+
+    $Text = Replace-ExactOnce `
+        -Text $Text `
+        -Name "LISTEN_ENDPOINT_ARRAY" `
+        -Old $ListenPairOld `
+        -New $ListenPairNew
 
     [System.IO.File]::WriteAllText($ServerPath, $Text, $Utf8NoBom)
     Write-Host "SERVER_PATCH_APPLIED=True"
@@ -319,7 +335,7 @@ async function handleAnalyzeCode(req, res) {
     Write-Host "MAIN_HEAD_UNCHANGED=True"
     Write-Host "MAIN_WORKTREE_CLEAN=True"
     Write-Host "EVAL_WORKTREE_CLEAN=True"
-    Write-Host "RESULT=PASS_LOCAL_PRT_PYTHON_ARCHIFY_EXECUTION_ENDPOINT_B2A_R1"
+    Write-Host "RESULT=PASS_LOCAL_PRT_PYTHON_ARCHIFY_EXECUTION_ENDPOINT_B2A_R2"
     Write-Host "NEW_FEATURE_HEAD=$NewHead"
 }
 catch {
