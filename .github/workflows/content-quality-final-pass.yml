@@ -1,0 +1,48 @@
+name: Content quality final pass
+
+on:
+  push:
+    branches:
+      - feat/content-quality-final-pass
+
+permissions:
+  contents: write
+
+jobs:
+  quality-final-pass:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout quality branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: feat/content-quality-final-pass
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Apply deterministic content quality repairs
+        run: python tools/content_quality_final_pass_v339.py --apply
+
+      - name: Run existing lesson validation
+        run: python tools/validate_lessons.py
+
+      - name: Run final content quality audit
+        run: python tools/content_quality_final_pass_v339.py --check
+
+      - name: Commit repaired corpus when changed
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "QUALITY_CORPUS_ALREADY_CLEAN=True"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data data_i18n src/pwa/app.js src/pwa/index.html
+          git commit -m "Apply final beginner content quality pass"
+          git push origin HEAD:feat/content-quality-final-pass
+          echo "QUALITY_CORPUS_COMMIT_PUSHED=True"
