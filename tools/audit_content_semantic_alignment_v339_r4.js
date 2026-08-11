@@ -21,7 +21,7 @@ const indexSource = fs.readFileSync(INDEX, "utf8");
 const context = vm.createContext({ window: {}, module: { exports: {} }, console, Set, String, Array, Object, Math, RegExp });
 vm.runInContext(source, context, { filename: "content_quality_semantics.js" });
 const api = context.module.exports;
-assert(api && api.version === "v339_r3", "semantic module API/version missing");
+assert(api && api.version === "v339_r4", "semantic module API/version missing");
 console.log("SEMANTIC_MODULE_API=PASS");
 
 const info = {
@@ -37,6 +37,7 @@ const commentCard = {
   concepts:["comment","print","indentation"]
 };
 assert(api.pickPrimaryConcept(commentCard, commentCard.concepts, info) === "comment", "comment problem did not select comment concept");
+assert(api.primaryFamily(commentCard) === "comment", "comment primary family mismatch");
 console.log("COMMENT_PROBLEM_PRIMARY_CONCEPT=PASS");
 
 const typeCard = {
@@ -47,6 +48,7 @@ const typeCard = {
   concepts:["print","str","type","value"]
 };
 assert(api.pickPrimaryConcept(typeCard, typeCard.concepts, info) === "type", "type problem was hijacked by print syntax");
+assert(api.primaryFamily(typeCard) === "type", "type primary family mismatch");
 console.log("TYPE_PROBLEM_PRIMARY_CONCEPT=PASS");
 
 const assignmentCard = {
@@ -58,6 +60,7 @@ const assignmentCard = {
 };
 const assignmentPrimary = api.pickPrimaryConcept(assignmentCard, assignmentCard.concepts, info);
 assert(["variable","assignment"].includes(assignmentPrimary), "assignment problem was hijacked by print syntax");
+assert(api.primaryFamily(assignmentCard) === "assignment", "assignment primary family mismatch");
 console.log("ASSIGNMENT_PRIMARY_CONCEPT=PASS");
 
 const indentSide = {related_concepts:["indentation","python"]};
