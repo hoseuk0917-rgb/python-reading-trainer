@@ -1,0 +1,72 @@
+name: Learning experience V341 gate
+
+on:
+  push:
+    branches:
+      - feat/learning-experience-v341
+
+permissions:
+  contents: write
+
+jobs:
+  learning-experience-v341:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout V341 branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: feat/learning-experience-v341
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Apply V341 integration
+        run: python tools/apply_learning_experience_v341.py --apply
+
+      - name: Confirm V341 integration idempotence
+        run: python tools/apply_learning_experience_v341.py --check
+
+      - name: JavaScript syntax
+        run: |
+          node --check src/pwa/learning_engine_v341.js
+          node --check src/pwa/learning_experience_v341.js
+
+      - name: V341 pure engine audit
+        run: node tools/audit_learning_experience_v341.js
+
+      - name: Side-card educational quality audit
+        run: python tools/audit_sidecard_educational_quality_v341.py
+
+      - name: Existing V340 learning regression
+        run: node tools/audit_learning_loop_v340.js
+
+      - name: Existing lesson validation
+        run: python tools/validate_lessons.py
+
+      - name: Existing content quality gates
+        run: |
+          python tools/content_quality_final_pass_v339.py --check
+          python tools/content_quality_final_pass_v339_r2.py --check
+          python tools/content_quality_final_pass_v339_r4.py --check
+          node tools/audit_content_semantic_alignment_v339_r4.js
+
+      - name: Patch integrity
+        run: git diff --check
+
+      - name: Commit generated integration if needed
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "V341_INTEGRATION_ALREADY_CLEAN=True"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pwa/index.html
+          git commit -m "Wire V341 practice and mastery experience into PWA"
+          git push origin HEAD:feat/learning-experience-v341
+          echo "V341_INTEGRATION_COMMIT_PUSHED=True"
