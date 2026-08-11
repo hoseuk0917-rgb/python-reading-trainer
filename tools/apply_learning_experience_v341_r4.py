@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 UI = ROOT / "src" / "pwa" / "learning_experience_v341.js"
-VERSION = "v341_r4"
+VERSION = "v341_r4_release"
 MARKER = "LEARNING_EXPERIENCE_V341_R4_STABLE_ACTIONS_RESET"
 
 OLD_CHECKPOINT_BIND = '        button.onclick = function() { openMission(firstPending); };'
@@ -67,11 +67,7 @@ NEW_READY_START = '''  function ready() {
     bindMissionDelegation();
     observeReviewClicks();'''
 
-OLD_EXPORTS = '''  window.renderPracticeV341 = renderPractice;
-  window.renderLearningSummaryV341 = renderLearningSummary;'''
-NEW_EXPORTS = '''  window.renderPracticeV341 = renderPractice;
-  window.renderLearningSummaryV341 = renderLearningSummary;
-  window.openPracticeMissionV341 = openMission;'''
+DEBUG_EXPORT = '  window.openPracticeMissionV341 = openMission;\n'
 
 
 def replace_once(text: str, old: str, new: str, label: str) -> str:
@@ -93,7 +89,7 @@ def patch(text: str) -> str:
             raise RuntimeError("mission delegation insertion anchor missing")
         out = out.replace(anchor, DELEGATE_FN + anchor, 1)
     out = replace_once(out, OLD_READY_START, NEW_READY_START, "ready delegation")
-    out = replace_once(out, OLD_EXPORTS, NEW_EXPORTS, "mission export")
+    out = out.replace(DEBUG_EXPORT, "")
     if MARKER not in out:
         anchor = "  // LEARNING_EXPERIENCE_V341_R3_WAIT_FOR_V340_PATH"
         if anchor not in out:
@@ -110,7 +106,6 @@ def audit(text: str) -> list[str]:
         NEW_RESET_BODY,
         "function bindMissionDelegation()",
         "bindMissionDelegation();",
-        "window.openPracticeMissionV341 = openMission;",
         MARKER,
     ]
     for value in required:
@@ -118,6 +113,8 @@ def audit(text: str) -> list[str]:
             errors.append("missing: " + value[:80])
     if OLD_RESET_BODY in text:
         errors.append("old null-key reset logic remains")
+    if "window.openPracticeMissionV341" in text:
+        errors.append("debug mission export remains")
     return errors
 
 
