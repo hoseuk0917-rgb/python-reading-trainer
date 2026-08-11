@@ -1,7 +1,7 @@
 (function() {
   "use strict";
 
-  const VERSION = "v339_r3";
+  const VERSION = "v339_r4";
   const GENERIC = new Set(["python", "code", "coding", "programming", "basic", "language", "syntax"]);
 
   const FAMILY = {
@@ -104,6 +104,21 @@
     return score;
   }
 
+  function rankedPrimaryConcept(card, concepts) {
+    const candidates = meaningfulConcepts(concepts);
+    if (!candidates.length) return "";
+    let best = candidates[0];
+    let bestScore = scoreConcept(card || {}, best, 0);
+    candidates.forEach(function(concept, index) {
+      const score = scoreConcept(card || {}, concept, index);
+      if (score > bestScore) {
+        best = concept;
+        bestScore = score;
+      }
+    });
+    return best;
+  }
+
   function pickPrimaryConcept(card, concepts, conceptInfo) {
     const candidates = (Array.isArray(concepts) ? concepts : []).filter(function(concept) {
       return conceptInfo && conceptInfo[concept];
@@ -121,19 +136,23 @@
     return best;
   }
 
+  function primaryFamily(card) {
+    return family(rankedPrimaryConcept(card || {}, card && card.concepts));
+  }
+
   function isSideCardRelevant(card, sideCard) {
     if (!card || !sideCard) return false;
-    const lessonConcepts = meaningfulConcepts(card.concepts).map(family);
-    const sideConcepts = meaningfulConcepts(sideCard.related_concepts || sideCard.concepts).map(family);
-    if (!lessonConcepts.length || !sideConcepts.length) return false;
-    const lessonSet = new Set(lessonConcepts);
-    return sideConcepts.some(function(value) { return lessonSet.has(value); });
+    const focusFamily = primaryFamily(card);
+    if (!focusFamily) return false;
+    const sideFamilies = meaningfulConcepts(sideCard.related_concepts || sideCard.concepts).map(family);
+    return sideFamilies.includes(focusFamily);
   }
 
   const api = {
     version: VERSION,
     pickPrimaryConcept: pickPrimaryConcept,
     isSideCardRelevant: isSideCardRelevant,
+    primaryFamily: primaryFamily,
     family: family,
     meaningfulConcepts: meaningfulConcepts,
     scoreConcept: scoreConcept
