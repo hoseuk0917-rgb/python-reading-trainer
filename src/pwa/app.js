@@ -354,6 +354,63 @@ Object.assign(conceptInfo, {
 });
 // === CONTENT_QUALITY_FINAL_PASS_V339 END ===
 
+// === CONTENT_QUALITY_BEGINNER_DENSITY_V339_R2 BEGIN ===
+if (currentLanguage === "en") {
+  Object.assign(conceptInfo, {
+    "comment": {definition:"A comment is explanatory text for people reading the code. In Python, text after # is not executed, so it does not directly change the output or calculation.", example:"# explanation\nprint(\"hello\")"},
+    "output": {definition:"Output is the result a program shows on the screen or terminal. In Python, print() is the usual way to display a value.", example:"print(\"hello\")"},
+    "execution_order": {definition:"Python normally runs code from top to bottom. Track how a value changes before the final print or return.", example:"x = 1\nx = 2\nprint(x)"},
+    "assignment": {definition:"Assignment calculates the right side first and stores that value under the name on the left. x = 3 lets later code use x to get 3.", example:"x = 3\nprint(x)"},
+    "str": {definition:"A string (str) is a text value. The quoted value \"3\" looks numeric but is text, so it behaves differently from the integer 3.", example:"text = \"3\""},
+    "int": {definition:"An integer (int) is a whole number such as 1, 2, or 100. int(\"3\") converts numeric text into the integer 3.", example:"number = int(\"3\")"},
+    "float": {definition:"A float represents numbers with a decimal part, such as 3.5. float(\"3.5\") converts numeric text into a float.", example:"value = float(\"3.5\")"},
+    "type": {definition:"A type tells you what kind of value something is. 3 is an int while \"3\" is a str, so they can behave differently.", example:"print(type(\"3\"))"},
+    "bool": {definition:"A bool is either True or False. Conditions use these truth values to decide which code should run.", example:"active = True"},
+    "comparison": {definition:"A comparison checks two values and produces True or False. Common operators include ==, !=, <, >, <=, and >=.", example:"print(3 < 5)"},
+    "operator": {definition:"An operator is a symbol that calculates or compares values. + adds numbers but can join strings.", example:"print(2 + 3)"},
+    "else": {definition:"else contains the code to run when the earlier if condition is False.", example:"if ready:\n    print(\"go\")\nelse:\n    print(\"wait\")"},
+    "while": {definition:"while repeats a block as long as its condition is True. Track the value that changes the condition so you can see when the loop stops.", example:"i = 0\nwhile i < 3:\n    i += 1"},
+    "range": {definition:"range() produces numbers for a loop. range(3) produces 0, 1, and 2.", example:"for i in range(3):\n    print(i)"},
+    "break": {definition:"break stops the current loop immediately. Code after the loop can still continue.", example:"if found:\n    break"},
+    "continue": {definition:"continue skips the rest of the current loop iteration and moves to the next one.", example:"if not item:\n    continue"},
+    "tuple": {definition:"A tuple groups values in order. It is similar to a list, but its items cannot be changed after the tuple is created.", example:"point = (10, 20)"},
+    "index": {definition:"An index is a position number in ordered data. Python starts counting positions at 0.", example:"items = [\"a\", \"b\"]\nprint(items[0])"},
+    "key": {definition:"A dict key is a label used to find a value. In data[\"name\"], \"name\" is the key.", example:"data = {\"name\": \"Mina\"}"},
+    "value": {definition:"A value is the actual data stored in a variable or data structure. In a dict, a key is used to retrieve its value.", example:"data = {\"name\": \"Mina\"}"},
+    "function": {definition:"A function gives a name to a reusable group of steps. The code inside runs when the function is called.", example:"def greet():\n    print(\"hi\")"},
+    "parameter": {definition:"A parameter is the name used inside a function definition to receive an input value.", example:"def greet(name):\n    print(name)"},
+    "argument": {definition:"An argument is the actual value passed when a function is called.", example:"greet(\"Mina\")"},
+    "scope": {definition:"Scope is the area where a variable name can be used. A variable created inside a function is normally used inside that function.", example:"def f():\n    x = 1"},
+    "import": {definition:"import makes code from another module available in the current file.", example:"import json"},
+    "module": {definition:"A module is a Python file or library unit that groups related features. import loads a module for use.", example:"import json"},
+    "file": {definition:"A file stores data. When reading code, check which file is opened, whether it is read or written, and when it is closed.", example:"with open(\"a.txt\") as f:\n    text = f.read()"},
+    "path": {definition:"A path is the address that tells a program where a file or folder is located.", example:"path = \"data/input.txt\""},
+    "exception": {definition:"An exception signals that code cannot continue normally. try/except can handle selected exceptions.", example:"try:\n    int(\"x\")\nexcept ValueError:\n    print(\"bad\")"},
+    "json": {definition:"JSON is a text format commonly used to store or exchange structured data. { } represents an object and [ ] represents a list.", example:"{\"name\":\"Mina\"}"},
+    "csv": {definition:"CSV stores table-like data as text, usually with values separated by commas. One line normally represents one row.", example:"name,score\nMina,90"},
+    "input": {definition:"input() returns what the user typed as a string. Convert it with int() or float() when numeric calculation is needed.", example:"age = int(input())"},
+    "indentation": {definition:"Indentation is the spaces at the start of a line. Python uses indentation to show which lines belong inside an if, loop, function, or class.", example:"if ready:\n    print(\"go\")"},
+    "class": {definition:"A class is a blueprint that groups related data and behavior. Objects can be created from that class.", example:"class Dog:\n    pass"},
+    "object": {definition:"An object is an actual value that can contain data and behavior. A value created from a class is an object.", example:"dog = Dog()"},
+    "method": {definition:"A method is a function connected to an object. It can read or change that object's data.", example:"items.append(\"a\")"},
+    "self": {definition:"self is the conventional name for the current object inside a method.", example:"def show(self):\n    print(self.name)"},
+    "None": {definition:"None is Python's special value for 'no value here' or 'no specific result returned.'", example:"result = None"},
+    "mutable": {definition:"Mutable means the contents can change after creation. Lists and dicts are common mutable values.", example:"items = []\nitems.append(1)"},
+    "print": {definition:"print() displays the value inside its parentheses. If you pass a variable name, Python displays the value stored under that name.", example:"name = \"Mina\"\nprint(name)"},
+    "variable": {definition:"A variable is a name attached to a value so the value can be used again later. After x = 3, later code can use x to get 3.", example:"x = 3\nprint(x)"},
+    "list": {definition:"A list stores several values in order. The first position is index 0, and append() adds a new value at the end.", example:"items = [\"a\", \"b\"]"},
+    "dict": {definition:"A dict stores pairs of keys and values. Use a key as a label to find its value.", example:"data = {\"name\": \"Mina\"}"},
+    "for": {definition:"for takes items one at a time and repeats the same block. The current item is placed in the loop variable each time.", example:"for item in [\"a\", \"b\"]:\n    print(item)"},
+    "if": {definition:"if runs its indented block only when the condition is True. If the condition is False, that block is skipped.", example:"if score >= 60:\n    print(\"pass\")"},
+    "def": {definition:"def creates a function and gives it a name. The function body runs when the function is called.", example:"def greet():\n    print(\"hi\")"},
+    "return": {definition:"return ends a function and sends a value back to the caller.", example:"def add(a, b):\n    return a + b"},
+    "open": {definition:"open() opens a file for reading or writing. Check the file path and the mode passed to it.", example:"open(\"data.txt\", \"r\")"},
+    "with": {definition:"with safely manages resources such as files. A file opened with with is closed automatically when the block ends.", example:"with open(\"a.txt\") as f:\n    text = f.read()"},
+    "try_except": {definition:"try/except lets code handle selected errors instead of stopping immediately.", example:"try:\n    int(text)\nexcept ValueError:\n    print(\"bad\")"}
+  });
+}
+// === CONTENT_QUALITY_BEGINNER_DENSITY_V339_R2 END ===
+
 function loadProgress() {
   const raw = localStorage.getItem(progressKey);
   if (!raw) {
