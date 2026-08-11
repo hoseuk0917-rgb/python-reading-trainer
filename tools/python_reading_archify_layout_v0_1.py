@@ -29,6 +29,7 @@ LABEL_DX_BY_ROLE = {
 LABEL_DY_BY_ROLE = {
     "continue": 20,
 }
+FALSE_BRANCH_LABEL_DX = 24
 FALSE_BRANCH_LABEL_DY = 10
 
 _FULLWIDTH_RANGES = (
@@ -205,17 +206,37 @@ def alternate_left_corridor_route(
     source_col: int,
     target_col: int,
 ) -> dict:
-    """Separate a second long route onto a farther left exterior corridor."""
+    """Separate a second long route onto a farther left exterior corridor.
+
+    A route starting in the top setup lane must leave through the full top
+    exterior band because its first lane gap can already be occupied by the
+    primary right-corridor route. Routes starting lower in the diagram leave
+    through the gap below their source lane instead; this avoids a long vertical
+    source approach that can cut through an earlier horizontal corridor.
+    """
     source_x = COL_XS[source_col]
     target_x = COL_XS[target_col]
 
     if target_lane_index > source_lane_index:
+        if source_lane_index == 0:
+            return {
+                "fromSide": "top",
+                "toSide": "bottom",
+                "via": [
+                    [source_x, TOP_EXTERIOR_Y],
+                    [FAR_LEFT_CORRIDOR_X, TOP_EXTERIOR_Y],
+                    [FAR_LEFT_CORRIDOR_X, BOTTOM_EXTERIOR_Y],
+                    [target_x, BOTTOM_EXTERIOR_Y],
+                ],
+            }
+
+        source_gap_y = lane_bottom(source_lane_index) + GAP_CORRIDOR_OFFSET
         return {
-            "fromSide": "top",
+            "fromSide": "bottom",
             "toSide": "bottom",
             "via": [
-                [source_x, TOP_EXTERIOR_Y],
-                [FAR_LEFT_CORRIDOR_X, TOP_EXTERIOR_Y],
+                [source_x, source_gap_y],
+                [FAR_LEFT_CORRIDOR_X, source_gap_y],
                 [FAR_LEFT_CORRIDOR_X, BOTTOM_EXTERIOR_Y],
                 [target_x, BOTTOM_EXTERIOR_Y],
             ],
