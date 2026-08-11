@@ -105,6 +105,8 @@ def main() -> None:
         rule = run_rule_analyzer(source)
         base = reconcile_python_reading_analysis(source, rule, f"{name}.py")
         assert_registration_invariants(base)
+        assert base["summary"]["agreed"] >= 1, f"no analyzer agreement found: {name}"
+        assert base["summary"]["conflict"] == 0, f"unexpected baseline semantic conflict: {name}"
 
         duplicate = reconcile_python_reading_analysis(
             source,
@@ -154,6 +156,7 @@ def main() -> None:
     assert conflict["summary"]["conflict"] >= baseline["summary"]["conflict"] + 1
     assert conflict["execution_projection_node_ids"] == baseline["execution_projection_node_ids"]
 
+    print("BASELINE_CONFLICTS=0")
     print("RULE_ONLY_AUTO_REGISTER_BLOCK=PASS")
     print("CONFLICT_AUTO_REGISTER_BLOCK=PASS")
     print("CANONICAL_AST_NODE_DEDUPE=PASS")
