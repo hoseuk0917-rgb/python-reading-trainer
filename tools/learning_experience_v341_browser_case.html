@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PRT V341 Browser Case</title>
+  <style>
+    body{font-family:system-ui,sans-serif;margin:12px;background:#f5f6f8;color:#172033}.summary{padding:10px;border-radius:10px;background:#fff;border:1px solid #d8dee8;margin-bottom:10px}.pass{color:#137333}.fail{color:#b3261e}iframe{display:block;border:1px solid #aab4c3;background:#fff}pre{white-space:pre-wrap;background:#111827;color:#e5e7eb;padding:12px;border-radius:10px;max-height:560px;overflow:auto}
+  </style>
+</head>
+<body>
+  <div id="summary" class="summary">RUNNING</div>
+  <iframe id="appFrame" height="1100"></iframe>
+  <pre id="report">RUNNING</pre>
+<script>
+(function(){
+  "use strict";
+  const params = new URLSearchParams(location.search);
+  const caseName = params.get("case") === "narrow" ? "narrow" : "desktop";
+  const width = caseName === "narrow" ? 390 : 1200;
+  const frame = document.getElementById("appFrame");
+  frame.width = String(width);
+  const lines = ["=== PRT V341 REAL BROWSER CASE ===", "CASE=" + caseName.toUpperCase(), "WIDTH=" + width];
+  const results = [];
+  const PROGRESS_KEY = "python-reading-trainer-progress-v1";
+  const V341_KEY = "python-reading-trainer-learning-experience-v341";
+  const NOTE_SENTINEL = "python-reading-trainer-v341-note-sentinel";
+
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  async function waitFor(fn, timeout=18000) {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      try { const value = fn(); if (value) return value; } catch (_) {}
+      await sleep(80);
+    }
+    return null;
+  }
+  function check(label, ok, detail) {
+    const row = {label, ok:Boolean(ok), detail:String(detail == null ? "" : detail)};
+    results.push(row);
+    lines.push(label + "=" + (row.ok ? "PASS" : "FAIL") + " DETAIL=" + row.detail);
+    return row.ok;
+  }
+  function appUrl(extra) {
+    return "/src/pwa/index.html?v341case=" + caseName + "&" + (extra || "phase") + "=" + Date.now();
+  }
+  async function waitReady() {
+    return waitFor(() => {
+      const doc = frame.contentDocument;
+      const win = frame.contentWindow;
+      if (!doc || !win || doc.readyState !== "complete") return null;
+      if (doc.documentElement.dataset.learningLoopV340 !== "v340_a1") return null;
+      if (doc.documentElement.dataset.learningExperienceV341 !== "v341_a1") return null;
+      if (!win.LearningEngineV341 || !doc.getElementById("practiceDashboardV341")) return null;
+      if (!doc.querySelectorAll(".choice-btn").length) return null;
+      return {doc, win};
+    }, 30000);
+  }
+  async function initialCleanLoad() {
+    frame.src = appUrl("initial");
+    const first = await waitFor(() => frame.contentDocument && frame.contentWindow && frame.contentDocument.readyState === "complete" ? {doc:frame.contentDocument,win:frame.contentWindow} : null, 20000);
+    if (!first) return null;
+    try {
+      first.win.localStorage.clear();
+      first.win.sessionStorage.clear();
+      if (first.win.navigator.serviceWorker && first.win.navigator.serviceWorker.getRegistrations) {
+        const regs = await first.win.navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(reg => reg.unregister()));
+      }
+    } catch (_) {}
+    frame.src = appUrl("clean");
+    return waitReady();
+  }
+  async function reloadReady(tag) {
+    frame.src = appUrl(tag);
+    return waitReady();
+  }
+  function clickTab(doc, view) {
+    const button = doc.querySelector('.tab-btn[data-view="' + view + '"]');
+    if (button) button.click();
+    return button;
+  }
+  function practiceText(doc) {
+    const view = doc.getElementById("practiceView");
+    return view ? view.textContent.replace(/\s+/g, " ").trim() : "";
+  }
+  function moduleByTitle(doc, title) {
+    return Array.from(doc.querySelectorAll(".practice-v341-module")).find(item => item.textContent.includes(title)) || null;
+  }
+  function syntheticProgress(win, count) {
+    const ids = JSON.parse(win.eval("JSON.stringify(cards.slice(0," + count + ").map(function(c){return c.id;}))"));
+    const progress = {seen:{}, correct:{}, confused:{}, lastSeenAt:{}};
+    ids.forEach((id, index) => {
+      progress.seen[id] = Date.now();
+      progress.correct[id] = index % 7 === 0 ? 0 : 1;
+      if (index % 7 === 0) progress.confused[id] = 1;
+      progress.lastSeenAt[id] = Date.now();
+    });
+    win.localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    const events = ids.map((id, index) => ({kind:"lesson_attempt",cardId:id,at:Date.now() - (index % 3) * 86400000}));
+    win.localStorage.setItem(V341_KEY, JSON.stringify({events, completedCheckpoints:[], lastToastKey:""}));
+    return ids;
+  }
+
+  async function main() {
+    const ready = await initialCleanLoad();
+    check("PWA_V341_READY", !!ready, ready ? "dataset=v341_a1" : "timeout");
+    if (!ready) return finish();
+    let {doc, win} = ready;
+    let root = doc.documentElement;
+
+    check("ONE_PRACTICE_TAB", doc.querySelectorAll('.tab-btn[data-view="practice"]').length === 1, "count=" + doc.querySelectorAll('.tab-btn[data-view="practice"]').length);
+    check("ONE_PRACTICE_VIEW", doc.querySelectorAll("#practiceView").length === 1, "count=" + doc.querySelectorAll("#practiceView").length);
+    check("ONE_PRACTICE_DASHBOARD", doc.querySelectorAll("#practiceDashboardV341").length === 1, "count=" + doc.querySelectorAll("#practiceDashboardV341").length);
+    check("LEARNING_SUMMARY_PRESENT", doc.querySelectorAll("#learningSummaryV341").length === 1, "count=" + doc.querySelectorAll("#learningSummaryV341").length);
+
+    const practiceTab = clickTab(doc, "practice");
+    await sleep(160);
+    check("PRACTICE_TAB_OPENS", !!practiceTab && doc.getElementById("practiceView").classList.contains("active-view"), "active=" + doc.getElementById("practiceView").classList.contains("active-view"));
+    let text = practiceText(doc);
+    check("INITIAL_CHECKPOINT_LOCKED", /첫 실전 체크포인트까지\s*30문제/.test(text), text.slice(0, 220));
+    check("INITIAL_SAFE_CHANGE_LOCKED", /안전한 변경 절차/.test(text) && /30문제 후/.test(text), "safe-change locked");
+    check("MASTERY_MAP_VISIBLE", doc.querySelectorAll(".mastery-v341-row").length > 0, "rows=" + doc.querySelectorAll(".mastery-v341-row").length);
+    check("WEEKLY_TARGET_VISIBLE", /이번 주\s*0\/50문제\s*·\s*0\/5일/.test(text), text.match(/이번 주[^.]{0,60}/)?.[0] || "not found");
+    check("NO_BADGE_XP_CURRENCY_UI", !/(배지|\bXP\b|\bbadge\b|\bcoin\b|loot)/i.test(text), "no gamified currency/reward labels");
+
+    clickTab(doc, "learning");
+    await sleep(100);
+    doc.getElementById("againBtn").click();
+    const eventRecorded = await waitFor(() => {
+      try {
+        const state = JSON.parse(win.localStorage.getItem(V341_KEY) || "{}");
+        return Array.isArray(state.events) && state.events.some(row => row.kind === "lesson_attempt") ? state : null;
+      } catch (_) { return null; }
+    }, 4000);
+    check("REAL_ATTEMPT_RECORDED", !!eventRecorded, eventRecorded ? "events=" + eventRecorded.events.length : "no V341 lesson event");
+    const summaryText = doc.getElementById("learningSummaryV341").textContent.replace(/\s+/g," ");
+    check("SUMMARY_ADVANCES_FROM_REAL_ATTEMPT", /순차 학습\s*1\s*\/\s*1785/.test(summaryText), summaryText);
+
+    syntheticProgress(win, 30);
+    const ready30 = await reloadReady("thirty");
+    check("SYNTHETIC_30_READY", !!ready30, ready30 ? "ready" : "reload timeout");
+    if (!ready30) return finish();
+    doc = ready30.doc; win = ready30.win; root = doc.documentElement;
+    clickTab(doc, "practice");
+    await sleep(140);
+    text = practiceText(doc);
+    check("CHECKPOINT_1_UNLOCKED", /체크포인트 1 미션 풀기/.test(text), "checkpoint button=" + /체크포인트 1 미션 풀기/.test(text));
+    const safeModule = moduleByTitle(doc, "안전한 변경 절차");
+    const regressionModule = moduleByTitle(doc, "회귀 테스트");
+    check("SAFE_CHANGE_MODULE_OPEN", !!safeModule && !safeModule.classList.contains("locked") && !safeModule.querySelector("button").disabled, safeModule ? safeModule.className : "missing");
+    check("REGRESSION_MODULE_STILL_LOCKED", !!regressionModule && regressionModule.classList.contains("locked") && regressionModule.querySelector("button").disabled, regressionModule ? regressionModule.className : "missing");
+
+    const checkpointButton = doc.querySelector(".practice-v341-primary");
+    if (checkpointButton) checkpointButton.click();
+    const mission = await waitFor(() => {
+      const modal = doc.getElementById("missionModalV341");
+      return modal && !modal.classList.contains("hidden") ? modal : null;
+    }, 3000);
+    const question = mission ? mission.querySelector(".mission-v341-question").textContent.trim() : "";
+    check("CHECKPOINT_MISSION_OPENS", !!mission, mission ? "open" : "missing");
+    check("CHECKPOINT_1_IS_SAFE_CHANGE", /작은 기능을 수정한 뒤/.test(question), question);
+    if (mission) {
+      const firstChoice = mission.querySelector(".mission-v341-choice");
+      if (firstChoice) firstChoice.click();
+      await sleep(120);
+    }
+    const completedState = JSON.parse(win.localStorage.getItem(V341_KEY) || "{}");
+    check("CHECKPOINT_COMPLETION_RECORDED", Array.isArray(completedState.completedCheckpoints) && completedState.completedCheckpoints.includes(1), JSON.stringify(completedState.completedCheckpoints || []));
+    const toast = doc.getElementById("toastV341");
+    check("QUIET_COMPLETION_TOAST", !!toast && /체크포인트 1 통과/.test(toast.textContent), toast ? toast.textContent : "missing");
+    if (mission) mission.querySelector(".mission-v341-close").click();
+
+    syntheticProgress(win, 60);
+    const ready60 = await reloadReady("sixty");
+    check("SYNTHETIC_60_READY", !!ready60, ready60 ? "ready" : "reload timeout");
+    if (!ready60) return finish();
+    doc = ready60.doc; win = ready60.win; root = doc.documentElement;
+    clickTab(doc, "practice");
+    await sleep(140);
+    const regressionOpen = moduleByTitle(doc, "회귀 테스트");
+    check("REGRESSION_MODULE_OPENS_AT_60", !!regressionOpen && !regressionOpen.classList.contains("locked") && !regressionOpen.querySelector("button").disabled, regressionOpen ? regressionOpen.className : "missing");
+    if (regressionOpen) regressionOpen.querySelector("button").click();
+    const regressionMission = await waitFor(() => {
+      const modal = doc.getElementById("missionModalV341");
+      return modal && !modal.classList.contains("hidden") ? modal : null;
+    }, 3000);
+    const regressionQuestion = regressionMission ? regressionMission.querySelector(".mission-v341-question").textContent.trim() : "";
+    check("REGRESSION_MODULE_MAPS_TO_REGRESSION", /회귀 테스트가 특히 확인해야/.test(regressionQuestion), regressionQuestion);
+    if (regressionMission) regressionMission.querySelector(".mission-v341-close").click();
+
+    try {
+      win.renderPracticeV341();
+      win.renderPracticeV341();
+      win.renderLearningSummaryV341();
+      win.renderLearningSummaryV341();
+    } catch (_) {}
+    await sleep(100);
+    check("NO_DUPLICATE_PRACTICE_DASHBOARD", doc.querySelectorAll("#practiceDashboardV341").length === 1, "count=" + doc.querySelectorAll("#practiceDashboardV341").length);
+    check("NO_DUPLICATE_MISSION_MODAL", doc.querySelectorAll("#missionModalV341").length === 1, "count=" + doc.querySelectorAll("#missionModalV341").length);
+    check("NO_DUPLICATE_TOAST", doc.querySelectorAll("#toastV341").length === 1, "count=" + doc.querySelectorAll("#toastV341").length);
+
+    win.localStorage.setItem(NOTE_SENTINEL, "keep-me");
+    win.confirm = function() { return true; };
+    clickTab(doc, "learning");
+    await sleep(80);
+    const resetBtn = doc.getElementById("resetBtn");
+    check("RESET_BUTTON_PRESENT", !!resetBtn, resetBtn ? "present" : "missing");
+    if (resetBtn) resetBtn.click();
+    await sleep(220);
+    check("RESET_CLEARS_V341_STATE", win.localStorage.getItem(V341_KEY) === null, "value=" + String(win.localStorage.getItem(V341_KEY)));
+    check("RESET_PRESERVES_NOTE_SENTINEL", win.localStorage.getItem(NOTE_SENTINEL) === "keep-me", "value=" + String(win.localStorage.getItem(NOTE_SENTINEL)));
+    const afterResetSummary = doc.getElementById("learningSummaryV341").textContent.replace(/\s+/g," ");
+    check("RESET_RETURNS_V341_SEQUENCE_ZERO", /순차 학습\s*0\s*\/\s*1785/.test(afterResetSummary), afterResetSummary);
+
+    clickTab(doc, "practice");
+    await sleep(100);
+    const viewRect = doc.getElementById("practiceView").getBoundingClientRect();
+    check("PRACTICE_WITHIN_VIEWPORT", viewRect.width > 0 && viewRect.left >= -1 && viewRect.right <= root.clientWidth + 1, "left=" + Math.round(viewRect.left) + " right=" + Math.round(viewRect.right) + " viewport=" + root.clientWidth);
+    check("NO_OUTER_HORIZONTAL_OVERFLOW", root.scrollWidth <= root.clientWidth + 2, "scrollWidth=" + root.scrollWidth + " clientWidth=" + root.clientWidth);
+    finish();
+  }
+
+  function finish() {
+    const pass = results.length > 0 && results.every(row => row.ok);
+    lines.push("RESULT=" + (pass ? "PASS_LEARNING_EXPERIENCE_V341_REAL_BROWSER_CASE" : "FAIL_LEARNING_EXPERIENCE_V341_REAL_BROWSER_CASE"));
+    document.getElementById("report").textContent = lines.join("\n");
+    const summary = document.getElementById("summary");
+    summary.textContent = pass ? caseName.toUpperCase() + " PASS" : caseName.toUpperCase() + " FAIL";
+    summary.className = "summary " + (pass ? "pass" : "fail");
+    document.documentElement.dataset.smokeDone = pass ? "pass" : "fail";
+  }
+
+  main().catch(error => {
+    lines.push("HARNESS_ERROR=" + (error && error.stack ? error.stack : String(error)));
+    lines.push("RESULT=FAIL_LEARNING_EXPERIENCE_V341_REAL_BROWSER_CASE");
+    document.getElementById("report").textContent = lines.join("\n");
+    document.documentElement.dataset.smokeDone = "fail";
+  });
+})();
+</script>
+</body>
+</html>
