@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ENGINE = ROOT / "src" / "pwa" / "learning_engine_v341.js"
 UI = ROOT / "src" / "pwa" / "learning_experience_v341.js"
-VERSION = "v341_r2"
+VERSION = "v341_r2_release2"
 MARKER = "LEARNING_EXPERIENCE_V341_R2_EXACT_MISSION_MAPPING"
 
 MODULE_REPLACEMENTS = {
@@ -33,6 +33,7 @@ OLD_MAPPING = '''      button.onclick = function() {
 NEW_MAPPING = '''      button.onclick = function() {
         openMission(Number(module.missionCheckpoint || 1));
       };'''
+DELEGATED_MAPPING = '      button.dataset.missionCheckpointV341 = String(Number(module.missionCheckpoint || 1));'
 
 
 def patch_engine(text: str) -> str:
@@ -60,7 +61,7 @@ def patch_ui(text: str) -> str:
         raise RuntimeError("EN intro anchor missing")
     if OLD_MAPPING in out:
         out = out.replace(OLD_MAPPING, NEW_MAPPING, 1)
-    elif NEW_MAPPING not in out:
+    elif NEW_MAPPING not in out and DELEGATED_MAPPING not in out:
         raise RuntimeError("mission mapping anchor missing")
     if MARKER not in out:
         out = out.replace('  const VERSION = "v341_a1";', '  const VERSION = "v341_a1";\n  // ' + MARKER, 1)
@@ -72,7 +73,7 @@ def audit(engine: str, ui: str) -> list[str]:
     for _, new in MODULE_REPLACEMENTS.items():
         if new not in engine:
             errors.append("missing exact mission mapping: " + new)
-    if NEW_MAPPING not in ui:
+    if NEW_MAPPING not in ui and DELEGATED_MAPPING not in ui:
         errors.append("UI exact mission mapping missing")
     if OLD_INTRO_KO in ui or OLD_INTRO_EN in ui:
         errors.append("user-facing badge/points wording remains")
