@@ -39,15 +39,15 @@
     "reading_goal": "Read the validation code that checks for duplicates by adding IDs that have already been checked to a set.",
     "code": "seen = set()\nduplicates = []\nfor card in cards:\n    if card[\"id\"] in seen:\n        duplicates.append(card[\"id\"])\n    seen.add(card[\"id\"])",
     "question_type": "meaning_choice",
-    "question": "What values are stored in `duplicates`?",
+    "question": "What is recorded in the duplicates list?",
     "choices": [
-      "Card IDs that appear more than once",
-      "All card IDs",
-      "Correct Answer Text",
-      "File path"
+      "Each card ID that appears again after its first occurrence",
+      "All card IDs after deduplication",
+      "Answer text",
+      "File paths"
     ],
-    "answer": "Card IDs that appear more than once",
-    "explanation": "A duplicate ID check is a validation process that verifies whether a card ID has been used only once. If an ID that is already in the \"seen\" list appears again, it is marked as a duplicate to prevent data conflicts.",
+    "answer": "Each card ID that appears again after its first occurrence",
+    "explanation": "When an ID is already in seen, the code appends it to duplicates and then keeps the ID in seen. If the same ID appears three times, the second and third occurrences each append it, so duplicates contains it twice. Use a set for duplicates too if only unique duplicated IDs are needed.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -127,7 +127,7 @@
       "Duplicate files"
     ],
     "answer": "Required fields not on the card",
-    "explanation": "The \"schema required fields\" check verifies that the card contains all the required keys. Using set and set difference operations makes it easy to identify any missing required keys.",
+    "explanation": "The set difference between required and card.keys() finds required names that are absent as dictionary keys. When missing is nonempty, the code prints the card ID and missing set. This checks only key presence, not whether a value is None or empty, whether level and choices have the right types, or whether extra fields are allowed; those need schema validation.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW",
       "PYV158_A1_SCHEMA_FLOW"
@@ -155,7 +155,7 @@
       "Monitor Resolution Error"
     ],
     "answer": "JSON Syntax Error",
-    "explanation": "If JSON parsing fails, it can cause problems when loading data after the app is fetched. A comprehensive JSON parse smoke test is a quick check to verify that all data files can be parsed syntactically. If even one fails, the entire app loading process may fail.",
+    "explanation": "For each .json file, the code reads all text and uses json.loads to check JSON syntax. One invalid file raises and stops the loop before later files are checked, and glob does not search nested directories recursively. Successful parsing also does not validate the card schema or ID and answer relationships, so semantic validation must follow the smoke test.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW",
       "PYV158_A1_JSON_FLOW"
@@ -182,11 +182,11 @@
       "Delete GitHub Pages"
     ],
     "answer": "It is treated as a regression and rejected",
-    "explanation": "If the connection to lessonFiles is lost during additional processing, the total number of cards may suddenly decrease, so we check to see if there has been a decrease. The total card count regression test verifies that the number of cards has not unintentionally decreased or increased after a new patch. It is a simple yet robust test for detecting missing data files. Therefore, the correct approach is to “report it as a regression and mark it as a failure.”",
+    "explanation": "When current_total is below 552, the code raises AssertionError. This detects a suspicious decrease but cannot detect an increase, an incorrect replacement with the same count, or exactly which file is missing. Validate expected counts per manifest plus an ID snapshot or explicitly approved baseline to diagnose regressions accurately.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
-    "project_context": "This is an approach to preventing incidents where outdated V3 scripts disrupt connections between v4 and v23."
+    "project_context": "This auxiliary check detects a total-count decrease caused by a missing lesson-loading entry."
   },
   {
     "id": "PY24_L09_snapshot_hash_001",
@@ -209,7 +209,7 @@
       "The JSON has been parsed"
     ],
     "answer": "The file contents have changed.",
-    "explanation": "A snapshot hash is a value used to quickly compare whether the contents of a file have changed. If the file contents are the same, the hash will be the same; if the contents change, the hash will also change. While comparing hashes is fast, additional verification—such as using a diff tool—is required to determine which lines have changed.",
+    "explanation": "If bytes differ between the two reads, the SHA-256 digests will differ with overwhelming probability and the comparison prints False. A matching digest is strong evidence against accidental change, but it does not show which lines changed, and an untrusted hash does not establish source authenticity. Review the git diff and expected change scope too.",
     "side_card_ids": [
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
@@ -236,7 +236,7 @@
       "Deploy the server"
     ],
     "answer": "Fail",
-    "explanation": "The Server 200 smoke test is a quick check to verify that key files are being served properly by the web server. A 200 response indicates that the default loading path is active. Therefore, the correct answer is “fails.”",
+    "explanation": "A 404 makes status_code == 200 false, so assert raises AssertionError. A timeout or connection failure instead raises from requests.get. Because requests follows redirects by default, a final 200 does not prove that the original URL returned the expected file, and the test does not validate the JSON or HTML body or content version. It checks only one part of availability.",
     "side_card_ids": [
       "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
     ],
@@ -263,10 +263,9 @@
       "Clear the browser cache"
     ],
     "answer": "Run the workflow when a push event occurs",
-    "explanation": "GitHub Actions CI automatically runs validation commands when a commit or push occurs. This allows you to catch data errors or test failures that might have been overlooked by humans, all from a remote location.",
+    "explanation": "on: [push] starts the workflow for repository push events. The job checks out the repository, prepares Python, and runs the validation script. For reproducibility, specify a Python version and an action-reference policy, and ensure the script exits nonzero on failure. A passing job guarantees only the scope checked by this command.",
     "side_card_ids": [
-      "PYV102_A7_AI_ML_TOOLCHAIN",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
     "project_context": "Once the number of cards has increased, you can use GitHub Actions to automate basic validation."
   },
@@ -280,7 +279,7 @@
       "debugging"
     ],
     "reading_goal": "Understand the structure that organizes validation failures into human-readable summaries.",
-    "code": "failures = []\nif duplicates:\n    failures.append(f\"duplicate ids: {len(duplicates)}\")\nif bad_answers:\n    failures.append(f\"bad answers: {len(bad_answers)}\")\nif missing_side:\n    failures.append(f\"missing side cards: {len(missing_side)}\")\n\nprint(\"OK\" if not failures else \"FAIL: \" + \", \".join(failures))",
+    "code": "failures = []\nif duplicates:\n    failures.append(f\"duplicate ids: {len(duplicates)}\")\nif bad_answers:\n    failures.append(f\"bad answers: {len(bad_answers)}\")\nif missing_side:\n    failures.append(f\"missing side cards: {len(missing_side)}\")\n\nif failures:\n    print(\"FAIL: \" + \", \".join(failures))\n    raise SystemExit(1)\nprint(\"OK\")",
     "question_type": "meaning_choice",
     "question": "If `failures` is empty, what is the output?",
     "choices": [
@@ -290,7 +289,7 @@
       "duplicates"
     ],
     "answer": "OK",
-    "explanation": "The test report summary is an output that summarizes the verification results in a human-readable format. If there are no failed items, it displays \"OK\"; if there are, it helps users quickly identify the cause of the failure.",
+    "explanation": "When failures is empty, the code skips the if and prints OK. If any failure exists, it prints the summary and exits with code 1. Printing FAIL but exiting normally, as the original did, can make CI report success, so a machine-readable failure signal is required.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW"
     ],
@@ -334,20 +333,19 @@
       "app_js"
     ],
     "reading_goal": "Read the code in `app.js` that checks whether the last item in `lessonFiles` is the latest file.",
-    "code": "expected = \"python_tests_validation_regression_v24.json\"\nlesson_tail = lessonFiles[lessonFiles.length - 1]\nif (!lesson_tail.includes(expected)) {\n  throw new Error(\"latest lesson missing: \" + expected)\n}",
+    "code": "const expected = \"python_tests_validation_regression_v24.json\";\nconst connected = lessonFiles.some((path) => path.endsWith(\"/\" + expected));\nif (!connected) {\n  throw new Error(\"lesson not connected: \" + expected);\n}",
     "question_type": "meaning_choice",
-    "question": "What issue is this prosecutor trying to address?",
+    "question": "What problem is this check intended to catch?",
     "choices": [
-      "Issue where the latest lesson file is not linked to app.js",
-      "Issue with Broken CSS Color Settings",
-      "Incorrect Password Issue",
-      "Issue with the mouse click location being different"
+      "The expected lesson file is absent from the app.js loading list",
+      "A broken CSS color setting",
+      "An incorrect password input",
+      "A different mouse position"
     ],
-    "answer": "Issue where the latest lesson file is not linked to app.js",
-    "explanation": "The \"lessonFiles tail check\" is a test that verifies whether a new JSON file has been included in the app's loading list. Even if the file exists, it will not be loaded by the app if it is not on the list. After adding a new file, you must verify not only that the data has been generated but also that it is linked to app.js.",
+    "answer": "The expected lesson file is absent from the app.js loading list",
+    "explanation": "some searches the full lessonFiles list for a path ending in the expected filename. Checking only the final element creates an unnecessary ordering dependency, while includes can accept a similar longer filename. A stronger check compares the exact path sets from the file manifest and loading list in both directions.",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
     "project_context": "This ties in with my habit of using `Select-String` to check `APP_DATA_VERSION` and the latest filename."
   },
@@ -362,7 +360,7 @@
       "validation"
     ],
     "reading_goal": "Read the code that checks whether the card's difficulty level is within the allowed range.",
-    "code": "for card in cards:\n    level = int(card[\"level\"])\n    if not (1 <= level <= 10):\n        raise ValueError(f\"bad level: {card['id']}={level}\")",
+    "code": "for card in cards:\n    level = card[\"level\"]\n    if type(level) is not int or not (1 <= level <= 10):\n        raise ValueError(f\"bad level: {card['id']}={level!r}\")",
     "question_type": "meaning_choice",
     "question": "What happens when the level is 11?",
     "choices": [
@@ -372,7 +370,7 @@
       "The card is hidden"
     ],
     "answer": "A ValueError occurs",
-    "explanation": "The schema-level range check verifies that the card-level value falls within the allowed range. Values outside this range are reported as data quality issues and cause the check to fail. The range check also helps prevent issues such as broken screen filters or disrupted difficulty sorting. Therefore, the correct answer is “A ValueError is raised.”",
+    "explanation": "The code raises ValueError if level is not a Python int or lies outside 1 through 10. Coercing with int(...) would silently accept a schema-invalid string such as \"3\", and bool is an int subclass under a simple isinstance check. type(level) is int checks the intended JSON integer type and the range together.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW",
       "PYV158_A1_SCHEMA_FLOW"

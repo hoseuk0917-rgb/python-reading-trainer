@@ -19,7 +19,7 @@
       "Marking something as complete without verification"
     ],
     "answer": "Skipping tasks that have already been completed and continuing with only the remaining tasks",
-    "explanation": "Since long-running tasks may be interrupted, it is important to record their completion status so they can be resumed later. A resume-safe pipeline is designed so that, even if interrupted, the task can continue from where it left off rather than restarting from the beginning. Both the completion status and the checkpoint file must be verified.",
+    "explanation": "Completed shards are skipped only when is_done reflects a trustworthy status recorded atomically with successful output. Resume safety also requires run_shard to tolerate re-execution at crash boundaries and handle checkpoint corruption, version mismatch, and out-of-order parallel completion. File existence alone is insufficient.",
     "side_card_ids": [
       "PYV158_A1_PIPELINE_FLOW"
     ],
@@ -45,7 +45,7 @@
       "Clear the browser cache"
     ],
     "answer": "Record how far you've gotten in your work",
-    "explanation": "If a checkpoint exists, the process can resume from the checkpoint rather than starting from the beginning. A checkpoint file is a file that saves the progress of a long task. When the process restarts, it reads this file to skip the parts that have already been completed and continue from the remaining work. Therefore, the correct answer is “It records how far the task has progressed.”",
+    "explanation": "A checkpoint durably records progress plus the input and code version needed to resume. A single last_done value is safe only for fixed ordered completion; parallel or reordered work can leave earlier shards unfinished. Use a completed-ID set or per-shard state and update it atomically when needed.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW",
       "PYV159_A1_CHECKPOINT_RESUME_FLOW"
@@ -66,13 +66,13 @@
     "question_type": "meaning_choice",
     "question": "Why is there a separate \"done\" marker like `output.done`?",
     "choices": [
-      "To distinguish between the presence of an output file and successful completion,",
-      "To always hide the output file",
-      "To ensure that the task is marked as a failure without exception",
-      "To reduce the Git log"
+      "Distinguish validated completion from mere output-file existence",
+      "Guarantee the output content without validation",
+      "Delete the output",
+      "Replace every checkpoint"
     ],
-    "answer": "To distinguish between the presence of an output file and successful completion,",
-    "explanation": "Even if a file exists, it may have been cut off partway through and only partially written, so it is safer to have a completion marker. A completion marker is a small file or record that indicates a specific task has been completed. It serves as a basis for safely skipping shards or items that have already been completed when the process is rerun. Therefore, the correct answer is “to distinguish between the existence of an output file and successful completion.”",
+    "answer": "Distinguish validated completion from mere output-file existence",
+    "explanation": "A marker represents validated completion instead of mere file existence. Link it to the output hash, row count, and version, and publish it atomically only after output is durably closed. A detached empty output.done file can itself become a stale marker.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -146,13 +146,13 @@
     "question_type": "meaning_choice",
     "question": "When is the safest time to use the \"done\" marker?",
     "choices": [
-      "After the output verification is passed,",
-      "Before you begin",
-      "Before viewing the input file",
-      "Whenever I failed"
+      "After output is durably written and validation passes",
+      "Before the job starts",
+      "Immediately after creating an empty file",
+      "Without checking the output"
     ],
-    "answer": "After the output verification is passed,",
-    "explanation": "\"Validate before done\" is the principle of verifying that the results are correct before marking the task as complete. Simply finishing the execution is different from completing the verification. Applying the \"done\" marker only after verification reduces the risk of mistaking a broken result for a successful one in the next run. Therefore, the correct answer is \"after the output has passed verification.\"",
+    "answer": "After output is durably written and validation passes",
+    "explanation": "Fully write and close output, validate it, and then atomically publish the done marker. Ensure validation covers the required schema, expected count, and hash. When output and marker live in different stores, recovery must reconcile a crash between those operations.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -178,7 +178,7 @@
       "It always causes Git conflicts."
     ],
     "answer": "Reduces the risk of a file that was interrupted midway being saved under the final output name",
-    "explanation": "If you do not create the final filename until the operation is successful, you can minimize the risk of partial output. An atomic write is a storage method in which data is first written to a temporary file and then replaced in the original file once the operation is complete. This helps reduce the problem of corrupted results left behind due to intermediate failures.",
+    "explanation": "Writing and validating a temporary file on the same filesystem before replacement reduces the window in which partial content appears under the final name. Rename atomicity and overwrite behavior depend on OS and filesystem, while power-loss durability may also require flush or fsync and directory synchronization. Clean up abandoned temporary files.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -205,7 +205,7 @@
       "It means you shouldn't verify it"
     ],
     "answer": "Even if it is run multiple times, the final state does not unnecessarily duplicate itself.",
-    "explanation": "Since automation can be re-run, you must prevent duplicate creation, duplicate links, and duplicate saves. An idempotent job is one designed so that even if the same task is run again, the results will not be unexpectedly duplicated. In restartable pipelines, you must ensure that items that have already been processed are skipped.",
+    "explanation": "An idempotent operation has the same observable final state whether the same input and idempotency key are applied once or repeatedly. An upsert needs the correct UNIQUE key and update semantics, and external side effects such as email need separate deduplication records. Skipping completed work is an optimization, not the definition itself.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
@@ -231,7 +231,7 @@
       "To automatically undo a Git commit"
     ],
     "answer": "To rerun only the failed items",
-    "explanation": "In a long pipeline, retrying only the failed items is less costly and time-consuming than re-running the entire pipeline. A retry queue is a list of failed tasks set aside for retries. You need to determine how many times to retry and what state to set the task to if it continues to fail.",
+    "explanation": "A retry queue separates transient failures for later execution. Store an input-version or payload reference, error, attempt count, and next retry time rather than only item_id. After a maximum, send the job to dead-letter handling or human review, and make processing idempotent.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -258,7 +258,7 @@
       "It always creates more duplicates"
     ],
     "answer": "We reduce time and costs by not repeating tasks that have already been successfully completed",
-    "explanation": "If you have an `audit.tsv` file or a validation report, you can extract only the failed IDs and rerun them. “Failed items only rerun” is a method that selects and reruns only the failed items without rerunning the entire process. The list of failures must be accurate to minimize duplicate processing and omissions. Therefore, the correct answer is “It reduces time and costs by avoiding the repetition of successful tasks.”",
+    "explanation": "Rerunning only failure IDs can avoid successful-work cost. Confirm that the audit matches the current input and code version and that upstream dependencies for failures have not changed. If a shared implementation changed, successful items still need regression testing.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -285,7 +285,7 @@
       "To change the file encoding"
     ],
     "answer": "To see at a glance which pieces are complete, in progress, or failed",
-    "explanation": "\"Shard status\" is a table that aggregates the progress status of tasks executed across shards. It is necessary for determining the overall progress, identifying failed segments, and pinpointing bottlenecks. If the status is broken down by shard—such as DONE, FAILED, and PENDING—you can calculate the remaining workload and identify which tasks need to be restarted.",
+    "explanation": "Per-shard total, done, and status reveal remaining work and failure areas. To know whether RUNNING is alive, include worker or lease ID and updated_at or heartbeat, and keep the definition of total and duplicate handling consistent. Record state transitions atomically.",
     "side_card_ids": [
       "CS_batch_shard_001",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -312,7 +312,7 @@
       "Because GitHub repositories are created automatically"
     ],
     "answer": "Because it allows you to determine whether the task has stopped or is still in progress",
-    "explanation": "A progress log is a record kept periodically to track the progress of a long-running task. Without a log, the task appears to have stalled, making it difficult to assess its status. It also allows you to identify the point where the task last succeeded when restarting it, serving as the basis for a resume-safe pipeline.",
+    "explanation": "A progress log shows the last observed done count and shard and helps diagnosis. A stale buffered line or repeated output cannot prove the process is healthy or output is durable. Include timestamp, attempt, and worker ID, and compare with checkpoint, heartbeat, and actual output.",
     "side_card_ids": [],
     "project_context": "Log entries such as \"done,\" \"running_processes,\" and \"GPU util\" in the `node_pass status` message fall into this category."
   },
@@ -330,13 +330,13 @@
     "question_type": "meaning_choice",
     "question": "What does \"heartbeat\" tell us?",
     "choices": [
-      "Is the workflow still active?",
-      "Is the correct answer always right?",
-      "Is the file compressed?",
-      "Has the Git remote address changed?"
+      "The process could emit a liveness signal at that time",
+      "The work output is correct",
+      "Every shard is complete",
+      "No deadlock can occur"
     ],
-    "answer": "Is the workflow still active?",
-    "explanation": "If a heartbeat hasn't been updated for a long time, you can suspect that the job has either died or stalled. A heartbeat is a signal that a long-running job periodically sends to indicate it is still active. If a significant amount of time has passed since the last heartbeat, you can assume the job has stalled.",
+    "answer": "The process could emit a liveness signal at that time",
+    "explanation": "A heartbeat means the loop could write a signal at that timestamp. A recent heartbeat suggests process liveness but does not prove useful progress or correct durable output. Set staleness thresholds from the expected interval and delays, and compare progress counters and worker leases.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -363,7 +363,7 @@
       "Let's start with a Git push"
     ],
     "answer": "Verify the checkpoint and the previous output state again.",
-    "explanation": "Crash recovery is a procedure for safely resuming processing after a task has been terminated prematurely. Before identifying the remaining tasks, you must first verify that the existing outputs are valid. By separating valid outputs from corrupted ones and re-executing only the remaining tasks, you can minimize duplicate processing.",
+    "explanation": "At startup, reconcile checkpoint, output, and done markers with their input and code versions and define which evidence is authoritative. Preserve only outputs with valid hash, schema, and count; quarantine or idempotently reprocess partial and stale states. Blindly trusting the checkpoint can skip work.",
     "side_card_ids": [
       "PYV159_A1_CHECKPOINT_RESUME_FLOW"
     ],
@@ -383,13 +383,13 @@
     "question_type": "meaning_choice",
     "question": "What are the benefits of having a final manifest?",
     "choices": [
-      "You can double-check the path, size, and validation status of the final output.",
-      "Delete all temporary files without exception",
-      "It automatically ensures model performance",
-      "It can be submitted without verification."
+      "Recheck final paths, row counts, hashes, and validation status",
+      "Modify every output automatically",
+      "Prove a process is still running",
+      "Publish secret keys"
     ],
-    "answer": "You can double-check the path, size, and validation status of the final output.",
-    "explanation": "A manifest serves as a reference for reproducing the same results later or identifying missing files. A final manifest is the final list that organizes the result files and status after the task is complete. It can be used as a reference to verify which deliverables were created and passed validation.",
+    "answer": "Recheck final paths, row counts, hashes, and validation status",
+    "explanation": "output_path, rows, sha256, status, and validated_at provide evidence for expected files, record counts, exact bytes, and validation time. Also manage hash algorithm, generator version, manifest integrity, and input provenance so that evidence remains trustworthy.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -410,13 +410,13 @@
     "question_type": "meaning_choice",
     "question": "When should `mark_done` be called in the `resume-safe` `node_pass`?",
     "choices": [
-      "After the jsonl output passes validation,",
-      "Before running shard",
-      "Immediately after creating the output file name",
-      "Before checking the GPU usage"
+      "After durable output passes JSONL validation",
+      "Before output is written",
+      "When the process starts",
+      "Whenever a partial file exists"
     ],
-    "answer": "After the jsonl output passes validation,",
-    "explanation": "Since running models for long periods is costly, strict criteria for determining completion are necessary to minimize omissions and duplicates. The “resume-safe” node_pass is an execution flow designed to allow node processing to resume even after it has been interrupted. You must check both the completion files and the failure lists for each shard. Therefore, the correct answer is “after the jsonl output verification passes.”",
+    "answer": "After durable output passes JSONL validation",
+    "explanation": "After run_node_pass stores output durably and validate_jsonl checks schema, count, and references, mark_done records completion atomically. A crash between validation and marker can cause a rerun, so processing and storage must be idempotent. Link failure records and input and model versions to shard state.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_RESILIENCE_RECOVERY"

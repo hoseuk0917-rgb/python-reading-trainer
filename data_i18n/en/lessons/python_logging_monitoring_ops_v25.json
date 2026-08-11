@@ -34,7 +34,7 @@
       "error_handling"
     ],
     "reading_goal": "Understand the structure for logging and rethrowing errors when an exception occurs.",
-    "code": "try:\n    run_job()\nexcept Exception as e:\n    logging.error(\"job failed: %s\", e)\n    raise",
+    "code": "try:\n    run_job()\nexcept Exception:\n    logging.exception(\"job failed\")\n    raise",
     "question_type": "meaning_choice",
     "question": "Why rewrite `raise`?",
     "choices": [
@@ -44,7 +44,7 @@
       "To delete the log files"
     ],
     "answer": "To record the error and report the failure to higher-ups,",
-    "explanation": "If you simply log the error in the `except` block and exit, the failure may be hidden. `raise` re-throws the exception. Logging in a `try/except` block is a way to record the cause and location of an exception when it occurs. Instead of simply hiding the error, you should log which input and at which step the failure occurred. Therefore, the correct answer is “to log the error and then propagate the failure to the parent block.”",
+    "explanation": "Inside except, logging.exception records the current exception message and traceback, while bare raise propagates that same exception to the caller. logging.error(..., e) alone can omit the traceback and lose the failure location. Sanitize tokens, passwords, and personal data from logs, and keep broad Exception boundaries as small as possible.",
     "side_card_ids": [
       "DEV_logging_001",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -97,7 +97,7 @@
       "This method completes the entire authentication process without using a database."
     ],
     "answer": "This makes it easy to search later using fields like event/run_id/items_written",
-    "explanation": "A structured log is a log recorded in a key-value format. It is easier to filter, aggregate, and search than simple string logs, making it ideal for analyzing operational status. By including fields such as `run_id`, `card_id`, and `status`, you can select and analyze specific runs or cards.",
+    "explanation": "A one-line JSON object lets a collector parse and filter fields such as event, run_id, and counts. This example merely prints JSON and has no timestamp, severity, schema version, or destination management. Ensure values are JSON-serializable, omit secrets and personal data, and define log size and retention policies.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -125,7 +125,7 @@
       "To clear your browser cache"
     ],
     "answer": "To group logs from the same execution for later reference",
-    "explanation": "As pipelines get longer, having a `run_id` makes it easier to track the input, processing, and output of a given execution. `run_id` tracking is a method of grouping the flow of a single execution under a single identifier. It is useful for linking multiple logs to determine whether they originated from the same task.",
+    "explanation": "Passing one run_id through start, processing, finish logs, and downstream calls lets operators group events from one execution. Generate a collision-resistant ID across workers and time zones, do not trust an arbitrary user-supplied value, and propagate it consistently through the entire request or job context.",
     "side_card_ids": [
       "PYV158_A1_PIPELINE_FLOW"
     ],
@@ -142,9 +142,9 @@
       "resilience"
     ],
     "reading_goal": "I'm reading some code that waits briefly and then retries in the event of a temporary failure.",
-    "code": "import time\n\nfor attempt in range(3):\n    try:\n        return call_api()\n    except TimeoutError:\n        wait = 2 ** attempt\n        time.sleep(wait)\nraise RuntimeError(\"api failed after retries\")",
+    "code": "import random\nimport time\n\ndef call_with_retry(max_attempts=3):\n    if max_attempts < 1:\n        raise ValueError(\"max_attempts must be positive\")\n    for attempt in range(max_attempts):\n        try:\n            return call_api()\n        except TimeoutError:\n            if attempt == max_attempts - 1:\n                raise\n            wait = 2 ** attempt + random.uniform(0, 0.5)\n            time.sleep(wait)",
     "question_type": "meaning_choice",
-    "question": "When `attempt` is 2, what is the value of `wait`?",
+    "question": "When attempt is 2, what is the exponential-backoff base value 2 ** attempt?",
     "choices": [
       "4",
       "2",
@@ -152,7 +152,7 @@
       "8"
     ],
     "answer": "4",
-    "explanation": "Retry backoff is a method in which a failed request is not retried immediately, but rather after waiting for progressively longer intervals. This reduces the load on the server during temporary outages. As the wait time increases with each attempt, the system can recover more reliably when temporary network or API limitations occur. Therefore, the return/call result is “4.”",
+    "explanation": "2 ** 2 equals 4. The code avoids sleeping after the final failure, re-raises the original TimeoutError, and adds small jitter so clients do not all retry together. Retry only transient failures and operations that are safe to repeat, and respect Retry-After, a total deadline, and an attempt limit.",
     "side_card_ids": [
       "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
     ],
@@ -179,7 +179,7 @@
       "Always set the status code to 10"
     ],
     "answer": "Set a limit so you don't have to wait too long for a response",
-    "explanation": "A timeout guard is a mechanism that sets a time limit to prevent external requests or tasks from stalling for too long. It reduces overall task congestion when network issues arise. Without a timeout, if one request stalls, subsequent batches or screen flows may also be blocked.",
+    "explanation": "In Requests, timeout=10 is used to limit connection and socket-read inactivity; it is not a guaranteed ten-second total wall-clock deadline. DNS, redirects, multiple response chunks, and another retry layer can make total time longer. raise_for_status turns 4xx and 5xx into HTTPError, so distinguish timeout, connection, and HTTP failures.",
     "side_card_ids": [
       "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
     ],
@@ -205,7 +205,7 @@
       "Perform a Git push"
     ],
     "answer": "Quickly check the server's current status",
-    "explanation": "A health check is a simple API that verifies whether a server is responsive during deployment or operation. A health check endpoint is an address used to quickly verify whether a service is active. It is important to distinguish whether it simply checks for a 200 response or also verifies database and external connections.",
+    "explanation": "This endpoint proves only that the process can answer the request and read APP_VERSION, which is a liveness signal. It does not check whether a database, queue, or external API is ready. Separate restart-oriented liveness from traffic-oriented readiness, and give dependency checks short timeouts and overload protection.",
     "side_card_ids": [
       "PYV158_A1_API_FLOW"
     ],
@@ -232,7 +232,7 @@
       "It never changes"
     ],
     "answer": "1 increases",
-    "explanation": "A metrics counter is a metric that tracks the cumulative number of events—such as successes, failures, and errors—to monitor operational status. Raising `errors` within an `except` block makes it easier to track failures. Therefore, the return/call result is “increased by 1.”",
+    "explanation": "On one call where run raises, requests increments by one, then errors increments by one before the exception propagates. This in-memory dictionary is separate per process, is not necessarily safe under thread or async concurrency, and resets on restart. Use a concurrency-safe metrics client and central backend with consistent request and error definitions.",
     "side_card_ids": [],
     "project_context": "This is the most basic way to track request volume, error rate, and failure rate."
   },
@@ -256,7 +256,7 @@
       "To delete the number of requests"
     ],
     "answer": "To avoid a division-by-zero error",
-    "explanation": "An \"alert condition\" is a criterion for determining whether a situation is problematic based on numerical values. If you implement safeguards to prevent the denominator from becoming zero, you can calculate the ratio without errors. When calculating operational metrics, exceptions such as division by zero can lead to service outages, so safeguards are necessary. Therefore, the correct answer is “to avoid division-by-zero errors.”",
+    "explanation": "max(total_requests, 1) prevents division by zero and produces an error rate of zero when there are no requests. A rate from one or two requests is noisy, so alerts also need minimum traffic, a time window, duration, and severity. Correlate the ratio with latency and absolute error count rather than declaring an incident from one number.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -284,7 +284,7 @@
       "To compress JSON"
     ],
     "answer": "To track the subject, action, and object of important tasks",
-    "explanation": "An audit log is a record that documents who performed what action and when. It is necessary for identifying the cause and scope of responsibility in the event of security incidents, operational issues, and post-incident analysis. Recording the run_id, user, action type, and result makes it easier to track the same incident later. Therefore, the correct answer is “to track the actor, action, and target of critical operations.”",
+    "explanation": "The record stores who acted, what action occurred, which target was affected, and when. Important audits may also need outcome, request or run ID, and policy-approved source context. Protect the log with least privilege and tamper-resistant storage, time synchronization, and retention and deletion rules, while excluding secrets and unnecessary personal data.",
     "side_card_ids": [
       "PYV158_A1_DATABASE_FLOW"
     ],
@@ -311,7 +311,7 @@
       "All items"
     ],
     "answer": "Runs that have remained in the \"running\" state for a long time",
-    "explanation": "If a job terminates prematurely, it may remain in the \"running\" state, so it is cleared based on a cutoff criterion. The \"stale job reaper\" is a mechanism that identifies jobs that have been paused for an extended period and marks them as failed or expired. You need to verify the cutoff time and determine which status the job is changed to.",
+    "explanation": "The statement marks every running row started before cutoff as error. It can incorrectly reap a legitimate long job, so prefer an updated heartbeat or lease expiry and compare ownership or version in the update to avoid a race with job completion. Audit the affected-row count too.",
     "side_card_ids": [
       "PL_cron_001",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -339,7 +339,7 @@
       "Restore the DB table to its initial state"
     ],
     "answer": "Register an asynchronous task in a schedule event so that it runs to completion",
-    "explanation": "This is a pattern used when passing asynchronous tasks to a Cloudflare Workers scheduled handler. The worker cron log shows when the scheduled job started and ended, as well as how many items were processed. It’s easier to track issues if the failure time and job name are recorded together.",
+    "explanation": "ctx.waitUntil registers the promise so the platform tracks work after the scheduled handler returns, within the platform execution lifetime. It does not provide unlimited execution or guaranteed completion; limits, exceptions, or deployment can interrupt it. Make runCurate idempotent and add failure logging, retry, durable checkpoints, and rejection observation.",
     "side_card_ids": [],
     "project_context": "This ties in with the workflow of checking cron execution logs using `wrangler tail`."
   },
@@ -364,7 +364,7 @@
       "Always an error"
     ],
     "answer": "Warning log",
-    "explanation": "A cost quota monitor is a tool that tracks whether usage or costs are approaching a set limit. If the ratio exceeds the threshold, it displays a warning to prevent excessive charges. By logging these warnings, you can adjust the model, batch size, and number of runs before exceeding the limit.",
+    "explanation": "When total_credits is positive and the ratio is 0.85, it exceeds 0.8 and emits a warning. If total_credits is zero, max(...,1) only avoids a division error and does not create a meaningful quota ratio; treat that as a configuration error. A warning does not prevent spending, so add hard budgets, rate limits, and a trustworthy provider-usage source.",
     "side_card_ids": [],
     "project_context": "These are operational practices for safely using AWS credits, LLM API usage, and free quotas."
   },
@@ -389,7 +389,7 @@
       "CSS File Size"
     ],
     "answer": "The Root Cause of the Problem",
-    "explanation": "Organizing an incident summary into sections such as symptoms, impact, cause, actions taken, and recurrence prevention is helpful for subsequent tasks. An incident summary object is a structure that consolidates the time the problem occurred, its cause, the scope of its impact, and the recovery measures taken in one place. It is used to convert logs into a human-readable report format. Therefore, the correct answer is “the root cause of the problem.”",
+    "explanation": "root_cause should contain an evidence-confirmed underlying cause, not merely a symptom. The object is a useful start for separating symptom, impact, cause, fix, and next action, but lacks timestamp, detection, affected version, evidence links, owner, and verification. Label the cause as a hypothesis until it is confirmed.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"

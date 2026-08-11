@@ -10,21 +10,21 @@
       "url"
     ],
     "reading_goal": "I understand that the GitHub Pages URL is fixed and that only the content is updated after a push.",
-    "code": "# repository\nhttps://github.com/hoseuk0917-rgb/python-reading-trainer\n\n# public site\nhttps://hoseuk0917-rgb.github.io/python-reading-trainer/",
+    "code": "# Example repository URL\nhttps://github.com/<account>/<repository>\n\n# Example project Pages URL\nhttps://<account>.github.io/<repository>/",
     "question_type": "meaning_choice",
-    "question": "What happens to the GitHub Pages URL every time I run `git push`?",
+    "question": "What happens to the URL after deploying a new commit while keeping the account, repository name, and Pages settings?",
     "choices": [
-      "A completely new address is generated every time.",
-      "It changes to the \"localhost\" address",
-      "The address remains the same; only the contents of the distributed files are updated.",
+      "A completely new address appears every time",
+      "It changes to localhost",
+      "The deployed content normally updates at the same address",
       "It is always deleted"
     ],
-    "answer": "The address remains the same; only the contents of the distributed files are updated.",
-    "explanation": "The public URL for GitHub Pages is fixed based on the repository settings. When a commit changes, only the content at that address is redeployed. The fixed GitHub Pages URL is the public address where static files are actually deployed. Since it may differ from the local path, you must check both the relative path and the base path.",
+    "answer": "The deployed content normally updates at the same address",
+    "explanation": "With the same account, repository, and Pages settings, a normal new deployment updates content at the same public URL. Renaming the repository or account or changing the custom domain or Pages source can change it. A project site includes the repository base path, so verify root-relative and relative asset paths at the actual deployed URL.",
     "side_card_ids": [
       "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
     ],
-    "project_context": "The distinction is that I use a fixed GitHub Pages URL on my phone and localhost when developing on my PC."
+    "project_context": "This card distinguishes a local development URL from a public GitHub Pages project URL."
   },
   {
     "id": "PY23_L07_static_loading_order_001",
@@ -47,7 +47,7 @@
       "The browser always ignores it"
     ],
     "answer": "It is loaded via the `src` attribute of the `script` tag",
-    "explanation": "HTML uses `link` tags to load CSS and `script` tags to load JavaScript. The `defer` attribute allows the JavaScript to run later without blocking HTML parsing. When `defer` is used, the JavaScript file is downloaded, but it is executed only after the document structure has been built, so it does not interfere with the initial display of the page. Therefore, the output is loaded from the `src` path specified in the `script` tag.",
+    "explanation": "link requests the stylesheet, and the script src requests JavaScript. A defer script downloads in parallel with HTML parsing and executes in document order after parsing finishes but before DOMContentLoaded. A stylesheet can block rendering, and a deferred script may wait for a stylesheet needed for style calculation, so this does not guarantee that initial display is never delayed.",
     "side_card_ids": [
       "PYV161_A1_ROLLBACK_SEPARATION_UI_FLOW"
     ],
@@ -74,12 +74,12 @@
       "I want to delete the HTML"
     ],
     "answer": "To make the browser recognize it as a different URL from the previous file",
-    "explanation": "Cache-busting is a method of refreshing the cache by appending a version number to the URL of a static file. If the query string changes, the browser treats it as a new file. If old files remain after deployment, it may appear as though the changes have not been applied. Therefore, the correct answer is “to make the browser recognize it as a different URL from the previous file.”",
+    "explanation": "Changing the query changes the full URL, which ordinary browser and CDN caches may treat as a separate resource key. This can cause a new asset request, but it is not guaranteed if the server, CDN, or service worker ignores queries. A content hash or consistent version policy is easier to trace than arbitrary per-deployment text.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
     ],
-    "project_context": "This is how I fixed the issue where the old app.js kept running, preventing the v15 recovery from appearing."
+    "project_context": "This is a versioned-asset URL pattern for reducing reuse of stale JavaScript and CSS after deployment."
   },
   {
     "id": "PY23_L08_data_version_fetch_001",
@@ -102,11 +102,11 @@
       "To close the browser"
     ],
     "answer": "Since the second query parameter and all subsequent ones must be separated by &,",
-    "explanation": "Data version fetch is a method of appending a version number to a JSON data request to retrieve the latest data. The first parameter begins with a question mark (?), and subsequent parameters are separated by an ampersand (&). You must use the correct query separator to add the version value without disrupting existing parameters. Therefore, the result is that “the second and subsequent query parameters must be separated by an ampersand (&).”",
+    "explanation": "The first query parameter in an ordinary URL starts with ?, and later parameters use &, so the function appends &v= when a query already exists. String concatenation can place a parameter after a #fragment or duplicate an existing v. URL and URLSearchParams.set(\"v\", APP_DATA_VERSION) preserve the URL structure and replace the value more safely.",
     "side_card_ids": [
       "PYV158_A1_JSON_FLOW"
     ],
-    "project_context": "This is the current app structure, which ensures that the JSON for lessons v1 through v22 loads in the new version."
+    "project_context": "This cache-refresh structure adds a data version to lesson JSON requests."
   },
   {
     "id": "PY23_L08_http_log_304_001",
@@ -129,7 +129,7 @@
       "Response indicating lack of authority"
     ],
     "answer": "Responses indicating that it is acceptable to use the browser cache",
-    "explanation": "A 304 Not Modified response means that the previously received cache is still valid. This is different from a 404 or 500 error. A 304 response indicates that the browser can reuse the existing cache. While this is not an error, you should also check the cache status when a new version is not reflected.",
+    "explanation": "304 Not Modified follows a conditional request containing a validator; the server says the resource has not changed and omits the body. The browser can use its cached body. This is not an error, but the status alone does not prove that the cached body is the intended deployment or that a service worker did not supply another response.",
     "side_card_ids": [
       "PL_cache_001",
       "PYV102_A7_PWA_OFFLINE_UPDATE"
@@ -157,7 +157,7 @@
       "Clear the browser cache"
     ],
     "answer": "It throws an error and does not proceed to JSON parsing",
-    "explanation": "If you simply try to parse failure responses such as HTTP 404 or 500 as JSON, it can be difficult to identify the cause. A JSON fetch failure could be due to a file path issue, a server response issue, or a JSON syntax error. You should review both the status code in the Network tab and the errors in the Console. Therefore, the result of the call is that “an error is thrown, and JSON parsing does not proceed.”",
+    "explanation": "When res.ok is false, the function throws and does not run res.json. Even with a 2xx response, invalid JSON makes res.json reject, while a network error rejects fetch before a response exists. The caller should catch both categories, display safe path and error context, and avoid leaving the entire app on an endless Loading state.",
     "side_card_ids": [
       "PYV158_A1_JSON_FLOW"
     ],
@@ -184,7 +184,7 @@
       "Deletes files in no particular order"
     ],
     "answer": "If even one of the requests fails, the entire process may fail.",
-    "explanation": "`Promise.all` returns an array of results only if all Promises succeed. If even one is rejected, the entire `await` statement fails. `Promise.all` is a mechanism for waiting for multiple asynchronous operations at once. Since the entire operation can fail if even one fails, error handling and fallbacks are crucial.",
+    "explanation": "map creates each loadJson promise, and Promise.all resolves with results in input order only after every promise fulfills. One rejection rejects the overall await, but it does not automatically cancel other fetches that have started. Use fail-fast behavior for required files and Promise.allSettled or per-item fallback for optional ones according to policy.",
     "side_card_ids": [
       "PYV158_A1_JSON_FLOW"
     ],
@@ -211,7 +211,7 @@
       "To install a new browser"
     ],
     "answer": "To convert an object into a string that can be stored in localStorage,",
-    "explanation": "Since localStorage stores string values, objects must be converted to JSON strings. Saving progress in localStorage is a way to store the user's learning status in the browser. You need to verify which keys are used to store the card ID, score, and completion status.",
+    "explanation": "localStorage stores strings, so JSON.stringify serializes the object to a JSON string. The data remains in origin-specific browser storage and is readable by scripts on that origin, so it is unsuitable for secrets or sensitive personal data. The synchronous API can block the UI for large frequent writes, and setItem may fail because of quota, private mode, or storage policy.",
     "side_card_ids": [
       "PYV158_A1_JSON_FLOW"
     ],
@@ -238,7 +238,7 @@
       "Error"
     ],
     "answer": "{ seen: [], unknown: [] }",
-    "explanation": "The ternary operator ensures that `JSON.parse` is called only if a value is stored; otherwise, it uses the default object. The fallback for loading from `localStorage` is a mechanism that safely reverts to the default value if no value is stored or if the stored value is corrupted. JSON parsing failures and empty value handling must be considered together. Therefore, the correct answer is ‘{ seen: [], unknown: [] }’.",
+    "explanation": "When raw is null, the conditional expression selects the default object, matching the answer. If raw exists but contains invalid JSON, JSON.parse throws; this code has no fallback for corruption. A safe loader catches parse errors, validates the parsed schema, records the problem, and deliberately selects a default.",
     "side_card_ids": [
       "WEB_localstorage_001",
       "PYV102_A7_PWA_OFFLINE_UPDATE"
@@ -266,7 +266,7 @@
       "Disable all caching"
     ],
     "answer": "Makes the browser run like an app with a less visible UI",
-    "explanation": "The manifest contains PWA metadata such as the app name, launch URL, icon, and display mode. The PWA `manifest.json` file defines the app name, icon, launch URL, and display mode. To make the app look like a native app, you must ensure that all required fields are included.",
+    "explanation": "display=\"standalone\" requests a standalone presentation with reduced browser UI when an installed app opens and the platform supports it. It does not by itself guarantee installability or presentation mode and may fall back by browser or platform. Verify name, icons, start_url, scope, and installation criteria such as HTTPS and service-worker support too.",
     "side_card_ids": [
       "WEB_pwa_001",
       "PYV102_A7_PWA_OFFLINE_UPDATE"
@@ -294,7 +294,7 @@
       "Shutting Down GitHub Pages"
     ],
     "answer": "It can return a cached response instead of accessing the network.",
-    "explanation": "Service workers are useful for offline and PWA caching, but they can also cause outdated files to remain visible. A service worker is a script that controls caching and offline behavior between a web app and the network. It is also closely related to the issue of previous files remaining after deployment.",
+    "explanation": "If caches.match finds a response, this cache-first flow returns it without going to the network. The snippet does not populate the cache or implement versioning, deletion, or a network-failure fallback. Cache-first is fast and useful offline but can serve stale assets for a long time, so install/activate version migration and update messaging are needed.",
     "side_card_ids": [
       "PYV160_A1_PWA_STATE_STORAGE_FLOW"
     ],
@@ -313,15 +313,15 @@
     "reading_goal": "Learn how to use the browser's Network tab to see which files were actually loaded.",
     "code": "Network tab check:\n- index.html status\n- app.js status and query version\n- style.css status\n- lesson JSON status\n- side_cards JSON status",
     "question_type": "meaning_choice",
-    "question": "If the app gets stuck on \"Loading...,\" what should you check first in the Network tab?",
+    "question": "What should you inspect in Network when investigating a stuck Loading screen?",
     "choices": [
-      "Is the monitor brightness set high enough?",
-      "Can you see my GitHub profile picture?",
-      "Did the app.js and lesson JSON files load with a 200 status code?",
-      "Is the keyboard input language correct?"
+      "Monitor brightness",
+      "A GitHub profile photo",
+      "The status, response, and version of app.js and JSON requests",
+      "Keyboard input language"
     ],
-    "answer": "Did the app.js and lesson JSON files load with a 200 status code?",
-    "explanation": "The DevTools Network tab shows whether the browser’s requests for JS, CSS, and JSON files were successful. In a static app, even if a single core file fails to load, the page may stop refreshing. Therefore, the correct answer is “whether app.js and the lesson JSON files loaded with a 200 status code.”",
+    "answer": "The status, response, and version of app.js and JSON requests",
+    "explanation": "In Network, inspect the request URL, status, response body, initiator, and cache or service-worker indicators. A 200 does not prove that JavaScript ran or JSON parsed, and a 304 can be normal cache validation. Connect this evidence with Console errors and application state to locate the stalled stage.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW"
     ],
@@ -348,7 +348,7 @@
       "manifest icon"
     ],
     "answer": "Around line 312 in app.js",
-    "explanation": "Console errors usually provide the filename and line number. Check the parentheses, curly braces, and strings around that location. The DevTools Console is a screen in the browser where you can view JavaScript errors and logs. It’s the first place to check when an app freezes or data doesn’t display. Therefore, the correct answer is “near line 312 in app.js.”",
+    "explanation": "The stack location makes line 312, column 5 of app.js the first place to inspect. A parser may detect a SyntaxError after the actual missing quote or brace, so the cause can be on an earlier line. For a generated or minified bundle, use source maps, and inspect the recent diff and syntax validation around the reported location.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW"
     ],
@@ -402,11 +402,11 @@
       "Model Training"
     ],
     "answer": "Serving static files such as HTML, CSS, and JS",
-    "explanation": "The static server serves app files, while the API server handles dynamic processing such as search, database operations, and LLM. The architecture connecting the static app and the API server involves serving screen files statically and sending data requests to the API. You must verify how the deployment URL and the API URL are separated.",
+    "explanation": "In this example, the 8790 server provides frontend files such as HTML, CSS, and JavaScript, while the 8000 application creates search responses. The ports make them different origins, so CORS may be required. On a phone, 127.0.0.1 means the phone, not the PC, so use a public API host or the PC LAN address with correct bind and firewall settings.",
     "side_card_ids": [
       "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
     ],
-    "project_context": "This is the structure required when integrating the LLM_Lora search API with the reading trainer."
+    "project_context": "This structure distinguishes origin and host when connecting a static learning frontend to a separate search API."
   },
   {
     "id": "PY23_L10_deploy_verify_checklist_001",
@@ -419,7 +419,7 @@
       "github_pages"
     ],
     "reading_goal": "Learn the steps to verify that the app is actually displaying the latest files after a push.",
-    "code": "# 1. git status clean # 2. git log --oneline -3 # 3. Verify v23 JSON 200 on the local server # 4. Search for the new card on GitHub Pages # 5. Check the version of app.js/data in DevTools Network",
+    "code": "# 1. Confirm the commit and pushed target branch\n# 2. Confirm CI/Pages success and source revision\n# 3. Inspect public HTML, JS, and JSON status/response\n# 4. Verify app.js and data content versions\n# 5. Check Console errors and service-worker/cache state",
     "question_type": "order_choice",
     "question": "If the latest changes aren't reflected after a push, what should you check in particular?",
     "choices": [
@@ -429,7 +429,7 @@
       "Just check the GitHub username display"
     ],
     "answer": "Browser/Pages cache and app.js/data version",
-    "explanation": "If the deployment was successful but the screen remains unchanged, you may be viewing a cached version or an outdated app.js/data JSON file. The post-deployment verification checklist involves confirming that the app files, data JSON, and resource cards load with a 200 status code from their actual URLs. You should also verify the version string.",
+    "explanation": "A clean local git status or one 200 response does not prove that the intended commit is publicly deployed. Compare the remote branch and deployment revision with response content and versions at the public URL, then inspect Console and service-worker cache state. Preserve evidence of which layer is stale before clearing caches so the cause remains traceable.",
     "side_card_ids": [
       "PYV161_A1_DEPLOY_VERSION_URL_FLOW",
       "PYV161_A1_ENV_MAIN_CHECKLIST_FLOW"

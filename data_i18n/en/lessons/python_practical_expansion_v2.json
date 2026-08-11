@@ -42,7 +42,7 @@
     ],
     "question": "What's the output?",
     "reading_goal": "I'm reading about a concise way to convert a list into a key-value dictionary.",
-    "project_context": "This is often used when creating an index dictionary to quickly find nodes by their `node_id`.",
+    "project_context": "This is often used to build an index dictionary that finds nodes quickly by `id`.",
     "explanation": "Dictionary comprehension creates key-value pairs iteratively. This code uses the node’s ID as the key and stores the entire node as the value. Since this is a one-line version of the pattern used to create a dictionary with a loop, you must first read what the key and value are. Therefore, the output is “LiDAR.”",
     "question_type": "output_prediction",
     "concepts": [
@@ -95,7 +95,7 @@
     "question": "Which of the following is closest to what `yield` does?",
     "reading_goal": "Understand that `yield` is a function structure that outputs values one by one.",
     "project_context": "The yield pattern can be used when streaming large files.",
-    "explanation": "Functions that include the `yield` keyword do not complete in a single call like regular functions; instead, they become generators. The caller can retrieve and use values one by one in order. Since large datasets are not generated all at once—only the necessary portions are retrieved—this also helps reduce memory usage.",
+    "explanation": "Calling a function that contains `yield` creates a generator object instead of producing one final result immediately. When the `for` loop requests a value, the function runs to the first `yield`, produces `LiDAR`, and pauses with its state preserved. The next request resumes after that line and produces `Radar`. Values can therefore be created one at a time without building the entire result list first.",
     "question_type": "meaning_choice",
     "concepts": [
       "yield",
@@ -111,17 +111,17 @@
     ],
     "level": 6,
     "title": "Reading Path.exists()",
-    "answer": "File Existence",
+    "answer": "Whether the path exists",
     "choices": [
-      "File Existence",
+      "Whether the path exists",
       "API Response Speed",
       "Model Accuracy",
       "Git Branches"
     ],
     "question": "What does this code check?",
     "reading_goal": "Read the code that checks whether a file or folder actually exists.",
-    "project_context": "You can perform a preliminary check to ensure that the batch job does not fail if there is no input file.",
-    "explanation": "Path.exists() checks whether a file or folder actually exists at the specified path. Checking for existence before reading a file can help reduce errors. Since attempting to open a nonexistent path will result in an error, you should include a conditional statement based on the result of `exists()` to either proceed with the operation or abort it.",
+    "project_context": "This preliminary check can stop with a clearer message when an input path is missing.",
+    "explanation": "`Path.exists()` returns `True` or `False` depending on whether a file or directory exists at that path. This code prints `found` when `data/nodes.jsonl` exists and `missing` otherwise. A `True` result does not guarantee that a later `open` will succeed: the path might disappear or lack read permission, so this check does not prevent every file-reading error.",
     "question_type": "meaning_choice",
     "concepts": [
       "pathlib",
@@ -147,7 +147,7 @@
     "question": "Which of the following is closest in meaning to `exist_ok=True`?",
     "reading_goal": "Read the code that creates the output folder in advance and avoids duplicate file creation errors.",
     "project_context": "This pattern ensures that the output folder is set before saving the result file.",
-    "explanation": "`mkdir` is a method for creating folders. If you set `exist_ok=True`, it will proceed without raising an error even if a folder with the same name already exists. Use this when you want the code to treat the existence of an existing folder as part of the normal flow, even when creating the output folder from scratch each time.",
+    "explanation": "`mkdir` creates a directory. `parents=True` also creates any missing parent directories, and `exist_ok=True` suppresses `FileExistsError` when `outputs` already exists as a directory. If a regular file occupies that path, the call still fails because it cannot turn that file into a directory.",
     "question_type": "meaning_choice",
     "concepts": [
       "pathlib",
@@ -173,8 +173,8 @@
     ],
     "question": "What is this code trying to read?",
     "reading_goal": "Understand the pattern of reading configuration values from outside the code using `os.environ.get()`.",
-    "project_context": "This is a standard practice for securely managing API keys without hard-coding them directly into the code.",
-    "explanation": "`os.environ.get` is used to read environment variable values. It allows you to inject settings—such as API keys or execution modes—that are difficult to hardcode directly into the code. Since an incorrect environment variable name may return `None`, it’s best to include default values or validation checks. Therefore, the output is “API key from the environment variable.”",
+    "project_context": "This avoids hard-coding an API key in source code, but an environment variable is not automatically secret.",
+    "explanation": "`os.environ.get('GOOGLE_API_KEY')` reads that environment variable as a string and returns `None` when it is absent. A present, nonempty value makes the condition true and prints `key found`; the actual key is not printed. Environment variables can reduce source-code exposure, but logs, process permissions, and deployment configuration still need access controls. The answer is “API Key in Environment Variables.”",
     "question_type": "meaning_choice",
     "concepts": [
       "os",
@@ -201,7 +201,7 @@
     "question": "What does this code do?",
     "reading_goal": "I understand that `requests.get(url)` is code that sends a request to an external address.",
     "project_context": "It is used when retrieving data from external APIs or data sources.",
-    "explanation": "`requests.get` sends an HTTP GET request to the specified URL. It is the most basic method for retrieving data from an API or web server. GET requests are typically used to retrieve data from a server, and you must check both the response status code and the response body.",
+    "explanation": "`requests.get` sends an HTTP GET request to the specified URL and returns a response object. After the request completes, this code prints `response.status_code`. Real code should inspect both the status and expected body format, and network failures can raise exceptions. This call has no timeout, so also check whether production code sets one.",
     "question_type": "meaning_choice",
     "concepts": [
       "requests",
@@ -218,9 +218,9 @@
     ],
     "level": 7,
     "title": "Reading response.json()",
-    "answer": "Modify the response so that it can be treated like a dict or list",
+    "answer": "Parse the JSON response body into a Python value",
     "choices": [
-      "Modify the response so that it can be treated like a dict or list",
+      "Parse the JSON response body into a Python value",
       "Save the response as an image",
       "Delete the response",
       "Shut down the server"
@@ -228,7 +228,7 @@
     "question": "What does `response.json()` do?",
     "reading_goal": "Read the code that converts the API response body into a JSON data structure.",
     "project_context": "It often appears in API-based harvesters and data collection code.",
-    "explanation": "`response.json()` converts the JSON string sent by the server into a Python data structure, such as a dictionary or list. This allows you to retrieve values using their keys. Since the response may not be JSON, you should also include exception handling in your actual service.",
+    "explanation": "`response.json()` parses the response body as JSON and returns the corresponding Python value, which may be a dictionary, list, string, number, boolean, or `None`. This example assumes a dictionary containing an `items` key. Invalid JSON causes a parsing exception, and this method alone does not verify HTTP success or the required schema.",
     "question_type": "meaning_choice",
     "concepts": [
       "requests",
@@ -270,17 +270,17 @@
     ],
     "level": 7,
     "title": "Reading logging.info()",
-    "answer": "Keeps a log of operations",
+    "answer": "Submit an INFO-level log record",
     "choices": [
-      "Keeps a log of operations",
+      "Submit an INFO-level log record",
       "Compress the file",
       "Evaluate the model",
       "Creating HTML"
     ],
     "question": "What is logging.info most similar to?",
-    "reading_goal": "Read the logging code that records execution history and tracks the cause of problems.",
+    "reading_goal": "Understand that `logging.info` submits an INFO-level record to the logging system.",
     "project_context": "This is important when tracking long deployments or server runtime status.",
-    "explanation": "Logging is a feature that records execution history more systematically than `print`. It records the time, level, and message together, which aids in debugging and operational monitoring. In production code, using logging instead of `print` makes management tasks—such as filtering by level and saving to files—easier.",
+    "explanation": "`logging.info` submits an INFO-level message to the logging system. Whether it appears on screen or in a file depends on the configured log level and handlers. The default root logger level is `WARNING`, so these two lines alone normally do not display the INFO message. A setup such as `logging.basicConfig(level=logging.INFO)` can make it visible; file output requires separate configuration.",
     "question_type": "meaning_choice",
     "concepts": [
       "logging",
@@ -301,13 +301,13 @@
     "choices": [
       "node_id",
       "n001",
-      "w+",
+      "\\w+",
       "None"
     ],
     "question": "What's the output?",
     "reading_goal": "I understand that this is code for finding a specific pattern in text.",
     "project_context": "It is used to extract IDs or patterns from filenames, logs, and text.",
-    "explanation": "A regular expression search finds a pattern within a string. In this code, the part enclosed in parentheses (\\w+) captures \"n001\" and extracts it as group (1). Regular expressions can find more complex patterns than simple string searches, but you must accurately interpret the positions of the parentheses.",
+    "explanation": "`re.search` finds the first matching region anywhere in the string. Parentheses in `(\\w+)` create a capture group, while `\\w+` matches one or more letters, digits, or underscores, producing `n001`. `match.group(1)` returns that first group. With different input, no match would make `match` equal to `None`, so practical code should check before calling `group`.",
     "question_type": "output_prediction",
     "concepts": [
       "regex",
@@ -330,10 +330,10 @@
       "Save file",
       "Start the loop"
     ],
-    "question": "-> What does \"str\" stand for?",
+    "question": "What does `-> str` mean?",
     "reading_goal": "Read the type hint code that indicates the expected types of function inputs and outputs.",
     "project_context": "It helps you quickly understand the intent of a function in large codebases.",
-    "explanation": "Type hints indicate the expected data type of a variable or function argument. While they are not enforced at runtime, they aid in code comprehension, auto-completion, and static analysis. -> Since `str` indicates that the function is intended to return a string, the caller can anticipate how the result will be used.",
+    "explanation": "Type hints describe the intended types of function inputs and outputs. They help readers, editors, and static analysis tools but are not enforced automatically at runtime. Here, `label: str` describes the parameter and `-> str` says the function is intended to return a string.",
     "question_type": "meaning_choice",
     "concepts": [
       "type_hint",
@@ -491,8 +491,8 @@
     ],
     "question": "Which of the following best describes the purpose of this function?",
     "reading_goal": "Read the flow of the function that feeds the basis into the model after searching.",
-    "project_context": "Yes, it is directly linked to the KG/LLM search service architecture.",
-    "explanation": "The RAG workflow follows the sequence: embed → search → prompt → call_llm. The RAG pipeline is a process that takes a question, finds relevant documents, and generates an answer based on that evidence. You can break it down into the following stages: search, candidate ranking, and answer generation.",
+    "project_context": "This example separates the retrieval and generation stages of retrieval-augmented generation code.",
+    "explanation": "The function embeds `question` into `query_vec`, searches for `docs`, places the question and documents in a prompt, and calls the LLM. That is a RAG flow that retrieves related documents before generating an answer. The structure alone does not guarantee that the documents are truly relevant or that the answer follows them, so those properties require separate evaluation.",
     "question_type": "reverse_inference",
     "concepts": [
       "rag",
@@ -510,18 +510,18 @@
       "AI_tool_calling_001"
     ],
     "level": 10,
-    "title": "Understanding the Agent Tool Call Flow",
-    "answer": "Select the appropriate tool based on the task at hand.",
+    "title": "Reading conditional tool routing",
+    "answer": "Choose a function based on the task string",
     "choices": [
-      "Select the appropriate tool based on the task at hand.",
+      "Choose a function based on the task string",
       "Always deletes the file",
       "I'm always just searching",
       "Train the model"
     ],
     "question": "What is the key point of this code?",
-    "reading_goal": "The agent reads the flow of how the tool function is selected based on the situation.",
+    "reading_goal": "Understand how `if` conditions inspect the task string and choose a function to call.",
     "project_context": "It's a good way to understand the basic workflow of code agents or automation agents.",
-    "explanation": "Depending on the task, select one of the following: search_tool, file_tool, or chat_model. The agent tool call flow is structured such that the model does not respond directly, but instead selects and executes the necessary tool and then interprets the results. The input, execution results, and post-processing must be read separately.",
+    "explanation": "The `if` statements in `run_agent`, not a model, make the choice. If `task` contains `search`, the function immediately calls and returns `search_tool`; otherwise, a task containing `file` uses `file_tool`, and every other task uses `chat_model`. If both words occur, the first branch returns, so only `search_tool` runs. This snippet has no later step that interprets a tool result.",
     "question_type": "meaning_choice",
     "concepts": [
       "agent",

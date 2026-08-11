@@ -20,7 +20,7 @@
       "Code with different roles is organized into layers to make the flow easier to follow."
     ],
     "answer": "Code with different roles is organized into layers to make the flow easier to follow.",
-    "explanation": "By dividing the system into layers, you can clearly distinguish the responsibilities of the UI, API, business logic, and data storage. Layer architecture is a structure that divides code by role, such as UI, services, and data storage. You must determine the scope of each layer’s responsibilities and where it calls the next layer. Therefore, the correct answer is: “Divide code with different roles into layers to make the flow easier to understand.”",
+    "explanation": "Layered architecture separates responsibilities such as UI, HTTP handling, business rules, and storage access. It is useful when each layer has a defined interface and dependency direction and higher layers do not bypass boundaries to manipulate lower-level details. Adding more layers alone does not automatically improve clarity or quality.",
     "side_card_ids": [
       "PYV158_A1_DATABASE_FLOW"
     ],
@@ -63,7 +63,7 @@
       "repository"
     ],
     "reading_goal": "Distinguish the differences in the roles of the controller, service, and repository.",
-    "code": "controller: Handles HTTP requests and responses service: Handles actual rules and workflows repository: Accesses the database and file storage",
+    "code": "controller: handle HTTP request/response\nservice: apply business rules and workflow\nrepository: access database/file storage",
     "question_type": "meaning_choice",
     "question": "Which of the following most closely resembles the role of a repository?",
     "choices": [
@@ -73,7 +73,7 @@
       "It communicates directly with storage systems such as databases and files"
     ],
     "answer": "It communicates directly with storage systems such as databases and files",
-    "explanation": "A repository centralizes access to storage, making the service less dependent on the specific storage mechanism. The controller, service, and repository form a layered structure that separates request handling, business logic, and storage access. You must ensure that each layer does not encroach on the responsibilities of other layers. Therefore, the correct answer is “It communicates directly with storage systems such as databases or files.”",
+    "explanation": "A controller translates HTTP input and output, a service assembles the business workflow, and a repository abstracts database or file access. Repository implementations talk to storage directly, while services can depend on the interface without knowing SQL or file-format details. Keep boundaries and error translation consistent.",
     "side_card_ids": [
       "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
     ],
@@ -89,7 +89,7 @@
       "orchestration"
     ],
     "reading_goal": "Understand that the service layer groups multiple tasks together to create the actual functional flow.",
-    "code": "def recommend_today_cards(user_id):\n    progress = repo.load_progress(user_id)\n    cards = repo.load_cards()\n    return select_cards(cards, progress)",
+    "code": "def recommend_today_cards(user_id, repo):\n    progress = repo.load_progress(user_id)\n    cards = repo.load_cards()\n    return select_cards(cards, progress)",
     "question_type": "meaning_choice",
     "question": "What role does the service layer play in the code above?",
     "choices": [
@@ -99,7 +99,7 @@
       "Retrieve \"progress\" and \"cards\" to assemble the recommendation flow"
     ],
     "answer": "Retrieve \"progress\" and \"cards\" to assemble the recommendation flow",
-    "explanation": "The service layer is a layer that bundles multiple sub-functions to provide a single user-facing function. It combines APIs, databases, and validation logic to create business workflows. Having a service layer reduces the dependence of UI and API code on specific storage methods. Therefore, the result of the call is “retrieve ‘progress’ and ‘cards’ to assemble the recommendation workflow.”",
+    "explanation": "This service function reads progress and cards through an injected repository and passes them to the select_cards recommendation rule. It does not directly handle HTTP responses or concrete SQL, separating it from the caller and storage implementation. Also define which layer owns authorization and transaction boundaries.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -126,7 +126,7 @@
       "This is because the core concepts of the learning app are represented as data structures."
     ],
     "answer": "This is because the core concepts of the learning app are represented as data structures.",
-    "explanation": "A domain model is a representation of the core entities handled by a service, expressed through code and data structures. It represents the core concepts of an app as code objects. You should start by looking at data structures that have business meaning, such as \"User,\" \"Card,\" and \"Progress.\"",
+    "explanation": "A domain model represents concepts, relationships, and rules from the problem the application solves. Card fields such as id, question, choices, and answer describe a core learning-app concept, so this structure can be part of the domain model. A field list alone does not enforce invariants such as answer membership; express those rules in the model or validation layer too.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -147,13 +147,13 @@
     "question_type": "meaning_choice",
     "question": "Which of the following best explains why DTOs are used?",
     "choices": [
-      "To unconditionally expose all internal fields,",
-      "To prevent the function from running",
-      "To hide file extensions",
-      "To reliably define the format of data sent externally,"
+      "Explicitly define data crossing an external boundary",
+      "Encrypt every field automatically",
+      "Replace all domain rules",
+      "Remove API versioning"
     ],
-    "answer": "To reliably define the format of data sent externally,",
-    "explanation": "A DTO is an object or structure that defines the format of data exchanged between layers. It makes it easy to maintain a consistent API response format even if the internal structure changes. You can think of it as a buffer layer that passes only the necessary fields to the outside, rather than exposing the domain object as-is.",
+    "answer": "Explicitly define data crossing an external boundary",
+    "explanation": "A DTO explicitly defines data crossing a layer or process boundary. When CardResponseDTO selects required fields and owns validation and serialization rules, internal Card changes are less likely to leak directly into the API. Stability comes from versioning and compatibility policy as well as the DTO.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -180,7 +180,7 @@
       "It wraps the complex usage of external APIs or tools into a format that is easy to use internally."
     ],
     "answer": "It wraps the complex usage of external APIs or tools into a format that is easy to use internally.",
-    "explanation": "Using an adapter can minimize the scope of changes required across the entire app even if the external service changes. An adapter serves to convert input or call methods from one format into a format that the other side can understand. When reading the code, you should compare the interface before the conversion with the interface after the conversion. Therefore, the result of the conversion is that “the complex usage of external APIs or tools is wrapped into a format that is easy to use internally.”",
+    "explanation": "The adapter turns the external Qwen call into the application's generate(prompt) interface. A useful adapter also normalizes provider differences such as input and output shape, timeouts, exceptions, and rate limits. Replacement becomes easier only when callers consistently use this boundary.",
     "side_card_ids": [
       "AI_lora_001",
       "PYV102_A7_ARCHITECTURE_DESIGN"
@@ -207,7 +207,7 @@
       "Establishes a convention that allows the same calling method to be used regardless of the implementation."
     ],
     "answer": "Establishes a convention that allows the same calling method to be used regardless of the implementation.",
-    "explanation": "An interface minimizes disruption to the calling code even if the internal implementation changes. An interface is a set of agreed-upon rules for how code fragments should be used. By checking which methods and inputs are expected, you can understand the flow of interactions even without knowing the internal implementation. Therefore, the correct answer is: “It establishes an agreement that allows the same method to be called regardless of the implementation.”",
+    "explanation": "An interface is a contract for the input, output, errors, and meaning of search(query). Sharing only a method name is not enough: KeywordSearch and VectorSearch must both satisfy the result shape and behavior expected by callers before they are substitutable.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -312,7 +312,7 @@
       "It separates concerns such as data retrieval, selection, display, and storage"
     ],
     "answer": "It separates concerns such as data retrieval, selection, display, and storage",
-    "explanation": "\"Separation of concerns\" is a design principle that divides concerns such as the user interface, data, validation, and storage. This narrows the scope of modifications and makes it easier to test each component separately.",
+    "explanation": "Retrieval, selection rules, rendering, and progress storage have different reasons to change and can be separated. Four function names alone do not create boundaries. Explicit inputs and outputs, less hidden shared state, and no circular dependencies make each concern independently testable and replaceable.",
     "side_card_ids": [
       "AI_architecture_001",
       "PYV102_A7_ARCHITECTURE_DESIGN"
@@ -339,7 +339,7 @@
       "By organizing files by role, you can reduce the scope of modifications and testing."
     ],
     "answer": "By organizing files by role, you can reduce the scope of modifications and testing.",
-    "explanation": "The monolithic modular architecture is an approach that divides functional units into modules even within a single app. It allows the entire app to be understood and managed as smaller units. When module boundaries are clearly defined, adding features or conducting tests can typically be confined to specific files and scopes of responsibility.",
+    "explanation": "Role-focused modules can expose narrow APIs so code depends only on what it needs. Splitting one file into many does not by itself create modularity; global state and circular imports can leave the same broad change impact. Cohesive responsibilities and clear dependency direction are the key.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -367,7 +367,7 @@
       "Check whether the outputs from the previous step comply with the rules and filter out any invalid results."
     ],
     "answer": "Check whether the outputs from the previous step comply with the rules and filter out any invalid results.",
-    "explanation": "The KG LoRA pipeline architecture is a structure that links stages such as data preparation, node passes, validation, and training. The longer the pipeline, the more important intermediate validation and resumption points become. Therefore, the correct answer is “Check whether the output from the previous stage conforms to the rules and filter out any invalid results.”",
+    "explanation": "Here, Validation checks node and edge outputs against schema, reference, and quality rules, then rejects or routes invalid results for reprocessing before final output. Versioned stage inputs and outputs plus checkpoints make failures resumable and traceable to the transformation that produced them.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -393,7 +393,7 @@
       "The direction in which data or requests travel"
     ],
     "answer": "The direction in which data or requests travel",
-    "explanation": "Boxes often represent components or layers, while arrows typically represent calls or data flow. An architecture diagram helps you visually understand the overall structure of the code. If you first look at how screens, APIs, storage, and external services are connected, the detailed code becomes easier to understand. Therefore, the correct answer is “the direction in which data or requests flow.”",
+    "explanation": "In this diagram, arrows show the main direction in which requests or data move to the next component. In another diagram an arrow may mean a dependency, event, or network connection, and the response direction may be omitted. Confirm the title, legend, and arrow style.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"

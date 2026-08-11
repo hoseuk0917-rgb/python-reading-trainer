@@ -9,22 +9,22 @@
       "file_system"
     ],
     "reading_goal": "Reads the absolute path in Windows, starting from the drive.",
-    "code": "path = r\"D:\\projects\\python-reading-trainer\\data\\lessons\"",
+    "code": "path = r\"C:\\work\\app\\data\\lessons\"",
     "question_type": "meaning_choice",
-    "question": "Why is this a relative path?",
+    "question": "Why is this an absolute path?",
     "choices": [
-      "Because the file has no name",
-      "Because it all starts with a single dot",
-      "D: Because I wrote down the full path starting with the drive letter",
-      "Because there is no file extension"
+      "Because it has no file name",
+      "Because it starts with one dot",
+      "Because it gives the full location starting with the C: drive",
+      "Because it has no extension"
     ],
-    "answer": "D: Because I wrote down the full path starting with the drive letter",
-    "explanation": "An absolute path is a path that indicates the full location of a file, starting from the drive or the root directory. It points to the same destination regardless of the current working directory. In automation scripts, outputting the absolute path makes it easy to verify which file was modified, regardless of its location.",
+    "answer": "Because it gives the full location starting with the C: drive",
+    "explanation": "An absolute path starts at a drive letter or filesystem root and gives the full location of a target. On the same computer it points to the same target even when the working directory changes, but another computer may not have that path, so avoid hard-coding it in portable configuration.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_ARCHITECTURE_DESIGN"
     ],
-    "project_context": "This is the most common directory structure used when working on projects under D:\\projects."
+    "project_context": "Logging the resolved absolute path makes it easier to verify which file a script actually handled."
   },
   {
     "id": "PY32_L06_relative_path_001",
@@ -36,7 +36,7 @@
       "path"
     ],
     "reading_goal": "Understand relative paths, which are interpreted relative to the current working directory.",
-    "code": "path = \".\\data\\lessons\\cards_seed_v1.json\"",
+    "code": "path = r\".\\data\\lessons\\cards_seed_v1.json\"",
     "question_type": "meaning_choice",
     "question": "What is the basis for interpreting this relative path?",
     "choices": [
@@ -46,7 +46,7 @@
       "Browser window size"
     ],
     "answer": "Current Working Folder",
-    "explanation": "Paths that start with a dot are typically resolved relative to the current location. That is why `Set-Location` is important. A relative path is a method of locating a file relative to the current working directory. If the execution location changes, the same relative path may point to a different file.",
+    "explanation": "A relative path is resolved from the current working directory. The leading dot means the current directory, so the same string can identify a different target when the program starts elsewhere. In a Python string, a raw string or pathlib also avoids treating Windows backslashes as escape characters.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
@@ -62,7 +62,7 @@
       "PowerShell"
     ],
     "reading_goal": "Read the command to check the current working directory in PowerShell.",
-    "code": "Get-Location\nSet-Location \"D:\\projects\\python-reading-trainer\"",
+    "code": "Get-Location\nSet-Location \"C:\\work\\app\"\nGet-Location",
     "question_type": "meaning_choice",
     "question": "What is the purpose of Get-Location?",
     "choices": [
@@ -72,7 +72,7 @@
       "Push to GitHub"
     ],
     "answer": "Displays the current PowerShell location",
-    "explanation": "The working directory is the folder that the current command or script uses as its reference point. To minimize issues with relative paths, you should first check your current location before beginning your work. In PowerShell, it’s a good practice to use both `Set-Location` and `Get-Location` to verify your location before running commands that use relative paths.",
+    "explanation": "The working directory is the base used to resolve relative paths. The first Get-Location prints the old location, Set-Location changes it, and the final Get-Location confirms the result. When FileNotFoundError occurs, checking this base first often narrows down the cause.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_ARCHITECTURE_DESIGN"
@@ -89,7 +89,7 @@
       "cross_platform"
     ],
     "reading_goal": "Understand how to concatenate paths more safely than concatenating strings.",
-    "code": "from pathlib import Path\n\nroot = Path(\"D:/projects/python-reading-trainer\")\nlesson = root / \"data\" / \"lessons\" / \"cards_seed_v1.json\"",
+    "code": "from pathlib import Path\n\nroot = Path(\"C:/work/app\")\nlesson = root / \"data\" / \"lessons\" / \"cards_seed_v1.json\"",
     "question_type": "meaning_choice",
     "question": "What does \"root / 'data' / 'lessons'\" mean?",
     "choices": [
@@ -99,7 +99,7 @@
       "Start the server"
     ],
     "answer": "Safely join the path segments",
-    "explanation": "A path join is a method of safely combining folder names and file names to create a path. The / operator in pathlib results in fewer delimiter errors than string concatenation. Since path delimiters can vary by operating system, using pathlib to construct paths is safer on both Windows and Linux.",
+    "explanation": "A path join combines path segments into one path object. pathlib's / operator handles the platform separator and reduces mistakes compared with string concatenation. It only constructs a path; it does not create the file or prove that the path exists.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
@@ -115,7 +115,7 @@
       "file_listing"
     ],
     "reading_goal": "Understand the code that searches for a list of files matching a specific pattern.",
-    "code": "Get-ChildItem \".\\data\\lessons\" -Filter \"*.json\"",
+    "code": "Get-ChildItem \".\\data\\lessons\" -File -Filter \"*.json\"",
     "question_type": "meaning_choice",
     "question": "What file does this command look for?",
     "choices": [
@@ -125,7 +125,7 @@
       "Browser Cache"
     ],
     "answer": "JSON files in the data/lessons folder",
-    "explanation": "glob and Get-ChildItem are used to find a list of files that meet certain criteria. -Filter '*.json' is a condition that selects only files with the .json extension. These file search commands are frequently used when validating or converting multiple JSON files at once.",
+    "explanation": "Get-ChildItem lists items at the specified location. -File excludes directories, and -Filter '*.json' keeps file names that match that pattern. It does not search nested directories unless -Recurse is also supplied.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_ARCHITECTURE_DESIGN"
@@ -171,15 +171,15 @@
     "reading_goal": "Understand the command to create a folder—if it doesn't exist, create it; if it does, skip it.",
     "code": "New-Item -ItemType Directory -Force -Path \".\\tmp\\backup\" | Out-Null",
     "question_type": "meaning_choice",
-    "question": "-Which of the following is the closest in meaning to “Force”?",
+    "question": "What does -Force do in this command?",
     "choices": [
-      "Deletes the file without exception",
-      "Force a push in Git",
-      "Ensure that the process proceeds without errors even if it already exists",
-      "Compress JSON"
+      "It deletes a file unconditionally",
+      "It force-pushes Git",
+      "It allows this command to reuse an existing directory",
+      "It compresses JSON"
     ],
-    "answer": "Ensure that the process proceeds without errors even if it already exists",
-    "explanation": "The New-Item -ItemType Directory command creates a folder. Using the -Force parameter ensures that the script does not stop even if the folder already exists. In automation scripts, this safeguard is necessary to prevent the entire operation from failing due to an existing folder.",
+    "answer": "It allows this command to reuse an existing directory",
+    "explanation": "New-Item -ItemType Directory creates a directory. Here, -Force lets the command use an existing directory instead of failing merely because it already exists. It does not suppress every other failure, such as insufficient permissions or a file occupying that path.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_ARCHITECTURE_DESIGN"
@@ -198,15 +198,15 @@
     "reading_goal": "Understand the code that specifies the encoding to prevent Hangul from appearing garbled.",
     "code": "$text = Get-Content \".\\README.md\" -Raw -Encoding UTF8\nSet-Content \".\\out.txt\" $text -Encoding UTF8",
     "question_type": "meaning_choice",
-    "question": "-Why is \"Encoding UTF-8\" included?",
+    "question": "Why is -Encoding UTF8 specified?",
     "choices": [
-      "To automatically delete files",
+      "To delete the file automatically",
       "To open a port",
-      "To reduce the occurrence of garbled Hangul and special characters,",
+      "To reduce corruption of Korean text and special characters",
       "To refresh the browser"
     ],
-    "answer": "To reduce the occurrence of garbled Hangul and special characters,",
-    "explanation": "\"Read/write UTF-8\" refers to the practice of explicitly specifying the encoding when reading and writing files. It is important for reducing Korean character corruption caused by differences in system defaults. Using the same encoding when saving a file also reduces the likelihood of garbled text when the file is read on another PC or server. Therefore, the correct answer is “to reduce garbled Korean text and special characters.”",
+    "answer": "To reduce corruption of Korean text and special characters",
+    "explanation": "Specifying UTF-8 for both reading and writing reduces text corruption caused by different system defaults. Be aware that Windows PowerShell 5.1 writes a BOM with UTF8, while PowerShell 7's utf8 is BOM-less by default, so check the PowerShell version and the receiving tool's BOM requirements.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
@@ -232,7 +232,7 @@
       "Convert app.js to JSON"
     ],
     "answer": "Copy app.js to the backup location",
-    "explanation": "A backup file is a file stored separately so that the original version can be restored before any modifications are made. Creating a backup before applying a patch makes it easy to revert to the previous state if a problem occurs. It’s a good practice to always create a backup and check the diff before applying automatic patches or performing bulk replacements. Therefore, the correct answer is “Copy app.js to the backup location.”",
+    "explanation": "Copy-Item copies app.js to the stated backup path. Because -Force can overwrite a backup with the same name, use a timestamp or another unique name when multiple restore points must be retained. For important changes, also verify that the copy succeeded and can be restored.",
     "side_card_ids": [],
     "project_context": "It can be used as a safety measure before applying a major patch."
   },
@@ -256,7 +256,7 @@
       "Clear the browser cache"
     ],
     "answer": "This can reduce the risk of data corruption if a write operation fails.",
-    "explanation": "It is safer to write to a temporary file first and then replace the original file than to overwrite the large file directly. A temporary file is a file used to temporarily store intermediate results. When reading the code, you should check where it is created, whether it is deleted after use, and the likelihood that a file with the same name will be reused. Therefore, the correct answer is “It reduces the risk of damaging the original file if a write operation fails.”",
+    "explanation": "Writing to a temporary file in the same directory and then replacing the destination reduces the risk of leaving the original half-written if writing fails. Validate the temporary JSON before replacement, and remember that replacement atomicity depends on the operating system, filesystem, and command used.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_ARCHITECTURE_DESIGN"
@@ -338,7 +338,7 @@
       "There is no longer a need to verify the correct answer."
     ],
     "answer": "You can change the settings without having to modify the code much",
-    "explanation": "Config location refers to where to place configuration files. Separating configuration values from the code makes it easier to make changes for different environments and reduces the risk of code modifications. By defining the configuration location—such as environment variables, JSON, or a .env file—you can manage sensitive values and general settings separately. Therefore, the correct answer is “You can change the configuration without having to modify the code.”",
+    "explanation": "Separating ordinary configuration from code lets you change environment-specific values with fewer application edits. However, putting secrets in app_settings.json or a committed .env file does not make them safe. Store secrets in access-controlled environment settings or a dedicated secret store.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -364,7 +364,7 @@
       "Browser executable file"
     ],
     "answer": "Verification reports or generated outputs",
-    "explanation": "The output folder is where generated results or reports are stored separately. Keeping deliverables separate from the source code makes it easier to organize, delete, and exclude them from Git. Storing automatically generated files in the outputs folder makes it easier to apply backup, cleanup, and deployment exclusion rules.",
+    "explanation": "An output folder keeps generated results and reports separate from source code, making retention, cleanup, and deployment rules easier to manage. Do not automatically ignore every output: hard-to-reproduce or official artifacts may need to be tracked according to project policy.",
     "side_card_ids": [
       "PYV159_A1_FUNCTION_IO_FLOW"
     ],
@@ -385,13 +385,13 @@
     "question_type": "meaning_choice",
     "question": "Which of the following correctly describes the flow of this code?",
     "choices": [
-      "Write → Delete → Launch Browser",
-      "Commit → Sort → Delete",
-      "Read → Summarize → Write",
-      "Unzip → Log in → Run"
+      "Read → Process → Write",
+      "Write → Read → Delete",
+      "Commit → Push → Merge",
+      "Start server → Clear cache → Stop"
     ],
-    "answer": "Read → Summarize → Write",
-    "explanation": "A file processing pipeline is easier to understand when you break it down into separate input, transformation, and output stages. It is helpful to divide a file processing pipeline into the stages of reading, transforming, validating, and storing. You must verify which files each stage receives as input and which output files it produces. Therefore, the correct answer is “Read → Process → Write.”",
+    "answer": "Read → Process → Write",
+    "explanation": "This code reads JSON from input_path, processes it with normalize_cards, and writes it to output_path. The visible flow is therefore read → process → write. If validation is required, the code needs a real validation step before write_json.",
     "side_card_ids": [
       "PYV158_A1_PIPELINE_FLOW"
     ],
@@ -407,7 +407,7 @@
       "temporary_files"
     ],
     "reading_goal": "Understand why we distinguish between files to be added to Git and those not to be added.",
-    "code": "# .gitignore example tmp/ outputs/ *.bak",
+    "code": "# .gitignore example\ntmp/\noutputs/\n*.bak",
     "question_type": "meaning_choice",
     "question": "Which of the following is the most appropriate reason for adding \"tmp/\" to .gitignore?",
     "choices": [
@@ -417,7 +417,7 @@
       "To save the browser cache"
     ],
     "answer": "To exclude temporary files from Git tracking",
-    "explanation": "The `git ignore outputs` setting excludes temporary files, backup files, and large artifacts from commits. If these files get mixed into Git, the change history can become cluttered. Since files that are generated repeatedly can be recreated as needed, it’s better to keep them separate from the source code.",
+    "explanation": "The tmp/, outputs/, and *.bak rules prevent matching untracked items from being newly added to Git. Adding a rule does not stop tracking a file that is already committed. Exclude files only after confirming that they are disposable or reproducible; track required official artifacts according to project policy.",
     "side_card_ids": [
       "DEV_dotenv_001",
       "PYV102_A7_ARCHITECTURE_DESIGN"

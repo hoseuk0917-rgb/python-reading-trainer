@@ -35,7 +35,7 @@
       "card_state"
     ],
     "reading_goal": "Understand the concept of \"favorite cards,\" which allows you to save cards you view frequently as favorites.",
-    "code": "card.favorite = true",
+    "code": "favoriteCardIds.add(card.id)",
     "question_type": "meaning_choice",
     "question": "What is the role of the \"favorite card\"?",
     "choices": [
@@ -45,7 +45,7 @@
       "To hide the verification results"
     ],
     "answer": "Allows you to quickly reopen cards you view frequently",
-    "explanation": "\"Favorite cards\" are cards that users have saved as favorites because they want to review them frequently. This is a way to create a personalized study list more quickly than searching. Since favorites serve as a signal of the user's personal priorities, they are ideal for personalized review and quick access.",
+    "explanation": "Store favorites in a user-specific ID set instead of mutating the shared card object. card.favorite=true in canonical data can mix personal state across users or caches and disappear on content update. Keep stable content IDs separate from user storage.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_NOTES_BOOKMARKS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -86,7 +86,7 @@
       "data_model"
     ],
     "reading_goal": "Understand a simple data structure for storing notes.",
-    "code": "note = {\n  cardId: card.id,\n  text: memo,\n  updatedAt: now\n}",
+    "code": "note = {\n  cardId: card.id,\n  text: memo,\n  schemaVersion: 1,\n  updatedAt: new Date().toISOString()\n}",
     "question_type": "meaning_choice",
     "question": "What values should be included in the \"note\" schema?",
     "choices": [
@@ -96,7 +96,7 @@
       "To hide the verification results"
     ],
     "answer": "Memory information such as cardId, text, and updatedAt",
-    "explanation": "The note schema is a structure that defines which fields to use for storing notes. It must also store information about which card the note is attached to, as well as when it was created and updated. Fields such as `card_id`, `body`, `created_at`, and `updated_at` make it easy to search for, sort, and edit notes.",
+    "explanation": "cardId, text, schemaVersion, and a timezone-aware updatedAt support linking, migration, and conflict comparison. A synchronized model may also need createdAt and device or user ID. Validate text, and do not assume timestamps alone resolve concurrent edits.",
     "side_card_ids": [
       "WEB_localstorage_001",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -150,7 +150,7 @@
       "To hide the verification results"
     ],
     "answer": "You can save personal notes in your browser without using a server.",
-    "explanation": "In a simple PWA learning app, you can start by implementing personal records using localStorage. localStorage notes store the user's notes in the browser's storage. You need to verify the storage key, JSON conversion, and default value handling in case of a load failure.",
+    "explanation": "localStorage can keep note JSON strings for the same browser origin without a server. It has no device sync and faces quota, private-mode, XSS, and storage-clearing risks, so handle errors, validate schemas, and offer export. Highly sensitive notes may need stronger protection.",
     "side_card_ids": [
       "PYV160_A1_PWA_STATE_STORAGE_FLOW"
     ],
@@ -166,7 +166,7 @@
       "state_restore"
     ],
     "reading_goal": "Understand the process of reloading saved notes when the app starts.",
-    "code": "notes = JSON.parse(localStorage.getItem('userNotes') || '{}')",
+    "code": "let notes = {};\ntry {\n  notes = validateNotes(JSON.parse(localStorage.getItem('userNotes') || '{}'));\n} catch (error) {\n  showNotesRecovery(error);\n}",
     "question_type": "meaning_choice",
     "question": "What is the purpose of load notes?",
     "choices": [
@@ -176,7 +176,7 @@
       "To hide the verification results"
     ],
     "answer": "To restore a previously saved personal note to the screen,",
-    "explanation": "\"Load notes\" refers to the process of retrieving saved notes when the app launches or when a card is displayed. If notes are only saved but not retrieved, users will not be able to view them. Retrieved notes must be displayed in association with the current card ID to prevent records from other cards from being mixed in.",
+    "explanation": "Catch parse and schema errors so malformed or old data does not break startup. Silently overwriting it with {} can destroy the only copy, so preserve the raw value and offer recovery or migration.",
     "side_card_ids": [],
     "project_context": "Since the USER_NOTES_BOOKMARKS section was almost empty in v2, v56 enhances the feature that allows users to mark important cards and add their own notes to personalize their review sessions."
   },
@@ -227,7 +227,7 @@
       "To hide the verification results"
     ],
     "answer": "To reduce the number of times you have to save your work every time you enter data,",
-    "explanation": "Auto-save notes is a feature that automatically saves a note after the user enters it. Since notes are constantly changing, waiting a moment before saving can reduce unnecessary saves. Enabling debounce prevents the note from being saved every time a key is pressed; instead, input pauses briefly before the note is saved.",
+    "explanation": "Debounce saves after typing pauses and reduces writes. Also handle ordering of in-flight asynchronous saves, pending changes at tab close, and failures, and show saving, saved, or failed state. Debounce alone does not prevent data loss.",
     "side_card_ids": [],
     "project_context": "Since the USER_NOTES_BOOKMARKS section was almost empty in v2, v56 enhances the feature that allows users to mark important cards and add their own notes to personalize their review sessions."
   },
@@ -241,7 +241,7 @@
       "filter"
     ],
     "reading_goal": "I'm reading about a filter that collects only the cards I've bookmarked and displays them as a review list.",
-    "code": "filtered = cards.filter(card => bookmarks.includes(card.id))",
+    "code": "const bookmarkSet = new Set(bookmarks);\nconst filtered = cards.filter(card => bookmarkSet.has(card.id));",
     "question_type": "meaning_choice",
     "question": "What is the purpose of the bookmark filter?",
     "choices": [
@@ -251,7 +251,7 @@
       "To hide the verification results"
     ],
     "answer": "To view only the cards I've bookmarked",
-    "explanation": "The bookmark filter is a filter that groups together only the cards you've bookmarked. Users should be able to reopen only the important cards in their review list. When reviewing, viewing only the bookmarked cards instead of all cards allows users to quickly return to the items they want to see again.",
+    "explanation": "Set.has avoids repeated linear array scans across many cards. Stored IDs may be stale after deletion or version change, so define preservation and display policy and normalize duplicate IDs at load.",
     "side_card_ids": [
       "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
     ],
@@ -267,7 +267,7 @@
       "search"
     ],
     "reading_goal": "Understand the method of including user notes in the search scope.",
-    "code": "matches = note.text.toLowerCase().includes(query)",
+    "code": "const normalizedQuery = query.trim().toLocaleLowerCase();\nconst matches = note.text.toLocaleLowerCase().includes(normalizedQuery);",
     "question_type": "meaning_choice",
     "question": "Why is \"notes search\" useful?",
     "choices": [
@@ -277,7 +277,7 @@
       "To hide the verification results"
     ],
     "answer": "Since you can find the card again using the notes you wrote yourself,",
-    "explanation": "\"Notes Search\" is a feature that searches not only card titles but also the content of notes written by users. Users often remember things based on their own words rather than the official titles. While note search can help create a personalized review flow, it is important to also consider the scope of data storage and privacy.",
+    "explanation": "Normalize both note and query for case matching. Define empty-query behavior and handle locale, Unicode, and missing notes. Explain whether private search data leaves the device; keep it local by default.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
@@ -330,7 +330,7 @@
       "To hide the verification results"
     ],
     "answer": "To back up or transfer your personal notes and bookmarks",
-    "explanation": "Since browser storage may be cleared, it’s a good idea to export important study records if the option is available. “Export Notes” is a feature that allows users to export their notes to a file or another format. You need to check which fields are included and whether the file format is JSON or Markdown. Therefore, the correct answer is “to back up or transfer personal notes and bookmarks.”",
+    "explanation": "Include schemaVersion, exportedAt, and appVersion with notes and bookmarks so future import can identify the format. Test that download and round-trip import work, warn that the file contains personal text, and explain risks of an unencrypted backup.",
     "side_card_ids": [
       "PYV158_A1_JSON_FLOW"
     ],
@@ -356,7 +356,7 @@
       "To hide the verification results"
     ],
     "answer": "To prevent corrupted files or incorrect structures from affecting the app's state,",
-    "explanation": "\"Import Notes\" is a feature that reimports user notes or bookmarks from external files. You must always verify the structure of the imported JSON before applying it. Failure to verify required fields, the presence of a card ID, and the criteria for handling duplicate notes may result in existing records being corrupted. Therefore, the correct answer is “to prevent corrupted files or incorrect structures from disrupting the app’s state.”",
+    "explanation": "Treat imports as untrusted: validate size, schema version, text types and lengths, allowed keys, and card IDs. Back up current data, show overwrite or merge and conflict policy, and apply the result atomically. A function name alone does not define sufficient validation.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -372,7 +372,7 @@
       "mistake_note"
     ],
     "reading_goal": "Understand the strategy of combining bookmarks, incorrect answers, and notes to create a personalized review queue.",
-    "code": "queue = merge(bookmarkedCards, wrongCards, notedCards)",
+    "code": "queue = deduplicateAndPrioritize(\n  bookmarkedCards, wrongCards, notedCards\n)",
     "question_type": "meaning_choice",
     "question": "What is the key feature of the personal review queue?",
     "choices": [
@@ -382,7 +382,7 @@
       "To hide the verification results"
     ],
     "answer": "Grouping cards with bookmarks, incorrect answers, and notes into a personalized review set",
-    "explanation": "Reviewing both the card the user selected and the card they actually got wrong improves the quality of personalized review. The personal review queue is a list that collects items for each user to review again. The system must distinguish between items saved because they were incorrect, bookmarked, or represent weak concepts.",
+    "explanation": "The same card can appear in all three inputs, so deduplicate by stable ID and apply an explicit priority for due items, errors, and learner choices. Concatenation order is not a learning guarantee; handle empty queues and removed cards.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_NOTES_BOOKMARKS",
       "PYV102_A7_ASYNC_CONCURRENCY"
@@ -399,7 +399,7 @@
       "bookmarks"
     ],
     "reading_goal": "Understand the quality criteria for verifying whether the notes/bookmarks feature supports saving, restoring, deleting, and filtering.",
-    "code": "assert saveNote()\nassert loadNote()\nassert toggleBookmark()\nassert filterBookmarks()",
+    "code": "saved = saveNote(fixtureNote)\nassert saved\nassert loadNote(fixtureNote.cardId) == fixtureNote\nassert toggleBookmark(fixtureCardId) is True\nassert fixtureCardId in filterBookmarks()",
     "question_type": "meaning_choice",
     "question": "notes/bookmarks: What is the purpose of a quality gate?",
     "choices": [
@@ -409,7 +409,7 @@
       "To hide the verification results"
     ],
     "answer": "To verify that the personal notes and bookmarks features are working properly,",
-    "explanation": "Since trust in the personal record feature drops significantly if data is lost even once, it is crucial to verify that data is saved and restored correctly. The \"notes bookmarks quality gate\" is a check to ensure that note and bookmark data remains intact. You must review required fields, duplicate IDs, and the storage format together.",
+    "explanation": "Test an exact fixture round trip plus bookmark state and filter membership, not only truthy function results. Add failures, malformed legacy data, quota, duplicates, migration, and export/import recovery tests.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_NOTES_BOOKMARKS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"

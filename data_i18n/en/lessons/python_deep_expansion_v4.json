@@ -23,7 +23,7 @@
     "side_card_ids": [
       "SC_list_why_used"
     ],
-    "project_context": "If you confuse `append` and `extend` when merging sort results, you'll encounter a nested list bug."
+    "project_context": "Confusing `append` and `extend` when combining batch results can create an unintended nested list."
   },
   {
     "id": "PY4_L03_extend_001",
@@ -147,7 +147,7 @@
       "Error"
     ],
     "answer": "[\"LiDAR\"]",
-    "explanation": "When you create a new list using `copy()`, it becomes a different object from the original list. Therefore, even if you use `append` on the copy, the original list remains unchanged. In functions that need to preserve the original, you must modify the copy to prevent the caller’s data from changing unexpectedly. Therefore, the output is ‘[\"LiDAR\"]’.",
+    "explanation": "`list(original)` creates a different outer list, so appending `Radar` to the copy leaves `original` as `['LiDAR']`. This is a shallow copy: nested lists or dictionaries inside it would still be shared. Also distinguish the code's `list()` constructor from the separate `copy()` method.",
     "side_card_ids": [
       "CS_shallow_deep_copy_001"
     ],
@@ -199,7 +199,7 @@
       "title"
     ],
     "answer": "True",
-    "explanation": "`all()` returns `True` only when all the specified conditions are true. Since all the keys in `required` are present in `row`, the result is `True`. Using `all` to check multiple validation conditions at once makes it easy to catch any missing required conditions.",
+    "explanation": "`all()` returns `True` because both generated conditions—`'id' in row` and `'title' in row`—are true. This checks only that the keys exist, not that their values are nonempty. An empty `required` list also makes `all` return `True`, so the required-field definition itself may need validation.",
     "side_card_ids": [
       "DATA_schema_001"
     ],
@@ -208,7 +208,7 @@
   {
     "id": "PY4_L05_finally_001",
     "level": 5,
-    "title": "\"Finally\" always wraps things up",
+    "title": "Reading cleanup with `finally`",
     "concepts": [
       "try_except",
       "finally",
@@ -225,7 +225,7 @@
       "JSON Conversion"
     ],
     "answer": "Final Cleanup",
-    "explanation": "The `finally` block is executed at the end, regardless of whether an exception occurs in the `try` block. It is used for tasks that must be performed, such as closing files or cleaning up temporary state. When the same cleanup is required in both the success and failure paths, checking the placement of the `finally` block makes it easier to understand the intent of the code.",
+    "explanation": "Under normal control flow, `finally` runs when the `try` block exits normally, by exception, or by `return`. No exception occurs here, so the code prints `run` and then `cleanup`. It is useful for releasing resources, but “always” does not cover hard process termination or power loss.",
     "side_card_ids": [
       "DEV_debugging_001"
     ],
@@ -241,7 +241,7 @@
       "validation"
     ],
     "reading_goal": "I read code that intentionally triggers an error if the conditions aren't met.",
-    "code": "score = -1\nif score < 0:\n    raise ValueError(\"score must be positive\")",
+    "code": "score = -1\nif score < 0:\n    raise ValueError(\"score must be non-negative\")",
     "question_type": "meaning_choice",
     "question": "Why does this code use `raise`?",
     "choices": [
@@ -251,7 +251,7 @@
       "To start the server"
     ],
     "answer": "To prevent incorrect scores",
-    "explanation": "`raise` is a syntax that allows code to explicitly throw an exception. Throwing a `ValueError` when a validation condition is violated allows you to quickly catch invalid input. Causing the program to fail early—rather than silently proceeding with an incorrect value—makes it easier to identify the cause of the problem. Therefore, the correct answer is “to prevent an incorrect score.”",
+    "explanation": "Because `score` is below 0, the condition is true and `raise` immediately creates a `ValueError`. The message now matches the rule by saying the score must be non-negative. Normal execution after this statement stops unless a caller catches the exception, preventing the invalid score from reaching later stages.",
     "side_card_ids": [
       "AI_eval_001"
     ],
@@ -277,7 +277,7 @@
       "Error"
     ],
     "answer": "Empty string",
-    "explanation": "`guard return` filters out unhandled input early in the function. If `label` is `None`, `not label` evaluates to true, so an empty string is returned immediately. By quickly handling exceptions early on, the indentation and conditions in the normal flow of code further down become simpler.",
+    "explanation": "Because `label` is `None`, `not label` is `True`, so the first `return` produces an empty string and `strip` never runs. The same condition is also true for `''`, 0, `False`, and empty containers. If only `None` should be special, the guard should use `label is None` instead.",
     "side_card_ids": [
       "SC_normalization"
     ],
@@ -322,7 +322,7 @@
     "reading_goal": "Read the code that reads a tab-delimited TSV file as dictionary rows.",
     "code": "import csv\n\nwith open(\"items.tsv\", \"r\", encoding=\"utf-8\") as f:\n    reader = csv.DictReader(f, delimiter=\"\\t\")\n    for row in reader:\n        print(row[\"title\"])",
     "question_type": "meaning_choice",
-    "question": "What does `delimiter='\\\\t'` mean?",
+    "question": "What does `delimiter='\\t'` mean?",
     "choices": [
       "Separate columns with commas",
       "Delete the file",
@@ -357,7 +357,7 @@
       "Error"
     ],
     "answer": "report .jsonl",
-    "explanation": "In Path, the stem is the filename without the file extension, and the suffix is the file extension. This is often used to check file types or construct output filenames. For example, in the case of `report.pdf`, the stem is `report` and the suffix is `.pdf`, making the file name processing logic easy to read. Therefore, the output is `report.jsonl`.",
+    "explanation": "For this path, `stem` is the final filename without its last suffix, so it is `report`; `suffix` is `.jsonl`. `print` separates its arguments with a space, producing `report .jsonl`. With multiple suffixes such as `archive.tar.gz`, the stem would be `archive.tar` and the final suffix `.gz`.",
     "side_card_ids": [
       "DEV_terminal_001"
     ],
@@ -383,7 +383,7 @@
       "Start the server"
     ],
     "answer": "Change to an absolute path",
-    "explanation": "resolve() converts a relative path into an actual absolute path based on the current working directory. This is useful for verifying the exact file location in logs or error messages. If you're confused by a relative path, printing the result of resolve() allows you to immediately check which file your code is actually referencing.",
+    "explanation": "`resolve()` makes the path absolute from the current working directory, removes `..` components, and resolves symbolic links where possible. With the default `strict=False`, it can still return a resolved path when the final target does not exist. A result therefore does not prove that the file exists; use a separate check such as `exists()` when needed.",
     "side_card_ids": [
       "LANG_powershell_001"
     ],
@@ -405,11 +405,11 @@
     "choices": [
       "Request number 10",
       "Create 10 files",
-      "Wait up to 10 seconds for a response",
+      "Set a 10-second connection/read timeout",
       "Limit it to 10 MB"
     ],
-    "answer": "Wait up to 10 seconds for a response",
-    "explanation": "A timeout stops the program from waiting if a request takes too long. It prevents the entire program from freezing when an external API is slow or unresponsive. Specifying a timeout value allows network issues to be handled as exceptions, making it easier to transition to a retry or fallback flow. Therefore, the output is “Wait up to 10 seconds for a response.”",
+    "answer": "Set a 10-second connection/read timeout",
+    "explanation": "In Requests, a single `timeout=10` value limits waits while connecting and receiving response data; exceeding it can raise `Timeout`. It is not a guarantee that the entire response download finishes within ten seconds. The question asks for the option's meaning, so the answer is “Set a 10-second connection/read timeout.”",
     "side_card_ids": [
       "AI_latency_001"
     ],
@@ -435,7 +435,7 @@
       "Always succeeds"
     ],
     "answer": "You can try up to three times.",
-    "explanation": "A retry loop is a structure that retries a task that may fail a specified number of times. If the range is `range(3)`, it iterates three times: 0, 1, and 2. To prevent the retry process from looping indefinitely, you must specify both the maximum number of attempts and the action to take after a failure. Therefore, the output is “Attempt up to 3 times.”",
+    "explanation": "`range(3)` supplies 0, 1, and 2, so `call_api` is attempted at most three times. A success reaches `break` and stops early. This example has no delay or backoff, catches every `Exception`, and neither re-raises nor runs a fallback after the final failure. Practical retry code should define retryable errors, a waiting policy, and final failure handling.",
     "side_card_ids": [
       "DEV_debugging_001"
     ],
@@ -462,7 +462,7 @@
       "HTML Title"
     ],
     "answer": "Authorization Header",
-    "explanation": "Authentication tokens are typically sent to the API in an HTTP header. The server uses this token to verify that the user making the request is authorized. The Bearer format is a convention in which the token type is prefixed to the value of the Authorization header so that the server can interpret it.",
+    "explanation": "The code constructs the `Authorization` header by combining `Bearer ` with `token`. The server applies its own rules to validate the token and authorize the request; the token may represent a service rather than a human user. Because possession of a bearer token can grant access, send it over HTTPS and keep it out of logs and error messages.",
     "side_card_ids": [
       "WEB_auth_001"
     ],
@@ -504,7 +504,7 @@
       "json"
     ],
     "reading_goal": "Read the structure that allows you to save your progress to a file so you can resume later.",
-    "code": "state = {\"last_shard\": 42}\nPath(\"checkpoint.json\").write_text(json.dumps(state), encoding=\"utf-8\")",
+    "code": "import json\nfrom pathlib import Path\n\nstate = {\"last_shard\": 42}\nPath(\"checkpoint.json\").write_text(json.dumps(state), encoding=\"utf-8\")",
     "question_type": "meaning_choice",
     "question": "What is the purpose of checkpoint.json?",
     "choices": [
@@ -514,7 +514,7 @@
       "Create an image"
     ],
     "answer": "Saves the progress made so far",
-    "explanation": "A checkpoint is a method for saving the current progress. By saving a value such as `last_shard`, you can determine where to resume even after an interruption. For long batch jobs, you must periodically save the completion point and status to avoid having to restart from the beginning every time. Therefore, the correct answer is “Save the progress made so far.”",
+    "explanation": "The code serializes `state` as JSON and writes that shard 42 was the latest saved position. A real resume feature also needs startup code that reads the file and computes the next shard. Important checkpoints may require an atomic write pattern, such as writing a temporary file and then replacing the old one, to avoid a partially written state.",
     "side_card_ids": [
       "CS_batch_shard_001"
     ],
@@ -592,7 +592,7 @@
       "DB Index"
     ],
     "answer": "Prompt to enter into the LLM",
-    "explanation": "A prompt template is a method of predefining the structure of the model’s input. It combines the retrieved documents and the question in a predetermined format to create the LLM input. Using a template ensures that the format remains consistent across every request, making verification and debugging easier. Therefore, the result of the call is the “prompt to be fed to the LLM.”",
+    "explanation": "The function joins the strings in `docs` with newlines and inserts that context and `question` into a fixed string format. The result is a prompt for an LLM. A non-string document makes `join` fail, and consistent formatting alone does not guarantee that the model follows the instructions or ignores malicious text inside a document.",
     "side_card_ids": [
       "AI_prompt_001"
     ],
@@ -601,14 +601,14 @@
   {
     "id": "PY4_L09_evidence_check_001",
     "level": 9,
-    "title": "Trend of Blocking Unsubstantiated Responses",
+    "title": "Checking for evidence before generation",
     "concepts": [
       "evidence",
       "validation",
       "rag"
     ],
     "reading_goal": "Read the defensive code that prevents the generation of answers if there is no supporting document.",
-    "code": "def answer(question, docs): if not docs: return \"Insufficient supporting documents.\" return call_llm(build_prompt(question, docs))",
+    "code": "def answer(question, docs):\n    if not docs:\n        return \"Insufficient supporting documents.\"\n    return call_llm(build_prompt(question, docs))",
     "question_type": "meaning_choice",
     "question": "What happens if \"docs\" is empty?",
     "choices": [
@@ -618,7 +618,7 @@
       "Turn off search"
     ],
     "answer": "Returns a \"not enough evidence\" message",
-    "explanation": "\"Evidence check\" is the step of verifying whether there is evidence before generating a response. If there is no evidence, the process does not proceed to `call_llm`, which helps reduce speculative responses. The rule of stopping when there is no evidence serves as the first line of defense for maintaining the reliability of RAG responses. Therefore, the return/call result is \"returns a 'lack of evidence' message.\"",
+    "explanation": "When `docs` is empty or otherwise false, the function immediately returns the insufficient-evidence message and never calls the LLM. It checks only that at least one document exists; it does not verify relevance, trustworthiness, or whether the generated answer follows the documents. This is one guard against empty-context generation, not a complete guarantee against hallucination.",
     "side_card_ids": [
       "AI_hallucination_001"
     ],
@@ -634,7 +634,7 @@
       "score"
     ],
     "reading_goal": "It analyzes the process of re-scoring search candidates to select the top results.",
-    "code": "def rerank(query, hits):\n    scored = []\n    for hit in hits:\n        scored.append((score_pair(query, hit), hit))\n    scored.sort(reverse=True)\n    return [hit for score, hit in scored[:5]]",
+    "code": "def rerank(query, hits):\n    scored = []\n    for hit in hits:\n        scored.append((score_pair(query, hit), hit))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [hit for score, hit in scored[:5]]",
     "question_type": "meaning_choice",
     "question": "What is the purpose of rerank?",
     "choices": [
@@ -644,7 +644,7 @@
       "Change the HTML color"
     ],
     "answer": "Re-sort the search suggestions by score",
-    "explanation": "Reranking is the step in which the initial search results are re-scored and sorted into a better order. After assigning a score to each candidate hit, the top results are selected. In search, you can think of it as a process where candidates are first identified broadly, and then, during reranking, the items that best match the query are moved to the top.",
+    "explanation": "The function stores `(score, hit)` pairs, sorts by the score field in descending order, and returns at most five hits. Supplying a key prevents equal scores from making Python compare the hit objects themselves, which could fail for objects such as dictionaries. Whether the resulting order is truly more relevant depends on `score_pair` quality.",
     "side_card_ids": [
       "AI_rag_001"
     ],
@@ -670,7 +670,7 @@
       "Deploy the web page"
     ],
     "answer": "Finds term candidates in the text chunk",
-    "explanation": "Node candidate extraction is the step of identifying node candidates in the text. If a TERM is found within a text chunk, it is added as a candidate row. It is safest to view candidate extraction not as the final determination of nodes, but as a step to gather potential candidates for review.",
+    "explanation": "For each term, the code lowercases both strings and performs a simple substring test. A match adds a row containing the term and chunk ID. These are review candidates, not confirmed nodes. Because the test ignores word boundaries, a short term can also match accidentally inside a longer word, so later validation is needed.",
     "side_card_ids": [
       "CS_graph_001"
     ],
@@ -697,7 +697,7 @@
       "It is always rejected without review."
     ],
     "answer": "score of 0.8 or higher and evidence_count of 2 or higher",
-    "explanation": "Edge promotion is the stage where we determine whether to promote a candidate relationship to an actual KG edge. Both conditions must be satisfied for the edge to be promoted. By considering both conditions—such as the number of pieces of evidence and confidence—we can minimize the inclusion of weak candidate relationships in the actual graph. Therefore, the return/call result is “score ≥ 0.8 and evidence_count ≥ 2.”",
+    "explanation": "Because the conditions use `and`, the function returns `promoted` only when score is at least 0.8 and evidence count is at least 2; otherwise it returns `rejected`. These thresholds are a policy in this code, and two pieces of evidence do not by themselves guarantee quality or independence. Missing keys would also raise `KeyError`, so the input schema is a prerequisite.",
     "side_card_ids": [
       "AI_eval_001",
       "CS_graph_001"
@@ -724,7 +724,7 @@
       "None"
     ],
     "answer": "KEEP",
-    "explanation": "Label adjudication is the process of determining whether to keep or discard a candidate label. In this code, the first condition is met, so it returns \"KEEP.\" When there are multiple adjudicators, the final label is determined by combining the voting results—such as \"KEEP\" and \"DROP\"—according to the rules.",
+    "explanation": "Two or more `KEEP` values satisfy the first condition, whose `return` immediately wins even if `REJECT` is also present. Only when there are fewer than two KEEPs does the function check for `REJECT`; otherwise it returns `REVIEW`. The code's label is `REJECT`, not `DROP`, and condition order defines the policy priority.",
     "side_card_ids": [
       "AI_labeling_001"
     ],

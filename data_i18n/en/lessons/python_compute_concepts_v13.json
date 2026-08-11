@@ -11,7 +11,7 @@
       "accelerator"
     ],
     "reading_goal": "Instead of memorizing them separately, students understand the differences in the roles of these computational devices as a single concept.",
-    "code": "CPU: Excels at general-purpose computing, complex branching, and running operating systems and general-purpose programs. GPU: Performs the same operations in parallel on a large scale using many cores; excels at matrix and vector operations. TPU: An accelerator developed by Google that specializes in deep learning matrix operations. NPU: An accelerator that performs AI inference quickly and with low power consumption within a device or SoC",
+    "code": "CPU: general-purpose compute, complex branching, and operating-system or application control\nGPU: high-throughput parallel work on matrix and vector operations\nTPU: Google's accelerator for supported tensor and deep-learning operations\nNPU: a device- or SoC-oriented accelerator for supported AI workloads, often inference",
     "question_type": "meaning_choice",
     "question": "Which of the following best describes a GPU?",
     "choices": [
@@ -21,7 +21,7 @@
       "It excels at mass parallel processing of operations of the same type"
     ],
     "answer": "It excels at mass parallel processing of operations of the same type",
-    "explanation": "GPUs excel at tasks that involve repeating the same calculations many times, such as matrix multiplication, image processing, and deep learning. CPUs, GPUs, TPUs, and NPUs each excel at different types of computations. As a general rule, think of CPUs for conditional branching and general-purpose tasks, and GPUs or dedicated accelerators for massively parallel computations.",
+    "explanation": "A GPU is strong at applying similar arithmetic to large amounts of data with high parallelism, especially matrix and vector workloads. A CPU is flexible for general control and varied low-latency work, while TPUs and NPUs target supported operations and deployment environments. A device name alone does not determine speed; operation size, memory transfer, framework support, hardware, and implementation all matter.",
     "side_card_ids": [
       "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
     ],
@@ -47,10 +47,9 @@
       "CPU"
     ],
     "answer": "CPU",
-    "explanation": "Complex branching, I/O coordination, and various types of task control are tasks best handled by the CPU. The CPU plays a central role in sequentially processing a variety of tasks, such as condition evaluation, file processing, and flow control. It is easier to understand this by comparing the nature of these tasks with those handled by the GPU.",
+    "explanation": "The outer Python loop inspects each task type and dispatches different functions, so its branch and call ordering are general-purpose CPU control flow. `download` can spend time waiting for network I/O, and `parse` could internally use another library or accelerator, so this fragment does not prove the whole workload is CPU computation. The CPU role shown here is coordination.",
     "side_card_ids": [
-      "PYV102_A7_SYSTEMS_CONCEPTS",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "PYV102_A7_SYSTEMS_CONCEPTS"
     ],
     "project_context": "The logic of the batch pipeline, collector, and server consists mostly of CPU control flow."
   },
@@ -92,7 +91,7 @@
       "cloud"
     ],
     "reading_goal": "Understand that TPU is a device specialized for deep learning matrix operations.",
-    "code": "# TPU is an accelerator designed to quickly process deep learning operations, rather than standard Python syntax. # It typically comes bundled with cloud and framework configurations.",
+    "code": "# A TPU accelerates supported tensor operations rather than ordinary Python syntax.\n# It appears with framework backends and cloud or TPU runtime configuration.",
     "question_type": "meaning_choice",
     "question": "Which of the following best describes TPU?",
     "choices": [
@@ -102,7 +101,7 @@
       "An accelerator specialized for deep learning matrix operations"
     ],
     "answer": "An accelerator specialized for deep learning matrix operations",
-    "explanation": "TPU stands for Tensor Processing Unit and is an accelerator designed to quickly process deep learning computations. The TPU is an AI-specific accelerator developed by Google. It is optimized for matrix operations, deep learning training, and inference, and the criteria for selecting a TPU may differ from those for a GPU.",
+    "explanation": "A TPU is Google's Tensor Processing Unit, a dedicated accelerator for high-throughput supported tensor and matrix operations. It is used for deep-learning training and inference but does not replace the execution of ordinary Python statements. Its framework backend, supported operations, runtime or cloud environment, data movement, and cost must be checked.",
     "side_card_ids": [],
     "project_context": "Although it is an accelerator similar to a GPU, it is primarily found in specific deep learning workloads and cloud environments."
   },
@@ -127,10 +126,9 @@
       "A device that accelerates AI inference within a device while maintaining low power consumption"
     ],
     "answer": "A device that accelerates AI inference within a device while maintaining low power consumption",
-    "explanation": "NPU stands for Neural Processing Unit and is frequently mentioned in the context of on-device AI inference. An NPU is a dedicated processor designed to quickly process AI computations. Its role differs from that of a CPU or GPU, and it is primarily used for inference optimization or low-power AI execution. Therefore, the correct answer is “a device that accelerates AI inference within a device while consuming low power.”",
+    "explanation": "NPU is a general name for a dedicated processor designed to run supported neural-network operations efficiently. It often appears in on-device inference on phones, laptops, and embedded systems, but supported models, data types, compilers, and performance differ by product. Having an NPU does not automatically make an arbitrary Python model run on it.",
     "side_card_ids": [
-      "AI_inference_001",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "AI_inference_001"
     ],
     "project_context": "This is necessary for understanding the AI capabilities of smartphones, laptops, and edge devices."
   },
@@ -155,7 +153,7 @@
       "The CPU prepares the text/input, and the GPU handles the model computations."
     ],
     "answer": "The CPU prepares the text/input, and the GPU handles the model computations.",
-    "explanation": "In an AI pipeline, the CPU and GPU share specific roles. The CPU is often responsible for data preparation and control, while the GPU handles computationally intensive tensor operations. Since moving data between the two devices incurs a cost, it is important to understand the workflow to determine when to send data to the GPU and when to retrieve it. Therefore, the result of this call-back is that “the CPU prepares the text or input, and the GPU handles the model computations.”",
+    "explanation": "`load_text` and the tokenizer normally prepare input tensors on the CPU, and the dictionary comprehension moves each tensor to CUDA memory. Assuming `model` is already on the same CUDA device, `generate` then runs its tensor operations on the GPU. A CPU model would cause a device mismatch. Host-to-device copies have a cost, so check for unnecessary round trips and when outputs return to the CPU.",
     "side_card_ids": [
       "PYV158_A1_PIPELINE_FLOW"
     ],
@@ -182,7 +180,7 @@
       "Move data from the CPU to GPU memory"
     ],
     "answer": "Move data from the CPU to GPU memory",
-    "explanation": "Since CPU memory and GPU memory are separate spaces, transferring data incurs a cost. If there is more data transfer than computation, the overall speed may slow down. Since `batch.to('cuda')` transfers tensors to the GPU, you should also check whether it is being called too frequently within the loop.",
+    "explanation": "When `batch` is a CPU tensor, `batch.to(\"cuda\")` returns a tensor on the CUDA device and the assignment stores that result. It does not mutate the original CPU tensor in place. A copy can be skipped when device and dtype already match. Many small host-device transfers can become a bottleneck, so batch size, pinned memory, and valid `non_blocking` conditions should be measured.",
     "side_card_ids": [
       "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
     ],
@@ -236,7 +234,7 @@
       "Branch and control code that is easy for the CPU to optimize"
     ],
     "answer": "Branch and control code that is easy for the CPU to optimize",
-    "explanation": "GPUs excel at simple, repetitive, large-scale computations, while the CPU primarily handles this type of control flow. Code with many branches is easy to understand in terms of CPU flow because it involves frequent conditional checks. This can be distinguished from GPU-type tasks that involve repeating the same calculation a large number of times.",
+    "explanation": "This Python loop dispatches different Python functions according to each row's status, so a CPU normally executes its control and orchestration. GPUs can evaluate conditions, but divergent branches across many threads can reduce efficiency, and Python calls do not move to a GPU automatically. The bodies of `save` and `enqueue` are not shown and may have their own workload characteristics.",
     "side_card_ids": [
       "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
     ],
@@ -253,7 +251,7 @@
       "batch_size"
     ],
     "reading_goal": "Understand that VRAM is affected by model size, input length, and batch size.",
-    "code": "# Large model + long input + large batch_size = higher VRAM usage batch_size = 8 max_length = 2048",
+    "code": "# Large model + long input + large batch_size = higher VRAM usage\nbatch_size = 8\nmax_length = 2048",
     "question_type": "meaning_choice",
     "question": "If you get a \"CUDA out of memory\" error, what can you try reducing first?",
     "choices": [
@@ -291,7 +289,7 @@
       "CPU preprocessing, I/O, and small batches may be bottlenecks"
     ],
     "answer": "CPU preprocessing, I/O, and small batches may be bottlenecks",
-    "explanation": "A low GPU utilization rate does not necessarily mean the GPU is slow. The GPU may be waiting for computations to begin due to data loading, CPU preprocessing, or disk I/O, creating a bottleneck. When evaluating performance, you should consider not only GPU utilization but also data preparation time and batch size.",
+    "explanation": "GPU-Util of 15% indicates low busy time during the sample, not a proven cause. CPU preprocessing, disk or network I/O, small batches, synchronization, short kernels, and device transfers can leave the GPU waiting, or the workload may simply contain little GPU work. Repeated measurement and a profiler should separate CPU time, input loading, kernel gaps, and transfers.",
     "side_card_ids": [
       "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
     ],
@@ -308,7 +306,7 @@
       "backward"
     ],
     "reading_goal": "Understand that inference is forward-only, while learning involves the addition of a backward pass and an optimizer.",
-    "code": "# inference\nwith torch.no_grad():\n    output = model(x)\n\n# training\nloss = model(x).loss\nloss.backward()\noptimizer.step()",
+    "code": "# inference\nwith torch.no_grad():\n    output = model(x)\n\n# training\noptimizer.zero_grad()\nloss = model(x).loss\nloss.backward()\noptimizer.step()",
     "question_type": "meaning_choice",
     "question": "What is the key flow found only in the learning code?",
     "choices": [
@@ -318,7 +316,7 @@
       "loss.backward and optimizer.step"
     ],
     "answer": "loss.backward and optimizer.step",
-    "explanation": "Training requires gradient calculation and parameter updates, so it consumes more memory and computational resources than inference. Inference is the process of generating an answer using a pre-trained model, while training is the process of adjusting the model’s weights. The computational requirements and the values that need to be stored differ between the two. Therefore, the correct answer is “loss.backward and optimizer.step.”",
+    "explanation": "Ordinary inference creates a forward result under `no_grad`, while training clears old gradients, computes a forward loss, calls `backward` to calculate gradients, and calls `optimizer.step` to change parameters. The training-only core is therefore backward and step. Training normally uses more memory and computation because activations and optimizer state must be retained.",
     "side_card_ids": [
       "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
     ],
@@ -346,9 +344,7 @@
     ],
     "answer": "When performing AI inference on mobile phones, laptops, or Edge devices",
     "explanation": "An NPU is an accelerator designed to process AI computations in a power-efficient manner. It is commonly used in on-device AI, where power consumption and latency are critical factors. It’s easy to understand when you think of environments with significant battery and thermal constraints, such as smartphones or small devices. Therefore, the correct answer is “when performing AI inference on cell phones, laptops, or edge devices.”",
-    "side_card_ids": [
-      "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "This is necessary for understanding AI on PCs, AI on smartphones, and edge inference in robots."
   },
   {
@@ -372,10 +368,8 @@
       "Cloud/Framework/Runtime Support"
     ],
     "answer": "Cloud/Framework/Runtime Support",
-    "explanation": "Unlike a standard GPU, which can be used immediately with any code, you must first verify the supported environment for a TPU. A TPU is a device specialized for specific deep learning computations, and in the cloud, it is often used on a pay-as-you-go basis. You need to consider both the execution environment and cost conditions, rather than just the code itself.",
-    "side_card_ids": [
-      "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
-    ],
+    "explanation": "A TPU requires a supported framework and compiler path that can lower the computation graph to TPU operations. Check model-operation support, runtime and topology, input pipeline, cloud quota and cost, and checkpoint compatibility. A GPU also does not accelerate arbitrary code automatically, so the meaningful comparison is software-stack and workload support rather than the device name alone.",
+    "side_card_ids": [],
     "project_context": "It is helpful for comparing Colab and cloud AI environments."
   },
   {
@@ -400,7 +394,7 @@
       "GPU or TPU"
     ],
     "answer": "GPU or TPU",
-    "explanation": "The choice of accelerator depends on the type of computation and operating conditions. When there are many large tensor and matrix operations, the advantages of parallel accelerators become particularly evident. To determine whether a GPU or NPU is better than a CPU, one must consider not only speed but also power consumption, memory, and deployment location. Therefore, the correct answer is “GPU or TPU.”",
+    "explanation": "Training dominated by large tensor and matrix operations is a good fit for a supported GPU or TPU software stack. The actual choice still depends on model support, accelerator memory, the data pipeline, distributed scale, cost, and availability. NPUs are commonly targeted at particular on-device inference workloads and are not automatically the best choice for the large training workload in this question.",
     "side_card_ids": [
       "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
     ],

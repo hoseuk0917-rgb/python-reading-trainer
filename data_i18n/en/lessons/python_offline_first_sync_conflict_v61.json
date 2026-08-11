@@ -13,13 +13,13 @@
     "question_type": "meaning_choice",
     "question": "What is the purpose of \"offline-first\"?",
     "choices": [
-      "To ensure users can continue to use the app's core features even without an internet connection,",
+      "To keep the app's core features usable without an internet connection",
       "To save your GitHub password",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "To ensure users can continue to use the app's core features even without an internet connection,",
-    "explanation": "\"Offline-first\" is an approach to designing applications so that core features work even without a network connection. It’s ideal for educational apps to allow users to continue reviewing material even on an unstable Wi-Fi connection. Since changes made offline must be synchronized later, a save queue and conflict resolution mechanisms are also required.",
+    "answer": "To keep the app's core features usable without an internet connection",
+    "explanation": "Offline-first designs locally available core features to work without a network. Calling syncWhenOnline does not prove that the server is reachable, so the app must handle real request failures and retries. Store offline changes in a durable queue, then prevent duplicate application and resolve conflicts after connectivity returns.",
     "side_card_ids": [
       "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
     ],
@@ -45,7 +45,7 @@
       "To hide the verification results"
     ],
     "answer": "User data can be saved immediately even if the network is slow.",
-    "explanation": "It’s better to safely store answers or notes locally first, rather than waiting for a server response. “Local-first” is an approach where data is first stored in the browser or local storage and then synchronized with the server later. It works even offline, but conflict resolution rules are necessary. Therefore, the correct answer is “User records can be saved immediately even if the network is slow.”",
+    "explanation": "Local-first applies a change to device storage first for an immediate response, then synchronizes it with the server. Local storage can still fail because of quota limits or browser cleanup, so confirm the write. If multiple devices can edit the same record, use a durable queue, version information, and conflict rules together.",
     "side_card_ids": [
       "PYV160_A1_PWA_STATE_STORAGE_FLOW"
     ],
@@ -71,7 +71,7 @@
       "To hide the verification results"
     ],
     "answer": "Saves app files to the cache so they can be opened quickly again",
-    "explanation": "The service worker cache is a mechanism in PWAs that stores files and data in the cache so they can be displayed even when offline. It is a key component for creating an offline experience. If the caching strategy is set incorrectly, outdated files may continue to be displayed, so version control is necessary.",
+    "explanation": "A service worker's Cache API stores request responses such as the app shell to support offline reopening. cache.addAll can reject the whole operation if one item fails, so handle installation failure. A cache is neither guaranteed permanent storage nor automatically fresh; define version replacement and stale-cache cleanup.",
     "side_card_ids": [
       "PYV160_A1_PWA_STATE_STORAGE_FLOW"
     ],
@@ -91,13 +91,13 @@
     "question_type": "meaning_choice",
     "question": "Why are there different cache strategies?",
     "choices": [
-      "Since the requirements for recency and speed vary depending on the file type,",
+      "Because freshness and speed requirements differ by resource",
       "To save your GitHub password",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "Since the requirements for recency and speed vary depending on the file type,",
-    "explanation": "For app shells, a \"cache-first\" approach is preferable, while a \"network-first\" approach may be more suitable for the latest data. A cache strategy is a set of rules that determines which files to store in the cache and when to fetch new ones. It is important to strike a balance between offline usability and data freshness. Therefore, the correct answer is, \"Because the requirements for freshness and speed vary depending on the file type.\"",
+    "answer": "Because freshness and speed requirements differ by resource",
+    "explanation": "Cache-first may suit a rarely changing app shell, while network-first with a timeout and fallback may suit freshness-sensitive data. Choose by update frequency and offline requirements rather than file extension alone. Every strategy still needs behavior for stale data, expiration, and request failure.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -124,7 +124,7 @@
       "To hide the verification results"
     ],
     "answer": "To synchronize changes made while offline with the server later",
-    "explanation": "Changes to answer history, bookmarks, and notes can be synchronized in order once the network connection is restored. The sync queue is a list that stores changes made while offline so they can be sent to the server later. In the code, you must verify the flow: add, send, remove after success, and retry in case of failure.",
+    "explanation": "A sync queue holds offline changes for later delivery. The in-memory array in the example can disappear on reload, so a durable store such as IndexedDB may be required. Give each item a stable operation ID and order, remove it only after confirmed success, and retry failures with bounded backoff.",
     "side_card_ids": [
       "AI_cost_001",
       "PYV102_A7_PWA_OFFLINE_UPDATE"
@@ -151,7 +151,7 @@
       "To hide the verification results"
     ],
     "answer": "Data that has been modified locally but has not yet been synchronized",
-    "explanation": "A \"dirty record\" is a record that has been modified locally but has not yet been synchronized with the server or another storage location. The \"dirty\" flag is necessary to identify which records to send. By saving the \"dirty\" status, you can determine which records to send to the server when you come back online.",
+    "explanation": "A dirty record was changed locally but has not yet been acknowledged by the server. Persist the flag with the change so a restart does not lose pending work. Clear it only after a successful response, and compare versions so a record edited again during upload is not incorrectly marked clean.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -172,13 +172,13 @@
     "question_type": "meaning_choice",
     "question": "Why is `updatedAt` important?",
     "choices": [
-      "To determine which set of data was modified more recently,",
+      "To provide useful context about when each copy was modified",
       "To save your GitHub password",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "To determine which set of data was modified more recently,",
-    "explanation": "The `updated_at` field stores the time when the data was last modified. During synchronization, both the content and the modification time must be considered to detect conflicts. It serves as the basis for determining which is more recent: the record modified offline or the record on the server.",
+    "answer": "To provide useful context about when each copy was modified",
+    "explanation": "updatedAt is useful metadata, but it cannot by itself prove which change is correct or newer. Device clocks may disagree, and two edits can share a timestamp. Use a server-managed revision or ETag for conflict detection and treat time as supporting information for the user.",
     "side_card_ids": [],
     "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
   },
@@ -202,7 +202,7 @@
       "To hide the verification results"
     ],
     "answer": "To continue your learning progress across multiple devices",
-    "explanation": "When cards solved on a PC and those solved on a smartphone are merged into a single account history, the learning flow improves. Cloud sync is the process of synchronizing data stored locally with a server or cloud storage. You need to consider the rules for uploading, downloading, and conflict resolution together. Therefore, the correct answer is “to continue your study progress across multiple devices.”",
+    "explanation": "Cloud sync aligns local records from multiple devices with the same server account. One upload is not the whole workflow. Authentication, download, server acknowledgement, deduplication, deletion propagation, and conflict rules are all needed so one device does not silently overwrite another.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -246,7 +246,7 @@
       "data_integrity"
     ],
     "reading_goal": "Understand sync conflicts that occur when the same data is edited differently on two devices.",
-    "code": "if local.updatedAt != remote.updatedAt:\n  detectConflict(local, remote)",
+    "code": "if local.baseVersion != remote.version:\n  detectConflict(local, remote)",
     "question_type": "meaning_choice",
     "question": "In what situations do sync conflicts occur?",
     "choices": [
@@ -256,7 +256,7 @@
       "To hide the verification results"
     ],
     "answer": "When the same data is edited differently on multiple devices",
-    "explanation": "A sync conflict occurs when the same data is modified differently on different devices or at different times. This must be taken into account in offline note-taking features. Without a conflict resolution policy, changes made on one device could silently overwrite changes made on another device.",
+    "explanation": "A sync conflict occurs when the server's copy changes after local editing began. Merely seeing different updatedAt values does not reliably prove concurrent editing. Comparing the edit's baseVersion with the current server version, as shown here, detects a change built on an outdated base.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -283,7 +283,7 @@
       "To hide the verification results"
     ],
     "answer": "Selecting the most recently updated data as the final value",
-    "explanation": "\"Last write wins\" is a conflict resolution method that selects the most recently modified value as the final value. While simple, caution is required because previous content may be lost. For critical data, user confirmation or merge rules may be necessary rather than simply selecting the latest value.",
+    "explanation": "Last-write-wins chooses the final write according to a defined order. Comparing client updatedAt values can produce the wrong order when device clocks disagree, so a server timestamp or monotonic revision is safer. Any version can still discard earlier content, so important notes need history or user choice.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -310,7 +310,7 @@
       "To hide the verification results"
     ],
     "answer": "Data that blends together naturally, like a list of bookmarks",
-    "explanation": "A merge strategy is a set of rules for combining or selecting values when a conflict occurs. It is generally better to merge data in a way that suits its nature rather than overwriting all conflicts. You must distinguish between data that can be merged—such as notes—and data that requires selecting the latest value, such as progress. Therefore, the correct answer is “data that feels natural to merge, such as a bookmark list.”",
+    "explanation": "A merge strategy combines conflicts according to the data's meaning. Set union is natural when two devices add different bookmarks, but a deletion can reappear unless deletions are represented separately. Free-form notes may be harmed by automatic merging, and progress also needs domain-specific rules rather than simply taking the latest value.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -337,7 +337,7 @@
       "To hide the verification results"
     ],
     "answer": "To allow users to choose in cases where automatic merging is difficult",
-    "explanation": "For data where meaning is important, such as personal notes, it’s safer to let the user choose which version to keep. The conflict resolution UI is a screen that allows users to make a choice when local changes conflict with server changes. Comparison information showing which value to keep must be displayed. Therefore, the correct answer is “to allow the user to choose in cases where automatic merging is difficult.”",
+    "explanation": "For notes that cannot be merged safely, show local and server versions side by side and offer keep-one, keep-both, or manual-merge choices. Device and changed-section details can help more than timestamps alone. Do not delete either version before the user decides.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -354,17 +354,17 @@
       "retry"
     ],
     "reading_goal": "Understand idempotent synchronization, which ensures that results remain intact even if the same synchronization request is sent multiple times.",
-    "code": "upsertProgress(record.id, record)",
+    "code": "upsertProgress(record.id, record, operationId)",
     "question_type": "meaning_choice",
     "question": "Why is idempotent sync necessary?",
     "choices": [
-      "Since the same request may be executed multiple times due to retries,",
+      "Because retries may deliver the same request more than once",
       "To save your GitHub password",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "Since the same request may be executed multiple times due to retries,",
-    "explanation": "Since retrying after a network failure can result in duplicate requests, a safe method such as `upsert` is necessary. Idempotent sync is a principle that ensures the results remain intact even if the same synchronization request is executed multiple times. It is important for preventing duplicate uploads or repeated applications.",
+    "answer": "Because retries may deliver the same request more than once",
+    "explanation": "Retries can deliver the same request multiple times, so the server should use a stable operationId to recognize work already processed. Upserting an absolute state by ID helps, but it is not sufficient if the operation also increments a score or sends a notification. Duplicate delivery must leave the same state and side effects as one delivery.",
     "side_card_ids": [
       "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
     ],
@@ -384,13 +384,13 @@
     "question_type": "meaning_choice",
     "question": "What is the purpose of the sync quality gate?",
     "choices": [
-      "To verify that records remain secure even when offline or out of sync,",
+      "To verify that records remain safe through offline use and synchronization",
       "To save your GitHub password",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "To verify that records remain secure even when offline or out of sync,",
-    "explanation": "If you only test successful online storage, you may overlook issues that arise in actual PWA usage scenarios. The sync quality gate acts as a checkpoint to verify that data is safe before synchronization. You should check whether it verifies for missing fields, conflicts, and whether retries are possible.",
+    "answer": "To verify that records remain safe through offline use and synchronization",
+    "explanation": "A sync quality gate tests offline writes, queue recovery after restart, duplicate requests, reconnection, and real conflicts. Checking only field presence is not enough. Also test closing immediately after failure, simultaneous device edits, and delete-versus-edit conflicts so records do not disappear silently.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -417,7 +417,7 @@
       "To hide the verification results"
     ],
     "answer": "Local storage → Mark as dirty → Add to sync queue → Transfer when online → Resolve conflicts",
-    "explanation": "The offline sync flow consists of local saving, marking as \"dirty,\" returning to online mode, uploading, and conflict resolution. It must satisfy both fast saving and secure synchronization.",
+    "explanation": "Persist the change locally, then store its dirty flag and stable operation ID in a queue. Do not trust an online signal alone; attempt delivery and confirm server acknowledgement. If versions conflict, resolve them and store the new version, then remove only queue items whose success is confirmed.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"

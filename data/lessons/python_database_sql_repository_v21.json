@@ -20,9 +20,8 @@
       "서버를 실행한다"
     ],
     "answer": "쿼리 결과 행들을 모두 가져온다",
-    "explanation": "execute로 실행한 SELECT 결과를 fetchall로 리스트 형태로 가져온다. sqlite3 연결 코드는 DB 파일을 열고 쿼리를 실행할 준비를 한다. 연결 객체, cursor, commit, close가 어떤 순서로 쓰이는지 보면 된다.",
+    "explanation": "fetchall은 아직 가져오지 않은 result row를 모두 list로 반환한다. 이 query에는 LIMIT 10이 있어 최대 열 행만 가져오지만, 제한 없는 큰 query에서는 메모리를 많이 쓸 수 있다. conn.close가 예외 때도 실행되게 하려면 with sqlite3.connect(...) as conn 같은 transaction context와 명시적 close 정책을 사용한다.",
     "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_ARCHITECTURE_DESIGN"
     ],
     "project_context": "로컬 메타 DB나 검증용 SQLite를 읽는 기본 코드다."
@@ -48,7 +47,7 @@
       "쿼리 주석"
     ],
     "answer": "나중에 안전하게 바인딩될 파라미터 자리",
-    "explanation": "사용자 입력을 SQL 문자열에 직접 붙이지 않고 파라미터로 넘기면 SQL injection 위험을 줄인다. 파라미터 바인딩 SQL은 값을 문자열로 직접 붙이지 않고 별도 인자로 넘기는 방식이다. SQL Injection 위험을 줄이는 기본 습관이다. 따라서 정답은 ‘나중에 안전하게 바인딩될 파라미터 자리’이다.",
+    "explanation": "?는 SQL 값 한 칸을 위한 placeholder이고 (item_id,)의 trailing comma는 한 원소 tuple을 만든다. driver가 값을 SQL 문법과 분리해 bind하므로 문자열 이어 붙이기보다 injection 위험이 줄어든다. placeholder는 table명이나 column명 같은 identifier에는 쓸 수 없으므로 그런 동적 부분은 allowlist로 제한해야 한다.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -103,7 +102,7 @@
       "오류를 숨기기 위해"
     ],
     "answer": "실패한 트랜잭션 변경을 되돌리기 위해",
-    "explanation": "중간 실패로 DB가 어중간한 상태가 되는 것을 줄이기 위해 rollback을 한다. rollback은 DB 작업 중 오류가 났을 때 변경을 되돌리는 처리다. 여러 쿼리를 한 묶음으로 실행할 때 실패한 중간 상태가 남지 않게 해 준다.",
+    "explanation": "execute나 commit이 Exception을 내면 rollback이 현재 connection의 아직 commit되지 않은 transaction 변경을 되돌린 뒤 bare raise가 원래 오류를 다시 알린다. 이미 commit된 변경이나 다른 connection의 transaction은 되돌리지 않는다. 실제 코드에서는 예상 DB 예외 범위를 정하고 connection context manager로 commit·rollback 경계를 명확히 할 수 있다.",
     "side_card_ids": [
       "PYV158_A1_DATABASE_FLOW"
     ],
@@ -120,7 +119,7 @@
       "sql"
     ],
     "reading_goal": "테이블 생성 SQL에서 컬럼과 primary key를 읽는다.",
-    "code": "CREATE TABLE IF NOT EXISTS items (\n  id TEXT PRIMARY KEY,\n  title TEXT NOT NULL,\n  source_url TEXT,\n  created_at TEXT NOT NULL\n);",
+    "code": "CREATE TABLE IF NOT EXISTS items (\n  id TEXT PRIMARY KEY NOT NULL,\n  title TEXT NOT NULL,\n  source_url TEXT,\n  created_at TEXT NOT NULL\n);",
     "question_type": "meaning_choice",
     "question": "PRIMARY KEY가 붙은 id의 의미에 가장 가까운 것은?",
     "choices": [
@@ -130,7 +129,7 @@
       "외부 파일 경로"
     ],
     "answer": "각 행을 구분하는 고유 식별자",
-    "explanation": "CREATE TABLE은 데이터베이스 테이블 구조를 만드는 명령이다. primary key는 테이블 안에서 각 행을 식별하는 대표 키 역할을 한다. schema를 보면 어떤 컬럼이 필수인지, 어떤 값으로 행을 찾을지 알 수 있다. 따라서 정답은 ‘각 행을 구분하는 고유 식별자’이다.",
+    "explanation": "PRIMARY KEY는 row를 고유하게 찾는 key이며 중복을 허용하지 않는다. 이 예시는 id에 NOT NULL도 명시해 SQLite rowid table에서 null identifier가 들어갈 수 있는 예외를 피한다. title과 created_at도 NULL을 금지하지만, empty string이나 올바른 날짜 형식까지 자동 검증하는 것은 아니다.",
     "side_card_ids": [
       "PYV158_A1_SCHEMA_FLOW"
     ],
@@ -149,15 +148,15 @@
     "reading_goal": "DB 컬럼이 비어 있으면 안 되는 제약을 이해한다.",
     "code": "CREATE TABLE runs (\n  id TEXT PRIMARY KEY,\n  job_name TEXT NOT NULL,\n  status TEXT NOT NULL\n);",
     "question_type": "meaning_choice",
-    "question": "job_name TEXT NOT NULL의 의미는?",
+    "question": "job_name TEXT NOT NULL이 직접 금지하는 것은?",
     "choices": [
-      "job_name은 반드시 숫자여야 한다",
-      "job_name은 자동 삭제된다",
-      "job_name은 반드시 값이 있어야 한다",
-      "job_name은 primary key다"
+      "숫자 값",
+      "빈 문자열",
+      "NULL 값",
+      "중복 문자열"
     ],
-    "answer": "job_name은 반드시 값이 있어야 한다",
-    "explanation": "NOT NULL은 해당 컬럼에 비어 있는 NULL 값이 들어갈 수 없다는 제약이다. 반드시 필요한 필드가 빠지는 것을 막을 때 쓴다. job_name처럼 실행 기록을 식별하는 필드는 비어 있으면 추적이 어려우므로 이런 제약을 붙이는 경우가 많다.",
+    "answer": "NULL 값",
+    "explanation": "NOT NULL은 해당 column에 SQL NULL이 저장되는 것을 금지한다. 빈 문자열 \"\"이나 공백 문자열까지 막는 제약은 아니므로 실제 job name이 비어 있지 않아야 한다면 CHECK(length(trim(job_name)) > 0) 같은 규칙이나 application validation이 추가로 필요하다.",
     "side_card_ids": [
       "PYV158_A1_SCHEMA_FLOW"
     ],
@@ -184,7 +183,7 @@
       "curations가 파일 폴더다"
     ],
     "answer": "curations.item_id가 items.id를 참조한다",
-    "explanation": "foreign key는 한 테이블의 값이 다른 테이블의 행을 참조한다는 뜻이다. 테이블 사이 연결과 데이터 정합성을 표현할 때 사용한다. item_id가 items 테이블의 id에 실제로 존재해야 한다는 규칙을 두면 고아 데이터가 생기는 것을 줄일 수 있다.",
+    "explanation": "이 FOREIGN KEY는 curations.item_id가 items.id를 참조한다는 관계를 선언한다. 부모에 없는 id를 막거나 delete 동작을 제어하려면 database가 외래키 제약을 실제로 활성화하고 있어야 한다. SQLite는 connection마다 PRAGMA foreign_keys = ON 설정을 확인해야 하며, 기존 orphan data와 ON DELETE 정책도 별도로 점검한다.",
     "side_card_ids": [
       "PYV158_A1_SCHEMA_FLOW"
     ],
@@ -289,7 +288,7 @@
       "3"
     ],
     "answer": "40",
-    "explanation": "(3 - 1) * 20 = 40이다. 앞의 40개를 건너뛰고 다음 20개를 가져온다. LIMIT과 OFFSET pagination은 많은 결과를 페이지 단위로 나누어 가져오는 방식이다. 몇 개를 가져올지와 어디서부터 가져올지를 함께 확인해야 한다.",
+    "explanation": "page=3이면 (3-1)*20으로 offset 40을 만들고 앞의 40 row를 건너뛴 뒤 최대 20 row를 가져온다. page와 page_size가 양수인지, 최대 page_size가 얼마인지 먼저 검증해야 한다. 같은 created_at 값이 있을 때 page 경계가 흔들리지 않도록 id 같은 고유 tie-breaker도 ORDER BY에 추가하는 것이 안전하다.",
     "side_card_ids": [
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
@@ -341,9 +340,8 @@
       "모든 행을 지운다"
     ],
     "answer": "items 테이블에 summary 컬럼을 추가한다",
-    "explanation": "migration은 데이터베이스 구조 변경을 기록하고 적용하는 절차다. ALTER TABLE은 기존 테이블에 컬럼을 추가하거나 구조를 바꿀 때 쓴다. 마이그레이션 파일을 순서대로 관리하면 여러 환경의 DB 구조를 같은 상태로 맞출 수 있다.",
+    "explanation": "ALTER TABLE ... ADD COLUMN은 기존 items table에 nullable summary column을 추가한다. migration은 이런 schema 변경을 version 순서로 기록하고 각 환경에 한 번씩 적용하는 절차다. DB engine별 지원 범위와 lock 시간을 확인하고, backup·transaction·rollback 또는 forward-fix 계획과 이미 적용됐는지 추적하는 migration table이 필요하다.",
     "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_ARCHITECTURE_DESIGN"
     ],
     "project_context": "D1/Supabase schema가 점점 확장될 때 migration을 읽는 기본이다."
@@ -369,12 +367,12 @@
       "items 테이블을 만든다"
     ],
     "answer": "SQL의 ? 자리에 itemId 값을 바인딩한다",
-    "explanation": "D1에서도 prepare/bind를 통해 SQL과 입력값을 분리하는 패턴을 쓴다. prepare와 bind는 SQL 문자열과 실제 값을 분리해서 안전하게 실행하는 흐름이다. 값을 직접 문자열에 붙이는 방식보다 SQL 주입 위험을 줄일 수 있다. 따라서 정답은 ‘SQL의 ? 자리에 itemId 값을 바인딩한다’이다.",
+    "explanation": "env.DB는 Worker에 설정된 D1 binding이고 prepare가 statement를 만든다. bind(itemId)는 ? placeholder에 값을 분리해 전달해 직접 문자열 연결보다 SQL injection 위험을 줄인다. first()는 첫 result row를 반환하므로 결과가 없을 때의 null과 실행 error를 호출 code에서 구분해야 한다.",
     "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING",
-      "PYV102_A7_ARCHITECTURE_DESIGN"
+      "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW",
+      "PYV158_A1_DATABASE_FLOW"
     ],
-    "project_context": "home-curator의 D1 DB 접근 코드를 읽는 데 직접 연결된다."
+    "project_context": "Cloudflare Worker에서 D1 prepared statement를 실행하는 기본 흐름이다."
   },
   {
     "id": "PY21_L10_supabase_select_001",
@@ -397,7 +395,7 @@
       "itemId를 암호화한다"
     ],
     "answer": "id가 itemId와 같은 행만 필터링한다",
-    "explanation": "Supabase 체인에서 eq는 SQL의 WHERE id = itemId와 비슷한 필터다. Supabase select 체인은 테이블에서 필요한 행과 열을 가져오는 쿼리 흐름이다. 필터, 정렬, limit이 어떤 순서로 붙는지 확인하면 된다. 따라서 정답은 ‘id가 itemId와 같은 행만 필터링한다’이다.",
+    "explanation": ".from은 items table을 선택하고 select는 반환할 columns를 정하며 eq는 id가 itemId와 같은 rows만 남긴다. single은 결과가 정확히 한 row이기를 기대하므로 0개이거나 여러 개면 error가 생긴다. 이 code는 error도 구조 분해하므로 반드시 검사해야 하며, 권한은 client filter가 아니라 server의 RLS와 인증 정책으로 보호한다.",
     "side_card_ids": [
       "PYV158_A1_DATABASE_FLOW"
     ],

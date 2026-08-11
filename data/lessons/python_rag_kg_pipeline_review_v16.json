@@ -20,7 +20,7 @@
       "임베딩 모델을 새로 학습한다"
     ],
     "answer": "manifest.jsonl의 각 줄을 JSON 객체로 읽어 rows에 모은다",
-    "explanation": "JSONL은 한 줄에 JSON 객체 하나가 들어가는 형식이다. splitlines로 줄을 나누고 json.loads로 각 줄을 dict로 바꾼다. manifest를 줄 단위로 읽으면 큰 목록도 한 번에 메모리에 올리지 않고 순차 처리할 수 있다.",
+    "explanation": "JSONL은 보통 한 줄에 JSON 값 하나를 저장하는 형식이다. 이 코드는 파일 전체를 read_text로 메모리에 읽고, 빈 줄을 건너뛴 뒤 각 줄을 json.loads로 파싱해 rows에 모두 저장한다. 따라서 줄 단위로 파싱하지만 메모리를 절약하는 스트리밍 코드는 아니다. 큰 파일은 open으로 연 파일 객체를 직접 반복하고 필요한 줄을 즉시 처리해야 한다.",
     "side_card_ids": [
       "PYV158_A1_PIPELINE_FLOW"
     ],
@@ -39,15 +39,15 @@
     "reading_goal": "문서마다 다른 메타 필드를 하나의 공통 스키마로 맞추는 코드를 읽는다.",
     "code": "def normalize_doc(row):\n    return {\n        \"doc_id\": str(row.get(\"doc_id\") or row.get(\"id\")),\n        \"title\": (row.get(\"title\") or \"\").strip(),\n        \"source_url\": row.get(\"url\") or row.get(\"source_url\"),\n        \"lane\": row.get(\"lane\", \"B\"),\n    }",
     "question_type": "meaning_choice",
-    "question": "row.get('doc_id') or row.get('id')의 의미는?",
+    "question": "row.get('doc_id') or row.get('id')의 실제 동작은?",
     "choices": [
-      "doc_id가 있으면 쓰고 없으면 id를 대신 쓴다",
+      "doc_id가 truthy이면 쓰고, 아니면 id 값을 대신 쓴다",
       "doc_id와 id를 둘 다 삭제한다",
       "항상 None을 반환한다",
       "URL을 다운로드한다"
     ],
-    "answer": "doc_id가 있으면 쓰고 없으면 id를 대신 쓴다",
-    "explanation": "or는 앞 값이 비어 있으면 뒤 값을 사용한다. 서로 다른 소스의 필드명을 통일할 때 자주 쓴다. 메타데이터 정규화 함수는 source, title, url, date 같은 필드를 같은 형식으로 맞추는 함수다. 이후 검색과 dedup 품질에 직접 영향을 준다.",
+    "answer": "doc_id가 truthy이면 쓰고, 아니면 id 값을 대신 쓴다",
+    "explanation": "or는 앞 값이 None일 때만이 아니라 빈 문자열, 0, False처럼 falsy인 모든 경우에 뒤 값을 선택한다. 따라서 두 필드명이 다른 입력을 합치는 데 쓸 수 있지만, 두 값이 모두 없으면 str(None)이 되어 문자열 \"None\"이 생긴다. doc_id가 필수라면 대체값을 고른 뒤 None과 빈 문자열을 명시적으로 검사해야 한다.",
     "side_card_ids": [
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
@@ -74,11 +74,11 @@
       "문장을 랜덤으로 섞는다"
     ],
     "answer": "이전 chunk의 마지막 두 문장을 다음 chunk에도 겹치게 한다",
-    "explanation": "sentence chunking은 문장을 기준으로 텍스트를 나누는 방식이다. overlap을 넣으면 검색할 때 앞뒤 문맥이 끊기는 문제를 줄일 수 있다. overlap이 너무 작으면 문맥이 끊기고 너무 크면 중복이 많아져 검색 효율이 떨어질 수 있다. 따라서 반환/호출 결과는 ‘이전 chunk의 마지막 두 문장을 다음 chunk에도 겹치게 한다’이다.",
+    "explanation": "current[-2:]는 현재 목록의 마지막 두 문장만 새 목록으로 남긴다. 직전에 완성한 chunk의 끝 두 문장이 다음 chunk의 시작에도 들어가므로 정답은 ‘이전 chunk의 마지막 두 문장을 다음 chunk에도 겹치게 한다’이다. 이 overlap은 경계에서 문맥이 끊기는 일을 줄이지만, 너무 크면 같은 문장이 여러 검색 결과에 반복될 수 있다. 문장 경계 보존은 sentences가 미리 올바르게 분리되어 있다는 전제도 필요하다.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
-    "project_context": "네가 고친 chunking 원칙인 문장 중간/단어 중간 split 금지와 직접 연결된다."
+    "project_context": "문장 중간이나 단어 중간을 자르지 않고, 검색에 필요한 앞뒤 문맥을 일부 겹치는 chunking 원칙과 연결된다."
   },
   {
     "id": "PY16_L09_chunk_id_001",
@@ -183,7 +183,7 @@
       "질문을 바꾼다"
     ],
     "answer": "score가 큰 후보가 앞에 오게 한다",
-    "explanation": "rerank는 1차 검색 결과를 다시 점수화해 순서를 고치는 단계다. 내림차순 정렬이면 점수가 높은 후보가 앞에 오게 된다. rerank는 1차 검색 후보를 다시 점수화해 더 관련 높은 순서로 정렬하는 단계다. 검색 결과 품질을 높이지만 추가 비용과 지연이 생길 수 있다.",
+    "explanation": "각 candidate에 대해 scorer가 question과 text의 점수를 만들고, scored에는 원래 chunk와 score가 함께 저장된다. sorted의 reverse=True는 score를 큰 값부터 정렬한다. 이 해석은 scorer가 큰 점수를 더 관련 있는 후보로 정의한다는 전제에 따른다. reranking은 검색 품질을 높일 수 있지만 후보마다 추가 계산 비용과 지연이 든다.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
@@ -210,7 +210,7 @@
       "문서를 삭제한다"
     ],
     "answer": "근거 텍스트 앞 300자만 quote로 저장한다",
-    "explanation": "evidence pack은 답변에 사용할 근거 조각을 묶은 자료다. 긴 chunk를 그대로 넣지 않고 일부 quote만 담으면 prompt 크기를 줄일 수 있다. 따라서 반환/호출 결과는 ‘근거 텍스트 앞 300자만 quote로 저장한다’이다.",
+    "explanation": "hit[\"text\"][:300]은 파이썬 문자열의 처음 300개 문자를 가져온다. 토큰 300개나 문장 300개가 아니며, 문장 중간에서 끊길 수 있다. 이 코드는 prompt 크기를 제한하는 간단한 예지만 처음 300자가 실제 주장을 뒷받침한다고 보장하지 않으므로, 실무에서는 관련 구간과 원문 위치도 함께 저장해야 한다.",
     "side_card_ids": [
       "PYV161_A1_EVIDENCE_LINEAGE_FLOW"
     ],
@@ -237,7 +237,7 @@
       "파일명을 만든다"
     ],
     "answer": "근거에 1번부터 번호를 붙인다",
-    "explanation": "enumerate는 순번과 값을 함께 꺼낸다. start=1이라 번호가 1부터 시작한다. 근거 포함 프롬프트는 답변에 어떤 출처를 사용했는지 함께 남기게 하는 지시다. 사용자가 답변의 신뢰도를 확인할 수 있도록 citation 형식을 고정해야 한다. 따라서 반환/호출 결과는 ‘근거에 1번부터 번호를 붙인다’이다.",
+    "explanation": "enumerate는 순번과 값을 함께 꺼내며 start=1 때문에 첫 근거 번호가 1이 된다. 마지막의 \"\\n\".join은 각 항목을 줄바꿈으로 연결한다. 번호를 붙이면 모델과 사용자가 근거를 가리키기 쉬워지지만, 이 문자열만으로 모델이 실제로 [1] 형식의 인용을 출력하거나 해당 근거를 정확히 사용한다고 보장되지는 않는다. 출력 형식 검사와 인용-주장 검증이 별도로 필요하다.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
@@ -254,7 +254,7 @@
       "api"
     ],
     "reading_goal": "실패할 수 있는 LLM 호출을 재시도하는 코드를 읽는다.",
-    "code": "def call_with_retry(client, prompt, max_attempts=3):\n    last_error = None\n    for attempt in range(max_attempts):\n        try:\n            return client.generate(prompt, timeout=60)\n        except TimeoutError as e:\n            last_error = e\n    raise last_error",
+    "code": "def call_with_retry(client, prompt, max_attempts=3):\n    if max_attempts < 1:\n        raise ValueError(\"max_attempts must be at least 1\")\n    for attempt in range(max_attempts):\n        try:\n            return client.generate(prompt, timeout=60)\n        except TimeoutError:\n            if attempt == max_attempts - 1:\n                raise",
     "question_type": "meaning_choice",
     "question": "이 함수가 TimeoutError를 만나면 바로 종료하지 않는 이유는?",
     "choices": [
@@ -264,7 +264,7 @@
       "GPU를 초기화하기 위해"
     ],
     "answer": "최대 max_attempts번까지 다시 시도하기 위해",
-    "explanation": "try/except가 반복문 안에 있어서 timeout이 나도 다음 attempt로 넘어갈 수 있다. LLM 호출 재시도 흐름은 시간초과나 일시 오류가 났을 때 다시 요청하는 구조다. 재시도 횟수와 대기 시간을 제한해야 비용과 지연을 통제할 수 있다. 따라서 반환/호출 결과는 ‘최대 max_attempts번까지 다시 시도하기 위해’이다.",
+    "explanation": "TimeoutError가 나면 마지막 시도가 아닌 동안 except 블록을 빠져나와 다음 반복으로 간다. 성공하면 즉시 결과를 반환하고, 마지막 시도도 시간 초과이면 bare raise가 원래 TimeoutError를 다시 발생시킨다. 실제 API에서는 재시도해도 안전한 요청인지 확인하고, 서버 부담을 줄이도록 backoff와 jitter를 추가하며 다른 영구 오류까지 무조건 재시도하지 않아야 한다.",
     "side_card_ids": [
       "PYV158_A1_API_FLOW"
     ],
@@ -291,7 +291,7 @@
       "질문을 저장하지 않는다"
     ],
     "answer": "근거가 너무 적으면 저신뢰 답변을 반환한다",
-    "explanation": "grounding guard는 근거가 부족할 때 답변을 제한하는 안전장치다. 모델이 근거 없이 그럴듯한 말을 만드는 hallucination을 줄이는 데 도움이 된다.",
+    "explanation": "evidence가 두 개보다 적으면 make_prompt와 llm을 호출하지 않고 low confidence 응답을 반환한다. 그러나 근거 개수만으로 충분성을 판단할 수는 없다. 서로 중복된 두 조각이거나 질문과 무관한 근거일 수도 있으므로 관련도, 출처 다양성, 주장 뒷받침 여부를 함께 검사해야 한다. 이 조건은 단순한 예시 가드이지 hallucination 방지 보장이 아니다.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
@@ -310,17 +310,17 @@
     "reading_goal": "chunk에서 노드 후보 추출용 입력을 만드는 코드를 읽는다.",
     "code": "def make_node_pass_input(chunk, node_catalog):\n    return {\n        \"chunk_id\": chunk[\"chunk_id\"],\n        \"text\": chunk[\"text\"],\n        \"known_nodes\": node_catalog,\n        \"task\": \"extract candidate nodes\"\n    }",
     "question_type": "meaning_choice",
-    "question": "known_nodes에 node_catalog를 넣는 이유는?",
+    "question": "known_nodes에 node_catalog를 함께 넣는 가장 직접적인 이유는?",
     "choices": [
-      "기존 노드 목록을 참고해 후보 추출 recall을 높이기 위해",
+      "후보가 기존 노드와 같은 개념이나 별칭인지 비교하기 위해",
       "텍스트를 삭제하기 위해",
       "JSON을 CSV로 바꾸기 위해",
       "서버 포트를 바꾸기 위해"
     ],
-    "answer": "기존 노드 목록을 참고해 후보 추출 recall을 높이기 위해",
-    "explanation": "node pass는 문서에서 후보 노드를 넓게 찾는 단계다. 기존 catalog를 참고하면 이미 정의된 개념과 새 후보를 함께 비교할 수 있다. known_nodes가 있으면 새 노드 후보가 기존 노드의 별칭인지 완전히 새 개념인지 판단하기 쉽다.",
+    "answer": "후보가 기존 노드와 같은 개념이나 별칭인지 비교하기 위해",
+    "explanation": "node pass는 chunk의 text에서 노드 후보를 찾는 단계다. known_nodes로 기존 catalog를 함께 주면 추출한 표현이 기존 노드와 같은 개념인지, 별칭인지, 새 후보인지 비교하기 쉬워진다. 따라서 정답은 ‘후보가 기존 노드와 같은 개념이나 별칭인지 비교하기 위해’이다. 다만 known_nodes에 없는 표현도 새 후보로 남길 수 있어야 하며, 목록에 있는 항목만 고르게 제한하면 새로운 노드를 놓칠 수 있다.",
     "side_card_ids": [],
-    "project_context": "네가 확정한 Node pass와 Edge pass 분리 원칙 중 Node pass 쪽에 해당한다."
+    "project_context": "노드 후보를 먼저 식별·정규화한 뒤, 확정된 노드 사이의 관계를 Edge pass에서 추출하는 분리 원칙 중 첫 단계다."
   },
   {
     "id": "PY16_L10_edge_pass_001",
@@ -343,9 +343,9 @@
       "임베딩을 삭제하기 위해"
     ],
     "answer": "관계 추출의 정밀도를 높이기 위해",
-    "explanation": "Edge pass는 precision이 중요하므로 승격된 노드 사이의 관계만 추출하도록 제한한다. Edge pass는 이미 고른 노드 사이의 관계를 근거 기반으로 추출하는 단계다. 아무 노드나 연결하지 말고 문서 안에서 함께 확인되는 관계만 승격해야 한다. 따라서 반환/호출 결과는 ‘관계 추출의 정밀도를 높이기 위해’이다.",
+    "explanation": "allowed_nodes를 승격된 노드로 제한하면 관계 후보의 양을 줄여 정밀도를 높이는 데 도움이 된다. 하지만 이 딕셔너리는 모델에 task 문자열과 목록을 전달할 뿐이며, 실제로 목록 밖 노드를 쓰지 않거나 관계가 문서에 존재한다고 보장하지 않는다. 출력 schema 검증과 원문 근거 위치 확인을 거쳐 관계를 승격해야 한다.",
     "side_card_ids": [],
-    "project_context": "네 고정 워크플로우인 Node pass와 Edge pass 엄격 분리에 직접 연결된다."
+    "project_context": "Node pass에서 확정한 노드를 바탕으로 Edge pass의 관계 후보 범위를 제한하는 분리 원칙과 연결된다."
   },
   {
     "id": "PY16_L10_provenance_lineage_001",
@@ -368,7 +368,7 @@
       "파일을 숨긴다"
     ],
     "answer": "결과의 출처와 생성 과정을 추적한다",
-    "explanation": "run_id, model, input_ids를 남기면 나중에 감사와 재현이 쉬워진다. provenance와 lineage는 데이터나 답변이 어디서 왔고 어떤 과정을 거쳤는지 추적하는 정보다. RAG나 KG에서는 근거 신뢰도를 확인하는 데 중요하다. 따라서 반환/호출 결과는 ‘결과의 출처와 생성 과정을 추적한다’이다.",
+    "explanation": "이 함수는 기존 result 딕셔너리에 run_id, model, input_ids를 담은 lineage를 붙인 뒤 같은 객체를 반환한다. 이 정보는 어떤 실행과 입력에서 결과가 나왔는지 추적하는 단서다. 다만 완전한 재현을 위해서는 모델 버전, 코드와 설정 버전, 프롬프트, 난수 seed 같은 정보가 더 필요하고, input_ids가 실제 원문 출처를 가리키는지도 별도로 보장해야 한다.",
     "side_card_ids": [
       "PYV161_A1_EVIDENCE_LINEAGE_FLOW"
     ],
@@ -395,7 +395,7 @@
       "항상 첫 case일 때"
     ],
     "answer": "인용이 필요한 case인데 citations가 없을 때",
-    "explanation": "must_cite가 True인데 result에 citations가 없으면 실패 목록에 추가한다. RAG 테스트 하네스는 검색, 근거 선택, 답변 생성 결과를 한 번에 검증하는 틀이다. 질문별 기대 근거와 실패 사례를 함께 기록하면 회귀를 잡기 쉽다. 따라서 반환/호출 결과는 ‘인용이 필요한 case인데 citations가 없을 때’이다.",
+    "explanation": "must_cite가 truthy이고 result.get(\"citations\")가 없거나 빈 값이면 case id가 failures에 들어간다. 이 테스트는 인용의 존재만 검사하며, 인용이 올바른 원문을 가리키는지 또는 답변의 주장을 실제로 뒷받침하는지는 검사하지 않는다. RAG 회귀 테스트에는 관련 근거, 답변 정확성, 실패 응답 같은 기준도 별도로 추가해야 한다.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
@@ -449,7 +449,7 @@
       "해시를 삭제한다"
     ],
     "answer": "대소문자와 공백 차이를 줄여 정규화한다",
-    "explanation": "dedup hash는 중복 판단을 위해 정규화한 텍스트에서 만든 해시다. lower와 split/join으로 대소문자와 공백 차이를 줄인 뒤 비교한다. 정규화 규칙을 먼저 통일해야 같은 문장이 사소한 공백 차이 때문에 다른 해시가 되는 일을 줄일 수 있다.",
+    "explanation": "lower는 대소문자를 통일하고 split 뒤 \" \".join은 앞뒤 공백과 연속 공백을 한 칸으로 정리한다. 그 정규화 문자열을 UTF-8 바이트로 바꿔 SHA-256 해시를 만든다. 해시는 암호화가 아니며 원문을 복원하기 위한 값도 아니다. 이 방식은 철자와 공백이 정규화된 동일 문장만 찾고, 뜻만 같은 문장은 찾지 못하며 대소문자가 중요한 표현을 잘못 합칠 수도 있다.",
     "side_card_ids": [
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
@@ -476,10 +476,10 @@
       "None"
     ],
     "answer": "error",
-    "explanation": "pipeline status는 처리 단계가 성공했는지 실패했는지 나타내는 값이다. 삼항 표현식에서 ok가 False이면 error 상태가 선택된다. 상태값을 파일이나 로그에 남기면 배치 작업이 어디서 실패했는지 빠르게 찾을 수 있다.",
+    "explanation": "조건식은 ok가 truthy이면 \"ok\", falsy이면 \"error\"를 선택하므로 False일 때 정답은 error다. 이어서 db.update가 runs의 해당 run_id 레코드에 상태, 통계, 오류 문자열을 저장한다. 이 코드는 파일 로그를 쓰는 코드는 아니다. str(error)에 토큰이나 개인정보가 섞일 수 있으므로 운영 환경에서는 저장할 오류 내용을 정제해야 한다.",
     "side_card_ids": [
       "PYV158_A1_PIPELINE_FLOW"
     ],
-    "project_context": "home-curator/D1 runs 테이블 정합성, 배치 작업 감사로그와 연결되는 코드다."
+    "project_context": "배치 실행 테이블의 상태 일관성과 작업 감사 기록을 읽는 코드다."
   }
 ]

@@ -147,7 +147,7 @@
       "에러"
     ],
     "answer": "[\"LiDAR\"]",
-    "explanation": "copy()로 새 리스트를 만들면 원본 리스트와 다른 객체가 된다. 그래서 복사본에 append를 해도 original 리스트는 그대로 유지된다. 원본을 보호해야 하는 함수에서는 복사본을 수정해야 호출한 쪽 데이터가 예상 밖으로 바뀌지 않는다. 따라서 출력은 ‘[\"LiDAR\"]’이다.",
+    "explanation": "list(original)은 원본과 다른 새 리스트를 만든다. 그래서 복사본의 바깥 리스트에 Radar를 append해도 original은 ['LiDAR'] 그대로다. 다만 이것은 얕은 복사라서 원소 안에 또 리스트나 dict가 있다면 그 중첩 객체는 공유될 수 있다. 이 코드가 호출한 것은 copy() 메서드가 아니라 list() 생성자라는 점도 구분해야 한다.",
     "side_card_ids": [
       "CS_shallow_deep_copy_001"
     ],
@@ -199,7 +199,7 @@
       "title"
     ],
     "answer": "True",
-    "explanation": "all()은 들어온 조건들이 모두 참일 때만 True를 반환한다. required에 있는 모든 key가 row에 있으므로 결과는 True가 된다. 검증 조건을 여러 개 묶어 한 번에 확인할 때 all을 쓰면 필수 조건 누락을 간단히 잡을 수 있다.",
+    "explanation": "all()은 생성된 조건이 모두 참일 때 True를 반환한다. id와 title이 둘 다 row의 key이므로 결과는 True다. 이 검사는 key의 존재만 확인하며 값이 빈 문자열인지까지 검증하지 않는다. 또한 required가 빈 목록이면 검사할 거짓 조건이 없어 all은 True를 반환하므로, 필수 필드 목록 자체가 올바른지도 따로 확인해야 한다.",
     "side_card_ids": [
       "DATA_schema_001"
     ],
@@ -208,7 +208,7 @@
   {
     "id": "PY4_L05_finally_001",
     "level": 5,
-    "title": "finally는 항상 정리",
+    "title": "finally 정리 흐름 읽기",
     "concepts": [
       "try_except",
       "finally",
@@ -225,7 +225,7 @@
       "JSON 변환"
     ],
     "answer": "마지막 정리 작업",
-    "explanation": "finally 블록은 try에서 예외가 나든 안 나든 마지막에 실행된다. 파일 닫기나 임시 상태 정리처럼 꼭 해야 하는 작업에 사용한다. 성공과 실패 경로 모두에서 같은 정리가 필요할 때 finally 위치를 확인하면 코드 의도를 읽기 쉽다.",
+    "explanation": "일반적인 제어 흐름에서는 try가 정상 종료되거나 예외·return으로 빠져나갈 때 finally가 마지막으로 실행된다. 이 코드에는 예외가 없으므로 run 다음 cleanup이 출력된다. 파일 닫기나 임시 상태 정리에 쓰지만, 프로세스 강제 종료나 전원 중단까지 보장하는 절대적인 의미의 ‘항상’은 아니다.",
     "side_card_ids": [
       "DEV_debugging_001"
     ],
@@ -241,7 +241,7 @@
       "validation"
     ],
     "reading_goal": "조건이 맞지 않으면 의도적으로 에러를 발생시키는 코드를 읽는다.",
-    "code": "score = -1\nif score < 0:\n    raise ValueError(\"score must be positive\")",
+    "code": "score = -1\nif score < 0:\n    raise ValueError(\"score must be non-negative\")",
     "question_type": "meaning_choice",
     "question": "이 코드는 왜 raise를 쓰는가?",
     "choices": [
@@ -251,7 +251,7 @@
       "서버를 시작하기 위해"
     ],
     "answer": "잘못된 score를 막기 위해",
-    "explanation": "raise는 코드가 직접 예외를 발생시키는 문법이다. 검증 조건을 위반했을 때 ValueError를 내면 잘못된 입력을 빨리 막을 수 있다. 조용히 잘못된 값으로 계속 진행하는 것보다 초기에 실패시키면 원인을 더 빨리 찾을 수 있다. 따라서 정답은 ‘잘못된 score를 막기 위해’이다.",
+    "explanation": "score가 0보다 작으므로 조건이 참이고 raise가 ValueError를 즉시 발생시킨다. 오류 메시지도 조건과 맞게 score는 0 이상이어야 한다고 설명한다. raise 이후의 정상 흐름은 실행되지 않으므로 잘못된 점수가 뒤 단계로 전달되는 것을 막는다. 이 예외를 어디에서 잡을지는 호출부에서 별도로 정해야 한다.",
     "side_card_ids": [
       "AI_eval_001"
     ],
@@ -277,7 +277,7 @@
       "에러"
     ],
     "answer": "빈 문자열",
-    "explanation": "guard return은 처리할 수 없는 입력을 함수 앞부분에서 먼저 걸러낸다. label이 None이면 not label이 참이라 빈 문자열을 바로 반환한다. 앞에서 예외 상황을 빨리 끝내면 아래쪽 정상 처리 코드의 들여쓰기와 조건이 단순해진다.",
+    "explanation": "label이 None이면 not label이 True여서 첫 return이 빈 문자열을 즉시 돌려주고 strip은 실행되지 않는다. 다만 not label은 None뿐 아니라 '', 0, False, 빈 컨테이너도 참으로 보므로, 오직 None만 특별 처리하려는 함수라면 label is None처럼 조건을 좁혀야 한다. 이 예제의 출력은 빈 문자열이다.",
     "side_card_ids": [
       "SC_normalization"
     ],
@@ -322,7 +322,7 @@
     "reading_goal": "탭으로 구분된 TSV 파일을 dict row로 읽는 코드를 읽는다.",
     "code": "import csv\n\nwith open(\"items.tsv\", \"r\", encoding=\"utf-8\") as f:\n    reader = csv.DictReader(f, delimiter=\"\\t\")\n    for row in reader:\n        print(row[\"title\"])",
     "question_type": "meaning_choice",
-    "question": "delimiter='\\\\t'는 무엇을 뜻하는가?",
+    "question": "delimiter='\\t'는 무엇을 뜻하는가?",
     "choices": [
       "쉼표로 컬럼을 구분한다",
       "파일을 삭제한다",
@@ -383,7 +383,7 @@
       "서버를 실행한다"
     ],
     "answer": "절대경로로 바꾼다",
-    "explanation": "resolve()는 현재 작업 위치를 기준으로 상대경로를 실제 절대경로로 바꾼다. 로그나 오류 메시지에서 정확한 파일 위치를 확인할 때 유용하다. 상대경로가 헷갈릴 때 resolve 결과를 출력하면 코드가 실제로 어느 파일을 바라보는지 바로 점검할 수 있다.",
+    "explanation": "resolve()는 현재 작업 디렉터리를 기준으로 경로를 절대경로로 만들고, .. 요소와 가능한 심볼릭 링크를 해석한다. 기본 strict=False에서는 경로가 존재하지 않아도 해석할 수 있는 데까지 처리하므로, 결과가 나왔다고 파일 존재까지 확인된 것은 아니다. 실제 존재 여부는 exists() 같은 별도 검사로 확인해야 한다.",
     "side_card_ids": [
       "LANG_powershell_001"
     ],
@@ -405,11 +405,11 @@
     "choices": [
       "10번 요청한다",
       "10개 파일을 만든다",
-      "응답을 최대 10초 정도 기다린다",
+      "연결·응답 데이터 대기의 timeout을 10초로 둔다",
       "10MB로 제한한다"
     ],
-    "answer": "응답을 최대 10초 정도 기다린다",
-    "explanation": "timeout은 요청이 너무 오래 걸릴 때 기다림을 중단하게 한다. 외부 API가 느리거나 멈췄을 때 프로그램 전체가 계속 멈추는 상황을 막는다. timeout 값을 명시하면 네트워크 문제를 예외로 다룰 수 있어 retry나 fallback 흐름으로 넘기기 쉽다. 따라서 출력은 ‘응답을 최대 10초 정도 기다린다’이다.",
+    "answer": "연결·응답 데이터 대기의 timeout을 10초로 둔다",
+    "explanation": "requests에서 숫자 하나인 timeout=10은 연결과 응답 데이터 읽기의 대기 제한에 사용되며, 제한을 넘기면 Timeout 예외가 날 수 있다. 이는 전체 응답 다운로드가 반드시 10초 안에 끝난다는 총 실행시간 보장은 아니다. 질문은 출력값이 아니라 옵션의 의미를 묻고 있으므로 정답은 ‘연결·응답 데이터 대기의 timeout을 10초로 둔다’이다.",
     "side_card_ids": [
       "AI_latency_001"
     ],
@@ -435,7 +435,7 @@
       "항상 성공한다"
     ],
     "answer": "최대 3번 시도한다",
-    "explanation": "retry loop는 실패할 수 있는 작업을 정해진 횟수만큼 다시 시도하는 구조다. range(3)이면 0, 1, 2로 총 세 번 반복한다. 재시도는 무한 반복이 되지 않게 최대 횟수와 실패 후 처리 경로를 함께 정해야 한다. 따라서 출력은 ‘최대 3번 시도한다’이다.",
+    "explanation": "range(3)은 attempt에 0, 1, 2를 넣어 call_api를 최대 세 번 시도하게 한다. 성공하면 break로 즉시 반복을 끝낸다. 하지만 이 예제는 모든 시도가 실패한 뒤 예외를 다시 내거나 fallback을 실행하지 않고, 지연·backoff도 없으며 모든 Exception을 넓게 잡는다. 실제 재시도 코드는 재시도 가능한 오류, 대기 정책, 최종 실패 처리를 함께 정해야 한다.",
     "side_card_ids": [
       "DEV_debugging_001"
     ],
@@ -462,7 +462,7 @@
       "HTML 제목"
     ],
     "answer": "Authorization 헤더",
-    "explanation": "인증 토큰은 보통 HTTP header에 담아 API로 보낸다. 서버는 이 토큰을 보고 요청한 사용자가 권한을 가진 사람인지 확인한다. Bearer 형식은 Authorization 헤더 값 앞에 토큰 종류를 붙여 서버가 해석할 수 있게 하는 약속이다.",
+    "explanation": "이 코드는 Authorization 헤더 값을 'Bearer '와 token을 합친 문자열로 만든다. 서버는 자신의 인증 규칙에 따라 토큰의 유효성과 요청 권한을 검사하며, 토큰이 반드시 사람 사용자를 뜻하는 것은 아니다. Bearer 토큰은 노출되면 소지자가 사용할 수 있으므로 HTTPS로 전송하고 로그나 오류 메시지에 남기지 않아야 한다.",
     "side_card_ids": [
       "WEB_auth_001"
     ],
@@ -504,7 +504,7 @@
       "json"
     ],
     "reading_goal": "중간 진행 상태를 파일에 저장해 재개할 수 있게 하는 구조를 읽는다.",
-    "code": "state = {\"last_shard\": 42}\nPath(\"checkpoint.json\").write_text(json.dumps(state), encoding=\"utf-8\")",
+    "code": "import json\nfrom pathlib import Path\n\nstate = {\"last_shard\": 42}\nPath(\"checkpoint.json\").write_text(json.dumps(state), encoding=\"utf-8\")",
     "question_type": "meaning_choice",
     "question": "checkpoint.json의 목적은?",
     "choices": [
@@ -514,7 +514,7 @@
       "이미지를 만든다"
     ],
     "answer": "어디까지 처리했는지 저장한다",
-    "explanation": "checkpoint는 중간 진행 상태를 저장하는 방식이다. last_shard 같은 값을 남겨 두면 중단 후에도 어디서 재개할지 알 수 있다. 긴 배치 작업에서는 매번 처음부터 다시 돌리지 않도록 완료 위치와 상태를 주기적으로 남겨야 한다. 따라서 정답은 ‘어디까지 처리했는지 저장한다’이다.",
+    "explanation": "state를 JSON 문자열로 바꿔 checkpoint.json에 쓰므로 마지막 처리 shard가 42라는 정보를 남긴다. 실제 재개 기능이 되려면 시작할 때 이 파일을 다시 읽고 다음 shard를 계산하는 코드도 필요하다. 중요한 진행 상태라면 쓰기 도중 손상되지 않도록 임시 파일 후 교체 같은 원자적 저장 방식도 고려해야 한다.",
     "side_card_ids": [
       "CS_batch_shard_001"
     ],
@@ -592,7 +592,7 @@
       "DB 인덱스"
     ],
     "answer": "LLM에 넣을 프롬프트",
-    "explanation": "prompt template은 모델 입력의 틀을 미리 정해 두는 방식이다. 검색된 docs와 question을 정해진 형식으로 합쳐 LLM 입력을 만든다. 템플릿을 쓰면 매 요청마다 형식이 흔들리지 않아 검증과 디버깅도 쉬워진다. 따라서 반환/호출 결과는 ‘LLM에 넣을 프롬프트’이다.",
+    "explanation": "docs의 각 문자열을 줄바꿈으로 합쳐 context를 만들고, question과 함께 고정 형식 문자열로 반환한다. 따라서 결과는 LLM에 전달할 프롬프트다. docs 항목이 문자열이 아니면 join에서 오류가 나며, 형식을 고정했다고 해서 모델이 지시를 반드시 따르거나 문서 안의 악성 지시를 무시하는 것은 아니다.",
     "side_card_ids": [
       "AI_prompt_001"
     ],
@@ -618,7 +618,7 @@
       "검색을 끈다"
     ],
     "answer": "근거 부족 메시지를 반환한다",
-    "explanation": "evidence check는 답변을 만들기 전에 근거가 있는지 확인하는 단계다. 근거가 없으면 call_llm으로 넘어가지 않아 추측 답변을 줄일 수 있다. 근거가 없을 때 멈추는 규칙은 RAG 답변의 신뢰도를 지키는 기본 방어선이다. 따라서 반환/호출 결과는 ‘근거 부족 메시지를 반환한다’이다.",
+    "explanation": "docs가 빈 목록처럼 falsy이면 근거 부족 메시지를 즉시 반환하고 call_llm은 실행하지 않는다. 다만 docs가 하나라도 있다는 사실만 확인할 뿐, 문서가 질문과 관련 있는지·신뢰할 수 있는지·답변이 문서를 따르는지는 검증하지 않는다. 따라서 이 분기는 빈 근거 호출을 막는 한 단계이지 환각을 차단하는 완전한 보장은 아니다.",
     "side_card_ids": [
       "AI_hallucination_001"
     ],
@@ -634,7 +634,7 @@
       "score"
     ],
     "reading_goal": "검색 후보를 다시 점수화해 상위 결과를 고르는 흐름을 읽는다.",
-    "code": "def rerank(query, hits):\n    scored = []\n    for hit in hits:\n        scored.append((score_pair(query, hit), hit))\n    scored.sort(reverse=True)\n    return [hit for score, hit in scored[:5]]",
+    "code": "def rerank(query, hits):\n    scored = []\n    for hit in hits:\n        scored.append((score_pair(query, hit), hit))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [hit for score, hit in scored[:5]]",
     "question_type": "meaning_choice",
     "question": "rerank의 목적은?",
     "choices": [
@@ -644,7 +644,7 @@
       "HTML 색상을 바꾼다"
     ],
     "answer": "검색 후보를 다시 점수순으로 정렬한다",
-    "explanation": "rerank는 1차 검색 결과를 다시 점수화해 더 좋은 순서로 정렬하는 단계다. 후보 hit마다 점수를 매긴 뒤 높은 순으로 고른다. 검색에서는 먼저 넓게 후보를 찾고, rerank에서 질문과 더 잘 맞는 항목을 위로 올리는 흐름으로 이해하면 된다.",
+    "explanation": "각 hit와 query의 score_pair 결과를 (점수, hit)로 저장하고, key가 점수만 꺼내도록 지정해 내림차순 정렬한 뒤 최대 5개 hit를 반환한다. 점수가 같은 경우에도 hit 객체끼리 비교하지 않으므로 dict 같은 비교 불가능한 객체에서 생길 수 있는 오류를 피한다. 위쪽 결과가 실제로 더 관련 있는지는 score_pair의 품질에 달려 있다.",
     "side_card_ids": [
       "AI_rag_001"
     ],
@@ -670,7 +670,7 @@
       "웹페이지를 배포한다"
     ],
     "answer": "chunk text에서 용어 후보를 찾는다",
-    "explanation": "node candidate extraction은 텍스트에서 노드 후보를 찾는 단계다. TERMS가 chunk text 안에 포함되면 후보 row로 추가한다. 후보 추출은 최종 노드 확정이 아니라 검토할 가능성을 모으는 단계로 보는 것이 안전하다.",
+    "explanation": "각 term과 chunk text를 소문자로 바꾼 뒤 단순 부분 문자열 포함 여부를 검사하고, 맞으면 term과 chunk_id를 후보 row로 추가한다. 이는 최종 노드 확정이 아니라 검토 후보 수집 단계다. 단어 경계를 보지 않으므로 짧은 term이 더 긴 단어 일부와 우연히 맞는 오탐이 생길 수 있어 후속 검증이 필요하다.",
     "side_card_ids": [
       "CS_graph_001"
     ],
@@ -697,7 +697,7 @@
       "검토 없이 항상 거절 처리한다"
     ],
     "answer": "score 0.8 이상이고 evidence_count 2 이상",
-    "explanation": "edge promotion은 후보 관계를 실제 KG edge로 승격할지 판단하는 단계다. 두 조건을 모두 만족해야 promoted 상태가 된다. 근거 수와 신뢰도 같은 조건을 함께 보아야 약한 후보 관계가 실제 그래프에 섞이는 것을 줄일 수 있다. 따라서 반환/호출 결과는 ‘score 0.8 이상이고 evidence_count 2 이상’이다.",
+    "explanation": "and 조건이므로 score가 0.8 이상이고 evidence_count가 2 이상일 때만 promoted 상태와 원본 candidate를 반환한다. 그 외에는 rejected다. 이 임계값은 코드에 정한 정책일 뿐이며, evidence_count가 2라는 사실만으로 근거의 품질이나 독립성이 보장되지는 않는다. 두 key가 없으면 KeyError가 날 수 있다는 입력 전제도 확인해야 한다.",
     "side_card_ids": [
       "AI_eval_001",
       "CS_graph_001"
@@ -724,7 +724,7 @@
       "None"
     ],
     "answer": "KEEP",
-    "explanation": "label adjudication은 후보 라벨을 유지할지 버릴지 판정하는 과정이다. 이 코드에서는 첫 번째 조건이 맞아 KEEP을 반환한다. 여러 판정자가 있을 때는 KEEP, DROP 같은 투표 결과를 규칙으로 합쳐 최종 라벨을 정한다.",
+    "explanation": "labels에서 KEEP이 두 번 이상이면 첫 번째 return이 즉시 실행되어 KEEP이 된다. 이 규칙은 REJECT가 함께 있어도 KEEP 조건을 먼저 적용하므로 조건 순서가 우선순위다. KEEP이 두 개 미만일 때만 REJECT 포함 여부를 보고, 둘 다 아니면 REVIEW를 반환한다. 코드의 라벨 이름은 DROP이 아니라 REJECT다.",
     "side_card_ids": [
       "AI_labeling_001"
     ],

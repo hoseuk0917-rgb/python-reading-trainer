@@ -11,7 +11,7 @@
     "reading_goal": "localStorage에서 진도 JSON을 읽고 기본값을 쓰는 흐름을 읽는다.",
     "code": "const progressKey = \"python-reading-trainer-progress-v1\";\nconst raw = localStorage.getItem(progressKey);\nconst progress = raw ? JSON.parse(raw) : { seen: {} };",
     "question_type": "meaning_choice",
-    "question": "raw가 없으면 progress는 어떻게 되는가?",
+    "question": "저장된 항목이 없어 raw가 null이면 progress는 무엇이 되는가?",
     "choices": [
       "{ seen: {} } 기본값",
       "null 그대로",
@@ -19,7 +19,7 @@
       "에러"
     ],
     "answer": "{ seen: {} } 기본값",
-    "explanation": "삼항연산자가 raw 존재 여부에 따라 JSON.parse 또는 기본 객체를 선택한다. app.js 진도 로딩 코드는 저장된 학습 상태를 읽어 화면에 반영하는 부분이다. 저장 key와 기본값, 불러오기 실패 시 동작을 확인해야 한다. 따라서 정답은 ‘{ seen: {} } 기본값’이다.",
+    "explanation": "localStorage.getItem은 해당 key가 없으면 null을 반환한다. null은 falsy이므로 삼항연산자는 JSON.parse(raw)를 실행하지 않고 { seen: {} }를 progress에 넣는다. 저장된 값이 빈 문자열이어도 같은 기본값 경로를 탄다. 반면 truthy인 문자열이 잘못된 JSON이면 JSON.parse가 예외를 던지며, 이 코드에는 그 예외나 파싱 결과의 구조를 검사하는 처리가 없다.",
     "side_card_ids": [
       "WEB_localstorage_001"
     ],
@@ -37,7 +37,7 @@
     "reading_goal": "배열과 인덱스로 현재 학습 카드를 가져오는 코드를 읽는다.",
     "code": "function getCurrentCard() {\n  return cards[currentIndex];\n}",
     "question_type": "meaning_choice",
-    "question": "currentIndex가 0이면 무엇을 반환하는가?",
+    "question": "cards에 요소가 있고 currentIndex가 0이면 무엇을 반환하는가?",
     "choices": [
       "첫 번째 카드",
       "마지막 카드",
@@ -45,7 +45,7 @@
       "null"
     ],
     "answer": "첫 번째 카드",
-    "explanation": "JavaScript 배열은 0번부터 시작한다. cards[0]은 카드 배열의 첫 번째 요소이므로, 첫 화면에 보여 줄 현재 카드를 꺼낼 때 사용할 수 있다. 현재 인덱스를 기준으로 카드를 꺼내면 다음, 이전 이동 로직도 일관되게 만들 수 있다.",
+    "explanation": "JavaScript 배열의 첫 인덱스는 0이므로 cards[0]은 첫 번째 요소다. 이 함수는 currentIndex의 값을 그대로 대괄호 접근에 사용한다. 따라서 cards가 비어 있거나 currentIndex가 범위를 벗어나면 첫 카드가 아니라 undefined를 반환하며, 범위 검사나 기본값 처리는 이 함수에 없다.",
     "side_card_ids": [
       "SC_list_why_used"
     ],
@@ -71,9 +71,9 @@
       "점수 계산"
     ],
     "answer": "끝에서 처음으로 순환",
-    "explanation": "나머지 연산 %는 인덱스가 배열 길이를 넘어가지 않게 순환시킨다. 다음 카드로 이동할 때 cards.length로 나누면 마지막 뒤에 다시 처음으로 돌아간다. 순환 로직은 카드 학습, 슬라이드, 캐러셀처럼 끝에서 처음으로 돌아가는 UI에 자주 쓰인다.",
+    "explanation": "cards.length가 0보다 크고 currentIndex가 0부터 마지막 인덱스 사이에 있다고 가정한다. 마지막 인덱스에 1을 더하면 cards.length가 되고, 이를 cards.length로 나눈 나머지는 0이어서 첫 카드로 돌아간다. %는 나눗셈 자체가 아니라 나머지 연산이다. 빈 배열이면 0으로 나머지를 구해 currentIndex가 NaN이 되므로 이 코드만으로 빈 배열까지 안전하게 처리하지는 않는다.",
     "side_card_ids": [
-      "CS_bit_byte_001"
+      "PYV96_A2_READ_LIST_INDEX"
     ],
     "project_context": "카드 앱의 순환 이동 로직을 읽는 데 중요하다."
   },
@@ -98,11 +98,11 @@
       "첫 카드"
     ],
     "answer": "빈 배열",
-    "explanation": "여러 lesson 파일을 불러올 때 일부 파일이 실패해도 앱 전체가 멈추면 안 된다. 실패 시 []를 반환하면 해당 파일만 비우고 계속 진행할 수 있다. 부분 실패를 허용하면 한 파일 문제 때문에 전체 학습앱이 멈추는 상황을 줄일 수 있다. 따라서 반환/호출 결과는 ‘빈 배열’이다.",
+    "explanation": "각 path에 대해 fetch를 시작하고, HTTP 상태가 성공 범위가 아니어서 res.ok가 false이면 그 항목의 Promise를 빈 배열로 이행시킨다. 모든 항목이 이행되면 Promise.all은 입력 순서대로 배열을 만들고 flat()이 한 단계 합친다. 다만 네트워크 오류로 fetch가 거부되거나 res.json()이 실패하면 그 Promise는 거부되고, 별도 catch가 없으므로 Promise.all 전체도 거부된다. 따라서 이 코드는 HTTP 비정상 응답만 빈 배열로 건너뛴다.",
     "side_card_ids": [
-      "WEB_html_css_js_001"
+      "PYV158_A1_JSON_FLOW"
     ],
-    "project_context": "네 앱이 v1~v8 카드 파일을 합치는 핵심 구조다."
+    "project_context": "학습 앱에서 여러 카드 JSON 파일을 합치는 핵심 구조다."
   },
   {
     "id": "PY8_L08_appjs_sort_cards_001",
@@ -124,9 +124,9 @@
       "코드 길이"
     ],
     "answer": "id 문자열",
-    "explanation": "카드 정렬에서는 먼저 level을 기준으로 비교하고, level이 같을 때 id를 비교한다. localeCompare는 문자열 id를 안정적으로 정렬하는 데 쓰인다.",
+    "explanation": "level이 다르면 a.level - b.level의 부호에 따라 숫자가 작은 level부터 정렬한다. level이 같을 때만 localeCompare로 id 문자열의 로캘 기준 순서를 비교한다. sort()는 정렬된 복사본을 만드는 것이 아니라 cards 배열 자체의 순서를 바꾼다. 또한 localeCompare는 문자열 비교 방법이지, 같은 비교값의 원래 순서를 보존한다는 의미의 ‘안정 정렬’을 보장하는 함수는 아니다.",
     "side_card_ids": [
-      "DATA_index_001"
+      "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT"
     ],
     "project_context": "카드가 앱에서 어떤 순서로 표시되는지 이해한다."
   },
@@ -150,7 +150,7 @@
       "레벨 변경"
     ],
     "answer": "해당 카드를 모르겠음으로 표시",
-    "explanation": "confused 상태는 사용자가 헷갈린 카드를 표시하기 위한 값이다. cardId를 key로 하고 true/false를 value로 저장하면 카드별 상태를 관리할 수 있다.",
+    "explanation": "대괄호 표기법으로 progress.confused 객체의 cardId 속성을 true로 만들거나 기존 값을 true로 덮어쓴 뒤 saveProgress에 전달한다. 이 코드가 실행되려면 loadProgress()의 결과에 confused 객체가 이미 있어야 하며, 없으면 속성을 설정하는 줄에서 TypeError가 난다. 또한 이 함수는 false로 해제하는 동작이나 saveProgress 내부의 실제 저장 성공까지 보장하지 않는다.",
     "side_card_ids": [
       "WEB_localstorage_001"
     ],
@@ -176,7 +176,7 @@
       "파일 삭제"
     ],
     "answer": "git commit",
-    "explanation": "git add는 변경 파일을 스테이징하고, git commit은 그 스테이징 내용을 하나의 기록으로 만든다. 이후 push로 원격 저장소에 올린다. add는 준비, commit은 저장, push는 공유 단계로 구분하면 Git 흐름을 이해하기 쉽다.",
+    "explanation": "표시된 순서에서는 status로 상태를 본 뒤 git add가 app.js의 현재 변경을 스테이징 영역에 올리고, git commit이 스테이징된 내용만 로컬 커밋으로 기록한다. 마지막 git push는 설정된 원격·업스트림으로 관련 ref를 전송한다. 스테이징하지 않은 변경은 그 커밋에 포함되지 않으며, 충돌·권한·원격 설정 문제 등이 있으면 commit이나 push는 별도로 실패할 수 있다.",
     "side_card_ids": [
       "DEV_github_001"
     ],
@@ -202,11 +202,11 @@
       "JSON 문법 오류"
     ],
     "answer": "줄바꿈 변환 경고",
-    "explanation": "Windows에서 LF/CRLF 변환 때문에 자주 보이는 warning이며 commit 자체가 실패했다는 뜻은 아니다. Git CRLF 경고는 줄바꿈 방식이 바뀔 수 있다는 알림이다. 코드 내용 자체 오류는 아니지만 저장소 설정과 파일 형식이 의도와 맞는지 확인해야 한다.",
+    "explanation": "Git이 이 작업 트리 파일의 LF 줄바꿈을 CRLF로 변환할 수 있다고 알리는 경고다. 변환 여부는 .gitattributes와 core.autocrlf·core.eol 같은 설정에 영향을 받으므로 Windows라는 사실만으로 결정되지는 않는다. 이 문장 자체는 commit이나 push 실패를 뜻하지 않지만, 의도하지 않은 줄바꿈 diff를 막으려면 저장소의 줄바꿈 정책과 실제 변경 내용을 확인해야 한다.",
     "side_card_ids": [
       "DEV_github_001"
     ],
-    "project_context": "네 PowerShell/Git 작업 로그에서 자주 나온다."
+    "project_context": "PowerShell에서 Git을 사용할 때 볼 수 있는 줄바꿈 경고를 해석한다."
   },
   {
     "id": "PY8_L06_git_push_success_001",
@@ -220,7 +220,7 @@
     "reading_goal": "push가 원격 main 브랜치에 반영된 로그를 읽는다.",
     "code": "remote: Resolving deltas: 100% (3/3), completed with 3 local objects.\nTo https://github.com/user/repo.git\n   abc123..def456  main -> main",
     "question_type": "meaning_choice",
-    "question": "main -> main은 무엇을 의미하는가?",
+    "question": "push 결과의 main -> main은 무엇을 의미하는가?",
     "choices": [
       "로컬 main이 원격 main에 반영됨",
       "main 파일 삭제",
@@ -228,7 +228,7 @@
       "새 폴더 생성"
     ],
     "answer": "로컬 main이 원격 main에 반영됨",
-    "explanation": "push 성공 메시지는 로컬 커밋이 원격 브랜치에 반영되었다는 뜻이다. 이후 다른 환경에서도 같은 최신 커밋을 가져올 수 있다. push 로그는 원격 저장소와 로컬 저장소의 기준점이 맞춰졌는지 확인하는 신호로 읽으면 된다.",
+    "explanation": "화살표 왼쪽 main은 보낸 로컬 ref, 오른쪽 main은 갱신된 원격 ref를 나타낸다. abc123..def456은 원격 main이 앞 커밋에서 뒤 커밋으로 이동했음을 보여 준다. 이는 해당 브랜치 갱신의 성공을 뜻할 뿐 저장소의 모든 브랜치·태그가 서로 같다는 뜻은 아니다. 다른 환경은 자동으로 바뀌지 않으며 fetch나 pull 같은 별도 동작이 필요하다.",
     "side_card_ids": [
       "DEV_github_001"
     ],
@@ -254,7 +254,7 @@
       "Git 커밋 생성"
     ],
     "answer": "새 URL처럼 보여 캐시를 덜 타게 함",
-    "explanation": "cache bust query는 URL 뒤의 버전 쿼리스트링을 바꿔 브라우저가 새 파일로 인식하게 하는 방법이다. PWA 데이터 갱신 확인에 유용하다. 버전 쿼리를 바꾸지 않으면 브라우저가 이전 JSON이나 JS를 계속 재사용할 수 있다. 따라서 정답은 ‘새 URL처럼 보여 캐시를 덜 타게 함’이다.",
+    "explanation": "브라우저 캐시는 보통 쿼리스트링까지 포함한 URL을 캐시 키로 구분하므로 _v 값이 다른 index.html을 새 URL로 요청하게 할 수 있다. 그러나 이 예시는 index.html의 URL만 바꾼다. 문서가 불러오는 JSON·JS의 URL이 그대로라면 그 하위 파일의 캐시까지 자동으로 무효화하지는 않는다. 서비스 워커나 CDN이 쿼리를 무시하도록 구성된 경우도 있어, 확실한 갱신에는 자산 URL 버전과 캐시 정책을 함께 확인해야 한다.",
     "side_card_ids": [
       "PL_cache_001"
     ],
@@ -280,7 +280,7 @@
       "권한 없음"
     ],
     "answer": "변경 없음, 캐시 사용 가능",
-    "explanation": "HTTP 304 Not Modified는 서버 파일이 이전과 달라지지 않았다는 뜻이다. 브라우저는 새로 받지 않고 기존 캐시를 재사용할 수 있다. 304가 보이면 캐시가 동작한 것이므로 새 파일을 기대했다면 버전값이나 캐시 헤더를 확인해야 한다.",
+    "explanation": "304 Not Modified는 조건부 요청의 ETag나 수정 시각 같은 검증자를 기준으로, 클라이언트가 가진 표현을 계속 사용할 수 있다고 서버가 알린 응답이다. 보통 응답 본문을 다시 보내지 않아 브라우저가 캐시된 본문을 재사용한다. 이 상태만으로 서버 디스크의 파일이 절대 바뀌지 않았다고 단정할 수는 없다. 새 내용을 기대했다면 요청 URL, 검증자·캐시 헤더, 서비스 워커 동작을 함께 확인해야 한다.",
     "side_card_ids": [
       "PL_cache_001"
     ],
@@ -306,7 +306,7 @@
       "JSON 파싱 실패"
     ],
     "answer": "아니다, favicon만 없을 수 있다",
-    "explanation": "브라우저가 자동으로 favicon을 요청했는데 파일이 없어서 난 404일 수 있다. favicon 404는 앱 본문 기능과 무관한 브라우저 자동 요청일 수 있다. 로그를 읽을 때는 실제 데이터 파일 404와 구분해야 원인을 잘못 찾지 않는다. 따라서 정답은 ‘아니다, favicon만 없을 수 있다’이다.",
+    "explanation": "이 두 줄은 /favicon.ico 요청이 404였다는 사실만 보여 준다. 브라우저가 사이트 아이콘을 자동 요청했지만 파일이 없었을 수 있으므로, 이 로그만으로 HTML·JavaScript·데이터 로딩까지 실패했다고 결론낼 수 없다. 실제 장애 여부는 실패한 요청 경로와 앱 화면·콘솔의 다른 오류를 함께 확인해야 한다. favicon이 필요한 제품이라면 아이콘 누락 자체는 별도로 고쳐야 한다.",
     "side_card_ids": [
       "WEB_html_css_js_001"
     ],
@@ -333,7 +333,7 @@
       "서버 포트만 변경해 다시 실행한다"
     ],
     "answer": "utf-8-sig로 읽거나 BOM 없는 UTF-8로 저장",
-    "explanation": "BOM은 UTF-8 파일 앞에 붙을 수 있는 숨은 표시다. 일부 JSON 도구는 이 표시를 예상하지 못해 파싱 오류를 낼 수 있다. 파이썬에서는 utf-8-sig로 읽어 BOM을 자연스럽게 처리하는 방식이 자주 쓰인다.",
+    "explanation": "UTF-8 BOM은 파일 맨 앞에 놓일 수 있는 바이트 표시이며, 오류의 line 1 column 1은 파서가 첫 위치의 BOM을 JSON 내용으로 받아들이지 못했음을 가리킨다. Python에서 파일을 열 때 encoding='utf-8-sig'를 지정하면 디코더가 시작 BOM을 소비한다. utf-8-sig는 별도 모듈 이름이 아니라 인코딩 이름이다. 또는 파일을 BOM 없는 UTF-8로 다시 저장하되, 내용의 JSON 문법도 별도로 유효해야 한다.",
     "side_card_ids": [
       "CS_encoding_utf8_001"
     ],
@@ -359,7 +359,7 @@
       "브라우저 캐시만 문제"
     ],
     "answer": "JSON 문법 또는 인코딩 문제",
-    "explanation": "PowerShell이나 Python JSON 파서가 파일을 읽지 못하면 구조 오류나 인코딩 문제를 의심해야 한다. 배포 전 검증으로 깨진 JSON을 막을 수 있다.",
+    "explanation": "파이프라인은 Get-Content가 파일 전체를 문자열로 읽고, ConvertFrom-Json이 그 문자열을 JSON 값으로 파싱한 뒤, Out-Null이 성공 결과의 표시만 버리는 순서다. ConvertFrom-Json 단계의 파싱 오류라면 잘못된 JSON 문법이나 입력 문자열의 인코딩 흔적을 점검한다. 다만 경로 없음·읽기 권한 같은 Get-Content 오류도 파이프라인을 실패시킬 수 있으므로 실제 오류 메시지와 실패한 단계를 먼저 구분해야 한다.",
     "side_card_ids": [
       "LANG_powershell_001"
     ],
@@ -377,7 +377,7 @@
     "reading_goal": "파일에서 특정 문자열과 주변 줄을 찾는 명령을 읽는다.",
     "code": "Select-String -Path $appPath -Pattern \"lessonFiles|python_realworld\" -Context 0,5",
     "question_type": "meaning_choice",
-    "question": "-Context 0,5는 무엇에 가까운가?",
+    "question": "-Context 0,5는 매칭 결과 주변의 몇 줄을 보여 주는가?",
     "choices": [
       "매칭 줄 뒤 5줄도 보여줌",
       "5번 삭제",
@@ -385,7 +385,7 @@
       "앞 5글자만 검색"
     ],
     "answer": "매칭 줄 뒤 5줄도 보여줌",
-    "explanation": "Select-String은 파일에서 특정 문자열을 찾는 명령이다. -Context를 주면 검색된 줄 앞뒤의 주변 줄까지 함께 보여 주어 위치 파악이 쉽다. 주변 줄을 같이 보면 찾은 문자열이 어떤 함수나 설정 안에 있는지 바로 판단할 수 있다. 따라서 정답은 ‘매칭 줄 뒤 5줄도 보여줌’이다.",
+    "explanation": "Select-String의 -Pattern은 기본적으로 정규식이며, lessonFiles|python_realworld는 두 표현 중 하나에 매칭한다. -Context의 첫 수는 매칭 전 줄 수, 둘째 수는 매칭 후 줄 수이므로 0,5는 앞줄 없이 매칭 줄과 그 뒤 최대 5줄을 함께 보여 준다. 파일 끝에 가까우면 뒤쪽 줄은 5개보다 적을 수 있다.",
     "side_card_ids": [
       "LANG_powershell_001"
     ],
@@ -404,15 +404,15 @@
     "reading_goal": "이미 패치가 있으면 교체하고 없으면 뒤에 추가하는 구조를 읽는다.",
     "code": "if ($app.Contains($markerStart)) {\n  $app = [regex]::Replace($app, $pattern, $patchBlock.Trim())\n} else {\n  $app = $app.TrimEnd() + \"`r`n\" + $patchBlock\n}",
     "question_type": "meaning_choice",
-    "question": "markerStart가 있으면 무엇을 하는가?",
+    "question": "markerStart가 포함되어 있으면 어느 경로를 실행하는가?",
     "choices": [
-      "기존 패치 블록을 새 블록으로 교체",
+      "정규식으로 기존 블록 교체를 시도",
       "전체 파일 삭제",
       "Git push",
       "서버 실행"
     ],
-    "answer": "기존 패치 블록을 새 블록으로 교체",
-    "explanation": "marker patch는 문서 안의 시작/끝 표시를 기준으로 블록을 교체하는 방식이다. Contains가 참이면 기존 블록을 찾아 regex replace 경로로 간다.",
+    "answer": "정규식으로 기존 블록 교체를 시도",
+    "explanation": "Contains($markerStart)가 참이면 if 분기로 들어가 [regex]::Replace를 실행하고, 거짓일 때만 파일 끝에 patchBlock을 덧붙인다. 시작 마커가 있다는 사실만으로 $pattern이 끝 마커까지 정확히 매칭된다는 보장은 없다. 패턴이 매칭되지 않으면 Replace 결과는 원문과 같아질 수 있으므로, 실제 패치 도구라면 교체 횟수나 시작·끝 마커의 유일성을 검증해야 한다.",
     "side_card_ids": [
       "DEV_debugging_001"
     ],
@@ -430,7 +430,7 @@
     "reading_goal": "System.Text.UTF8Encoding(false)로 BOM 없는 파일을 저장하는 의미를 읽는다.",
     "code": "$utf8NoBom = New-Object System.Text.UTF8Encoding($false)\n[System.IO.File]::WriteAllText($lessonPath, $json, $utf8NoBom)",
     "question_type": "meaning_choice",
-    "question": " 의미에 가까운 것은?",
+    "question": "UTF8Encoding($false)의 $false는 무엇을 뜻하는가?",
     "choices": [
       "BOM을 쓰지 않음",
       "파일을 쓰지 않음",
@@ -438,7 +438,7 @@
       "경로를 무시"
     ],
     "answer": "BOM을 쓰지 않음",
-    "explanation": "UTF8Encoding(false)는 BOM 없는 UTF-8 인코딩 객체를 만든다. 웹용 JSON이나 JS 파일을 저장할 때 불필요한 BOM 문제를 줄일 수 있다. 따라서 정답은 ‘BOM을 쓰지 않음’이다.",
+    "explanation": "UTF8Encoding($false)의 인자는 인코딩 객체가 UTF-8 BOM을 제공할지 정하며, false이므로 BOM 없는 UTF-8을 사용한다. WriteAllText는 $json 문자열을 그 인코딩으로 $lessonPath에 쓰고 기존 파일이 있으면 내용을 덮어쓴다. BOM을 빼는 것은 파일 앞 표시를 제어할 뿐, $json의 JSON 문법이 올바른지까지 검사하지는 않는다.",
     "side_card_ids": [
       "CS_encoding_utf8_001"
     ],
@@ -456,7 +456,7 @@
     "reading_goal": "저장된 JSON이 깨졌을 때 기본값으로 복구하는 코드를 읽는다.",
     "code": "try {\n  const parsed = JSON.parse(raw);\n  return parsed;\n} catch {\n  return {};\n}",
     "question_type": "meaning_choice",
-    "question": "JSON.parse가 실패하면 무엇을 반환하는가?",
+    "question": "JSON.parse(raw)가 예외를 던지면 이 try/catch를 포함한 함수는 무엇을 반환하는가?",
     "choices": [
       "빈 객체",
       "raw 문자열",
@@ -464,7 +464,7 @@
       "첫 번째 카드"
     ],
     "answer": "빈 객체",
-    "explanation": "JSON.parse는 잘못된 문자열을 만나면 예외를 낸다. catch 블록에서 {}를 반환하면 저장 데이터가 깨져도 앱이 멈추지 않게 할 수 있다. fallback 값을 줄 때도 빈 객체가 안전한지, 기본 구조를 채워야 하는지 함께 판단해야 한다.",
+    "explanation": "JSON.parse 자체는 잘못된 JSON을 반환값으로 처리하지 않고 SyntaxError를 던진다. 그 예외를 주변 catch가 잡아 이 함수가 빈 객체 {}를 반환한다. 따라서 ‘JSON.parse가 {}를 반환한다’고 이해하면 안 된다. 또한 호출부가 seen이나 confused 같은 속성을 기대한다면 빈 객체만으로는 부족할 수 있고, 원인 로그도 남기지 않아 손상 데이터를 알아채기 어렵다.",
     "side_card_ids": [
       "WEB_localstorage_001"
     ],
@@ -516,7 +516,7 @@
       "정답 카드만"
     ],
     "answer": "3회 미만이고 관련 있거나 일반 카드",
-    "explanation": "side card filter는 여러 조건을 조합해 보여 줄 보조 카드를 고른다. &&는 둘 다 참, ||는 둘 중 하나라도 참인 조건을 뜻한다. 조건식을 읽을 때는 먼저 괄호와 연산자 우선순위를 확인해야 실제 필터 결과를 예측할 수 있다. 따라서 반환/호출 결과는 ‘3회 미만이고 관련 있거나 일반 카드’이다.",
+    "explanation": "괄호 때문에 먼저 hasOverlap || isGeneral을 계산하고, 그 결과와 seenCount < 3이 모두 참일 때 현재 요소를 pool에 남긴다. 즉 ‘3회 미만’이면서 동시에 ‘관련 카드이거나 일반 카드’여야 한다. 이 조각에서는 콜백 매개변수 sc를 전혀 사용하지 않고 세 값도 바깥에서 가져오므로, 필터 실행 중 값이 같다면 sideCards의 모든 요소가 함께 남거나 함께 빠진다. 카드마다 판정하려는 코드라면 sc로부터 조건값을 계산하는 위치를 확인해야 한다.",
     "side_card_ids": [
       "AI_rag_001"
     ],
@@ -542,7 +542,7 @@
       "모델 학습"
     ],
     "answer": "근거 밖 답변을 줄이기",
-    "explanation": "strict RAG prompt는 모델이 제공된 context 안에서만 답하게 제한한다. 근거 밖 추측을 줄이고, 모르면 모른다고 답하게 만드는 데 중요하다. 프롬프트 규칙만 믿지 말고 근거가 비었을 때 호출 자체를 막는 코드도 함께 두는 편이 안전하다. 따라서 반환/호출 결과는 ‘근거 밖 답변을 줄이기’이다.",
+    "explanation": "함수는 chunk의 text를 빈 줄 두 개로 이어 붙이고, 그 앞에 Use only the context라는 지시를 넣는다. 이 지시의 의도는 근거 밖 답변을 줄이는 것이지만 모델 출력을 기술적으로 강제하는 접근 제어는 아니다. 또한 프롬프트에는 근거가 없을 때 ‘모른다’고 답하라는 명시적 규칙도 없다. 운영 코드라면 빈 evidence를 차단하고, 출력의 주장과 인용 근거가 실제로 맞는지 별도 검증해야 한다.",
     "side_card_ids": [
       "AI_hallucination_001"
     ],
@@ -568,7 +568,7 @@
       "Git 브랜치"
     ],
     "answer": "doc_id와 chunk_id",
-    "explanation": "RAG citation은 답변이 어떤 문서와 chunk를 근거로 했는지 남기는 정보다. 문서 id와 chunk id를 붙이면 나중에 출처를 추적할 수 있다. citation이 있으면 답변을 믿을 수 있는지 확인하고 잘못된 근거를 다시 점검할 수 있다. 따라서 반환/호출 결과는 ‘doc_id와 chunk_id’이다.",
+    "explanation": "반복문은 chunks의 각 항목에서 doc_id와 id를 읽어 {doc_id, chunk_id} 객체를 citations에 추가한다. 그래서 반환값에는 answer와 모든 입력 chunk의 식별자가 함께 들어간다. 이 코드는 answer가 실제로 어느 문장을 사용했는지 확인하지 않고 모든 chunk를 인용하며, 식별자가 존재한다는 사실만으로 답변이 그 근거의 지지를 받거나 신뢰할 수 있다고 보장하지 않는다. 화면에서 출처를 열려면 이 식별자를 원문 위치로 해석하는 별도 매핑도 필요하다.",
     "side_card_ids": [
       "AI_rag_001"
     ],
@@ -594,7 +594,7 @@
       "정답 번호"
     ],
     "answer": "node label",
-    "explanation": "node page markdown은 KG 노드 하나를 설명하는 문서 형식이다. # {node['label']} 부분은 해당 노드 라벨을 문서 제목으로 넣는다. 자동 생성 문서에서도 제목 규칙이 일정해야 링크와 검색 인덱스를 안정적으로 만들 수 있다.",
+    "explanation": "f-string의 # {node['label']}이 node의 label 값을 1단계 Markdown 제목에 넣고, evidence[0]['snippet']은 Definition 본문에 넣는다. 따라서 제목의 값은 node label이다. 다만 evidence가 비어 있으면 evidence[0]에서 IndexError가 나고, 필수 key가 없으면 KeyError가 난다. label이나 snippet의 Markdown 특수문자를 이스케이프하지도 않으므로 자동 문서 생성 전 입력 검증이 필요하다.",
     "side_card_ids": [
       "CS_graph_001"
     ],
@@ -614,13 +614,13 @@
     "question_type": "meaning_choice",
     "question": "PROMOTE 조건은?",
     "choices": [
-      "3회 이상 출현하고 정의 근거가 있음",
+      "3회 이상 출현하고 has_definition이 truthy",
       "1회만 출현",
       "항상 승격",
       "정의가 없을 때"
     ],
-    "answer": "3회 이상 출현하고 정의 근거가 있음",
-    "explanation": "node promotion rule은 후보 노드를 실제 노드로 올릴지 판단하는 규칙이다. 두 조건을 모두 만족해야 PROMOTE가 되어 승격된다. 승격 규칙을 코드로 고정하면 후보가 많아져도 같은 기준으로 노드를 선별할 수 있다. 따라서 반환/호출 결과는 ‘3회 이상 출현하고 정의 근거가 있음’이다.",
+    "answer": "3회 이상 출현하고 has_definition이 truthy",
+    "explanation": "and의 두 피연산자가 모두 참이어야 PROMOTE를 반환한다. 즉 occurrence_count가 3 이상이고 has_definition 값이 truthy여야 하며, 하나라도 거짓이면 REVIEW다. 여기서 코드는 has_definition의 진리값만 볼 뿐 실제 정의 문장이나 근거의 품질을 검증하지 않는다. 두 key가 없으면 KeyError가 나므로 이 함수만으로 완전한 노드 승격 검증이라고 부르기는 어렵다.",
     "side_card_ids": [
       "AI_labeling_001"
     ],
@@ -646,7 +646,7 @@
       "(800, 1000)"
     ],
     "answer": "(600, 800)",
-    "explanation": "shard range는 큰 작업을 조각으로 나눠 처리할 때 각 조각의 범위를 계산한다. 3번 shard는 3*200부터 800 전까지 처리한다. 시작과 끝 범위를 정확히 계산해야 샤드 사이에 누락이나 중복 처리 구간이 생기지 않는다. 따라서 출력은 ‘(600, 800)’이다.",
+    "explanation": "start는 3 * 200인 600이고 end는 600 + 200인 800이므로 튜플 (600, 800)을 출력한다. 보통 이 경계는 [600, 800), 즉 600 이상 800 미만으로 사용하며 shard_id를 0부터 센다면 id 3은 네 번째 조각이다. 이 함수는 경계만 계산할 뿐 실제 처리 범위의 끝을 배타적으로 쓰게 강제하지 않으므로, 호출부가 같은 규칙을 지켜야 누락과 중복을 막을 수 있다.",
     "side_card_ids": [
       "CS_batch_shard_001"
     ],
@@ -655,7 +655,7 @@
   {
     "id": "PY8_L09_resume_output_exists_001",
     "level": 9,
-    "title": "산출물 존재 기반 resume 읽기",
+    "title": "산출물 존재 여부로 재실행 건너뛰기",
     "concepts": [
       "resume",
       "pathlib",
@@ -672,7 +672,7 @@
       "delete"
     ],
     "answer": "skip",
-    "explanation": "resume-safe 처리는 이미 끝난 작업을 다시 하지 않게 만든다. 결과 파일이 존재하면 해당 shard가 처리된 신호로 보고 건너뛸 수 있다. 단순 존재 여부만 믿기보다 파일 크기나 JSON 유효성까지 확인하면 깨진 산출물 재사용을 줄일 수 있다. 따라서 출력은 ‘skip’이다.",
+    "explanation": "Path(output_path).exists()가 true이면 if 본문이 실행되어 skip을 출력한다. exists()는 이름과 달리 작업 완료 여부가 아니라 그 경로에 파일이나 디렉터리가 존재하는지만 확인한다. 따라서 빈 파일·부분 기록·잘못된 JSON도 skip할 수 있고, Path를 import하지 않았다면 NameError가 난다. 안전한 재개 로직은 파일 종류·크기·파싱·완료 메타데이터 등을 확인한 뒤 건너뛰어야 한다.",
     "side_card_ids": [
       "CS_batch_shard_001"
     ],
@@ -698,7 +698,7 @@
       "200"
     ],
     "answer": "20.0",
-    "explanation": "cost estimate는 사용량과 단가를 곱해 예상 비용을 계산한다. 1000개를 개당 0.02로 처리하면 총 비용은 20.0이 된다. 실제 운영에서는 요청 수, 토큰 수, 저장 용량처럼 비용을 만드는 입력값을 나누어 기록해야 한다.",
+    "explanation": "함수는 요청 수 1000과 요청당 단가 0.02를 곱하므로 20.0을 출력한다. 결과에는 통화 단위가 없고, 모든 요청의 가격이 같다는 단순한 가정을 사용한다. 실제 API가 입력·출력 토큰, 모델, 캐시, 도구 호출 등에 따라 과금한다면 해당 사용량과 단가를 항목별로 계산해야 하며, 청구 금액처럼 정확한 소수 계산에는 float 대신 Decimal이나 정수 최소 단위를 고려한다.",
     "side_card_ids": [
       "AI_eval_001"
     ],
@@ -707,7 +707,7 @@
   {
     "id": "PY8_L08_throttle_limit_001",
     "level": 8,
-    "title": "limit으로 처리량 제한 읽기",
+    "title": "슬라이스로 배치 수 제한 읽기",
     "concepts": [
       "limit",
       "throttle",
@@ -724,7 +724,7 @@
       "무한 반복"
     ],
     "answer": "앞에서 limit개만 처리",
-    "explanation": "throttle limit은 한 번에 처리할 양을 제한하는 장치다. 슬라이싱으로 앞쪽 일부만 가져오면 요청량이나 비용이 갑자기 커지는 것을 막을 수 있다. limit 값을 설정으로 빼 두면 테스트, 무료 사용, 운영 환경마다 처리량을 다르게 조절할 수 있다. 따라서 정답은 ‘앞에서 limit개만 처리’이다.",
+    "explanation": "items가 슬라이싱 가능한 시퀀스이고 limit이 양수라면 items[:limit]은 앞에서 최대 limit개를 골라 그 항목들에만 process를 호출한다. 이는 한 번의 배치 크기를 자르는 코드이지 초당 호출 수나 호출 간격을 조절하는 rate throttle은 아니다. limit이 음수이면 ‘0개’가 아니라 뒤에서 |limit|개를 뺀 앞부분이 선택되고, generator처럼 슬라이싱할 수 없는 입력은 TypeError가 나므로 입력 조건을 명시해야 한다.",
     "side_card_ids": [
       "AI_eval_001"
     ],
@@ -750,7 +750,7 @@
       "AI"
     ],
     "answer": "UAM",
-    "explanation": "domain classifier는 키워드나 규칙을 보고 항목의 분야를 분류한다. vertiport 조건이 맞으면 UAM 관련 항목으로 분기된다. 분류 규칙은 완벽한 AI가 아니라 운영상 빠르게 라벨을 붙이기 위한 1차 필터로 이해하면 된다.",
+    "explanation": "title.lower()로 대소문자를 통일한 뒤 uam 또는 vertiport라는 부분 문자열이 있으면 첫 분기에서 UAM을 반환한다. 따라서 title에 vertiport가 있으면 뒤의 robot 검사까지 가지 않는다. 이 코드는 단어 경계나 문맥을 보지 않는 규칙이므로 관련 없는 단어의 일부가 우연히 맞아 오분류할 수 있고, title이 문자열이 아니면 lower()에서 실패한다. 빠른 1차 라벨링 뒤 검토가 필요한 이유다.",
     "side_card_ids": [
       "PL_curation_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -777,7 +777,7 @@
       "Other"
     ],
     "answer": "regulation",
-    "explanation": "lens classifier는 항목을 규제, 안전, 운영 같은 관점으로 분류한다. 첫 조건이 참이면 이후 조건을 보지 않고 바로 regulation을 반환한다. 조건 순서가 결과에 영향을 주므로 우선순위가 높은 lens를 앞에 두어야 한다.",
+    "explanation": "item.get('regulation')의 값이 truthy이면 즉시 regulation을 반환하므로 risk 값도 참이어도 첫 결과가 우선한다. regulation이 falsy일 때만 risk를 검사하고, 둘 다 falsy이거나 key가 없으면 technology를 반환한다. get은 key 부재를 false처럼 처리하지만 값의 타입이나 의미를 검증하지 않으므로 문자열 'false'처럼 truthy인 값도 regulation으로 분류될 수 있다.",
     "side_card_ids": [
       "PL_curation_001"
     ],
@@ -803,7 +803,7 @@
       "정답이 없음"
     ],
     "answer": "중복 id가 있음",
-    "explanation": "unique id validation은 카드 id가 중복되지 않는지 확인한다. set은 중복을 제거하므로 원래 길이와 set 길이가 다르면 중복 id가 있다는 뜻이다.",
+    "explanation": "먼저 모든 card['id']를 ids에 모으고, set(ids)가 같은 값의 중복을 제거한 뒤 두 길이를 비교한다. 결과가 False라면 적어도 하나의 id 값이 중복되었다는 뜻이다. 다만 id key가 없으면 KeyError, id가 리스트처럼 hash할 수 없는 값이면 TypeError가 나며, 빈 cards는 길이 0과 0이 같아 True다. 이 검사는 형식·빈 문자열·대소문자 규칙까지 검증하지 않는다.",
     "side_card_ids": [
       "DATA_dedup_001"
     ],
@@ -829,7 +829,7 @@
       "완료 카드"
     ],
     "answer": "없는 side_card_id 참조",
-    "explanation": "sidecard integrity 검사는 lesson 카드가 참조한 side_id가 실제 보조 카드 목록에 있는지 확인한다. 없으면 missing에 기록해 깨진 연결을 찾는다. 따라서 반환/호출 결과는 ‘없는 side_card_id 참조’이다.",
+    "explanation": "각 카드의 side_card_ids가 없으면 빈 리스트로 보고 넘어가며, 각 side_id가 side_ids에 없을 때 (card['id'], side_id) 튜플을 missing에 추가한다. 반환값에는 어떤 카드가 어떤 없는 id를 참조했는지가 들어간다. 같은 잘못된 참조가 여러 번 나오면 중복 기록될 수 있고, 이 검사는 대상 id의 존재만 볼 뿐 사이드카드 내용이나 양방향 연결의 정확성까지 검증하지는 않는다. side_ids를 set으로 받으면 반복 membership 검사가 더 효율적이다.",
     "side_card_ids": [
       "DATA_schema_001"
     ],
@@ -855,7 +855,7 @@
       "에러"
     ],
     "answer": "10",
-    "explanation": "safe_int는 문자열을 정수로 바꾸되 실패해도 앱이 멈추지 않게 하는 함수다. int('abc')가 실패하면 except에서 기본값 10을 반환한다. 사용자 입력이나 저장값은 깨질 수 있으므로 변환 실패를 예상하고 기본값을 정해 두는 것이 안전하다.",
+    "explanation": "int('abc')는 ValueError를 던지고 이 except가 그 오류를 잡아 전달된 default 10을 반환하므로 출력은 10이다. 그러나 이 함수가 모든 변환 실패를 막는 것은 아니다. 예를 들어 int(None)은 TypeError를 던져 현재 except에 잡히지 않으며, 무조건 기본값으로 바꾸면 잘못된 입력 원인을 숨길 수도 있다. 허용할 입력 타입과 잡을 예외를 정하고 필요하면 오류를 기록해야 한다.",
     "side_card_ids": [
       "DEV_debugging_001"
     ],

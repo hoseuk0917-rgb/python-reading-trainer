@@ -19,7 +19,7 @@
       "Wait until the asynchronous task is complete"
     ],
     "answer": "Wait until the asynchronous task is complete",
-    "explanation": "`async` and `await` are syntax elements used to express asynchronous operations. `await` is used within an `async` function to wait for the result of an operation, such as I/O. At an `await` point, the program waits for the operation to complete, but the event loop can continue to process other pending tasks.",
+    "explanation": "await suspends the current fetch_item task until the api_get coroutine completes. If api_get yields to the event loop while waiting for non-blocking I/O, another ready task can run. This does not mean an OS thread blocks waiting, nor does it automatically make a blocking function or CPU calculation asynchronous.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -46,7 +46,7 @@
       "Execute multiple asynchronous tasks simultaneously and collect the results"
     ],
     "answer": "Execute multiple asynchronous tasks simultaneously and collect the results",
-    "explanation": "`asyncio.gather` runs multiple coroutines together and collects their results into a list. It is useful for performing independent asynchronous tasks simultaneously. When multiple requests are independent of one another, using `gather` can reduce the overall wait time.",
+    "explanation": "gather schedules the coroutines and, if all succeed, returns results in the same order as the inputs. By default, one exception propagates to the awaiting caller, but do not assume every other awaitable is automatically canceled. Choose TaskGroup, return_exceptions, or per-task error handling according to the partial-failure policy.",
     "side_card_ids": [
       "PYV161_A1_BATCH_MEMORY_FLOW"
     ],
@@ -72,7 +72,7 @@
       "3"
     ],
     "answer": "3",
-    "explanation": "A batch loop is an iterative structure that processes a large number of items in fixed-size batches. For example, if you process 250 items in batches of 100, they are divided into 100, 100, and 50. Since the last batch may be smaller, the loop must naturally handle the remaining count. Therefore, the correct answer is “3.”",
+    "explanation": "range starts at 0, 100, and 200, creating slices of 100, 100, and 50 items: three batches. A size of zero makes range raise ValueError, while a negative size produces no batches for this input, so validate a positive integer first. Batching can reduce peak memory, but process_batch failure and resume boundaries still need design.",
     "side_card_ids": [
       "PYV161_A1_BATCH_MEMORY_FLOW"
     ],
@@ -124,7 +124,7 @@
       "Limit the number of concurrent tasks to a maximum of five."
     ],
     "answer": "Limit the number of concurrent tasks to a maximum of five.",
-    "explanation": "A semaphore controls the number of concurrent executions to reduce API rate limits and overload. A semaphore is a mechanism that limits the number of tasks running simultaneously. It is used to prevent too many requests or GPU tasks from being processed all at once. Therefore, the conclusion is that “it limits the number of concurrent tasks to a maximum of five.”",
+    "explanation": "Cooperating coroutines that share this semaphore can have at most five executions inside the async with region at once. Work outside that region is not limited, and every process has its own semaphore, so this is not a system-wide rate limit. Add a time-based limiter for requests per second and handle timeout and cancellation.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -141,7 +141,7 @@
       "parallel"
     ],
     "reading_goal": "Understand the structure in which multiple workers retrieve tasks from a queue and process them.",
-    "code": "from queue import Queue\nfrom threading import Thread\n\nq = Queue()\nfor item in items:\n    q.put(item)\n\ndef worker():\n    while not q.empty():\n        item = q.get()\n        process(item)\n        q.task_done()\n\nfor _ in range(4):\n    Thread(target=worker).start()",
+    "code": "from queue import Queue\nfrom threading import Thread\n\nq = Queue()\nfor item in items:\n    q.put(item)\nfor _ in range(4):\n    q.put(None)\n\ndef worker():\n    while True:\n        item = q.get()\n        try:\n            if item is None:\n                return\n            process(item)\n        finally:\n            q.task_done()\n\nthreads = [Thread(target=worker) for _ in range(4)]\nfor thread in threads:\n    thread.start()\nq.join()\nfor thread in threads:\n    thread.join()",
     "question_type": "meaning_choice",
     "question": "Why are we starting four threads?",
     "choices": [
@@ -151,7 +151,7 @@
       "To have multiple workers divide up the work and process it"
     ],
     "answer": "To have multiple workers divide up the work and process it",
-    "explanation": "A worker pool is a structure in which multiple workers divide and process tasks queued up. It is used to process long batch jobs in parallel or to adjust throughput. Increasing the number of workers can speed up processing, but API limits, file conflicts, and CPU usage must also be taken into account.",
+    "explanation": "Four threads take different items from one thread-safe Queue and can divide I/O-bound work. Sentinel None values remove the q.empty race and terminate workers. task_done in finally, q.join, and thread.join wait for every retrieved queue item and thread termination. A policy to collect and propagate process exceptions is still needed.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -178,7 +178,7 @@
       "Mark it as already processed and skip it"
     ],
     "answer": "Mark it as already processed and skip it",
-    "explanation": "Checkpoint/resume is a key pattern for resuming a long task that was interrupted. The checkpoint/resume structure allows the task to restart from a checkpoint. You must determine where to record the last completed position and how to retrieve it when the task is restarted. Therefore, the correct answer is “treat it as already processed and skip it.”",
+    "explanation": "An ID in done is skipped with continue. Convert a large collection of IDs to a set for fast membership tests. If the external effect succeeds but appending the checkpoint fails, resume can repeat the item; use idempotency or an atomic transaction for result and checkpoint, and prevent concurrent workers from claiming the same ID.",
     "side_card_ids": [
       "PYV159_A1_CHECKPOINT_RESUME_FLOW"
     ],
@@ -204,7 +204,7 @@
       "Item for which an exception occurred during processing"
     ],
     "answer": "Item for which an exception occurred during processing",
-    "explanation": "A retry queue is a queue that collects only failed items for reprocessing. It allows you to retry only the failed items without having to run the entire job from the beginning. It is also important to distinguish between temporary network errors and permanent data errors in order to limit the number of retries. Therefore, the correct answer is “items for which an exception occurred during processing.”",
+    "explanation": "The first loop stores the original item object when process raises Exception, and the second loop tries it once more. Broad Exception does not distinguish permanent data errors from transient network failures, and an exception from retry_process is not caught. Record error type, attempt count, last error, and next retry time, and use backoff and dead-letter handling only for safe operations.",
     "side_card_ids": [
       "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
     ],
@@ -231,7 +231,7 @@
       "It is saved as an error"
     ],
     "answer": "It is saved as an error",
-    "explanation": "The \"background job status\" is a value that records the current status of a job running in the background. Recording the status (success, in progress, or error) along with any error messages makes it easier to track the job. Therefore, the correct answer is “it is saved as ‘error’.”",
+    "explanation": "If run_long_task raises, the code attempts to store error status and str(e), then propagates the exception. If that update fails, the job can remain running and the original exception can be masked. Use heartbeats or leases, finally cleanup, sanitized error codes, transition conditions, and a durable transaction to prevent competing workers from overwriting state.",
     "side_card_ids": [
       "PYV158_A1_DATABASE_FLOW"
     ],
@@ -248,7 +248,7 @@
       "server"
     ],
     "reading_goal": "I understand the concept of continuing to run tasks on the server even if my PC disconnects.",
-    "code": "# tmux example # tmux new -s nodepass # python run_shards.py --start 31 --end 100 # Detach with Ctrl+B, D(detach) # nohup example # nohup python run_shards.py > run.log 2>&1 &",
+    "code": "# tmux example\n# tmux new -s nodepass\n# python run_shards.py --start 31 --end 100\n# Press Ctrl+B, then D to detach\n\n# nohup example\n# nohup python run_shards.py > run.log 2>&1 &",
     "question_type": "meaning_choice",
     "question": "Which of the following best describes the purpose of `tmux detach`?",
     "choices": [
@@ -258,7 +258,7 @@
       "Keep the session running in the background without closing it"
     ],
     "answer": "Keep the session running in the background without closing it",
-    "explanation": "tmux and nohup are used to run time-consuming server tasks separately from the terminal connection. They help ensure that the task continues even if the connection is lost. For long-running tasks, you must also specify the log location and how to reconnect so you can check the status. Therefore, the correct answer is “Let it continue running in the background without closing the session.”",
+    "explanation": "tmux detach keeps the tmux session and its process alive while disconnecting the current client, allowing a later attach. nohup changes hangup-signal handling, while & backgrounds the process and the redirection sends output to a log. Neither guarantees crash recovery, so track exit status, disk space, log rotation, checkpoints, and a supervisor separately.",
     "side_card_ids": [
       "PYV159_A1_FASTAPI_SERVER_FLOW"
     ],
@@ -285,7 +285,7 @@
       "Insufficient GPU memory"
     ],
     "answer": "Insufficient GPU memory",
-    "explanation": "Increasing the batch size can boost throughput, but it also increases GPU memory usage. The GPU batch size refers to the amount of work loaded onto the GPU at one time. If it’s too large, you may run out of memory; if it’s too small, performance may suffer.",
+    "explanation": "More inputs at once can increase activation and temporary-buffer memory in addition to model weights and cause GPU OOM. Required memory also depends heavily on sequence length, output length, dtype, and model architecture. Confirm whether the library accepts list[str] or requires tokenized tensors, and measure to choose a safe batch size.",
     "side_card_ids": [
       "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
     ],
@@ -311,7 +311,7 @@
       "Add the items to the queue"
     ],
     "answer": "Add the items to the queue",
-    "explanation": "In a producer-consumer architecture, the producer adds tasks to the queue, and the consumer retrieves them from the queue for processing. Separating production from processing stabilizes the workflow. Using an asynchronous queue allows tasks to be passed in order even if the production and processing speeds differ. Therefore, the correct answer is “place items into the queue.”",
+    "explanation": "The producer puts each item into the queue, and the consumer gets and processes it. With no maxsize, memory can grow if production is much faster, and with no sentinel the consumer waits forever. Put task_done in try/finally so errors do not strand join, and design a bounded queue, shutdown, cancellation, and error propagation.",
     "side_card_ids": [
       "PYV158_A1_PIPELINE_FLOW"
     ],
@@ -338,7 +338,7 @@
       "Waits until the tasks in the queue reach the `task_done` state"
     ],
     "answer": "Waits until the tasks in the queue reach the `task_done` state",
-    "explanation": "`queue.join` is a call that waits until all tasks in the queue have finished. A task is considered complete only after the consumer calls `task_done`.",
+    "explanation": "queue.join waits until the unfinished-task count added by put reaches zero through one task_done call per item. Consumers must be running and must call task_done exactly once for every retrieved item. Omitting it waits forever; calling it twice raises ValueError, so wrap processing in try/finally.",
     "side_card_ids": [
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
@@ -365,7 +365,7 @@
       "Shards 31 and 32 were recorded as completed"
     ],
     "answer": "Shards 31 and 32 were recorded as completed",
-    "explanation": "A manifest is used to record the targets, status, and completion status of long-running jobs in a way that allows them to be resumed. A job manifest is a list that records the scope and status of multiple job fragments. In batch execution, it serves as the basis for determining which shards have finished and which remain. Therefore, the correct answer is “Shards 31 and 32 were recorded as completed.”",
+    "explanation": "The completed list says that shards 31 and 32 are recorded as complete; it does not prove that their output is valid. Verify a shard result and checksum before atomically updating the manifest, and validate consistency between status and completed. Concurrent writers need locking or compare-and-swap.",
     "side_card_ids": [
       "WEB_pwa_001",
       "PYV102_A7_ASYNC_CONCURRENCY"
@@ -392,7 +392,7 @@
       "Save the checkpoint and exit the loop"
     ],
     "answer": "Save the checkpoint and exit the loop",
-    "explanation": "A graceful shutdown saves the state to ensure that intermediate results are not lost before terminating. A graceful cancel is a method of stopping the task at a safe point without abruptly interrupting it. You must verify whether there are any intermediate results to save and cleanup tasks to perform. Therefore, the correct answer is “save the checkpoint and exit the loop.”",
+    "explanation": "When the condition is true, the code attempts to save a checkpoint and breaks from the loop. This snippet contains no signal handler or other thread that changes stop_requested, so it remains false as shown. A graceful design also needs a cancellation source, current-item atomicity, resource cleanup, checkpoint-failure handling, and preparation for forced termination.",
     "side_card_ids": [
       "PYV159_A1_CHECKPOINT_RESUME_FLOW"
     ],

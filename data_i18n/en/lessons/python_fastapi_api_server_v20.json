@@ -126,10 +126,9 @@
       "Automatically generates HTML"
     ],
     "answer": "Adapt the response format to match the SearchResponse schema",
-    "explanation": "The `response_model` clearly defines the format of the API’s response. It serves to constrain and document the structure of the API response. You can verify which specific fields from the actual internal data are exposed to the user. Therefore, the result of the call is that “the response format conforms to the SearchResponse schema.”",
+    "explanation": "FastAPI uses response_model for OpenAPI documentation and validates, serializes, and filters the returned value according to SearchResponse. Here, answer must be a string and citations a list of strings. Extra internal fields are normally excluded in favor of declared response fields, which can reduce accidental disclosure, but only if the correct model is specified.",
     "side_card_ids": [
-      "DATA_schema_001",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "DATA_schema_001"
     ],
     "project_context": "It is important to consistently maintain the response structure expected by the front-end app."
   },
@@ -179,7 +178,7 @@
       "Because it was a success"
     ],
     "answer": "Because the client request was incorrect,",
-    "explanation": "A 400 is typically used when a client sends an invalid request. A 500 is more closely associated with an internal server error. The HTTP status code system classifies request results using numerical codes. The meanings of 200, 400, 401, 404, and 500 must be distinguished and handled accordingly. Therefore, the result of the call is “because the client’s request was invalid.”",
+    "explanation": "An empty query fails this API's input requirement, so the code raises a client-error 400. Every other Exception from run_search becomes a 500 in this example. A real server should avoid replacing an existing HTTPException with 500, distinguish expected failures, log internal causes safely, and avoid sending sensitive details to the client.",
     "side_card_ids": [
       "PYV158_A1_API_FLOW"
     ],
@@ -206,7 +205,7 @@
       "I'm trying to delete a JSON file"
     ],
     "answer": "To allow API calls from that address's frontend,",
-    "explanation": "Since browsers restrict API calls to different origins, you may need to configure CORS permissions. CORS middleware controls whether the browser can call APIs from different origins. The allowed origin, method, and header settings must match the actual front-end URL.",
+    "explanation": "An origin combines scheme, host, and port. For browser frontend code running at http://localhost:8790 to read an API on another origin, the server must allow that frontend origin in its CORS response. CORS is a cross-origin browser rule, not authentication or API access control. Restrict wildcard methods and headers to the ranges actually needed.",
     "side_card_ids": [
       "PYV158_A1_API_FLOW"
     ],
@@ -232,10 +231,9 @@
       "Change it to return an HTML page"
     ],
     "answer": "Pass the result of `get_db` as an argument before running the endpoint.",
-    "explanation": "FastAPI's `Depends` is a way to inject common setup logic into an endpoint. `Depends` dependency injection automatically connects the necessary objects or validation logic before a request is processed. You need to verify where authentication, database connections, and common checks are injected.",
+    "explanation": "Before calling the endpoint, FastAPI resolves get_db and passes its returned value as the db argument of list_items. Depends reuses setup and cleanup for concerns such as authentication, settings, and database sessions. A real session commonly uses a yield dependency to open and close the resource rather than returning one global object, and dependency injection alone does not add authorization.",
     "side_card_ids": [
-      "PYV102_A7_ARCHITECTURE_DESIGN",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "PYV102_A7_ARCHITECTURE_DESIGN"
     ],
     "project_context": "You can avoid having to repeat database connections, user authentication, and configuration loading for each endpoint."
   },
@@ -259,7 +257,7 @@
       "Shut down the server"
     ],
     "answer": "Register `save_log` as a background job",
-    "explanation": "A background task is a method of first sending a response and then scheduling a task to be processed later. It is useful for tasks that do not take long to complete, such as logging or sending notifications. It improves the user experience by allowing additional tasks to be processed while keeping response times short. Therefore, the return/call result is “register save_log as a background task.”",
+    "explanation": "add_task registers save_log(req.query) to run after the response is sent. This suits small auxiliary work that should not delay the response, but the task still runs in the server process, can be lost if that process stops, and cannot report failure through the already-sent client response. Use a durable queue and worker for long or must-complete work.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_ASYNC_CONCURRENCY"
@@ -279,20 +277,19 @@
     "reading_goal": "Reads information about which module, app, and port the FastAPI server is running on.",
     "code": "uvicorn search_api:app --host 127.0.0.1 --port 8000 --reload",
     "question_type": "meaning_choice",
-    "question": "What does \"search_api:app\" mean?",
+    "question": "What does search_api:app mean?",
     "choices": [
       "Delete app.py",
       "Open file number 8000",
-      "Run the `app` object in `search_api.py`",
+      "Import the app object from the search_api module and run it as an ASGI app",
       "Clear the browser cache"
     ],
-    "answer": "Run the `app` object in `search_api.py`",
-    "explanation": "uvicorn uses a module:object format. It runs the `app` variable inside the `search_api` module as an ASGI app. uvicorn is an ASGI server that runs FastAPI apps. The app path, host, port, and reload options must be correct in order to call the API from a browser or frontend.",
+    "answer": "Import the app object from the search_api module and run it as an ASGI app",
+    "explanation": "search_api:app names an importable module path and the ASGI application object inside it. The module need not be one file named search_api.py; it can also be a package path. --reload watches source changes for development, so production normally disables it and uses appropriate process and proxy configuration.",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
-    "project_context": "It is directly linked to the structure for running LLM_Lora search_api.py as a local API."
+    "project_context": "This is the command structure for running a FastAPI application with a local development server."
   },
   {
     "id": "PY20_L10_async_endpoint_001",
@@ -315,7 +312,7 @@
       "Create a new database"
     ],
     "answer": "Wait until the asynchronous task `check_database` finishes",
-    "explanation": "An async endpoint is an API function capable of asynchronous processing. The `await` keyword allows the server to handle other tasks while waiting for the results of external requests or I/O operations.",
+    "explanation": "await suspends the current health task until the check_database coroutine completes. If that coroutine yields control while waiting for non-blocking I/O, the server can run other ready tasks in the meantime. Merely changing a function to async def does not make a blocking database driver or CPU-bound work non-blocking.",
     "side_card_ids": [
       "PYV159_A1_FASTAPI_SERVER_FLOW"
     ],
@@ -342,7 +339,7 @@
       "I want to convert JSON to CSV"
     ],
     "answer": "To safely include spaces and special characters from search terms in the URL",
-    "explanation": "Frontend fetch is code that sends requests from the browser to the API server. Strings included in URL queries must be safely encoded to account for spaces and special characters. If they are not encoded, Korean characters, spaces, and special characters can corrupt the URL, leading to a failed request.",
+    "explanation": "encodeURIComponent percent-encodes spaces, &, #, and other characters so q occupies one query-value position. It is not encryption or access control. fetch normally resolves even for a 404 or 500, so this function should inspect res.ok, and its caller must handle non-JSON responses and network errors.",
     "side_card_ids": [
       "PYV158_A1_JSON_FLOW",
       "PYV158_A1_API_FLOW"
@@ -370,17 +367,16 @@
       "Change the response to 200"
     ],
     "answer": "It throws an error and does not proceed to data parsing.",
-    "explanation": "res.ok indicates whether the response falls within the HTTP 2xx success range. If it fails, it is clearly treated as an error. Fetch error handling is code designed to prevent the screen from freezing when a server request fails. You must consider the entire flow, including status code verification, exception handling, and displaying user messages. Therefore, the correct answer is “Throw an ‘Error’ and do not proceed to data parsing.”",
+    "explanation": "Response.ok is true for statuses from 200 through 299. When it is false, throw stops this async flow, so this function does not reach res.json. To keep the UI usable, the caller must catch the error and provide a user message or retry action. Handle a network-level fetch rejection at the same boundary.",
     "side_card_ids": [
-      "WEB_frontend_backend_001",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "WEB_frontend_backend_001"
     ],
     "project_context": "This is a practical pattern that prevents the front end from silently ignoring API failures."
   },
   {
     "id": "PY20_L10_api_timeout_retry_001",
     "level": 10,
-    "title": "Understanding the API Timeout/Retry Flow",
+    "title": "Reading a fetch Timeout and AbortController Flow",
     "concepts": [
       "timeout",
       "retry",
@@ -398,7 +394,7 @@
       "Before the page loads for the first time"
     ],
     "answer": "ms When a timeout occurs as time passes",
-    "explanation": "An API timeout is a mechanism that terminates a request if it takes too long. Calling `abort` via `setTimeout` allows you to stop the fetch after a specified time. After the request is aborted, a workflow is needed to either prompt the user to retry or safely resend the request. Therefore, the return/call result is “when a timeout occurs after a specified number of milliseconds.”",
+    "explanation": "After ms elapses, the setTimeout callback calls controller.abort(), and a still-running fetch normally rejects with AbortError. If fetch settles first, finally clears the timer. This function implements a timeout but no retry at all. If retries are added, distinguish timeout from user cancellation and apply attempt limits and backoff only to safe requests.",
     "side_card_ids": [
       "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
     ],
@@ -415,7 +411,7 @@
       "pwa"
     ],
     "reading_goal": "Understand that static file servers and API servers perform different functions.",
-    "code": "# Static PWA server python -m http.server 8790 # Serve HTML/CSS/JS/JSON files # API server uvicorn search_api:app --port 8000 # Handle searches, queries, and database lookups",
+    "code": "# Static development server\npython -m http.server 8790 --bind 127.0.0.1\n# Serves HTML/CSS/JS/JSON files from a directory\n\n# ASGI API development server\nuvicorn search_api:app --host 127.0.0.1 --port 8000\n# Application code handles search, question, and DB requests",
     "question_type": "meaning_choice",
     "question": "Which of the following most closely matches the role of the uvicorn server?",
     "choices": [
@@ -425,12 +421,12 @@
       "Managing Browser Bookmarks"
     ],
     "answer": "Handling dynamic requests such as searches, queries, and database lookups",
-    "explanation": "The HTTP server serves static files, while FastAPI and Uvicorn handle dynamic API requests. The static PWA and the API server have different roles. HTML, JS, and CSS are served statically, while dynamic tasks such as login and data storage are handled by the API.",
+    "explanation": "The first command is a development server that mostly serves files directly from the current directory. The second runs an ASGI application whose route functions generate dynamic responses from input. FastAPI can also be configured to serve static files, so the roles are not a technical impossibility to combine; both example settings are for localhost development.",
     "side_card_ids": [
       "PYV160_A1_PWA_STATE_STORAGE_FLOW",
       "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
     ],
-    "project_context": "This outlines the structure required when integrating the LLM_Lora search API into the \"Reading Trainer\" static app."
+    "project_context": "This structure distinguishes the responsibilities and development ports of a static frontend and a dynamic API."
   },
   {
     "id": "PY20_L10_api_service_repository_001",
@@ -470,7 +466,7 @@
       "api"
     ],
     "reading_goal": "Read about the middleware architecture that logs the path and processing time of every request.",
-    "code": "import time\n\n@app.middleware(\"http\")\nasync def log_requests(request, call_next):\n    start = time.time()\n    response = await call_next(request)\n    elapsed = time.time() - start\n    print(request.url.path, response.status_code, elapsed)\n    return response",
+    "code": "import time\n\n@app.middleware(\"http\")\nasync def log_requests(request, call_next):\n    start = time.perf_counter()\n    status = 500\n    try:\n        response = await call_next(request)\n        status = response.status_code\n        return response\n    finally:\n        elapsed = time.perf_counter() - start\n        print(request.method, request.url.path, status, elapsed)",
     "question_type": "meaning_choice",
     "question": "What is the purpose of `call_next(request)`?",
     "choices": [
@@ -480,7 +476,7 @@
       "Delete the database"
     ],
     "answer": "Pass the request to the next processing step and receive a response",
-    "explanation": "Middleware contains common logic that runs before and after a request, and uses `call_next` to proceed with processing at the actual endpoint. Request logging middleware is a mechanism that records the process of incoming and outgoing API requests. Logging the method, path, status code, and processing time makes it easier to trace the cause of issues.",
+    "explanation": "call_next passes the request through later middleware and the endpoint and returns the response. Initializing status to 500 lets finally record elapsed time and a failure status even when later processing raises. perf_counter is suitable for elapsed duration because wall-clock adjustments affect it less. In production, use a structured logger and request ID, and do not log sensitive queries or headers.",
     "side_card_ids": [
       "PYV158_A1_API_FLOW"
     ],

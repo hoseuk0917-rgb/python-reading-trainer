@@ -9,7 +9,7 @@
       "small_test"
     ],
     "reading_goal": "Understand unit tests, which are used to verify a single small function.",
-    "code": "def add(a, b):\n    return a + b\n\nassert add(2, 3) == 5",
+    "code": "def add(a, b):\n    return a + b\n\ndef test_add():\n    assert add(2, 3) == 5",
     "question_type": "meaning_choice",
     "question": "What is the key to unit testing?",
     "choices": [
@@ -19,7 +19,7 @@
       "Clear the browser cache"
     ],
     "answer": "Test a single small function or piece of logic independently",
-    "explanation": "A unit test is a test that quickly verifies whether a function or small unit of logic behaves as expected. It catches small failures early, thereby reducing major regressions. The input, expected value, and actual result should be clearly defined so that the cause of a failure can be easily pinpointed.",
+    "explanation": "A unit test checks a small function or rule as independently as practical. In this pytest-style test, a mismatch between add(2, 3) and expected 5 fails. Ordinary asserts can be removed by Python -O, so execute tests with a runner such as pytest.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -90,7 +90,7 @@
       "quick_test"
     ],
     "reading_goal": "Understand what a smoke test is—a test conducted before a major validation to verify that the app at least launches and that its core files load.",
-    "code": "run server\nopen index.html\ncheck lesson json returns 200",
+    "code": "run server\nrequest core files and expect 200\nopen index.html in a browser\nverify main screen renders with no console errors",
     "question_type": "meaning_choice",
     "question": "Which of these is closest to a smoke test?",
     "choices": [
@@ -100,7 +100,7 @@
       "Deleting a Git remote repository"
     ],
     "answer": "Quickly checking whether the app launches by default and whether the core files are loaded",
-    "explanation": "A smoke test is a quick test used to verify, before conducting in-depth validation, that an app at least launches and reads its key files. It serves to filter out major issues early on. For example, it catches short but critical failures, such as the loading of the first screen, access to core JSON files, and verification of the version string.",
+    "explanation": "A smoke test quickly checks critical paths before deeper feature testing. HTTP 200 for files alone does not prove JavaScript execution or rendering, so also check the main screen and console. Passing still does not guarantee every feature or data meaning is correct.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -127,7 +127,7 @@
       "Shut down the server"
     ],
     "answer": "Compare the actual results with the expected output values.",
-    "explanation": "A golden file is a reference file used to verify whether the output format has changed unintentionally. It serves as the standard for the expected output. If the results of a new execution differ from the golden file, you must determine whether the change was intentional or a bug.",
+    "explanation": "A golden file is an explicitly approved exact expected output. A difference may be a regression or a valid requirement change, so review the diff before updating the golden through a separate process. Normalize nondeterministic timestamps or ordering to avoid noisy failures.",
     "side_card_ids": [],
     "project_context": "This can be used to ensure consistent card generation results or manifest output formats."
   },
@@ -151,7 +151,7 @@
       "When you want to change the server port"
     ],
     "answer": "When you want to check if the appearance or structure of the output has suddenly changed",
-    "explanation": "Snapshot tests detect unexpected changes in rendering results or structured output. A snapshot test compares a previously saved output with a new one. It is useful for verifying whether UI or JSON results have changed unintentionally.",
+    "explanation": "A snapshot test compares new rendering or structured output with a previously reviewed result. Blindly updating a large snapshot can approve a bug, so review small meaningful diffs and use separate assertions for accessibility and behavior.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -178,7 +178,7 @@
       "Generate a Git log"
     ],
     "answer": "Provides input data for repeatable testing",
-    "explanation": "A test fixture is a set of data or settings prepared to ensure that tests start under the same conditions every time. With a fixture, you can repeatedly verify results using the same inputs. Using a common fixture eliminates the need to repeat setup code for each test, making the tests shorter.",
+    "explanation": "From this code alone, fixture_card is reusable sample input. It is a fixture in the broad testing sense; a pytest fixture is normally registered with @pytest.fixture and injected. Create a fresh object or copy it so mutation does not leak between tests.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -303,7 +303,7 @@
       "pipeline_step"
     ],
     "reading_goal": "Understand the verification steps that must be completed before moving on to the next stage.",
-    "code": "generate_files()\nrun_validation_gate()\nif ok:\n    commit_and_push()",
+    "code": "generate_files()\nok = run_validation_gate()\nif not ok:\n    raise SystemExit(1)\ncommit_and_push()",
     "question_type": "meaning_choice",
     "question": "What is the role of a validation gate?",
     "choices": [
@@ -313,7 +313,7 @@
       "Preventing the server from starting"
     ],
     "answer": "Only sending deliverables that have passed verification to the next stage",
-    "explanation": "A validation gate is a quality checkpoint that ensures results meet certain criteria before proceeding to the next stage. It prevents faulty results from being committed or deployed. In an automated pipeline, it is safest to use only results that have passed the gate as input for the next stage.",
+    "explanation": "The gate result is assigned to ok; false exits nonzero, while true reaches the next step. Commit and push are permissioned side effects, so a real pipeline is easier to audit when validation and the explicit release stage are separate.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -340,7 +340,7 @@
       "To run tests only after deployment"
     ],
     "answer": "To catch corrupted files before they are committed",
-    "explanation": "Catching errors before committing can help prevent broken changes from being pushed to the remote repository. A pre-commit check is a quality check that runs automatically before a commit. If your code passes formatting, testing, and data validation checks first, you reduce the risk of pushing broken changes to the repository.",
+    "explanation": "A pre-commit check means a check run before committing; it is automatic only when a hook or tool is configured. JSON parsing, ID uniqueness, and answer consistency catch issues early but do not replace remote CI and review. Run the same script in CI because local hooks can be bypassed.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -421,7 +421,7 @@
       "To prevent server checks,"
     ],
     "answer": "To ensure that only verified changes are recorded in the history",
-    "explanation": "\"Quality gate before commit\" is a practice that ensures changes pass a minimum level of validation before being committed. This makes it easier to determine later which version is safe. Completing validation before committing reduces the likelihood of leaving an incorrect state on a tag or in a remote repository. Therefore, the correct answer is “to ensure that only validated changes are recorded in the history.”",
+    "explanation": "This policy proceeds to add and commit only when validation and an HTTP smoke check both pass. server_200_ok does not prove screen behavior, and a commit is not evidence that deployment is safe. Add relevant tests, diff review, and deployment verification according to risk.",
     "side_card_ids": [
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"

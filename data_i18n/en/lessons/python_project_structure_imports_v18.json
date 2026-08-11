@@ -25,7 +25,7 @@
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_ARCHITECTURE_DESIGN"
     ],
-    "project_context": "This exercise is designed to help you understand the purpose of each folder when looking at projects like LLM_Lora and collect-kit."
+    "project_context": "This trains you to identify the roles of src, scripts, and tests when first opening a Python project."
   },
   {
     "id": "PY18_L06_import_basic_001",
@@ -128,7 +128,7 @@
       "Git Remote Repository"
     ],
     "answer": "Python packages",
-    "explanation": "__init__.py allows the folder to be imported as if it were a package. __init__.py is a file that enables the folder to be treated as a Python package. You need to check how the import path is set up and what name is exported. Therefore, the correct answer is “Python package.”",
+    "explanation": "A directory containing __init__.py can be imported as a regular Python package. The file may contain package initialization code or names exported to users, but it may also be empty. Modern Python also supports namespace packages without __init__.py, so the file is not required for every kind of importable package.",
     "side_card_ids": [],
     "project_context": "This is the file you check when tracing why an import occurs in the project structure."
   },
@@ -206,7 +206,7 @@
       "Delete the folder"
     ],
     "answer": "Read the API key value from the environment variables",
-    "explanation": "It is safer to read sensitive values from environment variables or a secret store rather than writing them directly into the code. Loading a .env file is a process of reading secret values or configuration settings from a file outside the code. You must verify which variable names are required, as well as whether there are default values or error conditions when they are missing. Therefore, the correct answer is “Read the API key value from the environment variables.”",
+    "explanation": "By default, load_dotenv reads .env values into environment variables that are not already set; it does not replace existing values unless override=True is used. os.getenv returns None when the name is absent, so validate a required key before making an API call. A .env file is convenient for local settings, but do not commit one containing secrets, and consider a secret manager in production.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -232,7 +232,7 @@
       "Install Python 2.0"
     ],
     "answer": "Allows pydantic version 2.0 or higher",
-    "explanation": "The requirements file lists the packages and versions required by the project. “>=” indicates the minimum version, while “==” means the project must use that exact version. By looking at the dependencies file, you can quickly determine which packages need to be installed in a new environment for the project to run. Therefore, the correct answer is “pydantic version 2.0 or higher is allowed.”",
+    "explanation": "==0.111.0 permits that exact version, while >=2.0 sets a lower bound with no upper bound. A future major pydantic version can therefore satisfy the requirement even though compatibility is not automatic. For reproducible installation, combine tested version ranges with a lock file, hashes, or another dependency policy.",
     "side_card_ids": [
       "PYV160_A1_PACKAGING_DEPENDENCY_FLOW"
     ],
@@ -258,7 +258,7 @@
       "Git Commit Messages"
     ],
     "answer": "Packages required for the project",
-    "explanation": "pyproject.toml can contain the project name, version, dependencies, build settings, and more. pyproject.toml is a file that contains the build, dependency, and tool settings for a Python project. You need to check where the package name and execution settings are located. Therefore, the correct answer is “the packages required by the project.”",
+    "explanation": "In this [project] table, name and version identify the distributable project and dependencies lists packages needed at runtime. pyproject.toml can also contain [build-system] and tool-specific tables. A dependency with no version constraint permits any available version, so reproducibility and compatibility still need a separate policy.",
     "side_card_ids": [
       "DATA_metadata_001",
       "PYV102_A7_ARCHITECTURE_DESIGN"
@@ -365,7 +365,7 @@
       "To avoid saving the file"
     ],
     "answer": "After logging the error, to notify the caller of the failure as well,",
-    "explanation": "If you use `finalize` to save the state and then re-throw the exception with `raise`, the automation system can also detect the failure. An exception handler is designed to catch errors at a specific point to prevent them from propagating, log them, or convert them into user-friendly messages. It is essential to distinguish between internal errors and external responses. Therefore, the correct answer is “to log the error and notify the caller of the failure.”",
+    "explanation": "If run_pipeline or the success finalize call raises, the except block attempts to record an error status, then bare raise propagates the current exception with its traceback. The caller or automation can therefore detect failure. In production, also handle the risk that error finalization masks the original exception and that str(e) contains sensitive data.",
     "side_card_ids": [
       "PYV158_A1_PIPELINE_FLOW"
     ],
@@ -418,7 +418,7 @@
       "Train the model"
     ],
     "answer": "Provide a sample dictionary to use for testing",
-    "explanation": "A fixture provides data that multiple tests can share. It reduces repetitive initialization code and makes tests cleaner. A fixture with a name like `sample_doc` can be passed as an argument to a test function, allowing the same sample document to be reused.",
+    "explanation": "pytest sees the sample_doc parameter of test_doc_has_id, runs the fixture with the same name, and passes its returned dictionary to the test. With the default function scope, a new value is created for each test that requests the fixture. Reusing fixture setup does not necessarily mean sharing one dictionary object across all tests.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_ARCHITECTURE_DESIGN"
@@ -446,11 +446,11 @@
       "Since it's an HTML file,"
     ],
     "answer": "Since this is core logic that will be reused across multiple scripts,",
-    "explanation": "Placing reusable logic in `src` and execution assembly code in `scripts` makes the structure clearer. The `src` directory contains the main code used throughout the app, while the `scripts` directory holds execution tools for tasks such as testing and generation. Separating these roles makes maintenance easier. Therefore, the reason for the return/call is that “it is core logic that can be reused across multiple scripts.”",
+    "explanation": "make_chunks is reusable core transformation logic, so it belongs in an importable package under src, while the script assembles input reading and the function call. For from app... to work in a src layout, install the project or otherwise place src on the import path. Using with open(...) would also make the input file's closing point explicit.",
     "side_card_ids": [
       "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
     ],
-    "project_context": "This distinction becomes necessary as the number of scripts in collect-kit/LLM_Lora increases."
+    "project_context": "This example separates reusable logic from one-off orchestration as a project accumulates execution scripts."
   },
   {
     "id": "PY18_L10_cli_entrypoint_001",
@@ -490,17 +490,17 @@
       "debugging"
     ],
     "reading_goal": "I understand that an error indicating that a module cannot be found may be due to a path issue.",
-    "code": "ModuleNotFoundError: No module named 'app' # Common Causes # 1. The src folder is not in PYTHONPATH # 2. The program is not being run from the project root # 3. The package is not installed",
+    "code": "ModuleNotFoundError: No module named 'app'\n\n# Checks\n# 1. Is the project installed in the current environment?\n# 2. Is src included on the import path?\n# 3. Are installation and execution using the same Python?",
     "question_type": "meaning_choice",
-    "question": "Which of the following is NOT a common cause of this error?",
+    "question": "Which item is unrelated to the cause of this error?",
     "choices": [
-      "Because the CSS color is blue,",
-      "The src folder is not in PYTHONPATH",
-      "The execution location is not the project root",
-      "The package won't install"
+      "The CSS color is blue",
+      "The project is not installed in the current environment",
+      "src is absent from the import path",
+      "The package was installed into a different Python environment"
     ],
-    "answer": "Because the CSS color is blue,",
-    "explanation": "ModuleNotFoundErrors are usually related to import paths, execution locations, or installation issues. Debugging a ModuleNotFoundError involves checking the current working directory, the package structure, and the import path. The same code may fail if the execution location changes. Therefore, the correct answer is “because the CSS color is blue.”",
+    "answer": "The CSS color is blue",
+    "explanation": "ModuleNotFoundError means import could not find a module or package with that name on the search path. Check which Python executable is running, whether the package is installed in that environment, and whether the project root or src is on sys.path. Merely running from the project root does not always make app importable in a src layout.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW"
     ],

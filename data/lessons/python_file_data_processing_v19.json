@@ -47,7 +47,7 @@
       "탭을 모두 제거한다"
     ],
     "answer": "탭 문자를 컬럼 구분자로 쓴다",
-    "explanation": "TSV는 tab-separated values의 줄임말로, 값을 탭 문자로 구분한다. CSV와 비슷하지만 쉼표 대신 탭을 delimiter로 지정한다. 탭 구분자는 값 안에 쉼표가 들어가도 컬럼을 덜 헷갈리게 해 주는 장점이 있다. 따라서 출력은 ‘탭 문자를 컬럼 구분자로 쓴다’이다.",
+    "explanation": "TSV는 tab-separated values의 줄임말이다. delimiter=\"\\t\"를 지정하면 DictReader가 탭을 열 경계로 사용하고 첫 줄을 헤더로 읽는다. 값 안에 쉼표가 있어도 탭이 아니므로 열이 나뉘지 않지만, 탭이나 줄바꿈 자체가 든 값은 CSV와 마찬가지로 올바른 quoting 규칙이 필요하다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
@@ -74,7 +74,7 @@
       "네트워크를 차단한다"
     ],
     "answer": "파일을 한 줄씩 읽어 메모리 사용을 줄인다",
-    "explanation": "JSONL은 한 줄에 JSON 객체 하나를 저장하는 형식이다. 대용량 파일을 한 번에 모두 읽지 않고 줄 단위로 처리해 메모리 부담을 줄일 수 있다. 각 줄을 독립적으로 처리하면 일부 줄에서 오류가 나도 문제 위치를 찾고 재개하기 쉽다.",
+    "explanation": "파일 객체를 직접 반복하면 한 번에 한 줄씩 읽으므로 read_text처럼 파일 전체 문자열을 메모리에 만들지 않는다. 빈 줄은 건너뛰고 각 줄을 json.loads로 파싱한다. 하지만 한 줄의 JSON 오류가 나면 이 코드 전체는 그 자리에서 중단되므로, 계속 처리하거나 재개하려면 줄 번호와 오류를 별도로 기록하는 try/except가 필요하다.",
     "side_card_ids": [
       "PYV158_A1_JSON_FLOW"
     ],
@@ -101,7 +101,7 @@
       "줄바꿈을 제거하려고"
     ],
     "answer": "한글 같은 비ASCII 문자를 읽기 좋게 저장하려고",
-    "explanation": "ensure_ascii=False면 한글이 유니코드 escape가 아니라 실제 글자로 저장된다. JSONL 저장 루프는 객체 하나를 JSON 한 줄로 바꾸어 반복 저장하는 구조다. 줄마다 독립적으로 읽을 수 있어 대량 데이터 처리에 유리하다. 따라서 정답은 ‘한글 같은 비ASCII 문자를 읽기 좋게 저장하려고’이다.",
+    "explanation": "ensure_ascii=False는 비ASCII 문자를 \\uXXXX escape 대신 사람이 읽을 수 있는 문자로 JSON 문자열에 기록한다. UTF-8 encoding과 함께 쓰므로 한글도 그대로 보인다. 각 row 뒤에 줄바꿈을 붙여 JSONL 한 레코드를 완성한다. \"w\" 모드는 기존 nodes.jsonl을 먼저 비우므로 이어 쓰기가 필요한 작업에서는 덮어쓰기 정책을 확인해야 한다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
@@ -128,7 +128,7 @@
       "서버를 실행한다"
     ],
     "answer": "cp949 인코딩으로 다시 읽는다",
-    "explanation": "한국어 윈도우 환경의 오래된 파일은 cp949인 경우가 있어 fallback을 둔다. encoding fallback은 첫 번째 문자 인코딩으로 읽기 실패했을 때 다른 인코딩을 시도하는 방식이다. 텍스트 수집 코드에서 깨짐을 줄이는 데 도움이 된다.",
+    "explanation": "첫 UTF-8 decode가 실패할 때만 cp949로 다시 읽는다. 오래된 한국어 Windows 파일에는 도움이 될 수 있지만, 실제 encoding이 다른 파일도 cp949가 오류 없이 잘못된 글자로 해석할 수 있다. 출처의 encoding metadata나 탐지 결과를 우선하고, fallback을 썼다는 사실을 기록해 조용한 데이터 손상을 막아야 한다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
@@ -155,7 +155,7 @@
       "경로를 문자열로만 바꾼다"
     ],
     "answer": "중간 폴더가 없어도 함께 만든다",
-    "explanation": "parents=True는 derived/clean처럼 중간 폴더까지 생성하게 한다. Path 결합은 운영체제에 맞는 경로를 만들고, mkdir은 필요한 폴더를 생성한다. 코드를 읽을 때는 부모 폴더 생성 옵션과 이미 존재할 때 처리 방식을 봐야 한다. 따라서 정답은 ‘중간 폴더가 없어도 함께 만든다’이다.",
+    "explanation": "Path의 / 연산자는 운영체제에 맞게 경로 요소를 결합한다. mkdir의 parents=True는 derived와 clean 같은 누락된 부모 디렉터리도 만들고, exist_ok=True는 목표 디렉터리가 이미 있을 때의 FileExistsError를 막는다. 같은 위치에 일반 파일이 있으면 여전히 실패하며, out_file은 경로만 만들 뿐 파일을 생성하지 않는다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
@@ -209,7 +209,7 @@
       "JSON으로 변환하려고"
     ],
     "answer": "바이너리 모드로 읽어 정확한 바이트 해시를 계산하려고",
-    "explanation": "SHA-256은 파일 내용이 바뀌었는지 확인할 때 쓰는 해시 방식이다. 텍스트가 아니라 실제 바이트 기준으로 계산해야 하므로 rb 모드로 읽는다. 해시값을 비교하면 파일명이 같아도 내용이 같은지 다른지 안정적으로 판정할 수 있다.",
+    "explanation": "SHA-256은 bytes를 입력받으므로 rb로 열어 줄바꿈 변환이나 문자 decoding 없이 파일의 실제 바이트를 block별로 h에 누적한다. 같은 digest는 실수로 내용이 바뀌었는지 확인하는 강한 신호지만, 해시만 받은 경우 공격자가 파일과 digest를 모두 바꿀 수 있으므로 출처 인증은 서명이나 신뢰된 digest 채널이 별도로 필요하다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW",
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
@@ -237,10 +237,9 @@
       "파일명을 해시로 바꾼다"
     ],
     "answer": "zip 안의 파일들을 out_dir로 푼다",
-    "explanation": "ZipFile.extractall은 압축 파일 안의 모든 내용을 지정한 폴더로 푼다. 다운로드 자료나 묶음 데이터를 작업 폴더에 펼칠 때 사용한다. 압축을 풀기 전에는 대상 폴더와 파일명 충돌을 확인해 기존 파일을 덮어쓰지 않게 해야 한다.",
+    "explanation": "extractall(out_dir)은 archive의 모든 항목을 out_dir 아래에 푼다. 신뢰하지 않는 zip은 경로 이동 항목, 절대 경로, symlink, 지나치게 큰 압축 해제 크기 같은 위험이 있을 수 있으므로 이름과 크기·개수·링크를 검사하고 격리된 새 디렉터리에 풀어야 한다. 기존 파일 충돌도 extraction 전에 확인한다.",
     "side_card_ids": [
-      "PYF95_A4_PATHLIB_PATH",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "PYF95_A4_PATHLIB_PATH"
     ],
     "project_context": "clean pack, upload pack, 분할 압축본을 확인할 때 필요한 기본 코드다."
   },
@@ -293,7 +292,7 @@
       "확장자를 제거한다"
     ],
     "answer": "파일명이 너무 길어지는 것을 제한한다",
-    "explanation": "safe filename은 파일명에 위험한 문자나 너무 긴 문자열이 들어가는 문제를 줄이는 방식이다. 윈도우 경로 길이 문제도 함께 줄일 수 있다. 파일명 정규화는 다운로드 자료나 사용자 입력으로 파일을 만들 때 특히 필요한 방어 처리다. 따라서 반환/호출 결과는 ‘파일명이 너무 길어지는 것을 제한한다’이다.",
+    "explanation": "첫 줄은 앞뒤 공백을 제거하고 re.sub는 Windows에서 금지되는 여러 문자를 밑줄로 바꾼다. [:120]은 Python 문자 수를 제한할 뿐 byte 길이나 전체 경로 길이를 보장하지 않는다. 빈 이름, CON 같은 예약명, 끝의 점·공백, Unicode 정규화, 같은 결과로 변환되는 이름의 충돌과 확장자 보존도 별도로 처리해야 완전한 안전 파일명이 된다.",
     "side_card_ids": [],
     "project_context": "PDF 제목, 웹 제목, 기관 자료명을 파일명으로 바꿀 때 필요한 방어 코드다."
   },
@@ -318,7 +317,7 @@
       "done.txt를 비운다"
     ],
     "answer": "이미 처리한 항목은 건너뛴다",
-    "explanation": "resume done set은 이미 처리한 항목을 집합으로 기록하는 방식이다. 중간에 끊긴 배치 작업을 다시 돌릴 때 중복 처리를 막는다. set 조회는 빠르기 때문에 많은 항목을 처리할 때 이미 완료한 id를 건너뛰는 데 적합하다.",
+    "explanation": "done_ids에 있는 id는 continue로 건너뛰고, 새 항목은 process가 성공한 뒤 done.txt에 기록한다. set membership은 평균적으로 빠르다. 다만 process의 외부 효과는 성공했는데 완료 기록이 실패하면 재실행 때 중복 처리될 수 있다. 작업을 idempotent하게 만들거나 결과와 완료 상태를 하나의 transaction으로 기록하고, 동시 worker의 중복 실행도 제어해야 한다.",
     "side_card_ids": [
       "PYV159_A1_CHECKPOINT_RESUME_FLOW"
     ],
@@ -345,7 +344,7 @@
       "convert가 실행되지 않기 때문에"
     ],
     "answer": "try/except로 각 파일의 오류를 잡기 때문에",
-    "explanation": "failed list는 처리에 실패한 파일이나 항목을 따로 모아 두는 목록이다. except에서 실패를 기록하고 다음 파일로 넘어가면 전체 작업이 멈추지 않는다. 따라서 출력은 ‘try/except로 각 파일의 오류를 잡기 때문에’이다.",
+    "explanation": "각 convert 호출을 try/except로 감싸므로 Exception이 발생한 파일은 path와 오류 문자열을 failed에 추가한 뒤 다음 반복으로 넘어간다. 모든 Exception을 같은 방식으로 삼키면 디스크 부족이나 설정 오류 같은 시스템 전체 문제도 계속 반복할 수 있다. 예상 가능한 항목별 오류만 잡고, 치명적 오류는 중단하며, 오류 문자열의 민감 정보도 정제해야 한다.",
     "side_card_ids": [
       "PYV161_A1_BATCH_MEMORY_FLOW"
     ],
@@ -372,7 +371,7 @@
       "확장자를 jsonl로 바꾼다"
     ],
     "answer": "임시 파일을 최종 파일 위치로 교체한다",
-    "explanation": "먼저 임시 파일에 완전히 쓴 뒤 교체하면 저장 중단으로 인한 파일 깨짐 위험을 줄일 수 있다. atomic write는 임시 파일에 먼저 저장한 뒤 완성되면 원래 파일로 교체하는 방식이다. 중간에 실패해도 기존 파일이 깨질 위험을 줄인다.",
+    "explanation": "result.tmp를 완전히 쓴 뒤 replace가 같은 디렉터리의 result.json 위치로 이름을 바꾼다. 같은 filesystem에서 운영체제가 atomic rename을 제공하면 독자가 중간 파일을 볼 위험이 줄어든다. 하지만 write가 storage에 영구 반영됐음을 보장하려면 flush/fsync와 디렉터리 fsync 정책이 필요할 수 있고, 권한·filesystem·다른 process 조건에 따라 replace도 실패할 수 있다.",
     "side_card_ids": [],
     "project_context": "중요한 manifest, progress, 검증 결과를 안전하게 저장할 때 쓸 수 있다."
   },
@@ -425,7 +424,7 @@
       "확장자를 바꾸기"
     ],
     "answer": "입력 파일이 없을 때 조기에 명확히 실패시키기",
-    "explanation": "file exists guard는 필요한 파일이 있는지 먼저 확인하는 방어 코드다. 뒤 단계에서 이상한 오류가 나기 전에 원인을 명확히 보여 준다. guard를 먼저 두면 사용자에게 필요한 파일명과 경로를 안내하면서 안전하게 중단할 수 있다.",
+    "explanation": "exists가 False이면 뒤 처리로 가지 않고 구체적인 path가 든 FileNotFoundError를 일찍 발생시킨다. 다만 exists는 같은 이름의 디렉터리에도 True이므로 입력이 일반 파일이어야 한다면 input_path.is_file()을 검사해야 한다. 검사 직후 파일이 사라질 수도 있으므로 실제 open 오류도 여전히 처리해야 한다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],

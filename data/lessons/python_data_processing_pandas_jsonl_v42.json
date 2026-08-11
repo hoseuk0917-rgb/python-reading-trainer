@@ -19,7 +19,7 @@
       "탭 문자"
     ],
     "answer": "탭 문자",
-    "explanation": "CSV는 comma-separated values, TSV는 tab-separated values에 가깝다. CSV와 TSV는 표 데이터를 텍스트로 저장하는 형식이다. CSV는 쉼표, TSV는 탭으로 열을 나누므로 데이터 안의 쉼표 여부를 고려해야 한다. 따라서 정답은 ‘탭 문자’이다.",
+    "explanation": "CSV와 TSV는 표 데이터를 text record로 저장하며 기본 delimiter가 각각 comma와 tab이다. 실제 필드에 delimiter, 따옴표, 줄바꿈이 있으면 quoting·escaping 규칙으로 표현하므로 단순 split(',')이나 split('\\t')로 안전하게 읽을 수 없다. csv 같은 parser와 파일의 dialect·encoding을 사용해야 한다.",
     "side_card_ids": [
       "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -40,13 +40,13 @@
     "question_type": "meaning_choice",
     "question": "JSONL의 특징은?",
     "choices": [
-      "항상 하나의 큰 배열만 저장한다",
-      "표 데이터를 절대 저장할 수 없다",
-      "Python에서 읽을 수 없다",
-      "한 줄에 JSON 객체 하나씩 저장한다"
+      "각 줄에 독립적으로 파싱할 수 있는 JSON 값 하나를 둔다",
+      "파일 전체가 반드시 하나의 JSON 배열이다",
+      "줄마다 Python 코드가 들어간다",
+      "마지막 줄만 유효한 JSON이다"
     ],
-    "answer": "한 줄에 JSON 객체 하나씩 저장한다",
-    "explanation": "JSONL은 대용량 로그, LLM 출력, shard 결과처럼 한 줄씩 처리하기 좋다. JSON은 하나의 큰 구조를 저장하는 데 적합하고, JSONL은 줄마다 독립된 JSON 객체를 저장하는 방식이다. 대량 로그나 학습 데이터처럼 한 줄씩 읽고 처리할 때 JSONL이 편하다.",
+    "answer": "각 줄에 독립적으로 파싱할 수 있는 JSON 값 하나를 둔다",
+    "explanation": "JSON 문서는 배열이나 객체를 포함한 하나의 JSON 값이고, JSONL은 빈 줄 없이 각 줄을 독립적인 JSON 값으로 파싱할 수 있게 저장한다. 레코드는 보통 객체지만 문자열·숫자 같은 다른 JSON 값도 문법상 가능하다. 줄 단위 streaming과 append에는 편하지만 전체 파일 자체는 하나의 일반 JSON 값이 아니다.",
     "side_card_ids": [
       "PYV158_A1_JSON_FLOW"
     ],
@@ -72,7 +72,7 @@
       "첫 줄의 header"
     ],
     "answer": "첫 줄의 header",
-    "explanation": "DictReader는 header 이름을 key로 사용해서 각 행을 dict처럼 읽게 해준다. csv.DictReader는 CSV 행을 dict 형태로 읽게 해 주는 도구다. 열 이름을 key로 사용하므로 column 이름이 정확한지 먼저 확인해야 한다. 따라서 출력은 ‘첫 줄의 header’이다.",
+    "explanation": "fieldnames 인자를 생략한 csv.DictReader는 첫 row를 header로 읽어 key로 사용하고 그 header row는 data로 반환하지 않는다. fieldnames를 직접 주면 첫 row도 일반 data가 되므로 동작이 달라진다. 중복·빈 header와 예상 밖 column도 검증해야 한다.",
     "side_card_ids": [
       "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -153,7 +153,7 @@
       "큰 파일을 메모리에 한 번에 올리지 않기 위해"
     ],
     "answer": "큰 파일을 메모리에 한 번에 올리지 않기 위해",
-    "explanation": "chunksize는 대용량 데이터를 작은 DataFrame 여러 개로 나누어 처리하게 해준다. chunksize는 큰 파일을 한 번에 다 읽지 않고 일정 크기씩 나누어 처리하는 옵션이다. 메모리 사용량을 줄이고 긴 작업을 안정적으로 만들 때 쓴다.",
+    "explanation": "pd.read_csv(..., chunksize=10000)은 TextFileReader를 돌려주고 반복할 때 최대 약 10,000행씩 DataFrame을 읽으므로 전체 파일을 동시에 메모리에 둘 필요가 없다. 다만 global sort, dedup, groupby처럼 chunk 경계를 넘는 연산은 중간 집계나 외부 저장을 별도로 설계해야 한다.",
     "side_card_ids": [
       "PYV161_A1_BATCH_MEMORY_FLOW"
     ],
@@ -179,7 +179,7 @@
       "파일 전체를 한 번에 메모리에 올리지 않기 때문이다"
     ],
     "answer": "파일 전체를 한 번에 메모리에 올리지 않기 때문이다",
-    "explanation": "streaming JSONL은 파일을 한 줄씩 읽어 처리하는 방식이다. 전체 파일을 메모리에 올리지 않아도 되므로 큰 출력 파일도 안정적으로 다룰 수 있다. 한 줄이 한 레코드라는 규칙을 지키면 중간 실패 후 재처리하기도 쉽다.",
+    "explanation": "파일 반복은 한 줄씩 읽으므로 전체 JSONL을 메모리에 올리지 않는다. 각 non-empty line이 유효한 JSON인지 줄 번호와 함께 오류를 처리해야 하며, process 결과를 저장한 뒤 checkpoint를 원자적으로 갱신해야 안전하게 resume할 수 있다. 줄 단위라는 사실만으로 중단 재개가 자동 제공되지는 않는다.",
     "side_card_ids": [
       "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -196,7 +196,7 @@
       "validation"
     ],
     "reading_goal": "데이터에 필요한 필드가 모두 있는지 검사하는 schema check를 이해한다.",
-    "code": "required = {'id', 'title', 'answer'}\nmissing = required - set(row.keys())\nif missing:\n    raise ValueError(missing)",
+    "code": "required = {'id', 'title', 'answer'}\nmissing = required - row.keys()\nif missing:\n    raise ValueError(f\"missing fields: {sorted(missing)}\")\nif not isinstance(row['id'], str):\n    raise TypeError(\"id must be a string\")",
     "question_type": "meaning_choice",
     "question": "schema check의 목적은?",
     "choices": [
@@ -206,7 +206,7 @@
       "필수 컬럼이나 필드 누락을 빨리 찾는 것"
     ],
     "answer": "필수 컬럼이나 필드 누락을 빨리 찾는 것",
-    "explanation": "schema check는 데이터가 필요한 필드와 형식을 갖췄는지 확인하는 단계다. 나중 단계에서 이상하게 터지는 문제를 앞에서 잡아준다. 필수 컬럼 누락이나 타입 오류를 초기에 잡으면 후속 집계와 저장 단계의 실패를 줄일 수 있다.",
+    "explanation": "첫 검사는 필수 key 누락을 찾고, 두 번째 검사는 id type을 확인한다. key 존재만 확인하면 null, 빈 문자열, 잘못된 type까지 잡지는 못한다. 실제 schema validation은 각 field의 type, 허용값, 중첩 구조와 추가 field 정책을 함께 정의해야 한다.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW",
       "PYV158_A1_SCHEMA_FLOW"
@@ -227,13 +227,13 @@
     "question_type": "meaning_choice",
     "question": "df['label'].isna().sum()은 무엇을 세는가?",
     "choices": [
-      "전체 파일 개수",
-      "Git 커밋 개수",
-      "서버 요청 횟수",
-      "label 컬럼의 빈 값 개수"
+      "label column의 NaN·None 같은 결측값 개수",
+      "빈 문자열만의 개수",
+      "모든 행의 개수",
+      "중복 id 개수"
     ],
-    "answer": "label 컬럼의 빈 값 개수",
-    "explanation": "isna는 결측값 여부를 True/False로 만들고 sum은 True 개수를 센다. missing value는 데이터에 값이 비어 있거나 기록되지 않은 상태를 뜻한다. 분석 코드를 읽을 때는 비어 있는 값을 제거하는지, 기본값으로 채우는지, 그대로 두는지 확인해야 한다. 따라서 출력은 ‘label 컬럼의 빈 값 개수’이다.",
+    "answer": "label column의 NaN·None 같은 결측값 개수",
+    "explanation": "isna()는 각 값이 pandas에서 missing으로 인식되는 NaN, None, NaT 등인지 Boolean으로 만들고 sum()은 True 개수를 센다. 일반적인 빈 문자열 ''은 기본적으로 이 계산에서 missing이 아닐 수 있으므로 공백 제거와 빈 문자열 규칙은 별도로 정해야 한다.",
     "side_card_ids": [
       "PYV160_A1_FLOAT_NUMERIC_NAN_FLOW"
     ],
@@ -259,7 +259,7 @@
       "id 컬럼이 같은 행을 중복으로 본다"
     ],
     "answer": "id 컬럼이 같은 행을 중복으로 본다",
-    "explanation": "dedup은 중복 데이터를 제거하는 처리다. 어떤 컬럼이나 해시를 기준으로 같은 데이터로 볼지 정해야 결과가 흔들리지 않는다. subset을 ['id']로 주면 다른 컬럼이 달라도 id가 같으면 같은 항목으로 보고 중복 제거한다.",
+    "explanation": "drop_duplicates(subset=['id'])는 id가 같은 행을 한 중복 그룹으로 보고 기본적으로 첫 행을 남긴다. 다른 column 값이 충돌해도 조용히 하나가 제거될 수 있고 missing id들도 중복 취급될 수 있으므로, 삭제 전 중복 그룹을 조사하고 고유 ID 누락을 먼저 검증해야 한다.",
     "side_card_ids": [
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
@@ -285,7 +285,7 @@
       "status 값별 행 개수를 센다"
     ],
     "answer": "status 값별 행 개수를 센다",
-    "explanation": "groupby는 같은 값끼리 묶어 집계하는 pandas 기능이다. 검증 결과, 라벨 분포, 실패 원인 분포를 볼 때 자주 사용한다. size()를 붙이면 각 그룹에 row가 몇 개 있는지 세어 status별 개수표를 만들 수 있다. 따라서 정답은 ‘status 값별 행 개수를 센다’이다.",
+    "explanation": "groupby('status').size()는 같은 non-missing status 값의 row를 묶어 각 그룹 크기를 센다. pandas는 기본적으로 NaN status 그룹을 제외하므로 누락도 보고 싶으면 dropna=False를 사용하거나 별도 집계한다. reset_index(name='count')는 결과를 status와 count column의 DataFrame으로 만든다.",
     "side_card_ids": [
       "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
     ],
@@ -311,7 +311,7 @@
       "어떤 행끼리 연결할지 정하기 때문이다"
     ],
     "answer": "어떤 행끼리 연결할지 정하기 때문이다",
-    "explanation": "merge/join은 공통 키를 기준으로 두 표를 붙이는 작업이다. 키가 틀리면 데이터가 빠지거나 엉뚱하게 붙을 수 있어 검증이 필요하다. 병합 전후 row 수와 누락값을 확인하면 key 불일치 때문에 데이터가 사라졌는지 빨리 발견할 수 있다. 따라서 정답은 ‘어떤 행끼리 연결할지 정하기 때문이다’이다.",
+    "explanation": "left_on과 right_on은 어떤 key 값끼리 행을 연결할지 정한다. left join은 모든 nodes 행을 보존하지만 edges 쪽에 같은 key가 여러 개면 결과 row 수가 늘고, match가 없으면 오른쪽 값이 missing이 된다. validate 옵션, key uniqueness, 행 수와 unmatched 비율을 함께 점검해야 잘못된 many-to-many 결합을 잡을 수 있다.",
     "side_card_ids": [
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
@@ -389,7 +389,7 @@
       "카드 수를 무조건 줄인다"
     ],
     "answer": "무엇이 통과했고 무엇이 실패했는지 나중에 다시 추적할 수 있다",
-    "explanation": "audit TSV는 자동화 결과를 사람이 다시 확인할 수 있게 남긴 표 형식 리포트다. 문제 카드, 길이, 원본 파일을 추적하는 데 유용하다. TSV는 엑셀이나 텍스트 편집기로도 열기 쉬워 자동 처리 결과를 사람이 빠르게 검토하기 좋다. 따라서 정답은 ‘무엇이 통과했고 무엇이 실패했는지 나중에 다시 추적할 수 있다’이다.",
+    "explanation": "이 audit.tsv는 각 id의 status, reason, checked_at을 구조화해 통과·실패와 판정 이유를 나중에 filter하고 집계하게 한다. 표시된 column에 없는 길이·원본 파일까지 추적하려면 해당 column이나 별도 provenance가 실제로 추가되어야 한다. 생성 도구 version과 입력 hash도 있으면 재현성이 높아진다.",
     "side_card_ids": [
       "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -416,7 +416,7 @@
       "파일 확장자를 숨기기 위해"
     ],
     "answer": "깨진 데이터가 뒤 단계로 퍼지기 전에 잡기 위해",
-    "explanation": "pipeline data quality는 처리 단계마다 데이터가 기대한 형태와 수량을 유지하는지 확인하는 기준이다. 데이터 문제는 뒤로 갈수록 원인 추적이 어려워 중간 검증이 중요하다. 따라서 정답은 ‘깨진 데이터가 뒤 단계로 퍼지기 전에 잡기 위해’이다.",
+    "explanation": "schema check는 필요한 field와 type을 조기에 검사하고 dedup은 명시한 identity 규칙의 중복을 처리해 잘못된 데이터가 merge 이후 증폭되는 것을 줄인다. pipeline 단계마다 row 수가 유지될 필요는 없으므로 예상 증감, key uniqueness, rejected row와 provenance를 따로 기록해야 한다.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW",
       "PYV158_A1_PIPELINE_FLOW"

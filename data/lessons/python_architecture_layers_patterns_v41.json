@@ -20,7 +20,7 @@
       "역할이 다른 코드를 층으로 나누어 흐름을 읽기 쉽게 만든다"
     ],
     "answer": "역할이 다른 코드를 층으로 나누어 흐름을 읽기 쉽게 만든다",
-    "explanation": "레이어를 나누면 화면, API, 비즈니스 로직, 저장소의 책임을 분리해서 읽을 수 있다. layer architecture는 화면, 서비스, 저장소처럼 역할별로 코드를 나누는 구조다. 각 계층이 어디까지 책임지고 어디서 다음 계층을 호출하는지 확인해야 한다. 따라서 정답은 ‘역할이 다른 코드를 층으로 나누어 흐름을 읽기 쉽게 만든다’이다.",
+    "explanation": "layer architecture는 UI, HTTP 처리, 업무 규칙, 저장소 접근처럼 서로 다른 책임을 구분한다. 각 층의 공개 interface와 의존 방향을 정하고, 위층이 아래층의 세부 구현을 건너뛰어 직접 만지지 않게 해야 효과가 있다. 층을 많이 만드는 것 자체가 이해도나 품질을 자동으로 높이지는 않는다.",
     "side_card_ids": [
       "PYV158_A1_DATABASE_FLOW"
     ],
@@ -73,7 +73,7 @@
       "DB나 파일 같은 저장소와 직접 대화한다"
     ],
     "answer": "DB나 파일 같은 저장소와 직접 대화한다",
-    "explanation": "repository는 저장소 접근을 한곳에 모아 service가 저장 방식에 덜 묶이게 만든다. controller, service, repository는 요청 처리, 업무 로직, 저장소 접근을 나누는 계층 구조다. 각 계층이 다른 계층의 역할을 침범하지 않는지 확인해야 한다. 따라서 정답은 ‘DB나 파일 같은 저장소와 직접 대화한다’이다.",
+    "explanation": "controller는 HTTP 입력을 해석하고 응답으로 변환하며, service는 업무 흐름을 조립하고, repository는 DB나 파일 접근을 추상화한다. repository 구현은 저장소와 직접 대화하지만 service는 그 interface에 의존해 구체적인 SQL·파일 형식을 몰라도 되게 할 수 있다. 경계와 오류 변환 규칙을 일관되게 지켜야 한다.",
     "side_card_ids": [
       "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
     ],
@@ -89,7 +89,7 @@
       "orchestration"
     ],
     "reading_goal": "service layer가 여러 작업을 묶어 실제 기능 흐름을 만든다는 점을 이해한다.",
-    "code": "def recommend_today_cards(user_id):\n    progress = repo.load_progress(user_id)\n    cards = repo.load_cards()\n    return select_cards(cards, progress)",
+    "code": "def recommend_today_cards(user_id, repo):\n    progress = repo.load_progress(user_id)\n    cards = repo.load_cards()\n    return select_cards(cards, progress)",
     "question_type": "meaning_choice",
     "question": "위 코드에서 service layer가 맡는 역할은?",
     "choices": [
@@ -99,7 +99,7 @@
       "progress와 cards를 가져와 추천 흐름을 조립한다"
     ],
     "answer": "progress와 cards를 가져와 추천 흐름을 조립한다",
-    "explanation": "service layer는 여러 하위 기능을 묶어 하나의 사용자 기능으로 제공하는 계층이다. API, DB, 검증 로직을 조합해 업무 흐름을 만든다. 서비스 계층을 두면 화면이나 API 코드가 세부 저장 방식에 덜 의존하게 된다. 따라서 반환/호출 결과는 ‘progress와 cards를 가져와 추천 흐름을 조립한다’이다.",
+    "explanation": "service 함수는 주입받은 repo에서 progress와 cards를 읽고 select_cards라는 추천 규칙에 전달한다. HTTP 응답이나 구체적인 SQL을 직접 처리하지 않아 호출 계층과 저장 구현에서 분리된다. 권한 검사와 transaction 경계를 어느 층에서 맡을지도 명시해야 한다.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -126,7 +126,7 @@
       "학습앱의 핵심 개념을 데이터 구조로 표현하기 때문이다"
     ],
     "answer": "학습앱의 핵심 개념을 데이터 구조로 표현하기 때문이다",
-    "explanation": "domain model은 서비스가 다루는 핵심 대상을 코드와 데이터 구조로 표현한 것이다. domain model은 앱이 다루는 핵심 개념을 코드 객체로 표현한 것이다. 사용자, 카드, 진도처럼 업무 의미가 있는 데이터 구조를 먼저 보면 된다.",
+    "explanation": "domain model은 앱이 해결하는 문제 영역의 개념, 관계, 규칙을 코드로 표현한다. Card의 id, question, choices, answer는 학습 앱의 핵심 개념을 나타내므로 이 구조는 domain model의 일부로 볼 수 있다. 단순 필드 목록만으로 모든 불변조건이 보장되지는 않으므로 정답 포함 같은 규칙도 모델이나 검증 계층에 명시한다.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -153,7 +153,7 @@
       "외부로 보내는 데이터 모양을 안정적으로 정하기 위해"
     ],
     "answer": "외부로 보내는 데이터 모양을 안정적으로 정하기 위해",
-    "explanation": "DTO는 계층 사이에서 주고받는 데이터 모양을 정한 객체나 구조다. 내부 구조가 바뀌어도 API 응답 모양을 안정적으로 관리하기 쉽다. 도메인 객체를 그대로 밖으로 내보내지 않고 필요한 필드만 담아 전달하는 완충층으로 이해하면 된다.",
+    "explanation": "DTO는 계층이나 프로세스 경계를 넘어 전달할 데이터 모양을 명시한다. CardResponseDTO가 필요한 필드만 선택하고 validation·serialization 규칙을 가지면 내부 Card 변경이 곧바로 API 노출 변경이 되는 것을 줄일 수 있다. 외부 형식의 안정성은 DTO 이름만이 아니라 versioning과 호환성 정책으로 유지한다.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -180,7 +180,7 @@
       "외부 API나 도구의 복잡한 사용법을 내부에서 쓰기 좋은 모양으로 감싼다"
     ],
     "answer": "외부 API나 도구의 복잡한 사용법을 내부에서 쓰기 좋은 모양으로 감싼다",
-    "explanation": "adapter를 두면 외부 서비스가 바뀌어도 앱 전체 수정 범위를 줄일 수 있다. Adapter는 한쪽 형식의 입력이나 호출 방식을 다른 쪽이 이해하는 형태로 바꿔 주는 역할이다. 코드를 읽을 때는 바꾸기 전 인터페이스와 바꾼 뒤 인터페이스를 비교해야 한다. 따라서 반환/호출 결과는 ‘외부 API나 도구의 복잡한 사용법을 내부에서 쓰기 좋은 모양으로 감싼다’이다.",
+    "explanation": "adapter는 외부 Qwen 호출 방식을 앱이 기대하는 generate(prompt) interface로 변환한다. 효과적인 adapter라면 입력·출력 형식뿐 아니라 timeout, 외부 예외, rate limit 같은 공급자 차이도 내부의 일관된 결과나 오류로 바꾼다. 외부 서비스 교체가 쉬워지는 정도는 호출이 이 경계를 실제로 지키는지에 달려 있다.",
     "side_card_ids": [
       "AI_lora_001",
       "PYV102_A7_ARCHITECTURE_DESIGN"
@@ -207,7 +207,7 @@
       "구현체가 달라도 같은 방식으로 호출할 수 있는 약속을 만든다"
     ],
     "answer": "구현체가 달라도 같은 방식으로 호출할 수 있는 약속을 만든다",
-    "explanation": "interface는 내부 구현이 바뀌어도 호출하는 쪽의 코드를 덜 흔들리게 한다. Interface는 코드 조각들이 서로 약속한 사용 방법이다. 어떤 메서드와 입력을 기대하는지 확인하면 내부 구현을 몰라도 연결 흐름을 이해할 수 있다. 따라서 정답은 ‘구현체가 달라도 같은 방식으로 호출할 수 있는 약속을 만든다’이다.",
+    "explanation": "interface는 search(query)가 받는 입력, 돌려주는 결과, 오류와 의미를 구현체들이 지켜야 한다는 계약이다. 같은 메서드 이름만 갖는 것으로 충분하지 않고 KeywordSearch와 VectorSearch가 호출자가 기대하는 결과 구조와 동작을 만족해야 교체할 수 있다.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -312,7 +312,7 @@
       "데이터 가져오기, 선택, 화면 표시, 저장 같은 관심사를 나눈다"
     ],
     "answer": "데이터 가져오기, 선택, 화면 표시, 저장 같은 관심사를 나눈다",
-    "explanation": "separation of concerns는 화면, 데이터, 검증, 저장 같은 관심사를 나누는 설계 원칙이다. 수정 범위가 좁아지고 각 부분을 따로 테스트하기 쉽다.",
+    "explanation": "데이터 가져오기, 선택 규칙, 화면 렌더링, 진행 저장은 서로 다른 변경 이유를 가지므로 분리할 수 있다. 함수 이름을 네 개로 나눈 것만으로 경계가 생기는 것은 아니다. 입력·출력을 명시하고 숨은 공유 상태와 순환 의존을 줄여야 각 부분을 독립적으로 테스트하고 교체할 수 있다.",
     "side_card_ids": [
       "AI_architecture_001",
       "PYV102_A7_ARCHITECTURE_DESIGN"
@@ -339,7 +339,7 @@
       "역할별 파일로 나뉘어 수정과 테스트 범위를 줄일 수 있다"
     ],
     "answer": "역할별 파일로 나뉘어 수정과 테스트 범위를 줄일 수 있다",
-    "explanation": "monolith modular 구조는 하나의 앱 안에서도 기능 단위를 모듈로 나누는 방식이다. 전체 앱을 더 작은 단위로 이해하고 관리할 수 있다. 모듈 경계가 명확하면 기능 추가나 테스트가 특정 파일과 책임 범위 안에서 끝나기 쉽다.",
+    "explanation": "기능을 역할별 module로 나누면 공개 API를 통해 필요한 부분만 의존하게 만들 수 있다. 파일을 여러 개로 쪼개는 것만으로 modular해지지는 않으며, 전역 상태와 순환 import가 그대로면 영향 범위도 줄지 않는다. 응집도 높은 책임과 명확한 의존 방향이 핵심이다.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -367,7 +367,7 @@
       "앞 단계 산출물이 규칙에 맞는지 검사하고 깨진 결과를 걸러낸다"
     ],
     "answer": "앞 단계 산출물이 규칙에 맞는지 검사하고 깨진 결과를 걸러낸다",
-    "explanation": "KG LoRA pipeline architecture는 데이터 준비, 노드 패스, 검증, 학습 같은 단계를 잇는 구조다. 단계가 길수록 중간 검증과 재개 지점이 중요하다. 따라서 정답은 ‘앞 단계 산출물이 규칙에 맞는지 검사하고 깨진 결과를 걸러낸다’이다.",
+    "explanation": "이 그림의 Validation은 node·edge 추출 결과가 schema, 참조, 품질 규칙을 만족하는지 검사하고 부적합 결과를 final output에서 제외하거나 재처리로 보낸다. 각 단계의 입력·출력 version과 checkpoint를 남겨야 실패 지점에서 재개하고 어느 변환이 문제를 만들었는지 추적할 수 있다.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -393,7 +393,7 @@
       "데이터나 요청이 이동하는 방향"
     ],
     "answer": "데이터나 요청이 이동하는 방향",
-    "explanation": "박스는 컴포넌트나 레이어, 화살표는 호출이나 데이터 흐름을 나타내는 경우가 많다. architecture diagram은 코드의 큰 구조를 그림으로 이해하게 해 준다. 화면, API, 저장소, 외부 서비스가 어떤 방향으로 연결되는지 먼저 보면 세부 코드가 쉬워진다. 따라서 정답은 ‘데이터나 요청이 이동하는 방향’이다.",
+    "explanation": "이 다이어그램에서는 화살표가 요청이나 데이터가 다음 component로 흐르는 주 방향을 나타낸다. 하지만 다른 그림에서는 dependency, event, network connection을 뜻할 수 있고 응답 방향이 생략될 수도 있다. 실제 의미는 제목, legend, 화살표 종류와 함께 확인해야 한다.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"

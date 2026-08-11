@@ -47,7 +47,7 @@
       "API 키 같은 비밀값이 Git에 올라가지 않게 하려고"
     ],
     "answer": "API 키 같은 비밀값이 Git에 올라가지 않게 하려고",
-    "explanation": ".env에는 키/토큰/DB URL이 들어갈 수 있으므로 저장소에 커밋하지 않는 것이 기본이다. .env는 비밀 설정을 담는 파일이고 .gitignore는 Git에 올리지 않을 파일을 정한다. API key가 저장소에 올라가지 않게 함께 관리해야 한다.",
+    "explanation": ".gitignore는 아직 추적하지 않는 .env, .env.local, secrets.json이 새 commit에 포함되는 일을 막는 데 도움을 준다. 이미 commit된 secret은 ignore를 추가해도 history에서 사라지지 않으므로 즉시 key를 폐기·회전하고 노출 범위를 조사해야 한다. 공유할 변수 이름은 실제 값 없이 .env.example에 문서화할 수 있다.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -73,7 +73,7 @@
       "요청자가 가진 접근 토큰을 서버에 전달한다"
     ],
     "answer": "요청자가 가진 접근 토큰을 서버에 전달한다",
-    "explanation": "Bearer token은 API 서버가 요청자의 인증/권한을 확인하는 데 쓰인다. Bearer token header는 요청에 인증 토큰을 실어 보내는 방식이다. Authorization 헤더의 형식과 토큰이 서버에서 어떻게 검증되는지 확인해야 한다.",
+    "explanation": "Authorization: Bearer는 token을 소지한 client가 server에 그대로 제시하는 형식이다. Bearer는 이름처럼 소지자에게 권한이 생길 수 있으므로 HTTPS로 전송하고 URL·log·오류 메시지에 남기지 않아야 한다. server는 signature, issuer, audience, expiry와 필요한 scope를 검증해야 하며 header를 보내는 것만으로 인증이 완료되지는 않는다.",
     "side_card_ids": [
       "PYV102_A7_AUTH_SECURITY",
       "PYV102_A7_PRIVACY_ANALYTICS"
@@ -101,7 +101,7 @@
       "401"
     ],
     "answer": "401",
-    "explanation": "header token은 API 요청 헤더에 담아 보내는 인증 정보다. 401은 인증이 필요하거나 인증 정보가 없을 때 주로 사용하는 상태 코드다. 헤더 인증은 요청마다 토큰을 확인하므로 누가 API를 호출했는지 판단하는 출발점이 된다.",
+    "explanation": "authorization header 자체가 없으면 이 code는 401을 발생시킨다. 하지만 header가 있다는 사실만 검사하고 \"Bearer\" scheme, token signature, expiry, 권한을 전혀 검증하지 않으며 오히려 raw credential을 response로 돌려준다. 실제 private endpoint는 token을 검증하고 credential을 response나 log에 노출하지 않아야 한다.",
     "side_card_ids": [
       "PYV159_A1_FASTAPI_SERVER_FLOW"
     ],
@@ -110,7 +110,7 @@
   {
     "id": "PY22_L08_jwt_parts_001",
     "level": 8,
-    "title": "JWT 세 부분 구조 읽기",
+    "title": "점으로 나눈 예시 token 읽기",
     "concepts": [
       "jwt",
       "header",
@@ -128,7 +128,7 @@
       "3"
     ],
     "answer": "3",
-    "explanation": "JWT는 보통 header, payload, signature 세 부분이 점으로 연결된 문자열이다. JWT는 header, payload, signature 세 부분으로 구성된다. payload는 읽을 수 있지만 위조를 막으려면 signature 검증이 반드시 필요하다. 따라서 출력은 ‘3’이다.",
+    "explanation": "주어진 문자열은 점 두 개로 구분된 세 부분이라 split 결과 길이가 3이다. 서명된 compact JWT(JWS)는 흔히 protected header, payload, signature 세 부분이지만 암호화된 compact JWE는 다섯 부분일 수 있고, 단순히 세 부분이라고 유효한 JWT는 아니다. payload는 보통 암호화되지 않으므로 민감 정보를 넣지 말고 검증된 library로 signature와 claims를 확인한다.",
     "side_card_ids": [
       "WEB_auth_001",
       "PYV102_A7_AUTH_SECURITY"
@@ -151,13 +151,13 @@
     "question_type": "meaning_choice",
     "question": "sub claim은 보통 무엇을 나타내는가?",
     "choices": [
-      "서버 포트",
+      "서버 port",
       "파일 크기",
-      "쿼리 결과 수",
-      "토큰의 주체인 사용자 식별자"
+      "query 결과 수",
+      "token이 가리키는 subject의 identifier"
     ],
-    "answer": "토큰의 주체인 사용자 식별자",
-    "explanation": "sub는 subject의 줄임말로, 토큰이 누구를 나타내는지 담는 claim으로 자주 쓰인다. JWT payload claim은 토큰 안에 들어 있는 사용자 id, 권한, 만료 시각 같은 정보다. 서명 검증 없이 내용을 신뢰하면 안 된다. 따라서 정답은 ‘토큰의 주체인 사용자 식별자’이다.",
+    "answer": "token이 가리키는 subject의 identifier",
+    "explanation": "sub는 subject를 뜻하며 issuer의 문맥에서 token이 가리키는 주체의 identifier다. 주체가 사용자일 수 있지만 service나 다른 entity일 수도 있으므로 항상 user id라고 단정하지 않는다. payload를 decode한 것만으로는 믿을 수 없고 signature와 exp, iss, aud 등 application이 요구하는 claims를 검증해야 한다.",
     "side_card_ids": [
       "WEB_auth_001",
       "PYV102_A7_AUTH_SECURITY"
@@ -185,9 +185,8 @@
       "403"
     ],
     "answer": "403",
-    "explanation": "permission check는 사용자가 해당 작업을 할 권한이 있는지 확인하는 절차다. 401은 인증 문제, 403은 권한 부족 상황에 가깝다. 권한 검사는 실제 작업을 실행하기 전에 해야 데이터 변경이나 민감 정보 노출을 막을 수 있다.",
+    "explanation": "인증된 user의 신뢰할 수 있는 role이 admin이 아니면 이 함수는 403 Forbidden을 발생시킨다. user가 단순 client 입력 dict라면 role을 위조할 수 있으므로 검증된 token claim이나 server-side 권한 저장소에서 가져와야 한다. 세밀한 시스템에서는 role 한 개보다 resource와 action을 함께 검사하고, user에 role key가 없을 때의 오류도 처리한다.",
     "side_card_ids": [
-      "PL_sudo_001",
       "PYV102_A7_AUTH_SECURITY"
     ],
     "project_context": "관리자용 데이터 수정 API와 일반 사용자 API를 구분하는 데 필요하다."
@@ -212,7 +211,7 @@
       "비밀번호 원문 대신 해시를 저장/검증하기 위해"
     ],
     "answer": "비밀번호 원문 대신 해시를 저장/검증하기 위해",
-    "explanation": "서버는 비밀번호 원문을 저장하지 않고 해시를 저장한 뒤 입력값과 검증하는 방식이 안전하다. 비밀번호 해시는 원래 비밀번호를 그대로 저장하지 않고 되돌리기 어려운 값으로 바꾸는 방식이다. 로그인할 때는 입력 비밀번호를 다시 해시해 저장된 해시와 비교한다.",
+    "explanation": "repo 결과가 없을 때도 같은 generic 401을 반환하고 timing 차이를 줄여 account 존재 여부 노출을 막아야 한다. verify_password는 저장 hash에 포함된 salt와 cost를 이용하는 Argon2id, bcrypt, scrypt, PBKDF2 같은 password hashing scheme으로 검증해야 한다. 일반 fast hash나 직접 == 비교는 부적절하며 plaintext password를 저장하거나 log에 남기면 안 된다.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -239,7 +238,7 @@
       "만료된 access token을 새로 발급받는 데 사용한다"
     ],
     "answer": "만료된 access token을 새로 발급받는 데 사용한다",
-    "explanation": "access token은 짧게, refresh token은 더 길게 가져가 자동 로그인/세션 갱신에 쓸 수 있다. refresh token은 access token이 만료된 뒤 새 access token을 받기 위한 토큰이다. 수명이 길어 탈취 위험이 크므로 저장 위치와 폐기 처리가 중요하다.",
+    "explanation": "refresh token은 authorization server 정책이 허용하는 동안 새 access token을 요청하는 credential이다. access token보다 오래 사는 경우가 많아 탈취 피해도 크다. 안전한 저장, server-side revoke, rotation과 reuse detection, session 종료 시 폐기가 필요하며 client가 임의로 token을 새로 만드는 것은 아니다.",
     "side_card_ids": [],
     "project_context": "사용자 API 키를 계정 단위로 불러오는 앱 구조와 연결된다."
   },
@@ -264,7 +263,7 @@
       "브라우저 JS에서 쿠키를 직접 읽기 어렵게 한다"
     ],
     "answer": "브라우저 JS에서 쿠키를 직접 읽기 어렵게 한다",
-    "explanation": "session cookie는 로그인 상태를 브라우저에 저장하는 방식이다. HttpOnly 옵션은 자바스크립트로 쿠키를 읽지 못하게 해 XSS 위험을 줄인다. 민감한 세션 값은 화면 스크립트보다 브라우저의 쿠키 정책으로 보호하는 편이 안전하다.",
+    "explanation": "HttpOnly는 browser JavaScript의 document.cookie 같은 API로 session cookie를 직접 읽지 못하게 해 token 탈취 경로를 줄인다. XSS code가 사용자의 browser에서 인증 요청을 보내는 것까지 막지는 않는다. Secure는 HTTPS 전송을 요구하고 SameSite=Lax는 일부 cross-site request를 제한하지만, CSRF token·origin 검사와 짧은 session·rotation 등도 threat model에 따라 필요하다.",
     "side_card_ids": [
       "WEB_auth_001",
       "PYV102_A7_AUTH_SECURITY"
@@ -292,12 +291,12 @@
       "code 교환 → 사용자 프로필 조회 → 세션 생성"
     ],
     "answer": "code 교환 → 사용자 프로필 조회 → 세션 생성",
-    "explanation": "OAuth callback에서는 provider가 준 code를 token으로 교환하고, 그 token으로 사용자 정보를 확인한다. 즉 callback URL은 로그인 결과를 받는 지점이며, code 자체를 최종 로그인 정보로 저장하는 곳은 아니다.",
+    "explanation": "표면적인 순서는 authorization code 교환, provider의 검증된 user 정보 조회, local session 생성이다. 안전한 OAuth/OIDC callback은 시작 요청과 연결되는 state를 검증하고, public client에는 PKCE를 사용하며, redirect URI와 issuer·audience·nonce를 확인해야 한다. provider token을 곧바로 신뢰하거나 code를 log에 남기면 안 된다.",
     "side_card_ids": [
       "WEB_auth_001",
       "PYV102_A7_AUTH_SECURITY"
     ],
-    "project_context": "Google OAuth 계정으로 API 키를 어디서든 불러오는 앱 구조와 연결된다."
+    "project_context": "OAuth/OIDC callback에서 외부 identity를 검증한 뒤 local session을 만드는 흐름이다."
   },
   {
     "id": "PY22_L10_rate_limit_001",
@@ -320,7 +319,7 @@
       "429"
     ],
     "answer": "429",
-    "explanation": "429 Too Many Requests는 요청이 너무 많을 때 쓰는 상태 코드다. rate limit은 너무 많은 요청을 막기 위한 제한이다. 사용자별, IP별, 토큰별 기준이 다를 수 있으므로 제한 단위와 초과 시 응답을 함께 확인해야 한다.",
+    "explanation": "count가 101 이상이면 429를 발생시킨다. 그러나 이 예시에는 만료 시간이나 window reset이 없어 key가 영구 누적될 수 있다. 실제 rate limiter는 atomic increment와 TTL 또는 token/leaky bucket, 신뢰할 수 있는 user/IP/key 식별자, 분산 server의 공통 store, Retry-After와 fail-open/closed 정책을 함께 설계한다.",
     "side_card_ids": [
       "PYV158_A1_API_FLOW"
     ],
@@ -347,7 +346,7 @@
       "이전 버전 키는 더 이상 허용하지 않는다"
     ],
     "answer": "이전 버전 키는 더 이상 허용하지 않는다",
-    "explanation": "secret rotation은 키를 새 버전으로 바꾸고 오래된 키를 점진적으로 비활성화하는 운영 개념이다. secret rotation은 노출되었거나 오래된 API key와 토큰을 새 값으로 교체하는 절차다. 코드 수정뿐 아니라 저장소 기록과 배포 환경도 확인해야 한다. 따라서 정답은 ‘이전 버전 키는 더 이상 허용하지 않는다’이다.",
+    "explanation": "request가 보낸 key_version이 active version과 다르면 이 code는 401을 반환한다. 하지만 client의 version 문자열만 비교하면 실제 secret이 유효한지 검증하지 못한다. rotation은 새 key 발급·배포, dual-read 또는 overlap 기간, 사용 현황 확인, old key revoke, log와 backup 점검을 포함하며 노출 사고 때는 즉시 revoke가 우선이다.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -374,7 +373,7 @@
       "사용자 입력 길이를 제한한다"
     ],
     "answer": "사용자 입력 길이를 제한한다",
-    "explanation": "입력 길이 제한, 역할 분리, evidence-first 지시가 LLM 앱 방어의 일부가 될 수 있다. prompt injection guard는 사용자가 모델 규칙을 우회하려는 입력을 넣었을 때 방어하는 장치다. 시스템 규칙, 근거 제한, 출력 검증을 함께 써야 한다.",
+    "explanation": "user_query[:2000]은 Python 문자 기준으로 입력 길이만 제한한다. system과 user 역할을 나누거나 \"evidence only\"라고 쓰는 것은 유용한 지시지만 prompt injection을 막는 security boundary가 아니다. retrieved document도 공격 지시를 포함할 수 있으므로 tool allowlist와 최소 권한, structured output validation, sensitive data 분리, human approval 같은 application-level control이 필요하다.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW",
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
@@ -402,7 +401,7 @@
       "DB에 API 키 평문을 직접 저장하지 않기 위해"
     ],
     "answer": "DB에 API 키 평문을 직접 저장하지 않기 위해",
-    "explanation": "encrypted secret storage는 민감한 키를 서버 측에서 암호화해 저장하는 방식이다. 필요할 때만 복호화해 쓰면 노출 피해를 줄일 수 있다. 암호화 저장은 DB가 노출되더라도 원문 secret이 바로 드러나는 위험을 줄여 준다. 따라서 정답은 ‘DB에 API 키 평문을 직접 저장하지 않기 위해’이다.",
+    "explanation": "DB에 plaintext API key 대신 ciphertext를 저장하면 DB snapshot만 유출됐을 때 직접 노출을 줄일 수 있다. 효과를 내려면 encryption key를 DB와 분리된 KMS나 secret manager에서 관리하고, authenticated encryption과 user/context binding, 접근 제어, audit, rotation을 사용해야 한다. application이나 key도 함께 침해되면 복호화될 수 있으며 key가 log나 backup에 남지 않게 해야 한다.",
     "side_card_ids": [
       "PYV158_A1_DATABASE_FLOW"
     ],
@@ -419,7 +418,7 @@
       "current_user"
     ],
     "reading_goal": "endpoint마다 반복되는 인증 로직을 dependency로 분리하는 구조를 읽는다.",
-    "code": "def get_current_user(authorization: str = Header()):\n    token = authorization.removeprefix(\"Bearer \").strip()\n    return verify_token(token)\n\n@app.get(\"/private\")\ndef private(user = Depends(get_current_user)):\n    return {\"user_id\": user.id}",
+    "code": "from fastapi import Depends\nfrom fastapi.security import HTTPAuthorizationCredentials, HTTPBearer\n\nbearer = HTTPBearer()\n\ndef get_current_user(\n    credentials: HTTPAuthorizationCredentials = Depends(bearer),\n):\n    return verify_token(credentials.credentials)\n\n@app.get(\"/private\")\ndef private(user = Depends(get_current_user)):\n    return {\"user_id\": user.id}",
     "question_type": "meaning_choice",
     "question": "Depends(get_current_user)의 역할은?",
     "choices": [
@@ -429,7 +428,7 @@
       "요청 전에 토큰을 검증하고 user를 endpoint에 넣는다"
     ],
     "answer": "요청 전에 토큰을 검증하고 user를 endpoint에 넣는다",
-    "explanation": "인증을 dependency로 분리하면 여러 endpoint에서 같은 검증 로직을 재사용할 수 있다. FastAPI 인증 dependency는 endpoint 실행 전에 토큰 검증이나 사용자 조회를 수행하게 하는 구조다. 여러 API에 공통 인증 규칙을 적용할 때 유용하다.",
+    "explanation": "HTTPBearer dependency가 Authorization header의 Bearer scheme과 credential을 parse하고, get_current_user가 verify_token으로 signature와 필수 claims를 검증해 user를 만든다. HTTPBearer 자체가 JWT 유효성을 확인하는 것은 아니다. endpoint의 Depends는 이 검증이 성공한 뒤에만 user를 전달하며 resource별 authorization은 별도로 검사해야 한다.",
     "side_card_ids": [
       "PYV159_A1_FASTAPI_SERVER_FLOW"
     ],

@@ -19,7 +19,7 @@
       "검증 없이 완료 처리하는 것"
     ],
     "answer": "이미 끝난 작업은 건너뛰고 남은 작업만 이어서 실행하는 것",
-    "explanation": "긴 작업은 중간에 끊길 수 있으므로 완료 여부를 기록하고 이어서 실행할 수 있어야 한다. resume-safe pipeline은 중간에 끊겨도 처음부터 다시 하지 않고 이어서 실행할 수 있는 구조다. 완료 표시와 checkpoint 파일을 함께 확인해야 한다.",
+    "explanation": "is_done이 성공 결과와 원자적으로 기록된 신뢰할 수 있는 상태일 때 완료 shard를 건너뛰고 나머지를 실행한다. resume-safe가 되려면 run_shard가 중단 경계에서 재실행돼도 안전해야 하고, checkpoint 손상·version 불일치·병렬 완료 순서를 처리해야 한다. 단순 file 존재 검사는 충분하지 않다.",
     "side_card_ids": [
       "PYV158_A1_PIPELINE_FLOW"
     ],
@@ -45,7 +45,7 @@
       "브라우저 캐시를 비운다"
     ],
     "answer": "어디까지 작업했는지 기록한다",
-    "explanation": "checkpoint가 있으면 재실행 시 처음부터가 아니라 중간 지점부터 이어갈 수 있다. checkpoint file은 긴 작업의 중간 진행 상태를 저장하는 파일이다. 재시작할 때 이 파일을 읽어 이미 끝난 부분을 건너뛰고 남은 작업부터 이어갈 수 있다. 따라서 정답은 ‘어디까지 작업했는지 기록한다’이다.",
+    "explanation": "checkpoint는 재시작에 필요한 progress와 입력·code version을 내구성 있게 기록한다. last_done 하나는 작업이 고정 순서로 완료될 때만 안전하며 병렬 또는 순서 변경에서는 아직 안 끝난 shard를 건너뛸 수 있다. 그런 경우 완료 ID 집합이나 shard별 상태를 쓰고 atomic하게 갱신한다.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW",
       "PYV159_A1_CHECKPOINT_RESUME_FLOW"
@@ -72,7 +72,7 @@
       "Git 로그를 줄이기 위해"
     ],
     "answer": "출력 파일이 존재하는 것과 정상 완료를 구분하기 위해",
-    "explanation": "파일이 있어도 중간에 끊겨 일부만 써졌을 수 있으므로 완료 marker가 있으면 더 안전하다. done marker는 특정 작업이 끝났음을 표시하는 작은 파일이나 기록이다. 재실행할 때 이미 완료된 shard나 항목을 안전하게 건너뛰는 근거가 된다. 따라서 정답은 ‘출력 파일이 존재하는 것과 정상 완료를 구분하기 위해’이다.",
+    "explanation": "output 존재만으로는 완성을 알 수 없으므로 검증된 완료 상태를 별도 marker로 표현한다. marker에는 output hash·row count·version을 연결하고 output을 durable하게 닫은 뒤 atomic하게 publish해야 한다. 빈 output.done 파일만 따로 생기면 stale marker가 될 수 있다.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -152,7 +152,7 @@
       "항상 실패했을 때"
     ],
     "answer": "출력 검증이 통과한 뒤",
-    "explanation": "validate before done은 완료 표시를 남기기 전에 결과가 정상인지 먼저 검증하는 원칙이다. 실행만 끝난 것과 검증까지 끝난 것은 다르다. 검증 뒤에 done marker를 쓰면 다음 실행에서 깨진 결과를 완료물로 착각하는 위험을 줄인다. 따라서 정답은 ‘출력 검증이 통과한 뒤’이다.",
+    "explanation": "run_job의 output을 완전히 기록·닫고 validation을 통과한 뒤 done marker를 atomic하게 publish한다. validation 범위가 schema와 예상 count·hash를 포함하는지도 확인한다. output과 marker가 다른 storage에 있으면 둘 사이 crash를 reconcile하는 복구 절차가 필요하다.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -178,7 +178,7 @@
       "항상 Git 충돌을 만든다"
     ],
     "answer": "중간에 끊긴 파일이 최종 output 이름으로 남는 위험을 줄인다",
-    "explanation": "작업이 성공하기 전에는 최종 파일명을 만들지 않으면 partial output 착각을 줄일 수 있다. atomic write는 임시 파일에 먼저 쓴 뒤 완료되면 원래 파일로 교체하는 저장 방식이다. 중간 실패로 깨진 결과가 남는 문제를 줄일 수 있다.",
+    "explanation": "같은 filesystem의 임시 파일을 완전히 쓰고 검증한 뒤 replace하면 최종 이름에 partial content가 보이는 window를 줄일 수 있다. rename의 atomicity와 overwrite 동작은 OS·filesystem에 달려 있고, 전원 장애 내구성에는 flush/fsync와 directory sync가 추가로 필요할 수 있다. 임시 파일 정리도 고려한다.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -205,7 +205,7 @@
       "검증을 하면 안 된다는 뜻"
     ],
     "answer": "여러 번 실행해도 최종 상태가 불필요하게 중복되지 않는다",
-    "explanation": "자동화는 재실행될 수 있으므로 중복 생성, 중복 링크, 중복 저장을 막아야 한다. idempotent job은 같은 작업을 다시 실행해도 결과가 이상하게 중복되지 않도록 만든 작업이다. 재시작 가능한 파이프라인에서는 이미 처리한 항목을 어떻게 건너뛰는지 확인해야 한다.",
+    "explanation": "idempotent 작업은 같은 입력과 idempotency key로 한 번 또는 여러 번 적용해도 관찰되는 최종 상태가 같다. upsert도 올바른 UNIQUE key와 update 의미가 있어야 하고 email 전송 같은 외부 side effect는 별도 dedup 기록이 필요하다. 완료 항목을 skip하는 것은 최적화이지 idempotence 정의 자체는 아니다.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
@@ -231,7 +231,7 @@
       "Git commit을 자동 취소하기 위해"
     ],
     "answer": "실패한 항목만 다시 실행하기 위해",
-    "explanation": "긴 파이프라인에서는 전체 재실행보다 실패 항목만 재시도하는 편이 비용과 시간이 적게 든다. retry queue는 실패한 작업을 다시 시도하기 위해 따로 모아 둔 목록이다. 몇 번까지 재시도하는지, 계속 실패하면 어떤 상태로 남기는지 확인해야 한다.",
+    "explanation": "retry queue는 transient 실패 항목을 전체 작업과 분리해 다시 실행한다. item_id만 저장하면 input version이나 attempt 정보가 사라질 수 있으므로 payload reference, 오류, attempts, next retry time을 함께 둔다. 최대 횟수 뒤에는 dead-letter 또는 사람 검토로 보내고 idempotency를 보장한다.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -258,7 +258,7 @@
       "항상 더 많은 중복을 만든다"
     ],
     "answer": "성공한 작업을 반복하지 않아 시간과 비용을 줄인다",
-    "explanation": "audit.tsv나 validation report가 있으면 실패한 id만 뽑아 재실행할 수 있다. failed items only rerun은 전체를 다시 돌리지 않고 실패한 항목만 골라 재실행하는 방식이다. 실패 목록이 정확해야 중복 처리와 누락을 줄일 수 있다. 따라서 정답은 ‘성공한 작업을 반복하지 않아 시간과 비용을 줄인다’이다.",
+    "explanation": "audit에서 실패 ID만 재실행하면 성공 항목의 비용을 줄일 수 있다. audit가 현재 input·code version과 일치하는지, 실패 항목의 upstream dependency가 바뀌지 않았는지 확인해야 한다. 수정이 공통 로직에 영향을 줬다면 성공 항목도 regression 검사가 필요하다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -285,7 +285,7 @@
       "파일 인코딩을 바꾸기 위해"
     ],
     "answer": "어느 조각이 완료/진행/실패 상태인지 한눈에 보기 위해",
-    "explanation": "shard status는 나눠 실행한 작업 조각들의 진행 상태를 모아 보는 표다. 전체 진행률, 실패 구간, 병목을 파악하는 데 필요하다. 샤드별 상태가 있으면 DONE, FAILED, PENDING을 나누어 남은 작업량과 재시작 대상을 계산할 수 있다.",
+    "explanation": "shard별 total, done, status를 모으면 남은 양과 실패 구간을 볼 수 있다. RUNNING이 실제로 살아 있는지 판단하려면 worker/lease ID와 updated_at 또는 heartbeat가 필요하고, total 정의와 중복 처리 여부도 일관돼야 한다. 상태 전이는 atomic하게 기록한다.",
     "side_card_ids": [
       "CS_batch_shard_001",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -312,7 +312,7 @@
       "GitHub 저장소가 자동 생성되기 때문"
     ],
     "answer": "작업이 멈춘 것인지 진행 중인지 판단할 수 있기 때문",
-    "explanation": "progress log는 긴 작업이 어디까지 진행됐는지 주기적으로 남기는 기록이다. 로그가 없으면 멈춘 것처럼 보여 상태 판단이 어렵다. 재시작할 때도 마지막으로 성공한 위치를 확인할 수 있어 resume-safe 파이프라인의 근거가 된다.",
+    "explanation": "progress log는 마지막으로 관찰된 done과 shard를 알려 주어 진단에 도움을 준다. 오래된 buffered log나 반복 출력만으로 process가 건강하거나 결과가 durable하다고 증명할 수는 없다. timestamp, attempt, worker ID를 남기고 checkpoint·heartbeat·실제 output과 함께 본다.",
     "side_card_ids": [],
     "project_context": "node_pass status 메시지의 done, running_processes, GPU util 같은 로그가 이에 해당한다."
   },
@@ -336,7 +336,7 @@
       "Git 원격 주소가 바뀌었는지"
     ],
     "answer": "작업 프로세스가 아직 살아 있는지",
-    "explanation": "heartbeat가 오래 갱신되지 않으면 작업이 죽었거나 멈췄을 가능성을 의심할 수 있다. heartbeat는 긴 작업이 아직 살아 있음을 주기적으로 남기는 신호다. 마지막 heartbeat 시간이 오래 지났다면 멈춘 작업으로 판단할 수 있다.",
+    "explanation": "heartbeat는 해당 timestamp에 loop가 신호를 쓸 수 있었다는 뜻이다. 최근 heartbeat는 process 생존의 단서지만 실제 업무가 진행되거나 결과가 정확하다는 보장은 아니다. stale 판단 threshold는 갱신 주기와 일시 지연을 고려하고 progress counter와 worker lease도 함께 확인한다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -363,7 +363,7 @@
       "Git push부터 한다"
     ],
     "answer": "checkpoint와 기존 output 상태를 다시 확인한다",
-    "explanation": "crash recovery는 작업이 중간에 죽은 뒤 안전하게 이어서 처리하는 절차다. 남은 작업을 찾기 전에 기존 산출물이 정상인지 먼저 확인해야 한다. 정상 산출물과 깨진 산출물을 나눈 뒤 남은 작업만 다시 실행해야 중복 처리를 줄일 수 있다.",
+    "explanation": "시작 시 checkpoint, output, done marker를 입력·code version과 함께 reconcile해 어느 상태가 authoritative한지 정한다. 유효한 hash·schema·count를 가진 완료 output만 보존하고 partial·stale 상태는 격리하거나 idempotent하게 다시 처리한다. checkpoint만 무조건 믿으면 누락이 생길 수 있다.",
     "side_card_ids": [
       "PYV159_A1_CHECKPOINT_RESUME_FLOW"
     ],
@@ -383,13 +383,13 @@
     "question_type": "meaning_choice",
     "question": "final manifest가 있으면 좋은 점은?",
     "choices": [
-      "최종 산출물의 경로, 크기, 검증 상태를 재확인할 수 있다",
-      "모든 중간 파일을 무조건 지운다",
-      "모델 성능을 자동으로 보장한다",
-      "검증 없이 제출할 수 있다"
+      "최종 산출물의 경로, row 수, hash와 검증 상태를 재확인한다",
+      "모든 파일 내용을 자동 수정한다",
+      "실행 중인 process를 증명한다",
+      "비밀 key를 공개한다"
     ],
-    "answer": "최종 산출물의 경로, 크기, 검증 상태를 재확인할 수 있다",
-    "explanation": "manifest는 나중에 같은 결과를 재현하거나 누락 파일을 찾는 기준표가 된다. final manifest는 작업이 끝난 뒤 결과 파일과 상태를 정리하는 최종 목록이다. 어떤 산출물이 만들어졌고 검증을 통과했는지 확인하는 기준으로 읽으면 된다.",
+    "answer": "최종 산출물의 경로, row 수, hash와 검증 상태를 재확인한다",
+    "explanation": "manifest의 output_path, rows, sha256, status, validated_at은 예상 파일과 record 수, 정확한 byte content, 검증 시점을 확인하는 근거다. hash를 신뢰하려면 어떤 algorithm과 생성 version을 썼는지, manifest 자체의 무결성과 입력 provenance도 관리해야 한다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -416,7 +416,7 @@
       "GPU 사용률을 보기 전"
     ],
     "answer": "jsonl 출력 검증이 통과한 뒤",
-    "explanation": "장시간 모델 실행은 비용이 크므로 완료 판단을 엄격하게 해야 누락과 중복을 줄일 수 있다. resume-safe node_pass는 노드 처리 작업을 중단 후에도 이어갈 수 있게 만든 실행 흐름이다. shard별 완료 파일과 실패 목록을 함께 확인해야 한다. 따라서 정답은 ‘jsonl 출력 검증이 통과한 뒤’이다.",
+    "explanation": "run_node_pass가 output을 durable하게 저장하고 validate_jsonl이 schema·count·참조를 통과한 뒤 mark_done을 atomic하게 기록한다. validation 뒤 marker 전 crash가 나면 재실행될 수 있으므로 node pass와 저장은 idempotent해야 한다. 실패 목록과 input/model version도 shard 상태에 연결한다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_RESILIENCE_RECOVERY"

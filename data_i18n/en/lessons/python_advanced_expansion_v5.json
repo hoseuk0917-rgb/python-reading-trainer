@@ -19,9 +19,10 @@
       "Animal"
     ],
     "answer": "bark",
-    "explanation": "Inheritance is a structure in which a child class inherits the functionality of a parent class. If the `Dog` class redefines `speak`, it overrides the `speak` method of the `Animal` class. A child class can modify only the necessary behavior while inheriting the common structure from the parent, thereby reducing code duplication. Therefore, the output is “bark.”",
+    "explanation": "Because `pet` is an instance of `Dog`, Python first looks for `speak` on `Dog` when `pet.speak()` is called. `Dog` defines a method with the same name, so `Dog.speak` overrides the inherited `Animal.speak` and returns \"bark\". If `Dog` did not define `speak`, Python would use the inherited parent method and return \"sound\" instead.",
     "side_card_ids": [
-      "LANG_java_class_001"
+      "PYV116_A1_OVERRIDE_SUPER",
+      "PYV116_A1_INHERITANCE_BASIC"
     ],
     "project_context": "This is necessary for understanding the structure of class-based app and server code and libraries."
   },
@@ -45,9 +46,9 @@
       "True"
     ],
     "answer": "True",
-    "explanation": "Although `cfg.is_fast` does not look like a method call, the property is evaluated and returns `True`. The `@property` decorator is a syntax that allows methods to be treated as values. Although parentheses are not used when calling it, the function is executed internally; therefore, you must distinguish between computed properties and stored values.",
+    "explanation": "`Config(\"fast\")` stores \"fast\" in `self.mode`. Reading `cfg.is_fast` then runs the method marked with `@property`, even though no call parentheses are written, and the comparison `self.mode == \"fast\"` returns `True`. Unlike the stored `mode` attribute, `is_fast` is a computed attribute whose getter runs each time it is accessed.",
     "side_card_ids": [
-      "DATA_schema_001"
+      "PYV116_A1_WHEN_CLASS_HELPS"
     ],
     "project_context": "This is often seen when reading computed properties from configuration objects or model objects."
   },
@@ -60,7 +61,7 @@
       "function",
       "wrapper"
     ],
-    "reading_goal": "The decorator reads the structure that adds actions before and after a function is executed.",
+    "reading_goal": "Read how a decorator adds an action before the original function runs.",
     "code": "def log_call(fn):\n    def wrapper():\n        print(\"before\")\n        fn()\n    return wrapper\n\n@log_call\ndef run():\n    print(\"run\")\n\nrun()",
     "question_type": "meaning_choice",
     "question": "What is displayed before `run()` is executed?",
@@ -71,7 +72,7 @@
       "before"
     ],
     "answer": "before",
-    "explanation": "Because of @log_call, `run` is wrapped by a wrapper, and `before` is executed first inside the wrapper. A decorator wrapper is a function that wraps the original function to insert additional actions before and after execution. It is frequently used for common tasks such as logging, permission checks, and measuring execution time.",
+    "explanation": "After the function definition, `@log_call` has the same effect as `run = log_call(run)`, so the name `run` now refers to the returned `wrapper`. Calling `run()` prints \"before\" first, then calls the original function stored in `fn`, which prints \"run\". This example adds only a before-action; code after `fn()` would be needed to add an after-action.",
     "side_card_ids": [
       "DEV_logging_001"
     ],
@@ -97,9 +98,9 @@
       "start → work → end"
     ],
     "answer": "start → work → end",
-    "explanation": "A custom context manager executes `__enter__` when the `with` block begins and `__exit__` when the block ends. This is useful for cleaning up resources. It is particularly well-suited for tasks with a clear start and end, such as files, locks, and temporary settings. Therefore, the flow is “start → work → end.”",
+    "explanation": "Entering `with Timer()` calls `__enter__` first and prints \"start\". The indented block then prints \"work\", and leaving the block calls `__exit__`, which prints \"end\". The order is therefore start → work → end. `__exit__` is also called when the block raises an exception, which makes it useful for cleanup; returning `None` here does not suppress such an exception.",
     "side_card_ids": [
-      "CS_stack_heap_001"
+      "PYF95_A4_WITH_FILE"
     ],
     "project_context": "This is related to reading code for files, database connections, locks, and session management."
   },
@@ -123,9 +124,9 @@
       "data"
     ],
     "answer": "data",
-    "explanation": "`asyncio.run` executes `main` and waits for the result of `fetch` within `main`. `asyncio.run` acts as the entry point for executing asynchronous functions. When reading the code, you need to follow which async functions are passed to it and the order in which the `await` statements are executed within them. Therefore, the output is “data.”",
+    "explanation": "`main()` creates a coroutine object, and `asyncio.run(...)` starts an event loop to execute it. Inside `main`, `await fetch()` runs `fetch`, receives \"data\", stores it in `result`, and then prints data. `asyncio.run` is normally used once at the top-level entry point of an async program; note that it receives the coroutine created by `main()`, not the function name `main` by itself.",
     "side_card_ids": [
-      "WEB_frontend_backend_001"
+      "PYV102_A7_ASYNC_CONCURRENCY"
     ],
     "project_context": "This can be seen in code that calls asynchronous API servers, crawlers, and agent tools."
   },
@@ -150,10 +151,11 @@
       "HTTP Response"
     ],
     "answer": "HTTP Response",
-    "explanation": "Asynchronous requests in httpx can be processed alongside other asynchronous tasks while waiting for a network response. The `await` keyword waits for the response to arrive. Since the event loop does not pause while waiting for a response, multiple API requests can be handled efficiently.",
+    "explanation": "The `async with` block opens an `AsyncClient` and closes its connection resources on exit. At `await client.get(...)`, the current `get_items` coroutine pauses for the HTTP request and response, while the event loop may run other coroutines that have already been scheduled. This one function does not make multiple requests concurrent by itself; multiple request coroutines must be scheduled together, for example as tasks or with `gather`.",
     "side_card_ids": [
       "PL_endpoint_001",
-      "AI_latency_001"
+      "AI_latency_001",
+      "PYV102_A7_ASYNC_CONCURRENCY"
     ],
     "project_context": "This often occurs during bulk API calls or in FastAPI's internal asynchronous code."
   },
@@ -231,10 +233,9 @@
       "Allowed Web Sources"
     ],
     "answer": "Allowed Web Sources",
-    "explanation": "CORS is a security rule that determines whether a browser can send requests to servers from different origins. The configuration specifies the front-end domains to be allowed. During development, localhost is allowed, but after deployment, access is restricted to only the actual service address.",
+    "explanation": "An origin is the combination of scheme, host, and port. `allow_origins` lists the exact browser front-end origins that the server permits to use this API across origins. The middleware returns the matching CORS response headers and handles preflight requests according to the allowed origins and methods. CORS is not authentication or API authorization, and it is not a firewall that blocks non-browser clients.",
     "side_card_ids": [
-      "WEB_cors_001",
-      "PYV102_A7_AUTH_SECURITY"
+      "WEB_cors_001"
     ],
     "project_context": "This is a common scenario when integrating a separate API server with a GitHub Pages front end."
   },
@@ -277,7 +278,7 @@
     "reading_goal": "It reads a structure that passes SQL values as parameters instead of concatenating strings directly.",
     "code": "query = \"SELECT * FROM items WHERE source = ?\"\nrows = conn.execute(query, (source_name,)).fetchall()",
     "question_type": "meaning_choice",
-    "question": "?What is the purpose of the `?` and tuple arguments?",
+    "question": "What is the purpose of the `?` placeholder and tuple argument?",
     "choices": [
       "Delete Column",
       "Generate HTML",
@@ -285,9 +286,10 @@
       "Safe Passing of SQL Values"
     ],
     "answer": "Safe Passing of SQL Values",
-    "explanation": "SQL parameter binding involves passing values as separate arguments rather than embedding them directly into the SQL string. This reduces the risk of SQL injection and ensures that values are inserted securely.",
+    "explanation": "The `?` is a placeholder for one SQL value, and `(source_name,)` is a one-element tuple containing the value to bind there. The sqlite driver handles the value separately from SQL syntax, which reduces SQL injection risk and applies the necessary quoting. Placeholders bind values; they cannot replace SQL structure such as table or column names.",
     "side_card_ids": [
-      "WEB_auth_001"
+      "PYV158_A1_DATABASE_FLOW",
+      "LANG_sql_query_001"
     ],
     "project_context": "This is important in server code that queries the database based on user input."
   },
@@ -311,7 +313,7 @@
       "Join the two tables together"
     ],
     "answer": "Join the two tables together",
-    "explanation": "`pd.concat` concatenates multiple DataFrames vertically or horizontally. It is often used to combine multiple tables with the same structure into a single large table. Since changing the `axis` value determines whether the tables are concatenated vertically or horizontally, you should check the table structure first.",
+    "explanation": "With its default `axis=0`, `pd.concat` appends the rows of `df_new` below those of `df_old`. `ignore_index=True` discards the old row labels and assigns a new 0-based index to the result. Differing column names can create missing values, and `concat` does not remove duplicate rows by itself.",
     "side_card_ids": [
       "DATA_etl_001",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -338,7 +340,7 @@
       "Remove duplicates based on the URL"
     ],
     "answer": "Remove duplicates based on the URL",
-    "explanation": "`drop_duplicates` removes duplicate rows. If you specify a column as the criterion, such as `subset='url'`, it treats rows with the same URL as duplicates and keeps only one. Since necessary rows may be removed if the criteria for removing duplicates are not clearly defined, selecting the `subset` is important.",
+    "explanation": "`subset=[\"url\"]` tells pandas to compare only the `url` values when deciding whether rows are duplicates. When a URL appears more than once, the default `keep=\"first\"` keeps the first row and removes later ones, returning the result as `clean` without changing `df` here. Keeping the newest row instead requires an intentional sort order and `keep` policy.",
     "side_card_ids": [
       "DATA_dedup_001"
     ],
@@ -364,7 +366,7 @@
       "Average score by domain"
     ],
     "answer": "Average score by domain",
-    "explanation": "Pivot and pivot_table reorganize long-form data into a table format. In this code, the average score is calculated by grouping by domain. By examining what “index,” “columns,” and “values” represent, you can understand the meaning of the rows and columns in the reorganized table.",
+    "explanation": "`pivot_table` makes each distinct `domain` a result row through `index=\"domain\"`, then applies `aggfunc=\"mean\"` to the `score` values in that group. The result is therefore a table of average score by domain. Unlike a plain `pivot`, `pivot_table` can combine multiple source rows for the same group with an aggregation function.",
     "side_card_ids": [
       "DATA_rdb_001"
     ],
@@ -390,7 +392,7 @@
       "[5 7 9]"
     ],
     "answer": "[5 7 9]",
-    "explanation": "In NumPy, the axis specifies the direction of computation. `axis=0` performs calculations by grouping values along the same column, so it is used to calculate column-wise sums or averages. `axis=1` switches to row-wise computation, so you must check both the array shape and the axis number to predict the result. Therefore, the output is ‘[5 7 9]’.",
+    "explanation": "`x` has shape (2, 3): two rows and three columns. `sum(axis=0)` removes axis 0, the row axis, by adding values down the rows: 1+4, 2+5, and 3+6. One value remains per column, so the result is [5 7 9]. With `axis=1`, each row would be summed instead, producing [6 15].",
     "side_card_ids": [
       "CS_bit_byte_001"
     ],
@@ -416,7 +418,7 @@
       "It is applied repeatedly to each row"
     ],
     "answer": "It is applied repeatedly to each row",
-    "explanation": "Broadcasting is a rule that automatically adjusts calculations to match arrays of different shapes. [10,20,30] is applied to each row and added to that row. If you think of the smaller array as being repeatedly applied to match the shape of the larger array, it’s easy to infer the shape of the resulting array.",
+    "explanation": "`x` has shape (2, 3) and `y` has shape (3,). NumPy compares dimensions from the right, so the matching length 3 lets `y` align with each row of `x` for element-wise addition. The result is [[11, 22, 33], [14, 25, 36]]. NumPy does not need to copy `y` twice; incompatible trailing dimensions—neither equal nor 1—would raise `ValueError` instead.",
     "side_card_ids": [
       "CS_float_001"
     ],
@@ -442,7 +444,7 @@
       "Move the position by the size interval"
     ],
     "answer": "Move the position by the size interval",
-    "explanation": "A chunk loop is an iterative structure that processes a long list by dividing it into chunks of a fixed size. It creates segments as `i` moves through values such as 0, `size`, and 2*`size`. The start and end of each segment must be calculated precisely to prevent omissions or overlaps in the document segments. Therefore, the return/call result is “move the position by `size` intervals.”",
+    "explanation": "`range(0, len(text), size)` moves `i` through 0, `size`, 2*`size`, and so on. Each `text[i:i+size]` slice adds up to `size` characters, so only the final chunk may be shorter and this code creates no overlap. `size` must be positive. Because the split is character-based, production RAG chunking needs extra logic when token limits or word boundaries matter.",
     "side_card_ids": [
       "AI_context_window_001",
       "AI_chunking_001"
@@ -469,8 +471,9 @@
       "List of IDs in docs"
     ],
     "answer": "List of IDs in docs",
-    "explanation": "\"Attaching evidence\" is the process of associating a document ID with each result. We use a list comprehension to collect only the IDs of each document and create a list of evidence. Storing the evidence IDs along with the results makes it easier to review the results later or display source links.",
+    "explanation": "The list comprehension walks through `docs` in order and collects each `doc[\"id\"]` into `evidence_ids`. The returned dictionary contains both the original `answer` and that ID list. This trace makes it possible to find sources later, but attaching IDs alone does not verify that those documents actually support the answer. A document without an `id` would also raise `KeyError`.",
     "side_card_ids": [
+      "PYV161_A1_EVIDENCE_LINEAGE_FLOW",
       "AI_hallucination_001"
     ],
     "project_context": "It is important for evidence-based RAG and verifiable answer structures."
@@ -478,13 +481,13 @@
   {
     "id": "PY5_L10_claim_check_001",
     "level": 10,
-    "title": "Read the claim verification code",
+    "title": "Reading a literal claim containment check",
     "concepts": [
       "claim",
       "evidence",
       "validation"
     ],
-    "reading_goal": "Read through the simple flow that compares the key arguments in the response with the supporting text.",
+    "reading_goal": "Read a simple rule that checks whether the literal claim string occurs in the evidence text.",
     "code": "def check_claim(answer, evidence):\n    if answer[\"claim\"] not in evidence[\"text\"]:\n        return \"needs_review\"\n    return \"supported\"",
     "question_type": "meaning_choice",
     "question": "What if the claim isn't in the evidence text?",
@@ -495,11 +498,12 @@
       "needs_review"
     ],
     "answer": "needs_review",
-    "explanation": "The claim check verifies whether a claim is supported by the source text. If the claim cannot be found in the source, it is not automatically approved but is sent for review. Since automatic verification is only a supplementary tool, a human must compare the source and the claim again if a discrepancy is found. Therefore, the return/call result is “needs_review.”",
+    "explanation": "The `not in` test checks only whether the exact `answer[\"claim\"]` string occurs inside `evidence[\"text\"]`. It returns `needs_review` when absent and `supported` when present. A paraphrase can be missed, while an accidental substring match may still lack supporting context, so the `supported` label does not prove semantic support. This is a simple triage heuristic for deciding what needs stronger or human review.",
     "side_card_ids": [
-      "AI_guardrail_001"
+      "AI_guardrail_001",
+      "PYV161_A1_EVIDENCE_LINEAGE_FLOW"
     ],
-    "project_context": "It is linked to the cross-verified RAG and the claim-based verification framework."
+    "project_context": "This is a basic string heuristic that may be used before stronger RAG claim verification."
   },
   {
     "id": "PY5_L10_agent_router_001",
@@ -548,7 +552,7 @@
       "Tally of Failures by Cause"
     ],
     "answer": "Tally of Failures by Cause",
-    "explanation": "A failure summary is a summary that groups failure causes and counts their occurrences. It uses the “reason” value as a key to track the cumulative number of times each failure cause has occurred. By aggregating failure causes, you can address issues starting with the most common ones, thereby quickly improving overall quality.",
+    "explanation": "For each row, the code reads `reason`, using \"unknown\" when the key is absent. `by_reason.get(reason, 0)` starts an unseen reason at 0 and reuses the current count on later occurrences, then adds 1. The returned dictionary has the form `{failure reason: occurrence count}`. Frequency helps identify recurring problems, but impact should also be considered when setting repair priority.",
     "side_card_ids": [
       "AI_eval_001"
     ],
@@ -575,7 +579,7 @@
       "This URL has already been viewed, or the score is less than 0.5"
     ],
     "answer": "This URL has already been viewed, or the score is less than 0.5",
-    "explanation": "The curation skip condition determines whether an item should be excluded during the selection process. If either of the two conditions is met, the result is True, and the item is skipped. Since an “or” condition means the item is excluded if even one condition is true, you must check separately which items each condition filters out. Therefore, the return/call result is “a URL that has already been viewed or a score less than 0.5.”",
+    "explanation": "The first `if` immediately returns `True` when the item's URL is already in `seen_urls`. Even for a new URL, the second `if` returns `True` when the score is below 0.5, so the two branches behave like an OR condition. A score of exactly 0.5 is kept. A missing score defaults to 0 and is skipped, while a missing `url` key raises `KeyError` because bracket access is used.",
     "side_card_ids": [
       "PL_curation_001",
       "DATA_dedup_001"

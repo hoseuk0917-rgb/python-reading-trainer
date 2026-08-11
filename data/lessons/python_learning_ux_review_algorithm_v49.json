@@ -19,7 +19,7 @@
       "앱 버전을 바꾸는 것"
     ],
     "answer": "잊어버리기 전에 적절한 간격으로 다시 복습하게 하는 것",
-    "explanation": "간격 반복은 학습자가 잊기 쉬운 시점에 다시 보게 해서 기억을 오래 유지하도록 돕는다. spaced repetition은 잊을 만한 시점에 다시 복습하게 하는 방식이다. 마지막 학습일, 정답 여부, 다음 복습 간격이 어떻게 계산되는지 확인해야 한다.",
+    "explanation": "spaced repetition은 학습 결과를 바탕으로 다음 review 간격을 정해 기억 retrieval을 반복하는 방식이다. 이 예시는 correct면 3일, 아니면 1일이라는 단순 policy일 뿐 개인의 실제 망각 시점을 안다는 뜻은 아니다. 간격 규칙은 학습 성과와 부담을 측정해 조정한다.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW"
     ],
@@ -35,7 +35,7 @@
       "date_check"
     ],
     "reading_goal": "오늘 복습해야 할 카드만 골라내는 due cards 개념을 이해한다.",
-    "code": "today = '2026-05-31'\ndue = [card for card in cards if card['next_review_at'] <= today]",
+    "code": "from datetime import date\n\ntoday = date.today()\ndue = [card for card in cards\n       if date.fromisoformat(card['next_review_at']) <= today]",
     "question_type": "meaning_choice",
     "question": "due cards는 무엇인가?",
     "choices": [
@@ -45,7 +45,7 @@
       "GitHub Actions 설정 파일"
     ],
     "answer": "오늘 다시 볼 차례가 된 카드",
-    "explanation": "next_review_at 같은 날짜를 기준으로 오늘 복습할 카드를 추릴 수 있다. due cards는 지금 복습할 차례가 된 카드 목록이다. 마지막 학습 시각, 정답률, 간격 계산이 어떤 기준으로 다음 복습 시점을 만드는지 보면 된다.",
+    "explanation": "next_review_at을 ISO date로 parse해 오늘 이하인 카드를 due로 고른다. YYYY-MM-DD string끼리는 같은 형식에서 정렬 가능하지만 명시적 date type이 형식 오류를 빨리 잡는다. timestamp를 쓰면 timezone과 day boundary도 정의해야 한다.",
     "side_card_ids": [
       "PYV102_A7_LEARNING_UX_HABIT",
       "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
@@ -72,7 +72,7 @@
       "서버 포트를 바꾸기 위해"
     ],
     "answer": "잘 아는 카드는 덜 자주, 약한 카드는 더 자주 보기 위해",
-    "explanation": "review interval은 카드를 다시 복습하기까지의 시간 간격이다. 학습자의 기억 상태와 정답 기록에 맞춰 간격을 조절해야 효율이 좋아진다. 잘 맞힌 카드는 간격을 늘리고 자주 틀린 카드는 더 빨리 다시 보게 만드는 방식이 대표적이다.",
+    "explanation": "이 rule은 누적 correct_count만으로 1·3·7일을 정하는 예시다. 최근 실패, 답변 난이도, 마지막 간격과 시간 경과를 무시하므로 숙련도를 정확히 추정하지는 않는다. 실제 algorithm은 interval 상한·하한과 lapse 정책을 정하고 학습 결과로 보정한다.",
     "side_card_ids": [
       "PL_cron_001",
       "PYV102_A7_LEARNING_UX_HABIT"
@@ -89,7 +89,7 @@
       "review_timing"
     ],
     "reading_goal": "시간이 지나면 기억이 약해지므로 복습 시점이 중요하다는 점을 이해한다.",
-    "code": "memory_strength = memory_strength * 0.8\nif memory_strength < 0.5:\n    schedule_review(card)",
+    "code": "elapsed_days = (today - last_review_date).days\nmemory_strength = estimate_retention(elapsed_days, prior_strength)\nif memory_strength < 0.5:\n    schedule_review(card)",
     "question_type": "meaning_choice",
     "question": "forgetting curve와 가장 가까운 설명은?",
     "choices": [
@@ -99,7 +99,7 @@
       "JSON 파일이 압축된다는 생각"
     ],
     "answer": "시간이 지나면 기억 강도가 떨어질 수 있다는 생각",
-    "explanation": "forgetting curve는 시간이 지나며 기억이 약해지는 흐름을 설명하는 개념이다. 복습 알고리즘은 이 흐름을 고려해 다시 볼 시점을 잡는다. 복습 간격을 너무 길게 잡으면 잊기 쉽고 너무 짧게 잡으면 반복 부담이 커진다.",
+    "explanation": "forgetting curve는 복습 뒤 시간이 흐르며 recall probability가 낮아지는 경향을 model한다. 매 실행마다 무조건 0.8을 곱하면 실제 경과 시간을 반영하지 않으므로 이 예시는 elapsed_days를 사용한다. 개인과 자료마다 curve가 다르므로 0.5 threshold도 평가로 정한다.",
     "side_card_ids": [
       "PYV102_A7_LEARNING_UX_HABIT",
       "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
@@ -126,7 +126,7 @@
       "Git 원격 저장소를 만든다"
     ],
     "answer": "오늘 학습할 카드 목록을 정해준다",
-    "explanation": "daily review queue는 오늘 복습할 카드만 모아 놓은 목록이다. 학습자가 하루에 감당할 수 있는 분량으로 카드 묶음을 만드는 것이 중요하다. 큐가 너무 크면 부담이 되고 너무 작으면 복습 효과가 약해져 적정 분량 조절이 필요하다.",
+    "explanation": "due_cards가 우선순위와 due time으로 이미 정렬됐다는 전제에서 앞 20개를 오늘 queue로 고른다. 정렬되지 않았다면 중요한 overdue card가 뒤로 밀릴 수 있다. 20은 보편적 최적값이 아니며 사용자 시간, 미처리 backlog와 새 카드 비율에 맞춰 조절한다.",
     "side_card_ids": [],
     "project_context": "카드가 많아졌기 때문에 하루에 볼 양을 제한하고 우선순위를 정해야 한다."
   },
@@ -164,7 +164,7 @@
       "score"
     ],
     "reading_goal": "카드를 얼마나 익혔는지 나타내는 mastery score 개념을 이해한다.",
-    "code": "mastery = correct_count / total_attempts\nif mastery < 0.6:\n    mark_as_weak(card_id)",
+    "code": "mastery = correct_count / total_attempts if total_attempts else 0.0\nif total_attempts >= MIN_EVIDENCE and mastery < 0.6:\n    mark_as_weak(card_id)",
     "question_type": "meaning_choice",
     "question": "mastery score는 무엇을 나타내나?",
     "choices": [
@@ -174,7 +174,7 @@
       "브라우저 포트 번호"
     ],
     "answer": "학습자가 해당 카드를 얼마나 익혔는지",
-    "explanation": "mastery score는 정답률, 반복 횟수, 최근 오답 등을 이용해 계산할 수 있다. mastery score는 사용자가 특정 개념을 얼마나 익혔는지 나타내는 점수다. 정답률, 최근성, 반복 학습 결과가 어떻게 반영되는지 보면 된다.",
+    "explanation": "이 mastery는 시도 중 정답 비율이며 시도가 0이면 0으로 처리한다. 표본이 적은 한 번의 결과를 확정적 숙련도로 부르지 않도록 최소 evidence를 둔다. 반응 시간, 최근성, hint 사용과 문제 난이도에 따라 실제 이해도와 정답률이 다를 수 있다.",
     "side_card_ids": [],
     "project_context": "카드별 숙련도를 계산하면 약한 개념을 다시 추천할 수 있다."
   },
@@ -198,7 +198,7 @@
       "검증 스크립트를 삭제하기 위해"
     ],
     "answer": "너무 쉽거나 어려운 카드만 계속 나오지 않게 조절하기 위해",
-    "explanation": "difficulty adjustment는 학습자의 최근 성과에 맞춰 카드 난이도나 순서를 조절하는 방식이다. 적응형 학습의 핵심 판단 중 하나다. 너무 쉬운 카드만 나오거나 너무 어려운 카드만 몰리지 않도록 학습 흐름을 조절하는 역할도 한다.",
+    "explanation": "recent_accuracy가 충분한 수의 최근 시도에서 계산됐다는 전제에서 높으면 level을 올리고 낮으면 최소 1까지 내린다. 적은 표본으로 매번 level을 바꾸면 출렁일 수 있으므로 최소 시도, hysteresis, 최고 level bound와 사용자 선택을 둔다. accuracy만으로 학습자의 능력을 단정하지 않는다.",
     "side_card_ids": [
       "PYV102_A7_LEARNING_UX_HABIT",
       "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
@@ -225,7 +225,7 @@
       "앱 버전을 낮추기 위해"
     ],
     "answer": "자주 틀린 개념을 중심으로 다시 복습하게 하기 위해",
-    "explanation": "카드 단위뿐 아니라 concept 단위로 약점을 보면 더 똑똑한 추천이 가능하다. weak concept review는 사용자가 자주 틀리거나 오래 보지 않은 개념을 다시 보여 주는 흐름이다. 점수 계산 기준과 복습 큐에 넣는 조건을 함께 확인해야 한다.",
+    "explanation": "concept별 wrong count는 약점 후보를 찾는 신호다. 많이 노출된 concept가 단순히 더 많이 틀릴 수 있으므로 attempts 대비 비율, 최근성, 문제 난이도와 tag 품질을 함께 본다. 한 카드의 오답이 선행 개념 부족을 자동으로 증명하지는 않는다.",
     "side_card_ids": [],
     "project_context": "concepts 필드가 이미 있으므로 오답 기록과 연결하면 약점 개념 추천이 가능하다."
   },
@@ -239,7 +239,7 @@
       "learning_path"
     ],
     "reading_goal": "다음에 볼 카드를 우선순위로 고르는 추천 로직을 이해한다.",
-    "code": "score = due_weight + weak_concept_weight + level_match_weight\nnext_card = max(cards, key=lambda c: score_card(c))",
+    "code": "def score_card(card):\n    return (due_weight(card)\n            + weak_concept_weight(card)\n            + level_match_weight(card))\n\nnext_card = max(cards, key=score_card) if cards else None",
     "question_type": "meaning_choice",
     "question": "next card recommendation이 고려할 수 있는 것은?",
     "choices": [
@@ -249,7 +249,7 @@
       "브라우저 아이콘만"
     ],
     "answer": "복습 기한, 약한 개념, 현재 난이도",
-    "explanation": "추천 점수는 오늘 볼 차례인지, 자주 틀린 개념인지, 현재 수준과 맞는지 등을 합쳐 계산할 수 있다. next card recommendation은 사용자의 현재 상태를 보고 다음에 풀 카드나 읽을거리를 고르는 기능이다. 최근 오답, 난이도, 학습 목표를 함께 고려해야 한다.",
+    "explanation": "각 card의 due, weak-concept, level-match 항목을 계산해 합산하고 가장 큰 score를 고른다. 원래의 별도 score 변수는 사용되지 않았으므로 제거했다. cards가 비면 max가 실패하므로 None fallback을 두고, weight scale과 tie-break를 평가로 정한다.",
     "side_card_ids": [
       "PYV102_A7_LEARNING_UX_HABIT",
       "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
@@ -303,7 +303,7 @@
       "파일명이 짧은 카드"
     ],
     "answer": "오래 밀렸고 자주 틀린 카드",
-    "explanation": "review priority score는 어떤 카드를 더 먼저 복습해야 하는지 정렬하기 위한 점수다. 틀린 카드나 오래 지난 카드를 위로 올릴 수 있다. 점수 기준을 정하면 감이 아니라 규칙에 따라 복습 순서를 만들 수 있다.",
+    "explanation": "formula는 overdue day와 wrong count를 더하고 mastery를 빼 높은 score부터 정렬한다. 단위가 다른 feature를 그대로 합치면 wrong_count가 지나치게 지배할 수 있고 priority 함수는 card마다 계산돼야 한다. normalization, cap, tie-break와 공정성을 실제 학습 outcome으로 검증한다.",
     "side_card_ids": [],
     "project_context": "카드가 많아질수록 단순 순서보다 우선순위 정렬이 필요하다."
   },
@@ -396,7 +396,7 @@
       "learning_ux"
     ],
     "reading_goal": "복습 알고리즘에도 과도한 반복이나 편향을 막는 guard가 필요함을 이해한다.",
-    "code": "if same_concept_count > 5:\n    pick_different_concept()\nif session_size > 30:\n    stop_for_today()",
+    "code": "if same_concept_count >= 5:\n    pick_different_concept()\nif session_size >= 30:\n    stop_for_today()",
     "question_type": "meaning_choice",
     "question": "review algorithm guard가 필요한 이유는?",
     "choices": [
@@ -406,7 +406,7 @@
       "GitHub Actions를 끄기 위해"
     ],
     "answer": "같은 개념만 과도하게 반복되거나 학습량이 너무 많아지는 것을 막기 위해",
-    "explanation": "review algorithm guard는 추천 로직이 한쪽으로 치우치지 않도록 제한을 두는 장치다. 사용자 피로도, 다양성, 학습량을 함께 고려해야 한다. 가드가 없으면 쉬운 카드나 특정 태그만 반복 추천되는 문제가 생길 수 있다. 따라서 정답은 ‘같은 개념만 과도하게 반복되거나 학습량이 너무 많아지는 것을 막기 위해’이다.",
+    "explanation": "이미 같은 concept 5개 또는 session 30개에 도달했을 때 다음 추가 전에 guard를 실행한다. >를 쓰면 각각 한 개 더 허용하는 off-by-one이 생긴다. 숫자는 강제 학습 제한이 아니라 기본값으로 두고 접근성·사용자 선택과 학습 목표에 맞춰 조정한다.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW"
     ],
@@ -432,7 +432,7 @@
       "앱 배포를 막는다"
     ],
     "answer": "틀린 개념의 선행 개념까지 함께 추천할 수 있다",
-    "explanation": "learning roadmap bridge는 오답 개념을 다음 학습 경로와 연결하는 역할이다. 개념 그래프가 있으면 오답 원인을 선행 개념 부족으로 추적할 수 있다.",
+    "explanation": "concept graph가 json의 prerequisite로 dict와 list를 명시하면 해당 내용을 보충 추천할 수 있다. 그러나 json 문제를 틀렸다는 사실만으로 선행 개념 부족이 원인이라고 확정할 수 없다. 진단 질문, 여러 시도와 graph edge의 근거를 사용하고 사용자가 추천을 건너뛸 수 있게 한다.",
     "side_card_ids": [
       "PYV102_A7_LEARNING_UX_HABIT",
       "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"

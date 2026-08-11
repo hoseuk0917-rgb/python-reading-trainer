@@ -19,7 +19,7 @@
       "Delete the Git history"
     ],
     "answer": "Keep the functionality and improve the code structure",
-    "explanation": "Refactoring is the process of making existing code easier to read and safer, rather than adding new features. Refactoring involves changing the internal structure to make it more readable while preserving the code’s outward behavior. Since the results must be the same before and after the changes, it is important to perform refactoring alongside testing.",
+    "explanation": "Refactoring changes internal structure without intentionally changing externally observable behavior. Make 'cleaner' concrete through naming, duplication, or dependency improvements. Tests provide evidence that behavior was preserved, but they cannot guarantee untested behavior is identical.",
     "side_card_ids": [
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -46,7 +46,7 @@
       "GitHub Pages is deployed automatically"
     ],
     "answer": "You might fix one thing but overlook something else",
-    "explanation": "Duplicate code refers to the same logic appearing repeatedly in multiple places. Since it’s easy to miss some instances when making changes, it’s best to group such code into functions or shared modules. By extracting it into a shared function, you can make changes to the same logic in one place, which reduces maintenance costs.",
+    "explanation": "Copying the same rule into several places creates a risk that only one copy is updated. If the logic truly must change for the same reason, a shared function reduces edit points. Do not prematurely combine code that merely looks similar but should evolve independently; compare its reason to change first.",
     "side_card_ids": [
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -127,7 +127,7 @@
       "The cache always gets cleared"
     ],
     "answer": "The responsibilities of each function are separated",
-    "explanation": "The principle of single responsibility dictates that a single function or module should focus on a single responsibility. Dividing responsibilities makes the code easier to read, test, and modify. When a function performs only one task, its name becomes clearer, and the scope of the cause is narrowed if it fails. Consequently, the output results are separated according to each function’s responsibility.",
+    "explanation": "Separating load, render, and save makes each operation's inputs, outputs, and failures easier to understand and test independently. Three function names alone do not prove responsibility separation. Also check that the functions do not share hidden global state or depend tightly on one another's implementation details.",
     "side_card_ids": [
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -148,13 +148,13 @@
     "question_type": "meaning_choice",
     "question": "What problems can arise as the number of dependencies increases?",
     "choices": [
-      "The scope of the amendment's impact could expand",
-      "The code always becomes simpler",
-      "The test ends automatically",
-      "The file size becomes 0"
+      "The impact of a change can spread farther",
+      "Every function becomes faster",
+      "Tests are no longer needed",
+      "The code automatically becomes secure"
     ],
-    "answer": "The scope of the amendment's impact could expand",
-    "explanation": "A dependency is a relationship in which a piece of code relies on other functions, modules, or configuration settings. If dependencies are complex, modifying one part can break another. When dependency relationships become tangled, the scope of testing expands, and even minor changes require a thorough review of the entire structure.",
+    "answer": "The impact of a change can spread farther",
+    "explanation": "A dependency is a relationship where code relies on another value, module, or service. The concern is coupling and change direction, not just count. If renderCard must know storage details of progressStore, change impact grows; passing a small explicit interface makes replacement and testing easier.",
     "side_card_ids": [
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -181,7 +181,7 @@
       "Turn off answer verification"
     ],
     "answer": "Minimizes changes to core code when modifying settings",
-    "explanation": "Config separation is a method of separating configuration values from execution logic. Keeping addresses, versions, and options separate makes it easier to make changes for different environments and reduces the risk of code modifications. By keeping configuration and logic separate, you can avoid the confusion that arises when changes to experimental values are mistaken for bug fixes.",
+    "explanation": "Separating policy values such as dailyCardCount and dataVersion from execution logic makes environment and experiment changes easier to locate. Moving them to a file alone does not make them safe or valid. Validate schema and scope, and keep secrets separate from ordinary config and client bundles.",
     "side_card_ids": [
       "PYV161_A1_ROLLBACK_SEPARATION_UI_FLOW"
     ],
@@ -197,7 +197,7 @@
       "readability"
     ],
     "reading_goal": "Understand why numbers that have no apparent meaning are converted to constants.",
-    "code": "bad:\n  if retryCount > 3:\n\nbetter:\n  const MAX_RETRY = 3\n  if retryCount > MAX_RETRY:",
+    "code": "bad:\n  if retryCount >= 3:\n\nbetter:\n  const MAX_RETRIES = 3\n  if retryCount >= MAX_RETRIES:",
     "question_type": "meaning_choice",
     "question": "What are the advantages of the MAX_RETRY constant?",
     "choices": [
@@ -207,7 +207,7 @@
       "Encrypt the file"
     ],
     "answer": "The meaning of the number 3 becomes clear",
-    "explanation": "A \"magic number\" is a number embedded directly in the code without any explanation of its meaning. Assigning a name to a constant makes it easier to understand the purpose of the number and the reasons for any changes. When the same number appears repeatedly in multiple places, grouping them into constants means that only one place needs to be modified when policies change. Therefore, the correct answer is “the meaning of the number 3 is made clear.”",
+    "explanation": "MAX_RETRIES states that 3 is the policy for total allowed attempts and centralizes the value. The comparison must match the policy too. If retryCount is the number already attempted, >= prevents another attempt at the limit; > could introduce an off-by-one extra attempt.",
     "side_card_ids": [
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -234,7 +234,7 @@
       "Protects the database"
     ],
     "answer": "It's unclear whether it's actually being used, which makes maintenance difficult.",
-    "explanation": "Dead code is code that is no longer executed or used. If left in place, it can confuse readers and lead to incorrect modifications, so it must be removed. Unused code is often left untested, creating a risk that it might be mistaken for actual functionality later on. Therefore, the correct answer is “It makes maintenance difficult because it’s unclear whether the code is actually being used.”",
+    "explanation": "Dead code is unreachable in real execution paths. Keeping it confuses readers and may revive old untested behavior accidentally. Before deletion, search and test for dynamic calls, configuration, plugins, or external consumers; use version control to retrieve historical code when needed.",
     "side_card_ids": [],
     "project_context": "Code that doesn't fit the current structure—such as the outdated Expand V3 script—is particularly risky."
   },
@@ -250,7 +250,7 @@
     "reading_goal": "Understand backward compatibility, which ensures compatibility with existing data and features.",
     "code": "old card:\n  title\n\nnew card:\n  title\n  difficulty\n\nreader:\n  difficulty = card.difficulty ?? \"normal\"",
     "question_type": "meaning_choice",
-    "question": "?? Why is a default value like \"normal\" necessary?",
+    "question": "Why is a default such as 'normal' needed after ?? here?",
     "choices": [
       "To make it work even if the existing card doesn't have a \"difficulty\" setting",
       "I want to delete all my existing cards",
@@ -258,7 +258,7 @@
       "To hide the Git history"
     ],
     "answer": "To make it work even if the existing card doesn't have a \"difficulty\" setting",
-    "explanation": "Backward compatibility is the property whereby new code continues to support existing data and existing usage patterns. When changing the schema, existing data must still be readable. Therefore, the correct answer is “to ensure it works even if existing cards do not have a ‘difficulty’ field.”",
+    "explanation": "JavaScript's ?? uses normal only when the left side is null or undefined, allowing old cards without difficulty to be read. An empty string or unknown value still passes through, so allowed-value validation is separate. A default is a compatibility policy, not a reason to hide every data error.",
     "side_card_ids": [
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -333,7 +333,7 @@
       "Server costs will be zero"
     ],
     "answer": "If a problem occurs, it is easy to revert only specific changes.",
-    "explanation": "\"Rollback-friendly\" refers to a change management approach that makes it easy to revert to a previous state when problems arise. Small, clearly defined commits make it easier to trace the cause of issues and recover from them. Commits that are easy to roll back are helpful not only for responding to failures but also for safely introducing experimental features.",
+    "explanation": "A small single-purpose commit makes causes easier to isolate and a specific code change easier to revert. Database migrations, external API calls, and user data already written may not be reversed by git revert. Deployment validation and a separate rollback or forward-fix plan are still required.",
     "side_card_ids": [
       "PYV161_A1_ROLLBACK_SEPARATION_UI_FLOW"
     ],
@@ -375,7 +375,7 @@
       "quality"
     ],
     "reading_goal": "I understand why the items to check during a review are presented as a checklist.",
-    "code": "review checklist:\n  [ ] existing features preserved\n  [ ] names are clear\n  [ ] no duplicate logic\n  [ ] validation passes\n  [ ] rollback is easy",
+    "code": "review checklist:\n  [ ] intended behavior preserved\n  [ ] names are clear\n  [ ] duplication is intentional or removed\n  [ ] validation and tests pass\n  [ ] rollback/forward-fix is planned",
     "question_type": "meaning_choice",
     "question": "What is the purpose of this checklist?",
     "choices": [
@@ -385,7 +385,7 @@
       "Changing My GitHub Account"
     ],
     "answer": "Ensure that the changes are safe and easy to read.",
-    "explanation": "A code review checklist is a list of criteria that reviewers should check repeatedly during a review. It helps reduce common mistakes such as omissions, validation issues, and poor data quality. The checklist ensures that minimum quality standards are consistently maintained even when reviewers change. Therefore, the correct answer is “Verify that the change is safe and easy to read.”",
+    "explanation": "A checklist reduces repeated omissions, but mechanically checking boxes does not guarantee quality. Review the diff, test evidence, and risky assumptions. Include context-dependent items such as intentional duplication and side effects that cannot be rolled back directly.",
     "side_card_ids": [
       "PYV161_A1_ENV_MAIN_CHECKLIST_FLOW"
     ],

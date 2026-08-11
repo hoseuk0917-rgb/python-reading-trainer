@@ -10,7 +10,7 @@
       "cards"
     ],
     "reading_goal": "Reads a structure containing multiple card objects in a list.",
-    "code": "cards = [ {\"id\": \"c1\", \"level\": 1, \"title\": \"Reading len\"}, {\"id\": \"c2\", \"level\": 2, \"title\": \"Reading dict\"}, ] print(cards[0][\"title\"])",
+    "code": "cards = [\n    {\"id\": \"c1\", \"level\": 1, \"title\": \"Reading len\"},\n    {\"id\": \"c2\", \"level\": 2, \"title\": \"Reading dict\"},\n]\n\nprint(cards[0][\"title\"])",
     "question_type": "meaning_choice",
     "question": "What is the output value?",
     "choices": [
@@ -62,7 +62,7 @@
       "missing_field"
     ],
     "reading_goal": "Understand the `get` pattern, which uses a default value when a field is missing.",
-    "code": "card = {\"id\": \"c1\", \"title\": \"Reading len\"} level = card.get(\"level\", 1) summary = card.get(\"summary\", \"\") print(level)",
+    "code": "card = {\"id\": \"c1\", \"title\": \"Reading len\"}\n\nlevel = card.get(\"level\", 1)\nsummary = card.get(\"summary\", \"\")\n\nprint(level)",
     "question_type": "meaning_choice",
     "question": "What is the level value?",
     "choices": [
@@ -72,7 +72,7 @@
       "Error"
     ],
     "answer": "1",
-    "explanation": "`dict.get` can return a default value without raising an error when the key does not exist. If the `card` dictionary does not contain a `level` key, the default value of 1 returned by `get` is used. Unlike bracket notation, `get` returns a default value instead of raising an exception when the key does not exist, making it commonly used for safe reading.",
+    "explanation": "The card has no level key, so get returns the default 1 and print displays it. The default applies only when a key is absent; if the key exists with value None, get returns None. Use defaults only for fields that are truly optional so a missing required field is not silently hidden.",
     "side_card_ids": [
       "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -89,7 +89,7 @@
       "fallback"
     ],
     "reading_goal": "Reads a fallback structure that uses values from among several candidate fields in order.",
-    "code": "def get_side_text(sc): return sc.get(\"body\") or sc.get(\"summary\") or sc.get(\"description\") or \"\" text = get_side_text({\"summary\": \"Short description\"}) print(text)",
+    "code": "def get_side_text(sc):\n    return (\n        sc.get(\"body\") or sc.get(\"summary\")\n        or sc.get(\"description\") or sc.get(\"detail\") or \"\"\n    )\n\ntext = get_side_text({\"summary\": \"Short description\"})\nprint(text)",
     "question_type": "meaning_choice",
     "question": "What is the output value?",
     "choices": [
@@ -99,7 +99,7 @@
       "Error"
     ],
     "answer": "Brief Description",
-    "explanation": "If there is no `body`, it checks the `summary`; since there is a `summary`, it returns that value. Handling missing fields is a method of preventing errors when a specific key is absent from the data. You need to verify how to use `get`, default values, and conditional statements. Therefore, the output is “short description.”",
+    "explanation": "body is missing and therefore falsy, while summary is a nonempty string, so the function returns it. or falls back for any falsy value, including an empty string, 0, or False, not only a missing key. Multiple fields may support a migration, but emit schema warnings so the fallback does not hide invalid data.",
     "side_card_ids": [
       "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -234,7 +234,7 @@
       "Duplicate ID"
     ],
     "answer": "Required field names not found on the card",
-    "explanation": "\"Schema required fields\" is a list of fields that must be present in the data. If any required fields are missing, it could cause the app's rendering or validation to fail, so you should check for them first.",
+    "explanation": "The loop checks each name in required and appends field names absent from card. It does not catch a present key whose value is None, empty, or the wrong type. Complete validation also needs cross-field rules such as choices being a list, level range, answer membership, and unique IDs.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW",
       "PYV158_A1_SCHEMA_FLOW"
@@ -288,7 +288,7 @@
       "queueIds"
     ],
     "answer": "3",
-    "explanation": "The `update` method overwrites the existing value with the new one if a key already exists. The `level` changes from `all` to `3`. The `dict` `merge` and `update` methods combine new key-value pairs with an existing dictionary. You must check whether the existing value is overwritten when a key already exists.",
+    "explanation": "state.update(patch) mutates the state object, replacing its existing level and mode values with those from patch. queueIds remains because patch does not contain that key, and print displays the string 3. update is shallow rather than recursive, so a nested dictionary value can be replaced as a whole.",
     "side_card_ids": [
       "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -316,7 +316,7 @@
       "level"
     ],
     "answer": "The ID of the side card",
-    "explanation": "Using a dictionary comprehension with the ID as the key allows you to quickly find a card with a specific ID. An ID-based lookup table is a dictionary structure that uses the ID as the key and stores the entire entry as the value. It is useful for quickly finding entries without having to iterate through the list. Therefore, the output is “the ID of the side card.”",
+    "explanation": "Each sc[\"id\"] is a key and the full side-card dictionary is its value. Duplicate IDs make a later item silently overwrite an earlier one, so validate uniqueness before creating the lookup. get returns None for a missing ID, and if card also treats an empty dictionary as absent.",
     "side_card_ids": [
       "PYV158_A1_PERFORMANCE_FLOW"
     ],
@@ -396,7 +396,7 @@
       "Files are automatically compressed"
     ],
     "answer": "You don't have to load the entire large file into memory at once.",
-    "explanation": "A JSONL stream reads and processes JSON objects one line at a time. Since it is not necessary to upload the entire file at once, this method is well-suited for processing large amounts of data. Because each line is an independent JSON object, it is easy to process only certain lines or resume processing from the point where an error occurred.",
+    "explanation": "Iterating over the file parses one line at a time without loading one string for the whole file. However, a blank or invalid JSON line stops this code, and it does not automatically resume after the failure. To continue, add line-numbered error handling and an explicit checkpoint policy.",
     "side_card_ids": [
       "PYV158_A1_JSON_FLOW"
     ],

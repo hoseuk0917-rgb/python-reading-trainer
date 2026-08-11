@@ -31,8 +31,8 @@
       "state",
       "recovery"
     ],
-    "body": "A checkpoint saves an intermediate state, and resuming continues the process from the saved point.",
-    "detail": "Since long-running tasks or batch processing can fail midway, it is important to save checkpoints. A checkpoint may contain information such as the last item processed, a list of successes and failures, and the location of output files. The resume code reads this information to skip tasks that have already been completed and process only the remaining tasks. To ensure restart safety, you must verify the risk of duplicate processing and file overwriting.",
+    "body": "A checkpoint should record completed IDs, input version, output location, and validation state. File existence alone can mistake a partial output for success, so use atomic writes or a completion marker. On resume, verify duplicates, omissions, and changed inputs.",
+    "detail": "A checkpoint should record completed IDs, input version, output location, and validation state. File existence alone can mistake a partial output for success, so use atomic writes or a completion marker. On resume, verify duplicates, omissions, and changed inputs.",
     "examples": [
       "If the process fails after processing 60 out of 100, it restarts from the 61st.",
       "If an output file already exists, the same items are not processed again."
@@ -55,8 +55,8 @@
       "cpu",
       "inference"
     ],
-    "body": "The GPU and Torch code handle the device on which model computations are executed, as well as the training and inference workflows.",
-    "detail": "When reading Torch code, first check whether the device is a CPU or a CUDA device. The model and input tensor must reside on the same device, and training and inference operate in different modes. During training, loss calculation, backpropagation, and optimizer steps occur, whereas during inference, `no_grad` is typically used to prevent unnecessary gradient calculations. Checking for insufficient GPU memory and CUDA availability are also important considerations.",
+    "body": "The model and tensors must use the same device. Training uses loss.backward() and optimizer.step(); inference uses model.eval() to change dropout and batch-normalization behavior and no_grad() or inference_mode() to disable gradient recording. These settings serve different purposes, so check both.",
+    "detail": "The model and tensors must use the same device. Training uses loss.backward() and optimizer.step(); inference uses model.eval() to change dropout and batch-normalization behavior and no_grad() or inference_mode() to disable gradient recording. These settings serve different purposes, so check both.",
     "examples": [
       "Use `torch.cuda.is_available()` to check whether CUDA is available.",
       "Verify that `model.to(device)` and `tensor.to(device)` point to the same device."
@@ -79,8 +79,8 @@
       "secret",
       "env"
     ],
-    "body": "The key to security-related code is ensuring that configuration values and secrets are handled securely.",
-    "detail": "In the security process, we first verify that secrets—such as API keys, tokens, and passwords—are not hardcoded directly into the code. Typically, these are read via environment variables or a .env file and are not committed to Git. Settings must distinguish between publicly accessible configurations and sensitive secrets. For features involving privacy, you must also verify where user data is stored and transmitted, and ensure that no sensitive information is left in the logs.",
+    "body": "Keep secrets out of code, logs, and clients by injecting them through protected environment or platform secret settings. A local .env is a convenience file, and .gitignore does not protect an already tracked secret. Rotate exposed values and review least privilege, retention, and personal-data transfers.",
+    "detail": "Keep secrets out of code, logs, and clients by injecting them through protected environment or platform secret settings. A local .env is a convenience file, and .gitignore does not protect an already tracked secret. Rotate exposed values and review least privilege, retention, and personal-data transfers.",
     "examples": [
       "Read the secret using `os.environ.get('API_KEY')` and do not hardcode it in the code.",
       "Add the .env file to .gitignore so that it isn't pushed to the repository."
@@ -102,8 +102,8 @@
       "timeout",
       "failure"
     ],
-    "body": "Resilience is a design approach that ensures the overall flow does not break down even if external calls or long-running tasks fail.",
-    "detail": "A retry is a mechanism for reattempting a failed operation, while a timeout is a limit that stops an operation that is taking too long. Good code does not attempt infinite retries but instead sets a maximum number of attempts and a timeout. Since temporary failures are common in API calls, file downloads, LLM requests, and batch jobs, it is also necessary to log the failure and move on to the next item. The key is to distinguish between recoverable failures and failures that must be terminated.",
+    "body": "A timeout prevents indefinite waits, while a retry repeats eligible transient failures. Use a maximum, exponential backoff, and jitter. Do not automatically retry a side-effecting request such as POST unless idempotency is guaranteed, and stop immediately for authentication or validation failures.",
+    "detail": "A timeout prevents indefinite waits, while a retry repeats eligible transient failures. Use a maximum, exponential backoff, and jitter. Do not automatically retry a side-effecting request such as POST unless idempotency is guaranteed, and stop immediately for authentication or validation failures.",
     "examples": [
       "If a request fails, it will retry up to three times and log the failure.",
       "Set a limit, such as `timeout=10`, to prevent the system from getting stuck waiting for unresponsive requests."

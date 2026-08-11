@@ -46,7 +46,7 @@
       "access token"
     ],
     "answer": "UI state",
-    "explanation": "Whether the settings window is open or not is part of the UI state, while the progress rate retrieved from the server is closer to the server state. The UI state refers to the state required only on the screen, whereas the server state refers to the data state retrieved from the server or a file. Distinguishing between the two is key to minimizing cache and refresh issues.",
+    "explanation": "isSettingsOpen is UI state meaningful only to the current screen. progress is a local copy of data owned by the server, so it is server state. Server state needs loading, error, staleness, and revalidation policy; mixing the two can leave the screen inconsistent after a server update.",
     "side_card_ids": [
       "WEB_frontend_backend_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -73,7 +73,7 @@
       "It always disappears one second later"
     ],
     "answer": "You can save values in the browser so they remain even after refreshing the page.",
-    "explanation": "localStorage can be used to store settings or simple progress data in the browser. localStorage is a space in the browser for storing string data long-term. When converting data to JSON for storage and reading it back, you must handle parsing errors.",
+    "explanation": "localStorage stores strings for the same origin and can survive refreshes and browser restarts. JSON storage needs stringify, parse, corruption handling, and schema migration. Because same-origin JavaScript can read it, localStorage is risky for access tokens or secrets when XSS is possible.",
     "side_card_ids": [
       "WEB_localstorage_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -92,7 +92,7 @@
     "reading_goal": "Understand sessionStorage, which is retained only for the duration of a tab session.",
     "code": "sessionStorage.setItem(\"temporaryFilter\", \"level10\")",
     "question_type": "meaning_choice",
-    "question": "Which of the following is the closest similarity between sessionStorage and localStorage?",
+    "question": "How does sessionStorage differ from localStorage?",
     "choices": [
       "It is stored only on the server",
       "It may disappear when the tab/session ends",
@@ -127,7 +127,7 @@
       "It automatically generates the correct answer"
     ],
     "answer": "You can reuse the same file more quickly",
-    "explanation": "Caching is a method of storing frequently used files or responses so they can be accessed quickly later. While this improves speed, it also carries the risk of displaying outdated files. Therefore, criteria for determining when to reload the data—such as a version number or expiration time—are also necessary.",
+    "explanation": "A cache can reuse an earlier response to reduce transfer time and network use. Whether the second visit reuses it directly, revalidates with the server, or downloads it again depends on Cache-Control, validators, and any service-worker strategy. Design freshness rules together with speed.",
     "side_card_ids": [
       "PYV158_A1_PERFORMANCE_FLOW"
     ],
@@ -174,13 +174,13 @@
     "question_type": "meaning_choice",
     "question": "Why change APP_DATA_VERSION?",
     "choices": [
-      "To hide the card ID",
-      "To make the browser recognize it as a new URL and retrieve the latest data,",
-      "I'm trying to make a Git commit",
-      "I want to delete the CSS"
+      "Make ordinary HTTP caches treat it as a different URL",
+      "Delete the server",
+      "Disable every service worker automatically",
+      "Guarantee valid JSON"
     ],
-    "answer": "To make the browser recognize it as a new URL and retrieve the latest data,",
-    "explanation": "Cache busting is a technique that forces the browser to fetch a new file instead of a previously cached one. Changing the query string or version number can cause the request to be treated as a new one. In PWAs, data files may remain in the cache, so changing the version value is particularly important for checking for updates. Therefore, the purpose of returning or calling the result is to “prompt the browser to recognize it as a new URL and retrieve the latest data.”",
+    "answer": "Make ordinary HTTP caches treat it as a different URL",
+    "explanation": "Changing a version query normally gives ordinary HTTP caches a different URL and separates it from the old response. It is not an absolute freshness guarantee if a service worker ignores the query in a custom cache key or an intermediary is misconfigured. Combine it with content-hashed names or explicit cache policy and verify the response version.",
     "side_card_ids": [
       "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
     ],
@@ -206,7 +206,7 @@
       "Verify the correct answers on the card"
     ],
     "answer": "You can intercept a request and choose between a cached response or a network response.",
-    "explanation": "Service workers are used for offline support and caching strategies, but they can also cause update issues. A service worker is a script that manages caching and offline behavior between the browser and the network. Understanding the timing of updates can help reduce deployment issues.",
+    "explanation": "A service worker can intercept fetch events within its scope and provide the Response selected by a custom cacheFirst function. Cache-first improves offline use and speed but can keep serving stale responses. Understand install, activate, and control lifecycle, cache cleanup, and update strategy.",
     "side_card_ids": [
       "WEB_pwa_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -223,7 +223,7 @@
       "cache"
     ],
     "reading_goal": "Understand offline mode, which provides some features even without a network connection.",
-    "code": "if navigator.onLine:\n  fetch latest lessons\nelse:\n  load cached lessons",
+    "code": "try:\n  fetch latest lessons\ncatch network error:\n  if cached lessons exist:\n    load cached lessons\n  else:\n    show offline unavailable",
     "question_type": "meaning_choice",
     "question": "What is the natural behavior when offline?",
     "choices": [
@@ -233,7 +233,7 @@
       "Change the server port"
     ],
     "answer": "Loads cached lessons",
-    "explanation": "Offline mode is a mechanism that provides basic functionality using files stored in the cache even when the network connection is lost. In PWAs, it is important to store the app’s framework and core data in the cache. Therefore, the correct answer is “Load cached lessons.”",
+    "explanation": "navigator.onLine is only a hint about a network interface and does not prove that the server is reachable. It is safer to attempt the request and fall back to cache on network failure. The cache may also be empty, so show an unavailable state and the last update time when appropriate.",
     "side_card_ids": [
       "PL_cache_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -250,17 +250,17 @@
       "server_sync"
     ],
     "reading_goal": "Understand \"optimistic updates,\" where the screen is updated before the server responds, and reverted if the update fails.",
-    "code": "markCardCorrect(cardId)   // update UI now\ntry:\n  await saveProgress(cardId)\nexcept:\n  rollbackCardCorrect(cardId)",
+    "code": "markCardCorrect(cardId); // update UI now\ntry {\n  await saveProgress(cardId);\n} catch (error) {\n  rollbackCardCorrect(cardId);\n}",
     "question_type": "meaning_choice",
     "question": "Why is `rollbackCardCorrect` needed?",
     "choices": [
-      "Always to hide the correct answer",
-      "To revert the UI changes made when the server save fails,",
-      "To clear the Git log",
-      "To force the cache to be cleared"
+      "Revert the early UI change when saving fails",
+      "Delete the account",
+      "Force the server to succeed",
+      "Clear every browser cache"
     ],
-    "answer": "To revert the UI changes made when the server save fails,",
-    "explanation": "Although optimistic updates may seem fast, failure-handling logic is absolutely essential. An optimistic update is a method where the screen is updated before waiting for a response from the server. To ensure safety, you must also verify that there is code in place to roll back to the original state in case of failure.",
+    "answer": "Revert the early UI change when saving fails",
+    "explanation": "An optimistic update changes the UI before the server responds. On failure, roll back or retry and tell the user. When multiple mutations overlap, track request IDs or mutation order so an older failure does not undo a newer successful UI state.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_STORAGE_STATE",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -278,7 +278,7 @@
       "UX"
     ],
     "reading_goal": "Understand why you need to handle loading, error, and empty states separately on the data screen.",
-    "code": "if loading:\n  show(\"Loading\")\nelif error:\n  show(\"Could not load\")\nelif items.length == 0:\n  show(\"No cards to show\")\nelse:\n  render(items)",
+    "code": "if (loading) {\n  show(\"Loading\");\n} else if (error) {\n  show(\"Could not load\");\n} else if (items.length === 0) {\n  show(\"No cards to display\");\n} else {\n  render(items);\n}",
     "question_type": "meaning_choice",
     "question": "What is the state when `items.length == 0`?",
     "choices": [
@@ -288,7 +288,7 @@
       "Git state"
     ],
     "answer": "empty state",
-    "explanation": "The \"loading,\" \"error,\" and \"empty\" states are UI states that indicate whether the screen is loading, has encountered an error, or has no data to display. Displaying a message instead of a blank screen makes it easier for users to understand. Therefore, the correct answer is \"empty state.\"",
+    "explanation": "Separating loading, error, empty, and success tells the user why the screen has no content. In this order, empty is shown only after loading finishes, no error exists, and items is an empty array. If items could still be undefined, initialize it or guard before reading length.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW"
     ],
@@ -307,15 +307,15 @@
     "reading_goal": "Understand debouncing, which executes only once after a certain amount of time has passed since input stopped.",
     "code": "onSearchInput(text):\n  cancelPreviousTimer()\n  setTimer(300ms, () => search(text))",
     "question_type": "meaning_choice",
-    "question": "Why do people type \"debounce\" into the search bar?",
+    "question": "Why use debounce in a search box?",
     "choices": [
-      "To prevent searches at all times",
-      "To avoid making excessive API calls every time a key is pressed,",
-      "To automatically generate the correct answer",
-      "To deploy GitHub Pages"
+      "Avoid an API call for every keystroke",
+      "Run every old request after the new one",
+      "Store a password",
+      "Disable the keyboard"
     ],
-    "answer": "To avoid making excessive API calls every time a key is pressed,",
-    "explanation": "Performing a search after the user has finished typing can reduce the number of API calls and the rendering load. Debounce is a technique that delays execution until a certain amount of time has passed after the last input, when inputs occur too frequently. It is used to reduce the number of calls when handling repeated input in search bars or repeated button clicks. Therefore, the correct answer is “to prevent excessive API calls every time a key is pressed.”",
+    "answer": "Avoid an API call for every keystroke",
+    "explanation": "Debounce calls search only after 300 ms passes with no new input, reducing one-request-per-keystroke behavior. Canceling a timer does not stop a fetch already started, so use AbortController or request IDs to prevent a late old response from overwriting newer results.",
     "side_card_ids": [
       "PYV158_A1_PERFORMANCE_FLOW"
     ],
@@ -357,7 +357,7 @@
       "UI_flow"
     ],
     "reading_goal": "Understand the render flow, in which the screen is redrawn when the state changes.",
-    "code": "state.currentIndex += 1\nrenderCard(state.cards[state.currentIndex])\nupdateProgressText()",
+    "code": "const nextIndex = state.currentIndex + 1;\nif (nextIndex < state.cards.length) {\n  state.currentIndex = nextIndex;\n  renderCard(state.cards[state.currentIndex]);\n  updateProgressText();\n}",
     "question_type": "meaning_choice",
     "question": "What action is required after `state.currentIndex` changes?",
     "choices": [
@@ -367,7 +367,7 @@
       "Delete the database"
     ],
     "answer": "Redraws the screen to match the new currentIndex",
-    "explanation": "The front end updates the user interface by linking state changes to the rendering process. The rendering flow refers to the sequence in which screen elements are redrawn after data changes. You can understand this by connecting state changes, DOM updates, and the results visible to the user.",
+    "explanation": "After confirming that the next index is below cards.length, the code updates state and renders the new card and progress text. Incrementing without the boundary check could pass undefined after the last card. State changes and DOM updates should use the same state snapshot.",
     "side_card_ids": [],
     "project_context": "It connects to the flow of moving on to the next card among the 10 recommended cards."
   },
@@ -381,7 +381,7 @@
       "version_check"
     ],
     "reading_goal": "I understand why version checks are necessary since PWAs can use old cache data.",
-    "code": "currentVersion = \"20260529_v38\" serverVersion = \"20260529_v39\" if currentVersion != serverVersion: show(\"A new version is available\")",
+    "code": "currentVersion = \"20260529_v38\"\nserverVersion = \"20260529_v39\"\n\nif currentVersion != serverVersion:\n  show(\"A new version is available\")",
     "question_type": "meaning_choice",
     "question": "What makes for a natural UI when versions differ?",
     "choices": [
@@ -391,7 +391,7 @@
       "Changing Your GitHub Account"
     ],
     "answer": "Notification of a new version or prompt to refresh",
-    "explanation": "If the PWA cache is robust, users may see an outdated version of the app, so displaying the version number and providing update instructions can be helpful. The PWA update check process involves checking for new version files and prompting the user to refresh. Due to the cache, previous files may remain on the device.",
+    "explanation": "If serverVersion comes from a trustworthy non-stale path and differs from the running version, the UI can announce an update. This alone does not mean a new service worker has installed and activated. Account for a waiting worker and preserve user work when offering a safe reload.",
     "side_card_ids": [
       "PYV160_A1_PWA_STATE_STORAGE_FLOW"
     ],

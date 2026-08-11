@@ -198,103 +198,103 @@ const conceptMemoPrefix = "python-reading-trainer-concept-memo:";
 
 const conceptInfo = {
   "print": {
-    definition: "값을 화면에 출력하는 기본 함수다. 코드 흐름을 확인하거나 간단한 결과를 볼 때 자주 쓴다.",
+    definition: "print()는 괄호 안의 값을 기본 출력 통로(보통 터미널)에 쓴다. 값을 여러 개 주면 기본적으로 사이에 공백을 넣고 끝에 줄바꿈을 붙이므로 결과와 실행 흐름을 확인할 때 유용하다.",
     example: "name = \"LiDAR\"\nprint(name)"
   },
   "len": {
-    definition: "리스트, 문자열, dict 같은 자료의 길이나 개수를 구한다.",
+    definition: "len()은 문자열의 문자 수, 리스트의 항목 수, dict의 key(키) 수처럼 여러 값을 담는 자료에 들어 있는 항목 개수를 정수로 돌려준다.",
     example: "items = [\"UAM\", \"ADAS\", \"Robotics\"]\nprint(len(items))"
   },
   "variable": {
-    definition: "값에 이름표를 붙여두는 방식이다. 코드 독해에서는 값이 변수 이름을 바꿔 이동하는 흐름을 따라가는 것이 중요하다.",
+    definition: "변수는 값을 담는 고정 상자라기보다 문자열·리스트 같은 객체를 가리키는 이름이다. name = label은 label이 가리키던 객체를 name도 가리키게 하며, 객체를 자동 복사하지 않는다.",
     example: "label = \"LiDAR\"\nname = label\nprint(name)"
   },
   "list": {
-    definition: "여러 값을 순서대로 담는 자료구조다. 노드 목록, 파일 목록, 카드 목록처럼 여러 항목을 처리할 때 자주 쓴다.",
+    definition: "list는 여러 값을 순서대로 저장하고 나중에 바꿀 수 있는 자료구조다. 첫 항목의 인덱스는 0이며 append()로 끝에 값을 추가할 수 있다.",
     example: "items = [\"UAM\", \"ADAS\", \"Robotics\"]\nprint(items[0])"
   },
   "dict": {
-    definition: "key와 value로 이루어진 자료구조다. JSON, API 응답, KG 노드 데이터는 dict처럼 읽는 경우가 많다.",
+    definition: "dict는 서로 겹치지 않는 key(키)를 각 value(값)에 연결해 저장하는 자료구조다. node[\"label\"]은 지정한 key가 없으면 KeyError를 내므로 누락 가능성이 있으면 get()을 고려한다.",
     example: "node = {\"label\": \"LiDAR\", \"kind\": \"Sensor\"}\nprint(node[\"label\"])"
   },
   "get": {
-    definition: "dict에서 값을 꺼내되, key가 없을 때 기본값을 줄 수 있는 메서드다.",
+    definition: "dict.get(key, default)는 지정한 key(키)가 있으면 연결된 value(값)를, 없으면 default(기본값)를 돌려준다. 대괄호 조회와 달리 key 누락만으로 KeyError를 내지 않는다.",
     example: "row = {\"label\": \"Radar\"}\nprint(row.get(\"doc_id\", \"NO_DOC\"))"
   },
   "set": {
-    definition: "중복을 허용하지 않는 자료구조다. label 중복 제거, 처리한 파일 확인 등에 자주 쓴다.",
+    definition: "set은 같은 값을 하나만 보관하는 순서 없는 자료구조다. 중복 제거와 포함 여부 검사에 알맞지만, 리스트처럼 인덱스로 읽을 수는 없다.",
     example: "seen = set()\nseen.add(\"lidar\")\nprint(\"lidar\" in seen)"
   },
   "for": {
-    definition: "여러 항목을 하나씩 꺼내 반복 처리한다.",
+    definition: "for는 리스트처럼 항목을 차례로 꺼낼 수 있는 값에서 하나씩 꺼내 들여쓴 블록을 실행한다. 문자열·dict·range()에도 쓸 수 있고, dict를 그대로 반복하면 key가 나온다.",
     example: "items = [\"UAM\", \"ADAS\"]\nfor item in items:\n    print(item)"
   },
   "if": {
-    definition: "조건이 맞을 때만 특정 코드를 실행한다.",
-    example: "kind = \"Sensor\"\nif kind == \"Sensor\":\n    print(\"센서 노드\")"
+    definition: "if는 조건식을 참 또는 거짓으로 판단해 참일 때만 들여쓴 블록을 실행한다. 조건이 거짓이면 그 블록을 건너뛰고, 필요하면 elif나 else로 다른 흐름을 만든다.",
+    example: "kind = \"Sensor\"\nif kind == \"Sensor\":\n    print(\"sensor node\")"
   },
   "append": {
-    definition: "리스트 끝에 새 값을 추가한다. 필터링 결과를 모을 때 자주 쓴다.",
+    definition: "list.append(value)는 기존 리스트의 끝에 value 하나를 추가하고 None을 돌려준다. 여러 항목을 이어 붙이는 extend(iterable)와 구분해야 한다.",
     example: "selected = []\nselected.append(\"LiDAR\")\nprint(selected)"
   },
   "def": {
-    definition: "함수를 정의할 때 쓴다. 반복되는 처리나 하나의 기능 단위를 이름 붙여 분리한다.",
-    example: "def normalize_label(label):\n    return label.strip().lower()"
+    definition: "def는 함수 객체를 만들고 이름에 연결하는 문장이다. 들여쓴 함수 본문은 정의할 때가 아니라 그 함수를 호출할 때 실행된다.",
+    example: "def normalize_label(label):\n    return label.strip().lower()\n\nprint(normalize_label(\" LiDAR \"))"
   },
   "return": {
-    definition: "함수 안에서 처리한 결과를 함수 밖으로 돌려준다.",
+    definition: "return은 현재 함수 실행을 즉시 끝내고 호출한 곳에 값을 돌려준다. 값을 생략하거나 함수 끝까지 도달하면 None을 돌려준다.",
     example: "def add_one(x):\n    return x + 1\n\nprint(add_one(3))"
   },
   "open": {
-    definition: "파일을 열 때 쓴다. 실제 데이터 처리 스크립트에서 매우 자주 나온다.",
+    definition: "open(path, mode, encoding=...)은 파일을 열고 읽기·쓰기에 쓰는 파일 객체를 돌려준다. 기본 mode는 텍스트 읽기인 \"r\"이며, 사용 뒤에는 닫아야 하므로 보통 with와 함께 쓴다.",
     example: "with open(\"nodes.jsonl\", \"r\", encoding=\"utf-8\") as f:\n    text = f.read()"
   },
   "with": {
-    definition: "파일이나 리소스를 안전하게 열고 닫는 구조다. with open은 파일 처리의 기본 패턴이다.",
+    definition: "with는 작업의 시작과 정리를 한 묶음으로 관리한다. with open에서는 블록을 벗어날 때 파일을 닫으며, 중간에 예외가 나도 정리 동작이 실행된다.",
     example: "with open(\"input.txt\", \"r\", encoding=\"utf-8\") as f:\n    text = f.read()"
   },
   "json.loads": {
-    definition: "JSON 문자열을 파이썬 dict/list로 바꾼다. JSONL을 한 줄씩 읽을 때 핵심이다.",
+    definition: "json.loads(text)는 JSON 문자열을 해석해 Python의 dict, list, str, int 같은 값으로 바꾼다. 문자열이 올바른 JSON이 아니면 JSONDecodeError가 난다.",
     example: "import json\nline = \"{\\\"label\\\": \\\"LiDAR\\\"}\"\nrow = json.loads(line)\nprint(row[\"label\"])"
   },
   "json.dumps": {
-    definition: "파이썬 dict/list를 JSON 문자열로 바꾼다. JSONL 저장 시 자주 쓴다.",
+    definition: "json.dumps(value)는 Python 값을 JSON 문자열로 직렬화한다. 문자열만 돌려줄 뿐 파일에 쓰지는 않으며, 한글을 그대로 보이게 하려면 ensure_ascii=False를 쓸 수 있다.",
     example: "import json\nrow = {\"label\": \"LiDAR\"}\nprint(json.dumps(row, ensure_ascii=False))"
   },
   "jsonl": {
-    definition: "한 줄에 JSON 하나씩 저장하는 형식이다. LLM 학습 데이터, 로그, KG chunks/nodes/edges에 자주 쓰인다.",
+    definition: "JSONL은 각 줄에 서로 독립된 JSON 값 하나를 저장하는 텍스트 형식이다. 파일 전체가 JSON 배열 하나인 것은 아니며, 빈 줄은 레코드로 쓰지 않고 각 줄을 json.loads()로 읽는다.",
     example: "{\"id\":\"n001\",\"label\":\"LiDAR\"}\n{\"id\":\"n002\",\"label\":\"Radar\"}"
   },
   "pathlib": {
-    definition: "파일 경로를 문자열보다 안전하게 다루는 표준 라이브러리다. Windows/Linux 경로 차이를 줄이는 데 도움이 된다.",
+    definition: "pathlib은 경로를 Path 객체로 다루는 표준 라이브러리 모듈이다. 문자열을 직접 이어 붙이기보다 /, glob(), exists() 같은 경로 연산을 써서 운영체제 차이를 줄인다.",
     example: "from pathlib import Path\nfor path in Path(\"data\").glob(\"*.jsonl\"):\n    print(path.name)"
   },
   "argparse": {
-    definition: "명령어 옵션을 받는 표준 라이브러리다. --input, --output 같은 배치 스크립트 옵션에 쓰인다.",
-    example: "import argparse\nparser = argparse.ArgumentParser()\nparser.add_argument(\"--input\")"
+    definition: "argparse는 명령줄 인자의 규칙과 도움말을 정의하고 입력된 문자열을 해석하는 표준 라이브러리 모듈이다. parse_args() 결과에서 --input 같은 옵션 값을 읽는다.",
+    example: "import argparse\nparser = argparse.ArgumentParser()\nparser.add_argument(\"--input\", default=\"input.jsonl\")\nargs = parser.parse_args()\nprint(args.input)"
   },
   "try_except": {
-    definition: "에러가 나도 프로그램이 바로 죽지 않도록 처리하는 구조다.",
+    definition: "try의 코드에서 지정한 예외가 나면 해당 except 흐름으로 이동한다. 오류를 자동으로 고치는 문법은 아니며, 너무 넓게 잡으면 실제 버그를 숨길 수 있다.",
     example: "try:\n    value = row[\"doc_id\"]\nexcept KeyError:\n    value = \"NO_DOC\""
   },
   "logging": {
-    definition: "print보다 체계적으로 실행 기록을 남기는 방법이다. 오래 도는 배치 작업에서 중요하다.",
-    example: "import logging\nlogging.info(\"start job\")"
+    definition: "logging은 실행 메시지를 DEBUG, INFO, WARNING 같은 수준과 함께 기록하는 표준 라이브러리다. 출력 수준과 위치를 설정할 수 있으며, 기본 설정에서는 INFO 메시지가 보이지 않을 수 있다.",
+    example: "import logging\nlogging.basicConfig(level=logging.INFO)\nlogging.info(\"start job\")"
   },
   "env": {
-    definition: "API 키 같은 민감한 값을 코드에 직접 쓰지 않고 환경변수로 읽는 방식이다.",
+    definition: "환경변수는 운영체제가 실행 중인 프로그램(프로세스)에 전달하는 이름과 값의 문자열이다. os.environ.get()은 값이 없으면 None 또는 지정한 기본값을 돌려주며, 환경변수 자체가 비밀 저장소인 것은 아니다.",
     example: "import os\napi_key = os.environ.get(\"GOOGLE_API_KEY\")"
   },
   "api_key": {
-    definition: "API를 호출할 때 사용하는 비밀 키다. 코드에 직접 넣어 GitHub에 올리면 위험하다.",
-    example: "api_key = os.environ.get(\"GOOGLE_API_KEY\")"
+    definition: "API key는 API 호출자를 식별하거나 권한·사용량을 연결하는 비밀 문자열(자격 증명)이다. 소스 코드, 브라우저 클라이언트, 로그에 넣지 말고 노출되면 폐기·재발급한다.",
+    example: "import os\napi_key = os.environ.get(\"GOOGLE_API_KEY\")\nif api_key is None:\n    raise RuntimeError(\"GOOGLE_API_KEY is not set\")"
   },
   "pipeline": {
-    definition: "입력, 처리, 출력으로 이어지는 프로그램 흐름이다. 데이터 처리 스크립트는 대부분 이 구조로 읽을 수 있다.",
+    definition: "파이프라인은 입력을 여러 처리 단계에 차례로 통과시켜 출력을 만드는 흐름이다. 앞 단계의 출력 형식이 다음 단계가 기대하는 입력 규칙(계약)과 맞아야 하므로 단계별 검증과 실패 처리 지점을 함께 읽는다.",
     example: "rows = load_jsonl(\"input.jsonl\")\nselected = filter_rows(rows)\nwrite_jsonl(selected, \"output.jsonl\")"
   },
   "main": {
-    definition: "스크립트의 실행 시작점을 모아두는 함수 이름으로 자주 쓰인다.",
+    definition: "main은 스크립트의 주요 실행 흐름을 모으는 관례적 함수 이름일 뿐 Python이 자동 호출하는 특별한 이름은 아니다. if __name__ == \"__main__\": 가드를 써야 직접 실행할 때만 호출되고 import할 때는 건너뛴다.",
     example: "def main():\n    print(\"start\")\n\nif __name__ == \"__main__\":\n    main()"
   }
 };

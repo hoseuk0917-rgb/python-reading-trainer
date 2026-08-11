@@ -14,13 +14,13 @@
     "question_type": "meaning_choice",
     "question": "Which of the following is the closest to an advantage of the async flow?",
     "choices": [
-      "CPU calculations are always 100 times faster",
-      "The file is automatically committed",
-      "Errors never occur",
-      "Tasks that involve a lot of waiting time can be processed in parallel"
+      "It can overlap time spent waiting on I/O",
+      "It makes every calculation use all CPU cores",
+      "It guarantees completion order",
+      "It removes every network error"
     ],
-    "answer": "Tasks that involve a lot of waiting time can be processed in parallel",
-    "explanation": "The difference between `sync` and `async` lies in how they handle tasks that involve waiting. Asynchronous processing can improve efficiency for tasks with long wait times, such as network requests. Asynchronous processing is less about completing calculations faster and more about being able to perform other tasks while waiting.",
+    "answer": "It can overlap time spent waiting on I/O",
+    "explanation": "The difference between synchronous and asynchronous work is how control is handled while waiting. With asynchronous I/O, one request can wait for the network while another ready task progresses, overlapping wait time. This does not automatically make CPU calculations faster or run them in parallel on multiple cores.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
@@ -46,7 +46,7 @@
       "Wait until the asynchronous request is complete"
     ],
     "answer": "Wait until the asynchronous request is complete",
-    "explanation": "async/await is a syntax that makes asynchronous operations easier to read. The `await` keyword waits for an asynchronous operation to complete at the point where the result is needed. It is particularly common in code that aims to process operations with long wait times—such as HTTP requests—without blocking the rest of the code.",
+    "explanation": "async def defines a coroutine, and await suspends the current coroutine while allowing the event loop to run other ready work. Execution resumes at that point when the result is available. await alone does not make every call concurrent; overlapping independent work usually also requires creating tasks.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -63,7 +63,7 @@
       "scheduled_work"
     ],
     "reading_goal": "Understand the meaning of a \"task,\" which is an asynchronous unit of work.",
-    "code": "task1 = create_task(fetch(\"lesson_v35.json\"))\ntask2 = create_task(fetch(\"lesson_v36.json\"))\n\nresults = await gather(task1, task2)",
+    "code": "task1 = asyncio.create_task(fetch(\"lesson_v35.json\"))\ntask2 = asyncio.create_task(fetch(\"lesson_v36.json\"))\n\nresults = await asyncio.gather(task1, task2)",
     "question_type": "meaning_choice",
     "question": "What do \"task1\" and \"task2\" represent?",
     "choices": [
@@ -73,7 +73,7 @@
       "Asynchronous tasks that can be run simultaneously"
     ],
     "answer": "Asynchronous tasks that can be run simultaneously",
-    "explanation": "A task is an asynchronous unit of work whose results can be collected later. By creating multiple tasks, you can schedule independent tasks to run simultaneously. However, if you simply create a task without retrieving its results using `await` or `gather`, you may miss any failures.",
+    "explanation": "create_task schedules a coroutine on the event loop and returns a Task object. If the two fetches are independent, their I/O waits can overlap, and gather collects both results in argument order. Define cancellation and partial-result policy because one task's exception can make the gather call fail.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -100,7 +100,7 @@
       "Keep the tasks to be processed in order."
     ],
     "answer": "Keep the tasks to be processed in order.",
-    "explanation": "A queue is a structure that stores tasks that have not yet been processed and makes them available for workers to retrieve. A queue is a list that stores tasks in the order they were received so they can be processed sequentially. It is easy to understand if you think of it as a flow where a producer adds tasks and a worker retrieves and processes them.",
+    "explanation": "A queue stores unprocessed work until a worker retrieves it. This diagram represents a FIFO queue, where the first shard inserted is the first retrieved. Not every queue is FIFO; a priority queue uses a different selection rule.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -117,7 +117,7 @@
       "job_processing"
     ],
     "reading_goal": "Understand the role of the worker that retrieves tasks from the queue and actually processes them.",
-    "code": "while queue_has_items():\n    job = queue.pop()\n    process(job)\n    mark_done(job)",
+    "code": "while queue_has_items():\n    job = queue.get()\n    try:\n        process(job)\n    except Exception as error:\n        mark_failed(job, error)\n    else:\n        mark_done(job)",
     "question_type": "meaning_choice",
     "question": "What does a worker do?",
     "choices": [
@@ -127,7 +127,7 @@
       "Retrieve a job from the queue, process it, and mark it as complete"
     ],
     "answer": "Retrieve a job from the queue, process it, and mark it as complete",
-    "explanation": "A worker is responsible for processing tasks. Using multiple workers can increase throughput. A worker is the entity that retrieves jobs from the queue one by one and actually processes them. When reading the code, you must distinguish between the parts that retrieve jobs, handle success, and retry in case of failure. Therefore, the correct answer is “retrieve a job from the queue, process it, and mark it as complete.”",
+    "explanation": "A worker retrieves work from a queue and performs the actual processing. Only successful work should be marked done; failures need a distinct state and retry policy. With multiple workers, the queue also needs claim and acknowledgement behavior so the same job is not accidentally handed out as ordinary work twice.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -154,7 +154,7 @@
       "Take the first 100 cards as a single set."
     ],
     "answer": "Take the first 100 cards as a single set.",
-    "explanation": "Batch processing is a method of dividing large amounts of data into appropriate batches rather than processing it all at once. Batch processing involves grouping multiple items together and processing them at once. You need to determine how many items are processed at a time and whether failed items are retried separately. Therefore, the correct answer is “Treat the first 100 cards as a single batch.”",
+    "explanation": "cards[0:100] creates a list containing at most the first 100 elements, at indexes 0 through 99. It is one example batch. Processing the entire input in batches needs an outer loop that advances the starting index by 100.",
     "side_card_ids": [
       "PYV161_A1_BATCH_MEMORY_FLOW"
     ],
@@ -180,7 +180,7 @@
       "Multiple workers actually work simultaneously"
     ],
     "answer": "Multiple workers actually work simultaneously",
-    "explanation": "Concurrency is a concept that involves managing tasks in an overlapping manner, while parallelism refers more closely to actual simultaneous execution. Concurrency involves executing multiple tasks alternately, whereas parallelism involves executing them simultaneously. It is important to distinguish between asynchronous I/O and CPU parallel processing.",
+    "explanation": "Concurrency means managing multiple tasks whose progress intervals overlap; parallelism means at least two tasks actually execute at the same instant. The diagram simplifies these as one event-loop worker switching and multiple workers running. Concurrency can also involve multiple threads, so worker count alone does not define the concepts.",
     "side_card_ids": [
       "PYV158_A1_PERFORMANCE_FLOW"
     ],
@@ -206,7 +206,7 @@
       "Limit the number of instances running at any one time to a maximum of three."
     ],
     "answer": "Limit the number of instances running at any one time to a maximum of three.",
-    "explanation": "A semaphore can be used as a limiting mechanism to prevent API over-calls or GPU/memory overload. A semaphore is a synchronization tool that limits the number of tasks running simultaneously. They are used to impose limits on tasks that can be dangerous if they become overloaded, such as API requests or file processing. Therefore, the correct answer is “It limits the number of concurrent executions to a maximum of three.”",
+    "explanation": "Tasks sharing Semaphore(3) can hold at most three permits inside the async with sem section. Therefore, only calls that actually share and pass through this semaphore are limited to three at once. It is not a global limit across other processes or calls that bypass it.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -233,7 +233,7 @@
       "So that you can resume from where you left off even if you stop in the middle"
     ],
     "answer": "So that you can resume from where you left off even if you stop in the middle",
-    "explanation": "Since long batch jobs can be interrupted, saving the progress helps minimize wasted effort. A checkpoint is a point at which the intermediate state of a long job is saved. Since this serves as the basis for determining where to resume after a failure, you must verify the save location and the time of the last update. Therefore, the correct answer is “so that even if the process is interrupted, it can resume from the point of completion.”",
+    "explanation": "A checkpoint durably records completed work so a long job can choose where to resume. Because a crash can happen between saving a result and updating the checkpoint, make them transactional or make result writes idempotent. A single last_done marker can also skip work when jobs finish out of order in parallel.",
     "side_card_ids": [
       "PYV159_A1_CHECKPOINT_RESUME_FLOW"
     ],
@@ -259,7 +259,7 @@
       "Skip jobs that have already been completed"
     ],
     "answer": "Skip jobs that have already been completed",
-    "explanation": "The resume logic skips tasks that have already been completed and continues processing the remaining tasks. This is important for reducing duplicate processing and wasted resources. When an ID in the “done” list is encountered, the current iteration is skipped using `continue`, making it safe to re-execute after a failure. Therefore, the correct answer is “Skip jobs that have already been completed.”",
+    "explanation": "An ID in done is skipped with continue and only remaining jobs are processed. Safe resume requires the done set to be stored durably and atomically with successful results, rather than corrupted or marked too early. Making process idempotent also reduces duplicate-work risk at interruption boundaries.",
     "side_card_ids": [
       "PYV159_A1_CHECKPOINT_RESUME_FLOW"
     ],
@@ -275,7 +275,7 @@
       "resilience"
     ],
     "reading_goal": "Understand the structure of a retry queue, which collects only failed operations and retries them.",
-    "code": "try:\n    process(job)\nexcept Exception:\n    retry_queue.push(job)",
+    "code": "try:\n    process(job)\nexcept TransientError:\n    if job.attempts < MAX_ATTEMPTS:\n        retry_queue.push(job)\n    else:\n        dead_letter_queue.push(job)",
     "question_type": "meaning_choice",
     "question": "What does `retry_queue.push(job)` mean?",
     "choices": [
@@ -285,7 +285,7 @@
       "Place the failed operation in the retry queue"
     ],
     "answer": "Place the failed operation in the retry queue",
-    "explanation": "A retry queue is a queue where only failed items are collected for reprocessing. Since temporary errors can often be resolved by retrying, it is necessary to manage the list of failures. Collecting and reprocessing only the failed items reduces both cost and time compared to rerunning the entire job from the beginning.",
+    "explanation": "Put only potentially recoverable failures, such as a transient network error, on the retry queue. Retrying every Exception without a limit can repeat programming bugs or permanent failures forever. Define attempt limits, backoff, idempotency, and a dead-letter policy for final failures.",
     "side_card_ids": [
       "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
     ],
@@ -331,7 +331,7 @@
     "reading_goal": "Read the current throughput and remaining work from the progress log of a long-running task.",
     "code": "[KG node_pass status]\nrange: 31~100\ndone: 33/70\nGPU util=23%",
     "question_type": "meaning_choice",
-    "question": "done: What does 33/70 mean?",
+    "question": "What does done: 33/70 mean?",
     "choices": [
       "33 of them failed",
       "70 seconds left",
@@ -339,7 +339,7 @@
       "33 out of 70 are done"
     ],
     "answer": "33 out of 70 are done",
-    "explanation": "A progress log serves as a basis for determining whether a task is actually in progress and how much remains. A progress log records the current status of a long-running task. By looking at the number of completed items, the number of failed items, and the scope currently being processed, you can quickly assess the situation after an interruption. Therefore, the correct answer is “33 out of 70 have been completed.”",
+    "explanation": "done: 33/70 says this log has recorded 33 completions out of 70 defined items. Counting both endpoints, the range 31 through 100 contains 70 items. GPU util=23% is instantaneous resource use, not completion percentage, and the log must still be current and use a reliable definition of done.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -356,7 +356,7 @@
       "server"
     ],
     "reading_goal": "Understand the concept of background tasks, which run time-consuming operations in the background, separate from request-response operations.",
-    "code": "POST /api/start-job\n\nresponse:\n  {\"job_id\": \"job_123\", \"status\": \"queued\"}\n\nbackground:\n  process job_123",
+    "code": "POST /api/start-job\n\n202 Accepted\n{\"job_id\": \"job_123\", \"status\": \"queued\"}\n\ndurable worker:\n  process job_123",
     "question_type": "meaning_choice",
     "question": "Why does the API return the job_id directly?",
     "choices": [
@@ -366,7 +366,7 @@
       "To allow users to check the progress later without having to wait for a long process to complete"
     ],
     "answer": "To allow users to check the progress later without having to wait for a long process to complete",
-    "explanation": "Many systems that handle time-consuming tasks are designed to assign a `job_id` and process the task in the background rather than providing immediate results. A background task is a task that runs in the background, separate from the screen the user is viewing. Notifications of completion, failure logging, and measures to prevent duplicate executions must all be designed into the system. Therefore, the correct answer is “to allow users to proceed without waiting for long tasks and check the progress later.”",
+    "explanation": "A server can place long work on a durable queue and return 202 Accepted with a job_id for later status checks. That response means accepted, not completed. The design also needs a queue that survives process restarts, duplicate prevention, failure records, status retrieval, and completion notification.",
     "side_card_ids": [
       "PYV159_A1_FASTAPI_SERVER_FLOW"
     ],

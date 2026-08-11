@@ -20,7 +20,7 @@
       "Train a new embedding model"
     ],
     "answer": "Read each line of `manifest.jsonl` as a JSON object and collect them in `rows`",
-    "explanation": "JSONL is a format in which each line contains a single JSON object. Use `splitlines` to split the lines and `json.loads` to convert each line into a dictionary. By reading the manifest line by line, you can process even large lists sequentially without loading the entire list into memory at once.",
+    "explanation": "JSONL commonly stores one JSON value per line. This code reads the entire file into memory with read_text, skips blank lines, parses each remaining line with json.loads, and stores every result in rows. It parses line by line but is not memory-saving streaming code. For a large file, iterate over an open file object and process each needed row immediately.",
     "side_card_ids": [
       "PYV158_A1_PIPELINE_FLOW"
     ],
@@ -39,15 +39,15 @@
     "reading_goal": "I'm reading code that standardizes the different meta fields in each document into a single common schema.",
     "code": "def normalize_doc(row):\n    return {\n        \"doc_id\": str(row.get(\"doc_id\") or row.get(\"id\")),\n        \"title\": (row.get(\"title\") or \"\").strip(),\n        \"source_url\": row.get(\"url\") or row.get(\"source_url\"),\n        \"lane\": row.get(\"lane\", \"B\"),\n    }",
     "question_type": "meaning_choice",
-    "question": "What does `row.get('doc_id') or row.get('id')` mean?",
+    "question": "What does `row.get('doc_id') or row.get('id')` actually do?",
     "choices": [
-      "If doc_id exists, use it; otherwise, use id instead.",
+      "Use doc_id if it is truthy; otherwise use id",
       "Delete both doc_id and id",
-      "Always returns None",
+      "Always return None",
       "Download the URL"
     ],
-    "answer": "If doc_id exists, use it; otherwise, use id instead.",
-    "explanation": "The `or` operator uses the value that follows if the preceding value is empty. It is frequently used to standardize field names from different sources. A metadata normalization function is one that formats fields such as `source`, `title`, `url`, and `date` into a consistent format. This directly impacts the quality of subsequent searches and deduplication.",
+    "answer": "Use doc_id if it is truthy; otherwise use id",
+    "explanation": "The or operator chooses the second value not only when the first is None, but whenever the first is falsy, including an empty string, 0, or False. It can combine inputs with different field names, but if both fields are absent, str(None) produces the string \"None\". If doc_id is required, validate the selected value explicitly for None and empty strings.",
     "side_card_ids": [
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
@@ -74,11 +74,11 @@
       "Shuffle the sentences randomly"
     ],
     "answer": "Ensure that the last two sentences of the previous chunk overlap with the next chunk",
-    "explanation": "Sentence chunking is a method of dividing text into chunks based on sentences. Introducing overlap can help reduce the problem of context being disrupted during a search. If the overlap is too small, the context is disrupted; if it is too large, there is excessive duplication, which can reduce search efficiency. Therefore, the return/call result is “the last two sentences of the previous chunk should overlap into the next chunk.”",
+    "explanation": "`current[-2:]` creates a new list containing only the last two sentences currently stored. Those two sentences appeared at the end of the previous chunk and now also begin the next chunk, so the answer is ‘Ensure that the last two sentences of the previous chunk overlap with the next chunk.’ Overlap can preserve context at a boundary, but too much overlap repeats the same text across many search results. Preserving sentence boundaries also assumes that `sentences` was split correctly beforehand.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
-    "project_context": "This is directly related to your revised chunking principle—the prohibition against splitting in the middle of a sentence or in the middle of a word."
+    "project_context": "This connects to a chunking rule that avoids splitting in the middle of a sentence or word while retaining a small amount of neighboring context."
   },
   {
     "id": "PY16_L09_chunk_id_001",
@@ -183,7 +183,7 @@
       "Changing the question"
     ],
     "answer": "Place the candidate with the highest score at the top",
-    "explanation": "Reranking is the step in which the results from the first-pass search are re-scored and reordered. In descending order, candidates with higher scores appear first. Reranking is the step of re-scoring the candidates from the initial search to sort them in order of relevance. While it improves the quality of search results, it can incur additional costs and latency.",
+    "explanation": "For each candidate, scorer produces a score from the question and text, and scored stores the original chunk with that score. reverse=True makes sorted order the items from the largest score to the smallest. This interpretation assumes that the scorer defines a larger score as more relevant. Reranking can improve retrieval quality but adds computation cost and latency for each candidate.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
@@ -210,7 +210,7 @@
       "Delete the document"
     ],
     "answer": "Save only the first 300 characters of the source text as a quote.",
-    "explanation": "An \"evidence pack\" is a collection of evidence used in a response. Instead of including long chunks of text in their entirety, including only selected quotes can reduce the prompt size. Therefore, the return/call result is \"Save only the first 300 characters of the evidence text as a quote.\"",
+    "explanation": "`hit[\"text\"][:300]` takes the first 300 Python characters of the string. It does not mean 300 tokens or 300 sentences, and it may stop in the middle of a sentence. This is a simple prompt-size limit, but the first 300 characters are not guaranteed to support the claim, so a production system should also preserve a relevant span and its source location.",
     "side_card_ids": [
       "PYV161_A1_EVIDENCE_LINEAGE_FLOW"
     ],
@@ -237,7 +237,7 @@
       "Create a filename"
     ],
     "answer": "Number the evidence items starting with 1.",
-    "explanation": "`enumerate` returns both the index and the value. Since `start=1`, the index starts at 1. A prompt that includes sources is an instruction to include the sources used in the answer. The citation format must be standardized so that users can verify the reliability of the answer. Therefore, the return/call result is “number the sources starting from 1.”",
+    "explanation": "enumerate returns an index and a value together, and start=1 makes the first evidence number 1. The final \"\\n\".join connects all items with line breaks. Numbering makes evidence easier to reference, but this string alone does not guarantee that the model will output [1]-style citations or use the evidence correctly. Validate the output format and the alignment between each claim and citation separately.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
@@ -254,7 +254,7 @@
       "api"
     ],
     "reading_goal": "I'm reading code that retries LLM calls that might fail.",
-    "code": "def call_with_retry(client, prompt, max_attempts=3):\n    last_error = None\n    for attempt in range(max_attempts):\n        try:\n            return client.generate(prompt, timeout=60)\n        except TimeoutError as e:\n            last_error = e\n    raise last_error",
+    "code": "def call_with_retry(client, prompt, max_attempts=3):\n    if max_attempts < 1:\n        raise ValueError(\"max_attempts must be at least 1\")\n    for attempt in range(max_attempts):\n        try:\n            return client.generate(prompt, timeout=60)\n        except TimeoutError:\n            if attempt == max_attempts - 1:\n                raise",
     "question_type": "meaning_choice",
     "question": "Why doesn't this function terminate immediately when it encounters a TimeoutError?",
     "choices": [
@@ -264,7 +264,7 @@
       "To initialize the GPU"
     ],
     "answer": "To retry up to max_attempts times",
-    "explanation": "Since the `try/except` block is nested inside a loop, the system can proceed to the next attempt even if a timeout occurs. The LLM retry flow is designed to resend requests when a timeout or temporary error occurs. Limiting the number of retries and the wait time is essential for controlling costs and latency. Therefore, the return/call result is “to retry up to a maximum of max_attempts times.”",
+    "explanation": "After a TimeoutError, the except block reaches the next loop iteration unless this was the final attempt. A success returns immediately, while a timeout on the last attempt is re-raised as the original TimeoutError. For a real API, verify that repeating the request is safe, add backoff and jitter to reduce load, and do not retry permanent errors indiscriminately.",
     "side_card_ids": [
       "PYV158_A1_API_FLOW"
     ],
@@ -281,7 +281,7 @@
       "rag"
     ],
     "reading_goal": "If there is insufficient evidence, it reads the conditional statement that prevents the generation of a response.",
-    "code": "def answer_question(question, evidence, llm): if len(evidence) < 2: return { \"answer\": \"I cannot give a definitive answer due to insufficient evidence.\", \"confidence\": \"low\" } prompt = make_prompt(question, evidence) return {\"answer\": llm(prompt), \"confidence\": \"normal\"}",
+    "code": "def answer_question(question, evidence, llm):\n    if len(evidence) < 2:\n        return {\n            \"answer\": \"I cannot give a definitive answer due to insufficient evidence.\",\n            \"confidence\": \"low\"\n        }\n    prompt = make_prompt(question, evidence)\n    return {\"answer\": llm(prompt), \"confidence\": \"normal\"}",
     "question_type": "meaning_choice",
     "question": "What is the purpose of the condition `len(evidence) < 2`?",
     "choices": [
@@ -291,7 +291,7 @@
       "Questions are not saved"
     ],
     "answer": "If there is too little evidence, it returns a low-confidence response.",
-    "explanation": "A grounding guard is a safety mechanism that limits the model's responses when there is insufficient evidence. It helps reduce \"hallucinations,\" where the model generates plausible statements without any basis.",
+    "explanation": "If evidence has fewer than two items, the function returns a low-confidence response without calling make_prompt or llm. However, evidence count alone cannot establish sufficiency: two chunks may be duplicates or unrelated to the question. Also check relevance, source diversity, and whether each item supports the claim. This is a simple example guard, not a guarantee against hallucination.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
@@ -310,17 +310,17 @@
     "reading_goal": "Read the code that generates input for extracting node candidates from a chunk.",
     "code": "def make_node_pass_input(chunk, node_catalog):\n    return {\n        \"chunk_id\": chunk[\"chunk_id\"],\n        \"text\": chunk[\"text\"],\n        \"known_nodes\": node_catalog,\n        \"task\": \"extract candidate nodes\"\n    }",
     "question_type": "meaning_choice",
-    "question": "Why is `node_catalog` added to `known_nodes`?",
+    "question": "What is the most direct reason to include `node_catalog` in `known_nodes`?",
     "choices": [
-      "To improve recall when extracting candidates by referring to the list of existing nodes,",
+      "To compare each candidate with existing nodes and aliases",
       "To delete the text",
       "To convert JSON to CSV",
       "To change the server port"
     ],
-    "answer": "To improve recall when extracting candidates by referring to the list of existing nodes,",
-    "explanation": "The \"node pass\" is the stage in the document where candidate nodes are identified broadly. By referring to the existing catalog, you can compare the new candidates with already defined concepts. If `known_nodes` is available, it is easy to determine whether a new node candidate is an alias for an existing node or a completely new concept.",
+    "answer": "To compare each candidate with existing nodes and aliases",
+    "explanation": "The node pass extracts candidate nodes from the chunk text. Supplying the existing catalog as `known_nodes` makes it easier to compare an extracted phrase with an existing concept, an alias, or a genuinely new candidate. The answer is therefore ‘To compare each candidate with existing nodes and aliases.’ The extractor must still be allowed to keep expressions that are absent from `known_nodes`; restricting it to the catalog can hide new concepts.",
     "side_card_ids": [],
-    "project_context": "This falls under the \"Node pass\" category of the separation principle between Node pass and Edge pass that you established."
+    "project_context": "This is the first stage in a workflow that identifies and normalizes node candidates before an Edge pass extracts relationships among accepted nodes."
   },
   {
     "id": "PY16_L10_edge_pass_001",
@@ -343,9 +343,9 @@
       "To delete an embedding"
     ],
     "answer": "To improve the accuracy of relationship extraction,",
-    "explanation": "Since precision is crucial in the edge pass, it is restricted to extracting only the relationships between promoted nodes. The edge pass is a step that extracts relationships between already selected nodes based on evidence. Do not connect just any nodes; only promote relationships that are found together within the document. Therefore, the return/call result is “to increase the precision of relationship extraction.”",
+    "explanation": "Restricting allowed_nodes to promoted nodes can reduce the candidate space and improve relationship precision. However, this dictionary only sends a task string and a list to the model; it does not guarantee that the model will avoid other nodes or that a relation appears in the document. Validate the output schema and verify a source span before promoting a relation.",
     "side_card_ids": [],
-    "project_context": "This is directly linked to your fixed workflow, which strictly separates the Node pass and the Edge pass."
+    "project_context": "This connects to the separation principle that limits Edge pass relationship candidates using nodes accepted by the Node pass."
   },
   {
     "id": "PY16_L10_provenance_lineage_001",
@@ -368,7 +368,7 @@
       "Hide the file"
     ],
     "answer": "Trace the source and generation process of the results",
-    "explanation": "Keeping track of `run_id`, `model`, and `input_ids` makes it easier to audit and reproduce results later. Provenance and lineage refer to information that tracks where data or answers came from and the processes they underwent. In RAG and KG, this is crucial for verifying the reliability of sources. Therefore, the return/call result is “tracing the source and generation process of the result.”",
+    "explanation": "The function adds a lineage dictionary containing run_id, model, and input_ids to the existing result dictionary, then returns the same object. These fields help trace the run and inputs that produced the result. Full reproducibility also needs information such as model version, code and configuration versions, prompt, and random seed, and input_ids must actually resolve to source records.",
     "side_card_ids": [
       "PYV161_A1_EVIDENCE_LINEAGE_FLOW"
     ],
@@ -395,7 +395,7 @@
       "Whenever it's my first case"
     ],
     "answer": "When a case requires citations but there are none",
-    "explanation": "If `must_cite` is True but there are no citations in the result, add it to the failure list. The RAG test harness is a framework that verifies the results of search, evidence selection, and response generation all at once. Recording the expected evidence and failure cases for each question makes it easier to catch regression issues. Therefore, the return/call result is “a case where citations are required but are missing.”",
+    "explanation": "If must_cite is truthy and result.get(\"citations\") is missing or empty, the case ID is appended to failures. This test checks only whether citations are present; it does not verify that they point to the correct source or support the answer. A RAG regression suite should also test relevant evidence, answer correctness, and appropriate refusal behavior.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
@@ -449,7 +449,7 @@
       "Delete the hash"
     ],
     "answer": "Normalize by ignoring differences in uppercase and lowercase letters and spaces",
-    "explanation": "A dedup hash is a hash generated from normalized text for the purpose of detecting duplicates. It is created by using the `lower` and `split/join` functions to eliminate differences in case and spacing before comparison. Standardizing the normalization rules first is essential to minimize instances where the same sentence results in different hashes due to minor differences in spacing.",
+    "explanation": "lower normalizes letter case, while split followed by \" \".join removes surrounding whitespace and reduces runs of whitespace to one space. SHA-256 then hashes the UTF-8 bytes of that normalized string. A hash is not encryption and is not meant to restore the input. This finds text that becomes identical under these rules, not semantic paraphrases, and it can wrongly merge terms whose capitalization matters.",
     "side_card_ids": [
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
@@ -476,10 +476,10 @@
       "None"
     ],
     "answer": "error",
-    "explanation": "The \"pipeline status\" is a value that indicates whether a processing step succeeded or failed. In a ternary expression, if `ok` is `False`, the \"error\" status is selected. Logging the status value to a file or log allows you to quickly identify where a batch job failed.",
+    "explanation": "The conditional expression selects \"ok\" when ok is truthy and \"error\" when it is falsy, so False produces error. db.update then stores the status, statistics, and error string in the runs record for run_id. This code does not write a file log. Because str(error) may contain a token or personal data, sanitize error details before storing them in production.",
     "side_card_ids": [
       "PYV158_A1_PIPELINE_FLOW"
     ],
-    "project_context": "home-curator/D1 runs code that links to table consistency and batch job audit logs."
+    "project_context": "This code illustrates consistency in a batch-run status table and an audit trail for jobs."
   }
 ]

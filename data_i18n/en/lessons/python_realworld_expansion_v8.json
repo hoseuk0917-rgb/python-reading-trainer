@@ -2,7 +2,7 @@
   {
     "id": "PY8_L08_appjs_progress_load_001",
     "level": 8,
-    "title": "Reading the Progress Bar in app.js",
+    "title": "Reading Progress Loading in app.js",
     "concepts": [
       "javascript",
       "localStorage",
@@ -11,7 +11,7 @@
     "reading_goal": "Understand the process of reading the progress JSON from localStorage and writing the default values.",
     "code": "const progressKey = \"python-reading-trainer-progress-v1\";\nconst raw = localStorage.getItem(progressKey);\nconst progress = raw ? JSON.parse(raw) : { seen: {} };",
     "question_type": "meaning_choice",
-    "question": "If there is no \"raw,\" what happens to \"progress\"?",
+    "question": "If the key is absent and raw is null, what is assigned to progress?",
     "choices": [
       "{ seen: {} } Default value",
       "null as is",
@@ -19,7 +19,7 @@
       "Error"
     ],
     "answer": "{ seen: {} } Default value",
-    "explanation": "The ternary operator selects either `JSON.parse` or the default object depending on whether `raw` is present. The progress loading code in app.js reads the saved learning state and displays it on the screen. You need to check the save key, the default value, and the behavior when loading fails. Therefore, the correct answer is “{ seen: {} } default value.”",
+    "explanation": "localStorage.getItem returns null when the key does not exist. Because null is falsy, the ternary skips JSON.parse(raw) and assigns { seen: {} } to progress. A stored empty string also takes this default branch. By contrast, a truthy string containing invalid JSON makes JSON.parse throw; this code neither catches that exception nor validates the shape of a successfully parsed value.",
     "side_card_ids": [
       "WEB_localstorage_001"
     ],
@@ -37,7 +37,7 @@
     "reading_goal": "Read the code that retrieves the current study card using an array and an index.",
     "code": "function getCurrentCard() {\n  return cards[currentIndex];\n}",
     "question_type": "meaning_choice",
-    "question": "What is returned if `currentIndex` is 0?",
+    "question": "If cards is nonempty and currentIndex is 0, what is returned?",
     "choices": [
       "The First Card",
       "The Last Card",
@@ -45,7 +45,7 @@
       "null"
     ],
     "answer": "The First Card",
-    "explanation": "JavaScript arrays start at 0. Since `cards[0]` is the first element of the card array, it can be used to retrieve the current card to be displayed on the first screen. By retrieving the card based on the current index, you can ensure that the logic for moving to the next or previous card remains consistent.",
+    "explanation": "A JavaScript array's first index is 0, so cards[0] is its first element. The function uses currentIndex directly in bracket access. If cards is empty or currentIndex is outside the valid range, it returns undefined rather than a first card; this function contains no bounds check or fallback.",
     "side_card_ids": [
       "SC_list_why_used"
     ],
@@ -60,7 +60,7 @@
       "modulo",
       "navigation"
     ],
-    "reading_goal": "I see that the structure loops back to the beginning after the last card.",
+    "reading_goal": "Read how navigation wraps from the last card to the first card.",
     "code": "function nextCard() {\n  currentIndex = (currentIndex + 1) % cards.length;\n  renderCard();\n}",
     "question_type": "meaning_choice",
     "question": "What is the purpose of % cards.length?",
@@ -71,9 +71,9 @@
       "Score Calculation"
     ],
     "answer": "Loop from the end to the beginning",
-    "explanation": "The remainder operator (%) is used to ensure that the index does not exceed the array length. When moving to the next card, dividing by `cards.length` causes the loop to wrap around from the end back to the beginning. This looping logic is frequently used in UIs that loop from the end back to the beginning, such as card-based learning interfaces, slideshows, and carousels.",
+    "explanation": "This assumes cards.length is greater than 0 and currentIndex is between 0 and the last index. Adding 1 at the last index produces cards.length, whose remainder after division by cards.length is 0, so navigation wraps to the first card. The % operator returns a remainder; it is not ordinary division. With an empty array the remainder uses zero as the divisor and currentIndex becomes NaN, so this snippet is not safe for that case.",
     "side_card_ids": [
-      "CS_bit_byte_001"
+      "PYV96_A2_READ_LIST_INDEX"
     ],
     "project_context": "It is important to understand the circular navigation logic of the card app."
   },
@@ -87,7 +87,7 @@
       "fetch",
       "flat"
     ],
-    "reading_goal": "I am reviewing the process of loading multiple JSON card files in parallel and then merging them into a single file.",
+    "reading_goal": "Read how multiple JSON card files are fetched and merged into one array.",
     "code": "const lessonResults = await Promise.all(lessonFiles.map(function(path) {\n  return fetch(path).then(function(res) {\n    if (!res.ok) return [];\n    return res.json();\n  });\n}));\ncards = lessonResults.flat();",
     "question_type": "meaning_choice",
     "question": "If `res.ok` is false, what is returned?",
@@ -98,11 +98,11 @@
       "First Card"
     ],
     "answer": "Empty Array",
-    "explanation": "When loading multiple lesson files, the entire app should not crash even if some files fail to load. Returning [] upon failure allows the app to skip only that file and continue. Allowing partial failures helps prevent situations where the entire learning app crashes due to a problem with a single file. Therefore, the return/call result is an “empty array.”",
+    "explanation": "The map starts a fetch for each path. When an HTTP response has res.ok equal to false, that item's promise fulfills with an empty array. If every item fulfills, Promise.all preserves input order and flat() merges one array level. A network rejection or a failure in res.json() still rejects its promise, and without a catch it rejects Promise.all as a whole. This code therefore skips non-OK HTTP responses, not every kind of file-loading failure.",
     "side_card_ids": [
-      "WEB_html_css_js_001"
+      "PYV158_A1_JSON_FLOW"
     ],
-    "project_context": "This is the core structure of your app that merges the v1–v8 card files."
+    "project_context": "This is a core pattern for merging several lesson JSON files in a learning app."
   },
   {
     "id": "PY8_L08_appjs_sort_cards_001",
@@ -124,16 +124,16 @@
       "Code Length"
     ],
     "answer": "id string",
-    "explanation": "In card sorting, comparisons are first made based on level, and when levels are the same, comparisons are made based on id. localeCompare is used to reliably sort string IDs.",
+    "explanation": "If the levels differ, the sign of a.level - b.level puts the smaller numeric level first. Only a tie on level reaches localeCompare, which orders the id strings using locale-aware comparison. sort() mutates the cards array rather than creating a sorted copy. Also, localeCompare defines string comparison; it is not what the term stable sort means.",
     "side_card_ids": [
-      "DATA_index_001"
+      "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT"
     ],
     "project_context": "Understand the order in which cards are displayed in the app."
   },
   {
     "id": "PY8_L08_appjs_confused_001",
     "level": 8,
-    "title": "Don't know Save Read",
+    "title": "Reading the Confused-State Update",
     "concepts": [
       "javascript",
       "progress",
@@ -150,7 +150,7 @@
       "Change Level"
     ],
     "answer": "Mark this card as \"Unknown\"",
-    "explanation": "The \"confused\" status is a value used to indicate that a user is confused about a card. By storing the cardId as the key and true or false as the value, you can manage the status for each card.",
+    "explanation": "Bracket notation sets the cardId property of progress.confused to true, overwriting any prior value, and then passes progress to saveProgress. The object returned by loadProgress must already contain a confused object or the assignment throws a TypeError. This function does not clear the flag with false, and the snippet alone does not prove that saveProgress successfully persists the update.",
     "side_card_ids": [
       "WEB_localstorage_001"
     ],
@@ -176,7 +176,7 @@
       "Deleting Files"
     ],
     "answer": "git commit",
-    "explanation": "`git add` stages the modified files, and `git commit` records those staged changes as a single commit. Afterward, you use `push` to upload them to the remote repository. It’s easier to understand the Git workflow if you think of `add` as preparation, `commit` as saving, and `push` as sharing.",
+    "explanation": "In the shown sequence, status inspects the state, git add places the current app.js change in the staging area, and git commit records only staged content in a local commit. git push then sends the relevant ref to the configured remote and upstream. Unstaged changes are excluded from that commit, and commit or push can still fail because of conflicts, permissions, hooks, or remote configuration.",
     "side_card_ids": [
       "DEV_github_001"
     ],
@@ -202,7 +202,7 @@
       "JSON Syntax Error"
     ],
     "answer": "Line Break Conversion Warning",
-    "explanation": "This is a common warning in Windows caused by LF/CRLF conversion, and it does not mean that the commit itself has failed. A Git CRLF warning is a notification that the line break format may change. While this is not an error in the code itself, you should verify that your repository settings and file format match your intentions.",
+    "explanation": "Git is warning that LF line endings in this working-tree file may be converted to CRLF. The behavior depends on .gitattributes and settings such as core.autocrlf and core.eol, not on Windows alone. The message itself does not say that commit or push failed, but the repository's intended line-ending policy and the actual diff should be checked to avoid unintended line-ending-only changes.",
     "side_card_ids": [
       "DEV_github_001"
     ],
@@ -220,7 +220,7 @@
     "reading_goal": "The `push` command reads the logs that have been applied to the remote `main` branch.",
     "code": "remote: Resolving deltas: 100% (3/3), completed with 3 local objects.\nTo https://github.com/user/repo.git\n   abc123..def456  main -> main",
     "question_type": "meaning_choice",
-    "question": "main -> What does \"main\" mean?",
+    "question": "What does main -> main mean in this push result?",
     "choices": [
       "The local main is reflected in the remote main",
       "Delete the main file",
@@ -228,7 +228,7 @@
       "Create a New Folder"
     ],
     "answer": "The local main is reflected in the remote main",
-    "explanation": "A successful `push` message indicates that the local commit has been reflected in the remote branch. Afterward, you can pull the same latest commit into other environments. The `push` log should be interpreted as a signal confirming that the remote and local repositories are now in sync.",
+    "explanation": "The main on the left is the local source ref that was sent, while the main on the right is the remote destination ref that was updated. abc123..def456 shows that remote main moved between those commits. This confirms that branch update, not that every branch and tag in both repositories is synchronized. Other working copies do not change automatically; they must fetch or pull.",
     "side_card_ids": [
       "DEV_github_001"
     ],
@@ -254,7 +254,7 @@
       "Create a Git commit"
     ],
     "answer": "It looks like a new URL, so it's less likely to be cached",
-    "explanation": "A cache-busting query is a method of changing the version query string at the end of a URL so that the browser recognizes it as a new file. It is useful for checking PWA data updates. If the version query is not changed, the browser may continue to reuse the previous JSON or JS files. Therefore, the correct answer is “It makes the URL appear new, thereby reducing cache hits.”",
+    "explanation": "Browser caches normally distinguish URLs including their query strings, so changing _v can make this index.html URL use a different cache key. This example changes only the document URL; it does not automatically change the URLs of JSON or JavaScript loaded by that document. A service worker or CDN may also normalize or ignore query parameters. Reliable updates require checking asset versioning and cache policy as well as the page URL.",
     "side_card_ids": [
       "PL_cache_001"
     ],
@@ -280,7 +280,7 @@
       "No Permission"
     ],
     "answer": "No changes, cache available",
-    "explanation": "An HTTP 304 Not Modified response means that the server file has not changed since the last request. The browser can reuse the existing cache instead of fetching a new copy. If you see a 304 response, it means the cache was used; if you were expecting a new file, you should check the version value or the cache headers.",
+    "explanation": "A 304 Not Modified response tells a client making a conditional request that its cached representation may still be used according to a validator such as an ETag or modification time. The server normally omits the representation body, so the browser reuses its cached body. This does not by itself prove that a file on the server's disk never changed. If new content was expected, inspect the request URL, validators, cache headers, and any service worker.",
     "side_card_ids": [
       "PL_cache_001"
     ],
@@ -306,7 +306,7 @@
       "JSON parsing failed"
     ],
     "answer": "No, it's possible that only the favicon is missing.",
-    "explanation": "The browser automatically requested the favicon, but since the file didn’t exist, I might have gotten a 404 error. A 404 error for the favicon could be caused by an automatic browser request unrelated to the app’s core functionality. When reviewing the logs, you must distinguish this from a 404 caused by the actual data file being missing to avoid misidentifying the cause. Therefore, the correct answer is “No, it’s possible that only the favicon is missing.”",
+    "explanation": "These lines show only that the request for /favicon.ico returned 404. A browser may have requested the site icon automatically when no icon file existed, so this log alone does not prove that the HTML, JavaScript, or data loading failed. Check the failed path, the rendered app, and other console or server errors before diagnosing an app-wide failure. If the product needs an icon, the missing favicon is still a separate issue to fix.",
     "side_card_ids": [
       "WEB_html_css_js_001"
     ],
@@ -333,7 +333,7 @@
       "Just change the server port and run it again."
     ],
     "answer": "Read as utf-8-sig or save as UTF-8 without a BOM",
-    "explanation": "A BOM is a hidden marker that may appear at the beginning of a UTF-8 file. Some JSON tools do not expect this marker and may therefore generate parsing errors. In Python, the `utf-8-sig` module is often used to read and handle the BOM seamlessly.",
+    "explanation": "A UTF-8 BOM is a byte marker that can appear at the very beginning of a file. Line 1, column 1 indicates that the parser rejected it at the first position. Opening the file in Python with encoding='utf-8-sig' makes the decoder consume an initial BOM; utf-8-sig is an encoding name, not a separate module. Saving as UTF-8 without a BOM is another option, but the JSON syntax must still be valid.",
     "side_card_ids": [
       "CS_encoding_utf8_001"
     ],
@@ -359,7 +359,7 @@
       "It's just a browser cache issue"
     ],
     "answer": "JSON syntax or encoding issue",
-    "explanation": "If a PowerShell or Python JSON parser cannot read a file, you should suspect a structural error or an encoding issue. You can prevent broken JSON by validating it before deployment.",
+    "explanation": "The pipeline first has Get-Content read the whole file as a string, then ConvertFrom-Json parses that string as JSON, and Out-Null discards only the displayed success value. A parsing failure at ConvertFrom-Json suggests invalid JSON syntax or an encoding artifact in the input. A missing path, permissions problem, or other Get-Content failure can also break the pipeline, so inspect the error message and identify which stage failed.",
     "side_card_ids": [
       "LANG_powershell_001"
     ],
@@ -377,7 +377,7 @@
     "reading_goal": "Reads the command to search for a specific string and the surrounding lines in a file.",
     "code": "Select-String -Path $appPath -Pattern \"lessonFiles|python_realworld\" -Context 0,5",
     "question_type": "meaning_choice",
-    "question": "-What is Context 0.5 closest to?",
+    "question": "How many surrounding lines does -Context 0,5 request?",
     "choices": [
       "It also shows the 5 lines following the matching line.",
       "Delete No. 5",
@@ -385,7 +385,7 @@
       "Search only the first 5 characters"
     ],
     "answer": "It also shows the 5 lines following the matching line.",
-    "explanation": "Select-String is a command that searches for a specific string in a file. -If you specify a context, it displays the lines surrounding the found line, making it easier to pinpoint its location. By looking at the surrounding lines, you can immediately determine whether the found string is inside a function or a setting. Therefore, the correct answer is “It also displays the 5 lines following the matching line.”",
+    "explanation": "Select-String treats -Pattern as a regular expression by default, so lessonFiles|python_realworld matches either alternative. The first -Context number is the count before a match and the second is the count after it. Therefore 0,5 shows no preceding context and up to five lines after each matching line. Near the end of a file, fewer than five following lines may exist.",
     "side_card_ids": [
       "LANG_powershell_001"
     ],
@@ -404,15 +404,15 @@
     "reading_goal": "It reads the structure such that if a patch already exists, it replaces it; if not, it appends it to the end.",
     "code": "if ($app.Contains($markerStart)) {\n  $app = [regex]::Replace($app, $pattern, $patchBlock.Trim())\n} else {\n  $app = $app.TrimEnd() + \"`r`n\" + $patchBlock\n}",
     "question_type": "meaning_choice",
-    "question": "What does `markerStart` do?",
+    "question": "Which path runs when markerStart is present?",
     "choices": [
-      "Replace the existing patch block with a new one",
+      "Attempt a regex replacement of the existing block",
       "Delete All Files",
       "Git push",
       "Running the Server"
     ],
-    "answer": "Replace the existing patch block with a new one",
-    "explanation": "The marker patch method replaces blocks based on start and end markers within a document. If `Contains` is true, it locates the existing block and proceeds with a regex replace.",
+    "answer": "Attempt a regex replacement of the existing block",
+    "explanation": "If Contains($markerStart) is true, the if branch calls [regex]::Replace; only the else branch appends patchBlock to the file. Finding the start marker does not prove that $pattern also matches the intended end marker. If the regex finds no match, Replace may return the original text unchanged, so production patching code should validate marker uniqueness and the replacement count.",
     "side_card_ids": [
       "DEV_debugging_001"
     ],
@@ -430,7 +430,7 @@
     "reading_goal": "I understand that using `System.Text.UTF8Encoding(false)` saves files without a BOM.",
     "code": "$utf8NoBom = New-Object System.Text.UTF8Encoding($false)\n[System.IO.File]::WriteAllText($lessonPath, $json, $utf8NoBom)",
     "question_type": "meaning_choice",
-    "question": "Which one is closest in meaning?",
+    "question": "What does the $false argument in UTF8Encoding($false) mean?",
     "choices": [
       "Do not use a BOM",
       "File not written",
@@ -438,7 +438,7 @@
       "Ignore the path"
     ],
     "answer": "Do not use a BOM",
-    "explanation": "UTF8Encoding(false) creates a UTF-8 encoding object without a BOM. This can help reduce unnecessary BOM issues when saving JSON or JS files for the web. Therefore, the correct answer is “Do not use a BOM.”",
+    "explanation": "The argument to UTF8Encoding($false) controls whether the encoding object provides a UTF-8 BOM; false selects UTF-8 without a BOM. WriteAllText writes the $json string to $lessonPath using that encoding and replaces existing file contents. Removing the BOM controls the leading marker only; it does not validate the JSON syntax in $json.",
     "side_card_ids": [
       "CS_encoding_utf8_001"
     ],
@@ -456,7 +456,7 @@
     "reading_goal": "Read the code that restores the saved JSON to its default values when it is corrupted.",
     "code": "try {\n  const parsed = JSON.parse(raw);\n  return parsed;\n} catch {\n  return {};\n}",
     "question_type": "meaning_choice",
-    "question": "What does `JSON.parse` return if it fails?",
+    "question": "If JSON.parse(raw) throws, what does the surrounding function return?",
     "choices": [
       "Empty object",
       "raw string",
@@ -464,7 +464,7 @@
       "The First Card"
     ],
     "answer": "Empty object",
-    "explanation": "JSON.parse throws an exception when it encounters an invalid string. Returning {} in the catch block ensures that the app won’t crash even if the stored data is corrupted. When providing a fallback value, you must also determine whether an empty object is safe or if you need to populate the default structure.",
+    "explanation": "JSON.parse does not return an empty object for invalid JSON; it throws a SyntaxError. The surrounding catch handles that exception, so this function returns {}. If callers expect properties such as seen or confused, an empty object may still be an unsafe shape. The empty catch also records no cause, which can make corrupted stored data harder to diagnose.",
     "side_card_ids": [
       "WEB_localstorage_001"
     ],
@@ -516,7 +516,7 @@
       "Only the answer cards"
     ],
     "answer": "Fewer than 3 times and either related or general cards",
-    "explanation": "The side card filter selects which side cards to display by combining multiple conditions. \"&&\" means both conditions must be true, while \"||\" means at least one of the conditions must be true. When reading a conditional expression, you must first check the parentheses and operator precedence to predict the actual filter results. Therefore, the result returned/called is \"less than 3 times and either related or general cards.\"",
+    "explanation": "The parentheses evaluate hasOverlap || isGeneral first, and the current element remains only when that result and seenCount < 3 are both true. In other words, it must be under three views and either related or general. In this snippet the callback never uses sc, and all three values are captured from outside. If those values remain constant during filter(), either every sideCards element is retained or every element is removed; per-card filtering would need to derive conditions from sc.",
     "side_card_ids": [
       "AI_rag_001"
     ],
@@ -542,7 +542,7 @@
       "Model Training"
     ],
     "answer": "Reducing unsubstantiated responses",
-    "explanation": "A strict RAG prompt restricts the model to answering only within the provided context. This is important for reducing unfounded speculation and ensuring the model responds with “I don’t know” when it doesn’t know the answer. Rather than relying solely on prompt rules, it is safer to also include code that prevents the call from being made altogether when there is no evidence. Therefore, the goal of the return/call is to “reduce answers without evidence.”",
+    "explanation": "The function joins each chunk's text with blank lines and places the instruction Use only the context before it. The instruction is intended to reduce unsupported answers, but it is not a technical access-control boundary that guarantees model behavior. The prompt also does not explicitly say what to do when the evidence is insufficient. Production code should block empty evidence and separately check whether output claims are supported by the cited text.",
     "side_card_ids": [
       "AI_hallucination_001"
     ],
@@ -568,7 +568,7 @@
       "Git Branches"
     ],
     "answer": "doc_id and chunk_id",
-    "explanation": "A RAG citation is information that indicates which documents and chunks a response is based on. By including the document ID and chunk ID, the source can be traced later. Citations allow users to verify the reliability of a response and re-examine any incorrect sources. Therefore, the return/call result is “doc_id and chunk_id.”",
+    "explanation": "For every item in chunks, the loop copies doc_id and id into a {doc_id, chunk_id} citation object. The returned value therefore contains answer plus identifiers for every input chunk. The code does not determine which text the answer actually used and cites all chunks indiscriminately. Identifier presence alone does not prove that a claim is supported or reliable, and another mapping is needed to open the original source from those IDs.",
     "side_card_ids": [
       "AI_rag_001"
     ],
@@ -594,7 +594,7 @@
       "Answer Number"
     ],
     "answer": "node label",
-    "explanation": "A node page in Markdown is a document format used to describe a single KG node. The section # {node['label']} sets the node's label as the document title. Consistent title conventions are necessary even in automatically generated documents to ensure reliable links and search indexes.",
+    "explanation": "The f-string places node['label'] after # as a level-one Markdown heading, while evidence[0]['snippet'] becomes the Definition body. The heading value is therefore the node label. If evidence is empty, evidence[0] raises IndexError, and a missing key raises KeyError. The function also does not escape Markdown syntax in label or snippet, so generated-document inputs still need validation.",
     "side_card_ids": [
       "CS_graph_001"
     ],
@@ -614,13 +614,13 @@
     "question_type": "meaning_choice",
     "question": "What are the conditions for PROMOTE?",
     "choices": [
-      "Appears at least three times and has a defined basis",
+      "Appears at least three times and has a truthy has_definition value",
       "Appears only once",
       "Always Promoted",
-      "When There Is No Justice"
+      "When has_definition is false"
     ],
-    "answer": "Appears at least three times and has a defined basis",
-    "explanation": "A node promotion rule determines whether a candidate node should be promoted to an actual node. A node is promoted only if it satisfies both conditions. By hard-coding the promotion rules, nodes can be selected based on the same criteria even if there are many candidates. Therefore, the return/call result is “appears at least three times and has a basis for its definition.”",
+    "answer": "Appears at least three times and has a truthy has_definition value",
+    "explanation": "Both operands of and must be true: occurrence_count must be at least 3 and has_definition must be truthy. Otherwise the function returns REVIEW. The code checks only the truth value of has_definition; it does not inspect a definition or verify the quality of its evidence. A missing key raises KeyError, so this function alone is not a complete node-promotion validator.",
     "side_card_ids": [
       "AI_labeling_001"
     ],
@@ -646,7 +646,7 @@
       "(800, 1000)"
     ],
     "answer": "(600, 800)",
-    "explanation": "The shard range calculates the range for each shard when a large task is divided into shards for processing. Shard 3 processes the range from 3*200 to just before 800. The start and end ranges must be calculated precisely to prevent gaps or overlapping processing intervals between shards. Therefore, the output is ‘(600, 800)’.",
+    "explanation": "start is 3 * 200, or 600, and end is 600 + 200, or 800, so the printed tuple is (600, 800). These bounds are normally used as the half-open interval [600, 800), and with zero-based shard IDs, id 3 is the fourth shard. The function only returns boundaries; callers must consistently treat end as exclusive to avoid gaps or overlap.",
     "side_card_ids": [
       "CS_batch_shard_001"
     ],
@@ -655,7 +655,7 @@
   {
     "id": "PY8_L09_resume_output_exists_001",
     "level": 9,
-    "title": "Reading a Resume Based on Work Experience",
+    "title": "Skipping Reruns Based on Output Existence",
     "concepts": [
       "resume",
       "pathlib",
@@ -672,7 +672,7 @@
       "delete"
     ],
     "answer": "skip",
-    "explanation": "Resume-safe processing ensures that tasks that have already been completed are not run again. If the output file exists, it can be treated as an indication that the shard has been processed and skipped. Rather than relying solely on the file’s existence, checking the file size and JSON validity can help reduce the reuse of corrupted output. Therefore, the output is “skip.”",
+    "explanation": "When Path(output_path).exists() is true, the if body runs and prints skip. Despite the function name, exists() checks only whether a file or directory is present at that path, not whether work completed successfully. An empty, partial, or invalid JSON file can therefore be skipped, and omitting the Path import raises NameError. Robust resume logic should validate file type, size, parseability, and completion metadata.",
     "side_card_ids": [
       "CS_batch_shard_001"
     ],
@@ -698,7 +698,7 @@
       "200"
     ],
     "answer": "20.0",
-    "explanation": "A cost estimate calculates the expected cost by multiplying the usage by the unit price. If 1,000 units are processed at 0.02 per unit, the total cost is 20.0. In actual operations, input values that generate costs—such as the number of requests, the number of tokens, and storage capacity—must be recorded separately.",
+    "explanation": "The function multiplies 1,000 requests by a per-request cost of 0.02, so it prints 20.0. The result has no currency unit and assumes every request costs the same amount. If an API bills by input tokens, output tokens, model, caching, or tool calls, those quantities and rates must be estimated separately. For billing-grade decimal arithmetic, consider Decimal or integer minor units instead of binary float.",
     "side_card_ids": [
       "AI_eval_001"
     ],
@@ -707,7 +707,7 @@
   {
     "id": "PY8_L08_throttle_limit_001",
     "level": 8,
-    "title": "Reading the Throughput Limit Using `limit`",
+    "title": "Limiting Batch Size with a Slice",
     "concepts": [
       "limit",
       "throttle",
@@ -724,7 +724,7 @@
       "Infinite Loop"
     ],
     "answer": "Process only the first limit items",
-    "explanation": "A throttle limit is a mechanism that restricts the amount of data processed at any given time. By using slicing to retrieve only the first portion, you can prevent a sudden spike in request volume or costs. If you set the limit value in the configuration, you can adjust the throughput differently for each environment—such as testing, free usage, and production. Therefore, the correct answer is “process only the first limit items.”",
+    "explanation": "If items is a sliceable sequence and limit is positive, items[:limit] selects at most the first limit elements and calls process only for them. This caps one batch's item count; it does not regulate calls per second or add delays like a rate throttle. A negative limit selects everything except the final |limit| items rather than zero items, and a nonsliceable iterator such as a generator raises TypeError.",
     "side_card_ids": [
       "AI_eval_001"
     ],
@@ -750,7 +750,7 @@
       "AI"
     ],
     "answer": "UAM",
-    "explanation": "The domain classifier categorizes items by field based on keywords or rules. If the vertiport criteria are met, the item is classified as UAM-related. The classification rules should be understood as a preliminary filter designed to enable rapid labeling during operations, rather than as a perfect AI system.",
+    "explanation": "title.lower() normalizes case, then the first branch returns UAM when either uam or vertiport occurs as a substring. A title containing vertiport therefore never reaches the robot check. Because the rule ignores word boundaries and context, an unrelated substring match can cause a false positive, and a non-string title fails at lower(). It is a preliminary labeling rule that needs review, not a semantic classifier.",
     "side_card_ids": [
       "PL_curation_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -777,7 +777,7 @@
       "Other"
     ],
     "answer": "regulation",
-    "explanation": "The lens classifier categorizes items based on criteria such as regulation, safety, and operations. If the first condition is true, it immediately returns “regulation” without checking subsequent conditions. Since the order of the conditions affects the result, lenses with higher priority should be placed first.",
+    "explanation": "A truthy item.get('regulation') returns regulation immediately, so it wins even if risk is also truthy. Only a falsy regulation value reaches the risk test, and missing or falsy values for both keys produce technology. get treats a missing key as falsy but does not validate types or meaning; for example, the nonempty string 'false' is truthy and would be classified as regulation.",
     "side_card_ids": [
       "PL_curation_001"
     ],
@@ -803,7 +803,7 @@
       "There is no right answer"
     ],
     "answer": "There is a duplicate ID.",
-    "explanation": "Unique ID validation checks whether card IDs are duplicated. Since the `set` operation removes duplicates, if the original length differs from the length of the `set`, it means there are duplicate IDs.",
+    "explanation": "The comprehension collects every card['id'], and set(ids) removes equal duplicate values before the lengths are compared. A False result therefore means at least one ID value is duplicated. A missing id key raises KeyError, an unhashable ID such as a list raises TypeError, and an empty cards list returns True. The function does not validate format, blank IDs, or case conventions.",
     "side_card_ids": [
       "DATA_dedup_001"
     ],
@@ -829,7 +829,7 @@
       "Completed Card"
     ],
     "answer": "Reference to a non-existent side_card_id",
-    "explanation": "The sidecard integrity check verifies whether the side_id referenced by the lesson card is actually in the list of side cards. If it is not, it is logged in \"missing\" to identify broken links. Therefore, the return/call result is \"missing side_card_id reference.\"",
+    "explanation": "A card without side_card_ids uses an empty list. For each referenced side_id not found in side_ids, the function appends the tuple (card['id'], side_id), so the result identifies both the source card and missing target. Repeated bad references can appear repeatedly. The function checks target-ID existence only, not side-card content or semantic relevance; passing side_ids as a set makes repeated membership checks more efficient.",
     "side_card_ids": [
       "DATA_schema_001"
     ],
@@ -855,7 +855,7 @@
       "Error"
     ],
     "answer": "10",
-    "explanation": "The `safe_int` function converts a string to an integer, but ensures the app does not crash if the conversion fails. If `int('abc')` fails, the `except` block returns the default value of 10. Since user input or stored values can be corrupted, it is safer to anticipate conversion failures and specify a default value.",
+    "explanation": "int('abc') raises ValueError, which this except catches, so the supplied default 10 is returned and printed. The function does not handle every conversion failure: int(None), for example, raises TypeError and escapes this except block. Silently substituting a default can also hide the cause of invalid input, so callers should define accepted types and log or surface unexpected errors when appropriate.",
     "side_card_ids": [
       "DEV_debugging_001"
     ],

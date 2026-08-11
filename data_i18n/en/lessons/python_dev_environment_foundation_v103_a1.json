@@ -20,7 +20,7 @@
       "Browser cache files"
     ],
     "answer": "Path to the Python script to run",
-    "explanation": "Instead of memorizing terminal commands as a single block, you should break them down into the executable program, the target file, options, and output. Here, `python` is the executable program, and `tools/validate_lessons.py` is the script to be run. Values like --expected-app-version at the end are options that specify the validation method. By breaking the command down this way, you can more quickly narrow down the cause of a failure—whether it’s a Python issue, a path issue, or an option issue.",
+    "explanation": "Read a terminal command as an executable, a target, option names, and option values. Here, python is the executable and tools/validate_lessons.py is the script. --expected-app-version is the option name, while 20260602_v103_a1 is its value. This separation helps narrow a failure to Python, the path, the option name, or the option value.",
     "side_card_ids": [
       "PYV103_ENV_TERMINAL_COMMAND_FLOW",
       "PYV103_ENV_PATH_WORKING_DIR"
@@ -42,11 +42,11 @@
     "question": "What is the biggest difference between the two lines?",
     "choices": [
       "Both are Git commit commands.",
-      "The first line is the command to enable PowerShell, and the second line is the command to enable Bash.",
+      "The first activates the environment in PowerShell; the second does so in Bash",
       "Both are commands to check GPU memory.",
       "Both are commands to delete requirements.txt."
     ],
-    "answer": "The first line is the command to enable PowerShell, and the second line is the command to enable Bash.",
+    "answer": "The first activates the environment in PowerShell; the second does so in Bash",
     "explanation": "Even when activating the same virtual environment, PowerShell and Bash use different command syntaxes. In Windows PowerShell, you run `Activate.ps1` in the `Scripts` folder under `.venv`, while in Ubuntu Bash, you use the `source` command to load `bin/activate`. If the command fails, you should first check what the current shell is before running any Python code. If you copy and paste commands from a different environment as-is, the path and execution method may not be correct.",
     "side_card_ids": [
       "PYV103_ENV_SHELL_POWERSHELL_BASH",
@@ -128,7 +128,7 @@
       "GPU Driver Path"
     ],
     "answer": "Current Working Folder",
-    "explanation": "An absolute path specifies the full location starting from the drive or root, so it points to the same destination regardless of the current folder. In contrast, a relative path is interpreted relative to the current working folder. Since automation scripts frequently use relative paths, you must navigate to the project root before starting. To minimize path errors, you must verify the base folder, the target file, and whether the file actually exists. In practice, you should always check the current working directory before examining relative paths, and keep in mind that even the same command can point to a different file depending on where it is executed.",
+    "explanation": "An absolute path starts at a drive or root, while a relative path is interpreted from the current working directory. Automation does not universally require the project root; the current location must match the base expected by that script. Check it with pwd or Get-Location, or resolve paths from the script file to reduce dependence on the launch directory.",
     "side_card_ids": [
       "PYV103_ENV_PATH_WORKING_DIR"
     ],
@@ -150,12 +150,12 @@
     "question": "What is the closest equivalent to --oneline and -8?",
     "choices": [
       "New File Name",
-      "Options for changing the command's output format",
+      "Options that change the command's behavior and output range",
       "Python Function Names",
       "Environment variable values"
     ],
-    "answer": "Options for changing the command's output format",
-    "explanation": "In CLI commands, options are values that change how the command is executed, while arguments are the targets the command processes. In `git log --oneline -8`, `--oneline` is the option that displays the log in a single line, and `-8` is the option that limits the output to the most recent 8 entries. Distinguishing between options and arguments makes even long commands easier to read. It also allows you to determine whether an error is caused by a misspelled option or a missing target file.",
+    "answer": "Options that change the command's behavior and output range",
+    "explanation": "A CLI option changes command behavior, while a positional argument supplies a target. In git log --oneline -8, --oneline selects a compact display and -8 limits output to eight commits. Both are options, but one controls format and the other controls count. Separating option names, values, and positional arguments makes long commands easier to diagnose.",
     "side_card_ids": [
       "PYV103_ENV_TERMINAL_COMMAND_FLOW"
     ],
@@ -343,7 +343,7 @@
       "Force the use of the GPU"
     ],
     "answer": "Exit the virtual environment currently running in the terminal",
-    "explanation": "The `activate` command enables the use of a virtual environment in the current terminal, while `deactivate` exits that environment. Just because a `venv` folder exists doesn’t mean the virtual environment is always active. You can verify which Python version is actually being used by comparing the output of `python -m pip --version` or `where python` before and after activation. Understanding the process of activating and deactivating the environment helps minimize discrepancies between installation and execution.",
+    "explanation": "Activation changes PATH and related values in the current terminal so the virtual environment's python is selected by default; deactivate reverses those changes. A venv folder is not automatically active. Compare python -m pip --version and Get-Command python in PowerShell, or where.exe python on Windows, to confirm the executable path.",
     "side_card_ids": [
       "PYV103_ENV_ACTIVATE_DEACTIVATE",
       "PYV103_ENV_PYTHON_M_PIP"
@@ -365,11 +365,11 @@
     "question": "What are the advantages of using `python -m pip`?",
     "choices": [
       "Automatically generates Git commits",
-      "I now use pip, which is linked to Python, more consistently.",
+      "It more reliably runs pip with the selected Python interpreter",
       "Uninstall Ubuntu",
       "Set the GPU usage to a fixed value"
     ],
-    "answer": "I now use pip, which is linked to Python, more consistently.",
+    "answer": "It more reliably runs pip with the selected Python interpreter",
     "explanation": "\"python -m pip\" means running the pip module using the currently running Python. Simply running the \"pip\" command may invoke pip from a different environment, depending on your PATH settings. Especially in environments using venv or where multiple Python versions are mixed, you should verify that \"python\" and \"pip\" point to the same environment. `python -m pip --version` shows which path pip is linked to, making it useful for debugging installation issues.",
     "side_card_ids": [
       "PYV103_ENV_PYTHON_M_PIP",
@@ -389,7 +389,7 @@
     "reading_goal": "The environment is recreated based on the package list file.",
     "code": "python -m pip install -r requirements.txt",
     "question_type": "meaning_choice",
-    "question": "- What does the -r option in requirements.txt mean?",
+    "question": "What does `-r requirements.txt` mean?",
     "choices": [
       "Create a Git tag for `requirements.txt`",
       "Print the Python version",
@@ -397,7 +397,7 @@
       "Terminate the GPU process"
     ],
     "answer": "Reads the `requirements.txt` file and installs the packages",
-    "explanation": "requirements.txt is a file that contains a list of Python packages required for the project. The -r option instructs the system to read that file and install the packages. This command is frequently used when setting up the same environment on a new PC or in a new venv. Don’t just trust the message indicating that the installation is complete; you must verify that the code runs by running actual validation commands or import tests to ensure the environment is reproducible.",
+    "explanation": "-r tells pip to read requirements.txt as a requirements file and install its Python packages. It is useful for a new venv, but an unpinned file or missing system libraries may still produce a different environment. Run project validation or import tests afterward, and document the Python version and external tools separately.",
     "side_card_ids": [
       "PYV103_ENV_REQUIREMENTS_REPRO",
       "PYV103_ENV_PYTHON_M_PIP"
@@ -424,7 +424,7 @@
       "The list of packages in the current environment is saved in requirements.txt"
     ],
     "answer": "The list of packages in the current environment is saved in requirements.txt",
-    "explanation": "`pip freeze` lists the packages and their versions currently installed in the Python environment. > `requirements.txt` saves that output to a file. While this command helps with reproducing the environment, it may also include unnecessary packages installed during experimentation. Therefore, you should not automatically treat the `freeze` results as definitive; instead, you should review them to ensure they are dependencies actually needed for your project. While the `freeze` results are useful as a snapshot of the current environment, they may include temporary packages installed during experimentation, so you should double-check whether they are necessary dependencies before committing.",
+    "explanation": "pip freeze prints installed Python distributions and versions, and > overwrites requirements.txt with that output. The snapshot may include experimental packages and transitive dependencies the project does not need. Review it, and remember that this one file does not reproduce operating-system packages, Python itself, or every platform condition.",
     "side_card_ids": [
       "PYV103_ENV_REQUIREMENTS_REPRO"
     ],
@@ -446,11 +446,11 @@
     "choices": [
       "Is the Git tag name too long?",
       "Is the browser window too small?",
-      "Are the Python/venv and pip installation environments currently the same?",
+      "Whether the active Python and the pip installation environment match",
       "Is the GPU fan speed high?"
     ],
-    "answer": "Are the Python/venv and pip installation environments currently the same?",
-    "explanation": "A `ModuleNotFoundError` means that the module you are trying to import cannot be found in the current Python environment. This may be because the package hasn’t been installed, or it could be that the pip used for installation and the Python being run are in different environments. You should check the venv status, Python path, pip path, and current working directory together. If you try to resolve this error solely by reinstalling the package, the root cause may become even more obscure.",
+    "answer": "Whether the active Python and the pip installation environment match",
+    "explanation": "ModuleNotFoundError means the active Python cannot find the import name. requests may be absent, installed into another venv, or confused with a differently named distribution package. Check python -m pip --version and python -m pip show requests in the same environment before deciding to install it.",
     "side_card_ids": [
       "PYV103_ENV_MODULE_NOT_FOUND",
       "PYV103_ENV_PYTHON_M_PIP"
@@ -521,17 +521,17 @@
       "remote"
     ],
     "reading_goal": "Mark the point where verification was passed with a tag and upload it to the remote server.",
-    "code": "git tag quality-v103-dev-env-a1-20260602\ngit push origin main --tags",
+    "code": "git tag quality-v103-dev-env-a1-20260602\ngit push origin quality-v103-dev-env-a1-20260602",
     "question_type": "meaning_choice",
-    "question": "Why do we use --tags?",
+    "question": "Why does the second line name the tag when pushing?",
     "choices": [
       "To install the virtual environment package,",
       "To choose a GPU",
       "To change file permissions",
-      "To push not only commits but also tags to the remote repository,"
+      "To push only the specific tag that was just created"
     ],
-    "answer": "To push not only commits but also tags to the remote repository,",
-    "explanation": "A tag is a label assigned to a specific commit. Tagging a version that has passed verification makes it easier to return to a stable state later. The command `git push origin main` pushes commits from the `main` branch to the remote repository, and the `--tags` option pushes local tags as well. If you only commit but do not push, your repository may not be up to date on other machines or on GitHub. Therefore, the correct answer is “to push not only commits but also tags to the remote repository.”",
+    "answer": "To push only the specific tag that was just created",
+    "explanation": "A tag names a particular commit. Creating it locally does not create it on the remote, so it needs a push. git push origin <tag> sends that one tag and has a clearer scope than --tags, which sends all local tags. If the branch commit also needs publishing, check and push the current branch separately.",
     "side_card_ids": [
       "PYV103_ENV_GIT_TAG_PUSH_PULL",
       "PYV103_ENV_GIT_MODEL"
@@ -558,7 +558,7 @@
       "Change the PowerShell execution policy"
     ],
     "answer": "Fetch changes from the remote `main` branch and apply them locally",
-    "explanation": "The `git pull` command fetches changes from the remote repository and merges them into your local repository. If you’re working on multiple devices or have made changes directly on GitHub, your local `main` branch may fall behind. `origin/main` serves as the reference point for the remote `main` branch. By checking the `log` and `status` before and after a `push`, you can verify that your local and remote branches are pointing to the same commit. By distinguishing between `push` and `pull`, you can more reliably identify changes that exist only on your computer, changes that have already been pushed to the remote, and changes that need to be fetched from another device.",
+    "explanation": "git pull origin main fetches origin's main and then integrates it into the currently checked-out branch. It usually updates local main only when main is the current branch; on another branch, it can merge main there instead. Check git status and the current branch first, and handle local work that could conflict.",
     "side_card_ids": [
       "PYV103_ENV_GIT_TAG_PUSH_PULL"
     ],
@@ -611,7 +611,7 @@
       "nvidia-smi"
     ],
     "answer": "git restore",
-    "explanation": "Although `restore`, `reset`, and `revert` all seem to be ways to undo changes, their scope of impact differs. `restore` is typically used to revert uncommitted changes in the working directory, while `revert` creates a new commit that undoes changes that have already been committed. `reset` can reorder the history, so you need to be more careful when using it. Before using any command, you should check the current status and whether a remote push has been made using `status` and `log`. Therefore, the correct answer is “git restore.”",
+    "explanation": "git restore commonly replaces uncommitted working-tree content with the chosen source, while git revert creates a new commit that undoes an existing commit. Because restore can discard the target file's uncommitted work, inspect git diff and copy or stash anything needed first. reset can also move the index or history, so understand its exact scope before use.",
     "side_card_ids": [
       "PYV103_ENV_GIT_BRANCH_CONFLICT_RESTORE",
       "PYV103_ENV_GIT_STATUS_DIFF_ADD_COMMIT"
@@ -660,11 +660,11 @@
     "choices": [
       "To upgrade the Python version",
       "To speed up GPU computations",
-      "To prevent the leakage of secret values,",
+      "To prevent secret values from being exposed",
       "To change the browser font"
     ],
-    "answer": "To prevent the leakage of secret values,",
-    "explanation": ".env is often used in local development to store API keys and secret settings. If you upload a file containing actual secret values to a public repository, others could use the service with your account. Therefore, it is safer to add `.env` to `.gitignore` and share a `.env.example` file that contains only the necessary variable names. When reading code, you must consider both where values are stored and the risk of exposure. Therefore, the correct answer is “to prevent the leakage of secret values.”",
+    "answer": "To prevent secret values from being exposed",
+    "explanation": ".env may contain API keys, so .gitignore commonly prevents a new file from being tracked while .env.example shares names and fake values. An ignore rule does not stop tracking a file already committed. If a secret was committed, deleting the file is insufficient: revoke and rotate the credential immediately and address its presence in history.",
     "side_card_ids": [
       "PYV103_ENV_ENV_VAR_DOTENV",
       "PYV103_ENV_GIT_MODEL"
@@ -743,10 +743,10 @@
       "Git remote repository address",
       "Number of lines in requirements.txt",
       "PowerShell Current Folder",
-      "Can PyTorch currently use CUDA GPUs?"
+      "Whether this PyTorch process can currently use a CUDA device"
     ],
-    "answer": "Can PyTorch currently use CUDA GPUs?",
-    "explanation": "`torch.cuda.is_available()` checks whether PyTorch in the current Python environment can use CUDA devices. If the result is `False`, it could mean there is no GPU, there is a driver issue, a CPU-only version of PyTorch is installed, or the venv is different. Checking `torch.version.cuda` at the same time allows you to verify which CUDA build PyTorch is linked to. This is a very important basic check to perform before running AI code.",
+    "answer": "Whether this PyTorch process can currently use a CUDA device",
+    "explanation": "torch.cuda.is_available() returns whether the current PyTorch process considers a CUDA device usable. False can mean no GPU, a driver mismatch, a CPU-only build, or hidden devices. torch.version.cuda describes the CUDA version targeted by the PyTorch build; it does not by itself prove successful GPU use or a matching locally installed toolkit.",
     "side_card_ids": [
       "PYV103_ENV_TORCH_CUDA_CHECK",
       "PYV103_ENV_GPU_CUDA_DRIVER"
@@ -769,11 +769,11 @@
     "choices": [
       "Install the Python package",
       "Create a Git branch",
-      "Limits the number of GPUs the process can access to 0",
+      "It limits the process to seeing physical GPU 0",
       "Open all file permissions"
     ],
-    "answer": "Limits the number of GPUs the process can access to 0",
-    "explanation": "CUDA_VISIBLE_DEVICES is an environment variable that restricts which GPUs a process can see. It is used on servers with multiple GPUs to ensure that a specific task uses only a specific GPU or to hide certain GPUs. Because of this value, the results of `torch.cuda.is_available` or the GPU numbers may appear different than expected. When troubleshooting GPU issues, you should check not only the code but also the environment variables preceding the execution command.",
+    "answer": "It limits the process to seeing physical GPU 0",
+    "explanation": "CUDA_VISIBLE_DEVICES=0 exposes only physical GPU 0 to this process. Exposed devices are renumbered inside the process starting at cuda:0, so logical and physical numbers can differ when several devices are selected or reordered. The variable must be set before launch and does not itself free memory or guarantee GPU use.",
     "side_card_ids": [
       "PYV103_ENV_TORCH_CUDA_CHECK",
       "PYV103_ENV_ENV_VAR_DOTENV"
@@ -844,11 +844,11 @@
     "choices": [
       "To ensure that all projects use the same list of global packages,",
       "To organize the Git commit history for you",
-      "To manage the packages required for each project separately,",
+      "To manage each project's Python packages separately",
       "To check whether the GPU driver is installed,"
     ],
-    "answer": "To manage the packages required for each project separately,",
-    "explanation": "A virtual environment is a space where you can manage the packages and versions required for each project separately. Since it prevents all packages from getting mixed in with the system-wide Python installation, it helps reduce version conflicts and installation confusion as the number of projects increases. Therefore, when you’re just starting out, it’s helpful to think of it as a “toolbox for each project.”",
+    "answer": "To manage each project's Python packages separately",
+    "explanation": "A virtual environment separates the Python executable path and package installation location for a project. This reduces cross-project version conflicts. It does not reproduce operating-system tools or every aspect of Python itself, so a precise beginner model is a ‘project-specific Python package toolbox.’",
     "concepts": [
       "venv",
       "virtual_environment",
@@ -859,7 +859,7 @@
       "PYV103_ENV_VENV_REASON"
     ],
     "reading_goal": "Think of a virtual environment as a project-specific toolkit.",
-    "code": "python -m venv .venv # Create a package space for each project",
+    "code": "python -m venv .venv\n# Create a project-specific package environment",
     "question_type": "concept"
   },
   {
@@ -885,7 +885,7 @@
       "PYV103_ENV_VENV_REASON"
     ],
     "reading_goal": "Explains why virtual environments are separated for each project.",
-    "code": "project_a/.venv # Project A package project_b/.venv # Project B package",
+    "code": "project_a/.venv  # Project A packages\nproject_b/.venv  # Project B packages",
     "question_type": "concept"
   },
   {
@@ -926,7 +926,7 @@
       "This is the file used to install the GPU driver version manually."
     ],
     "answer": "Save a list of required packages to make it easier to recreate the environment",
-    "explanation": "The `requirements.txt` file contains a list of packages required to run the project. By running `python -m pip install -r requirements.txt` on another computer or server, you can recreate a similar environment. Since simply copying the code isn’t enough to get it running, you must also manage the list of required packages.",
+    "explanation": "requirements.txt records Python packages to install and, optionally, version constraints. Running python -m pip install -r requirements.txt can create a similar package set elsewhere. For stronger reproducibility, also record the Python version, operating-system tools, and setup and validation steps.",
     "concepts": [
       "requirements.txt",
       "pip",
@@ -1031,7 +1031,7 @@
       "The process proceeds in the order of input, print, and return."
     ],
     "answer": "Check the status, then proceed in the order of add, commit, and push.",
-    "explanation": "`git status` shows the current state of changes, and `git add` selects the files to be included in a commit. `git commit` creates a local commit, and `git push` uploads that commit to a remote repository such as GitHub. The key thing to understand first is that modifying files, creating commits, and pushing to a remote repository are distinct steps.",
+    "explanation": "git status shows the changes, git add explicitly stages a file for this commit, git commit creates a local record, and git push sends it to the remote branch. Because git add . can include unintended files, beginners should inspect status and diff and stage a narrow path.",
     "concepts": [
       "git",
       "git_status",
@@ -1044,7 +1044,7 @@
       "PYV103_ENV_GIT_STATUS_DIFF_ADD_COMMIT"
     ],
     "reading_goal": "Read about Git's basic workflow—status, add, commit, and push—in order.",
-    "code": "git status\ngit add .\ngit commit -m \"message\"\ngit push origin main",
+    "code": "git status\ngit add path/to/changed_file.py\ngit commit -m \"message\"\ngit push origin main",
     "question_type": "flow"
   }
 ]

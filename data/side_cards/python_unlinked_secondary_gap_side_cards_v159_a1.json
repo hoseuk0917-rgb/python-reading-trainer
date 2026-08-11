@@ -31,8 +31,8 @@
       "state",
       "recovery"
     ],
-    "body": "checkpoint는 중간 상태를 저장하고, resume은 저장된 지점부터 다시 이어가는 흐름이다.",
-    "detail": "긴 작업이나 배치 처리는 중간에 실패할 수 있으므로 checkpoint를 남겨 두는 것이 중요하다. checkpoint에는 마지막으로 처리한 항목, 성공·실패 목록, 출력 파일 위치 같은 정보가 들어갈 수 있다. resume 코드는 이 정보를 읽어서 이미 끝난 작업을 건너뛰고 남은 작업만 처리한다. 재시작 안전성을 보려면 중복 처리와 파일 덮어쓰기 위험을 확인해야 한다.",
+    "body": "checkpoint에는 완료 항목 ID, 입력 버전, 출력 위치와 검증 상태를 기록한다. 파일이 존재한다는 사실만으로 완료를 판단하면 부분 파일을 정상 결과로 오인할 수 있으므로 atomic write나 완료 표식을 쓴다. resume 시 중복·누락과 입력 변경 여부를 확인한다.",
+    "detail": "checkpoint에는 완료 항목 ID, 입력 버전, 출력 위치와 검증 상태를 기록한다. 파일이 존재한다는 사실만으로 완료를 판단하면 부분 파일을 정상 결과로 오인할 수 있으므로 atomic write나 완료 표식을 쓴다. resume 시 중복·누락과 입력 변경 여부를 확인한다.",
     "examples": [
       "100개 중 60개를 처리한 뒤 실패하면 61번째부터 다시 시작한다.",
       "이미 만들어진 output 파일이 있으면 같은 항목을 다시 처리하지 않는다."
@@ -55,8 +55,8 @@
       "cpu",
       "inference"
     ],
-    "body": "GPU와 torch 코드는 모델 계산이 어느 장치에서 실행되는지와 학습·추론 흐름을 다룬다.",
-    "detail": "torch 코드를 읽을 때는 먼저 device가 cpu인지 cuda인지 확인한다. 모델과 입력 tensor가 같은 device에 있어야 하며, training과 inference는 실행 모드가 다르다. training에서는 loss 계산, backward, optimizer step이 나오고, inference에서는 보통 no_grad로 불필요한 gradient 계산을 막는다. GPU 메모리 부족이나 cuda 사용 가능 여부도 중요한 점검 포인트다.",
+    "body": "모델과 tensor는 같은 device에 있어야 한다. 학습은 loss.backward와 optimizer.step을 사용하고, 추론은 model.eval()로 dropout·batch norm 동작을 바꾸며 torch.no_grad() 또는 inference_mode로 gradient 기록을 막는다. 두 설정은 역할이 달라 둘 다 확인한다.",
+    "detail": "모델과 tensor는 같은 device에 있어야 한다. 학습은 loss.backward와 optimizer.step을 사용하고, 추론은 model.eval()로 dropout·batch norm 동작을 바꾸며 torch.no_grad() 또는 inference_mode로 gradient 기록을 막는다. 두 설정은 역할이 달라 둘 다 확인한다.",
     "examples": [
       "torch.cuda.is_available()로 CUDA 사용 가능 여부를 확인한다.",
       "model.to(device)와 tensor.to(device)가 같은 장치를 가리키는지 확인한다."
@@ -79,8 +79,8 @@
       "secret",
       "env"
     ],
-    "body": "보안 관련 코드는 설정값과 secret을 안전하게 다루는지 확인하는 것이 핵심이다.",
-    "detail": "security 흐름에서는 API key, token, password 같은 secret이 코드에 직접 들어가지 않는지 먼저 확인한다. 보통 환경변수나 .env 파일을 통해 읽고, Git에는 올리지 않는다. settings는 공개 가능한 설정과 민감한 secret을 구분해야 한다. privacy가 포함된 기능은 사용자의 데이터가 어디에 저장되고 전송되는지, 로그에 민감정보가 남지 않는지도 함께 봐야 한다.",
+    "body": "secret은 코드·로그·클라이언트에서 분리해 플랫폼 secret manager나 보호된 환경변수로 주입한다. 로컬 .env는 편의 파일이며 .gitignore만으로 이미 추적된 비밀을 보호하지 못한다. 노출 시 폐기·교체하고 최소 권한·보존 기간·개인정보 전송 범위를 확인한다.",
+    "detail": "secret은 코드·로그·클라이언트에서 분리해 플랫폼 secret manager나 보호된 환경변수로 주입한다. 로컬 .env는 편의 파일이며 .gitignore만으로 이미 추적된 비밀을 보호하지 못한다. 노출 시 폐기·교체하고 최소 권한·보존 기간·개인정보 전송 범위를 확인한다.",
     "examples": [
       "os.environ.get('API_KEY')로 secret을 읽고 코드에는 직접 쓰지 않는다.",
       ".env 파일은 .gitignore에 넣어 저장소에 올라가지 않게 한다."
@@ -102,8 +102,8 @@
       "timeout",
       "failure"
     ],
-    "body": "resilience는 외부 호출이나 긴 작업이 실패해도 전체 흐름이 무너지지 않게 만드는 설계다.",
-    "detail": "retry는 실패한 작업을 다시 시도하는 구조이고, timeout은 너무 오래 걸리는 작업을 멈추는 제한이다. 좋은 코드는 무한 재시도를 하지 않고 최대 횟수와 대기 시간을 둔다. API 호출, 파일 다운로드, LLM 요청, 배치 작업에서는 일시적 실패가 흔하므로 실패 기록을 남기고 다음 항목으로 넘어가는 방식도 필요하다. 복구 가능 실패와 중단해야 할 실패를 구분하는 것이 핵심이다.",
+    "body": "timeout은 무기한 대기를 막고 retry는 일부 일시적 실패를 다시 시도한다. 최대 횟수, 지수 backoff와 jitter를 두고, POST처럼 중복 실행이 부작용을 만들 수 있는 요청은 idempotency 보장 없이 재시도하지 않는다. 인증·검증 오류처럼 재시도로 낫지 않는 실패는 즉시 중단한다.",
+    "detail": "timeout은 무기한 대기를 막고 retry는 일부 일시적 실패를 다시 시도한다. 최대 횟수, 지수 backoff와 jitter를 두고, POST처럼 중복 실행이 부작용을 만들 수 있는 요청은 idempotency 보장 없이 재시도하지 않는다. 인증·검증 오류처럼 재시도로 낫지 않는 실패는 즉시 중단한다.",
     "examples": [
       "요청이 실패하면 최대 3번만 재시도하고 실패 로그를 남긴다.",
       "timeout=10처럼 제한을 두어 응답 없는 요청에 계속 묶이지 않게 한다."

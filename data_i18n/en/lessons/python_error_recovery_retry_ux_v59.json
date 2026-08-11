@@ -9,17 +9,17 @@
       "UX"
     ],
     "reading_goal": "Understand how to clearly notify users of data loading failures.",
-    "code": "if (!response.ok) {\n  showError('카드를 Could not load')\n}",
+    "code": "if (!response.ok) {\n  showError('Could not load the cards')\n}",
     "question_type": "meaning_choice",
     "question": "What is the purpose of the \"load failed\" message?",
     "choices": [
       "To save your GitHub password",
       "To delete all cards",
-      "To notify the user when data cannot be loaded,",
+      "To tell the user that the data could not be loaded",
       "To hide the verification results"
     ],
-    "answer": "To notify the user when data cannot be loaded,",
-    "explanation": "\"Load failed\" means the app was unable to load the necessary data or files. If users see only a blank screen, it can be difficult for them to tell the difference between a freeze and a data error. Displaying both the cause of the failure and instructions on how to retry makes it easier for users to decide what to do next.",
+    "answer": "To tell the user that the data could not be loaded",
+    "explanation": "A load failure means the app could not obtain required data or files. A blank screen does not tell the user whether the app is still loading or has failed. If the cause is unknown, do not guess: show a plain-language failure message and a next step such as retrying. Do not expose internal paths or error details in the user-facing message.",
     "side_card_ids": [
       "PYV102_A7_RESILIENCE_RECOVERY",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -46,7 +46,7 @@
       "To hide the verification results"
     ],
     "answer": "Allows users to rerun failed tasks",
-    "explanation": "The \"Retry\" button allows users to retry a failed load or request. It is useful because network or cache issues may be temporary. When the button is pressed, the same request is sent again, but measures to prevent duplicate clicks and display the loading status must also be taken into account.",
+    "explanation": "A retry button lets the user repeat a failed load or request. However, blindly repeating a payment or duplicate write can cause a second side effect. Retry only operations that are transient and safe to repeat, and disable or deduplicate the button while a request is in flight.",
     "side_card_ids": [
       "PYV102_A7_RESILIENCE_RECOVERY",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -149,7 +149,7 @@
       "To hide the verification results"
     ],
     "answer": "Allowing users to check the network status and try again",
-    "explanation": "A \"network error\" occurs when a data request fails due to an internet connection issue or a server response failure. PWAs are often opened while offline or on unstable networks. By implementing a cache fallback or providing retry instructions, you can prevent the learning flow from being completely interrupted even if the connection fails. Therefore, the correct answer is “checking the network status and allowing users to try again.”",
+    "explanation": "A network error broadly covers requests that cannot complete because of a lost connection, DNS failure, or server outage. A connectivity indicator alone cannot prove that the server is reachable, so handle the actual request result. Offer cached material and a retry for transient failures, but explain authentication or validation errors separately because retrying will not fix them.",
     "side_card_ids": [
       "AI_cost_001",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -166,7 +166,7 @@
       "resilience"
     ],
     "reading_goal": "Understand the process of handling failures and retrying when a request takes too long.",
-    "code": "if elapsedMs > 5000:\n  showError('응답 시간이 너무 깁니다')",
+    "code": "if elapsedMs > 5000:\n  showError('The response is taking too long')",
     "question_type": "meaning_choice",
     "question": "Why is a timeout necessary?",
     "choices": [
@@ -176,7 +176,7 @@
       "To hide the verification results"
     ],
     "answer": "To move on to a cycle of failure and retry without waiting indefinitely",
-    "explanation": "Timeout retry is a mechanism that allows the system to stop and retry when a response takes too long. Users prefer to be notified of a delay rather than encountering a complete stoppage. By setting the number of retries and the wait time, you can prevent infinite waiting or excessive repetition of requests. Therefore, the correct answer is “to avoid waiting indefinitely and to transition to a failure-and-retry flow.”",
+    "explanation": "This code moves an overdue request into an error state; it does not itself perform a retry. A real retry flow also needs cancellation, a maximum attempt count, and a delay policy. Apply backoff only to transient operations that are safe to repeat so that retries do not overload the server or duplicate work.",
     "side_card_ids": [
       "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
     ],
@@ -202,7 +202,7 @@
       "To hide the verification results"
     ],
     "answer": "It can display previous data even in the event of a network failure.",
-    "explanation": "Cached fallback is a method that displays previous data from the cache even if the latest data cannot be retrieved. It’s best if the learning app allows users to continue studying with the existing cards. However, if the app indicates that the data is cached, users will understand that it may not be the most up-to-date information.",
+    "explanation": "A cached fallback displays previously stored data when fresh data cannot be fetched. It can keep learning available, but the cache may be old or empty. Label the material as cached, show its last update time when useful, and check for a newer version after connectivity returns.",
     "side_card_ids": [
       "PL_cache_001",
       "PYV102_A7_RESILIENCE_RECOVERY"
@@ -255,7 +255,7 @@
       "To hide the verification results"
     ],
     "answer": "To prevent a single screen error from causing the entire app to crash,",
-    "explanation": "An error boundary is a mechanism that prevents errors in a specific screen or component from disrupting the entire app. A rendering issue with a single card should not prevent the entire learning experience from proceeding. By implementing an error boundary, users are notified of the failed portion, while the rest of the screen remains usable.",
+    "explanation": "This example uses try/except as an isolation boundary around one card render. If that card fails, the app can draw a fallback and continue with the other cards. A framework's formal Error Boundary may use different syntax. Record the cause safely after catching it, and do not silently hide errors that the app cannot recover from.",
     "side_card_ids": [
       "PYV102_A7_RESILIENCE_RECOVERY",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -272,7 +272,7 @@
       "recovery"
     ],
     "reading_goal": "Understand the method of logging the filename and recovery instructions when JSON parsing fails.",
-    "code": "try:\n  data = JSON.parse(text)\ncatch:\n  reportBadJson(fileName)",
+    "code": "try:\n  data = JSON.parse(text)\ncatch (error):\n  reportBadJson(fileName)",
     "question_type": "meaning_choice",
     "question": "What information is needed for invalid JSON recovery?",
     "choices": [
@@ -282,7 +282,7 @@
       "To hide the verification results"
     ],
     "answer": "Guidance on which files are corrupted and how to recover them",
-    "explanation": "While it’s best to catch JSON errors during the validation phase rather than on the app screen, runtime protection is also necessary. “Invalid JSON recovery” refers to the process by which the app safely recovers after a JSON parsing failure. You must consider error messages, applying default values, and isolating corrupted files together. Therefore, the correct answer is “guidance on which files are corrupted and how to recover them.”",
+    "explanation": "JSON errors should first be caught before release, but runtime defenses are still useful. Record which file failed in developer diagnostics and give the user a safe fallback or recovery step. Replacing corrupt required data with arbitrary defaults can hide the defect, so define whether to isolate or explicitly skip the bad file.",
     "side_card_ids": [
       "PYV161_A1_ENV_MAIN_CHECKLIST_FLOW"
     ],
@@ -298,17 +298,17 @@
       "UX"
     ],
     "reading_goal": "Understand how to ensure the app continues to function using a safe default value when a value is missing.",
-    "code": "choices = card.choices || [] title = card.title || 'No title'",
+    "code": "choices = card.choices || []\ntitle = card.title || 'Untitled'",
     "question_type": "meaning_choice",
     "question": "What is the purpose of \"safe default\"?",
     "choices": [
       "To save your GitHub password",
       "To delete all cards",
-      "To prevent the app from crashing completely even if some values are missing,",
+      "To keep the app usable when optional values are missing",
       "To hide the verification results"
     ],
-    "answer": "To prevent the app from crashing completely even if some values are missing,",
-    "explanation": "A \"safe default\" is a default value set to ensure that an app operates safely when a value is missing or invalid. Even with validated data, it’s best to handle it defensively at runtime. While default values are convenient, they can mask incorrect data, so it’s best to use them in conjunction with logs or warnings.",
+    "answer": "To keep the app usable when optional values are missing",
+    "explanation": "A safe default lets the app continue when an optional value is absent. Here, missing choices become an empty list and a missing title gets a label. Defaults can hide corrupt data if applied to required fields, so validate required values as errors and reserve defaults for genuinely optional values.",
     "side_card_ids": [
       "PYV102_A7_RESILIENCE_RECOVERY",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -325,17 +325,17 @@
       "support"
     ],
     "reading_goal": "Understand how to distinguish between errors displayed to users and logs viewed by developers.",
-    "code": "console.error(error) showError('An error has occurred')",
+    "code": "console.error(error)\nshowError('Something went wrong')",
     "question_type": "meaning_choice",
     "question": "Why are error logs and user messages distinguished from one another?",
     "choices": [
       "To save your GitHub password",
       "To delete all cards",
-      "To keep a record of development information and display messages that users can understand,",
+      "To keep diagnostic details in logs while showing users an understandable message",
       "To hide the verification results"
     ],
-    "answer": "To keep a record of development information and display messages that users can understand,",
-    "explanation": "An error log is a record kept so that developers can identify the cause and location of an error. Users should be provided with guidance that is easier to understand than internal system messages. While a stack trace may be necessary in developer logs, messages focused on resolution steps are more appropriate for the user interface.",
+    "answer": "To keep diagnostic details in logs while showing users an understandable message",
+    "explanation": "Developer logs should contain the error type and location needed for diagnosis, while the UI should explain the problem and next action in plain language. Do not put stack traces, tokens, or personal notes in the user message, and avoid recording sensitive values in production logs. A non-sensitive error ID can connect the two views.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW"
     ],
@@ -351,17 +351,17 @@
       "resilience"
     ],
     "reading_goal": "Understand a retry policy that avoids infinite retries and specifies the number of attempts and the interval between them.",
-    "code": "maxRetries = 3\nwait = 500 * attempt",
+    "code": "maxRetries = 3\nwaitMs = 500 * (2 ** attempt)",
     "question_type": "meaning_choice",
     "question": "Why is a retry policy necessary?",
     "choices": [
       "To save your GitHub password",
       "To delete all cards",
-      "To prevent infinite retries or excessive requests,",
+      "To prevent endless retries and excessive requests",
       "To hide the verification results"
     ],
-    "answer": "To prevent infinite retries or excessive requests,",
-    "explanation": "A retry policy is a set of rules that determines when, how many times, and at what intervals to retry a failed request. Endless retries place a burden on both the app and the server. By defining a limit on the number of retries, a backoff strategy, and termination conditions together, you can recover from transient errors and stop persistent errors.",
+    "answer": "To prevent endless retries and excessive requests",
+    "explanation": "A retry policy defines which failures to retry, how many times, and at what interval. This simplified example increases the delay exponentially with the attempt count. In production, add a small random jitter so clients do not retry together, and retry only transient operations that are safe to repeat.",
     "side_card_ids": [
       "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
     ],
@@ -404,17 +404,17 @@
       "retry"
     ],
     "reading_goal": "Understand the recovery flow, which includes error detection, guidance, retries, cache replacement, and logging.",
-    "code": "detectError()\nshowFallback()\nofferRetry()\nuseCacheIfPossible()\nlogError()",
+    "code": "detectError()\nlogSafely()\nshowCacheOrFallback()\nofferRetry()\nrestoreState()",
     "question_type": "meaning_choice",
     "question": "What is the natural sequence of the error recovery flow?",
     "choices": [
       "To save your GitHub password",
       "To delete all cards",
-      "Error detection → Fallback guidance → Retry → Cache replacement → Logging",
+      "Detect the error → Log safely → Show cache or a fallback → Offer retry → Restore state",
       "To hide the verification results"
     ],
-    "answer": "Error detection → Fallback guidance → Retry → Cache replacement → Logging",
-    "explanation": "For learning apps, it’s just as important to have a process that doesn’t lose user trust when errors occur as it is to avoid errors altogether. The error recovery flow is the process that allows users to retry or safely return to where they were after a failure. You need to verify the error message, the retry button, and the sequence for restoring the state.",
+    "answer": "Detect the error → Log safely → Show cache or a fallback → Offer retry → Restore state",
+    "explanation": "After detecting an error, record useful diagnostics without sensitive data. Then show available cached content or a fallback, offer retry for work that is safe to repeat, and restore the user's input and screen state after success. Cache display and retry can be ordered differently by situation, but the user should always have a clear next step without losing work.",
     "side_card_ids": [
       "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
     ],

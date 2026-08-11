@@ -73,7 +73,7 @@
       "Stay logged in for a certain period of time"
     ],
     "answer": "Stay logged in for a certain period of time",
-    "explanation": "A session is a mechanism for maintaining a user’s logged-in status on a server or in a storage system for a certain period of time. It helps users avoid having to re-enter their password with every request. Sessions require an expiration time, and the system is designed to automatically log the user out upon expiration or after a prolonged period of inactivity.",
+    "explanation": "In a server-side session, a successful login creates a random session ID while the user and expiration data remain in server storage. The browser normally sends only the ID in a cookie with Secure, HttpOnly, and SameSite attributes instead of resending a password. Also design expiration, logout invalidation, and ID regeneration.",
     "side_card_ids": [
       "WEB_auth_001",
       "PYV102_A7_AUTH_SECURITY"
@@ -100,7 +100,7 @@
       "To allow the API to verify the user making the request"
     ],
     "answer": "To allow the API to verify the user making the request",
-    "explanation": "An access token is a short authorization value that verifies a user’s authentication status in an API request. The server uses this token to identify the requester. When sent in the Authorization header, the server can verify the request’s authorization without directly asking for a session. Therefore, the correct answer is “to allow the API to verify the user making the request.”",
+    "explanation": "An access token is a bearer credential presented to an API. The server validates its signature or lookup result, issuer, audience, expiry, and scope before deciding who is calling and what is allowed. The mere presence of a string in Authorization is not authentication; transmit it over TLS and keep it out of logs.",
     "side_card_ids": [
       "PYV102_A7_AUTH_SECURITY",
       "PYV102_A7_PRIVACY_ANALYTICS"
@@ -127,7 +127,7 @@
       "Used to obtain a new access token"
     ],
     "answer": "Used to obtain a new access token",
-    "explanation": "The access token is kept short, while the refresh token is kept longer to balance security and convenience. The refresh token is a long-lived token used to obtain a new token when the access token expires. Where it is stored and preventing its theft are particularly important. Therefore, the correct answer is “It is used to obtain a new access token.”",
+    "explanation": "A refresh token is used at the authorization server to obtain a new access token when the old one expires. Its longer life requires stronger protection; browser apps commonly consider a secure cookie that JavaScript cannot read. Rotation, reuse detection, and server-side revocation policy are also needed.",
     "side_card_ids": [
       "WEB_auth_001",
       "PYV102_A7_AUTH_SECURITY"
@@ -143,8 +143,8 @@
       "token",
       "claims"
     ],
-    "reading_goal": "I understand that a JWT is a type of token that contains claims such as user information and expiration time.",
-    "code": "JWT payload:\n{\n  \"sub\": \"u1\",\n  \"role\": \"student\",\n  \"exp\": 1770000000\n}",
+    "reading_goal": "Understand what the `sub`, `role`, and `exp` claims in a JWT payload represent and that the payload is not an encrypted place for secrets.",
+    "code": "JWT payload:\n{\n  \"sub\": \"u1\",\n  \"role\": \"student\",\n  \"exp\": 1893456000\n}",
     "question_type": "meaning_choice",
     "question": "What does the \"sub\" field usually represent?",
     "choices": [
@@ -154,7 +154,7 @@
       "User ID"
     ],
     "answer": "User ID",
-    "explanation": "A JWT payload can contain claims such as subject, role, and expiration. A JWT is a token signed by the server that can contain user information and an expiration time. Since the payload is readable, you should not include sensitive information such as passwords. Therefore, the correct answer is “user identifier.”",
+    "explanation": "sub means subject and identifies the entity represented by the token, user u1 here. exp is an expiration time expressed as Unix time. A signed JWT payload is not encrypted by default, so do not put secrets in it. The server must validate the signature plus allowed algorithm, issuer, audience, exp, and other required claims.",
     "side_card_ids": [],
     "project_context": "The server can read the `user_id` from the token to save progress for each user."
   },
@@ -199,13 +199,13 @@
     "question_type": "meaning_choice",
     "question": "Which of the following is the most appropriate reason for using environment variables?",
     "choices": [
-      "To automatically generate a card ID",
-      "To slow down the server",
-      "To delete the Git log",
-      "To avoid writing secret values directly into code files,"
+      "Keep secret values out of source-code files",
+      "Make the key public",
+      "Disable authentication",
+      "Store the value in browser JavaScript"
     ],
-    "answer": "To avoid writing secret values directly into code files,",
-    "explanation": "Using `env` allows you to securely store different secret values for local and server environments, even with the same code. `secret` and `env` are related to the practice of managing secret values as environment variables rather than hard-coding them directly into the code. You must ensure that API keys or tokens are not committed to the repository.",
+    "answer": "Keep secret values out of source-code files",
+    "explanation": "Environment variables are one way to separate environment-specific secrets from source code and the repository. They are not automatically safe: process inspection, error logs, diagnostics, or CI settings can expose them. Apply least privilege and rotation, and consider an access-controlled secret store in production.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -221,17 +221,17 @@
       "security"
     ],
     "reading_goal": "Understand why hashes are stored instead of plaintext passwords.",
-    "code": "stored_password = hash_password(\"user password\")\n\ndatabase:\n  password_hash = \"$argon2id$...\"",
+    "code": "password_hash = argon2.hash(plain_password)\n\n# later, during login\nargon2.verify(password_hash, submitted_password)",
     "question_type": "meaning_choice",
     "question": "Why is the `password_hash` stored in the database?",
     "choices": [
-      "To prevent users from logging in",
-      "To shorten the card JSON",
-      "To protect CSS files",
-      "To reduce the risk of exposing plaintext passwords,"
+      "Reduce the risk of exposing plaintext passwords",
+      "Recover every user's original password",
+      "Remove the need for access control",
+      "Make login possible without verification"
     ],
-    "answer": "To reduce the risk of exposing plaintext passwords,",
-    "explanation": "A password hash is a method of storing a verifiable transformed value instead of the plaintext password. Storing the plaintext password should be avoided to minimize the damage caused by a leak. During the login process, the entered password is hashed in the same way and compared to the stored value.",
+    "answer": "Reduce the risk of exposing plaintext passwords",
+    "explanation": "Store passwords with a password KDF such as Argon2id and a random salt, not as plaintext or a fast general hash. At login, do not compare a newly produced hash string; use the verification function with the parameters and salt encoded in the stored hash. Rehash with stronger parameters after a successful verification when needed.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -247,7 +247,7 @@
       "delegated_auth"
     ],
     "reading_goal": "Understand the OAuth flow for logging in with an external account, such as Google.",
-    "code": "User clicks \"Login with Google\"\nGoogle verifies user\nApp receives auth result\nApp creates session",
+    "code": "User clicks \"Login with Google\"\nGoogle authenticates the user and asks consent\nApp validates the OpenID Connect result\nApp creates its own session",
     "question_type": "order_choice",
     "question": "Google verifies the user. What's the next logical step?",
     "choices": [
@@ -257,7 +257,7 @@
       "App receives auth result"
     ],
     "answer": "App receives auth result",
-    "explanation": "OAuth is a method that allows users to authenticate using an external provider’s authentication results without directly providing their password to the app. OAuth is a method that allows users to authenticate using an external account without directly providing their password to the app. It is important to understand the differences between the redirect, token, and scope flows. Therefore, the correct answer is “App receives auth result.”",
+    "explanation": "OAuth 2.0 is a framework for delegating limited resource access without giving the app the user's provider password. Login with Google normally uses OpenID Connect on top of OAuth to obtain identity information. Validate the ID token's signature, issuer, audience, nonce, and required claims before creating an application session.",
     "side_card_ids": [
       "PYV102_A7_AUTH_SECURITY",
       "PYV102_A7_PRIVACY_ANALYTICS"
@@ -311,7 +311,7 @@
       "Because it sends authentication headers to a different origin"
     ],
     "answer": "Because it sends authentication headers to a different origin",
-    "explanation": "If the front-end and back-end ports or domains are different, you may need to configure CORS and allow headers. CORS and authentication headers are important when a browser sends a token to an API from a different origin. You must verify both the origins and headers allowed by the server.",
+    "explanation": "Sending a non-safelisted header such as Authorization to another origin normally causes a browser preflight that asks what the server allows. Allow only required origins, methods, and the Authorization header. CORS never replaces token validation, and server-side authentication and authorization remain necessary.",
     "side_card_ids": [],
     "project_context": "This is a problem that can occur when you run the PWA and the FastAPI server separately."
   },
@@ -335,7 +335,7 @@
       "401 Unauthorized"
     ],
     "answer": "401 Unauthorized",
-    "explanation": "Token expiration is a security measure that sets a validity period for tokens. Expired tokens are no longer considered valid for authentication, requiring the user to log in again or renew the token. Setting an expiration time reduces the risk of stolen tokens being exploited indefinitely. Therefore, the response to a request is “401 Unauthorized.”",
+    "explanation": "When server-side exp validation says the credential has expired, it can no longer authenticate the request, so 401 is usually appropriate. 403 generally means the caller is authenticated but lacks permission for the action. Validate against server time with a small, deliberate clock-skew policy rather than trusting client time.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -351,17 +351,17 @@
       "database"
     ],
     "reading_goal": "Understand why sensitive tokens and keys are stored on the server side rather than on the front end.",
-    "code": "browser:\n  session_id only\n\nserver database:\n  encrypted_api_key\n  refresh_token",
+    "code": "browser cookie:\n  opaque_session_id; Secure; HttpOnly; SameSite=Lax\n\nserver secret store:\n  encrypted_api_key\n  refresh_token",
     "question_type": "meaning_choice",
     "question": "Why is the API key stored on the server side?",
     "choices": [
-      "To hide the correct answer on the card",
-      "To speed up GitHub Pages",
-      "To reduce the amount of CSS",
-      "To prevent it from being exposed in the browser code,"
+      "Keep it out of browser code",
+      "Make every visitor an administrator",
+      "Disable TLS",
+      "Publish it in the frontend bundle"
     ],
-    "answer": "To prevent it from being exposed in the browser code,",
-    "explanation": "Since values sent to the browser are visible to the user, sensitive keys must be stored on the server. Server-side storage is a method of storing important values on the server rather than in the browser. It is suitable for values that would be dangerous if exposed, such as API keys or secret tokens. Therefore, the correct answer is “to prevent them from being exposed in the browser code.”",
+    "answer": "Keep it out of browser code",
+    "explanation": "Keeping API keys and refresh tokens in access-controlled server storage prevents sending them directly to browser code. Encryption at rest is not enough: separate encryption keys, apply least privilege, mask logs, and rotate secrets. Give the browser only an opaque session ID in a cookie with security attributes.",
     "side_card_ids": [
       "PYV158_A1_DATABASE_FLOW"
     ],
@@ -387,7 +387,7 @@
       "There were too many requests, so access has been restricted."
     ],
     "answer": "There were too many requests, so access has been restricted.",
-    "explanation": "Rate limiting is the first line of defense against skyrocketing costs, indiscriminate login attempts, and API abuse. Rate limiting is a mechanism that restricts users from sending too many requests. Abuse prevention includes additional safeguards to prevent cost overruns and misuse. Therefore, the response is “Request limited due to excessive volume.”",
+    "explanation": "429 says this request was rejected because it exceeded the applied request-rate rule. Rate limiting is one defense against cost and automated abuse, but it does not stop every distributed attack, account rotation, or brute-force attempt. Before authentication, use signals such as IP as well, and design Retry-After, detection, careful lockout, and other protections.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],

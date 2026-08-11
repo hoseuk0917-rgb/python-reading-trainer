@@ -23,7 +23,7 @@
     "side_card_ids": [
       "SC_variable_flow"
     ],
-    "project_context": "CSV 비슷한 문자열이나 로그 한 줄을 나눠 읽을 때 자주 쓰인다."
+    "project_context": "단순 구분 문자열이나 로그 한 줄에는 쓸 수 있지만, 따옴표·이스케이프 규칙이 있는 실제 CSV는 csv 모듈로 읽어야 한다."
   },
   {
     "id": "PY3_L03_join_001",
@@ -97,7 +97,7 @@
       "0.7"
     ],
     "answer": "B",
-    "explanation": "sort의 key는 무엇을 기준으로 정렬할지 정한다. 이 코드에서는 score를 기준으로 내림차순 정렬하므로 0.9인 B가 먼저 온다. reverse=True가 있으면 큰 값이 앞에 오므로 key와 reverse를 함께 읽어야 최종 순서를 정확히 알 수 있다.",
+    "explanation": "sorted의 key는 각 항목에서 정렬 기준값을 꺼내는 함수다. lambda가 score를 반환하고 reverse=True가 큰 값을 앞으로 보내므로 0.9인 B가 먼저 온다. sorted는 새 리스트 ranked를 만들며 원본 rows의 순서를 직접 바꾸지 않는다. 따라서 ranked[0]['label']은 B다.",
     "side_card_ids": [
       "DATA_index_001"
     ],
@@ -123,7 +123,7 @@
       "['LiDAR', 'Radar']만 남는다"
     ],
     "answer": "['LiDAR', 'Radar']만 남는다",
-    "explanation": "set은 이미 본 값을 빠르게 확인할 때 유용하다. 이 예제에서는 첫 번째 LiDAR를 seen에 넣고, 두 번째 LiDAR는 이미 들어 있으므로 중복으로 보고 건너뛴다. 중복 제거 코드는 보통 본 적 있는지 검사하고, 없으면 결과에 추가한 뒤 seen에도 기록한다. 값을 seen에 넣는 시점과 continue 또는 append가 실행되는 조건을 함께 추적해야 한다. 따라서 출력은 ‘['LiDAR', 'Radar']만 남는다’이다.",
+    "explanation": "seen set은 이미 본 값을 빠르게 확인하는 용도이고, unique 리스트는 처음 등장한 순서대로 결과를 보관한다. 첫 LiDAR와 Radar는 둘 다 추가되지만 두 번째 LiDAR는 seen에 있어 continue로 건너뛴다. 따라서 ['LiDAR', 'Radar']만 남는다. set 자체의 반복 순서가 원본 순서를 보장하는 것은 아니며, 이 예제의 순서는 labels를 앞에서부터 읽어 unique에 append하기 때문에 유지된다.",
     "side_card_ids": [
       "DATA_dedup_001"
     ],
@@ -175,7 +175,7 @@
       "0"
     ],
     "answer": "0",
-    "explanation": "중첩된 값은 중간 key가 없으면 오류가 날 수 있다. get을 단계적으로 쓰면 meta 안에 score가 없을 때 기본값 0을 안전하게 돌려줄 수 있다. 중첩 get은 편하지만 구조가 복잡해지면 helper 함수로 감싸 읽기 쉽게 만드는 것도 좋다.",
+    "explanation": "row.get('meta', {})는 meta key가 없으면 빈 dict를 반환한다. 이 예제에서는 meta가 빈 dict이므로 이어지는 .get('score', 0)이 기본값 0을 반환한다. 다만 meta key가 있으면서 값이 None이나 다른 자료형이면 첫 get의 기본값은 쓰이지 않아 두 번째 .get에서 오류가 날 수 있다. 그래서 이 패턴은 중간 값이 dict라는 전제까지 보장될 때만 안전하다.",
     "side_card_ids": [
       "SC_get_safety"
     ],
@@ -201,7 +201,7 @@
       "README.md 내용을 읽고 길이를 출력한다"
     ],
     "answer": "README.md 내용을 읽고 길이를 출력한다",
-    "explanation": "read_text는 파일 전체 내용을 문자열로 읽는다. 작은 설정 파일이나 카드 JSON 조각을 확인할 때 간단히 사용할 수 있다. 파일이 크면 한 번에 모두 메모리에 올라오므로 로그나 대용량 데이터에서는 줄 단위 읽기와 비교해야 한다. 따라서 출력은 ‘README.md 내용을 읽고 길이를 출력한다’이다.",
+    "explanation": "read_text는 README.md 전체를 UTF-8 문자열로 읽고, len(text)는 그 문자열의 문자 수를 계산해 출력한다. 실제 숫자는 파일 내용에 따라 달라진다. 파일이 크면 전체가 한꺼번에 메모리에 올라오며, 파일이 없거나 UTF-8로 해석할 수 없으면 예외가 날 수 있다. 질문의 정답은 ‘README.md 내용을 읽고 길이를 출력한다’이다.",
     "side_card_ids": [
       "CS_encoding_utf8_001"
     ],
@@ -250,10 +250,10 @@
       "문자열 하나를 줄 단위로 자른다",
       "서버를 실행한다",
       "이미지를 저장한다",
-      "파일 안 JSON을 dict/list로 읽는다"
+      "파일 안 JSON을 파이썬 값으로 읽는다"
     ],
-    "answer": "파일 안 JSON을 dict/list로 읽는다",
-    "explanation": "json.load는 열린 파일 객체에서 JSON 내용을 읽어 파이썬 dict나 list로 바꾼다. 파일 기반 설정이나 데이터 로딩에 자주 쓰인다. 파일 인코딩과 JSON 구조가 맞아야 하므로 로딩 뒤에는 필요한 key가 있는지도 함께 확인하는 편이 안전하다.",
+    "answer": "파일 안 JSON을 파이썬 값으로 읽는다",
+    "explanation": "json.load는 열린 파일 객체의 JSON 문서를 파싱해 대응하는 파이썬 값을 반환한다. JSON 객체는 dict, 배열은 list가 되지만 문자열·숫자·불리언·null도 각각 대응하는 값이 될 수 있다. 이 코드는 최상위 값이 dict이고 mode key가 있다는 전제이므로, 파싱 성공과 필요한 구조 검증을 따로 구분해야 한다.",
     "side_card_ids": [
       "CS_json_jsonl_001"
     ],
@@ -271,7 +271,7 @@
     "reading_goal": "dict/list를 JSON 파일로 저장하는 코드를 읽는다.",
     "code": "import json\n\nresult = {\"ok\": True, \"count\": 3}\nwith open(\"result.json\", \"w\", encoding=\"utf-8\") as f:\n    json.dump(result, f, ensure_ascii=False, indent=2)",
     "question_type": "meaning_choice",
-    "question": "이 코드는 어떤 dict를 JSON 파일로 저장하는가?",
+    "question": "이 코드는 무엇을 하는가?",
     "choices": [
       "CSV를 엑셀로 바꾼다",
       "폴더를 삭제한다",
@@ -383,7 +383,7 @@
       "id 컬럼을 기준으로 합친다"
     ],
     "answer": "id 컬럼을 기준으로 합친다",
-    "explanation": "pandas merge는 공통 컬럼을 기준으로 두 DataFrame을 결합한다. 서로 다른 표의 정보를 같은 id나 key로 이어 붙일 때 쓴다. on에 지정한 컬럼 값이 양쪽 표에서 맞는 행끼리 합쳐지므로 key 중복 여부도 중요하다.",
+    "explanation": "on='id'는 양쪽 DataFrame의 id 값이 같은 행끼리 연결하라는 뜻이다. how='left'이므로 왼쪽 nodes의 모든 행을 유지하고, 일치하는 scores 정보가 없으면 오른쪽 컬럼은 결측값이 된다. 어느 한쪽 id가 중복되면 결과 행이 여러 개로 늘어날 수 있으므로 key의 유일성도 확인해야 한다.",
     "side_card_ids": [
       "DATA_rdb_001"
     ],
@@ -433,10 +433,10 @@
       "모든 행",
       "doc_id가 있는 행",
       "첫 번째 행만",
-      "doc_id가 비어 있는 행"
+      "doc_id가 결측값인 행"
     ],
-    "answer": "doc_id가 비어 있는 행",
-    "explanation": "isna()는 값이 비어 있거나 결측치인지 확인한다. 데이터 정제에서 빠진 값만 골라내거나 기본값으로 채울 때 사용한다. pandas isna는 값이 비어 있거나 결측인지 확인한다. CSV나 표 데이터를 정리할 때 빈 값 필터링과 기본값 채우기 전에 자주 사용한다. 따라서 정답은 ‘doc_id가 비어 있는 행’이다.",
+    "answer": "doc_id가 결측값인 행",
+    "explanation": "df['doc_id'].isna()는 각 행의 doc_id가 None, NaN 같은 결측값이면 True인 불리언 Series를 만든다. 그 Series로 df를 필터링하므로 missing에는 결측값인 행만 들어간다. 빈 문자열 ''은 기본적으로 결측값으로 간주되지 않으므로, 공백이나 빈 문자열까지 찾으려면 별도 조건이 필요하다.",
     "side_card_ids": [
       "SC_pm_code_review"
     ],
@@ -514,7 +514,7 @@
       "0.8"
     ],
     "answer": "0.8",
-    "explanation": "Pydantic 모델은 입력 데이터를 정해진 필드 구조에 맞게 검증하고 객체로 만든다. 이 코드에서는 Item 객체의 score 값 0.8을 읽는다. Pydantic은 타입 변환과 검증을 함께 처리하므로 API 입력 모델에 자주 쓰인다.",
+    "explanation": "Item을 만들 때 Pydantic이 title과 score를 선언된 필드에 맞게 검증하고, 성공하면 Item 객체를 만든다. 이 입력의 score는 유효한 0.8이므로 item.score도 0.8이고 그대로 출력된다. 기본 설정에서는 일부 입력을 선언 타입으로 변환할 수 있지만 strict 설정에서는 변환 규칙이 달라지며, 변환할 수 없는 입력은 ValidationError를 낸다.",
     "side_card_ids": [
       "DATA_schema_001"
     ],
@@ -540,7 +540,7 @@
       "limit 기본값은 10이고 정수로 받는다"
     ],
     "answer": "limit 기본값은 10이고 정수로 받는다",
-    "explanation": "FastAPI는 함수 인자를 URL query parameter로 해석할 수 있다. 예를 들어 ?q=lidar처럼 들어온 값을 함수 인자로 받을 수 있다. 기본값이 있으면 limit을 생략해도 서버가 안정적으로 동작한다. 따라서 반환/호출 결과는 ‘limit 기본값은 10이고 정수로 받는다’이다.",
+    "explanation": "app이 FastAPI 객체라는 전제에서 경로에 포함되지 않은 q와 limit은 쿼리 파라미터가 된다. URL의 값은 문자열로 오지만 FastAPI가 limit을 int로 변환하고 검증한다. limit을 생략하면 기본값 10을 쓰고, 정수로 바꿀 수 없는 값을 보내면 검증 오류 응답이 난다. q에는 기본값이 없으므로 필수다. 질문의 정답은 ‘limit 기본값은 10이고 정수로 받는다’이다.",
     "side_card_ids": [
       "PL_endpoint_001"
     ],
@@ -566,7 +566,7 @@
       "DB에서 title을 최대 10개 조회한다"
     ],
     "answer": "DB에서 title을 최대 10개 조회한다",
-    "explanation": "SQLite 쿼리는 작은 로컬 DB에서 데이터를 읽을 때 쓴다. SELECT title FROM items LIMIT 10은 items에서 title을 최대 10개 가져온다.",
+    "explanation": "sqlite3.connect는 app.db 연결을 열고, SELECT title FROM items LIMIT 10은 items 테이블에서 title 한 컬럼을 최대 10행 조회한다. fetchall()은 결과를 튜플 목록으로 가져오며 print(len(rows))는 실제로 조회된 행 수를 출력한다. 이 예제는 연결을 닫지 않으므로 실제 코드에서는 with 문이나 conn.close()로 정리하는지도 확인해야 한다.",
     "side_card_ids": [
       "LANG_sql_query_001",
       "DATA_rdb_001"
@@ -617,10 +617,10 @@
       "5초 기다린다",
       "5개 파일을 삭제한다",
       "5번 학습한다",
-      "상위 5개 후보를 찾는다"
+      "상위 후보를 최대 5개 요청한다"
     ],
-    "answer": "상위 5개 후보를 찾는다",
-    "explanation": "vector search에서 top_k는 가장 비슷한 결과를 몇 개 가져올지 정하는 값이다. top_k=5라면 상위 5개 후보만 반환한다. top_k가 너무 작으면 좋은 후보를 놓칠 수 있고 너무 크면 후속 rerank나 검토 비용이 늘어난다.",
+    "answer": "상위 후보를 최대 5개 요청한다",
+    "explanation": "top_k=5는 index.search에 점수 순 상위 후보를 최대 5개 요청한다는 뜻이다. 실제 결과는 인덱스에 저장된 항목 수나 필터 조건에 따라 5개보다 적을 수 있고, 무엇을 ‘가깝다’고 보는지는 인덱스의 거리·유사도 설정에 달려 있다. top_k가 작으면 관련 후보를 놓칠 수 있고 너무 크면 후속 재정렬이나 검토 비용이 늘어난다.",
     "side_card_ids": [
       "AI_vector_db_001"
     ],
@@ -672,14 +672,14 @@
       "이미지를 만든다",
       "로그인을 처리한다",
       "파일을 암호화한다",
-      "자료를 수집하고 중복 제거 후 상위 20개를 고른다"
+      "자료를 수집·중복 제거·랭킹한 뒤 앞에서 최대 20개를 반환한다"
     ],
-    "answer": "자료를 수집하고 중복 제거 후 상위 20개를 고른다",
-    "explanation": "harvest는 자료 수집, dedup은 중복 제거, rank는 우선순위 계산이다. 마지막 top 20은 상위 20개만 고르는 단계다. 수집한 자료 전체를 바로 보여주지 않고 중복 제거와 점수화를 거쳐 추천 후보를 줄이는 흐름으로 읽으면 된다.",
+    "answer": "자료를 수집·중복 제거·랭킹한 뒤 앞에서 최대 20개를 반환한다",
+    "explanation": "harvest가 자료를 모으고 dedup이 중복을 제거한 뒤 rank_by_score가 목록을 반환한다. ranked[:20]은 그 목록의 앞에서 최대 20개를 잘라 반환한다. 이 20개를 실제 ‘상위’ 후보라고 부르려면 rank_by_score가 높은 우선순위부터 정렬한다는 구현 계약이 필요하므로, 함수 본문이나 테스트에서 그 순서를 확인해야 한다.",
     "side_card_ids": [
       "PL_harvest_001",
       "PL_curation_001"
     ],
-    "project_context": "네 home-curator/reading queue 파이프라인 이해에 직접 연결된다."
+    "project_context": "수집 결과를 중복 제거하고 우선순위 목록으로 줄이는 일일 큐레이션 흐름을 읽는 예제다."
   }
 ]

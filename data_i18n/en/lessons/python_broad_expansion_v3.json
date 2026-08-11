@@ -23,7 +23,7 @@
     "side_card_ids": [
       "SC_variable_flow"
     ],
-    "project_context": "It is often used when reading CSV-like strings or individual lines of log data."
+    "project_context": "This works for simple delimited strings or log lines; real CSV with quoting and escaping rules should be read with the `csv` module."
   },
   {
     "id": "PY3_L03_join_001",
@@ -45,7 +45,7 @@
       "Assuming a runtime error has occurred"
     ],
     "answer": "UAM | ADAS | Robotics, separated by a delimiter",
-    "explanation": "The `join` method is used to combine the strings in a list into a single string. In this case, the string preceding `join` acts as a separator between each item. For example, `','.join(items)` concatenates the items with commas, while `''.join(items)` concatenates them directly without a separator. Since `join` is a tool for concatenating a list of strings—not a list of numbers—you must also verify that all items are strings. Therefore, the output is “UAM | ADAS | Robotics, separated by commas.”",
+    "explanation": "The `join` method combines the strings in a list into one string. The string before `.join` becomes the separator between items. Here that separator is ` | `, so the output is `UAM | ADAS | Robotics`. `','.join(items)` would use commas, and `''.join(items)` would use no separator. Every item must be a string unless it is converted first.",
     "side_card_ids": [
       "SC_list_why_used"
     ],
@@ -71,7 +71,7 @@
       "LiDAR with leading and trailing spaces removed"
     ],
     "answer": "LiDAR with leading and trailing spaces removed",
-    "explanation": "The `strip()` function creates a new string by removing leading and trailing whitespace and line breaks. It is often used to clean up user-entered values or text read from a file. It is important to note that it leaves leading and trailing whitespace intact while removing only the whitespace at the very beginning and end. Since it returns the cleaned result rather than modifying the original string directly, you must ensure that you store the result in a variable or use it in subsequent comparisons. Therefore, the output is “LiDAR with leading and trailing whitespace removed.”",
+    "explanation": "`strip()` returns a new string with whitespace removed from both ends. It does not remove spaces in the middle of a string and does not modify `raw` itself. Because the returned value is assigned to `label`, the output is `LiDAR` without its leading or trailing spaces.",
     "side_card_ids": [
       "SC_normalization"
     ],
@@ -80,7 +80,7 @@
   {
     "id": "PY3_L04_sort_key_001",
     "level": 4,
-    "title": "Reading the `sorted_key` function",
+    "title": "Reading the `key` argument of `sorted`",
     "concepts": [
       "sorted",
       "lambda",
@@ -97,7 +97,7 @@
       "0.7"
     ],
     "answer": "B",
-    "explanation": "The `key` parameter in `sort` determines the sorting criterion. In this code, the elements are sorted in descending order by `score`, so B (with a score of 0.9) appears first. If `reverse=True` is specified, larger values appear first; therefore, you must consider both the `key` and `reverse` parameters together to accurately determine the final order.",
+    "explanation": "The `key` argument of `sorted` is a function that extracts the comparison value from each item. The lambda returns each row's `score`, and `reverse=True` puts larger values first, so B with 0.9 is first. `sorted` creates the new list `ranked` without changing the order of the original `rows`, and `ranked[0]['label']` is therefore `B`.",
     "side_card_ids": [
       "DATA_index_001"
     ],
@@ -123,7 +123,7 @@
       "Only ['LiDAR', 'Radar'] remain"
     ],
     "answer": "Only ['LiDAR', 'Radar'] remain",
-    "explanation": "A set is useful for quickly checking whether a value has already been seen. In this example, the first LiDAR reading is added to `seen`, and since the second LiDAR reading is already in the set, it is treated as a duplicate and skipped. Duplicate removal code typically checks whether a value has been seen before; if not, it adds it to the result and records it in `seen`. You must track both when a value is added to `seen` and the conditions under which `continue` or `append` is executed. Therefore, the output is “Only [‘LiDAR’, ‘Radar’] remains.”",
+    "explanation": "The `seen` set supports fast membership checks, while the `unique` list preserves first-seen order. The first `LiDAR` and `Radar` are appended, but the second `LiDAR` is already in `seen`, so `continue` skips it. The output is `['LiDAR', 'Radar']`. A set's own iteration order does not promise the input order; this example preserves order because it walks `labels` and appends to a separate list.",
     "side_card_ids": [
       "DATA_dedup_001"
     ],
@@ -175,7 +175,7 @@
       "0"
     ],
     "answer": "0",
-    "explanation": "Nested values may cause errors if the intermediate key is missing. By using `get` in a step-by-step manner, you can safely return the default value of 0 when `score` is not present in `meta`. While nested `get` calls are convenient, it’s a good idea to wrap them in helper functions to make the code easier to read as the structure becomes more complex.",
+    "explanation": "`row.get('meta', {})` returns an empty dictionary when the `meta` key is absent. Here `meta` is already an empty dictionary, so the next `.get('score', 0)` returns 0. If `meta` exists but holds `None` or another non-dictionary value, the first default is not used and the second `.get` can fail. This pattern is safe only when the intermediate value is known to be a dictionary.",
     "side_card_ids": [
       "SC_get_safety"
     ],
@@ -201,7 +201,7 @@
       "Read the contents of README.md and print its length."
     ],
     "answer": "Read the contents of README.md and print its length.",
-    "explanation": "`read_text` reads the entire contents of a file as a string. It can be used simply to check small configuration files or snippets of JSON data. If the file is large, the entire contents are loaded into memory at once, so for logs or large datasets, it should be compared with line-by-line reading. Therefore, the output is “Reads the contents of ‘README.md’ and prints its length.”",
+    "explanation": "`read_text` loads all of `README.md` as a UTF-8 string, and `len(text)` prints its character count. The number depends on the file contents. A large file is loaded fully into memory, and a missing file or invalid UTF-8 can raise an exception. The answer is “Read the contents of README.md and print its length.”",
     "side_card_ids": [
       "CS_encoding_utf8_001"
     ],
@@ -250,10 +250,10 @@
       "Split a string into lines",
       "Start the server",
       "Save the image",
-      "Read JSON from a file as a dictionary or list"
+      "Parse JSON from a file into a Python value"
     ],
-    "answer": "Read JSON from a file as a dictionary or list",
-    "explanation": "`json.load` reads JSON content from an open file object and converts it into a Python dictionary or list. It is frequently used for file-based configuration or data loading. Since the file encoding and JSON structure must match, it is safer to also check whether the required keys are present after loading.",
+    "answer": "Parse JSON from a file into a Python value",
+    "explanation": "`json.load` parses a JSON document from an open file and returns the corresponding Python value. JSON objects become dictionaries and arrays become lists, but a top-level string, number, boolean, or null is also possible. This code assumes that the result is a dictionary with a `mode` key, so parsing success and schema validation are separate checks.",
     "side_card_ids": [
       "CS_json_jsonl_001"
     ],
@@ -271,7 +271,7 @@
     "reading_goal": "Read the code that saves a dict/list to a JSON file.",
     "code": "import json\n\nresult = {\"ok\": True, \"count\": 3}\nwith open(\"result.json\", \"w\", encoding=\"utf-8\") as f:\n    json.dump(result, f, ensure_ascii=False, indent=2)",
     "question_type": "meaning_choice",
-    "question": "Does this code save a dict to a JSON file?",
+    "question": "What does this code do?",
     "choices": [
       "Convert CSV to Excel",
       "Delete the folder",
@@ -283,7 +283,7 @@
     "side_card_ids": [
       "DATA_schema_001"
     ],
-    "project_context": "According to the verification results, it is used when saving settings and app card data."
+    "project_context": "This pattern is used when saving validation results, settings, or app card data."
   },
   {
     "id": "PY3_L07_cli_flags_001",
@@ -380,10 +380,10 @@
       "Delete the 'id' column",
       "Use the ID as the filename",
       "Discard all rows",
-      "Group by the 'id' column"
+      "Merge using the 'id' column"
     ],
-    "answer": "Group by the 'id' column",
-    "explanation": "The `pandas merge` function combines two DataFrames based on a common column. It is used to link information from different tables using the same ID or key. Since rows are merged based on matching values in the column specified by `on`, it is important to check for duplicate keys.",
+    "answer": "Merge using the 'id' column",
+    "explanation": "`on='id'` means that rows are matched using equal values in the `id` column of both DataFrames. Because `how='left'`, every row from `nodes` is retained; when no score matches, columns from `scores` contain missing values. Duplicate IDs on either side can multiply result rows, so key uniqueness also matters.",
     "side_card_ids": [
       "DATA_rdb_001"
     ],
@@ -433,10 +433,10 @@
       "All rows",
       "Rows with a doc_id",
       "Only the first row",
-      "Rows where doc_id is empty"
+      "Rows where doc_id is missing"
     ],
-    "answer": "Rows where doc_id is empty",
-    "explanation": "isna() checks whether a value is empty or missing. It is used in data cleaning to identify missing values or fill them with default values. The pandas isna function checks whether a value is empty or missing. It is frequently used when cleaning CSV or tabular data, typically before filtering out empty values or filling them with default values. Therefore, the correct answer is “rows where doc_id is empty.”",
+    "answer": "Rows where doc_id is missing",
+    "explanation": "`df['doc_id'].isna()` creates a Boolean Series that is `True` for missing values such as `None` or `NaN`. Filtering `df` with that Series places only those rows in `missing`. An empty string `''` is not considered missing by default, so blank strings or whitespace require an additional condition.",
     "side_card_ids": [
       "SC_pm_code_review"
     ],
@@ -514,7 +514,7 @@
       "0.8"
     ],
     "answer": "0.8",
-    "explanation": "The Pydantic model validates input data against a defined field structure and converts it into an object. In this code, it reads the `score` value of 0.8 from the `Item` object. Since Pydantic handles both type conversion and validation, it is frequently used in API input models.",
+    "explanation": "When `Item` is created, Pydantic validates `title` and `score` against the declared fields and creates the model on success. The supplied score is the valid value 0.8, so `item.score` prints 0.8. Default settings may coerce some inputs to declared types, while strict settings change coercion behavior; input that cannot be validated raises `ValidationError`.",
     "side_card_ids": [
       "DATA_schema_001"
     ],
@@ -540,7 +540,7 @@
       "The default value for `limit` is 10, and it must be an integer."
     ],
     "answer": "The default value for `limit` is 10, and it must be an integer.",
-    "explanation": "FastAPI can interpret function arguments as URL query parameters. For example, it can accept a value like ?q=lidar as a function argument. If a default value is specified, the server will operate reliably even if the `limit` parameter is omitted. Therefore, the conclusion is that “the default value for `limit` is 10, and it accepts integers.”",
+    "explanation": "Assuming `app` is a FastAPI application, `q` and `limit` are query parameters because they are not part of the path. URL values arrive as strings, and FastAPI converts and validates `limit` as an integer. Omitting it uses 10; a value that cannot become an integer causes a validation-error response. `q` has no default, so it is required. The answer is that `limit` has default 10 and is received as an integer.",
     "side_card_ids": [
       "PL_endpoint_001"
     ],
@@ -566,7 +566,7 @@
       "Retrieve up to 10 titles from the database."
     ],
     "answer": "Retrieve up to 10 titles from the database.",
-    "explanation": "SQLite queries are used to read data from a small local database. The query `SELECT title FROM items LIMIT 10` retrieves up to 10 `title` values from the `items` table.",
+    "explanation": "`sqlite3.connect` opens `app.db`, and `SELECT title FROM items LIMIT 10` selects one column from at most 10 rows. `fetchall()` returns those rows as a list of tuples, and `print(len(rows))` prints the number actually returned. This snippet does not close the connection, so practical code should also use a context manager or `conn.close()`.",
     "side_card_ids": [
       "LANG_sql_query_001",
       "DATA_rdb_001"
@@ -617,10 +617,10 @@
       "Wait 5 seconds",
       "Delete 5 files",
       "Study No. 5",
-      "Find the top 5 candidates"
+      "Request up to 5 top candidates"
     ],
-    "answer": "Find the top 5 candidates",
-    "explanation": "In vector search, `top_k` is a value that determines how many of the most similar results to retrieve. If `top_k=5`, only the top 5 candidates are returned. If `top_k` is too small, you may miss good candidates, and if it is too large, the cost of subsequent re-ranking or review increases.",
+    "answer": "Request up to 5 top candidates",
+    "explanation": "`top_k=5` asks `index.search` for up to five highest-ranked candidates. Fewer may be returned when the index or filters contain fewer eligible items, and the meaning of “closest” depends on the index's distance or similarity configuration. A small value can miss useful candidates, while a large one increases later reranking or review cost.",
     "side_card_ids": [
       "AI_vector_db_001"
     ],
@@ -672,14 +672,14 @@
       "Create an image",
       "Handles the login process",
       "Encrypt the file",
-      "Collect the data, remove duplicates, and select the top 20 entries."
+      "Collect, deduplicate, rank, and return up to the first 20 items"
     ],
-    "answer": "Collect the data, remove duplicates, and select the top 20 entries.",
-    "explanation": "\"harvest\" refers to data collection, \"dedup\" refers to deduplication, and \"rank\" refers to priority calculation. The final \"top 20\" step involves selecting only the top 20 items. You should understand this as a process where the system does not immediately display all collected data, but instead narrows down the list of recommendation candidates through deduplication and scoring.",
+    "answer": "Collect, deduplicate, rank, and return up to the first 20 items",
+    "explanation": "`harvest` collects items, `dedup` removes duplicates, and `rank_by_score` returns a list. The slice `ranked[:20]` returns at most the first 20 elements. Calling those elements the true “top” results depends on the contract that `rank_by_score` orders the best items first, so its implementation or tests must confirm that order.",
     "side_card_ids": [
       "PL_harvest_001",
       "PL_curation_001"
     ],
-    "project_context": "This is directly related to understanding the home-curator/reading queue pipeline."
+    "project_context": "This example shows a daily curation flow that reduces collected material to a deduplicated priority list."
   }
 ]

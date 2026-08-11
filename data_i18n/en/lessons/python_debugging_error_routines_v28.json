@@ -192,7 +192,7 @@
       "environment"
     ],
     "reading_goal": "If you can't import a module even after installing the package, check the Python interpreter you're using.",
-    "code": "ModuleNotFoundError: No module named \"fastapi\"\n\npython -c \"import sys; print(sys.executable)\"\npip show fastapi",
+    "code": "ModuleNotFoundError: No module named \"fastapi\"\n\npython -c \"import sys; print(sys.executable)\"\npython -m pip show fastapi",
     "question_type": "meaning_choice",
     "question": "Why do we print `sys.executable`?",
     "choices": [
@@ -202,7 +202,7 @@
       "To format JSON"
     ],
     "answer": "To check the path of the Python interpreter that is actually running,",
-    "explanation": "If the environment in which pip was run differs from the environment in which Python is running, the import may fail even though the module was installed. A `ModuleNotFoundError` means that the module you are trying to import could not be found. You need to check whether the module is installed, the virtual environment, the current working directory, and the package path.",
+    "explanation": "sys.executable shows the interpreter that ran the code, and python -m pip show checks for the FastAPI distribution in that same environment. An installation in another venv or interpreter does not satisfy the import. Also inspect whether a local file shadows the package and what appears on sys.path.",
     "side_card_ids": [
       "PYV103_ENV_MODULE_NOT_FOUND"
     ],
@@ -309,7 +309,7 @@
       "To change the port"
     ],
     "answer": "To reduce the browser's reliance on outdated cached data,",
-    "explanation": "The browser cache is a feature that allows the browser to store previously downloaded files for reuse. If the query string changes, the browser is likely to recognize it as a new resource and request it again. In PWAs, since service workers and the browser cache work together, version indicators are even more important.",
+    "explanation": "Changing the query version changes the full URL, so an ordinary browser cache is likely to request a separate resource. This is not guaranteed if a server, CDN, or service worker ignores queries or uses its own cache key. Check the response content version and service-worker update state, and use a consistent version or hash policy.",
     "side_card_ids": [
       "PYV160_A1_PWA_STATE_STORAGE_FLOW"
     ],
@@ -326,7 +326,7 @@
       "debugging"
     ],
     "reading_goal": "Understand the process for checking whether a file has loaded successfully or failed in the browser's Network tab.",
-    "code": "Troubleshooting Steps: 1. Press F12 2. Select the Network tab 3. Refresh the page 4. Check the status codes for app.js, style.css, and lesson.json",
+    "code": "Check sequence:\n1. Press F12\n2. Open the Network tab\n3. Refresh\n4. Inspect URL, status, and response for app.js / style.css / lesson JSON",
     "question_type": "order_choice",
     "question": "lesson: Which tab should you check first when the JSON doesn't load?",
     "choices": [
@@ -336,7 +336,7 @@
       "Application Color Settings"
     ],
     "answer": "Network",
-    "explanation": "On the Network tab, you can view the URL, status code, and cache status for each file request. DevTools Network shows which files and APIs the browser has requested. By reviewing the status code, request URL, and response content, you can quickly narrow down the cause of a loading failure.",
+    "explanation": "Network shows request URLs, status, response bodies, initiators, and cache or service-worker information. If lesson JSON is absent, check whether the request started, which URL it used, whether it returned 404 or 500, and whether a 200 body is the expected JSON. Check Console too for parsing and runtime errors.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW"
     ],
@@ -355,15 +355,15 @@
     "reading_goal": "Understand the risks and implications of the command used to revert a file that has been incorrectly modified back to its state at the time of the last commit.",
     "code": "git status\ngit restore src/pwa/app.js",
     "question_type": "meaning_choice",
-    "question": "What does \"git restore src/pwa/app.js\" mean?",
+    "question": "With no staged change, what does git restore src/pwa/app.js do?",
     "choices": [
       "Deploy app.js to GitHub",
       "Create a new branch",
-      "Revert uncommitted changes in app.js",
-      "Delete all commits"
+      "Restore working-tree app.js from the index",
+      "Delete every commit"
     ],
-    "answer": "Revert uncommitted changes in app.js",
-    "explanation": "Since `restore` may cause you to lose local changes, you should first check the status and carefully write only the necessary files. `git restore` is a command used to revert changes you’re currently working on. Be sure to verify the target files, as any uncommitted changes may be lost.",
+    "answer": "Restore working-tree app.js from the index",
+    "explanation": "Without an explicit source, git restore restores the working-tree file from the index. With no staged changes, that usually matches the last commit, but with staged content it restores that staged version. Because local edits can be lost, inspect git diff and git diff --cached, preserve any needed patch, and restore only the exact file.",
     "side_card_ids": [
       "PYV103_ENV_GIT_BRANCH_CONFLICT_RESTORE"
     ],
@@ -380,7 +380,7 @@
       "command"
     ],
     "reading_goal": "Understand why we leave the minimum number of commands necessary to reproduce the error.",
-    "code": "# Reproduction steps Set-Location \"D:\\projects\\python-reading-trainer\" .\\run_local_server.ps1 # Symptoms Stuck on \"Loading...\" in the browser",
+    "code": "# Reproduction command\nSet-Location \"<repository-root>\"\n.\\run_local_server.ps1\n\n# Symptom\nBrowser remains on \"Loading...\"",
     "question_type": "meaning_choice",
     "question": "What is the main reason for leaving a reproduction step-by-step guide?",
     "choices": [
@@ -390,7 +390,7 @@
       "To minify CSS"
     ],
     "answer": "To review the same issue again and verify whether it has been corrected,",
-    "explanation": "The \"reproduce\" command is used to recreate the same problem. Only by reproducing the issue can you identify the cause and verify that it has actually been fixed after making changes. If you document the command, input files, and version information together, others—or even your future self—can verify the issue under the same conditions.",
+    "explanation": "A reproduction procedure lets another person repeat the symptom and compare behavior before and after a fix. Replace a personal absolute path with repository revision, OS and shell, Python and browser versions, input data, exact command, expected and actual results, and logs. Remove secrets and personal paths from the report.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW"
     ],
@@ -407,7 +407,7 @@
       "validation"
     ],
     "reading_goal": "Instead of just fixing things blindly, learn to think by separating hypotheses from verification commands.",
-    "code": "Symptom: New card not visible on the screen Hypothesis A: Files missing from lessonFiles Verification: Select-String app.js -Pattern \"v28\" Hypothesis B: JSON syntax error Verification: Get-Content file.json | ConvertFrom-Json",
+    "code": "Symptom: A new card is not visible\n\nHypothesis A: The file is absent from the loading manifest\nCheck: Compare exact path sets with the file manifest\n\nHypothesis B: JSON syntax or schema is invalid\nCheck: Get-Content file.json -Raw | ConvertFrom-Json",
     "question_type": "meaning_choice",
     "question": "What are the advantages of this method?",
     "choices": [
@@ -417,7 +417,7 @@
       "Ignore errors"
     ],
     "answer": "Separate verification commands by potential cause to reduce unnecessary fixes",
-    "explanation": "Hypothesis-based debugging is a method of formulating and verifying possible causes based on symptoms. Following the sequence of symptoms, hypotheses, verification, and correction helps keep even complex problems under control. By verifying hypotheses one at a time, you can reduce the confusion that arises from changing multiple causes simultaneously.",
+    "explanation": "For one symptom, form hypotheses that may not be mutually exclusive and define evidence that can falsify each. A v28 substring check can produce false positives, so compare exact path sets, and parse the full PowerShell JSON document with -Raw. Change one variable at a time and record the result before applying a fix.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW",
       "PYV158_A1_DEBUGGING_FLOW"

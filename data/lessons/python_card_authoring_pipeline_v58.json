@@ -36,7 +36,7 @@
       "authoring"
     ],
     "reading_goal": "새 카드를 만들 때 반복되는 필드를 template으로 잡는 방식을 이해한다.",
-    "code": "template = {\n  id: '',\n  title: '',\n  question: '',\n  answer: ''\n}",
+    "code": "template = {\n  id: '',\n  level: null,\n  title: '',\n  question: '',\n  choices: [],\n  answer: '',\n  explanation: '',\n  concepts: []\n}",
     "question_type": "meaning_choice",
     "question": "card template의 역할은?",
     "choices": [
@@ -46,7 +46,7 @@
       "카드 작성에 필요한 기본 필드를 빠뜨리지 않게 한다"
     ],
     "answer": "카드 작성에 필요한 기본 필드를 빠뜨리지 않게 한다",
-    "explanation": "card template은 질문, 선택지, 정답, 해설, 개념 태그 같은 카드 구조를 미리 정한 틀이다. 형식이 일정해지고 자동 검증도 쉬워진다. 템플릿을 정해 두면 새 카드를 대량 생성해도 누락 필드나 형식 오류를 자동으로 찾기 쉽다. 따라서 정답은 ‘카드 작성에 필요한 기본 필드를 빠뜨리지 않게 한다’이다.",
+    "explanation": "template에 실제 설명이 언급한 choices, explanation, concepts와 level까지 넣어 author가 필요한 field를 보게 한다. 빈 기본값은 완성된 card가 아니므로 schema validation으로 non-empty text, choice 수, answer membership, 허용 level과 concept ID를 검사해야 한다.",
     "side_card_ids": [
       "PYV158_A1_SCHEMA_FLOW"
     ],
@@ -62,7 +62,7 @@
       "quality_gate"
     ],
     "reading_goal": "카드에 반드시 필요한 필드를 정하고 검사하는 방식을 이해한다.",
-    "code": "required = ['id', 'level', 'title', 'question', 'choices', 'answer']",
+    "code": "required = [\n  'id', 'level', 'title', 'question',\n  'choices', 'answer', 'explanation', 'concepts'\n]",
     "question_type": "meaning_choice",
     "question": "required fields를 검사하는 이유는?",
     "choices": [
@@ -72,7 +72,7 @@
       "카드가 앱에서 깨지지 않도록 필수 정보를 확인하기 위해"
     ],
     "answer": "카드가 앱에서 깨지지 않도록 필수 정보를 확인하기 위해",
-    "explanation": "required fields는 카드가 반드시 가져야 하는 필수 항목이다. 빠진 필드가 있으면 JSON 로딩은 되어도 학습 화면에서 문제가 생길 수 있다. 필수 필드 검사는 카드 생성 직후와 배포 직전에 모두 실행하는 것이 좋다.",
+    "explanation": "required key 존재 검사는 rendering에 필요한 field 누락을 잡는다. 존재만으로 충분하지 않으므로 type, 빈 값, choice uniqueness, answer in choices, ID uniqueness와 reference도 검사한다. optional field는 schema에 기본값과 의미를 명시한다.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
@@ -124,7 +124,7 @@
       "초안 작성 → 검토 → 승인 → 배포"
     ],
     "answer": "초안 작성 → 검토 → 승인 → 배포",
-    "explanation": "review workflow는 생성된 카드를 사람이 확인하고 수정해 확정하는 절차다. 학습카드는 정확해야 하므로 생성 직후 바로 배포하지 않는 편이 안전하다. 검토 단계에서는 정답, 선택지, 설명, 태그, 난이도를 각각 확인해야 한다.",
+    "explanation": "draft → review → approve → publish는 상태 전이를 나타낸다. 학습 정확성에 중요한 card는 가능한 한 작성자와 독립적인 reviewer가 source, code 실행 결과, 정답·선지·설명과 난이도를 근거로 검토한다. approve 권한, 변경 뒤 재승인 조건과 audit trail을 명시한다.",
     "side_card_ids": [
       "PYV102_A7_AUTHORING_PIPELINE",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -167,7 +167,7 @@
       "card_creation"
     ],
     "reading_goal": "자료에서 카드까지 이어지는 콘텐츠 제작 파이프라인을 이해한다.",
-    "code": "source -> extract -> draftCards -> validate -> publish",
+    "code": "source -> extract -> draftCards -> humanReview -> validate -> publish",
     "question_type": "meaning_choice",
     "question": "content pipeline의 목적은?",
     "choices": [
@@ -177,7 +177,7 @@
       "원자료에서 학습 카드까지의 제작 흐름을 단계화하기 위해"
     ],
     "answer": "원자료에서 학습 카드까지의 제작 흐름을 단계화하기 위해",
-    "explanation": "content pipeline은 원본 수집, 카드 생성, 검토, 검증, 배포를 순서대로 연결한 흐름이다. 단계가 있으면 문제 위치를 추적하기 쉽다. 각 단계의 입력과 출력이 정해져 있으면 실패한 카드가 어느 과정에서 생겼는지 추적하기 쉽다. 따라서 정답은 ‘원자료에서 학습 카드까지의 제작 흐름을 단계화하기 위해’이다.",
+    "explanation": "source에서 text를 추출해 draft를 만들고 사람의 의미 검토와 자동 schema·reference validation을 거친 뒤 publish한다. 자동 validate는 사실 정확성과 pedagogical quality를 모두 판단하지 못하므로 humanReview를 code 흐름에도 명시했다. 각 stage의 provenance와 version을 남긴다.",
     "side_card_ids": [
       "PYV158_A1_PIPELINE_FLOW"
     ],
@@ -256,7 +256,7 @@
       "비슷한 카드가 불필요하게 반복되는 것을 줄이기 위해"
     ],
     "answer": "비슷한 카드가 불필요하게 반복되는 것을 줄이기 위해",
-    "explanation": "duplicate card check는 비슷하거나 같은 카드가 중복으로 들어갔는지 확인하는 검증이다. 무분별한 중복은 카드 품질과 검색 품질을 흐릴 수 있다. 중복 검사는 id뿐 아니라 질문, 정답, 설명이 비슷한지도 함께 보는 것이 좋다.",
+    "explanation": "normalized title이 같으면 duplicate 후보로 경고하지만 제목이 같아도 학습 목표가 다를 수 있고 제목이 달라도 사실상 같은 card일 수 있다. ID uniqueness는 hard error로, question·answer·concept similarity는 reviewer가 확인할 후보로 구분한다. 자동으로 삭제하지 않는다.",
     "side_card_ids": [
       "PYV102_A7_AUTHORING_PIPELINE",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -273,7 +273,7 @@
       "quality_gate"
     ],
     "reading_goal": "정답이 선택지에 있고 설명이 충분한지 확인하는 품질 검사를 이해한다.",
-    "code": "assert card.answer in card.choices\nassert len(card.explanation) > 20",
+    "code": "assert card.answer in card.choices\nassert explanationSupportsAnswer(card)\nassert codeAndQuestionAgree(card)",
     "question_type": "meaning_choice",
     "question": "answer quality check에서 확인할 것은?",
     "choices": [
@@ -283,7 +283,7 @@
       "정답 포함 여부와 설명 품질"
     ],
     "answer": "정답 포함 여부와 설명 품질",
-    "explanation": "answer quality check는 정답이 선택지에 있고 해설이 충분한지 확인하는 검증이다. 정답 누락이나 짧은 설명은 학습 효과를 떨어뜨린다. 카드가 많아질수록 이런 검증을 자동화해야 품질 편차와 누락을 줄일 수 있다.",
+    "explanation": "answer membership은 객관적으로 검사할 수 있지만 explanation 길이가 20자를 넘는다고 품질이 보장되지는 않는다. 설명이 왜 정답인지 code 결과와 질문에 맞게 뒷받침하는지, 오개념을 만들지 않는지는 의미 검사와 사람 review가 필요하다.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -336,7 +336,7 @@
       "브라우저가 새 데이터 파일을 다시 불러오게 하기 위해"
     ],
     "answer": "브라우저가 새 데이터 파일을 다시 불러오게 하기 위해",
-    "explanation": "새 카드 파일만 만들어도 app.js 목록과 버전이 갱신되지 않으면 앱에 반영되지 않는다. publish step은 검증된 카드 데이터를 실제 앱이 읽는 위치로 반영하는 단계다. 임시 파일과 배포 대상 파일을 구분해야 실수를 줄일 수 있다.",
+    "explanation": "APP_DATA_VERSION 변경은 version query를 쓰는 cache에 새 URL을 유도할 수 있다. 하지만 새 file이 manifest·lesson list에 실제 연결되고 배포됐는지, service worker가 query를 존중하는지와 schema compatibility를 별도 확인해야 한다. version string만 올려도 publish가 완성되는 것은 아니다.",
     "side_card_ids": [
       "PYV102_A7_AUTHORING_PIPELINE",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -353,7 +353,7 @@
       "traceability"
     ],
     "reading_goal": "생성된 카드 묶음의 목적, 출처, 버전, 검토 상태를 manifest로 남기는 방식을 이해한다.",
-    "code": "manifest = {\n  version: 'v58',\n  topic: 'authoring pipeline',\n  status: 'approved'\n}",
+    "code": "manifest = {\n  version: 'v58',\n  topic: 'authoring pipeline',\n  status: 'approved',\n  sourceHash: source_hash,\n  cardIds: approved_card_ids,\n  validatorVersion: validator_version\n}",
     "question_type": "meaning_choice",
     "question": "authoring manifest의 역할은?",
     "choices": [
@@ -363,7 +363,7 @@
       "카드 묶음의 제작 정보와 검토 상태를 추적하기 위해"
     ],
     "answer": "카드 묶음의 제작 정보와 검토 상태를 추적하기 위해",
-    "explanation": "authoring manifest는 어떤 카드 묶음을 왜 추가했는지 기록하는 목록이다. 나중에 추가 의도, 파일 위치, 검증 상태를 추적하는 데 필요하다. manifest가 있으면 생성 카드가 어떤 배치에서 왔는지 나중에 되돌아보기 쉽다.",
+    "explanation": "manifest는 batch version, topic, status뿐 아니라 source hash, 승인 card ID와 validator version을 연결해 무엇을 검토·배포했는지 추적하게 한다. approved라는 label은 reviewer와 approval timestamp·evidence가 있어야 신뢰할 수 있다.",
     "side_card_ids": [
       "DATA_metadata_001",
       "PYV102_A7_AUTHORING_PIPELINE"
@@ -380,7 +380,7 @@
       "validation"
     ],
     "reading_goal": "새 카드 추가 후 기존 카드 구조가 깨지지 않았는지 회귀 검증하는 습관을 이해한다.",
-    "code": "python tools/validate_lessons.py --expected-lesson-cards 1118",
+    "code": "python tools/validate_lessons.py --manifest data/lesson_manifest.json",
     "question_type": "meaning_choice",
     "question": "authoring regression test의 목적은?",
     "choices": [
@@ -390,7 +390,7 @@
       "새 카드 추가가 기존 앱 데이터를 깨지 않았는지 확인하기 위해"
     ],
     "answer": "새 카드 추가가 기존 앱 데이터를 깨지 않았는지 확인하기 위해",
-    "explanation": "authoring regression test는 카드 제작 후 기존 앱 품질이 깨지지 않았는지 확인하는 자동 검증이다. 제작 파이프라인의 마지막 단계로 필요하다.",
+    "explanation": "version 관리된 manifest의 예상 file·ID·count를 validator가 읽게 하면 workflow command의 오래된 숫자만 바꾸는 실수를 줄일 수 있다. regression test는 기존 ID·answer·reference와 app 연결을 검사해야 하며 총 count 하나만으로 content 보존을 증명하지 않는다.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -406,7 +406,7 @@
       "quality_gate"
     ],
     "reading_goal": "카드 제작 전체 흐름을 초안, 검토, 검증, 배포, 기록으로 묶어 이해한다.",
-    "code": "draftCards()\nreviewCards()\nvalidateCards()\npublishCards()\nlogRelease()",
+    "code": "draftCards()\nhumanReviewCards()\nvalidateApprovedCards()\npublishCards()\nverifyReleaseAndLogEvidence()",
     "question_type": "meaning_choice",
     "question": "card authoring pipeline의 핵심 순서는?",
     "choices": [
@@ -416,7 +416,7 @@
       "초안 작성 → 검토 → 검증 → 배포 → 기록"
     ],
     "answer": "초안 작성 → 검토 → 검증 → 배포 → 기록",
-    "explanation": "학습카드가 1000장을 넘으면 제작 속도보다 안정적인 제작/검토/배포 흐름이 더 중요해진다. card authoring pipeline은 카드 초안 작성부터 검증, 배포 파일 반영까지의 흐름이다. 생성 결과를 바로 믿지 말고 품질 검사와 참조 검사를 거쳐야 한다.",
+    "explanation": "draft를 사람 검토해 승인하고 승인본에 자동 validation을 실행한 뒤 publish한다. 마지막에는 실제 배포 revision과 load·schema를 확인하고 source·review evidence를 기록한다. publish 실패나 변경 후 재검토 없이 이전 승인을 재사용하는 경우도 처리한다.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],

@@ -9,7 +9,7 @@
       "validation"
     ],
     "reading_goal": "Understand what a \"smoke test\" is—a test to verify that the app launches properly before conducting a full functional test.",
-    "code": ".\\run_local_server.ps1\n\nGET /src/pwa/index.html 200\nGET /src/pwa/app.js 200\nGET /src/pwa/style.css 200",
+    "code": ".\\run_local_server.ps1\n\nGET /src/pwa/index.html 200\nGET /src/pwa/app.js 200\nGET /src/pwa/style.css 200\nBROWSER: main screen rendered\nCONSOLE ERRORS: 0",
     "question_type": "meaning_choice",
     "question": "What is the purpose of a smoke test?",
     "choices": [
@@ -19,7 +19,7 @@
       "Automatically fills in the card details"
     ],
     "answer": "Quickly check if the app opens by default",
-    "explanation": "A smoke test is an initial check to quickly verify whether the app runs properly before testing specific features. Rather than thoroughly verifying all features, a smoke test is a quick check to ensure that basic functionality is intact. If it fails, you should suspect major connectivity issues before proceeding to detailed testing. Therefore, the correct answer is “quickly verify that the app launches properly.”",
+    "explanation": "A smoke test is a fast first check that critical paths basically work before deeper feature testing. HTTP 200 for static files alone does not prove that JavaScript executed or the screen rendered, so this example also checks the main screen and browser errors. Passing it still does not prove every feature is correct.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -61,7 +61,7 @@
       "bug_prevention"
     ],
     "reading_goal": "Understand regression testing, which verifies that new changes have not broken existing functionality.",
-    "code": "Even after adding the new v34: v1 lesson 200, v20 lesson 200, v33 lesson 200, side_cards 200",
+    "code": "Even after adding the new v34:\nv1 lesson 200\nv20 lesson 200\nv33 lesson 200\nside_cards 200",
     "question_type": "meaning_choice",
     "question": "Why is this verification considered a regression test?",
     "choices": [
@@ -71,7 +71,7 @@
       "Because it changes the browser's color"
     ],
     "answer": "This is to check whether the new v34 has caused any issues with loading the existing v1–v33 versions.",
-    "explanation": "A regression test is a test that verifies that existing functionality has not been broken following a new update. It focuses on ensuring that existing behavior is maintained rather than on new features. Regression tests can also be used to verify that a bug does not reoccur after it has been fixed.",
+    "explanation": "A regression test checks that behavior already guaranteed still works after a change. This example is a narrow regression check that existing lesson and side_cards requests still succeed. HTTP 200 does not validate their meaning, so existing rendering and quiz behavior need separate tests.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -88,7 +88,7 @@
       "assert"
     ],
     "reading_goal": "Understand unit tests, which test a single small function independently.",
-    "code": "def add(a, b):\n    return a + b\n\nassert add(2, 3) == 5",
+    "code": "def add(a, b):\n    return a + b\n\ndef test_add():\n    assert add(2, 3) == 5",
     "question_type": "meaning_choice",
     "question": "What does `assert add(2, 3) == 5` mean?",
     "choices": [
@@ -98,7 +98,7 @@
       "Commit to Git"
     ],
     "answer": "Checks whether the result of the `add` function is 5",
-    "explanation": "A unit test is a test that independently verifies a small function or a single piece of logic. If the assert condition is true, the test passes; if it is false, the test fails. An assert is a way of writing code to verify that the actual result matches the expected value, and if there is a discrepancy, the test fails.",
+    "explanation": "A unit test checks a small function or piece of logic as independently as practical. In this pytest-style test, a false assert condition fails the test. Ordinary asserts can be removed when Python is run directly with -O, so run tests through a test runner such as pytest.",
     "side_card_ids": [
       "PYV159_A1_FUNCTION_IO_FLOW"
     ],
@@ -107,13 +107,13 @@
   {
     "id": "PY34_L08_fixture_001",
     "level": 8,
-    "title": "Reading a fixture",
+    "title": "Distinguishing Test Data from a Fixture",
     "concepts": [
       "fixture",
       "test_data",
       "sample"
     ],
-    "reading_goal": "Understand why small sample data sets that are reused in tests are called \"fixtures.\"",
+    "reading_goal": "Distinguish ordinary sample data from a fixture supplied by a test framework.",
     "code": "sample_cards = [\n    {\"id\": \"c1\", \"level\": 1},\n    {\"id\": \"c2\", \"level\": 2},\n]",
     "question_type": "meaning_choice",
     "question": "What is the role of `sample_cards` in the test perspective?",
@@ -124,7 +124,7 @@
       "CSS file"
     ],
     "answer": "Sample Data for Testing",
-    "explanation": "A fixture is a set of sample input data prepared in advance to save the trouble of creating it anew for each test. A fixture is the setup data or environment used repeatedly in tests. When reading the code, you should check what is created before the test begins and what is cleaned up after the test ends.",
+    "explanation": "From this code alone, sample_cards is sample data for a test. It can be called setup data in a broad sense, but a pytest fixture is normally registered with @pytest.fixture and injected into a test function. A fixture can also provide setup and cleanup, not just data.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -231,7 +231,7 @@
       "The server went down."
     ],
     "answer": "I got 15 more cards",
-    "explanation": "A \"before/after\" comparison is a verification method that compares numerical values or file lists before and after a change. It allows you to quickly verify whether new files have been properly included. Comparing the before and after states numerically is more effective at detecting regressions or omissions than relying on intuition. Therefore, the correct answer is “15 more cards were added.”",
+    "explanation": "These numbers directly show only that the total rose from 708 to 723, an increase of 15 cards. Comparing that with the expected increase can reveal a possible omission or duplicate, but the total alone cannot prove that new content is correct or that every old card was preserved.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -247,7 +247,7 @@
       "regression"
     ],
     "reading_goal": "I understand why we need to verify whether the total number of cards has increased as expected.",
-    "code": "if total_cards <= previous_total:\n    raise Exception(\"card count did not increase\")",
+    "code": "expected_total = previous_total + new_file_card_count\nif total_cards != expected_total:\n    raise AssertionError(\"unexpected card count\")",
     "question_type": "meaning_choice",
     "question": "What kinds of issues can this verification detect?",
     "choices": [
@@ -257,7 +257,7 @@
       "Issues with Different Keyboard Input Methods"
     ],
     "answer": "Issue where a new lesson is not linked to app.js or has not been included",
-    "explanation": "Even if you’ve created a new JSON file, it may not be reflected in the total number of cards if it’s missing from `lessonFiles`. Verifying the total number of cards involves checking whether the expected number of cards before deployment matches the actual number of cards loaded. This allows you to quickly detect missing files or incorrect references. Therefore, the correct answer is “an issue where a new lesson was not linked to `app.js` or was not included in the count.”",
+    "explanation": "This check compares the actual total with the exact expected value: the previous total plus the number of cards in the new file. It can catch a missing lesson connection as well as an unexpected duplicate or addition. A correct total still does not prove IDs, references, or content are correct, so use other validations too.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -283,7 +283,7 @@
       "The correct answer was wrong"
     ],
     "answer": "The file request was successful",
-    "explanation": "The lessonFiles loading test verifies that the app loads all registered lesson JSON files. The files must load with a 200 status code before the card data can be read. Therefore, the correct answer is “The file request was successful.”",
+    "explanation": "HTTP 200 means the server responded to that request with a success status. It is useful for checking the file path connection, but it does not prove that the body is valid JSON, matches the schema, or was rendered by the app. Parse and validate the response body next.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -300,7 +300,7 @@
       "data_quality"
     ],
     "reading_goal": "Understand the process of verifying whether the correct answer to a quiz is among the options.",
-    "code": "if card[\"answer\"] not in card[\"choices\"]:\n    print(\"bad answer\", card[\"id\"])",
+    "code": "if card[\"answer\"] not in card[\"choices\"]:\n    raise AssertionError(f\"bad answer: {card['id']}\")",
     "question_type": "meaning_choice",
     "question": "What is the main reason this verification is necessary?",
     "choices": [
@@ -310,7 +310,7 @@
       "To turn off GitHub Pages"
     ],
     "answer": "This is because if the correct answer isn't among the options, the user can't get it right.",
-    "explanation": "In a quiz app, consistency between the answer and the choices is one of the most important data quality requirements. The “answer in choices” validation checks whether the correct answer is actually included among the options. Without this check, the app may appear to display an error even when the user selects the correct answer. Therefore, the output is “because the user cannot get the answer correct if the correct answer is not among the choices.”",
+    "explanation": "If the answer is absent from choices, the user cannot select the correct answer. Merely printing a message may let an automated check exit successfully, so this code raises AssertionError and makes the test or CI job detect the failure.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -328,7 +328,7 @@
       "validation"
     ],
     "reading_goal": "Understand the validation process that checks whether the `side_card_id` referenced by the card actually exists.",
-    "code": "for sid in card[\"side_card_ids\"]:\n    if sid not in side_ids:\n        print(\"missing side card\", sid)",
+    "code": "for sid in card.get(\"side_card_ids\", []):\n    if sid not in side_ids:\n        raise AssertionError(f\"missing side card: {sid}\")",
     "question_type": "meaning_choice",
     "question": "What does \"sid not in side_ids\" mean?",
     "choices": [
@@ -338,7 +338,7 @@
       "The server is running."
     ],
     "answer": "It is referencing a \"side card\" that has no card.",
-    "explanation": "If the referenced ID does not exist in the actual `side_cards` array, the bonus content may appear blank or display incorrectly. The `side_card` reference validation checks whether the side card ID referenced by the `lesson` actually exists in the file. If the reference is broken, the related reading material may not be displayed on the screen.",
+    "explanation": "sid not in side_ids means the lesson references a side-card ID absent from the real list. get(..., []) treats an optional missing reference list as empty, and AssertionError makes automated validation fail clearly when a broken reference is found.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -355,7 +355,7 @@
       "quality_gate"
     ],
     "reading_goal": "Understand why we compile a checklist of items to verify before committing or pushing.",
-    "code": "[ ] validation OK\n[ ] local server lesson 200\n[ ] app version bumped\n[ ] git status expected\n[ ] commit and push",
+    "code": "[ ] validation OK\n[ ] local smoke test OK\n[ ] asset/data version updated if required\n[ ] git status and diff expected\n[ ] commit and push\n[ ] deployed revision/status verified",
     "question_type": "meaning_choice",
     "question": "What are the benefits of a checklist?",
     "choices": [
@@ -365,7 +365,7 @@
       "Hide your GitHub account"
     ],
     "answer": "Reduce the number of items overlooked in repetitive tasks",
-    "explanation": "A release checklist is a list of items to review repeatedly before a deployment or commit. It reduces the likelihood of errors during similar extension tasks. By creating a checklist for verification, versioning, temporary files, and commit scope, you can minimize the number of items overlooked during deployment.",
+    "explanation": "A release checklist records repeatable validations in order so they are less likely to be skipped. Update versions only when the cache strategy requires it, and after pushing, verify deployment status and the revision actually published. Evidence for each item matters more than the check mark itself.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],

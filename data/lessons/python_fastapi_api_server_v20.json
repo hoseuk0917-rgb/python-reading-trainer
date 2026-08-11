@@ -126,10 +126,9 @@
       "HTML을 자동 생성한다"
     ],
     "answer": "응답 형식을 SearchResponse 스키마에 맞춘다",
-    "explanation": "response_model은 API가 어떤 형태의 응답을 내보낼지 명확하게 만든다. response_model은 API 응답의 모양을 제한하고 문서화하는 역할을 한다. 실제 내부 데이터 중 어떤 필드만 사용자에게 내보내는지 확인할 수 있다. 따라서 반환/호출 결과는 ‘응답 형식을 SearchResponse 스키마에 맞춘다’이다.",
+    "explanation": "FastAPI는 response_model을 OpenAPI 문서에 사용하고, 반환값을 SearchResponse에 맞게 검증·직렬화·필터링한다. 이 예시에서는 answer는 문자열이고 citations는 문자열 목록이어야 한다. 내부 객체에 다른 필드가 있어도 기본적으로 응답 model에 선언된 필드 중심으로 내보내 민감한 필드 노출을 줄일 수 있지만, 올바른 model을 지정해야 한다.",
     "side_card_ids": [
-      "DATA_schema_001",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "DATA_schema_001"
     ],
     "project_context": "프론트 앱이 기대하는 응답 구조를 안정적으로 유지하는 데 중요하다."
   },
@@ -179,7 +178,7 @@
       "성공했기 때문에"
     ],
     "answer": "클라이언트 요청이 잘못되었기 때문에",
-    "explanation": "400은 클라이언트가 잘못된 요청을 보냈을 때 주로 쓴다. 500은 서버 내부 오류에 가깝다. HTTP status code 분기는 요청 결과를 숫자 코드로 구분하는 방식이다. 200, 400, 401, 404, 500의 의미를 나누어 처리해야 한다. 따라서 반환/호출 결과는 ‘클라이언트 요청이 잘못되었기 때문에’이다.",
+    "explanation": "빈 query는 이 API가 요구하는 입력을 충족하지 못한 client 요청이므로 코드가 400을 발생시킨다. run_search의 다른 Exception은 이 예시에서 모두 500으로 바뀐다. 실제 서버에서는 기존 HTTPException까지 500으로 덮어쓰지 않도록 예상 오류를 구분하고, 내부 원인은 안전한 로그에 남기되 client에는 민감한 세부 정보를 보내지 않아야 한다.",
     "side_card_ids": [
       "PYV158_A1_API_FLOW"
     ],
@@ -206,7 +205,7 @@
       "JSON 파일을 삭제하려고"
     ],
     "answer": "그 주소의 프론트에서 API 호출을 허용하려고",
-    "explanation": "브라우저는 다른 origin API 호출을 제한하므로 CORS 허용 설정이 필요할 수 있다. CORS middleware는 브라우저가 다른 출처의 API를 호출할 수 있는지 제어한다. 허용 origin, method, header 설정이 실제 프론트 주소와 맞아야 한다.",
+    "explanation": "origin은 scheme, host, port의 조합이므로 http://localhost:8790에서 실행된 browser frontend가 다른 origin의 API를 읽게 하려면 서버가 해당 origin을 CORS 응답에 허용해야 한다. CORS는 browser가 적용하는 교차 출처 규칙이지 authentication이나 API 접근 제어가 아니다. allow_methods와 allow_headers의 *도 필요한 범위로 줄이는 편이 안전하다.",
     "side_card_ids": [
       "PYV158_A1_API_FLOW"
     ],
@@ -232,10 +231,9 @@
       "HTML 페이지를 반환하도록 바꾼다"
     ],
     "answer": "endpoint 실행 전에 get_db 결과를 인자로 넣는다",
-    "explanation": "FastAPI의 Depends는 공통 준비 로직을 endpoint에 주입하는 방식이다. Depends 의존성 주입은 요청 처리 전에 필요한 객체나 검증 로직을 자동으로 연결하는 방식이다. 인증, DB 연결, 공통 검사를 어디서 주입하는지 확인해야 한다.",
+    "explanation": "FastAPI는 endpoint 호출 전에 get_db 의존성을 해결하고 그 반환값을 list_items의 db 인자로 전달한다. Depends는 인증·설정·DB session 같은 공통 준비와 정리를 재사용하게 한다. 실제 DB session은 return global 대신 yield dependency로 열고 닫는 패턴이 흔하며, 의존성 주입 자체가 권한 검사를 자동으로 제공하는 것은 아니다.",
     "side_card_ids": [
-      "PYV102_A7_ARCHITECTURE_DESIGN",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "PYV102_A7_ARCHITECTURE_DESIGN"
     ],
     "project_context": "DB 연결, 사용자 인증, 설정 로딩을 endpoint마다 반복하지 않게 할 수 있다."
   },
@@ -259,7 +257,7 @@
       "서버를 종료한다"
     ],
     "answer": "save_log를 백그라운드 작업으로 등록한다",
-    "explanation": "background task는 응답을 먼저 보낸 뒤 뒤에서 처리할 일을 등록하는 방식이다. 로그 저장이나 알림처럼 오래 걸리지 않아도 되는 작업에 유용하다. 응답 시간을 짧게 유지하면서 부가 작업을 처리할 수 있어 사용자 경험이 좋아진다. 따라서 반환/호출 결과는 ‘save_log를 백그라운드 작업으로 등록한다’이다.",
+    "explanation": "add_task는 response가 전송된 뒤 save_log(req.query)를 실행할 background task 목록에 등록한다. 요청 응답을 늦추지 않는 작은 부가 작업에 유용하지만 같은 server process 안에서 실행되므로 process가 종료되면 잃을 수 있고, 실패를 client 응답으로 알릴 수도 없다. 오래 걸리거나 반드시 완료해야 하는 작업은 durable queue와 worker를 고려한다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_ASYNC_CONCURRENCY"
@@ -283,16 +281,15 @@
     "choices": [
       "app.py를 삭제한다",
       "8000번 파일을 연다",
-      "search_api.py 안의 app 객체를 실행한다",
+      "search_api 모듈에서 app 객체를 가져와 ASGI 앱으로 실행한다",
       "브라우저 캐시를 지운다"
     ],
-    "answer": "search_api.py 안의 app 객체를 실행한다",
-    "explanation": "uvicorn의 모듈:객체 형식이다. search_api 모듈 안의 app 변수를 ASGI 앱으로 실행한다. uvicorn은 FastAPI 앱을 실행하는 ASGI 서버다. 앱 경로, host, port, reload 옵션이 맞아야 브라우저나 프론트에서 API를 호출할 수 있다.",
+    "answer": "search_api 모듈에서 app 객체를 가져와 ASGI 앱으로 실행한다",
+    "explanation": "search_api:app은 module import path와 그 안의 ASGI application 객체 이름이다. module이 반드시 search_api.py 한 파일일 필요는 없고 import 가능한 package 경로일 수도 있다. --reload는 source 변경을 감지하는 개발 옵션이라 production에서는 보통 끄고 적절한 process와 proxy 설정을 사용한다.",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
-    "project_context": "LLM_Lora search_api.py를 로컬 API로 띄우는 구조와 직접 연결된다."
+    "project_context": "FastAPI application을 로컬 개발 server로 실행하는 command 구조다."
   },
   {
     "id": "PY20_L10_async_endpoint_001",
@@ -315,7 +312,7 @@
       "DB를 새로 만든다"
     ],
     "answer": "비동기 작업 check_database가 끝날 때까지 기다린다",
-    "explanation": "async endpoint는 비동기 처리를 할 수 있는 API 함수다. await는 외부 요청이나 I/O 작업의 결과를 기다리면서 서버가 다른 일을 처리하게 돕는다.",
+    "explanation": "await는 check_database coroutine이 완료될 때까지 현재 health task를 일시 중단한다. 그 coroutine이 non-blocking I/O에서 제어권을 event loop에 돌려주면 server가 그동안 다른 준비된 task를 실행할 수 있다. 단순히 async def로 바꾸는 것만으로 blocking DB driver나 CPU 작업이 non-blocking이 되는 것은 아니다.",
     "side_card_ids": [
       "PYV159_A1_FASTAPI_SERVER_FLOW"
     ],
@@ -342,7 +339,7 @@
       "JSON을 CSV로 바꾸려고"
     ],
     "answer": "검색어의 공백/특수문자를 URL에 안전하게 넣기 위해",
-    "explanation": "frontend fetch는 브라우저에서 API 서버로 요청을 보내는 코드다. URL 쿼리에 들어가는 문자열은 공백과 특수문자를 안전하게 인코딩해야 한다. 인코딩하지 않으면 한글, 공백, 특수문자가 URL을 깨뜨려 요청 실패로 이어질 수 있다.",
+    "explanation": "encodeURIComponent는 q를 query 값 한 칸에 넣을 수 있도록 공백, &, # 같은 문자를 percent-encode한다. 암호화나 접근 제어는 아니다. fetch는 404나 500에서도 보통 resolve하므로 이 함수는 res.ok를 검사해야 하고, JSON이 아닌 응답이나 network 오류를 caller가 처리해야 한다.",
     "side_card_ids": [
       "PYV158_A1_JSON_FLOW",
       "PYV158_A1_API_FLOW"
@@ -370,17 +367,16 @@
       "응답을 200으로 바꾼다"
     ],
     "answer": "Error를 던지고 data 파싱으로 넘어가지 않는다",
-    "explanation": "res.ok는 HTTP 2xx 성공 범위인지 알려준다. 실패면 명확히 오류로 처리한다. fetch 오류 처리는 서버 요청이 실패했을 때 화면이 멈추지 않게 만드는 코드다. 상태 코드 확인, 예외 처리, 사용자 메시지 표시 흐름을 함께 봐야 한다. 따라서 정답은 ‘Error를 던지고 data 파싱으로 넘어가지 않는다’이다.",
+    "explanation": "Response.ok는 status가 200~299이면 true다. false이면 throw가 현재 async 흐름을 중단하므로 이 함수 안에서는 res.json까지 가지 않는다. 그러나 화면이 멈추지 않게 하려면 이 코드를 호출한 곳에서 try/catch로 error를 받아 사용자 메시지와 재시도 동작을 제공해야 한다. fetch 자체의 network rejection도 같은 경계에서 처리한다.",
     "side_card_ids": [
-      "WEB_frontend_backend_001",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "WEB_frontend_backend_001"
     ],
     "project_context": "프론트에서 API 실패를 조용히 무시하지 않게 만드는 실전 패턴이다."
   },
   {
     "id": "PY20_L10_api_timeout_retry_001",
     "level": 10,
-    "title": "API timeout/retry 흐름 읽기",
+    "title": "fetch timeout과 AbortController 흐름 읽기",
     "concepts": [
       "timeout",
       "retry",
@@ -398,7 +394,7 @@
       "페이지가 처음 로딩되기 전"
     ],
     "answer": "ms 시간이 지나 timeout이 발생할 때",
-    "explanation": "API timeout은 요청이 너무 오래 걸릴 때 중단하는 장치다. setTimeout으로 abort를 호출하면 지정 시간 후 fetch를 멈출 수 있다. 중단 뒤에는 사용자에게 재시도 안내를 보여 주거나 안전하게 다시 요청하는 흐름이 필요하다. 따라서 반환/호출 결과는 ‘ms 시간이 지나 timeout이 발생할 때’이다.",
+    "explanation": "setTimeout callback은 ms가 지난 뒤 controller.abort()를 호출하고, 아직 진행 중인 fetch는 보통 AbortError로 reject된다. fetch가 먼저 끝나면 finally가 timer를 지운다. 이 함수는 timeout만 구현하며 retry는 전혀 하지 않는다. 재시도를 추가할 때는 AbortError와 사용자 취소를 구분하고 안전한 요청에만 횟수 제한과 backoff를 적용해야 한다.",
     "side_card_ids": [
       "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
     ],
@@ -415,7 +411,7 @@
       "pwa"
     ],
     "reading_goal": "정적 파일 서버와 API 서버가 하는 일이 다르다는 것을 이해한다.",
-    "code": "# 정적 PWA 서버\npython -m http.server 8790\n# HTML/CSS/JS/JSON 파일 제공\n\n# API 서버\nuvicorn search_api:app --port 8000\n# 검색/질문/DB 조회 처리",
+    "code": "# 정적 개발 서버\npython -m http.server 8790 --bind 127.0.0.1\n# 디렉터리의 HTML/CSS/JS/JSON 파일 제공\n\n# ASGI API 개발 서버\nuvicorn search_api:app --host 127.0.0.1 --port 8000\n# application 코드가 검색/질문/DB 조회 요청 처리",
     "question_type": "meaning_choice",
     "question": "uvicorn 서버의 역할에 가장 가까운 것은?",
     "choices": [
@@ -425,12 +421,12 @@
       "브라우저 즐겨찾기 관리"
     ],
     "answer": "검색/질문/DB 조회 같은 동적 요청 처리",
-    "explanation": "http.server는 정적 파일 제공, FastAPI/uvicorn은 동적 API 처리를 담당한다. 정적 PWA와 API 서버는 역할이 다르다. HTML, JS, CSS는 정적으로 제공하고, 로그인이나 저장 같은 동적 작업은 API가 처리한다.",
+    "explanation": "첫 command는 현재 디렉터리의 파일을 거의 그대로 제공하는 개발용 정적 server다. 둘째 command는 ASGI application을 실행해 route 함수가 입력에 따라 동적 응답을 만든다. FastAPI도 설정하면 정적 파일을 제공할 수 있으므로 기술적으로 완전히 분리된다는 뜻은 아니며, 둘 다 예시 설정은 localhost 개발용이다.",
     "side_card_ids": [
       "PYV160_A1_PWA_STATE_STORAGE_FLOW",
       "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
     ],
-    "project_context": "reading trainer 정적 앱에 LLM_Lora 검색 API를 붙일 때 필요한 구조 구분이다."
+    "project_context": "정적 frontend와 동적 API의 책임 및 개발 port를 구분하는 구조다."
   },
   {
     "id": "PY20_L10_api_service_repository_001",
@@ -470,7 +466,7 @@
       "api"
     ],
     "reading_goal": "모든 요청의 경로와 처리 시간을 기록하는 middleware 구조를 읽는다.",
-    "code": "import time\n\n@app.middleware(\"http\")\nasync def log_requests(request, call_next):\n    start = time.time()\n    response = await call_next(request)\n    elapsed = time.time() - start\n    print(request.url.path, response.status_code, elapsed)\n    return response",
+    "code": "import time\n\n@app.middleware(\"http\")\nasync def log_requests(request, call_next):\n    start = time.perf_counter()\n    status = 500\n    try:\n        response = await call_next(request)\n        status = response.status_code\n        return response\n    finally:\n        elapsed = time.perf_counter() - start\n        print(request.method, request.url.path, status, elapsed)",
     "question_type": "meaning_choice",
     "question": "call_next(request)의 역할은?",
     "choices": [
@@ -480,7 +476,7 @@
       "DB를 삭제한다"
     ],
     "answer": "다음 요청 처리 단계로 요청을 넘기고 응답을 받는다",
-    "explanation": "middleware는 요청 전후에 공통 로직을 넣고, call_next로 실제 endpoint 처리를 진행한다. 요청 로그 middleware는 API 요청이 들어오고 나가는 과정을 기록하는 장치다. method, path, status code, 처리 시간을 남기면 장애 원인 추적이 쉬워진다.",
+    "explanation": "call_next는 요청을 다음 middleware와 endpoint로 보내고 response를 돌려준다. status를 먼저 500으로 두어 아래 단계가 예외를 내도 finally에서 시간과 실패 상태를 기록한다. 경과 시간에는 시스템 시각 조정의 영향을 덜 받는 perf_counter를 쓴다. production에서는 print 대신 구조화 logger와 request ID를 사용하고 민감한 query·header는 기록하지 않는다.",
     "side_card_ids": [
       "PYV158_A1_API_FLOW"
     ],

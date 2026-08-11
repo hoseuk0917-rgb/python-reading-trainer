@@ -11,7 +11,7 @@
       "ai_learning_method"
     ],
     "reading_goal": "Instead of memorizing specific AI training methods, we compare them based on the types of data and feedback they use.",
-    "code": "Supervised learning: Learns from data with ground-truth labels. Unsupervised learning: Identifies patterns or clusters without ground-truth labels. Self-supervised learning: Learns representations by generating problems and solutions from the data itself. Reinforcement learning: Learns policies through the sequence of actions and corresponding rewards or penalties.",
+    "code": "Supervised learning: learns from examples with target labels\nUnsupervised learning: finds structure or clusters without target labels\nSelf-supervised learning: derives prediction targets from the data itself\nReinforcement learning: learns a policy from actions and reward signals",
     "question_type": "meaning_choice",
     "question": "What is the method of learning the input-to-answer relationship using data with labeled answers?",
     "choices": [
@@ -38,7 +38,7 @@
       "training"
     ],
     "reading_goal": "Read the learning flow that combines the input x and the correct answer y.",
-    "code": "for x, y in train_loader:\n    pred = model(x)\n    loss = loss_fn(pred, y)\n    loss.backward()\n    optimizer.step()",
+    "code": "for x, y in train_loader:\n    optimizer.zero_grad()\n    pred = model(x)\n    loss = loss_fn(pred, y)\n    loss.backward()\n    optimizer.step()",
     "question_type": "meaning_choice",
     "question": "What is the role of y here?",
     "choices": [
@@ -48,7 +48,7 @@
       "Correct Answer label"
     ],
     "answer": "Correct Answer label",
-    "explanation": "Supervised learning is a method of training a model using data with known answers. The model calculates the loss by comparing its prediction (pred) with the correct answer (y), and works to minimize that loss. Since y is the reference value the model must predict correctly, it must be treated separately from the input X to understand the logic of the training code. Therefore, the correct answer is referred to as the “label.”",
+    "explanation": "The training loader pairs input `x` with its target label `y`. `loss_fn` compares `model(x)`'s prediction with `y`, and backward plus `optimizer.step` update parameters toward reducing that loss. `y` is the learning target rather than a model input. An ordinary loop also clears prior accumulated gradients before the new batch.",
     "side_card_ids": [
       "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
     ],
@@ -91,7 +91,7 @@
       "representation"
     ],
     "reading_goal": "Understand how to generate training signals from the original data itself.",
-    "code": "# Examples: Guessing the missing part of a sentence, predicting the next token # Expressions can be learned even with only a large corpus of source text.",
+    "code": "# Examples: predict a masked part of a sentence or the next token\n# Training targets are derived from the source data rather than hand labels.",
     "question_type": "meaning_choice",
     "question": "Which of the following best describes self-directed learning?",
     "choices": [
@@ -119,7 +119,7 @@
       "agent"
     ],
     "reading_goal": "Understand the framework for improving policies through actions and rewards.",
-    "code": "state = env.reset()\naction = policy(state)\nnext_state, reward, done, info = env.step(action)",
+    "code": "state, info = env.reset()\naction = policy(state)\nnext_state, reward, terminated, truncated, info = env.step(action)\ndone = terminated or truncated",
     "question_type": "meaning_choice",
     "question": "What is the role of a reward?",
     "choices": [
@@ -129,10 +129,8 @@
       "A signal that tells you whether an action was good or bad"
     ],
     "answer": "A signal that tells you whether an action was good or bad",
-    "explanation": "Reinforcement learning is a learning method that improves a policy based on the rewards received as a result of actions. The goal is to find actions that yield greater rewards in the long run. By examining the relationships between the agent, action, reward, and environment, it is easy to distinguish reinforcement learning from supervised learning. Therefore, the correct answer is “a signal that indicates whether an action was good or bad.”",
-    "side_card_ids": [
-      "PYV161_A1_EVIDENCE_LINEAGE_FLOW"
-    ],
+    "explanation": "The agent chooses an action from the state, and the environment returns a next state and numeric reward. A reward is immediate feedback for that transition, while a policy normally aims to maximize return accumulated over time. `terminated` means the task reached a terminal condition and `truncated` means an outside limit ended the episode; either condition signals that a reset is needed.",
+    "side_card_ids": [],
     "project_context": "This is necessary when reading explanations of robotics, autonomous driving, gaming, and policy optimization."
   },
   {
@@ -146,7 +144,7 @@
       "alignment"
     ],
     "reading_goal": "We compare two approaches to using human preference data in LLM alignment training.",
-    "code": "RLHF: Human preferences → reward model → model tuning via reinforcement learning DPO: Tuning by directly incorporating preferences based on pairs of selected and rejected answers",
+    "code": "RLHF example: human preferences -> reward model -> policy optimization\nDPO: preferred/rejected answer pairs -> direct preference objective with a reference policy",
     "question_type": "meaning_choice",
     "question": "Which of the following best describes a DPO?",
     "choices": [
@@ -156,7 +154,7 @@
       "Directly tune the model using preferred answer pairs"
     ],
     "answer": "Directly tune the model using preferred answer pairs",
-    "explanation": "DPO can be understood as a preference optimization method that simplifies the separate reward model and reinforcement learning loop. Both RLHF and DPO are methods for aligning model preferences. RLHF uses a reward model and reinforcement learning, while DPO optimizes directly using preference pair data.",
+    "explanation": "RLHF is a broad family that uses human feedback; a common pipeline trains a reward model from preferences and then optimizes a policy with a reinforcement-learning algorithm. DPO uses chosen/rejected pairs and a reference policy to optimize a preference objective without a separate reward model and online RL loop. Both depend on the preference data and baseline model, and preference does not itself guarantee truth or safety.",
     "side_card_ids": [
       "PYV102_A7_AI_ML_TOOLCHAIN",
       "PYV102_A7_SYSTEMS_CONCEPTS"
@@ -174,7 +172,7 @@
       "dataset"
     ],
     "reading_goal": "Understand the differences between general learning on a large scale and additional learning tailored to specific purposes.",
-    "code": "Pretraining: Builds basic language and pattern recognition capabilities using large amounts of general data. Fine-tuning: Adjusts the pretrained model using data specific to a particular task, style, or domain.",
+    "code": "Pretraining: builds broad representations from large, general datasets\nFine-tuning: further adjusts a pretrained model for a task, style, or domain",
     "question_type": "meaning_choice",
     "question": "Which of the following best describes fine-tuning?",
     "choices": [
@@ -201,7 +199,7 @@
       "adapter"
     ],
     "reading_goal": "Understand the difference between adjusting all weights and making small adjustments to the adapter.",
-    "code": "Full fine-tuning: Updates all model parameters. LoRA/PEFT: Trains only the small adapter parameters to reduce computational cost and storage space.",
+    "code": "Full fine-tuning: updates all or most base-model parameters\nLoRA/PEFT: trains small low-rank adapter parameters on selected modules",
     "question_type": "meaning_choice",
     "question": "Which of the following best describes the advantages of LoRA?",
     "choices": [
@@ -239,7 +237,7 @@
       "Names of internal modules in the model to which LoRA will be applied"
     ],
     "answer": "Names of internal modules in the model to which LoRA will be applied",
-    "explanation": "It is common to see configurations that apply LoRA to attention-related modules such as q_proj and v_proj. The LoRA configuration code is designed to train only a small adapter without modifying the entire large model. The rank, target modules, and learning rate all affect both quality and computational cost.",
+    "explanation": "`target_modules` selects module names in the base model where LoRA low-rank updates are inserted. `q_proj` and `v_proj` are attention projection names in some transformer architectures, but not every model uses them. Verify that the names exist and their module types are supported. `r` is the adapter rank and `lora_alpha` affects update scaling; the learning rate is configured separately in the trainer or optimizer.",
     "side_card_ids": [
       "AI_lora_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -257,7 +255,7 @@
       "lora"
     ],
     "reading_goal": "I understand that QLoRA combines 4-bit quantization with LoRA.",
-    "code": "# QLoRA Style # Base model: 4-bit to save memory # Trainable part: Training focused on the LoRA adapter",
+    "code": "# QLoRA concept\n# Base model: 4-bit weights reduce memory\n# Trainable part: primarily LoRA adapter parameters",
     "question_type": "meaning_choice",
     "question": "Which of the following best describes QLoRA?",
     "choices": [
@@ -284,7 +282,7 @@
       "vram"
     ],
     "reading_goal": "We compare the trade-off between precision and memory usage.",
-    "code": "fp32: Accurate but memory-intensive; fp16/bfloat16: Memory-efficient; commonly used in GPU inference and training; int8/4-bit: Even more memory-efficient, but may result in a loss of quality",
+    "code": "fp32: broad precision with higher memory per weight\nfp16/bfloat16: reduced precision common in supported GPU training and inference\nint8/4-bit quantization: can reduce weight memory further; verify support, quality, and speed",
     "question_type": "meaning_choice",
     "question": "What is the main purpose of 4-bit quantization?",
     "choices": [
@@ -294,7 +292,7 @@
       "Significantly reduces model memory usage"
     ],
     "answer": "Significantly reduces model memory usage",
-    "explanation": "Quantization represents numbers using fewer bits to reduce VRAM and storage space, but this may involve a trade-off between quality and speed. Quantization is a technique that reduces the numerical precision of a model to conserve memory and improve speed. fp32, fp16, int8, and 4-bit formats offer different balances between quality and resource usage.",
+    "explanation": "The main purpose of 4-bit quantization is to represent supported model weights with fewer bits and greatly reduce their memory footprint. Using fp16 or bfloat16 is commonly called mixed or reduced precision and is not necessarily the same implementation as int8 or 4-bit quantization. Fewer bits are not always faster, and some layers, activations, and compute dtypes stay at higher precision, so hardware support, measured memory, latency, and quality all need checking.",
     "side_card_ids": [
       "PYV102_A7_AI_ML_TOOLCHAIN",
       "PYV102_A7_SYSTEMS_CONCEPTS"
@@ -312,7 +310,7 @@
       "compression"
     ],
     "reading_goal": "Understand how a small \"student\" model learns from the output of a large \"teacher\" model.",
-    "code": "teacher_logits = teacher_model(x)\nstudent_logits = student_model(x)\nloss = distill_loss(student_logits, teacher_logits)",
+    "code": "with torch.no_grad():\n    teacher_logits = teacher_model(x)\nstudent_logits = student_model(x)\nloss = distill_loss(student_logits, teacher_logits)",
     "question_type": "meaning_choice",
     "question": "Which of the following is closest to the purpose of distillation?",
     "choices": [
@@ -322,7 +320,7 @@
       "Have the smaller model learn from the larger model's behavior"
     ],
     "answer": "Have the smaller model learn from the larger model's behavior",
-    "explanation": "Knowledge distillation is a method in which a smaller model learns from the output of a larger model. It is a concept frequently used when model compression or lightweighting is required. Knowledge distillation is a method in which a smaller model learns the output or decision-making process of a larger model. The goal is to use the smaller model more quickly while preserving performance.",
+    "explanation": "The student is trained with a loss comparing its output to soft targets such as teacher logits. The teacher is normally fixed, so `no_grad` avoids building its autograd graph. A real setup also chooses the weighting between target-label and teacher loss, temperature, and input and tokenizer compatibility. A smaller student is not guaranteed to preserve all teacher performance.",
     "side_card_ids": [
       "PYV102_A7_AI_ML_TOOLCHAIN",
       "PYV102_A7_SYSTEMS_CONCEPTS"
@@ -340,7 +338,7 @@
       "knowledge_update"
     ],
     "reading_goal": "Determine whether to incorporate knowledge through external searches or reflect it in the model weights.",
-    "code": "RAG: When a question is asked, relevant documents are retrieved and included in the prompt. Fine-tuning: The model’s response patterns, knowledge, and format are adjusted using training data.",
+    "code": "RAG: retrieve relevant documents at request time and place evidence in the prompt\nFine-tuning: adjust response behavior, format, or task performance with training data",
     "question_type": "meaning_choice",
     "question": "When you need to frequently update the latest document, what is the approach you would generally consider first?",
     "choices": [
@@ -350,7 +348,7 @@
       "RAG"
     ],
     "answer": "RAG",
-    "explanation": "For knowledge that changes frequently, updating the search system or database is often more practical than retraining the model. RAG works by searching external sources and incorporating the results into responses, while fine-tuning changes the model’s own response behavior. Since their objectives and costs differ, it is important to distinguish between them.",
+    "explanation": "When documents change frequently, RAG is often the first approach because the document store and index can be updated and evidence retrieved per request. Fine-tuning can adjust response format or task behavior but does not guarantee exact storage, citation, or immediate updates of facts. RAG can also retrieve stale or irrelevant material and must be evaluated; the two approaches can be combined when needed.",
     "side_card_ids": [
       "AI_retrieval_001"
     ],
@@ -368,7 +366,7 @@
       "strategy"
     ],
     "reading_goal": "We compare which adjustment methods are appropriate depending on the situation.",
-    "code": "Prompting: Adjusts the model using prompts without changing the code or retraining RAG: Integrates external knowledge retrieval LoRA: Learns style and task habits using a small adapter Full fine-tuning: Adjusts all weights; high cost and risk",
+    "code": "Prompting: human-written instructions without training\nPrompt tuning: train a small set of continuous soft-prompt vectors\nRAG: include retrieved external knowledge in each request\nLoRA: train small adapters on selected modules\nFull fine-tuning: update all or most model weights",
     "question_type": "meaning_choice",
     "question": "What is the closest method to requiring students to include references to external documents in their answers every time?",
     "choices": [
@@ -378,7 +376,7 @@
       "RAG"
     ],
     "answer": "RAG",
-    "explanation": "Prompt tuning is a method of adjusting the trainable prompts on the input side without making major changes to the model as a whole. Unlike RAG, it does not involve attaching search evidence.",
+    "explanation": "Prompting writes human-readable instructions, while prompt tuning is a PEFT method that trains a small set of continuous prompt parameters with the base model fixed. Neither is the retrieval mechanism that attaches current external evidence per request. RAG is therefore closest to the question, and it can be combined with prompting or fine-tuning.",
     "side_card_ids": [
       "AI_retrieval_001"
     ],
@@ -395,7 +393,7 @@
       "evaluation"
     ],
     "reading_goal": "Understand the reasons for dividing the data into training, tuning, and final evaluation sets.",
-    "code": "train: Data used to train the model validation: Data used to select settings and hyperparameters test: Data used to evaluate performance at the end",
+    "code": "train: data used to fit model parameters\nvalidation: data used for settings, hyperparameters, and intermediate model selection\ntest: held-out data used for final performance estimation",
     "question_type": "meaning_choice",
     "question": "What is the role of the validation set?",
     "choices": [
@@ -422,7 +420,7 @@
       "training"
     ],
     "reading_goal": "Let's look at three words that frequently appear in the learning log and understand them together.",
-    "code": "epoch: The number of times the entire training dataset will be iterated through; batch_size: The number of samples processed at a time; learning_rate: The magnitude of the step taken during each update",
+    "code": "epoch: one pass over the training dataset\nbatch_size: the number of samples in one training iteration\nlearning_rate: the scale of an optimizer update",
     "question_type": "meaning_choice",
     "question": "What problems can arise if the learning rate is too high?",
     "choices": [
@@ -448,7 +446,7 @@
       "validation_loss"
     ],
     "reading_goal": "Understands that the model performs well on the training data but struggles with new data.",
-    "code": "train_loss: Continues to decrease; validation_loss: Begins to increase at some point # This may be a sign of overfitting",
+    "code": "train_loss: keeps decreasing\nvalidation_loss: rises repeatedly after an earlier improvement\n# This pattern can be evidence of overfitting.",
     "question_type": "meaning_choice",
     "question": "Which of the following is the closest explanation of overfitting?",
     "choices": [
@@ -458,7 +456,7 @@
       "It performs well on the training data but generalizes poorly to new data"
     ],
     "answer": "It performs well on the training data but generalizes poorly to new data",
-    "explanation": "If validation performance deteriorates, you may suspect that the model is merely memorizing peculiarities in the training data. Overfitting is a phenomenon in which a model performs well on the training data but underperforms on new data. You should check whether the gap between the training score and the validation score is widening.",
+    "explanation": "Overfitting means error is low on training data but performance does not generalize well to unseen data from the target distribution. Training loss falling while validation loss repeatedly worsens is evidence, not proof from one fluctuation. Check train-validation distribution, leakage, metrics, multiple epochs, and seeds.",
     "side_card_ids": [
       "AI_eval_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -476,7 +474,7 @@
       "training"
     ],
     "reading_goal": "Distinguish between the loss used for training and the metric interpreted by humans.",
-    "code": "loss = loss_fn(pred, y) # The value the optimizer aims to minimize accuracy = correct / total # A metric that makes it easy for humans to assess performance",
+    "code": "loss = loss_fn(pred, y)     # differentiable training objective\naccuracy = correct / total  # example reporting metric",
     "question_type": "meaning_choice",
     "question": "What is the role of loss?",
     "choices": [
@@ -486,7 +484,7 @@
       "The learning objective value that the optimizer is trying to minimize"
     ],
     "answer": "The learning objective value that the optimizer is trying to minimize",
-    "explanation": "Metrics are used for evaluation and interpretation, while loss is often used directly for training updates. A loss is a value used to minimize how much the model is off during training, while a metric is an evaluation indicator that is easy for users to understand. The two do not always move in the same direction. Therefore, the correct answer is “the training objective that the optimizer aims to minimize.”",
+    "explanation": "A loss is the objective differentiated by `backward` to form optimizer updates. It can combine prediction error, regularization, and weighted terms, so it is not simply a count of wrong predictions. A metric such as accuracy is chosen for evaluation and interpretation and need not be differentiable. Different definitions mean loss and metrics do not always move together.",
     "side_card_ids": [
       "AI_eval_001"
     ],
@@ -513,7 +511,7 @@
       "Do not update this parameter during training"
     ],
     "answer": "Do not update this parameter during training",
-    "explanation": "In the LoRA/adapter approach, the base model is often frozen, and only a small number of training parameters are adjusted. Freezing means locking certain parameters of the model so they are not trained. Since only the trainable parameters are updated, this reduces computational cost and preserves existing knowledge.",
+    "explanation": "Setting each parameter's `requires_grad` to false prevents autograd from producing that parameter's gradient, so a normal optimizer does not update it. This freezes parameter gradients; it does not call `model.eval()` or freeze train-mode behavior of dropout and batch-normalization buffers. Also verify that the optimizer contains only intended trainable parameters.",
     "side_card_ids": [
       "AI_lora_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -531,7 +529,7 @@
       "training"
     ],
     "reading_goal": "I understand the method of gathering small batches multiple times and updating them when VRAM is insufficient.",
-    "code": "loss = loss / accumulation_steps\nloss.backward()\nif step % accumulation_steps == 0:\n    optimizer.step()\n    optimizer.zero_grad()",
+    "code": "optimizer.zero_grad()\nfor step, batch in enumerate(loader, start=1):\n    loss = compute_loss(batch) / accumulation_steps\n    loss.backward()\n    if step % accumulation_steps == 0 or step == len(loader):\n        optimizer.step()\n        optimizer.zero_grad()",
     "question_type": "meaning_choice",
     "question": "Which of the following is closest to the purpose of gradient accumulation?",
     "choices": [
@@ -541,7 +539,7 @@
       "Aggregate multiple small batches and update them as if they were a single large batch."
     ],
     "answer": "Aggregate multiple small batches and update them as if they were a single large batch.",
-    "explanation": "Gradient accumulation is a method in which the gradients from multiple small batches are accumulated and then updated all at once. It is used to increase the effective batch size when VRAM is limited.",
+    "explanation": "Each micro-batch loss is divided by `accumulation_steps`, and `backward` adds its gradients to `parameter.grad`. The optimizer steps only after the chosen count or the final leftover batch, then clears gradients. This approximates a larger effective batch without loading it at once, but model and optimizer memory remain, and loss scaling, scheduler steps, and gradient clipping must be placed consistently.",
     "side_card_ids": [
       "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
     ],
@@ -558,7 +556,7 @@
       "state_dict"
     ],
     "reading_goal": "Understand the structure that allows learning to continue from a checkpoint.",
-    "code": "checkpoint = torch.load(\"checkpoint.pt\")\nmodel.load_state_dict(checkpoint[\"model\"])\noptimizer.load_state_dict(checkpoint[\"optimizer\"])\nstart_step = checkpoint[\"step\"]",
+    "code": "checkpoint = torch.load(\"checkpoint.pt\", map_location=device)\nmodel.load_state_dict(checkpoint[\"model\"])\noptimizer.load_state_dict(checkpoint[\"optimizer\"])\nstart_step = checkpoint[\"step\"]",
     "question_type": "meaning_choice",
     "question": "What is the purpose of this code?",
     "choices": [
@@ -568,7 +566,7 @@
       "Load the saved training state and continue training"
     ],
     "answer": "Load the saved training state and continue training",
-    "explanation": "Checkpoint resume is a save-and-restore procedure used to resume interrupted training. To resume training reliably, not only the model but also the optimizer and step information must be saved. Therefore, the correct answer is “Load the saved training state and continue training.”",
+    "explanation": "The code restores model weights, optimizer internals, and the starting step from a checkpoint dictionary. Compatible model and optimizer objects must already exist, and optimizer-state tensor devices need checking. An exact resume may also need scheduler, AMP scaler, random-generator, and data-sampler state. Never load an untrusted checkpoint with `torch.load`.",
     "side_card_ids": [
       "PYV159_A1_CHECKPOINT_RESUME_FLOW",
       "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
@@ -596,7 +594,7 @@
       "Embedding model"
     ],
     "answer": "Embedding model",
-    "explanation": "The embedding model generates vectors for semantic search, while the LLM generates response text. The embedding model converts text into vectors, which are used for search and similarity calculations, while the LLM generates sentences or performs reasoning. In RAG, the two models have different roles.",
+    "explanation": "An embedding model converts queries and documents into numeric arrays in a shared vector space for similarity search. An LLM generates next tokens from prompt tokens. In RAG, a retriever finds evidence candidates and the LLM answers from selected context, but vector proximity and generated text do not guarantee correctness, so retrieval and generation require separate evaluation.",
     "side_card_ids": [
       "AI_embedding_001",
       "AI_vector_db_001"

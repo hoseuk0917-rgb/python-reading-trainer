@@ -9,7 +9,7 @@
       "search"
     ],
     "reading_goal": "Understand the tag filter, which allows you to select only the cards you want based on their concepts or tags.",
-    "code": "filtered = cards.filter(card => card.concepts.includes('validation'))",
+    "code": "filtered = cards.filter(card =>\n  (card.concepts ?? []).includes('validation')\n)",
     "question_type": "meaning_choice",
     "question": "What is the purpose of the tag filter?",
     "choices": [
@@ -19,7 +19,7 @@
       "To hide the verification results"
     ],
     "answer": "To view only cards tagged with a specific concept or tag,",
-    "explanation": "When the number of cards exceeds 1,000, you’ll need filters based not only on search terms but also on concepts and tags. A tag filter is a feature that narrows down the list based on the tags assigned to each item. You simply need to check the condition that compares the selected tag with the list of tags on the cards. Therefore, the correct answer is “to select only cards associated with a specific concept or tag.”",
+    "explanation": "Cards without concepts are treated as an empty array, avoiding a runtime error, and only an exact validation tag matches. Normalize canonical tag IDs at ingestion if aliases, case differences, or hierarchy are supported.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
@@ -45,7 +45,7 @@
       "To hide the verification results"
     ],
     "answer": "It shows only cards within your desired difficulty range.",
-    "explanation": "The level filter is a feature that narrows down the list based on card difficulty or learning stage. Beginners should be able to select only low-level cards, while those reviewing should be able to select only high-level cards. With a difficulty filter, users can focus on cards that match their current level.",
+    "explanation": "This is a minimum-level filter selecting cards at level 8 or above. A true range also needs a maximum condition. Validate missing and nonnumeric levels, and do not assume one number perfectly represents learning difficulty.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW"
     ],
@@ -113,7 +113,7 @@
       "UX"
     ],
     "reading_goal": "Understand the \"clear filter\" UX, which resets all filters at once.",
-    "code": "clearButton.onclick = () => {\n  filterState = defaultFilterState\n}",
+    "code": "clearButton.onclick = () => {\n  filterState = structuredClone(defaultFilterState);\n  syncUrlAndRender(filterState);\n};",
     "question_type": "meaning_choice",
     "question": "What is the purpose of the \"Clear Filter\" button?",
     "choices": [
@@ -123,7 +123,7 @@
       "To hide the verification results"
     ],
     "answer": "To reset the applied search and filter criteria to their default values,",
-    "explanation": "The \"Clear Filter\" feature quickly resets the applied search criteria. The more filters there are, the easier it should be for users to clear the current criteria. With a \"Clear\" button, users can quickly return to the full results without having to clear each filter one by one.",
+    "explanation": "Copy the default object so later mutation cannot change the defaults themselves. Synchronize URL, control values, and rendered results with the reset state so visible controls and actual filtering agree.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -167,7 +167,7 @@
       "UX"
     ],
     "reading_goal": "Understand the sort orders used to sort card results by most recent, difficulty, and relevance.",
-    "code": "cards.sort((a, b) => b.level - a.level)",
+    "code": "const sortedCards = [...cards].sort((a, b) =>\n  (Number(b.level) || 0) - (Number(a.level) || 0)\n);",
     "question_type": "meaning_choice",
     "question": "What is the purpose of sort order?",
     "choices": [
@@ -177,7 +177,7 @@
       "To hide the verification results"
     ],
     "answer": "Sort search results according to the user's preferred criteria",
-    "explanation": "Sort order refers to the method used to determine how search results are sorted. The learning flow can vary depending on whether results are sorted by difficulty, recency, or relevance. Even for the same search results, changing the sort order alters which cards the user sees first.",
+    "explanation": "Copy before sorting to avoid mutating cards, then order numeric levels descending. Missing or invalid levels fall back to zero here but should also be reported by validation. Define a stable ID or relevance tie-break when needed.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -194,7 +194,7 @@
       "search"
     ],
     "reading_goal": "Understand search ranking, which assigns relevance scores to search results to determine their order.",
-    "code": "score = titleMatch * 3 + conceptMatch * 2 + bodyMatch",
+    "code": "function scoreCard(card, query) {\n  return titleMatch(card, query) * 3\n       + conceptMatch(card, query) * 2\n       + bodyMatch(card, query);\n}\nresults.sort((a, b) => scoreCard(b, query) - scoreCard(a, query));",
     "question_type": "meaning_choice",
     "question": "What is the key to search rankings?",
     "choices": [
@@ -204,7 +204,7 @@
       "To hide the verification results"
     ],
     "answer": "Displaying cards that are more relevant to the search term at the top",
-    "explanation": "Search quality improves when the degree of match between the title, concept, and body text is factored in differently, rather than simply checking for inclusion. Search ranking is the process of determining which criteria to use to place search results higher in the results. We need to examine how scores for factors such as keyword match, recency, and importance are combined. Therefore, the correct approach is to “display cards that are more relevant to the search query at the top.”",
+    "explanation": "Calculate title, concept, and body matches for each card and sort by weighted score. The 3:2:1 weights are examples; without normalization, long fields can dominate. Evaluate ranking with labeled queries and useful learner outcomes.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
@@ -230,7 +230,7 @@
       "To hide the verification results"
     ],
     "answer": "To show where the search term matches in the results,",
-    "explanation": "Search Highlight is a feature that shows where the search term matches a card. It allows users to quickly see why a particular card appeared in the results. Highlighting allows users to assess relevance before opening search results, thereby reducing search time. Therefore, the correct answer is “to show where the search term matches in the results.”",
+    "explanation": "Highlighting shows why a result matched. Do not inject the raw query into HTML; create text nodes and safe ranges to avoid XSS and broken markup. Match ranking normalization and provide semantic markup and contrast rather than color alone.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -274,7 +274,7 @@
       "UX"
     ],
     "reading_goal": "Understand the UX that prompts users to narrow their search criteria when no results are found.",
-    "code": "if (results.length === 0) {\n  showHint('필터를 줄여보세요')\n}",
+    "code": "if (results.length === 0) {\n  showHint('Try fewer filters')\n}",
     "question_type": "meaning_choice",
     "question": "What is the purpose of \"no result recovery\"?",
     "choices": [
@@ -301,7 +301,7 @@
       "learning_ux"
     ],
     "reading_goal": "Understand the concept of \"saved searches,\" which allows you to save frequently used search criteria.",
-    "code": "savedSearches.push({ name: 'Incorrect Answer Validation', filterState })",
+    "code": "savedSearches.push({\n  name: 'Wrong validation answers',\n  filterState: structuredClone(filterState)\n});",
     "question_type": "meaning_choice",
     "question": "When is a saved search useful?",
     "choices": [
@@ -311,7 +311,7 @@
       "To hide the verification results"
     ],
     "answer": "When you want to quickly reload frequently used filter criteria",
-    "explanation": "A saved search is a feature that lets you save frequently used search criteria so you can retrieve them later. For example, you can save a search that displays only high-difficulty validation cards. Saving search criteria allows you to quickly resume repetitive review or quality check tasks.",
+    "explanation": "Store a copied snapshot so later state mutation cannot change the saved search. Include a schema version and canonical tags and validate on load. Explain synchronization and sharing because names or queries may be sensitive.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW"
     ],
@@ -327,7 +327,7 @@
       "state"
     ],
     "reading_goal": "Understand how to share or restore search criteria by including them in a URL query.",
-    "code": "url = '?q=json&level=8&concept=validation'",
+    "code": "const params = new URLSearchParams({\n  q: filterState.query,\n  level: String(filterState.levelMin),\n  concept: filterState.concept\n});\nconst url = `?${params}`;",
     "question_type": "meaning_choice",
     "question": "What are the advantages of the URL query state?",
     "choices": [
@@ -337,7 +337,7 @@
       "To hide the verification results"
     ],
     "answer": "You can share search criteria as a link or restore them after refreshing the page.",
-    "explanation": "The URL query state is a method that allows you to embed filters and search criteria in a URL so you can share it or reopen it later. It makes it easy to reproduce a specific training set. If the state is included in the URL, you can restore the same filter criteria even after refreshing the page, using a bookmark, or clicking a shared link.",
+    "explanation": "URLSearchParams encodes spaces and special characters. On load, validate level range and allowed concepts and safely ignore unknown parameters. URLs can enter history, logs, and referrers, so do not include private notes or sensitive queries.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -380,7 +380,7 @@
       "performance"
     ],
     "reading_goal": "Understand how to determine which fields to include in the search index.",
-    "code": "searchText = [card.title, card.question, card.answer, card.concepts.join(' ')].join(' ')",
+    "code": "searchText = [\n  card.title,\n  card.question,\n  card.explanation,\n  card.concepts.join(' ')\n].join(' ')",
     "question_type": "meaning_choice",
     "question": "What are good values to include in search index fields?",
     "choices": [
@@ -390,7 +390,7 @@
       "To hide the verification results"
     ],
     "answer": "Searchable fields such as title, question, answer, and concepts",
-    "explanation": "Search index fields are fields that pre-collect text to be used for searching. Combining the title, description, and concept fields can improve search performance and consistency. Creating separate fields for search allows you to separate data used for rendering from data optimized for search.",
+    "explanation": "A learner-facing index can combine title, question, explanation, and concepts. Indexing the answer before a quiz can leak it in results or snippets, so reserve answer search for an authoring or admin mode. Rebuild the index when fields change.",
     "side_card_ids": [
       "PYV158_A1_PERFORMANCE_FLOW"
     ],
@@ -406,7 +406,7 @@
       "test_case"
     ],
     "reading_goal": "Understand the importance of using test cases to verify that the advanced search feature is working properly.",
-    "code": "assert search('json', levelMin=8)\nassert filterByConcept('validation')",
+    "code": "assert [c.id for c in search('json', levelMin=8)] == expected_ranked_ids\nassert {c.id for c in filterByConcept('validation')} == expected_concept_ids",
     "question_type": "meaning_choice",
     "question": "What is the purpose of the \"Advanced Search Quality Gate\"?",
     "choices": [
@@ -416,7 +416,7 @@
       "To hide the verification results"
     ],
     "answer": "To verify that search, filtering, and sorting functions work as intended,",
-    "explanation": "The \"advanced search quality gate\" is a quality standard that ensures users can find the cards they want even as the number of cards increases. The search function is a core quality gate for learning apps. Therefore, the correct answer is \"to verify that search, filtering, and sorting functions work as intended.\"",
+    "explanation": "A truthy assertion can pass with wrong cards or order. Compare exact expected IDs and ranking on fixed fixtures and test empty, Unicode, invalid level, and combined filters. Use a test runner rather than depending on asserts under Python -O.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"

@@ -37,7 +37,7 @@
       "parameter"
     ],
     "reading_goal": "Distinguish between what a function takes as input and what it returns.",
-    "code": "def get_card_title(card): return card[\"title\"] title = get_card_title({\"id\": \"c1\", \"title\": \"Reading Functions\"})",
+    "code": "def get_card_title(card):\n    return card[\"title\"]\n\ntitle = get_card_title({\"id\": \"c1\", \"title\": \"Reading Functions\"})",
     "question_type": "meaning_choice",
     "question": "Which of the following are the input and output of this function?",
     "choices": [
@@ -92,15 +92,15 @@
     "reading_goal": "Understand guard clauses, which exit a function early if the conditions are not met.",
     "code": "def render_card(card):\n    if not card:\n        return \"\"\n\n    return f\"<h2>{card['title']}</h2>\"",
     "question_type": "meaning_choice",
-    "question": "if not card: return \\",
+    "question": "What does if not card: return \"\" do?",
     "choices": [
-      "Delete the card",
-      "If there is no card, it returns an empty string instead of an error.",
-      "Always print the title",
-      "Shut down the server"
+      "Delete card",
+      "Return an empty string without reading title when card is falsy",
+      "Always output the title",
+      "Stop the server"
     ],
-    "answer": "If there is no card, it returns an empty string instead of an error.",
-    "explanation": "A guard clause ensures that a function can safely exit in the event of invalid input or a null value. A guard clause is a structure that either returns immediately at the beginning of the function or throws an error if the condition is not met. It helps reduce nested `if` statements and makes failure conditions more apparent. Therefore, the result of the return/call is “return an empty string instead of an error when there is no card.”",
+    "answer": "Return an empty string without reading title when card is falsy",
+    "explanation": "For any falsy card, including None or an empty dictionary, the function immediately returns an empty string and does not access title. If an empty card is invalid, ValueError or an explicit placeholder may be better than a silently empty UI. A guard clause makes early exit clear but does not choose the correct failure policy for you.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -142,7 +142,7 @@
       "testable"
     ],
     "reading_goal": "Understand the advantages of pure functions, which always produce the same output for the same input.",
-    "code": "def make_status(done, total): return f\"{done}/{total} completed\" text = make_status(3, 10)",
+    "code": "def make_status(done, total):\n    return f\"{done}/{total} completed\"\n\ntext = make_status(3, 10)",
     "question_type": "meaning_choice",
     "question": "Why are pure functions easy to test?",
     "choices": [
@@ -169,7 +169,7 @@
       "state"
     ],
     "reading_goal": "Identify side effects where a function modifies external state.",
-    "code": "def save_progress(progress):\n    localStorage.setItem(\"progress\", JSON.stringify(progress))",
+    "code": "function saveProgress(progress) {\n  localStorage.setItem(\"progress\", JSON.stringify(progress));\n}",
     "question_type": "meaning_choice",
     "question": "What is the side effect of this function?",
     "choices": [
@@ -179,7 +179,7 @@
       "It always displays the same screen"
     ],
     "answer": "Store a value in localStorage",
-    "explanation": "A side effect is an operation in which a function modifies external state. Saving a file, updating the screen, making a network request, and modifying external storage are all examples of side effects. Since the more side effects there are, the more difficult testing and debugging become, it is best to separate them from the core computation. Therefore, the correct answer is “stores a value in localStorage.”",
+    "explanation": "This is a JavaScript function that changes external browser state in localStorage and returns undefined. JSON.stringify or setItem can fail because of circular data, quota, or privacy settings. Separating core calculation from a storage adapter makes testing easier and lets the caller handle errors.",
     "side_card_ids": [
       "PYV160_A1_OBJECT_METHOD_CLASS_FLOW",
       "PYV160_A1_PWA_STATE_STORAGE_FLOW"
@@ -250,7 +250,7 @@
       "function"
     ],
     "reading_goal": "Understand the renderer function that converts data into an HTML string for display on the screen.",
-    "code": "def render_title(card):\n    return f\"<h2>{card['title']}</h2>\"",
+    "code": "from html import escape\n\ndef render_title(card):\n    title = escape(str(card[\"title\"]))\n    return f\"<h2>{title}</h2>\"",
     "question_type": "meaning_choice",
     "question": "What does this function do?",
     "choices": [
@@ -260,7 +260,7 @@
       "Python Virtual Environment"
     ],
     "answer": "HTML string containing the card title",
-    "explanation": "A renderer function is a function that transforms data into a format suitable for display on the screen. It is useful for separating and managing the source data from the HTML or UI strings used for display. By separating the renderer, the same data can be displayed differently depending on whether it is shown on a card, in a list, or on a detail page.",
+    "explanation": "The function converts the card title to text, escapes characters such as <, &, and quotes for HTML, and returns an h2 string. Inserting an untrusted title directly can cause XSS if the result is used as innerHTML. Prefer DOM textContent or template auto-escaping and apply escaping for the actual rendering context.",
     "side_card_ids": [
       "PYV159_A1_FUNCTION_IO_FLOW"
     ],
@@ -315,7 +315,7 @@
       "level value"
     ],
     "answer": "All cards originally",
-    "explanation": "A filter function is a function that retains only the items that meet a certain condition. If `all` is passed as an argument, it means no filter is applied, so the entire list can be returned as-is. Defining a rule to return the entire list when no filter condition is specified simplifies the UI code. Therefore, the result of the call is “the original set of cards.”",
+    "explanation": "When level is exactly the string \"all\", the function returns the same list object as cards. Mutating the returned list therefore mutates the original. Otherwise, string conversion treats numeric 3 and string \"3\" as equal but can silently merge invalid types; normalize and validate the schema first, and return a copy if aliasing is unwanted.",
     "side_card_ids": [
       "PYV159_A1_FUNCTION_IO_FLOW"
     ],
@@ -341,7 +341,7 @@
       "Push to GitHub"
     ],
     "answer": "Formats the card for display on the screen",
-    "explanation": "There is a naming convention where “render” means to display the UI, “load” means to load data, “save” means to save data, and “filter” means to filter data. Function names are the first clue to what the code is intended to do. By looking at the verb and its object, you can infer how it processes input and what result it returns. Therefore, the correct answer is “prepares the card for display on the screen.”",
+    "explanation": "Names such as load, save, render, and filter are conventions that suggest intent, so renderCard most naturally suggests preparing a card for display. A name alone does not guarantee side effects, return type, or real behavior. Verify the inference from the definition, call sites, tests, and documentation.",
     "side_card_ids": [
       "PYV159_A1_FUNCTION_IO_FLOW"
     ],
@@ -386,15 +386,15 @@
     "reading_goal": "Understand the function structure that allows testing without a browser or files.",
     "code": "def make_recommendation(cards, progress, limit=10):\n    unseen = [c for c in cards if not progress[\"seen\"].get(c[\"id\"])]\n    return unseen[:limit]",
     "question_type": "meaning_choice",
-    "question": "Why are card rendering functions easy to test?",
+    "question": "Why is make_recommendation relatively easy to test?",
     "choices": [
-      "Because it directly modifies localStorage",
-      "This is because you can see the results just by entering \"cards\" and \"progress.\"",
-      "Because I'm editing the HTML directly",
-      "Because it opens a server port"
+      "It directly modifies localStorage",
+      "Its returned list can be checked from only cards and progress inputs",
+      "It directly changes HTML",
+      "It opens a server port"
     ],
-    "answer": "This is because you can see the results just by entering \"cards\" and \"progress.\"",
-    "explanation": "A testable function is one with clear inputs and outputs and few external dependencies. It is easy to verify the results even with just a small amount of sample data. If a rendering function does not depend directly on the DOM or the network, it is easy to create tests that compare the expected HTML or strings. Therefore, the return/call result is “because you can verify the result just by including ‘cards’ and ‘progress’.”",
+    "answer": "Its returned list can be checked from only cards and progress inputs",
+    "explanation": "The function does not directly access the DOM, network, or storage; it returns an unseen slice from cards and progress, so small inputs can verify the output. Its contract should still test that progress[\"seen\"] is a mapping, limit is nonnegative, and returned cards are the same mutable objects.",
     "side_card_ids": [
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"

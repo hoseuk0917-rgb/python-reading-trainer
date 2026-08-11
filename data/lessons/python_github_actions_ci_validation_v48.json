@@ -95,7 +95,7 @@
       "lesson 파일을 삭제한다"
     ],
     "answer": "CI 실행 환경에 저장소 파일을 내려받는다",
-    "explanation": "CI 서버는 빈 환경에서 시작하므로 먼저 저장소 파일을 가져와야 검증 스크립트를 실행할 수 있다. checkout action은 GitHub Actions에서 저장소 코드를 runner에 내려받는 단계다. 이 단계가 없으면 테스트 스크립트가 검사할 파일을 찾지 못한다.",
+    "explanation": "actions/checkout은 runner workspace에 event가 가리키는 repository revision을 받아 뒤 step이 file을 읽게 한다. 보안 요구가 높은 workflow에서는 movable major tag만 믿지 않고 검토한 full commit SHA로 pin하고 Dependabot 같은 절차로 갱신한다. credential persistence와 fetch-depth도 작업 필요에 맞게 제한한다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_ARCHITECTURE_DESIGN"
@@ -122,7 +122,7 @@
       "브라우저 포트를 바꾸기 위해"
     ],
     "answer": "검증 스크립트를 실행할 Python 환경을 준비하기 위해",
-    "explanation": "setup-python action은 GitHub Actions 환경에 원하는 Python 버전을 준비하는 단계다. CI에서도 로컬처럼 검증 스크립트를 실행할 수 있어야 한다.",
+    "explanation": "setup-python은 runner에 요청한 Python 3.11 계열을 준비하고 PATH에 둔다. 정확한 재현성이 필요하면 patch version과 dependency lock을 pin하고, ubuntu-latest image 변화도 고려한다. 표준 library만 쓴다는 사실은 repository script가 항상 같은 결과를 낸다는 보장은 아니다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -176,7 +176,7 @@
       "Git 원격 주소를 바꾸기 위해"
     ],
     "answer": "검증 조건을 실행 시점에 지정할 수 있기 때문",
-    "explanation": "CLI args는 명령줄에서 스크립트에 넘기는 옵션 값이다. 같은 검증 스크립트라도 기대 버전이나 카드 수를 인자로 다르게 줄 수 있다. 하드코딩하지 않고 인자로 받으면 같은 코드를 여러 버전 검증에 재사용하기 쉽다. 따라서 정답은 ‘검증 조건을 실행 시점에 지정할 수 있기 때문’이다.",
+    "explanation": "CLI option은 같은 validator에 release별 expected count를 외부에서 전달한다. 값의 source가 실제 data에서 다시 계산되면 누락을 못 잡으므로 version 관리된 manifest나 독립 spec에서 가져와야 한다. argparse type과 범위 validation, help, 실패 message도 제공한다.",
     "side_card_ids": [
       "SC_import_pm_reading",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -283,7 +283,7 @@
       "GitHub Actions를 삭제하기 위해"
     ],
     "answer": "관련 파일이 바뀔 때만 검증을 실행하기 위해",
-    "explanation": "path filter는 특정 경로가 바뀐 경우에만 CI를 실행하도록 제한하는 설정이다. 문서만 바뀐 경우 같은 불필요한 실행을 줄일 수 있다. 경로 필터를 쓰면 관련 파일이 바뀐 경우에만 무거운 테스트나 빌드를 실행할 수 있다.",
+    "explanation": "paths filter는 나열된 경로가 바뀐 event에서만 workflow를 실행해 비용을 줄인다. validator, workflow, dependency file, side card처럼 결과에 영향을 주는 모든 경로를 포함해야 하며 누락하면 필요한 검사가 skip된다. branch protection의 required check와 filter 조합에서 대기 상태가 생기는지도 확인한다.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -310,7 +310,7 @@
       "CI 검증을 항상 실패시키기 위해"
     ],
     "answer": "내 컴퓨터와 원격 저장소 양쪽에서 같은 기준으로 확인하기 위해",
-    "explanation": "로컬에서 먼저 잡고, 원격에서 한 번 더 잡으면 깨진 변경이 남을 가능성이 줄어든다. local check는 내 PC에서 돌리는 검사이고, CI check는 GitHub 같은 원격 환경에서 돌리는 검사다. 두 환경의 파이썬 버전과 경로 차이를 주의해야 한다.",
+    "explanation": "같은 script를 local과 CI에서 실행하면 rule drift를 줄이고 feedback을 빨리 받는다. 하지만 OS, Python patch, locale, timezone, dependency와 environment variable이 다르면 결과가 달라질 수 있다. CI environment를 명시적으로 pin하고 local 재현 방법을 문서화한다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -363,7 +363,7 @@
       "lesson 파일을 자동 삭제할 수 있다"
     ],
     "answer": "새 버전 추가 때마다 workflow 파일을 수정하지 않아도 된다",
-    "explanation": "CI는 구조 검증을 기본으로 돌리고, 로컬 릴리스 검증에서 기대 카드 수를 인자로 확인할 수 있다. CI에서 count를 하드코딩하면 카드 수가 바뀔 때 검증이 잘못 실패할 수 있다. 기대값을 명시하되 실제 파일 로딩 결과와 함께 비교해야 한다. 따라서 출력 결과는 새 버전 추가 때마다 workflow 파일을 수정하지 않아도 된다.",
+    "explanation": "workflow YAML을 매번 수정하지 않는 장점은 있지만 CI에서 count expectation을 완전히 빼면 lesson 연결 누락을 놓칠 수 있다. 예상 파일과 count를 version 관리된 manifest 또는 validator가 읽는 독립 metadata로 두면 workflow 변경 없이도 회귀 검사를 유지할 수 있다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -390,7 +390,7 @@
       "파일을 읽지 않고 통과시키는 것"
     ],
     "answer": "어디서 실행해도 같은 규칙으로 검증하는 것",
-    "explanation": "검증 기준이 코드로 고정되어 있으면 사람마다 다른 방식으로 확인하는 문제를 줄일 수 있다. reproducible validation은 누가 실행해도 같은 검증 결과가 나오게 만드는 원칙이다. 고정된 명령, 버전, 기대 카드 수를 함께 관리해야 한다.",
+    "explanation": "재현 가능한 검증은 같은 input revision, validator, config, runtime과 dependency에서 같은 판정을 내는 것을 목표로 한다. same repo라는 표현만으로는 branch 시점, generated file, timezone, network 변화가 고정되지 않는다. tool version과 environment를 pin하고 외부 의존을 제거하거나 기록한다.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
@@ -416,7 +416,7 @@
       "Git log를 숨기는 것"
     ],
     "answer": "자동 검증을 통과한 변경만 안전한 기준으로 삼는 것",
-    "explanation": "CI as quality gate는 CI 통과 여부를 main 브랜치의 최소 품질 기준으로 쓰는 방식이다. 자동 문지기처럼 깨진 변경을 막아준다. 검증이 실패하면 merge나 배포를 멈추게 해 사람이 놓친 오류도 저장소 단계에서 잡을 수 있다.",
+    "explanation": "CI status를 branch protection의 required check로 설정해야 실패한 job이 merge를 실제로 막는 gate가 된다. workflow가 존재하거나 빨간 표시가 난다는 사실만으로 merge 차단이 자동 보장되지는 않는다. 관리자 bypass, skipped job, 권한과 protected branch 설정도 확인한다.",
     "side_card_ids": [
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"

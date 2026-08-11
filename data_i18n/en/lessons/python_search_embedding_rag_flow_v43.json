@@ -45,7 +45,7 @@
       "Disconnect from the database"
     ],
     "answer": "Minimize unnecessary spaces and case sensitivity in search terms",
-    "explanation": "Query normalization is a preprocessing step that standardizes input data into a consistent format before a search. By standardizing case, spaces, and variations in notation, it helps reduce the problem of input data with the same meaning being processed differently.",
+    "explanation": "strip() removes leading and trailing whitespace, lower() changes uppercase letters to lowercase, and normalize_spaces handles internal spacing. This helps natural-language matching, but case can matter in terms such as Python or US and in exact IDs. Preserve the original or use field-specific normalization rules.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
@@ -71,7 +71,7 @@
       "When shutting down the server"
     ],
     "answer": "When precise terminology, code names, file names, and document titles are important",
-    "explanation": "Keyword search is a search method that checks whether a specific string or word actually appears within a document. It is particularly effective for finding exact terms, filenames, and error messages. However, it may be less effective for semantic searches where the wording has changed, so it is often used in conjunction with embedding search.",
+    "explanation": "This code checks case-sensitively whether the consecutive lowercase substring embedding occurs in document_text. It does not handle token boundaries, inflections, or Embedding with a capital letter. Keyword search is strong for exact errors and IDs, but a real engine must define tokenization, normalization, and ranking.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -98,7 +98,7 @@
       "GitHub remote repository URL"
     ],
     "answer": "A representation of the text's meaning as an array of numbers",
-    "explanation": "An embedding vector is a representation that converts the meaning of text into a numerical vector. It ensures that sentences or documents with similar meanings are positioned close to each other in vector space. In RAG, this vector is used to first identify document fragments that are likely to be relevant to the query.",
+    "explanation": "An embedding model encodes text as a learned numeric vector. Texts with similar learned patterns are often close under the chosen metric, which helps semantic search, but this does not guarantee semantic or factual equivalence across every language and domain. Keep query and document vectors in a compatible model-version space.",
     "side_card_ids": [
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
     ],
@@ -124,7 +124,7 @@
       "Hide the correct answer five times"
     ],
     "answer": "Retrieves the 5 closest candidates",
-    "explanation": "In vector search, `top_k` is a parameter that determines how many top candidates to retrieve from the embedding search. If it is too small, relevant candidates may be missed; if it is too large, the number of unnecessary candidates increases. Since `top_k` represents a balance between search quality and cost, it must be adjusted according to the data size and input constraints. Therefore, the correct answer is “retrieve the 5 closest candidates.”",
+    "explanation": "top_k=5 requests up to five highest-ranked candidates under the index's similarity or distance metric and filters. An approximate index may not return the globally exact nearest five, and fewer than five may qualify. Select k by measuring retrieval recall, latency, and reranking and context budgets.",
     "side_card_ids": [],
     "project_context": "If you retrieve too little from RAG, evidence may be missing, and if you retrieve too much, the context can become cluttered."
   },
@@ -148,7 +148,7 @@
       "This means the database has been deleted."
     ],
     "answer": "This means that the question is deemed to be more closely related to the meaning of the chunk.",
-    "explanation": "The similarity score indicates how closely a search result matches the question. While it helps with ranking, the score itself does not guarantee the correct answer. When searching, you should look at candidates with higher scores first, but you must also verify that the source and the content of the sentence match the actual question. Therefore, the correct answer is “it means that the chunk is judged to be semantically closer to the question.”",
+    "explanation": "Here, chunks with cosine score above 0.75 are retained, so within the same model and preprocessing a higher value means a more similar vector direction to the query. Score distributions and useful thresholds differ by model and domain, so 0.75 is not universal. High similarity does not guarantee relevant facts or a correct answer.",
     "side_card_ids": [
       "PL_curation_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -169,13 +169,13 @@
     "question_type": "meaning_choice",
     "question": "Why are chunks created in RAG?",
     "choices": [
-      "To break down a long document into smaller units suitable for searching and context integration,",
-      "Just to lose the document",
-      "To change a file extension",
-      "To always increase GPU memory"
+      "Split a long document into retrieval and context units",
+      "Guarantee every answer is true",
+      "Delete source metadata",
+      "Avoid all tokenization"
     ],
-    "answer": "To break down a long document into smaller units suitable for searching and context integration,",
-    "explanation": "Chunking for search is the process of dividing long documents into smaller units that are easier to search. If a chunk is too large, it becomes less effective; if it is too small, the context may be disrupted.",
+    "answer": "Split a long document into retrieval and context units",
+    "explanation": "Chunking lets retrieval find a relevant part of a long document and place it in context. Oversized chunks mix topics and consume token budget; tiny chunks can lose needed context. Preserve sentence or section boundaries, overlap when justified, titles, source and offset provenance, and tune size with retrieval evaluation.",
     "side_card_ids": [
       "AI_chunking_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -196,13 +196,13 @@
     "question_type": "meaning_choice",
     "question": "Why do we create the embedding index in advance?",
     "choices": [
-      "To avoid re-embedding the entire document every time a question is asked,",
-      "To eliminate search entirely",
-      "To delete all documents",
-      "To avoid saving user questions"
+      "Avoid re-embedding every document for each question",
+      "Never update changed documents",
+      "Remove the query embedding",
+      "Guarantee zero search latency"
     ],
-    "answer": "To avoid re-embedding the entire document every time a question is asked,",
-    "explanation": "An index is a structure designed to perform computationally intensive calculations in advance so that searches can be performed quickly at query time. Index build time refers to the time it takes to create the search index, while query time refers to the time it takes for a user to perform a search. We must separate the parts to be pre-computed from those to be processed in real time. Therefore, the correct answer is “to avoid re-embedding the entire document every time a query is received.”",
+    "answer": "Avoid re-embedding every document for each question",
+    "explanation": "Precomputing document embeddings and storing them in an index means query time needs to encode only the question and search existing vectors. Rebuild affected vectors when documents, chunking, the embedding model, or normalization version changes. Query and document embeddings must use a compatible vector space.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -219,7 +219,7 @@
       "vector_search"
     ],
     "reading_goal": "Understand why keyword search and vector search are used together.",
-    "code": "keyword_hits = keyword_search(query)\nvector_hits = vector_search(query)\ncandidates = merge(keyword_hits, vector_hits)",
+    "code": "keyword_hits = keyword_search(query)\nvector_hits = vector_search(query)\ncandidates = deduplicate_and_fuse(keyword_hits, vector_hits)",
     "question_type": "meaning_choice",
     "question": "What are the advantages of hybrid search?",
     "choices": [
@@ -229,7 +229,7 @@
       "Automatically corrects file encoding"
     ],
     "answer": "You can use both exact word matching and semantic search together.",
-    "explanation": "Keywords are strong at matching exact terms, while vector search is strong at finding documents with similar meanings even if the wording differs. Hybrid search is a method that combines keyword search and vector search. We need to determine how to combine exact word matching with semantic similarity.",
+    "explanation": "Hybrid search combines keyword results, strong for exact terms, with vector results, useful for varied wording. Concatenating the lists can create duplicates and incomparable score scales, so define a deduplication key and a fusion method such as RRF, score normalization, or a learned ranker.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -250,13 +250,13 @@
     "question_type": "meaning_choice",
     "question": "Why use a metadata filter?",
     "choices": [
-      "To narrow the search scope to the desired document group,",
-      "To delete a question",
-      "To set all scores to 0",
-      "Just to convert JSON to CSV"
+      "Narrow retrieval to the desired document group",
+      "Prove all metadata is correct",
+      "Encrypt the documents",
+      "Generate missing sources"
     ],
-    "answer": "To narrow the search scope to the desired document group,",
-    "explanation": "A metadata filter is a method of narrowing down search results using additional information such as domain, date, source, and document type. It reduces the problem of irrelevant or outdated documents appearing in the results. Therefore, the correct answer is “to narrow the search scope to the desired group of documents.”",
+    "answer": "Narrow retrieval to the desired document group",
+    "explanation": "The metadata filter limits retrieval candidates to documents whose domain and doc_type match. It can reduce irrelevant results, but missing or incorrect metadata and an overly narrow filter can exclude good evidence. Verify that fields are indexed and define relaxation behavior for zero results.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -277,13 +277,13 @@
     "question_type": "meaning_choice",
     "question": "What is the role of reranking?",
     "choices": [
-      "Among the initial candidates, I’ll list the ones that best match the question at the top.",
-      "Delete all candidates without exception",
-      "Save the query as a file",
-      "Disconnect from the database"
+      "Move better-matching first-stage candidates upward",
+      "Recover any document absent from retrieval",
+      "Guarantee a correct answer",
+      "Delete all relevance scores"
     ],
-    "answer": "Among the initial candidates, I’ll list the ones that best match the question at the top.",
-    "explanation": "The search can be designed to return a broad set of candidates and then use reranking to improve the quality of the final results. Reranking is the step in which the candidates found in the initial search are re-scored and reordered. It can better reflect the relevance to the actual question than simple keyword matching.",
+    "answer": "Move better-matching first-stage candidates upward",
+    "explanation": "A reranker rescoring the first-stage top 50 selects up to five candidates that appear more relevant to the query. It cannot recover a document absent from those 50 and can also make mistakes, so evaluate candidate recall and final relevance separately. Python's [:5] takes at most five items.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -310,7 +310,7 @@
       "Not sorting search results"
     ],
     "answer": "Including key evidence within the token limit",
-    "explanation": "Context packing is the process of selecting the necessary information from the retrieved evidence and incorporating it into the LLM’s input. Since there is an input limit, relevant evidence must be filtered and condensed. Including too much low-priority evidence can actually push the key evidence to the background, so selection criteria are necessary.",
+    "explanation": "Context packing arranges retrieved evidence within max_tokens as counted by the model tokenizer. Consider relevance, deduplication, source diversity, ordering, tokens needed for the question, and citation provenance. If chunks are truncated, keep claims connected to their source and necessary surrounding context.",
     "side_card_ids": [
       "AI_hallucination_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -327,7 +327,7 @@
       "evidence_first"
     ],
     "reading_goal": "Understand the concept of a “grounded answer,” which refers to an answer that must be based on search evidence.",
-    "code": "answer = generate_answer(question, context)\nassert answer_uses_evidence(answer, context)",
+    "code": "answer = generate_answer(question, context)\nreport = check_evidence_support(answer, context)\nif not report.supported:\n    answer = revise_or_decline(question, context, report)",
     "question_type": "meaning_choice",
     "question": "What is the key to a \"grounded answer\"?",
     "choices": [
@@ -337,7 +337,7 @@
       "Ignoring a question"
     ],
     "answer": "Providing answers based on the evidence found",
-    "explanation": "A \"grounded answer\" is a response that is not based solely on the model's memory but is crafted in accordance with retrieved evidence. In RAG, it is important that the answer is linked to the source document. If there is a discrepancy between a sentence in the source document and the answer, the answer should be revised to prioritize the evidence over the model's representation.",
+    "explanation": "A grounded answer has each important claim supported by the supplied evidence. An automated support checker can also be wrong, so one assertion cannot prove groundedness. For important uses, combine claim-level citations, source comparison, evaluation datasets, or human review.",
     "side_card_ids": [
       "PYV102_A7_AI_ML_TOOLCHAIN",
       "PYV102_A7_SYSTEMS_CONCEPTS"
@@ -354,17 +354,17 @@
       "retrieval_confidence"
     ],
     "reading_goal": "Understand the practice of falling back on an alternative approach rather than giving a forced answer when there is insufficient evidence.",
-    "code": "if evidence or confidence < threshold: return 'Insufficient evidence' return answer",
+    "code": "evidence = retrieve(question)\nconfidence = calibrated_confidence(evidence)\nif not evidence or confidence < threshold:\n    return 'Insufficient evidence'\nanswer = generate_answer(question, evidence)\nreturn answer",
     "question_type": "meaning_choice",
     "question": "Why is a \"no-answer fallback\" necessary?",
     "choices": [
-      "To reduce the number of unfounded responses",
-      "To make searches always appear successful",
-      "To give the same answer to every question",
-      "To automatically delete documents"
+      "Reduce unsupported answers when evidence is inadequate",
+      "Guarantee the model always answers",
+      "Ignore retrieval failures",
+      "Increase the context without a limit"
     ],
-    "answer": "To reduce the number of unfounded responses",
-    "explanation": "The \"no answer\" fallback is a safety mechanism that, when there is insufficient evidence, avoids forcing an answer and instead treats the query as \"unknown.\" Acknowledging a lack of evidence is also part of RAG quality. Fallback responses should be designed not as failures, but as a response policy intended to maintain trust.",
+    "answer": "Reduce unsupported answers when evidence is inadequate",
+    "explanation": "When evidence is absent or calibrated confidence is below a threshold, the system declines instead of inventing an answer. A poorly calibrated threshold can over-refuse answerable questions or allow unsupported answers, so tune it on labeled evaluation data. When possible, explain what additional information or search scope is needed.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -385,13 +385,13 @@
     "question_type": "meaning_choice",
     "question": "Why break down the RAG evaluation?",
     "choices": [
-      "To distinguish between problems caused by incorrect searches and those caused by incorrect answers,",
-      "To always make the scores look higher",
-      "To delete a dataset,",
-      "To prevent LLM calls"
+      "Separate retrieval failures from answer-generation failures",
+      "Use one score for every failure",
+      "Skip labeled questions",
+      "Assume citations are correct"
     ],
-    "answer": "To distinguish between problems caused by incorrect searches and those caused by incorrect answers,",
-    "explanation": "A RAG failure could be either a failure to retrieve evidence or a failure to generate a response due to the incorrect use of evidence. RAG evaluation is the process of assessing whether the response used the evidence appropriately. The relevance of the retrieved documents, the accuracy of the answer, and the citation of sources must all be considered together. Therefore, the correct answer is “to distinguish between problems caused by incorrect retrieval and those caused by incorrect answer generation.”",
+    "answer": "Separate retrieval failures from answer-generation failures",
+    "explanation": "Separating retrieval and answer evaluation distinguishes failure to find evidence from failure to use retrieved evidence. Retrieval needs measures such as recall and context precision; generation needs faithfulness, answer correctness, and citation accuracy on labeled questions. Also evaluate the user's end task.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -412,13 +412,13 @@
     "question_type": "meaning_choice",
     "question": "What are the benefits of having a retrieval log?",
     "choices": [
-      "We can trace why a particular piece of evidence was selected at a later time.",
-      "You can hide search results without exception",
-      "You don't have to read the JSON",
-      "You can always set the score to 1."
+      "Trace which evidence was selected and why",
+      "Store secrets without controls",
+      "Prove every score is calibrated",
+      "Replace evaluation data"
     ],
-    "answer": "We can trace why a particular piece of evidence was selected at a later time.",
-    "explanation": "A retrieval log is a record that tracks which documents and chunks were retrieved for a given query. It serves as the starting point for RAG debugging and improving search quality. When search results are poor, reviewing the log allows you to trace the source of the problem—whether it lies in the query, the top_k, or the selected chunks.",
+    "answer": "Trace which evidence was selected and why",
+    "explanation": "query, top_ids, and scores are a foundation for reproducing and diagnosing selection. Also log model and index versions, query-normalization version, filters, top_k, and a request ID. Queries and documents may contain personal data, so apply minimization, access controls, retention limits, and redaction.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW"
     ],

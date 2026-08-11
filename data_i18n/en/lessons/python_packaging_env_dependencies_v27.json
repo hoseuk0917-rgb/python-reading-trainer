@@ -45,7 +45,7 @@
       "Automatically translate requirements.txt"
     ],
     "answer": "Create a virtual environment folder for the current project",
-    "explanation": "venv is a tool for creating independent Python execution environments for each project. It is used to reduce package version conflicts and create a reproducible development environment. By installing packages within an activated venv, you can manage project-specific dependencies without polluting the global Python environment. Therefore, the correct answer is “Create a virtual environment folder for the current project.”",
+    "explanation": "python -m venv .venv creates a project-local environment using the selected Python. Activation is a convenience that changes PATH and related values in the current shell so python and pip point to it; it is not required. You can call the venv Python directly, and the venv itself does not record dependency versions, so a lock or requirement file is still needed.",
     "side_card_ids": [
       "DEV_venv_001",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -62,7 +62,7 @@
       "dependency"
     ],
     "reading_goal": "Understand the command for installing all the packages listed in `requirements.txt` at once.",
-    "code": "pip install -r requirements.txt",
+    "code": "python -m pip install -r requirements.txt",
     "question_type": "meaning_choice",
     "question": "- What does the -r option in requirements.txt mean?",
     "choices": [
@@ -72,7 +72,7 @@
       "Create a GitHub repository"
     ],
     "answer": "Reads the `requirements.txt` file and installs the packages",
-    "explanation": "`pip install -r requirements.txt` is a command that installs all the dependencies listed in the file at once. It allows you to quickly set up the necessary packages when creating a new environment.",
+    "explanation": "-r tells pip to read each requirement from the file and resolve and install packages and dependencies. python -m pip makes it explicit that pip belongs to the selected Python environment. Unless the file is an exact lock, transitive versions can vary by platform and index state.",
     "side_card_ids": [
       "PYV160_A1_PACKAGING_DEPENDENCY_FLOW"
     ],
@@ -88,7 +88,7 @@
       "dependency_snapshot"
     ],
     "reading_goal": "Understand the command that saves a list of packages currently installed in the environment to a file.",
-    "code": "pip freeze > requirements.txt",
+    "code": "python -m pip freeze > requirements.txt",
     "question_type": "meaning_choice",
     "question": "What is the result of this command?",
     "choices": [
@@ -98,7 +98,7 @@
       "Python is getting an upgrade"
     ],
     "answer": "A list of currently installed packages is saved in requirements.txt",
-    "explanation": "`pip freeze` lists the packages and their versions in the current environment. The `>` symbol redirects that output to a file. `pip freeze` lists the packages and their versions installed in the current environment. It is used to create a reproducible installation, but it may include unnecessary packages.",
+    "explanation": "The command prints distributions and versions visible to pip in the current environment, and > overwrites requirements.txt with that output. Direct, transitive, experimental, and platform-specific packages can all be mixed together, so this is not the same as project dependency intent or a cross-platform lock. Review the diff and choose a lock tool appropriate to the goal.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -125,7 +125,7 @@
       "Change the FastAPI execution port to 1150"
     ],
     "answer": "Install FastAPI version 0.115.0 exactly",
-    "explanation": "Version pinning is a method of fixing or specifying a range for package versions. == specifies an exact version, while >= indicates a minimum version requirement. To reproduce the deployment environment, it is safer to pin core packages to verified versions rather than using overly broad ranges. Therefore, the correct answer is “Install FastAPI exactly at version 0.115.0.”",
+    "explanation": "==0.115.0 permits that exact FastAPI release. In contrast, uvicorn>=0.30.0 has no upper bound and requests has no version constraint, so future incompatible releases can be selected. Pinning direct packages alone does not fix transitive dependencies or artifact hashes; use a tested lock and update process.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -152,7 +152,7 @@
       "Clear the local cache"
     ],
     "answer": "List the packages required to run the project",
-    "explanation": "pyproject.toml is a standard configuration file that contains the project name, version, dependencies, build settings, and more. The basic structure of pyproject.toml includes the project name, build settings, and tool settings. It is easier to find the relevant settings if you know which tool reads which section. Therefore, the correct answer is “List the packages required to run the project.”",
+    "explanation": "[project] dependencies declares runtime requirements for this distribution. pyproject.toml can also contain [build-system] and tool-specific tables; not every setting belongs under [project]. With no version constraints, different FastAPI and Uvicorn releases may be selected at different install times, so reproducibility needs a separate policy.",
     "side_card_ids": [
       "DATA_metadata_001",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -170,7 +170,7 @@
       "debugging"
     ],
     "reading_goal": "Learn how to determine whether an error caused by a missing module is due to an environment issue or a path issue.",
-    "code": "ModuleNotFoundError: No module named \"sentence_transformers\"\n\n# check\npython -c \"import sys; print(sys.executable)\"\npip show sentence-transformers",
+    "code": "ModuleNotFoundError: No module named \"sentence_transformers\"\n\n# check\npython -c \"import sys; print(sys.executable)\"\npython -m pip show sentence-transformers",
     "question_type": "meaning_choice",
     "question": "Why check `sys.executable`?",
     "choices": [
@@ -180,7 +180,7 @@
       "I want to compress JSON"
     ],
     "answer": "I want to check the path of the currently running Python",
-    "explanation": "If the Python version used to install a package differs from the one currently running, an import error may occur. When debugging a `ModuleNotFoundError`, you must check whether the module is installed, verify that the virtual environment is active, and confirm the current execution location. Even the same package may not be available in a different virtual environment.",
+    "explanation": "sys.executable shows the interpreter running the code, and python -m pip show checks the distribution in that same environment. The import name sentence_transformers and distribution name sentence-transformers illustrate that the names can differ. Also inspect package version, a shadowing local file, and the import path.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW"
     ],
@@ -206,7 +206,7 @@
       "It refers to a Git remote."
     ],
     "answer": "Treats the string as a raw string",
-    "explanation": "Raw strings cause backslashes to be interpreted less frequently as escape characters, making them convenient for Windows paths. Windows paths can cause confusion with string escaping due to the backslash. Using raw strings or slash conversion can reduce path errors. Therefore, the correct answer is “Treat the string as a raw string.”",
+    "explanation": "The r prefix preserves most backslashes as literal characters, which makes Windows paths easier to read. Raw strings still have quote rules and cannot end in an odd number of backslashes, so they do not eliminate every path issue. pathlib.Path and / reduce separator handling, and this code creates only path objects, not directories.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
@@ -232,7 +232,7 @@
       "Set a fixed Python version"
     ],
     "answer": "Change the policy for the current user group",
-    "explanation": "PowerShell execution policies can restrict script execution. Therefore, if the venv activation script is blocked, you can sometimes use workarounds within the scope of the current process. By limiting the scope of these settings, you can perform only the necessary tasks without making excessive changes to the overall PC security policy.",
+    "explanation": "-Scope CurrentUser persistently changes the execution policy for the current user account; it is not limited to the current process. RemoteSigned is not a security boundary, and organization Group Policy can take precedence. Confirm that policy changes are allowed and consider the narrower Process scope or directly calling the venv Python without an activation script.",
     "side_card_ids": [],
     "project_context": "This is something I often check when I can't get a virtual environment to work on a new Windows server or laptop."
   },
@@ -247,7 +247,7 @@
       "server"
     ],
     "reading_goal": "Navigate to the project root directory and review the structure of the script that runs the server.",
-    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\npython -m http.server 8790 --bind 127.0.0.1",
+    "code": "$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path\nSet-Location $scriptDir\npython -m http.server 8790 --bind 127.0.0.1",
     "question_type": "meaning_choice",
     "question": "Why do we use `Set-Location` first?",
     "choices": [
@@ -257,7 +257,7 @@
       "To clear your browser cache"
     ],
     "answer": "To set the relative path to the project root,",
-    "explanation": "Since a static server serves files relative to the current folder, it must be run from the project root for the paths to be correct. A portable run script is a script that organizes paths and environment variables so that it runs the same way on other computers. It is important to minimize the use of hard-coded personal paths. Therefore, the correct answer is “to set the project root as the base for relative paths.”",
+    "explanation": "The script computes its own directory and changes to it, avoiding a user-specific D: path while setting the relative file-serving root. It must still verify that python is the intended interpreter and that the port is available. http.server is for localhost development, not production.",
     "side_card_ids": [
       "PYV159_A1_FASTAPI_SERVER_FLOW"
     ],
@@ -300,7 +300,7 @@
       "documentation"
     ],
     "reading_goal": "Understand why installation, execution, and verification commands are included in the README.",
-    "code": "## Run locally\n\nSet-Location D:\\projects\\python-reading-trainer\n.\\run_local_server.ps1\n\nOpen http://localhost:8790/src/pwa/index.html",
+    "code": "## Run locally\n\n1. Clone the repository and create the documented Python environment.\n2. Run `./run_local_server.ps1` from the repository root.\n3. Open `http://localhost:8790/src/pwa/index.html`.",
     "question_type": "meaning_choice",
     "question": "Why is the \"Run locally\" section of the README important?",
     "choices": [
@@ -310,7 +310,7 @@
       "To revert a commit"
     ],
     "answer": "To quickly reproduce the same execution procedure later,",
-    "explanation": "As a project grows, you should document the execution commands in the README or runbook so you won’t have as much trouble getting started again later. The “How to Run” section of the README is a guide that allows someone seeing it for the first time to run the app. You should list the commands for installation, verification, and running the app on a local server in order. Therefore, the correct answer is “to quickly reproduce the same execution procedure later.”",
+    "explanation": "A Run section should let a new reader reproduce prerequisites, environment creation, dependency installation, validation, and launch in order. Use repository-root commands instead of a personal absolute path, and document supported OS and shell, expected output, how to stop, and a link to common errors.",
     "side_card_ids": [
       "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
     ],
@@ -336,7 +336,7 @@
       "Git pushes will be faster"
     ],
     "answer": "It is easy to reproduce the same version combination on other PCs.",
-    "explanation": "Since code can suddenly break when versions change, version locking is helpful for important projects. A dependency lock fixes the versions of installed packages, making it easier to reproduce the runtime environment. It is important for ensuring that the same versions are used on both the development machine and the CI environment.",
+    "explanation": "Exact versions for these three direct packages help another PC select the same releases for those requirements. They do not fully lock transitive dependencies, artifact hashes, or Python and platform markers. Use a resolver-generated lock, trusted index and hashes, and regular update and security review.",
     "side_card_ids": [],
     "project_context": "To achieve the same results on a GPU server, laptop, or local PC, it is important to ensure that dependencies can be reproduced."
   },
@@ -360,7 +360,7 @@
       "CSS file"
     ],
     "answer": "The `main` function in the `tools.validate` module",
-    "explanation": "project.scripts is a configuration that maps CLI command names to Python functions. A package entrypoint is a function or module that is executed when the package is run as a command. You need to verify how the pyproject configuration is linked to the actual execution function. Therefore, the correct answer is “the `main` function in the `tools.validate` module.”",
+    "explanation": "After installation, the packaging tool creates a py-reader-validate command that imports the tools.validate module and calls main. The module must be included and importable, and main should follow CLI argument and exit-code conventions. Merely adding this table does not make the command available in an uninstalled source checkout.",
     "side_card_ids": [
       "PYV160_A1_PACKAGING_DEPENDENCY_FLOW"
     ],
@@ -387,7 +387,7 @@
       "Error"
     ],
     "answer": "http://127.0.0.1:8000",
-    "explanation": "Loading an .env file is the process of reading environment variables from a file such as .env. The second argument of `os.getenv` is the default value to use when no value is present. Setting a default value ensures that the app does not fail immediately when a configuration is missing, but instead operates using a predictable value. Therefore, the correct answer is “http://127.0.0.1:8000.”",
+    "explanation": "By default, load_dotenv does not overwrite an existing environment value and fills only missing variables from .env. The os.getenv default applies only when the variable is absent; an empty string is returned as an empty string. Validate required settings per environment so production does not silently point to localhost, and never commit .env secrets.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -413,7 +413,7 @@
       "Ignore the package list"
     ],
     "answer": "Install dependencies after activating the venv",
-    "explanation": "A repro setup checklist is a step-by-step guide for reproducing the same environment on other computers. It includes instructions for setting up the environment, activating it, installing packages, and running verification commands. Having a checklist reduces trial and error when new equipment is used or when someone else works on the same project.",
+    "explanation": "After creating the venv, a common flow activates it in that shell and installs verified requirements with that interpreter's python -m pip. Activation is optional if the .venv Python is called directly. Record repository revision, Python version, lock and hashes, OS prerequisites, and validation results, and keep the local server for development only.",
     "side_card_ids": [
       "PYV161_A1_ENV_MAIN_CHECKLIST_FLOW"
     ],

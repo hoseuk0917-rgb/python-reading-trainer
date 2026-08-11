@@ -19,7 +19,7 @@
       "Changing the app version"
     ],
     "answer": "Encouraging students to review the material at appropriate intervals before they forget it",
-    "explanation": "Spaced repetition helps learners retain information for longer by having them review material at the exact moment they are most likely to forget it. Spaced repetition is a method that prompts learners to review material just as they are about to forget it. You should check how the last study date, whether the answer was correct, and the next review interval are calculated.",
+    "explanation": "Spaced repetition schedules later retrieval practice from learning outcomes. This is only a simple policy of three days after correct and one after incorrect; it does not know an individual's exact forgetting moment. Tune interval rules by measured learning and workload.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW"
     ],
@@ -35,7 +35,7 @@
       "date_check"
     ],
     "reading_goal": "Understand the concept of \"due cards,\" which selects only the cards you need to review today.",
-    "code": "today = '2026-05-31'\ndue = [card for card in cards if card['next_review_at'] <= today]",
+    "code": "from datetime import date\n\ntoday = date.today()\ndue = [card for card in cards\n       if date.fromisoformat(card['next_review_at']) <= today]",
     "question_type": "meaning_choice",
     "question": "What are \"due cards\"?",
     "choices": [
@@ -45,7 +45,7 @@
       "GitHub Actions configuration file"
     ],
     "answer": "The card it's time to look at again today",
-    "explanation": "You can select the cards to review today based on a date such as `next_review_at`. `due cards` is a list of cards that are currently due for review. You can see how the last study time, accuracy rate, and spacing calculation are used to determine the next review time.",
+    "explanation": "Parsing next_review_at as an ISO date selects cards due on or before today and catches malformed dates early. YYYY-MM-DD strings sort chronologically only under the same format. If timestamps are used, define timezone and the day boundary.",
     "side_card_ids": [
       "PYV102_A7_LEARNING_UX_HABIT",
       "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
@@ -72,7 +72,7 @@
       "To change the server port"
     ],
     "answer": "To see familiar cards less often and weaker cards more often",
-    "explanation": "The review interval is the time interval before a card is reviewed again. Adjusting the interval based on the learner’s memory status and answer history improves efficiency. A common approach is to increase the interval for cards answered correctly and review cards that are frequently answered incorrectly more frequently.",
+    "explanation": "This example chooses 1, 3, or 7 days only from cumulative correct_count. It ignores recent failure, response difficulty, prior interval, and elapsed time, so it is not a precise mastery estimate. Real policies need interval bounds, lapse behavior, and outcome-based calibration.",
     "side_card_ids": [
       "PL_cron_001",
       "PYV102_A7_LEARNING_UX_HABIT"
@@ -89,7 +89,7 @@
       "review_timing"
     ],
     "reading_goal": "I understand that memories fade over time, so the timing of review is important.",
-    "code": "memory_strength = memory_strength * 0.8\nif memory_strength < 0.5:\n    schedule_review(card)",
+    "code": "elapsed_days = (today - last_review_date).days\nmemory_strength = estimate_retention(elapsed_days, prior_strength)\nif memory_strength < 0.5:\n    schedule_review(card)",
     "question_type": "meaning_choice",
     "question": "Which of the following best describes the \"forgetting curve\"?",
     "choices": [
@@ -99,7 +99,7 @@
       "The idea that JSON files are compressed"
     ],
     "answer": "The idea that the intensity of a memory may fade over time",
-    "explanation": "The forgetting curve is a concept that describes how memories fade over time. Review algorithms take this trend into account to determine when to review material. If the review interval is too long, it’s easy to forget the material; if it’s too short, the burden of repetition becomes too great.",
+    "explanation": "A forgetting curve models the tendency for recall probability to decline with elapsed time. Multiplying by 0.8 on every program run would not represent elapsed time, so this example uses elapsed_days. Curves vary by learner and material, and the threshold needs evaluation.",
     "side_card_ids": [
       "PYV102_A7_LEARNING_UX_HABIT",
       "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
@@ -126,7 +126,7 @@
       "Create a Git remote repository"
     ],
     "answer": "It determines the list of cards to study today.",
-    "explanation": "The daily review queue is a list that contains only the cards to be reviewed today. It is important to create a set of cards that a learner can manage in a single day. If the queue is too large, it becomes overwhelming; if it is too small, the review effect is diminished, so it is necessary to adjust the volume to an appropriate level.",
+    "explanation": "The first 20 form today's queue only if due_cards is already sorted by priority and due time. Otherwise, important overdue cards can be pushed back. Twenty is not universally optimal; adapt it to available time, backlog, and the new-card mix.",
     "side_card_ids": [],
     "project_context": "Since I have so many cards now, I need to limit how many I look at each day and set priorities."
   },
@@ -164,7 +164,7 @@
       "score"
     ],
     "reading_goal": "Understand the concept of the \"mastery score,\" which indicates how well you have mastered a card.",
-    "code": "mastery = correct_count / total_attempts\nif mastery < 0.6:\n    mark_as_weak(card_id)",
+    "code": "mastery = correct_count / total_attempts if total_attempts else 0.0\nif total_attempts >= MIN_EVIDENCE and mastery < 0.6:\n    mark_as_weak(card_id)",
     "question_type": "meaning_choice",
     "question": "What does the mastery score represent?",
     "choices": [
@@ -174,7 +174,7 @@
       "Browser port number"
     ],
     "answer": "How well the learner has mastered the card",
-    "explanation": "The mastery score can be calculated using the correct answer rate, the number of repetitions, and recent incorrect answers. The mastery score indicates how well a user has mastered a specific concept. You can see how the correct answer rate, recency, and repeated learning results are factored into the score.",
+    "explanation": "This mastery value is answer accuracy, with zero attempts handled explicitly. A minimum evidence threshold avoids treating one response as certain mastery. Response time, recency, hints, and item difficulty can make accuracy differ from understanding.",
     "side_card_ids": [],
     "project_context": "By calculating proficiency for each card, we can recommend concepts that the user is struggling with."
   },
@@ -198,7 +198,7 @@
       "To delete the verification script"
     ],
     "answer": "To prevent cards that are either too easy or too difficult from appearing repeatedly,",
-    "explanation": "Difficulty adjustment is a method of adjusting the difficulty or order of cards based on the learner’s recent performance. It is one of the key components of adaptive learning. It also helps regulate the learning flow to prevent a concentration of cards that are either too easy or too difficult.",
+    "explanation": "This rule assumes recent_accuracy comes from enough recent attempts, raising or lowering level accordingly. Small samples can cause oscillation, so use a minimum count, hysteresis, an upper bound, and learner control. Accuracy alone should not label a learner's ability.",
     "side_card_ids": [
       "PYV102_A7_LEARNING_UX_HABIT",
       "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
@@ -225,7 +225,7 @@
       "To downgrade the app version"
     ],
     "answer": "To help students review the concepts they frequently get wrong",
-    "explanation": "By analyzing weaknesses not only at the card level but also at the concept level, we can provide smarter recommendations. A “weak concept review” is a process that revisits concepts the user frequently gets wrong or hasn’t reviewed in a while. It’s important to review both the scoring criteria and the conditions for adding items to the review queue.",
+    "explanation": "Wrong counts by concept are a signal for possible weakness. A frequently exposed concept naturally accumulates more errors, so consider attempts, error rate, recency, item difficulty, and tag quality. One wrong card does not prove a prerequisite deficit.",
     "side_card_ids": [],
     "project_context": "Since the \"concepts\" field already exists, linking it to the record of incorrect answers makes it possible to recommend concepts that the student needs to work on."
   },
@@ -239,7 +239,7 @@
       "learning_path"
     ],
     "reading_goal": "Understand the recommendation logic for prioritizing which cards to view next.",
-    "code": "score = due_weight + weak_concept_weight + level_match_weight\nnext_card = max(cards, key=lambda c: score_card(c))",
+    "code": "def score_card(card):\n    return (due_weight(card)\n            + weak_concept_weight(card)\n            + level_match_weight(card))\n\nnext_card = max(cards, key=score_card) if cards else None",
     "question_type": "meaning_choice",
     "question": "What factors should be considered for the \"Next Card Recommendation\"?",
     "choices": [
@@ -249,7 +249,7 @@
       "Just the browser icon"
     ],
     "answer": "Review Deadline, Weak Concepts, Current Difficulty Level",
-    "explanation": "The recommendation score can be calculated based on factors such as whether it’s the user’s turn to review the card today, whether it covers a concept they frequently get wrong, and whether it matches their current level. The “Next Card” recommendation feature selects the next card to solve or reading material based on the user’s current status. It must take into account recent incorrect answers, difficulty level, and learning objectives.",
+    "explanation": "The function calculates due, weak-concept, and level-match components for each card, and max selects the highest. The separate unused score variable was removed. Empty cards returns None, while weight scales and tie-breaking need evaluation.",
     "side_card_ids": [
       "PYV102_A7_LEARNING_UX_HABIT",
       "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
@@ -303,7 +303,7 @@
       "Cards with short filenames"
     ],
     "answer": "Cards that have been overdue for a long time and are frequently marked as incorrect",
-    "explanation": "The review priority score is a score used to rank flashcards so you know which ones to review first. It allows you to move cards you got wrong or cards you haven’t reviewed in a while to the top of the list. By setting a scoring criteria, you can create a review order based on rules rather than intuition.",
+    "explanation": "The formula adds overdue days and wrong count and subtracts mastery before descending sort. Raw features with different scales can let wrong_count dominate, and priority must be calculated per card. Evaluate normalization, caps, tie-breaking, and fairness against learning outcomes.",
     "side_card_ids": [],
     "project_context": "As the number of cards increases, it becomes necessary to sort them by priority rather than simply by order."
   },
@@ -396,7 +396,7 @@
       "learning_ux"
     ],
     "reading_goal": "I understand that review algorithms also require safeguards to prevent excessive repetition or bias.",
-    "code": "if same_concept_count > 5:\n    pick_different_concept()\nif session_size > 30:\n    stop_for_today()",
+    "code": "if same_concept_count >= 5:\n    pick_different_concept()\nif session_size >= 30:\n    stop_for_today()",
     "question_type": "meaning_choice",
     "question": "Why is a review algorithm guard necessary?",
     "choices": [
@@ -406,7 +406,7 @@
       "To turn off GitHub Actions"
     ],
     "answer": "To prevent the excessive repetition of the same concepts or an overwhelming amount of material,",
-    "explanation": "The review algorithm guard is a mechanism that imposes limits to prevent the recommendation logic from becoming biased in one direction. It must take user fatigue, diversity, and the volume of data being learned into account. Without the Guard, issues such as the repeated recommendation of easy cards or specific tags may arise. Therefore, the correct answer is “to prevent the excessive repetition of the same concepts or an excessive volume of training data.”",
+    "explanation": "The guard acts before adding another item once five same-concept cards or thirty session cards have been reached. Using > would allow an off-by-one extra item. Treat the numbers as adjustable defaults, not forced universal limits.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW"
     ],
@@ -432,7 +432,7 @@
       "Prevents app distribution"
     ],
     "answer": "It can also recommend the preceding concept associated with the incorrect concept.",
-    "explanation": "The Learning Roadmap Bridge serves to link incorrect answers to the next learning path. With a concept graph, you can trace the cause of an incorrect answer back to a lack of prior knowledge.",
+    "explanation": "If the concept graph records dict and list as prerequisites of json, the app can suggest those foundations. One incorrect json question does not prove that a prerequisite gap caused it. Use diagnostic questions, repeated evidence, and supported graph edges, and let the learner skip the suggestion.",
     "side_card_ids": [
       "PYV102_A7_LEARNING_UX_HABIT",
       "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"

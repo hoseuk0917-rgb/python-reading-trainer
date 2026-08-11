@@ -19,7 +19,7 @@
       "To hide the verification results"
     ],
     "answer": "To save the learner's progress",
-    "explanation": "Progress tracking is a feature that saves how far a learner has progressed and their current status. Progress saving is necessary so that learners can resume their studies where they left off when they reopen the app. Progress data serves as the foundation for learning features such as the review queue, streak, and weakness analysis.",
+    "explanation": "Progress tracking saves learning state so a session can resume. current_card_id and solved_count alone do not handle reordered or deleted cards and multi-device conflicts; keep stable per-card state, schema version, and updated_at as needed. Do not tell the user it was saved until storage succeeds.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -73,7 +73,7 @@
       "To hide the verification results"
     ],
     "answer": "I make a note of the questions I got wrong so I can review them later.",
-    "explanation": "The \"wrong answer log\" is a record of incorrect cards and the choices made. This log serves as the foundation for reviewing weaknesses, creating a notebook of wrong answers, and the retry feature. Recording which answer choice was selected allows you to track confusing concepts more effectively than simply noting whether an answer was wrong. Therefore, the correct answer is “Record incorrect questions so you can review them later.”",
+    "explanation": "A wrong-answer log stores card ID, selection, answer at that time, and timestamp for review and analysis. Because card content can change, link a card version or prompt snapshot to reproduce the decision. It is personal learning data, so minimize collection and define retention.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -90,7 +90,7 @@
       "review"
     ],
     "reading_goal": "Understand the structure in which incorrect cards and explanations are displayed again in the error log.",
-    "code": "mistake_note = [row for row in history if row['correct'] == False]",
+    "code": "mistake_note = [\n    {**row, 'card': cards_by_id[row['card_id']]}\n    for row in history\n    if row.get('correct') is False and row['card_id'] in cards_by_id\n]",
     "question_type": "meaning_choice",
     "question": "Which data is most appropriate for the \"mistake note\"?",
     "choices": [
@@ -100,7 +100,7 @@
       "To hide the verification results"
     ],
     "answer": "Wrong Card, Selected Answer, Correct Answer, Explanation",
-    "explanation": "A \"mistake note\" is a screen or set of data that compiles incorrect cards and their explanations so users can review them later. It helps users understand why they got a question wrong and review their weak areas. By linking the reason for the mistake to the explanation to be reviewed, it becomes a record that can be immediately used for future review—rather than just a simple score.",
+    "explanation": "The comprehension selects explicitly incorrect history and joins current card metadata by card_id so the UI can show selection, answer, and explanation. Filtering alone cannot create an explanation absent from history. Handle deleted or version-changed cards with a fallback.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW"
     ],
@@ -126,7 +126,7 @@
       "To hide the verification results"
     ],
     "answer": "Recently, to make sure students only retake the questions they got wrong,",
-    "explanation": "\"Retry Wrong Cards\" is a feature that creates a queue so you can review only the cards you got wrong. By immediately retrying the cards you got wrong, you can quickly reinforce your understanding of the concepts you missed. Focusing on your weak points rather than reviewing all the cards at once makes your review more efficient, even in a short amount of time.",
+    "explanation": "Collecting cards whose last_correct is false creates a recent-error queue. Immediate repetition can produce an illusion from memorizing answer position, so offer explanation or a related item and spaced retry. Handle missing last_correct and duplicate IDs.",
     "side_card_ids": [
       "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
     ],
@@ -168,7 +168,7 @@
       "weak_concept"
     ],
     "reading_goal": "Read the explanation of why we calculate proficiency by concept rather than the correct answer rate on the flashcards.",
-    "code": "concept_score['dict'] = correct_dict_cards / total_dict_cards",
+    "code": "attempts = total_dict_cards\nconcept_score['dict'] = (correct_dict_cards / attempts\n                         if attempts else None)",
     "question_type": "meaning_choice",
     "question": "How does \"concept mastery\" differ from card scores?",
     "choices": [
@@ -178,7 +178,7 @@
       "To hide the verification results"
     ],
     "answer": "We compile the results from multiple cards to assess proficiency by conceptual unit.",
-    "explanation": "Concept mastery is a metric designed to assess understanding of concepts rather than the accuracy rate for individual cards. It is useful for identifying which topics you are weak in and prioritizing your review. If multiple cards are linked to the same concept, this metric allows you to better identify weaknesses at the concept level rather than focusing on mistakes on a single card.",
+    "explanation": "This aggregates accuracy across dict-related attempts and uses None for no evidence. Card difficulty, multiple concept tags, and repeated exposure differ, so a simple ratio is not complete understanding. Display sample size and recency too.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -195,7 +195,7 @@
       "learning_state"
     ],
     "reading_goal": "It tracks how many times you've solved the puzzle and uses that data to assess your skill level.",
-    "code": "progress[card_id]['attempts'] += 1",
+    "code": "row = progress.setdefault(card_id, {'attempts': 0})\nrow['attempts'] += 1",
     "question_type": "meaning_choice",
     "question": "Why is the \"attempt count\" needed?",
     "choices": [
@@ -205,7 +205,7 @@
       "To hide the verification results"
     ],
     "answer": "To find out how many times I've tried using the card",
-    "explanation": "The \"attempt count\" is a value that tracks how many times a card has been attempted. Even with the same accuracy rate, a card attempted only once may have a different significance than one attempted multiple times. The number of attempts serves as an important behavioral indicator when adjusting difficulty levels or calculating review priorities. Therefore, the correct answer is “to determine how many times a card has been attempted.”",
+    "explanation": "setdefault creates a row and zero count before incrementing once per real submission. Avoid counting refreshes or duplicate network events by using an event ID. Server-side concurrent updates need an atomic increment or transaction.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -232,7 +232,7 @@
       "To hide the verification results"
     ],
     "answer": "To calculate the next review date based on the time of the last solution,",
-    "explanation": "`last_answered_at` is a field that stores the time when a card was last solved. Time information is necessary to calculate review intervals and due cards. Without this value, it is difficult to distinguish between cards solved just now and those solved a long time ago. Therefore, the correct answer is “to calculate the next review date based on the last time the card was solved.”",
+    "explanation": "last_answered_at stores the latest submission time for elapsed-time and next-review calculations. Define now_iso as a timezone-aware UTC timestamp and prefer a server clock. Handle device clock changes and late multi-device updates.",
     "side_card_ids": [
       "AI_sensor_fusion_001",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -259,7 +259,7 @@
       "To hide the verification results"
     ],
     "answer": "Stores string data in the browser",
-    "explanation": "\"localStorage progress save\" is a method of storing progress data in the browser without using a server. Even in a static PWA, you can maintain the user's progress and a record of incorrect answers.",
+    "explanation": "JSON.stringify stores progress as a string in localStorage for the current origin. It survives refresh but does not sync devices, and quota, private mode, or storage errors can make setItem fail. Same-origin scripts can read it, so it is unsuitable for secrets or highly sensitive detail.",
     "side_card_ids": [
       "WEB_localstorage_001",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -276,7 +276,7 @@
       "JSON_parse"
     ],
     "reading_goal": "Read the process for converting the progress string stored in localStorage back into an object.",
-    "code": "raw = localStorage.getItem('pythonReadingProgress')\nprogress = raw ? JSON.parse(raw) : {}",
+    "code": "const raw = localStorage.getItem('pythonReadingProgress');\nlet progress = {};\nif (raw) {\n  try {\n    progress = validateProgress(JSON.parse(raw));\n  } catch (error) {\n    showRecoveryOption(error);\n  }\n}",
     "question_type": "meaning_choice",
     "question": "Why is JSON.parse needed?",
     "choices": [
@@ -286,7 +286,7 @@
       "To hide the verification results"
     ],
     "answer": "To convert the saved JSON string back into an object,",
-    "explanation": "Since data is stored as strings in localStorage, it must be converted to an object using `JSON.parse` when reading it. The `localStorage progress load` process retrieves the learning progress from the browser's storage. You must verify whether default values are used if the stored values are missing or corrupted.",
+    "explanation": "JSON.parse converts stored text but throws for malformed JSON. Use try/catch and schema validation to handle corruption and old versions. Do not silently overwrite the only copy with an empty object; offer backup or recovery.",
     "side_card_ids": [
       "PYV160_A1_PWA_STATE_STORAGE_FLOW"
     ],
@@ -302,7 +302,7 @@
       "compatibility"
     ],
     "reading_goal": "When the Jindo storage structure changes, existing data is migrated to the new structure.",
-    "code": "if progress['schema_version'] == 1:\n    progress = migrate_v1_to_v2(progress)",
+    "code": "version = progress.get('schema_version', 1)\nif version == 1:\n    progress = migrate_v1_to_v2(progress)\nvalidate_v2(progress)",
     "question_type": "meaning_choice",
     "question": "When is a progress migration necessary?",
     "choices": [
@@ -312,7 +312,7 @@
       "To hide the verification results"
     ],
     "answer": "When you've changed the Jindo storage structure but need to preserve existing user data",
-    "explanation": "Including a `schema_version` allows you to safely convert legacy progress data. A progress migration is the process of converting existing progress data to match the new schema. You must verify field mappings and default values to ensure that users' previous records are not lost.",
+    "explanation": "Treat missing schema_version as legacy v1, run an explicit migration, and validate v2. Back up first, make migration idempotent, and stop rather than guessing when the file has an unknown future version.",
     "side_card_ids": [
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -339,7 +339,7 @@
       "To hide the verification results"
     ],
     "answer": "To prevent user learning records from being accidentally deleted,",
-    "explanation": "\"Reset Progress Guard\" is a mechanism that implements a confirmation step before resetting progress. Since progress data is important to users, accidental deletion must be prevented. Including a confirmation dialog or a double-confirmation prompt can reduce the number of irreversible user data deletions. Therefore, the correct answer is “to prevent the user’s learning history from being accidentally deleted.”",
+    "explanation": "A confirmation reduces accidental clicks but does not make deletion recoverable. State exactly what will be removed, offer export or a short undo window, and delete only the exact key. Confirm separately whether synchronized server data is included.",
     "side_card_ids": [],
     "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
   },
@@ -363,7 +363,7 @@
       "To hide the verification results"
     ],
     "answer": "To back up your learning history or transfer it to another device",
-    "explanation": "In static apps, export/import is an important backup method when account synchronization is not available. Export progress is a feature that exports a user’s learning progress or scores to an external file. You must verify which fields are included and ensure that no personal information is mixed in. Therefore, the correct answer is “to back up learning records or transfer them to another device.”",
+    "explanation": "Export supports backup and transfer when no account sync exists. Include schema version, exported_at, app version, and an integrity check, and assess whether user IDs or notes are necessary. Test successful download and later import before calling it a backup.",
     "side_card_ids": [],
     "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
   },
@@ -377,7 +377,7 @@
       "validation"
     ],
     "reading_goal": "The system verifies the file when a backed-up progress file is reloaded.",
-    "code": "data = JSON.parse(file_text)\nvalidateProgress(data)\nlocalStorage.setItem('pythonReadingProgress', JSON.stringify(data))",
+    "code": "data = JSON.parse(file_text)\nclean = validateAndMigrateProgress(data)\nbackupCurrentProgress()\nlocalStorage.setItem('pythonReadingProgress', JSON.stringify(clean))",
     "question_type": "meaning_choice",
     "question": "Why is `validateProgress` required before `import progress`?",
     "choices": [
@@ -387,7 +387,7 @@
       "To hide the verification results"
     ],
     "answer": "To prevent corrupted files or data in other formats,",
-    "explanation": "\"Import Progress\" is a feature that reimports progress data from an external file. Before saving, you must verify that the file structure and required fields are correct. Since overwriting an incorrect progress file as-is could corrupt existing learning records, prior validation is necessary. Therefore, the correct answer is “to prevent corrupted files or data in different formats.”",
+    "explanation": "Treat the file as untrusted: validate size, schema, types, allowed keys, and version and store only migrated clean data. Back up current progress first and explain overwrite versus merge policy. Successful JSON parsing alone does not make data safe or compatible.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -440,7 +440,7 @@
       "To hide the verification results"
     ],
     "answer": "We do not send learning records to external parties without the user's consent.",
-    "explanation": "Since incorrect answers, scores, and learning patterns can be considered personal data, care must be taken when storing and transmitting them. “Progress privacy” is the perspective that learning progress and scores are also personal data. You must verify the storage location, whether synchronization occurs, and whether data is transmitted externally. Therefore, the correct answer is “Do not send learning records externally without user consent.”",
+    "explanation": "Errors, scores, and study patterns can be personal data. For external transfer, establish purpose and required consent or other lawful basis, and provide minimization, access control, retention, deletion, and export. Even localStorage can be read by same-origin scripts and device users, so assess sensitivity.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],

@@ -20,9 +20,8 @@
       "Start the server"
     ],
     "answer": "Retrieves all rows from the query results",
-    "explanation": "The results of the SELECT statement executed with `execute` are retrieved as a list using `fetchall`. The SQLite3 connection code opens the database file and prepares to execute the query. Just look at the order in which the connection object, cursor, commit, and close are used.",
+    "explanation": "fetchall returns all remaining result rows as a list. Because this query has LIMIT 10, it returns at most ten rows, but an unbounded large query can consume substantial memory. To close the connection even after an exception, use a clear connection lifecycle in addition to a transaction context such as with sqlite3.connect(...) as conn.",
     "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_ARCHITECTURE_DESIGN"
     ],
     "project_context": "This is the basic code for reading a local meta database or a test SQLite database."
@@ -48,7 +47,7 @@
       "Query Comments"
     ],
     "answer": "A placeholder for a parameter that will be safely bound later",
-    "explanation": "Passing user input as parameters rather than embedding it directly into an SQL string reduces the risk of SQL injection. Parameter-bound SQL is a method of passing values as separate arguments rather than concatenating them directly into a string. This is a fundamental practice for reducing the risk of SQL injection. Therefore, the correct answer is “a placeholder for a parameter that will be safely bound later.”",
+    "explanation": "? is a placeholder for one SQL value, and the trailing comma in (item_id,) creates a one-element tuple. The driver binds the value separately from SQL syntax, reducing injection risk compared with string concatenation. Placeholders cannot represent identifiers such as table or column names; restrict those dynamic parts with an allowlist.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -103,7 +102,7 @@
       "To hide the error"
     ],
     "answer": "To roll back a failed transaction change",
-    "explanation": "A rollback is performed to minimize the risk of the database ending up in an inconsistent state due to an intermediate failure. A rollback is a process that reverts changes when an error occurs during a database operation. It ensures that no intermediate failed state remains when multiple queries are executed as a batch.",
+    "explanation": "If execute or commit raises an Exception, rollback reverses uncommitted transaction changes on this connection, then bare raise propagates the original error. It cannot undo changes that were already committed or a transaction on another connection. In real code, define the expected database exception boundary and use a connection context manager to make commit and rollback scope clear.",
     "side_card_ids": [
       "PYV158_A1_DATABASE_FLOW"
     ],
@@ -120,7 +119,7 @@
       "sql"
     ],
     "reading_goal": "Read the columns and primary key from the SQL statement that creates the table.",
-    "code": "CREATE TABLE IF NOT EXISTS items (\n  id TEXT PRIMARY KEY,\n  title TEXT NOT NULL,\n  source_url TEXT,\n  created_at TEXT NOT NULL\n);",
+    "code": "CREATE TABLE IF NOT EXISTS items (\n  id TEXT PRIMARY KEY NOT NULL,\n  title TEXT NOT NULL,\n  source_url TEXT,\n  created_at TEXT NOT NULL\n);",
     "question_type": "meaning_choice",
     "question": "Which of the following best describes the meaning of an `id` column marked as a PRIMARY KEY?",
     "choices": [
@@ -130,7 +129,7 @@
       "External file path"
     ],
     "answer": "A unique identifier that distinguishes each row",
-    "explanation": "The `CREATE TABLE` statement is used to create the structure of a database table. A primary key serves as the primary identifier for each row in the table. By examining the schema, you can determine which columns are required and how to locate rows based on specific values. Therefore, the correct answer is “a unique identifier that distinguishes each row.”",
+    "explanation": "A PRIMARY KEY uniquely locates a row and disallows duplicate key values. This example also declares id NOT NULL explicitly, avoiding SQLite rowid-table exceptions that can otherwise permit a null non-integer primary key. NOT NULL on title and created_at does not reject an empty string or validate a date format.",
     "side_card_ids": [
       "PYV158_A1_SCHEMA_FLOW"
     ],
@@ -149,15 +148,15 @@
     "reading_goal": "Understand the constraint that a DB column must not be empty.",
     "code": "CREATE TABLE runs (\n  id TEXT PRIMARY KEY,\n  job_name TEXT NOT NULL,\n  status TEXT NOT NULL\n);",
     "question_type": "meaning_choice",
-    "question": "What does \"job_name TEXT NOT NULL\" mean?",
+    "question": "What does job_name TEXT NOT NULL directly prohibit?",
     "choices": [
-      "`job_name` must be a number",
-      "\"job_name\" is automatically deleted",
-      "\"job_name\" must have a value.",
-      "\"job_name\" is the primary key."
+      "Numeric values",
+      "An empty string",
+      "A NULL value",
+      "A duplicate string"
     ],
-    "answer": "\"job_name\" must have a value.",
-    "explanation": "NOT NULL is a constraint that prevents the column from containing a NULL value. It is used to prevent required fields from being omitted. Fields that identify execution records, such as `job_name`, are often subject to this constraint because it is difficult to track them if they are left blank.",
+    "answer": "A NULL value",
+    "explanation": "NOT NULL prevents SQL NULL from being stored in that column. It does not reject \"\" or a whitespace-only string. If a job name must contain non-whitespace text, add a rule such as CHECK(length(trim(job_name)) > 0) or application validation.",
     "side_card_ids": [
       "PYV158_A1_SCHEMA_FLOW"
     ],
@@ -184,7 +183,7 @@
       "\"curations\" is a file folder"
     ],
     "answer": "`curations.item_id` references `items.id`",
-    "explanation": "A foreign key means that a value in one table references a row in another table. It is used to represent relationships between tables and ensure data consistency. By enforcing the rule that an `item_id` must correspond to an actual ID in the `items` table, you can reduce the occurrence of orphaned data.",
+    "explanation": "This FOREIGN KEY declares that curations.item_id refers to items.id. The database must actually enforce foreign keys to reject missing parents or apply delete behavior. In SQLite, verify PRAGMA foreign_keys = ON for each connection, and separately decide how to handle existing orphan rows and the ON DELETE policy.",
     "side_card_ids": [
       "PYV158_A1_SCHEMA_FLOW"
     ],
@@ -289,7 +288,7 @@
       "3"
     ],
     "answer": "40",
-    "explanation": "(3 - 1) * 20 = 40. Skip the first 40 records and retrieve the next 20. LIMIT and OFFSET pagination is a method of retrieving a large number of results in pages. You must specify both how many records to retrieve and where to start retrieving them from.",
+    "explanation": "For page 3, (3-1)*20 produces offset 40, so the query skips forty rows and returns at most twenty. Validate that page and page_size are positive and cap page_size. Add a unique tie-breaker such as id to ORDER BY so rows with equal created_at values do not move unpredictably across page boundaries.",
     "side_card_ids": [
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
@@ -341,9 +340,8 @@
       "Delete all rows"
     ],
     "answer": "Add a \"summary\" column to the \"items\" table",
-    "explanation": "A migration is a procedure for recording and applying changes to a database structure. The `ALTER TABLE` statement is used to add columns to an existing table or modify its structure. By managing migration files in the correct order, you can ensure that the database structures across multiple environments are kept in sync.",
+    "explanation": "ALTER TABLE ... ADD COLUMN adds a nullable summary column to the existing items table. A migration records such schema changes in version order and applies each once per environment. Check the database engine's supported operation and locking behavior, and plan backups, transactions, rollback or forward fixes, and a migration table that tracks applied versions.",
     "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_ARCHITECTURE_DESIGN"
     ],
     "project_context": "This is the foundation for understanding migrations as the D1/Supabase schema continues to expand."
@@ -369,12 +367,12 @@
       "Create the \"items\" table"
     ],
     "answer": "Bind the value of `itemId` to the `?` placeholder in the SQL statement.",
-    "explanation": "In D1, the pattern of separating SQL from input values using `prepare` and `bind` is also used. `prepare` and `bind` are a process that separates SQL strings from actual values to ensure safe execution. This reduces the risk of SQL injection compared to embedding values directly into a string. Therefore, the correct answer is “Bind the `itemId` value to the `?` placeholder in the SQL.”",
+    "explanation": "env.DB is the D1 binding configured for the Worker, and prepare creates a statement. bind(itemId) supplies the ? value separately, reducing SQL injection risk compared with string concatenation. first() returns the first result row, so caller code must distinguish a missing row from an execution error.",
     "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING",
-      "PYV102_A7_ARCHITECTURE_DESIGN"
+      "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW",
+      "PYV158_A1_DATABASE_FLOW"
     ],
-    "project_context": "It links directly to the code in home-curator that accesses the D1 database."
+    "project_context": "This is the basic flow for executing a D1 prepared statement from a Cloudflare Worker."
   },
   {
     "id": "PY21_L10_supabase_select_001",
@@ -397,7 +395,7 @@
       "Encrypt the itemId"
     ],
     "answer": "Filter only rows where the id is equal to itemId",
-    "explanation": "In the Supabase chain, `eq` is a filter similar to the SQL `WHERE id = itemId`. The Supabase `select` chain is a query flow that retrieves the necessary rows and columns from a table. You just need to check the order in which the filter, sort, and `LIMIT` are applied. Therefore, the correct answer is “It filters only rows where `id` equals `itemId`.”",
+    "explanation": ".from selects the items table, select names returned columns, and eq keeps rows whose id equals itemId. single expects exactly one row and reports an error for zero or multiple rows. Because the code also destructures error, it must inspect it. Protect authorization with server-side authentication and RLS policies, not only a client-side filter.",
     "side_card_ids": [
       "PYV158_A1_DATABASE_FLOW"
     ],

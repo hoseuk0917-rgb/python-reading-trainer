@@ -192,7 +192,7 @@
       "environment"
     ],
     "reading_goal": "패키지를 설치했는데도 import가 안 될 때 실행 Python을 확인한다.",
-    "code": "ModuleNotFoundError: No module named \"fastapi\"\n\npython -c \"import sys; print(sys.executable)\"\npip show fastapi",
+    "code": "ModuleNotFoundError: No module named \"fastapi\"\n\npython -c \"import sys; print(sys.executable)\"\npython -m pip show fastapi",
     "question_type": "meaning_choice",
     "question": "sys.executable을 찍는 이유는?",
     "choices": [
@@ -202,7 +202,7 @@
       "JSON을 포맷하기 위해"
     ],
     "answer": "실제로 실행 중인 Python 경로를 확인하기 위해",
-    "explanation": "pip를 실행한 환경과 python을 실행한 환경이 다르면 설치했는데도 import가 실패할 수 있다. ModuleNotFoundError는 import하려는 모듈을 찾지 못했다는 뜻이다. 설치 여부, 가상환경, 현재 작업 폴더, 패키지 경로를 함께 봐야 한다.",
+    "explanation": "sys.executable은 실제 code를 실행한 interpreter path를 보여 주고 같은 python -m pip show는 그 environment에 FastAPI distribution이 있는지 확인한다. 설치했어도 다른 venv나 interpreter를 쓰면 import하지 못한다. local file 이름이 package를 가리는지와 sys.path도 함께 본다.",
     "side_card_ids": [
       "PYV103_ENV_MODULE_NOT_FOUND"
     ],
@@ -309,7 +309,7 @@
       "포트를 바꾸기 위해"
     ],
     "answer": "브라우저가 오래된 데이터 캐시를 계속 쓰는 것을 줄이기 위해",
-    "explanation": "browser cache는 이전에 받은 파일을 브라우저가 저장해 다시 쓰는 기능이다. 쿼리 문자열이 바뀌면 새 리소스로 인식해 다시 요청할 가능성이 높다. PWA에서는 service worker와 브라우저 캐시가 함께 작동하므로 버전 표식이 더 중요하다.",
+    "explanation": "query version이 바뀌면 전체 URL이 달라져 일반 browser cache에서 별도 resource로 다시 요청될 가능성이 높다. 그러나 server, CDN이나 service worker가 query를 무시하거나 자체 cache key를 쓰면 보장되지 않는다. response의 content version과 service-worker update state를 확인하고 일관된 version/hash policy를 사용한다.",
     "side_card_ids": [
       "PYV160_A1_PWA_STATE_STORAGE_FLOW"
     ],
@@ -326,7 +326,7 @@
       "debugging"
     ],
     "reading_goal": "브라우저에서 파일 로딩 성공/실패를 Network 탭으로 확인하는 루틴을 이해한다.",
-    "code": "확인 순서:\n1. F12\n2. Network 탭\n3. 새로고침\n4. app.js / style.css / lesson json 상태코드 확인",
+    "code": "확인 순서:\n1. F12\n2. Network tab\n3. 새로고침\n4. app.js / style.css / lesson JSON의 URL·status·response 확인",
     "question_type": "order_choice",
     "question": "lesson JSON이 로딩되지 않을 때 가장 직접적으로 볼 탭은?",
     "choices": [
@@ -336,7 +336,7 @@
       "Application 색상 설정"
     ],
     "answer": "Network",
-    "explanation": "Network 탭에서 각 파일 요청의 URL, 상태코드, 캐시 여부를 확인할 수 있다. DevTools Network는 브라우저가 어떤 파일과 API를 요청했는지 보여 준다. 상태 코드, 요청 URL, 응답 내용을 보면 로딩 실패 원인을 빠르게 좁힐 수 있다.",
+    "explanation": "Network tab은 request URL, status, response body, initiator와 cache/service-worker 정보를 보여 준다. lesson JSON이 안 보이면 request가 시작됐는지, 어느 URL인지, 404/500인지, 200 body가 기대한 JSON인지 순서대로 본다. parse와 runtime error는 Console에서도 함께 확인해야 한다.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW"
     ],
@@ -355,15 +355,15 @@
     "reading_goal": "잘못 수정한 파일을 마지막 커밋 상태로 되돌리는 명령의 위험과 의미를 이해한다.",
     "code": "git status\ngit restore src/pwa/app.js",
     "question_type": "meaning_choice",
-    "question": "git restore src/pwa/app.js의 의미는?",
+    "question": "staged change가 없는 상태에서 git restore src/pwa/app.js는 무엇을 하는가?",
     "choices": [
       "app.js를 GitHub에 배포한다",
-      "새 브랜치를 만든다",
-      "app.js의 커밋되지 않은 변경을 되돌린다",
-      "모든 커밋을 삭제한다"
+      "새 branch를 만든다",
+      "working tree의 app.js를 index 상태로 되돌린다",
+      "모든 commit을 삭제한다"
     ],
-    "answer": "app.js의 커밋되지 않은 변경을 되돌린다",
-    "explanation": "restore는 로컬 수정분을 잃을 수 있으므로 status를 먼저 보고 필요한 파일만 신중히 써야 한다. git restore는 작업 중인 변경을 되돌릴 때 쓰는 명령이다. 아직 커밋하지 않은 수정이 사라질 수 있으니 대상 파일을 반드시 확인해야 한다.",
+    "answer": "working tree의 app.js를 index 상태로 되돌린다",
+    "explanation": "source를 지정하지 않은 git restore는 기본적으로 working tree file을 index 상태로 복원한다. staged change가 없다면 보통 마지막 commit과 같지만 staged content가 있으면 그 staged version으로 돌아간다. local 수정이 사라질 수 있으므로 먼저 git diff와 git diff --cached를 보고 필요한 patch를 보관한 뒤 exact file만 복원한다.",
     "side_card_ids": [
       "PYV103_ENV_GIT_BRANCH_CONFLICT_RESTORE"
     ],
@@ -380,7 +380,7 @@
       "command"
     ],
     "reading_goal": "오류를 다시 만들 수 있는 최소 명령어를 남기는 이유를 이해한다.",
-    "code": "# 재현 명령\nSet-Location \"D:\\projects\\python-reading-trainer\"\n.\\run_local_server.ps1\n\n# 증상\n브라우저에서 Loading...에서 멈춤",
+    "code": "# reproduction command\nSet-Location \"<repository-root>\"\n.\\run_local_server.ps1\n\n# symptom\nbrowser remains on \"Loading...\"",
     "question_type": "meaning_choice",
     "question": "재현 명령어를 남기는 가장 큰 이유는?",
     "choices": [
@@ -390,7 +390,7 @@
       "CSS를 압축하기 위해"
     ],
     "answer": "같은 문제를 다시 확인하고 수정 여부를 검증하기 위해",
-    "explanation": "reproduce command는 같은 문제를 다시 발생시키는 명령이다. 재현이 되어야 원인을 찾고, 수정 뒤에 정말 고쳐졌는지 확인할 수 있다. 명령어와 입력 파일, 버전 정보를 함께 남기면 다른 사람이나 미래의 내가 같은 조건으로 다시 확인할 수 있다.",
+    "explanation": "재현 절차는 다른 사람이 같은 symptom을 반복하고 fix 전후를 비교하게 한다. 개인 absolute path 대신 repository revision, OS/shell, Python/browser version, 입력 data, exact command, expected·actual result와 log를 함께 남긴다. secret이나 개인 경로는 report에서 제거한다.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW"
     ],
@@ -407,7 +407,7 @@
       "validation"
     ],
     "reading_goal": "무작정 고치기보다 가설과 확인 명령을 나눠 생각하는 방법을 익힌다.",
-    "code": "증상: 새 카드가 화면에 안 보임\n\n가설 A: lessonFiles에 파일이 빠짐\n확인: Select-String app.js -Pattern \"v28\"\n\n가설 B: JSON 문법 오류\n확인: Get-Content file.json | ConvertFrom-Json",
+    "code": "증상: 새 card가 화면에 안 보임\n\n가설 A: loading manifest에 file이 빠짐\n확인: exact path set을 file manifest와 비교\n\n가설 B: JSON syntax 또는 schema 오류\n확인: Get-Content file.json -Raw | ConvertFrom-Json",
     "question_type": "meaning_choice",
     "question": "이 방식의 장점은?",
     "choices": [
@@ -417,7 +417,7 @@
       "오류를 무시한다"
     ],
     "answer": "원인 후보별로 확인 명령을 분리해 헛수정을 줄인다",
-    "explanation": "hypothesis debug는 증상에서 가능한 원인을 세우고 확인하는 방식이다. 증상, 가설, 확인, 수정 순서가 있으면 복잡한 문제도 덜 흔들린다. 가설을 하나씩 확인하면 여러 원인을 동시에 바꾸다 생기는 혼란을 줄일 수 있다.",
+    "explanation": "하나의 symptom에 대해 서로 배타적이지 않은 hypothesis를 세우고 각 hypothesis를 falsify할 evidence를 정한다. 단순 v28 substring은 false positive가 날 수 있어 exact path set을 비교하고, PowerShell JSON은 -Raw로 전체 document를 parse한다. 한 번에 한 변수를 확인하고 결과를 기록한 뒤 fix를 적용한다.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW",
       "PYV158_A1_DEBUGGING_FLOW"

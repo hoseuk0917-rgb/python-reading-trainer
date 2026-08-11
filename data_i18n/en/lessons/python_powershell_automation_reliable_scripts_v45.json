@@ -9,17 +9,17 @@
       "working_directory"
     ],
     "reading_goal": "Understand why you should pin the working folder first in a PowerShell script.",
-    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"",
+    "code": "$projectRoot = Split-Path -Parent $PSScriptRoot\nSet-Location $projectRoot\nGet-Location",
     "question_type": "meaning_choice",
     "question": "Why is `Set-Location` used first?",
     "choices": [
-      "To ensure the command is executed in the correct folder,",
-      "To automatically delete Git commits",
-      "To encrypt a JSON file,",
-      "To install a new browser"
+      "Set and verify the correct base directory",
+      "Delete the project",
+      "Push to GitHub",
+      "Disable relative paths"
     ],
-    "answer": "To ensure the command is executed in the correct folder,",
-    "explanation": "In tasks that make heavy use of relative paths, if the current folder is incorrect, you may end up reading or creating the wrong files. `Set-Location` is a PowerShell command that changes the current working directory. Since it determines the base from which relative path commands are executed, it’s important to make a habit of checking it before starting a script.",
+    "answer": "Set and verify the correct base directory",
+    "explanation": "$PSScriptRoot is the folder containing the running script, so taking its parent avoids hard-coding a D: path for one computer. Set-Location changes the base and Get-Location confirms it. Stop on failure so relative paths cannot target an unintended location.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -40,13 +40,13 @@
     "question_type": "meaning_choice",
     "question": "What does it mean when the output of `git status --short` is empty?",
     "choices": [
-      "This means there are currently no changes being tracked.",
-      "This means the Git repository has been deleted.",
-      "This means that all the files are corrupted.",
-      "This means the browser cache is empty."
+      "No staged, tracked-working-tree, or shown untracked changes exist",
+      "The remote is synchronized",
+      "No ignored files exist",
+      "Every test passed"
     ],
-    "answer": "This means there are currently no changes being tracked.",
-    "explanation": "\"git status clean\" means there are no uncommitted changes in the working tree. Checking that the status is \"clean\" before you start working makes it easier to track where new changes originated. You should start with a \"clean\" status so you can immediately spot any temporary files or unintended changes that occur during testing.",
+    "answer": "No staged, tracked-working-tree, or shown untracked changes exist",
+    "explanation": "Empty default git status --short output means there are no staged changes, tracked working-tree changes, or untracked files that status would show. Ignored files may remain, and this says nothing about remote synchronization. A dirty tree may contain user work, so inspect scope instead of deleting it automatically.",
     "side_card_ids": [
       "PYV107_A1_ENV_GIT_FLOW_BEGINNER"
     ],
@@ -93,13 +93,13 @@
     "question_type": "meaning_choice",
     "question": "Why use `here-string`?",
     "choices": [
-      "To pass a multi-line string as-is to a file or a pipe,",
-      "To automatically push to GitHub at all times",
-      "To prevent JSON from being read",
-      "To hide a folder"
+      "Pass a multiline literal string to a file or pipeline",
+      "Execute untrusted text safely",
+      "Encrypt the content",
+      "Remove every newline"
     ],
-    "answer": "To pass a multi-line string as-is to a file or a pipe,",
-    "explanation": "This is useful for safely storing long Python scripts or JSON text in PowerShell. The PowerShell `here-string` syntax is used to contain multi-line strings as-is. It is useful for safely passing long Python code or JSON snippets within PowerShell.",
+    "answer": "Pass a multiline literal string to a file or pipeline",
+    "explanation": "@' ... '@ is a single-quoted here-string, so it does not interpolate variables and passes multiline text nearly literally. Newlines after the opening and before the closing marker matter, and the closing '@ must begin its own line. This syntax does not make untrusted text safe to execute as code.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -126,7 +126,7 @@
       "Because it cannot be saved in UTF-8"
     ],
     "answer": "This is because if the terminating boundary is misaligned, unexpected code may be executed.",
-    "explanation": "A nested here-string is a situation where another delimiter string is intermixed within a PowerShell string block, causing the delimiters to become entangled. If the delimiters become entangled, unintended code may be executed.",
+    "explanation": "If a line matching the here-string delimiter appears in content, the block can end early or cause a parse error. Multiple quoting layers make boundaries hard to review. Prefer maintained source files or unique temporary files with explicit arguments when practical.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -153,7 +153,7 @@
       "Because the JSON file is automatically deleted"
     ],
     "answer": "This is because values from previous operations may remain, which could cause unexpected code to be executed",
-    "explanation": "Since variables may remain in an interactive PowerShell session, it’s safer to clear them before performing critical automation tasks. `Remove-Variable` is a command that clears variables from the current PowerShell session. It is used to prevent previous values from remaining and affecting subsequent commands.",
+    "explanation": "Remove-Variable removes a name from the current scope, but SilentlyContinue hides failure and it does not reset values in other scopes or environment state. Reliable automation should not depend on cleaning an interactive session; use a fresh process or script scope, Set-StrictMode, and explicit initialization.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -170,7 +170,7 @@
       "automation"
     ],
     "reading_goal": "Understand how to save long Python code to a temporary file instead of a PowerShell variable and execute it.",
-    "code": "$script = \".\\_make_v45.py\"\n@'\nprint('hello')\n'@ | Set-Content -Path $script -Encoding UTF8\npython $script\nRemove-Item $script",
+    "code": "$script = Join-Path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName() + '.py')\ntry {\n  @'\nprint('hello')\n'@ | Set-Content -Path $script -Encoding UTF8\n  python $script\n  if ($LASTEXITCODE -ne 0) { throw \"Python failed\" }\n} finally {\n  Remove-Item -LiteralPath $script -ErrorAction SilentlyContinue\n}",
     "question_type": "meaning_choice",
     "question": "What are the advantages of the temporary Python file method?",
     "choices": [
@@ -180,7 +180,7 @@
       "Files are always automatically committed"
     ],
     "answer": "Long code is less susceptible to changes in the state of PowerShell variables",
-    "explanation": "A \"temp Python script\" is a method of saving complex automation code in a temporary Python file and executing it. The code to be executed is clearly defined, and it is easy to review and delete. This approach reduces issues with broken quotes and indentation compared to putting long code on a single line in PowerShell. Therefore, the takeaway is that “long code is less susceptible to the state of PowerShell variables.”",
+    "explanation": "A unique temporary Python file makes long code and indentation reviewable outside command-line quoting. try/finally removes the exact literal path on success or failure, and the Python exit code is checked. If the automation should be maintained, keep a reviewed script in the repository instead.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
@@ -200,13 +200,13 @@
     "question_type": "meaning_choice",
     "question": "Why specify UTF-8 encoding?",
     "choices": [
-      "To reduce the risk of Korean characters and special characters appearing garbled,",
-      "Just to make the file smaller",
-      "To delete a Git commit message",
-      "To prevent Python from running"
+      "Reduce text corruption from encoding mismatch",
+      "Validate JSON syntax",
+      "Run Python faster",
+      "Remove all BOMs"
     ],
-    "answer": "To reduce the risk of Korean characters and special characters appearing garbled,",
-    "explanation": "It is important to ensure that PowerShell, Python, and the browser use the same encoding. `Set-Content -Encoding UTF8` is an option in PowerShell that saves files in UTF-8. This is important for minimizing character corruption when saving JSON or Markdown containing Korean characters. Therefore, the correct answer is “to reduce the risk of Korean characters and special characters appearing garbled.”",
+    "answer": "Reduce text corruption from encoding mismatch",
+    "explanation": "-Encoding UTF8 reduces corruption caused by mismatched default encodings. Windows PowerShell 5.1 writes a BOM for UTF8, while PowerShell 7's utf8 is BOM-less by default, so check the consumer and runtime version. Encoding does not validate JSON syntax.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
@@ -226,13 +226,13 @@
     "question_type": "meaning_choice",
     "question": "What is the purpose of the overwrite guard?",
     "choices": [
-      "To prevent accidental duplication or overwriting of tasks that have already been applied,",
-      "To delete a file, always",
-      "To hide the verification failure",
-      "To block browser requests"
+      "Avoid overwriting or duplicating an already applied change",
+      "Prove the existing result is correct",
+      "Delete every prior version",
+      "Ignore concurrent edits"
     ],
-    "answer": "To prevent accidental duplication or overwriting of tasks that have already been applied,",
-    "explanation": "\"Prevent overwrite\" is a safeguard that prevents automation from accidentally overwriting existing files or results. Since scripts can be re-run, preventing duplicate applications is crucial. Overwrite prevention is a fundamental safeguard that protects backups, verified outputs, and manually modified files. Therefore, the correct answer is “to prevent incidents where an operation that has already been applied is applied again or overwritten.”",
+    "answer": "Avoid overwriting or duplicating an already applied change",
+    "explanation": "The first guard refuses to overwrite an existing target; the second avoids a duplicate link when the app text contains v45.json. A substring can match a comment or another path, so parse structure or validate an exact anchor and match count. On rerun, also verify that existing output has the intended content.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -259,7 +259,7 @@
       "To skip JSON parsing"
     ],
     "answer": "To stop when someone else has already made changes or when the current standards are different",
-    "explanation": "If the version differs from the expected version, the `replace` command may be applied to the wrong location, so you must check this first. The `expected version guard` is a mechanism in the validation command that checks whether the app version matches the expected value. It allows you to quickly catch issues such as caching problems or missed version updates after a patch. Therefore, the correct answer is “to stop the process if someone else has already made a change or if the current baseline is different.”",
+    "explanation": "An exact baseline string prevents a simple replacement on an unexpected version. It is also formatting-sensitive, and matching the version alone does not prove surrounding structure is unchanged. Require exactly one target anchor and inspect the diff; a mismatch is not evidence of a cache problem.",
     "side_card_ids": [
       "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
     ],
@@ -285,7 +285,7 @@
       "All JSON is automatically deleted"
     ],
     "answer": "The actual data may be correct, but the validation may still fail.",
-    "explanation": "In v42 and v44, the actual generation process was normal, but because the number of expected cards was incorrect, it appeared as though the validation had failed. Managing validation expectations involves clearly documenting the version, number of cards, and number of files required for the test to pass. If the expected values are incorrect, success and failure may be misjudged.",
+    "explanation": "This check fails when cards differs from the independently specified count of 16. Deriving expected from len(cards) would make it meaningless, while a wrong specification can reject good data or accept bad data. Version the expectation with requirements and report actual and expected values on failure.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -301,7 +301,7 @@
       "lesson_cards"
     ],
     "reading_goal": "Understand the process of verifying references, including not only lesson cards but also side cards.",
-    "code": "all_known_ids = set(lesson_ids) | set(side_ids)\nfor sid in card['side_card_ids']:\n    assert sid in all_known_ids",
+    "code": "for card in lessons:\n    for sid in card.get('side_card_ids', []):\n        assert sid in side_ids, (card['id'], sid)",
     "question_type": "meaning_choice",
     "question": "Why do we need to verify the `side_cards` as well?",
     "choices": [
@@ -311,7 +311,7 @@
       "To speed up Git pushes"
     ],
     "answer": "Because lesson cards can reference side card IDs",
-    "explanation": "If you check `side_card_ids` using only the lesson ID list, even valid references may appear to be missing. The complete validation routine consists of a series of steps: data validation, target validation, loop statement checks, and browser smoke testing. To improve reliability, you should repeat these steps in the same order before committing.",
+    "explanation": "side_card_ids must reference real side-card IDs, so validate only against side_ids. Unioning lesson_ids could let an accidental lesson ID pass as a side-card reference. Treat a missing optional list as empty and report both source card and bad sid.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -338,7 +338,7 @@
       "This means the Git push failed"
     ],
     "answer": "This means that the requested file was successfully provided.",
-    "explanation": "If the browser receives the \"lesson\" JSON and \"side_cards\" with a 200 status code, the app is connected. A 200 status code in the server logs means the request was processed successfully. When verifying whether a file has actually been loaded, you must distinguish between status codes 200, 304, 404, and 500. Therefore, the correct answer is “it means the requested file was successfully served.”",
+    "explanation": "200 means the server returned a success status and response for that URL. It checks one part of the connection, but not that the body is expected JSON, matches the schema, or was parsed and rendered by the browser. Continue with content type, body validation, and browser error checks.",
     "side_card_ids": [
       "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
     ],
@@ -385,13 +385,13 @@
     "question_type": "meaning_choice",
     "question": "When is `git restore` needed?",
     "choices": [
-      "When a change was applied incorrectly and you revert the tracking file to the state of the last commit",
-      "When pushing a normal commit to a remote repository",
-      "When clearing your browser cache",
-      "When printing PowerShell variables"
+      "Discard a verified target's unstaged working-tree changes when that is intended",
+      "Delete the remote repository",
+      "Undo every committed change automatically",
+      "Preserve all untracked files"
     ],
-    "answer": "When a change was applied incorrectly and you revert the tracking file to the state of the last commit",
-    "explanation": "Use `git restore` to revert tracked files, and use `Remove-Item` to delete newly created untracked files. `git rollback` is used to revert incorrect changes to a previous state. Since `restore`, `reset`, and `revert` have different scopes, you must first check whether the changes have been committed.",
+    "answer": "Discard a verified target's unstaged working-tree changes when that is intended",
+    "explanation": "Default git restore app.js can overwrite unstaged working-tree edits with the index version while leaving staged changes, and Remove-Item irreversibly deletes an untracked file. Verify exact targets, status, git diff, and git diff --cached first, preserving needed work as a patch or backup.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE",
       "PYV102_A7_RESILIENCE_RECOVERY"

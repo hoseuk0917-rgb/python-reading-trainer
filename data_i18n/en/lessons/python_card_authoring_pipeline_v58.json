@@ -36,7 +36,7 @@
       "authoring"
     ],
     "reading_goal": "Understand how to use a template to define fields that repeat when creating a new card.",
-    "code": "template = {\n  id: '',\n  title: '',\n  question: '',\n  answer: ''\n}",
+    "code": "template = {\n  id: '',\n  level: null,\n  title: '',\n  question: '',\n  choices: [],\n  answer: '',\n  explanation: '',\n  concepts: []\n}",
     "question_type": "meaning_choice",
     "question": "What is the purpose of a card template?",
     "choices": [
@@ -46,7 +46,7 @@
       "Make sure not to omit any of the required fields when filling out the form."
     ],
     "answer": "Make sure not to omit any of the required fields when filling out the form.",
-    "explanation": "A card template is a predefined framework for the structure of a card, including questions, answer choices, correct answers, explanations, and concept tags. This ensures a consistent format and makes automatic validation easier. By defining a template in advance, it becomes easy to automatically detect missing fields or formatting errors even when generating a large number of new cards. Therefore, the correct answer is “Ensure that you do not omit any essential fields required for creating cards.”",
+    "explanation": "The template includes choices, explanation, concepts, and level as well as the named fields. Empty defaults are not a complete card, so validate nonempty text, choice count, answer membership, allowed level, and concept IDs.",
     "side_card_ids": [
       "PYV158_A1_SCHEMA_FLOW"
     ],
@@ -62,7 +62,7 @@
       "quality_gate"
     ],
     "reading_goal": "Understand how to identify and validate the required fields on a card.",
-    "code": "required = ['id', 'level', 'title', 'question', 'choices', 'answer']",
+    "code": "required = [\n  'id', 'level', 'title', 'question',\n  'choices', 'answer', 'explanation', 'concepts'\n]",
     "question_type": "meaning_choice",
     "question": "Why do we check for required fields?",
     "choices": [
@@ -72,7 +72,7 @@
       "To verify the necessary information and ensure your card works properly in the app,"
     ],
     "answer": "To verify the necessary information and ensure your card works properly in the app,",
-    "explanation": "\"Required fields\" are mandatory items that a card must include. If any fields are missing, the JSON may load successfully, but issues may arise on the training screen. It is recommended to check for required fields both immediately after creating a card and just before deployment.",
+    "explanation": "Required-key checks catch fields needed for rendering. Presence is not enough; validate types, empty values, choice uniqueness, answer membership, ID uniqueness, and references. Define defaults and meaning for optional fields.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
@@ -124,7 +124,7 @@
       "Draft → Review → Approval → Distribution"
     ],
     "answer": "Draft → Review → Approval → Distribution",
-    "explanation": "The review workflow is the process by which a person checks, revises, and finalizes the generated cards. Since learning cards must be accurate, it is safer not to distribute them immediately after they are generated. During the review stage, the correct answer, answer choices, explanation, tags, and difficulty level must each be verified.",
+    "explanation": "draft → review → approve → publish is a state transition. For accuracy-critical learning cards, an independent reviewer should compare source, code result, answer, choices, explanation, and difficulty. Define approval authority, reapproval after edits, and an audit trail.",
     "side_card_ids": [
       "PYV102_A7_AUTHORING_PIPELINE",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -167,7 +167,7 @@
       "card_creation"
     ],
     "reading_goal": "Understand the content creation pipeline from source material to the final product.",
-    "code": "source -> extract -> draftCards -> validate -> publish",
+    "code": "source -> extract -> draftCards -> humanReview -> validate -> publish",
     "question_type": "meaning_choice",
     "question": "What is the purpose of the content pipeline?",
     "choices": [
@@ -177,7 +177,7 @@
       "To break down the production process from source material to flashcards into steps,"
     ],
     "answer": "To break down the production process from source material to flashcards into steps,",
-    "explanation": "The content pipeline is a sequence that connects the collection of source material, card creation, review, verification, and distribution in that order. Having distinct stages makes it easier to trace the source of a problem. If the inputs and outputs of each stage are clearly defined, it is easy to determine at which stage a failed card originated. Therefore, the correct answer is “to break down the production process from raw data to learning cards into distinct stages.”",
+    "explanation": "Extract source text, create drafts, perform semantic human review and automated schema and reference validation, and then publish. Automated checks cannot judge all factual and pedagogical quality, so humanReview is explicit. Record provenance and versions at each stage.",
     "side_card_ids": [
       "PYV158_A1_PIPELINE_FLOW"
     ],
@@ -256,7 +256,7 @@
       "To reduce unnecessary repetition of similar cards,"
     ],
     "answer": "To reduce unnecessary repetition of similar cards,",
-    "explanation": "A duplicate card check is a verification process that checks whether similar or identical cards have been included more than once. Indiscriminate duplication can compromise card quality and search quality. When performing a duplicate check, it is best to examine not only the ID but also whether the question, answer, and explanation are similar.",
+    "explanation": "An equal normalized title is a duplicate candidate, not proof. Same-title cards can have different goals, while differently titled cards can duplicate content. Treat ID duplication as a hard error and question, answer, and concept similarity as reviewer evidence rather than deleting automatically.",
     "side_card_ids": [
       "PYV102_A7_AUTHORING_PIPELINE",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -273,7 +273,7 @@
       "quality_gate"
     ],
     "reading_goal": "Understand quality checks that verify whether the correct answer is among the options and whether the explanation is sufficient.",
-    "code": "assert card.answer in card.choices\nassert len(card.explanation) > 20",
+    "code": "assert card.answer in card.choices\nassert explanationSupportsAnswer(card)\nassert codeAndQuestionAgree(card)",
     "question_type": "meaning_choice",
     "question": "What should be checked during the answer quality check?",
     "choices": [
@@ -283,7 +283,7 @@
       "Whether the answer is included and the quality of the explanation"
     ],
     "answer": "Whether the answer is included and the quality of the explanation",
-    "explanation": "Answer quality check is a verification process that ensures the correct answer is included among the options and that the explanation is sufficient. Missing answers or brief explanations reduce the effectiveness of learning. As the number of cards increases, automating this verification is essential to minimize quality variations and omissions.",
+    "explanation": "Answer membership is mechanically checkable, but an explanation longer than 20 characters is not necessarily good. Semantic checks and human review must verify that the explanation supports the answer, agrees with code and question, and avoids misconceptions.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -336,7 +336,7 @@
       "To have the browser reload the new data file,"
     ],
     "answer": "To have the browser reload the new data file,",
-    "explanation": "Even if you simply create a new card file, the changes won’t be reflected in the app unless the list and version in `app.js` are updated. The publish step is the process of deploying the validated card data to the location where the actual app reads it. You can minimize errors by keeping temporary files and production files separate.",
+    "explanation": "Changing APP_DATA_VERSION may make query-based caches request a new URL. Also verify that the new file is connected in the manifest or lesson list, deployed, schema-compatible, and handled by the service-worker cache strategy. A version string alone is not publication.",
     "side_card_ids": [
       "PYV102_A7_AUTHORING_PIPELINE",
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
@@ -353,7 +353,7 @@
       "traceability"
     ],
     "reading_goal": "Understand how to record the purpose, source, version, and review status of a generated set of cards in a manifest.",
-    "code": "manifest = {\n  version: 'v58',\n  topic: 'authoring pipeline',\n  status: 'approved'\n}",
+    "code": "manifest = {\n  version: 'v58',\n  topic: 'authoring pipeline',\n  status: 'approved',\n  sourceHash: source_hash,\n  cardIds: approved_card_ids,\n  validatorVersion: validator_version\n}",
     "question_type": "meaning_choice",
     "question": "What is the role of the authoring manifest?",
     "choices": [
@@ -363,7 +363,7 @@
       "To track the production information and review status of card sets"
     ],
     "answer": "To track the production information and review status of card sets",
-    "explanation": "An authoring manifest is a list that records which sets of cards were added and why. It is necessary for tracking the intent behind the additions, file locations, and validation status at a later date. With a manifest, it is easy to look back later and see which batch the generated cards came from.",
+    "explanation": "The manifest links batch version, topic, and status with source hash, approved card IDs, and validator version. An approved label is trustworthy only with reviewer, approval timestamp, and evidence.",
     "side_card_ids": [
       "DATA_metadata_001",
       "PYV102_A7_AUTHORING_PIPELINE"
@@ -380,7 +380,7 @@
       "validation"
     ],
     "reading_goal": "Understand the importance of making it a habit to perform regression testing to ensure that the existing card structure remains intact after adding a new card.",
-    "code": "python tools/validate_lessons.py --expected-lesson-cards 1118",
+    "code": "python tools/validate_lessons.py --manifest data/lesson_manifest.json",
     "question_type": "meaning_choice",
     "question": "What is the purpose of authoring regression tests?",
     "choices": [
@@ -390,7 +390,7 @@
       "To verify that adding a new card did not corrupt the existing app data,"
     ],
     "answer": "To verify that adding a new card did not corrupt the existing app data,",
-    "explanation": "Authoring regression tests are automated checks performed after creating a card to verify that the existing app's quality has not been compromised. They are required as the final step in the development pipeline.",
+    "explanation": "A versioned manifest supplies expected files, IDs, and counts without a stale number embedded in the command. Regression checks should verify existing IDs, answers, references, and app connections; one total cannot prove content preservation.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW"
     ],
@@ -406,7 +406,7 @@
       "quality_gate"
     ],
     "reading_goal": "Understand the entire card production process, which consists of drafting, review, verification, distribution, and documentation.",
-    "code": "draftCards()\nreviewCards()\nvalidateCards()\npublishCards()\nlogRelease()",
+    "code": "draftCards()\nhumanReviewCards()\nvalidateApprovedCards()\npublishCards()\nverifyReleaseAndLogEvidence()",
     "question_type": "meaning_choice",
     "question": "What are the key steps in the card authoring pipeline?",
     "choices": [
@@ -416,7 +416,7 @@
       "Draft → Review → Verification → Deployment → Documentation"
     ],
     "answer": "Draft → Review → Verification → Deployment → Documentation",
-    "explanation": "Once the number of learning cards exceeds 1,000, a stable production, review, and distribution workflow becomes more important than production speed. The card authoring pipeline refers to the process from drafting a card to validation and incorporating it into the distribution files. Do not immediately trust the generated results; they must undergo quality checks and reference checks.",
+    "explanation": "Draft, perform human approval, validate approved cards, publish, and then verify the deployed revision and loading and record source and review evidence. Handle publication failure and require reapproval after meaningful edits.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],

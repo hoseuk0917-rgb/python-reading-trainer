@@ -20,12 +20,11 @@
       "Merge JSON files"
     ],
     "answer": "Opens the current folder as a local static server on port 8790",
-    "explanation": "`python -m http.server` makes the current folder accessible via a web browser. The `--bind 127.0.0.1` option restricts access to the local machine only. This allows you to quickly check if there are any file path issues when testing a static PWA locally.",
+    "explanation": "Set-Location changes the working directory, then python -m http.server serves files from that directory over HTTP. 8790 is the port, and --bind 127.0.0.1 restricts connections to the same PC. This server is for local development and inspection, not production use that requires authentication, TLS, performance, and other protections.",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
-    "project_context": "This is the fixed local execution method I've included in `run_local_server.ps1`."
+    "project_context": "This is a local execution pattern for checking paths and browser loading in a static learning app."
   },
   {
     "id": "PY17_L06_localhost_vs_ip_001",
@@ -38,7 +37,7 @@
       "mobile_test"
     ],
     "reading_goal": "Understand why the URLs are different between PC browsers and mobile browsers.",
-    "code": "# View on PC http://localhost:8790/src/pwa/index.html # View the PC server on your phone http://192.168.0.23:8790/src/pwa/index.html",
+    "code": "# View the server from the same PC\nhttp://localhost:8790/src/pwa/index.html\n\n# View the PC server from a phone on the same LAN\nhttp://192.168.0.23:8790/src/pwa/index.html",
     "question_type": "meaning_choice",
     "question": "Why doesn't the \"localhost\" address usually work on a phone?",
     "choices": [
@@ -48,10 +47,9 @@
       "Since Git isn't installed,"
     ],
     "answer": "Since \"localhost\" on a phone refers to the phone itself, not the PC,",
-    "explanation": "\"localhost\" refers to the device you're connecting from. To access a PC server from a phone, you need the PC's internal IP address. \"localhost\" refers to your own computer, while the internal IP address is used when accessing the PC from another device on the same network. You must use the appropriate address depending on what you're testing.",
+    "explanation": "localhost refers to the device on which the address is entered, so localhost on a phone means the phone itself. To reach a PC server from a phone, the server must bind to the PC's LAN address or 0.0.0.0 rather than only 127.0.0.1, both devices must be on the same network, and the firewall must allow the port. The PC's internal IP varies by environment, so do not copy the example value blindly.",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
     "project_context": "This is a practical concept for distinguishing between GitHub Pages URLs and local test URLs."
   },
@@ -76,10 +74,9 @@
       "A message stating that the password is incorrect"
     ],
     "answer": "Responses indicating that it is acceptable to use the browser cache",
-    "explanation": "A 200 indicates that a new file was received, while a 304 means that the previously received cached file is still valid. In server logs, a 200 indicates a successful response, and a 304 means the cached file can be used as is. Since neither of these is a failure, they must be distinguished from 404 and 500 errors.",
+    "explanation": "200 OK means the request succeeded and usually includes a response body. 304 Not Modified appears after a conditional request such as one using If-None-Match or If-Modified-Since; the server reports that the resource has not changed and does not resend the body. The browser can reuse its cached copy. Both lines show a successful HTTP flow here, but neither proves that the app ran or that the displayed content is current.",
     "side_card_ids": [
-      "PL_cache_001",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "PL_cache_001"
     ],
     "project_context": "Loading... This is used to determine whether index/app.js and style.css were actually reloaded when viewing the issue."
   },
@@ -104,11 +101,11 @@
       "I want to change the port"
     ],
     "answer": "To make the browser recognize it as a different URL from the previous file",
-    "explanation": "Query cache busting is a method of bypassing the browser cache by appending a version query to the end of a URL. If the value changes, the browser treats it as a new resource and makes a new request. Including the app version in the query can reduce the problem of users seeing outdated JS or JSON files after a deployment. Therefore, the correct answer is “to make the browser recognize it as a different URL from the previous file.”",
+    "explanation": "Changing the query value changes the full URL, so ordinary browser and CDN caches may treat it as a separate entry. This can force another request for deployed JavaScript or CSS. However, a server, CDN, or service worker can be configured to ignore the query, so it is not an unconditional cache bypass. Manage a content version or hash consistently.",
     "side_card_ids": [
       "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
     ],
-    "project_context": "This ties in with my experience of using `force`, `restore`, and `sidefix` during the v15.1 recovery to work around cache issues."
+    "project_context": "This is a versioned-URL pattern for reducing reuse of stale static assets after deployment."
   },
   {
     "id": "PY17_L08_app_data_version_001",
@@ -131,11 +128,11 @@
       "To change the port"
     ],
     "answer": "Since the second and subsequent parameters in a URL must be separated by &,",
-    "explanation": "APP_DATA_VERSION is the version value appended to data file requests. The first query parameter begins with a ?, and additional parameters are appended using &. Since adding another “?” to a URL that already contains a query will break the format, new parameters are appended using “&”. Therefore, the result of the return/call is “because the second and subsequent parameters in the URL must be separated by ‘&’.”",
+    "explanation": "A URL query starts its first parameter with ? and separates later parameters with &, so an ordinary path that already contains ? receives &v=. However, string concatenation can place a query after a #fragment or duplicate an existing v parameter. Production code that accepts varied URLs should set v with URL and URLSearchParams.",
     "side_card_ids": [
       "PYV159_A1_FUNCTION_IO_FLOW"
     ],
-    "project_context": "This is the current app structure, which forces the JSON for `lesson/side_card` to load the new version."
+    "project_context": "This cache-refresh structure adds a data version to lesson and side-card JSON requests."
   },
   {
     "id": "PY17_L08_fetch_log_sequence_001",
@@ -150,20 +147,20 @@
     "reading_goal": "Read the server logs to see which files the app requested and in what order.",
     "code": "GET /src/pwa/index.html 200\nGET /src/pwa/app.js?v=20260529_force1 200\nGET /data/curriculum/curriculum_v1.json?v=20260529_v16 200\nGET /data/lessons/python_rag_kg_pipeline_review_v16.json?v=20260529_v16 200",
     "question_type": "meaning_choice",
-    "question": "Was the v16 lesson file loaded in this log?",
+    "question": "What can be concluded with certainty from this log?",
     "choices": [
-      "No, it's a 404.",
-      "Cannot be verified",
-      "Yes, the response was 200.",
-      "The browser closed."
+      "The server responded 200 to the v16 lesson request",
+      "The browser parsed the JSON and rendered the page successfully",
+      "The file contents are necessarily current",
+      "The service worker is disabled"
     ],
-    "answer": "Yes, the response was 200.",
-    "explanation": "The fetch log sequence shows which files the browser requested and in what order. If the JSON request returns a 200 status code, it means the server successfully served the file. By examining the request order, you can quickly narrow down whether loading has stalled on a specific file or if it’s a caching issue. Therefore, the correct answer is “Yes, it returned a 200 response.”",
+    "answer": "The server responded 200 to the v16 lesson request",
+    "explanation": "The final line shows that the browser requested the v16 lesson URL and the server returned HTTP 200. A 200 response alone does not prove that the body contains the expected JSON, that parsing succeeded, or that the page rendered it. Inspect the Network response body, Console errors, and application state for those later stages.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW",
       "PYV158_A1_JSON_FLOW"
     ],
-    "project_context": "This is the method we used to verify that all lesson and side cards were set to 200 after applying v16."
+    "project_context": "This is a network-log example for checking server response status for lesson and side-card requests."
   },
   {
     "id": "PY17_L08_json_parse_check_001",
@@ -241,11 +238,11 @@
       "Open the server port"
     ],
     "answer": "Find only the `renderSideCards` function and replace it with a new block",
-    "explanation": "Find the section from the `function renderSideCards` function to just before the next `function markSeen` function, and replace it with a new function block. When using regular expressions to replace code blocks, if you don't specify the start and end boundaries precisely, other functions may be deleted as well.",
+    "explanation": "Replace matches from the renderSideCards declaration through the later markSeen declaration, then inserts the new function string followed by the markSeen declaration again. If similar text, different line endings, or an unexpected function order appears, this pattern can replace the wrong range or nothing at all. Prefer a syntax-aware edit or an explicit patch for source code, and always inspect the match count and diff.",
     "side_card_ids": [
       "PYV159_A1_FUNCTION_IO_FLOW"
     ],
-    "project_context": "After failing earlier when I tried adding a watcher at the end of the entire `app.js` file, I switched to a safer approach of replacing it on a per-function basis."
+    "project_context": "This example shows why a function-level source change needs a precise boundary and diff verification."
   },
   {
     "id": "PY17_L09_git_status_001",
@@ -295,12 +292,12 @@
       "Start the server"
     ],
     "answer": "Stage the files to be included in the commit",
-    "explanation": "Local changes are pushed to the remote repository in the following order: `git add` → `git commit` → `git push`. The `git add`, `commit`, and `push` workflow involves staging the changed files, committing them, and then sending them to the remote repository. These changes should be grouped into meaningful units after verification. Therefore, the correct answer is “Stage the files to be included in the commit.”",
+    "explanation": "git add stages the current contents of the two specified files. git commit records the staged snapshot locally, and git push sends commits according to the current branch and configured remote/upstream. Other working-tree changes are not included automatically, so inspect git diff --cached before committing.",
     "side_card_ids": [
       "PYV103_ENV_GIT_STATUS_DIFF_ADD_COMMIT",
       "PYV103_ENV_GIT_TAG_PUSH_PULL"
     ],
-    "project_context": "This is a routine for establishing a stable point after each reinforcement."
+    "project_context": "This is the basic flow for recording only verified changes as a meaningful unit and sharing them with a remote branch."
   },
   {
     "id": "PY17_L09_gitignore_reports_001",
@@ -323,11 +320,11 @@
       "To secure the port"
     ],
     "answer": "To avoid pushing local files, such as verification outputs, to Git",
-    "explanation": ".gitignore is a file that lists patterns for files or folders that Git should ignore. It is used to exclude output folders, such as \"reports,\" from commits. Output files, such as validation reports, change every time the code is run and can clutter the repository history, so they are excluded.",
+    "explanation": "The reports/ pattern makes Git ignore untracked files under that directory by default. Running Add-Content repeatedly can duplicate the line, and adding a path to .gitignore does not automatically stop tracking files that Git already tracks. Also decide whether reports are reproducible local output or official team artifacts before excluding them.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
-    "project_context": "This is the actual work I did to resolve the issue where \"reports/\" kept appearing as \"untracked.\""
+    "project_context": "This is an example of deciding by repository policy whether generated local output belongs in version control."
   },
   {
     "id": "PY17_L10_loading_stuck_debug_001",
@@ -340,7 +337,7 @@
       "browser_cache"
     ],
     "reading_goal": "Learn to categorize the causes of the app getting stuck in the \"Loading\" state based on the logs.",
-    "code": "if index_requested and not app_js_requested:\n    cause = \"HTML은 열렸지만 JS 로딩이 안 됨: 캐시/PWA/스크립트 태그 의심\"\nelif app_js_requested and data_json_failed:\n    cause = \"JS는 실행됐지만 데이터 JSON 로딩 실패\"\nelse:\n    cause = \"브라우저 콘솔 오류 확인 필요\"",
+    "code": "if index_requested and not app_js_requested:\n    cause = \"HTML opened, but JavaScript did not load: check cache, PWA, or the script tag\"\nelif app_js_requested and data_json_failed:\n    cause = \"JavaScript ran, but loading the data JSON failed\"\nelse:\n    cause = \"Check the browser console error\"",
     "question_type": "meaning_choice",
     "question": "If only the index page is requested and there are no requests for app.js, what should you suspect first?",
     "choices": [
@@ -350,11 +347,11 @@
       "Python List Syntax"
     ],
     "answer": "HTML Cache/PWA/Script Tag Issues",
-    "explanation": "If there is no request for `app.js` in the server logs, you should check the HTML, cache, and browser first, rather than the data files. If the loading process stops, check the following in order: console errors, Network 404 errors, JSON parsing failures, and cache versions. It’s important to get into the habit of identifying where the process has stalled.",
+    "explanation": "When the first condition is true, an HTML request is visible but no app.js request is visible, so investigate the script tag, HTML or service-worker cache, browser policy, or network blocking first. The second condition points to a data JSON failure after the JavaScript request. These branches form hypotheses for the next check, not proof of the root cause; verify them with Console and Network evidence.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW"
     ],
-    "project_context": "After the v15.1 test, when \"Loading...\" got stuck, only the index log was recorded, so I bypassed the cache."
+    "project_context": "This diagnosis narrows a stuck Loading screen by locating the request stage where progress stopped."
   },
   {
     "id": "PY17_L10_side_card_field_bug_001",
@@ -377,12 +374,11 @@
       "Automatically modifies and saves the JSON file"
     ],
     "answer": "Since only `sc.body` is read, the `summary` and `detail` elements may not appear on the screen.",
-    "explanation": "A \"side card field bug\" occurs when the data field name and the rendering code do not match. Even if the value is present in the JSON, it will not be displayed if the screen code reads a different name. Therefore, the correct answer is, \"Since only `sc.body` is read, `summary` and `detail` may not appear on the screen.\"",
+    "explanation": "The renderer reads only sc.body, so values stored in summary or detail are never used. If sc.body is undefined, the browser's DOM string conversion can also display an unintended value. Fix the data to use one schema, or handle supported fields with an explicit priority and default, then add a schema test.",
     "side_card_ids": [
-      "PYV102_A9_RUNTIME_PERFORMANCE_LIST",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "PYV102_A9_RUNTIME_PERFORMANCE_LIST"
     ],
-    "project_context": "The \"Sensor Fusion/State Estimation\" card—which was only visible by its title—is the actual cause."
+    "project_context": "This is a display bug caused by a mismatch between data field names and the renderer contract."
   },
   {
     "id": "PY17_L10_safe_render_fallback_001",
@@ -395,22 +391,21 @@
       "side_card"
     ],
     "reading_goal": "Read the code that selects values in order from among several candidate fields.",
-    "code": "function getSideText(sc) {\n  return sc.body || sc.summary || sc.description || \"\";\n}",
+    "code": "function getSideText(sc) {\n  return sc.body || sc.summary || sc.description || sc.detail || \"\";\n}",
     "question_type": "meaning_choice",
-    "question": "When does this function use `sc.summary`?",
+    "question": "What is returned when sc.body is an empty string and sc.summary is present?",
     "choices": [
-      "When `sc.body` is always present",
-      "When the \"description\" comes first",
-      "When sc.body is empty and sc.summary is present",
-      "When all values are empty"
+      "The empty sc.body string",
+      "sc.summary",
+      "Always sc.detail",
+      "Always undefined"
     ],
-    "answer": "When sc.body is empty and sc.summary is present",
-    "explanation": "|| evaluates the value on the right if the value on the left is empty. If there is no `body`, `summary` is used as a fallback. The rendering fallback function is defensive code that prevents the screen from freezing completely even if data is missing or partially corrupted. It requires handling of default text and empty lists.",
+    "answer": "sc.summary",
+    "explanation": "|| evaluates the next operand when the left value is falsy, including not only undefined and null but also an empty string, 0, or false. Therefore, a truthy summary is returned when body is empty. This fallback can prevent a blank display but can also hide malformed data, so validate required fields separately and emit a warning.",
     "side_card_ids": [
-      "PYV102_A9_RUNTIME_PERFORMANCE_LIST",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "PYV102_A9_RUNTIME_PERFORMANCE_LIST"
     ],
-    "project_context": "This is the core pattern used in the v15.2 side card rendering fix."
+    "project_context": "This is a compatibility fallback for reading side-card text fields from several schema versions."
   },
   {
     "id": "PY17_L10_pwa_deploy_address_001",
@@ -423,21 +418,21 @@
       "url"
     ],
     "reading_goal": "Understand why the public deployment URL and the local test URL are different.",
-    "code": "# Public deployment URL: This URL remains fixed even after a push https://hoseuk0917-rgb.github.io/python-reading-trainer/ # Local test URL: Runs only on my PC http://localhost:8790/src/pwa/index.html",
+    "code": "# Example public URL: ordinarily unchanged after a normal push\nhttps://<account>.github.io/<repository>/\n\n# Local test URL: accessed from the PC running the server\nhttp://localhost:8790/src/pwa/index.html",
     "question_type": "meaning_choice",
-    "question": "Does the GitHub Pages URL change every time I push?",
+    "question": "What happens to the URL after deploying a new commit while keeping the same repository name and Pages settings?",
     "choices": [
-      "Yes, the URL changes completely with every commit.",
-      "It only exists when the local server is running",
-      "No, the Pages repository URL remains the same; only the content is updated.",
-      "It is always the same as localhost"
+      "It becomes a completely new URL for every commit",
+      "It exists only while a local server is running",
+      "It ordinarily stays the same while deployed content updates",
+      "It is always identical to localhost"
     ],
-    "answer": "No, the Pages repository URL remains the same; only the content is updated.",
-    "explanation": "The public URL for GitHub Pages is fixed; only the contents of the files deployed after a push are updated. The GitHub Pages URL and the local URL represent different deployment environments. Even if the local response is a 200, the Pages path and cache may differ, so you must check them separately.",
+    "answer": "It ordinarily stays the same while deployed content updates",
+    "explanation": "With the same account, repository, and Pages configuration, an ordinary deployment updates content at the same public URL. Renaming the repository or account or changing the custom domain or Pages configuration can change the address, so it is not absolutely fixed. Local and public URLs are different environments with different paths, caches, and deployment times.",
     "side_card_ids": [
       "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
     ],
-    "project_context": "I've decided to use the GitHub Pages URL on my phone and the local server URL when developing on my PC."
+    "project_context": "This card distinguishes a local development address from a public Pages deployment address."
   },
   {
     "id": "PY17_L10_service_recovery_habit_001",
@@ -450,7 +445,7 @@
       "debugging"
     ],
     "reading_goal": "Understand the procedure for establishing a stable point when an experimental patch fails.",
-    "code": "# 1. Remove the experimental block # 2. Update the cache version # 3. Check JSON parsing and lessonFiles # 4. Verify the 200 status code on the local server # 5. Commit the changes",
+    "code": "# 1. Inspect the failing change with git diff\n# 2. Disable or revert only that experimental block\n# 3. Validate JSON parsing and lessonFiles\n# 4. Check the local server and browser Console/Network\n# 5. Commit only the verified recovery change",
     "question_type": "order_choice",
     "question": "What should you do first if an experimental patch causes the app to fail to load?",
     "choices": [
@@ -460,10 +455,10 @@
       "Changing the GitHub Pages URL"
     ],
     "answer": "Remove the test block and restore normal loading.",
-    "explanation": "Before expanding functionality, you must first restore the system to its normal state, and then reapply the patch to the correct location. The practice of restoring the system after an experimental patch ensures that you know the state before the change and can revert it if verification fails. Checking `git status` and reviewing the most recent commit is essential.",
+    "explanation": "First use the diff and error evidence to identify the change that caused the failure, then disable or revert only that experimental scope. Other unfinished work may exist in the working tree, so do not blindly revert a whole file or repository. Restore normal loading, pass automated checks and browser verification, and record only the verified recovery change.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW"
     ],
-    "project_context": "This is the workflow where a recovery commit was created after the v15.1 failure, and v15.2 was reapplied on a per-function basis."
+    "project_context": "This is a minimal-scope recovery procedure that preserves unrelated work after an experimental change breaks the app."
   }
 ]

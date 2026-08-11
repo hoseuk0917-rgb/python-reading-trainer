@@ -19,7 +19,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "앱 문구를 여러 언어로 제공하기 위해",
-    "explanation": "처음에는 한국어만 쓰더라도 문구를 코드에 직접 박아두지 않으면 나중에 언어 확장이 쉬워진다. i18n은 여러 언어를 지원하기 위해 문구를 코드에서 분리하는 방식이다. 화면 문자열을 직접 박아 넣지 않고 key로 찾아오는 구조인지 확인하면 된다.",
+    "explanation": "i18n은 앱을 여러 언어와 지역 규칙에 맞게 만들기 위한 설계다. 문구를 key로 분리하는 것은 시작일 뿐이며, 복수형, 날짜·숫자 형식, 문장 순서와 오른쪽에서 왼쪽으로 쓰는 화면도 고려해야 한다. 현재 locale에 key가 없을 때의 fallback까지 정해야 빈 화면을 막을 수 있다.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
@@ -46,7 +46,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "언어와 지역 형식을 구분하기 위해",
-    "explanation": "ko-KR, en-US처럼 locale을 두면 문구뿐 아니라 날짜와 숫자 표시도 맞출 수 있다. locale은 언어와 지역에 따른 표시 규칙을 뜻한다. 날짜, 숫자, 통화, 문구가 어떤 사용자를 기준으로 보여지는지 결정한다.",
+    "explanation": "ko-KR, en-US 같은 언어 태그는 언어와 지역별 형식 선택에 쓰인다. 그러나 locale 하나가 사용자의 언어, 통화, 시간대를 모두 확정하는 것은 아니다. 앱이 지원하는 BCP 47 태그 목록과 fallback을 두고, 날짜의 시간대나 결제 통화처럼 별도 선택이 필요한 값은 따로 관리한다.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -72,7 +72,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "사용자가 원하는 언어로 앱을 바꾸게 하기 위해",
-    "explanation": "학습앱은 한국어 기반이어도 영어 UI나 용어 보기를 선택할 수 있으면 확장성이 좋아진다. language toggle은 사용자가 표시 언어를 바꾸는 기능이다. 선택한 언어가 저장되는지, 화면 문구가 즉시 다시 렌더링되는지 확인해야 한다. 따라서 정답은 ‘사용자가 원하는 언어로 앱을 바꾸게 하기 위해’이다.",
+    "explanation": "language toggle은 사용자가 표시 언어를 직접 바꾸는 기능이다. 선택한 태그가 앱이 지원하는지 확인한 뒤 저장하고, 번역 문구뿐 아니라 날짜·숫자와 접근성 이름도 다시 렌더링해야 한다. 언어를 바꿔도 사용자가 작성한 메모나 코드 자체는 동의 없이 번역하거나 바꾸지 않는다.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW",
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
@@ -99,7 +99,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "같은 의미의 문구를 언어별로 안정적으로 찾아오기 위해",
-    "explanation": "코드 곳곳에 '다음'을 직접 쓰는 것보다 button.next 같은 key를 쓰는 편이 관리하기 쉽다. message key는 화면 문구를 직접 쓰지 않고 번역표에서 찾기 위한 이름이다. 같은 key가 한국어와 영어에서 같은 의미를 가리키는지 확인해야 한다.",
+    "explanation": "message key는 화면 문구를 직접 쓰지 않고 번역표에서 찾는 안정적인 이름이다. button.next처럼 역할을 나타내는 key를 쓰면 영어 원문이 바뀌어도 코드 위치를 바꿀 필요가 적다. 같은 단어라도 문맥과 문법 역할이 다르면 별도 key를 써야 번역자가 자연스러운 문장을 만들 수 있다.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
@@ -143,7 +143,7 @@
       "resilience"
     ],
     "reading_goal": "선택한 언어의 문구가 없을 때 기본 언어로 대체하는 fallback locale을 이해한다.",
-    "code": "text = messages[locale].get(key) or messages['ko-KR'][key]",
+    "code": "text = messages.get(locale, {}).get(key) or messages['ko-KR'][key]",
     "question_type": "meaning_choice",
     "question": "fallback locale의 목적은?",
     "choices": [
@@ -153,7 +153,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "번역이 빠진 문구가 있어도 앱이 깨지지 않게 하기 위해",
-    "explanation": "fallback locale은 선택한 언어에 번역이 없을 때 기본 언어 문구로 대신 보여주는 전략이다. 모든 문구가 동시에 번역되지 않을 수 있어 필요하다. fallback이 있으면 일부 번역 누락 때문에 버튼이나 안내 문구가 빈칸으로 보이는 일을 줄일 수 있다.",
+    "explanation": "fallback locale은 선택한 locale 또는 key가 없을 때 기본 언어 문구를 보여 주는 전략이다. 먼저 빈 사전으로 안전하게 대체해야 지원하지 않는 locale에서도 조회 자체가 실패하지 않는다. 기본 언어에도 key가 없다면 개발 로그와 눈에 띄는 대체 문구를 남겨 누락을 조용히 숨기지 않아야 한다.",
     "side_card_ids": [
       "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
     ],
@@ -179,7 +179,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "언어별로 빠진 번역 문구를 찾기 위해",
-    "explanation": "언어 토글을 만들었는데 일부 버튼만 원래 언어로 남으면 사용자 경험이 어색해진다. missing translation은 특정 언어에서 아직 번역문이 없는 상태를 뜻한다. 코드를 읽을 때는 기본 언어로 fallback하는지, 누락 키를 로그로 남기는지 확인해야 한다. 따라서 정답은 ‘언어별로 빠진 번역 문구를 찾기 위해’이다.",
+    "explanation": "필수 key 집합과 각 언어의 key 집합을 비교하면 빠진 번역을 배포 전에 찾을 수 있다. 실행 중 fallback은 화면이 깨지는 것을 막지만 번역 완료를 증명하지는 않는다. CI에서는 누락 key, 불필요해진 key, 변수 자리표시자가 언어별로 같은지도 함께 검사한다.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
@@ -206,7 +206,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "사용자 지역에 맞게 날짜를 자연스럽게 보여주기 위해",
-    "explanation": "한국어 사용자는 2026. 5. 31. 같은 표시가 익숙하고 영어권은 다른 형식을 쓸 수 있다. locale date format은 지역별 날짜 표시 방식이다. 같은 날짜도 한국식, 미국식, ISO 형식이 다르게 보일 수 있어 사용자 설정과 맞춰야 한다. 따라서 정답은 ‘사용자 지역에 맞게 날짜를 자연스럽게 보여주기 위해’이다.",
+    "explanation": "같은 날짜도 ko-KR에서는 ‘2026. 5. 31.’, en-US에서는 ‘5/31/2026’처럼 다르게 표시될 수 있다. toLocaleDateString은 locale에 맞춘 표시를 돕지만 어떤 순간을 어느 날짜로 볼지는 timeZone 옵션에 따라 달라진다. streak처럼 날짜 경계가 중요한 기능은 사용자 시간대를 명시해야 한다.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
@@ -228,12 +228,12 @@
     "question": "number format의 목적은?",
     "choices": [
       "GitHub 비밀번호를 저장하기 위해",
-      "숫자와 퍼센트를 사용자의 지역 형식에 맞게 보여주기 위해",
+      "숫자를 사용자의 지역 형식에 맞게 보여주기 위해",
       "모든 카드를 삭제하기 위해",
       "검증 결과를 숨기기 위해"
     ],
-    "answer": "숫자와 퍼센트를 사용자의 지역 형식에 맞게 보여주기 위해",
-    "explanation": "학습 점수, 정답률, 카드 수 같은 값도 locale에 맞게 표시하면 더 자연스럽다. number format은 언어와 지역에 따라 숫자 표시 방식이 달라지는 문제를 다룬다. 쉼표, 소수점, 통화 기호가 사용자 지역에 맞게 표시되는지 확인해야 한다.",
+    "answer": "숫자를 사용자의 지역 형식에 맞게 보여주기 위해",
+    "explanation": "Intl.NumberFormat(locale)의 기본 설정은 일반 숫자의 자릿수 구분과 소수점 표기를 locale에 맞춘다. 퍼센트나 통화를 표시하려면 style: 'percent' 또는 style: 'currency'와 통화 코드를 별도로 지정해야 한다. 값의 의미에 맞는 옵션 없이 기호만 붙이면 지역에 따라 잘못 보일 수 있다.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
@@ -260,7 +260,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "사용자가 고른 언어를 다음 실행 때도 유지하기 위해",
-    "explanation": "language setting save는 사용자가 고른 언어를 저장해 다음 실행에도 유지하는 기능이다. 선택이 매번 초기화되면 사용자는 설정을 반복해야 한다. 저장 위치는 localStorage처럼 재방문 후에도 유지되는 공간을 사용할 수 있다.",
+    "explanation": "사용자가 명시적으로 고른 locale을 저장하면 다음 실행에도 같은 UI 언어를 유지할 수 있다. 저장된 값이 현재 지원 목록에 있는지 읽을 때 다시 검사하고, 값이 없을 때만 브라우저 선호 언어로 돌아간다. ‘시스템 설정 사용’ 선택도 제공하면 사용자가 브라우저 언어 변경을 따르게 할 수 있다.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -286,7 +286,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "사용자에게 익숙한 언어를 기본값으로 추정하기 위해",
-    "explanation": "browser language는 브라우저가 알려주는 사용자 선호 언어 정보다. 초기 언어 추정에 쓸 수 있지만, 항상 맞지는 않으므로 직접 변경 기능이 필요하다. 따라서 정답은 ‘사용자에게 익숙한 언어를 기본값으로 추정하기 위해’이다.",
+    "explanation": "navigator.language은 초기 표시 언어를 추정하는 힌트일 뿐이며 실제 사용자가 원하는 언어와 다를 수 있다. navigator.languages의 우선순위를 앱의 지원 locale 목록과 매칭하고, 정확한 지역 태그가 없으면 같은 기본 언어로 단계적으로 fallback한다. 사용자가 언제든 직접 바꿀 수 있어야 한다.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
@@ -313,7 +313,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "학습 개념의 의미가 바뀌지 않게 번역하는 것",
-    "explanation": "term translation은 개념어와 기술 용어를 어떤 표현으로 번역할지 정하는 작업이다. 버튼 문구보다 학습 이해에 더 직접적인 영향을 준다. 같은 용어를 카드마다 다르게 번역하면 학습자가 다른 개념으로 오해할 수 있어 일관성이 중요하다. 따라서 정답은 ‘학습 개념의 의미가 바뀌지 않게 번역하는 것’이다.",
+    "explanation": "기술 용어는 단어를 바꾸는 것보다 개념을 같은 범위로 전달하는 것이 중요하다. 용어집에 번역, 원어, 정의와 사용 문맥을 함께 두면 카드마다 표현이 흔들리는 일을 줄일 수 있다. 뜻이 다른데 철자가 같은 용어는 문맥별 항목으로 나누고, 필요하면 원어를 병기한다.",
     "side_card_ids": [],
     "project_context": "감사 v2에서 I18N_LANGUAGE_TOGGLE이 0 hits였으므로, v62는 언어 설정, locale, 번역 dictionary, fallback, 다국어 학습 UX를 보강한다."
   },
@@ -337,7 +337,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "한국어 설명과 영어 개발 용어를 함께 익혀야 할 때",
-    "explanation": "파이썬과 웹 개발은 영어 용어가 많으므로 한글 설명과 원어를 함께 보는 것이 도움이 된다. bilingual hint는 사용자가 두 언어 사이에서 의미를 연결할 수 있게 돕는 짧은 설명이다. 번역문과 원문의 개념이 어긋나지 않는지 확인해야 한다.",
+    "explanation": "bilingual hint는 한국어 설명과 영어 개발 용어를 연결하는 보조 표기다. 처음 등장할 때 ‘캐시(cache)’처럼 병기하고 이후에는 익숙한 표현만 쓰면 읽기 부담을 줄일 수 있다. 화면 낭독기가 괄호와 반복 단어를 과도하게 읽지 않는지도 확인하고, 두 표현이 같은 개념을 가리켜야 한다.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW"
     ],
@@ -353,7 +353,7 @@
       "test_case"
     ],
     "reading_goal": "언어 전환, 누락 번역, fallback이 제대로 동작하는지 테스트하는 기준을 이해한다.",
-    "code": "assert t('next', 'ko-KR')\nassert t('next', 'en-US')\nassert fallbackWorks()",
+    "code": "assert t('next', 'ko-KR') == '다음'\nassert t('next', 'en-US') == 'Next'\nassert fallbackWorks()",
     "question_type": "meaning_choice",
     "question": "i18n quality gate의 목적은?",
     "choices": [
@@ -363,7 +363,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "언어 전환과 번역 누락 방어가 제대로 되는지 검증하기 위해",
-    "explanation": "i18n quality gate는 언어 전환, 누락 번역, fallback 표시를 확인하는 검증 기준이다. 화면에 보이는 기능이라 작은 누락도 사용자가 바로 알아차린다.",
+    "explanation": "값이 존재한다는 사실만 검사하면 잘못된 언어의 문자열도 통과할 수 있다. 예시처럼 핵심 key의 실제 예상값, 누락 key fallback, 언어 변경 뒤 재렌더링을 확인한다. 복수형, 변수 자리표시자, 날짜·숫자 형식과 오른쪽에서 왼쪽으로 쓰는 레이아웃도 대표 locale별로 테스트해야 한다.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
@@ -390,7 +390,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "언어별 번역 파일의 버전과 상태를 추적하기 위해",
-    "explanation": "translation manifest는 언어별 번역 파일과 적용 범위를 관리하는 목록이다. 문구가 늘어날수록 어떤 언어가 최신 문구를 따라왔는지 확인해야 한다. manifest를 보면 누락된 번역과 오래된 번역 파일을 한눈에 점검할 수 있다.",
+    "explanation": "translation manifest는 locale, 번역 버전과 적용 상태를 추적한다. complete: true라는 수동 표시는 선언일 뿐 완성을 보장하지 않으므로 필수 key와 자리표시자 검사를 통과했을 때 빌드가 계산하도록 하는 편이 안전하다. 원문 버전이 바뀌면 번역이 다시 검토 대상이 되도록 연결해야 한다.",
     "side_card_ids": [
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
@@ -406,17 +406,17 @@
       "localization"
     ],
     "reading_goal": "언어 감지, 설정 저장, 문구 조회, fallback, 품질 검증까지 이어지는 i18n 흐름을 이해한다.",
-    "code": "detectLocale()\nloadMessages()\nsetLocale()\nrenderText()\ncheckMissingKeys()",
+    "code": "detectSupportedLocale()\nloadMessages()\ncheckMissingKeys()\nsetLocale()\nrenderLocalizedUI()",
     "question_type": "meaning_choice",
     "question": "i18n flow의 자연스러운 순서는?",
     "choices": [
       "GitHub 비밀번호를 저장하기 위해",
-      "언어 감지 → 번역 문구 로드 → 언어 선택 저장 → 화면 렌더링 → 누락 검증",
+      "지원 언어 감지 → 번역 문구 로드 → 누락 검증 → 언어 선택 적용 → 지역화된 화면 렌더링",
       "모든 카드를 삭제하기 위해",
       "검증 결과를 숨기기 위해"
     ],
-    "answer": "언어 감지 → 번역 문구 로드 → 언어 선택 저장 → 화면 렌더링 → 누락 검증",
-    "explanation": "작은 학습앱이라도 i18n 구조를 잡아두면 나중에 다국어 학습/용어 비교 기능으로 확장하기 쉽다. i18n flow는 문구 key를 읽고 현재 언어에 맞는 문자열로 바꿔 화면에 보여 주는 흐름이다. 언어 변경 후 즉시 다시 렌더링되는지 확인해야 한다.",
+    "answer": "지원 언어 감지 → 번역 문구 로드 → 누락 검증 → 언어 선택 적용 → 지역화된 화면 렌더링",
+    "explanation": "먼저 브라우저 선호와 사용자 저장값을 지원 목록에 맞춰 locale 후보로 정한다. 번역 문구를 불러온 뒤 필수 key와 자리표시자를 검사하고, 선택을 적용해 문구와 날짜·숫자를 렌더링한다. 언어 변경 때도 같은 검증과 재렌더링 경로를 거쳐야 일부 화면만 이전 언어로 남는 일을 줄일 수 있다.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"

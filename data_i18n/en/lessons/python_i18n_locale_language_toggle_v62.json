@@ -19,7 +19,7 @@
       "To hide the verification results"
     ],
     "answer": "To provide app text in multiple languages",
-    "explanation": "Even if you start out using only Korean, it will be easier to add new languages later if you don’t hard-code strings directly into the code. i18n is a method of separating strings from the code to support multiple languages. You just need to verify that the structure retrieves strings using keys rather than hard-coding them directly into the code.",
+    "explanation": "Internationalization (i18n) prepares an app for multiple languages and regional conventions. Moving strings behind keys is only a start; plural rules, dates, numbers, sentence order, and right-to-left layouts may also differ. Define a fallback for a key missing from the current locale so the UI does not become blank.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
@@ -46,7 +46,7 @@
       "To hide the verification results"
     ],
     "answer": "To distinguish between language and regional formats",
-    "explanation": "By setting a locale, such as ko-KR or en-US, you can adjust not only text but also how dates and numbers are displayed. A locale refers to the display rules specific to a language and region. It determines how dates, numbers, currencies, and text are displayed based on the user.",
+    "explanation": "Language tags such as ko-KR and en-US help select language and regional formatting. One locale does not determine every preference, however: currency and time zone may need separate settings. Keep a supported list of BCP 47 tags and fallbacks, and manage values such as the date time zone separately when needed.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -67,12 +67,12 @@
     "question": "What is the purpose of the language toggle?",
     "choices": [
       "To save your GitHub password",
-      "To allow users to change the app's language to the one they prefer,",
+      "To let users switch the app to their preferred display language",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "To allow users to change the app's language to the one they prefer,",
-    "explanation": "Even if a learning app is based on Korean, its scalability improves if users can choose to view the UI or terminology in English. A language toggle is a feature that allows users to change the display language. You must verify whether the selected language is saved and whether the on-screen text is immediately re-rendered. Therefore, the correct answer is “to allow users to switch the app to their preferred language.”",
+    "answer": "To let users switch the app to their preferred display language",
+    "explanation": "A language toggle lets the user change the display language. Validate the selected tag against supported locales, save it, and rerender translations, formats, and accessible names. Do not translate or alter user-authored notes or code merely because the interface language changed.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW",
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
@@ -94,12 +94,12 @@
     "question": "Why do we use a message key?",
     "choices": [
       "To save your GitHub password",
-      "To reliably find phrases with the same meaning across different languages,",
+      "To look up the same UI role consistently in each locale",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "To reliably find phrases with the same meaning across different languages,",
-    "explanation": "It’s easier to maintain the code by using keys like `button.next` throughout the code rather than writing “Next” directly. The `message` key is a name used to look up text in the translation table instead of writing the on-screen text directly. You must verify that the same key refers to the same meaning in both Korean and English.",
+    "answer": "To look up the same UI role consistently in each locale",
+    "explanation": "A message key is a stable name used to look up translated UI text. A role-based key such as button.next usually remains useful even if the English source wording changes. When the same word has different contexts or grammar roles, use separate keys so translators can produce natural text.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
@@ -116,7 +116,7 @@
       "i18n"
     ],
     "reading_goal": "Understand how to manage sets of phrases by language using a dictionary.",
-    "code": "messages = { 'ko-KR': {'next': '다음'}, 'en-US': {'next': 'Next'} }",
+    "code": "messages = {\n  'ko-KR': {'next': '다음'},\n  'en-US': {'next': 'Next'}\n}",
     "question_type": "meaning_choice",
     "question": "What is the role of a translation dictionary?",
     "choices": [
@@ -143,17 +143,17 @@
       "resilience"
     ],
     "reading_goal": "Understand the fallback locale, which is used to substitute the default language when there is no text available in the selected language.",
-    "code": "text = messages[locale].get(key) or messages['ko-KR'][key]",
+    "code": "text = messages.get(locale, {}).get(key) or messages['ko-KR'][key]",
     "question_type": "meaning_choice",
     "question": "What is the purpose of a fallback locale?",
     "choices": [
       "To save your GitHub password",
-      "To ensure the app doesn't crash even if some text is missing a translation,",
+      "To keep the UI usable when a locale or translation is missing",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "To ensure the app doesn't crash even if some text is missing a translation,",
-    "explanation": "A fallback locale is a strategy used to display text in the default language when a translation for the selected language is unavailable. This is necessary because not all text may be translated at the same time. Having a fallback locale helps prevent buttons or instructions from appearing blank due to missing translations.",
+    "answer": "To keep the UI usable when a locale or translation is missing",
+    "explanation": "A fallback locale supplies default-language text when the requested locale or key is missing. Looking up an empty dictionary first prevents an unsupported locale from failing before fallback. If the key is also absent from the default language, log it for developers and show a visible placeholder rather than hiding the defect.",
     "side_card_ids": [
       "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
     ],
@@ -179,7 +179,7 @@
       "To hide the verification results"
     ],
     "answer": "To find missing translations for each language",
-    "explanation": "If you create a language toggle but only some buttons remain in the original language, the user experience becomes awkward. “Missing translation” refers to a situation where a translation is not yet available for a specific language. When reading the code, you need to check whether it falls back to the default language or logs the missing keys. Therefore, the correct answer is “to find missing translations for each language.”",
+    "explanation": "Comparing required keys with each locale's keys finds missing translations before release. Runtime fallback prevents a broken screen but does not prove that a translation is complete. CI should also detect obsolete keys and verify that variable placeholders match across locales.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
@@ -201,12 +201,12 @@
     "question": "Why is a locale date format needed?",
     "choices": [
       "To save your GitHub password",
-      "To display the date naturally according to the user's region,",
+      "To display dates in the user's regional format",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "To display the date naturally according to the user's region,",
-    "explanation": "Korean users are accustomed to the notation “May 31, 2026,” while English-speaking users may use a different format. The “locale date format” refers to the date display format specific to each region. The same date may appear differently in Korean, American, and ISO formats, so it must be adjusted according to user settings. Therefore, the correct answer is “to display the date naturally according to the user’s region.”",
+    "answer": "To display dates in the user's regional format",
+    "explanation": "The same date may appear as ‘2026. 5. 31.’ in ko-KR and ‘5/31/2026’ in en-US. toLocaleDateString helps format it by locale, but the timeZone option determines which calendar day an instant belongs to. Date-boundary features such as streaks should specify the user's time zone.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
@@ -228,12 +228,12 @@
     "question": "What is the purpose of number formatting?",
     "choices": [
       "To save your GitHub password",
-      "To display numbers and percentages in the user's regional format,",
+      "To display numbers in the user's regional format",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "To display numbers and percentages in the user's regional format,",
-    "explanation": "Values such as learning scores, accuracy rates, and the number of cards also appear more natural when displayed according to the locale. Number formatting addresses the issue of how numbers are displayed, which varies by language and region. You must ensure that commas, decimal points, and currency symbols are displayed correctly for the user’s region.",
+    "answer": "To display numbers in the user's regional format",
+    "explanation": "The default Intl.NumberFormat(locale) formats an ordinary number's grouping and decimal separators. Percentages and currencies require explicit options such as style: 'percent' or style: 'currency' plus a currency code. Adding a symbol without meaning-aware options can produce incorrect regional output.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
@@ -255,12 +255,12 @@
     "question": "What is the purpose of saving language settings?",
     "choices": [
       "To save your GitHub password",
-      "To retain the language selected by the user for the next session,",
+      "To keep the user's chosen language for the next session",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "To retain the language selected by the user for the next session,",
-    "explanation": "The \"Save Language Settings\" feature saves the language selected by the user so that it is retained for the next session. If the selection is reset each time, the user would have to repeat the setup process. For storage, you can use a location that persists even after the user returns, such as localStorage.",
+    "answer": "To keep the user's chosen language for the next session",
+    "explanation": "Saving an explicitly chosen locale keeps the same UI language on the next visit. Validate the stored value against the current supported list when reading it, and use browser preferences only when no valid choice exists. A ‘use system setting’ option can let users follow later browser-language changes.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -281,12 +281,12 @@
     "question": "Why do we check the browser language?",
     "choices": [
       "To save your GitHub password",
-      "To assume the user's familiar language as the default,",
+      "To estimate a familiar initial language for the user",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "To assume the user's familiar language as the default,",
-    "explanation": "\"Browser language\" refers to the user's preferred language as reported by the browser. While it can be used for initial language estimation, it is not always accurate, so a feature to manually change it is necessary. Therefore, the correct answer is \"to estimate the language the user is familiar with as the default.\"",
+    "answer": "To estimate a familiar initial language for the user",
+    "explanation": "navigator.language is a hint for the initial display language, not proof of what the user wants. Match navigator.languages in preference order against the app's supported locales, falling back from a region-specific tag to its base language when appropriate. Always provide a manual choice.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
@@ -313,7 +313,7 @@
       "To hide the verification results"
     ],
     "answer": "Translating in a way that preserves the meaning of the learning concept",
-    "explanation": "Term translation is the process of determining how to translate conceptual and technical terms. It has a more direct impact on learning comprehension than button labels. Since translating the same term differently on each card can lead learners to misunderstand the concept, consistency is crucial. Therefore, the correct answer is “translating in a way that preserves the meaning of the learning concept.”",
+    "explanation": "Technical-term translation must preserve the concept's scope, not merely replace a word. A glossary containing the translation, source term, definition, and context helps keep cards consistent. Split homonyms by context and show the source term when that helps learners recognize documentation and code.",
     "side_card_ids": [],
     "project_context": "Since I18N_LANGUAGE_TOGGLE had 0 hits in v2, v62 enhances language settings, locales, translation dictionaries, fallback options, and the multilingual learning UX."
   },
@@ -332,12 +332,12 @@
     "question": "When is a \"bilingual hint\" useful?",
     "choices": [
       "To save your GitHub password",
-      "When You Need to Learn Both Korean Explanations and English Development Terminology",
+      "When learners need to connect Korean explanations with English development terms",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "When You Need to Learn Both Korean Explanations and English Development Terminology",
-    "explanation": "Since Python and web development involve many English terms, it’s helpful to refer to both the Korean explanation and the original language. A “bilingual hint” is a brief explanation that helps users connect the meanings across the two languages. You must verify that the concepts in the translation and the original text align.",
+    "answer": "When learners need to connect Korean explanations with English development terms",
+    "explanation": "A bilingual hint connects a Korean explanation with the English development term. Showing both on first use, then using the familiar form, can reduce reading load. Check how screen readers announce parentheses and repeated terms, and make sure both labels refer to the same concept.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW"
     ],
@@ -353,17 +353,17 @@
       "test_case"
     ],
     "reading_goal": "Understand the criteria for testing whether language switching, missing translations, and fallback mechanisms are working properly.",
-    "code": "assert t('next', 'ko-KR')\nassert t('next', 'en-US')\nassert fallbackWorks()",
+    "code": "assert t('next', 'ko-KR') == '다음'\nassert t('next', 'en-US') == 'Next'\nassert fallbackWorks()",
     "question_type": "meaning_choice",
     "question": "What is the purpose of the i18n quality gate?",
     "choices": [
       "To save your GitHub password",
-      "To verify whether language switching and protection against missed translations are working properly,",
+      "To verify language switching and safe handling of missing translations",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "To verify whether language switching and protection against missed translations are working properly,",
-    "explanation": "The i18n quality gate is a set of validation criteria that checks for language switching, missing translations, and fallback displays. Since these are on-screen features, users immediately notice even minor omissions.",
+    "answer": "To verify language switching and safe handling of missing translations",
+    "explanation": "A truthiness check can pass even when text comes from the wrong language. Verify expected values for important keys, missing-key fallback, and rerendering after a language change. Also test plurals, placeholders, date and number formats, and representative right-to-left layouts.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
@@ -390,7 +390,7 @@
       "To hide the verification results"
     ],
     "answer": "To track the versions and statuses of translation files by language",
-    "explanation": "A translation manifest is a list that manages language-specific translation files and their scope. As the number of strings increases, it becomes necessary to verify which languages have been updated with the latest strings. By reviewing the manifest, you can quickly identify missing translations and outdated translation files at a glance.",
+    "explanation": "A translation manifest tracks locale, source version, and review state. A handwritten complete: true flag is only a claim, so the build should derive completion from required-key and placeholder checks. When the source version changes, mark the translation for review again.",
     "side_card_ids": [
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
@@ -406,17 +406,17 @@
       "localization"
     ],
     "reading_goal": "Understand the i18n workflow, from language detection and saving settings to looking up strings, fallback, and quality verification.",
-    "code": "detectLocale()\nloadMessages()\nsetLocale()\nrenderText()\ncheckMissingKeys()",
+    "code": "detectSupportedLocale()\nloadMessages()\ncheckMissingKeys()\nsetLocale()\nrenderLocalizedUI()",
     "question_type": "meaning_choice",
     "question": "What is the natural order of the i18n workflow?",
     "choices": [
       "To save your GitHub password",
-      "Language detection → Load translated text → Save language selection → Render screen → Check for missing content",
+      "Detect a supported locale → Load messages → Check missing keys → Apply the locale → Render the localized UI",
       "To delete all cards",
       "To hide the verification results"
     ],
-    "answer": "Language detection → Load translated text → Save language selection → Render screen → Check for missing content",
-    "explanation": "Even for a small learning app, establishing an i18n structure makes it easy to expand into multilingual learning and terminology comparison features later on. The i18n flow refers to the process of reading a string key and replacing it with the string corresponding to the current language before displaying it on the screen. You must verify that the screen is re-rendered immediately after a language change.",
+    "answer": "Detect a supported locale → Load messages → Check missing keys → Apply the locale → Render the localized UI",
+    "explanation": "First match browser preferences and the saved user choice to a supported locale. Load messages, validate required keys and placeholders, then apply the choice and render text, dates, and numbers. A later language change should follow the same validation and rerender path so part of the screen does not remain in the old language.",
     "side_card_ids": [
       "PYV102_A7_I18N_LOCALE",
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"

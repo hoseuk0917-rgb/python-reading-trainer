@@ -47,7 +47,7 @@
       "To prevent sensitive information, such as API keys, from being uploaded to Git,"
     ],
     "answer": "To prevent sensitive information, such as API keys, from being uploaded to Git,",
-    "explanation": "Since the .env file may contain keys, tokens, and DB URLs, the default practice is not to commit it to the repository. The .env file stores sensitive settings, and .gitignore specifies which files should not be added to Git. These files must be managed together to ensure that API keys are not uploaded to the repository.",
+    "explanation": ".gitignore helps keep untracked .env, .env.local, and secrets.json files out of new commits. Adding an ignore rule does not erase a secret that was already committed, so revoke or rotate it immediately and investigate exposure. Document required variable names without values in a file such as .env.example.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -73,7 +73,7 @@
       "Sends the access token held by the requester to the server"
     ],
     "answer": "Sends the access token held by the requester to the server",
-    "explanation": "Bearer tokens are used by API servers to verify a requester's authentication and authorization. The Bearer token header is a method of including an authentication token in a request. You must verify the format of the Authorization header and how the token is validated by the server.",
+    "explanation": "Authorization: Bearer presents a token held by the client to the server. As the name implies, possession may grant authority, so transmit it over HTTPS and keep it out of URLs, logs, and error messages. The server must validate signature, issuer, audience, expiry, and required scopes; merely sending the header does not complete authentication.",
     "side_card_ids": [
       "PYV102_A7_AUTH_SECURITY",
       "PYV102_A7_PRIVACY_ANALYTICS"
@@ -101,7 +101,7 @@
       "401"
     ],
     "answer": "401",
-    "explanation": "A header token is authentication information included in the API request header. A 401 status code is typically used when authentication is required or when authentication information is missing. Since header-based authentication verifies the token with each request, it serves as a starting point for determining who is calling the API.",
+    "explanation": "When the authorization header is absent, this code raises 401. However, it checks only that a header exists; it does not validate the Bearer scheme, token signature, expiry, or permissions, and it returns the raw credential in the response. A real private endpoint must validate the token and never expose credentials in a response or log.",
     "side_card_ids": [
       "PYV159_A1_FASTAPI_SERVER_FLOW"
     ],
@@ -110,7 +110,7 @@
   {
     "id": "PY22_L08_jwt_parts_001",
     "level": 8,
-    "title": "Understanding the Three-Part Structure of JWT",
+    "title": "Reading an Example Token Split on Periods",
     "concepts": [
       "jwt",
       "header",
@@ -128,7 +128,7 @@
       "3"
     ],
     "answer": "3",
-    "explanation": "A JWT is typically a string consisting of three parts—header, payload, and signature—separated by dots. A JWT consists of three parts: header, payload, and signature. While the payload is readable, signature verification is essential to prevent forgery. Therefore, the output is “3.”",
+    "explanation": "The given string has three period-separated parts, so split returns a list of length 3. A signed compact JWT (JWS) commonly has protected header, payload, and signature parts, while compact JWE can have five, and any three-part string is not automatically a valid JWT. The payload is normally not encrypted, so do not place secrets there and validate signatures and claims with a trusted library.",
     "side_card_ids": [
       "WEB_auth_001",
       "PYV102_A7_AUTH_SECURITY"
@@ -149,15 +149,15 @@
     "reading_goal": "Understand the meaning of claims such as \"sub\" and \"exp\" within the token payload.",
     "code": "payload = {\n    \"sub\": \"user_123\",\n    \"role\": \"admin\",\n    \"exp\": 1893456000\n}",
     "question_type": "meaning_choice",
-    "question": "What does a \"sub-claim\" typically refer to?",
+    "question": "What does the sub claim usually represent?",
     "choices": [
-      "Server Port",
-      "File size",
-      "Number of query results",
-      "User identifier as the token holder"
+      "A server port",
+      "A file size",
+      "A query result count",
+      "An identifier for the subject represented by the token"
     ],
-    "answer": "User identifier as the token holder",
-    "explanation": "\"sub\" is short for \"subject\" and is often used as a claim that identifies who the token represents. A JWT payload claim refers to information contained within the token, such as the user ID, permissions, and expiration time. You should not trust the contents without verifying the signature. Therefore, the correct answer is \"the user identifier, which is the subject of the token.\"",
+    "answer": "An identifier for the subject represented by the token",
+    "explanation": "sub means subject and identifies the entity represented by the token in the issuer's context. That entity may be a user, service, or something else, so it is not always a user ID. Decoding a payload does not make it trustworthy; validate the signature and application-required claims such as exp, iss, and aud.",
     "side_card_ids": [
       "WEB_auth_001",
       "PYV102_A7_AUTH_SECURITY"
@@ -185,9 +185,8 @@
       "403"
     ],
     "answer": "403",
-    "explanation": "A permission check is a procedure to verify whether a user has the necessary permissions to perform a specific action. A 401 error typically indicates an authentication issue, while a 403 error usually indicates a lack of permissions. Permission checks must be performed before the actual action is executed to prevent data modifications or the exposure of sensitive information.",
+    "explanation": "For an authenticated user whose trusted role is not admin, this function raises 403 Forbidden. If user is merely a client-provided dictionary, its role can be forged; obtain it from a validated token claim or server-side authorization store. Fine-grained systems also check the resource and action, and the code should handle a missing role field.",
     "side_card_ids": [
-      "PL_sudo_001",
       "PYV102_A7_AUTH_SECURITY"
     ],
     "project_context": "This is necessary to distinguish between the data modification API for administrators and the API for general users."
@@ -212,7 +211,7 @@
       "To store and verify hashes instead of plaintext passwords"
     ],
     "answer": "To store and verify hashes instead of plaintext passwords",
-    "explanation": "It is safer for a server to store hashes of passwords rather than the plaintext passwords themselves, and then verify them against the entered password. Password hashing is a process that converts the original password into a value that is difficult to reverse. When logging in, the entered password is hashed again and compared to the stored hash.",
+    "explanation": "When the repository finds no user, return the same generic 401 and reduce timing differences so the response does not reveal whether an account exists. verify_password should use the salt and cost encoded in an Argon2id, bcrypt, scrypt, or PBKDF2 password-hashing scheme. A fast general hash or direct == comparison is unsuitable, and plaintext passwords must never be stored or logged.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -239,7 +238,7 @@
       "Used to obtain a new access token to replace an expired one"
     ],
     "answer": "Used to obtain a new access token to replace an expired one",
-    "explanation": "The access token is short, while the refresh token is longer, allowing them to be used for automatic login and session renewal. The refresh token is used to obtain a new access token after the original one expires. Because it has a long lifespan and is therefore at high risk of being compromised, it is important to manage where it is stored and how it is disposed of.",
+    "explanation": "A refresh token is a credential used to request a new access token while the authorization server's policy permits it. It often lives longer than an access token and therefore has greater theft impact. Use safe storage, server-side revocation, rotation and reuse detection, and revoke it when the session ends; the client does not mint a new token by itself.",
     "side_card_ids": [],
     "project_context": "This is linked to the app architecture that retrieves user API keys on a per-account basis."
   },
@@ -264,7 +263,7 @@
       "Makes it difficult to read cookies directly in browser JavaScript"
     ],
     "answer": "Makes it difficult to read cookies directly in browser JavaScript",
-    "explanation": "A session cookie is a method of storing login status in the browser. The `HttpOnly` option prevents JavaScript from reading the cookie, thereby reducing the risk of XSS. It is safer to protect sensitive session values using the browser's cookie policy rather than relying on client-side scripts.",
+    "explanation": "HttpOnly prevents browser JavaScript APIs such as document.cookie from directly reading the session cookie, reducing one theft path. It does not stop XSS code from sending authenticated requests in the victim's browser. Secure requires HTTPS transport and SameSite=Lax limits some cross-site requests, while CSRF tokens, origin checks, short sessions, and rotation may still be required by the threat model.",
     "side_card_ids": [
       "WEB_auth_001",
       "PYV102_A7_AUTH_SECURITY"
@@ -292,12 +291,12 @@
       "Code exchange → View user profile → Create session"
     ],
     "answer": "Code exchange → View user profile → Create session",
-    "explanation": "In the OAuth callback, the code provided by the provider is exchanged for a token, and that token is used to verify the user's information. In other words, the callback URL is where the login results are received; it is not where the code itself is stored as the final login information.",
+    "explanation": "The visible order is authorization-code exchange, validated provider user information, then local session creation. A secure OAuth/OIDC callback validates state against the initiating request, uses PKCE for public clients, and checks redirect URI plus issuer, audience, and nonce where applicable. Do not trust a provider token blindly or log the code.",
     "side_card_ids": [
       "WEB_auth_001",
       "PYV102_A7_AUTH_SECURITY"
     ],
-    "project_context": "It integrates with an app architecture that allows API keys to be retrieved from anywhere using a Google OAuth account."
+    "project_context": "This is the flow for validating an external identity in an OAuth/OIDC callback before creating a local session."
   },
   {
     "id": "PY22_L10_rate_limit_001",
@@ -320,7 +319,7 @@
       "429"
     ],
     "answer": "429",
-    "explanation": "429 Too Many Requests is a status code used when there are too many requests. A rate limit is a restriction designed to prevent an excessive number of requests. Since the criteria may vary by user, IP address, or token, you should check both the limit units and the response when the limit is exceeded.",
+    "explanation": "When count reaches 101, the code raises 429. This example has no expiry or window reset, so its key can grow forever. A real limiter combines an atomic increment with a TTL or token/leaky bucket, a trusted user/IP/key identity, a common store for distributed servers, Retry-After behavior, and an explicit fail-open or fail-closed policy.",
     "side_card_ids": [
       "PYV158_A1_API_FLOW"
     ],
@@ -347,7 +346,7 @@
       "Previous version keys are no longer accepted."
     ],
     "answer": "Previous version keys are no longer accepted.",
-    "explanation": "Secret rotation is an operational concept that involves replacing keys with new versions and gradually deactivating old ones. Secret rotation is the process of replacing compromised or outdated API keys and tokens with new values. In addition to code changes, you must also check the repository history and the deployment environment. Therefore, the correct answer is “Older keys are no longer accepted.”",
+    "explanation": "When the request-supplied key_version differs from the active version, this code returns 401. Comparing a client version string alone does not validate the actual secret. Rotation covers issuing and distributing the new key, an overlap or dual-read period, usage monitoring, old-key revocation, and inspection of logs and backups; after known exposure, immediate revocation takes priority.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -374,7 +373,7 @@
       "Limit the length of user input"
     ],
     "answer": "Limit the length of user input",
-    "explanation": "Input length limits, separation of duties, and \"evidence-first\" instructions can be part of LLM app security measures. A prompt injection guard is a mechanism that defends against users entering input intended to bypass model rules. System rules, evidence limits, and output validation must be used together.",
+    "explanation": "user_query[:2000] only limits input by Python characters. Separating system and user roles or saying \"evidence only\" is useful guidance but not a security boundary against prompt injection. Retrieved documents can contain attack instructions too, so use tool allowlists and least privilege, structured-output validation, sensitive-data separation, and human approval where needed.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW",
       "PYV159_A1_RAG_SEARCH_LLM_FLOW"
@@ -402,7 +401,7 @@
       "To avoid storing API keys in plain text directly in the database,"
     ],
     "answer": "To avoid storing API keys in plain text directly in the database,",
-    "explanation": "Encrypted secret storage is a method of storing sensitive keys in an encrypted form on the server side. Decrypting them only when needed helps minimize the risk of exposure. Encrypted storage reduces the risk of the plaintext secret being immediately exposed even if the database is compromised. Therefore, the correct answer is “to avoid storing API keys in plaintext directly in the database.”",
+    "explanation": "Storing ciphertext instead of a plaintext API key can reduce direct exposure when only a database snapshot leaks. To be effective, manage the encryption key separately in a KMS or secret manager and use authenticated encryption with user/context binding, access control, auditing, and rotation. Compromise of both the application and key can still reveal the secret, and keys must stay out of logs and backups.",
     "side_card_ids": [
       "PYV158_A1_DATABASE_FLOW"
     ],
@@ -419,7 +418,7 @@
       "current_user"
     ],
     "reading_goal": "I understand the structure that separates the authentication logic, which is repeated for each endpoint, into a dependency.",
-    "code": "def get_current_user(authorization: str = Header()):\n    token = authorization.removeprefix(\"Bearer \").strip()\n    return verify_token(token)\n\n@app.get(\"/private\")\ndef private(user = Depends(get_current_user)):\n    return {\"user_id\": user.id}",
+    "code": "from fastapi import Depends\nfrom fastapi.security import HTTPAuthorizationCredentials, HTTPBearer\n\nbearer = HTTPBearer()\n\ndef get_current_user(\n    credentials: HTTPAuthorizationCredentials = Depends(bearer),\n):\n    return verify_token(credentials.credentials)\n\n@app.get(\"/private\")\ndef private(user = Depends(get_current_user)):\n    return {\"user_id\": user.id}",
     "question_type": "meaning_choice",
     "question": "What is the purpose of `Depends(get_current_user)`?",
     "choices": [
@@ -429,7 +428,7 @@
       "Verify the token before making the request and pass the user to the endpoint."
     ],
     "answer": "Verify the token before making the request and pass the user to the endpoint.",
-    "explanation": "By separating authentication into a dependency, you can reuse the same validation logic across multiple endpoints. The FastAPI authentication dependency is designed to perform token validation or user lookups before an endpoint is executed. This is useful when applying common authentication rules to multiple APIs.",
+    "explanation": "The HTTPBearer dependency parses the Bearer scheme and credential from Authorization, then get_current_user uses verify_token to validate the signature and required claims and obtain a user. HTTPBearer itself does not validate a JWT. The endpoint dependency supplies the user only after that succeeds; resource-specific authorization remains a separate check.",
     "side_card_ids": [
       "PYV159_A1_FASTAPI_SERVER_FLOW"
     ],

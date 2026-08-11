@@ -19,7 +19,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "사용자에게 앱 설치 가능 상태를 알려주기 위해",
-    "explanation": "install prompt는 PWA를 기기에 설치할 수 있음을 알려주는 안내다. 브라우저 앱처럼 쓰일 수 있으므로 자연스러운 설치 안내 UX가 필요하다. 설치 안내는 너무 자주 띄우면 방해가 되므로 사용 흐름에 맞는 시점에 보여 주는 것이 좋다. 따라서 정답은 ‘사용자에게 앱 설치 가능 상태를 알려주기 위해’이다.",
+    "explanation": "install 안내는 browser가 설치 가능 조건을 충족했다고 알려 주거나 platform별 설치 절차가 있을 때만 보여 준다. 모든 browser가 같은 prompt API를 지원하지 않으며 이미 설치됐거나 설치를 원치 않는 사용자에게 반복 노출하지 않는다. 설치는 사용자 선택이고 사용 전제 조건이 되어서는 안 된다.",
     "side_card_ids": [
       "PYV160_A1_PWA_STATE_STORAGE_FLOW"
     ],
@@ -45,7 +45,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "브라우저의 기본 설치 안내를 잠시 보류하고 나중에 직접 보여줄 수 있게 한다",
-    "explanation": "beforeinstallprompt는 브라우저가 PWA 설치 가능 상태를 알려주는 이벤트다. 설치 버튼을 앱 UI 안에 자연스럽게 배치할 때 이해해야 한다. 이 이벤트를 잡아 두면 브라우저 기본 안내 대신 앱에 맞는 설치 버튼을 만들 수 있다.",
+    "explanation": "beforeinstallprompt는 일부 Chromium 계열 browser가 설치 가능 시 보내는 비표준 event다. preventDefault로 즉시 prompt를 보류하고 event를 저장해 사용자 gesture에서 prompt()를 호출할 수 있다. 지원되지 않는 browser에는 platform별 안내나 설치 버튼 숨김 fallback이 필요하다.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -62,7 +62,7 @@
       "event_state"
     ],
     "reading_goal": "설치 이벤트를 변수에 저장했다가 사용자가 버튼을 누를 때 실행하는 흐름을 이해한다.",
-    "code": "installButton.onclick = async () => {\n  await deferredPrompt.prompt()\n}",
+    "code": "installButton.onclick = async () => {\n  if (!deferredPrompt) return;\n  deferredPrompt.prompt();\n  await deferredPrompt.userChoice;\n  deferredPrompt = null;\n};",
     "question_type": "meaning_choice",
     "question": "deferred prompt를 쓰는 이유는?",
     "choices": [
@@ -72,7 +72,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "사용자가 설치 버튼을 눌렀을 때 설치 안내를 보여주기 위해",
-    "explanation": "deferred prompt는 설치 안내 이벤트를 바로 쓰지 않고 저장해 두었다가 필요한 순간에 보여주는 방식이다. 사용자가 의도한 시점에 안내할 수 있다. 이벤트 객체를 보관해 두면 사용자가 버튼을 눌렀을 때 설치 흐름을 시작할 수 있다.",
+    "explanation": "저장된 event가 있을 때 사용자 click에서 prompt를 요청하고 userChoice가 끝난 뒤 참조를 지운다. 같은 BeforeInstallPromptEvent는 재사용할 수 없으므로 새 event 전까지 버튼을 숨긴다. prompt 호출이 설치 성공을 뜻하지 않으며 사용자는 거절할 수 있다.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -153,7 +153,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "사용자가 새로고침해서 새 버전을 적용하게 돕는다",
-    "explanation": "앱이 자동으로 바뀌지 않을 때 사용자가 직접 업데이트할 수 있는 버튼이 필요하다. refresh to update는 새 버전이 준비되었을 때 사용자가 새로고침해서 앱을 갱신하도록 안내하는 흐름이다. 캐시된 파일과 새 파일의 버전 차이를 확인하는 과정이 중요하다.",
+    "explanation": "location.reload()은 현재 page를 다시 load하지만 새 service worker가 아직 waiting이면 곧바로 새 worker가 control한다고 보장하지 않는다. 앱은 waiting worker에 명시적 activation message를 보내거나 기존 client 종료 정책을 정하고 controllerchange 뒤 한 번만 reload해야 한다. 저장되지 않은 작업도 먼저 처리한다.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -180,7 +180,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "사용자가 현재 최신 버전을 보고 있는지 확인할 수 있다",
-    "explanation": "v49, v50처럼 버전이 빠르게 바뀔 때 화면에 버전이 보이면 캐시 문제를 찾기 쉽다. version display UX는 사용자가 현재 앱 데이터 버전을 확인할 수 있게 보여 주는 장치다. 캐시 문제를 디버깅할 때 실제 로딩 버전을 확인하는 데 유용하다.",
+    "explanation": "APP_DATA_VERSION을 표시하면 현재 load한 data bundle version을 진단하는 데 도움이 된다. 이것이 app code, service worker, API schema version과 같다는 보장은 없으므로 label을 정확히 쓰고 build commit이나 app version을 별도로 표시할 수 있다. 화면 숫자만으로 cache 최신성을 증명하지는 않는다.",
     "side_card_ids": [
       "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
     ],
@@ -206,7 +206,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "네트워크 문제로 데이터가 안 바뀌는 상황을 사용자에게 알려주기 위해",
-    "explanation": "offline notice는 네트워크가 끊겼다는 사실을 사용자에게 알려주는 메시지다. 상태를 숨기면 사용자는 앱이 고장났다고 느낄 수 있다. 오프라인 상태에서는 저장 지연이나 동기화 대기를 알려 주면 사용자가 데이터 손실을 덜 걱정한다.",
+    "explanation": "offline event는 browser가 network 연결이 없다고 판단했다는 신호다. 반대로 online이라고 실제 API가 reachable하다는 보장은 없으므로 요청 실패를 직접 처리해야 한다. offline notice에는 cached 기능 범위, 저장 대기 상태와 마지막 sync 시간을 알려 준다.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -233,7 +233,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "다시 연결되었음을 알려주는 메시지",
-    "explanation": "online recovered notice는 오프라인에서 다시 온라인으로 돌아왔을 때 보여주는 안내다. 사용자가 새 데이터를 다시 불러올 수 있게 돕는다. 복구 안내를 보여주면 저장 대기 중인 데이터 동기화나 새 카드 갱신을 자연스럽게 유도할 수 있다. 따라서 정답은 ‘다시 연결되었음을 알려주는 메시지’이다.",
+    "explanation": "online event는 network interface가 돌아왔다는 신호이므로 다시 연결을 시도할 계기가 된다. 즉시 sync 성공이라고 표시하지 말고 health request와 pending write 결과를 확인한 뒤 성공·충돌·실패 상태를 알려야 한다.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -314,7 +314,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "새 service worker가 준비됐지만 아직 적용 대기 중인 상황",
-    "explanation": "업데이트 배너는 새 버전이 대기 중일 때 사용자에게 적용 여부를 묻는 데 쓸 수 있다. service worker waiting은 새 서비스 워커가 준비됐지만 아직 적용되지 않은 상태다. 사용자가 새로고침하거나 기존 탭을 닫아야 반영될 수 있다.",
+    "explanation": "registration.waiting은 새 worker가 install을 마치고 activate를 기다린다는 뜻이다. 기존 worker가 control하는 client가 남아 있으면 자동 activation이 늦어질 수 있고, skipWaiting을 쓰면 열린 app과 version mismatch가 생길 수 있다. 사용자 작업을 보존한 뒤 activation·reload 정책을 적용한다.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -341,7 +341,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "사용자가 새 버전 확인을 직접 요청할 수 있게 하기 위해",
-    "explanation": "자동 업데이트가 늦을 때 수동 확인 버튼이 있으면 디버깅과 사용자 안내에 도움이 된다. update check button은 사용자가 새 버전이 있는지 직접 확인하게 해 주는 버튼이다. 클릭 시 캐시 확인과 새로고침 안내가 어떻게 이어지는지 보면 된다.",
+    "explanation": "registration.update()는 service worker script update check를 요청한다. 호출 완료가 새 version 발견, cache 갱신 또는 app reload를 뜻하지는 않는다. updatefound, installing state, waiting과 오류를 관찰해 실제 결과를 표시하고 지나친 수동 polling을 막는다.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -385,7 +385,7 @@
       "PWA_update"
     ],
     "reading_goal": "업데이트 전에 저장되지 않은 학습 기록을 보호하는 guard를 이해한다.",
-    "code": "if (hasUnsavedProgress) {\n  saveProgressBeforeReload()\n}",
+    "code": "if (hasUnsavedProgress) {\n  const saved = await saveProgressBeforeReload();\n  if (!saved) return;\n}\nactivateUpdate();",
     "question_type": "meaning_choice",
     "question": "update guard가 필요한 이유는?",
     "choices": [
@@ -395,7 +395,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "새로고침 전에 학습 기록이 사라지지 않게 하기 위해",
-    "explanation": "update guard는 앱 업데이트 과정에서 사용자 데이터가 손상되지 않게 확인하는 장치다. 진도와 오답 기록이 생긴 뒤에는 특히 중요하다. 버전 변경 전후에 저장소 구조와 캐시 상태를 확인하면 업데이트 후 학습 기록 손실을 줄일 수 있다.",
+    "explanation": "reload 전에 비동기 저장이 성공했는지 확인하고 실패하면 update 적용을 멈춰야 한다. local draft와 server sync가 다른 경우 둘을 구분하고, schema migration backup과 recovery도 준비한다. 함수를 호출했다는 사실만으로 data 보존이 보장되지는 않는다.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE",
       "PYV102_A9_RUNTIME_STORAGE_STATE"
@@ -422,7 +422,7 @@
       "검증 결과를 숨기기 위해"
     ],
     "answer": "새 버전 감지 → 업데이트 안내 → 진도 저장 → 새로고침 → 버전 확인",
-    "explanation": "PWA 업데이트는 기술 동작뿐 아니라 사용자가 안전하게 새 버전으로 넘어가는 UX 흐름이다. PWA update flow는 새 파일이 배포된 뒤 서비스 워커와 캐시가 어떻게 교체되는지 보는 흐름이다. 버전 표시와 새로고침 안내가 함께 필요하다.",
+    "explanation": "새 service worker 발견 뒤 사용자의 저장 중 작업을 확인하고 update를 안내한다. 동의하면 progress 저장 성공을 확인하고 waiting worker를 activate한 뒤 controllerchange에서 한 번 reload하며, 실행된 app·data version을 확인한다. 단계별 실패와 여러 tab의 old client도 처리해야 한다.",
     "side_card_ids": [
       "PYV102_A7_PWA_OFFLINE_UPDATE"
     ],

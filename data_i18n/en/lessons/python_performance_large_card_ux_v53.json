@@ -19,7 +19,7 @@
       "To hide the verification results"
     ],
     "answer": "It displays the content in sections so that it isn't rendered all at once.",
-    "explanation": "\"Large card count\" refers to a situation where the number of cards increases, leading to more search targets and DOM elements. As the data set grows, the costs associated with loading, searching, and rendering must be managed separately. Therefore, the correct answer is \"Display the content in batches so that it is not rendered all at once.\"",
+    "explanation": "Card count alone does not determine when pagination is needed. One thousand is only an example threshold; measure card complexity, DOM nodes, device capability, and interaction latency before choosing pagination or virtualization. Separate full-data memory cost from DOM rendering cost.",
     "side_card_ids": [
       "PYV158_A1_PERFORMANCE_FLOW"
     ],
@@ -45,7 +45,7 @@
       "To hide the verification results"
     ],
     "answer": "To display a large number of items on a per-page basis,",
-    "explanation": "Pagination is a method of displaying a large number of items across multiple pages. Dividing them into smaller batches reduces the load compared to rendering more than 1,000 items on a single screen. Dividing the content into pages reduces not only the rendering cost but also the burden on the user when navigating.",
+    "explanation": "With a zero-based page, slice returns up to 50 items from page*50. Bound page to valid values and preserve total, previous and next state, and filters in URL or state. Pagination reduces visible DOM work but does not automatically reduce fetching all data.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_PERFORMANCE_LIST",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -72,7 +72,7 @@
       "To hide the verification results"
     ],
     "answer": "You can quickly open the initial screen and load only the necessary data later.",
-    "explanation": "Lazy loading is a method that loads data and screens only when needed, rather than preparing everything from the start. It helps speed up initial startup. However, the loading screen must also be designed to prevent a blank screen from appearing while content is being loaded.",
+    "explanation": "Loading review cards only when the tab opens defers initial network and parsing work. Coalesce repeated clicks and design loading, error, retry, cancellation, and prefetch behavior. Lazy loading moves the cost to another point in the user flow; it does not erase it.",
     "side_card_ids": [
       "PYV158_A1_PERFORMANCE_FLOW"
     ],
@@ -88,7 +88,7 @@
       "UX"
     ],
     "reading_goal": "Understand the UI that displays the status to the user while data is being loaded.",
-    "code": "showLoading('Loading cards...') await loadCards() hideLoading()",
+    "code": "showLoading('Loading cards');\ntry {\n  await loadCards();\n} finally {\n  hideLoading();\n}",
     "question_type": "meaning_choice",
     "question": "Why is a loading indicator needed?",
     "choices": [
@@ -98,7 +98,7 @@
       "To hide the verification results"
     ],
     "answer": "To let you know that the app isn't frozen but is currently processing",
-    "explanation": "A loading indicator is a visual cue that shows data is still being loaded. As the number of JSON files increases, users need to be able to distinguish between a freeze and a loading state. With a loading indicator, users can tell that the app is not frozen but is simply preparing to load, even on a slow network.",
+    "explanation": "A loading indicator communicates pending work. finally hides it even on failure, while separate error and retry UI prevents an endless-loading impression. Expose busy state and status announcements to screen readers too.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW"
     ],
@@ -150,7 +150,7 @@
       "To hide the verification results"
     ],
     "answer": "To minimize unnecessary repetitive processing by running the search after the user has finished typing,",
-    "explanation": "Search debounce is a method where a search is executed only after the user pauses typing for a moment. This reduces the computational cost of filtering the entire card set with every keystroke. Debounce is particularly effective on mobile devices, where repeated rendering with every keystroke can cause the screen to stutter.",
+    "explanation": "Canceling the timer delays search until 250 ms after the last input, reducing repeated filtering or requests. It does not cancel an already-started asynchronous search; use AbortController or a request sequence so old results cannot overwrite the latest query.",
     "side_card_ids": [
       "PYV158_A1_PERFORMANCE_FLOW"
     ],
@@ -176,7 +176,7 @@
       "To hide the verification results"
     ],
     "answer": "To avoid having to repeat the same string combinations every time I search,",
-    "explanation": "Filtering performance is the problem of managing the cost incurred when filtering a list of cards based on certain conditions. As the number of cards increases, strategies to reduce repetitive calculations become crucial. By pre-combining search strings, you avoid having to repeatedly combine multiple fields each time you enter a search. Therefore, the correct answer is “to avoid repeating string combinations every time a search is performed.”",
+    "explanation": "Precomputing lowercased title and concept text avoids joining and lowercasing on every query. Rebuild the index when fields change and define locale and Unicode normalization. Apply it only when profiling justifies the extra memory and invalidation logic.",
     "side_card_ids": [
       "PYV158_A1_PERFORMANCE_FLOW"
     ],
@@ -228,7 +228,7 @@
       "To hide the verification results"
     ],
     "answer": "Rendering only the items visible on the screen",
-    "explanation": "A virtual list is a technique that renders only the items currently visible on the screen from a long list. It can significantly reduce rendering costs for lists containing thousands of cards. By creating only the necessary items based on the scroll position and removing those that are no longer visible, it reduces the load on the browser.",
+    "explanation": "A virtual list keeps only viewport-adjacent rows in the DOM, reducing rendering and memory. It must handle dynamic heights, scroll position, keyboard focus, and screen-reader understanding of list position. Removing an offscreen focused node can break navigation.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_PERFORMANCE_LIST",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -245,7 +245,7 @@
       "performance"
     ],
     "reading_goal": "Understand incremental rendering, which renders a large list in multiple passes.",
-    "code": "renderNextChunk(50)\nrequestAnimationFrame(() => renderNextChunk(50))",
+    "code": "function renderNextChunk(start, size = 50) {\n  const end = Math.min(start + size, cards.length);\n  render(cards.slice(start, end));\n  if (end < cards.length) {\n    requestAnimationFrame(() => renderNextChunk(end, size));\n  }\n}\nrenderNextChunk(0);",
     "question_type": "meaning_choice",
     "question": "What is the purpose of incremental rendering?",
     "choices": [
@@ -255,7 +255,7 @@
       "To hide the verification results"
     ],
     "answer": "To break down large rendering tasks into smaller chunks and reduce screen freezes,",
-    "explanation": "Incremental rendering is a method of rendering many cards in small increments rather than all at once. This reduces the appearance of the browser freezing momentarily. Using `requestAnimationFrame` or chunk-based rendering allows even long lists to be displayed more smoothly. Therefore, the correct answer is “to break large rendering tasks into smaller chunks to reduce screen freezes.”",
+    "explanation": "Advance start and end and stop scheduling at the final card. Chunking gives the browser opportunities to paint, but an oversized chunk can still miss the frame budget. Also support cancellation and prevent duplicate runs.",
     "side_card_ids": [
       "PYV158_A1_PERFORMANCE_FLOW"
     ],
@@ -281,7 +281,7 @@
       "To hide the verification results"
     ],
     "answer": "To execute rendering operations in sync with the browser's screen refresh cycle,",
-    "explanation": "`requestAnimationFrame` is an API that synchronizes UI operations with the browser's next screen refresh. Aligning these operations with the rendering flow results in smoother screen transitions. By synchronizing heavy UI updates with the screen refresh cycle, you can reduce the stuttering experienced by users.",
+    "explanation": "requestAnimationFrame schedules work before the next paint. A long renderVisibleCards callback still blocks the main thread and the frame, so reduce or chunk work or move pure calculation to a worker. Calls may be throttled in background tabs.",
     "side_card_ids": [
       "PYV158_A1_PERFORMANCE_FLOW"
     ],
@@ -321,7 +321,7 @@
       "architecture"
     ],
     "reading_goal": "Understand the strategy of splitting large datasets into multiple JSON files for loading.",
-    "code": "lessonFiles = ['v1.json', 'v2.json', 'v3.json']\nawait Promise.all(lessonFiles.map(loadJson))",
+    "code": "const neededFiles = selectLessonFiles(route, filters);\nconst lessons = await Promise.all(neededFiles.map(loadJson));",
     "question_type": "meaning_choice",
     "question": "What are the advantages of splitting large JSON files?",
     "choices": [
@@ -331,7 +331,7 @@
       "To hide the verification results"
     ],
     "answer": "You can split the data into multiple files for management and load it in the units you need.",
-    "explanation": "Since this app already manages lesson files by version, it is well-suited for scaling. “Large JSON split” is a method of dividing large datasets into multiple files to reduce the load on the system. The app must verify that only the necessary files are loaded and that the order and references are preserved.",
+    "explanation": "Splitting data supports separate versions, caches, and selective loading. Promise.all over every lesson file still transfers all of them at once and can create connection and memory bursts. Select only needed files and define concurrency and error behavior.",
     "side_card_ids": [
       "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
     ],
@@ -357,7 +357,7 @@
       "To hide the verification results"
     ],
     "answer": "To set performance goals to ensure the app doesn't slow down,",
-    "explanation": "A performance budget is a set of acceptable thresholds for loading time, search time, and rendering costs. As the number of cards continues to grow, performance standards are just as necessary as new features. If the budget is exceeded, you must either reduce features or consider optimizations such as lazy loading or pagination. Therefore, the correct answer is “to set performance goals to ensure the app does not slow down.”",
+    "explanation": "A performance budget gives numerical regression targets for load, search, and rendering. These values are examples; specify device and network conditions, start and end points, and percentiles such as p75 or p95. When exceeded, profile the cause before changing product behavior.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_PERFORMANCE_LIST",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -384,7 +384,7 @@
       "To hide the verification results"
     ],
     "answer": "To measure how long a specific task takes,",
-    "explanation": "Performance measurement involves directly measuring loading, search, and rendering times. When it comes to performance issues, it’s safer to fix them based on measurement results rather than on guesswork. By recording these measurements, you can compare the results before and after making changes to verify whether the improvements are real. Therefore, the correct answer is “to measure how long a specific task takes.”",
+    "explanation": "console.time and timeEnd provide a quick elapsed-time measurement. One DevTools run can be skewed by JIT warmup, cache, and background work. Use Performance APIs, repeated benchmarks, and real-device percentiles for representative results.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_PERFORMANCE_LIST",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -411,7 +411,7 @@
       "To hide the verification results"
     ],
     "answer": "Load quickly, display status, reduce search time, and render only what is visible",
-    "explanation": "For learning apps with over 1,000 cards, not only data quality but also a fast and predictable user experience is crucial. The “large card” UX strategy is a design approach that makes content easy to read even when there is a lot of information on a single card. You need to determine how to combine collapsing, summarization, step-by-step disclosure, and search. Therefore, the solution is to “load quickly, display status, minimize search, and render only what is visible.”",
+    "explanation": "Fast first content, explicit loading and error states, debounce, and visible-only rendering are candidate strategies for large lists. Choose pagination, indexing, or virtualization from measured bottlenecks and user tasks rather than applying everything. Do not trade away search correctness or accessibility.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_PERFORMANCE_LIST",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"

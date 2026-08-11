@@ -72,7 +72,7 @@
       "오류"
     ],
     "answer": "1",
-    "explanation": "dict.get은 키가 없을 때 오류를 내지 않고 기본값을 돌려줄 수 있다. card에 level 키가 없으면 get의 기본값 1이 사용된다. 대괄호 접근과 달리 get은 키가 없어도 예외 대신 기본값을 돌려주어 안전한 읽기에 자주 쓰인다.",
+    "explanation": "card에는 level key가 없으므로 get이 default 1을 반환해 print한다. get의 default는 key가 없을 때만 사용되며 key가 존재하고 value가 None이면 None을 그대로 반환한다. 필수 field 누락을 조용히 숨기면 안 되므로 default가 domain상 타당한 optional field에만 사용한다.",
     "side_card_ids": [
       "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -89,7 +89,7 @@
       "fallback"
     ],
     "reading_goal": "여러 후보 필드 중 있는 값을 순서대로 사용하는 fallback 구조를 읽는다.",
-    "code": "def get_side_text(sc):\n    return sc.get(\"body\") or sc.get(\"summary\") or sc.get(\"description\") or \"\"\n\ntext = get_side_text({\"summary\": \"짧은 설명\"})\nprint(text)",
+    "code": "def get_side_text(sc):\n    return (\n        sc.get(\"body\") or sc.get(\"summary\")\n        or sc.get(\"description\") or sc.get(\"detail\") or \"\"\n    )\n\ntext = get_side_text({\"summary\": \"짧은 설명\"})\nprint(text)",
     "question_type": "meaning_choice",
     "question": "출력되는 값은?",
     "choices": [
@@ -99,7 +99,7 @@
       "오류"
     ],
     "answer": "짧은 설명",
-    "explanation": "body가 없으면 summary를 보고, summary가 있으므로 그 값을 반환한다. missing field 방어는 데이터에 특정 key가 없을 때 오류가 나지 않게 처리하는 방식이다. get, 기본값, 조건문을 어떻게 쓰는지 확인해야 한다. 따라서 출력은 ‘짧은 설명’이다.",
+    "explanation": "body가 missing이라 falsy이고 summary는 non-empty string이므로 그 값을 반환한다. or는 key 누락뿐 아니라 empty string, 0, False에서도 fallback하므로 유효한 falsy value를 보존해야 하는 schema에는 주의해야 한다. 여러 field 지원은 migration 호환용일 수 있지만 invalid data를 숨기지 않도록 schema warning도 남긴다.",
     "side_card_ids": [
       "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -234,7 +234,7 @@
       "중복 id"
     ],
     "answer": "card에 없는 필수 필드 이름",
-    "explanation": "schema required fields는 데이터에 반드시 있어야 하는 필드 목록이다. 필수 필드가 빠지면 앱 렌더링이나 검증이 깨질 수 있어 먼저 찾아야 한다.",
+    "explanation": "required 순서대로 key 존재를 검사해 card에 없는 field name을 missing에 넣는다. key가 있어도 value가 None·empty이거나 잘못된 type인 경우는 잡지 않는다. 완전한 schema 검사에는 choices list type, level range, answer membership과 duplicate ID 같은 field 간 rule도 필요하다.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW",
       "PYV158_A1_SCHEMA_FLOW"
@@ -288,7 +288,7 @@
       "queueIds"
     ],
     "answer": "3",
-    "explanation": "update는 같은 키가 있으면 새 값으로 덮어쓴다. level이 all에서 3으로 바뀐다. dict merge/update는 기존 dict에 새 key-value를 합치는 동작이다. 같은 key가 있을 때 기존 값이 덮어써지는지 확인해야 한다.",
+    "explanation": "state.update(patch)는 state object 자체를 mutate하고 patch의 level과 mode가 같은 key의 기존 값을 덮어쓴다. queueIds는 patch에 없으므로 그대로 남고 print는 문자열 3을 출력한다. update는 nested dict를 재귀 merge하지 않는 shallow operation이므로 nested setting은 전체 value가 교체될 수 있다.",
     "side_card_ids": [
       "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -316,7 +316,7 @@
       "level"
     ],
     "answer": "side card의 id",
-    "explanation": "dict comprehension으로 id를 키로 만들면 특정 id의 카드를 빠르게 찾을 수 있다. id 기반 lookup table은 id를 key로 두고 항목 전체를 value로 저장한 dict 구조다. 목록을 반복 검색하지 않고 빠르게 항목을 찾는 데 좋다. 따라서 출력은 ‘side card의 id’이다.",
+    "explanation": "dict comprehension의 key는 각 sc[\"id\"]이고 value는 side-card dict 전체다. 같은 id가 여러 번 나오면 뒤 항목이 앞 항목을 조용히 덮어쓰므로 lookup table을 만들기 전에 duplicate ID를 검증해야 한다. get은 없는 id에 None을 반환하고 if card는 empty dict도 없는 것처럼 처리한다.",
     "side_card_ids": [
       "PYV158_A1_PERFORMANCE_FLOW"
     ],
@@ -396,7 +396,7 @@
       "파일이 자동 압축된다"
     ],
     "answer": "큰 파일을 한 번에 전부 메모리에 올리지 않아도 된다",
-    "explanation": "JSONL stream은 한 줄씩 JSON 객체를 읽어 처리하는 방식이다. 전체 파일을 한 번에 올리지 않아도 되므로 대용량 데이터 처리에 유리하다. 각 줄이 독립 JSON이라 일부 줄만 처리하거나 실패 지점 이후부터 재개하기도 쉽다.",
+    "explanation": "file object를 반복해 한 줄씩 parse하므로 전체 file string을 한 번에 memory에 올리지 않는다. 하지만 blank line이나 invalid JSON 한 줄이 나오면 이 code는 중단되고, 자동으로 실패 지점 뒤에서 resume하지 않는다. 계속 처리하려면 line number별 try/except와 checkpoint policy를 명시해야 한다.",
     "side_card_ids": [
       "PYV158_A1_JSON_FLOW"
     ],

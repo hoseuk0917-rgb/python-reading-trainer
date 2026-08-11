@@ -47,7 +47,7 @@
       "Remove all tabs"
     ],
     "answer": "Use a tab character as the column separator",
-    "explanation": "TSV stands for \"tab-separated values,\" meaning that values are separated by tab characters. It is similar to CSV, but uses tabs instead of commas as the delimiter. The advantage of using tabs as delimiters is that they make it less confusing to distinguish columns even when commas appear within the values. Therefore, the output is “uses tabs as column delimiters.”",
+    "explanation": "TSV stands for tab-separated values. With delimiter=\"\\t\", DictReader uses a tab as the column boundary and reads the first line as headers. A comma inside a value does not split a column because it is not the delimiter, but a value containing a tab or line break still needs correct CSV quoting rules.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
@@ -74,7 +74,7 @@
       "Block the network"
     ],
     "answer": "Reads the file line by line to reduce memory usage",
-    "explanation": "JSONL is a format that stores one JSON object per line. It reduces the memory load by processing large files line by line rather than reading the entire file at once. Since each line is processed independently, it is easy to locate the source of an error and resume processing even if an error occurs in a single line.",
+    "explanation": "Iterating over the file object reads one line at a time instead of creating one string for the entire file as read_text would. The code skips blank lines and parses each other line with json.loads. However, one invalid JSON line stops this entire loop; continuing or resuming requires a try/except that records the line number and error.",
     "side_card_ids": [
       "PYV158_A1_JSON_FLOW"
     ],
@@ -101,7 +101,7 @@
       "To remove line breaks"
     ],
     "answer": "To store non-ASCII characters, such as Hangul, in a way that is easy to read,",
-    "explanation": "If `ensure_ascii=False`, Korean characters are stored as actual characters rather than Unicode escapes. The JSONL storage loop is structured to convert a single object into a single line of JSON and save it iteratively. Since each line can be read independently, this is advantageous for processing large amounts of data. Therefore, the correct answer is “to store non-ASCII characters, such as Korean, in a way that is easy to read.”",
+    "explanation": "ensure_ascii=False writes non-ASCII characters directly instead of representing them with \\uXXXX escapes. Together with UTF-8 encoding, Korean remains human-readable. A newline after each row completes one JSONL record. Because \"w\" mode truncates an existing nodes.jsonl first, confirm the overwrite policy when a job is supposed to append or resume.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
@@ -128,7 +128,7 @@
       "Start the server"
     ],
     "answer": "Reread using CP949 encoding",
-    "explanation": "Since some older files in a Korean Windows environment may be encoded in cp949, a fallback is provided. Encoding fallback is a method that attempts a different encoding when reading the first character fails. This helps reduce garbled text in the text collection code.",
+    "explanation": "The code retries with cp949 only after UTF-8 decoding fails. This can help with older Korean Windows files, but a file in another encoding may decode as incorrect characters under cp949 without raising an error. Prefer encoding metadata or a verified detection result, and record whenever fallback is used to avoid silent data corruption.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
@@ -155,7 +155,7 @@
       "Convert the path to a string only"
     ],
     "answer": "They are created together even without an intermediate folder",
-    "explanation": "Setting `parents=True` causes the command to create intermediate folders, such as `derived/clean`. Path concatenation creates a path appropriate for the operating system, and `mkdir` creates the necessary folders. When reading the code, you should look at the option to create parent folders and how the code handles cases where they already exist. Therefore, the correct answer is “It creates them even if the intermediate folders do not exist.”",
+    "explanation": "The / operator on Path combines path components for the current operating system. parents=True creates missing parents such as derived and clean, while exist_ok=True suppresses FileExistsError when the target directory already exists. It still fails if an ordinary file occupies that path, and assigning out_file creates only a path object, not the file.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
@@ -209,7 +209,7 @@
       "I want to convert it to JSON"
     ],
     "answer": "I'm trying to read it in binary mode to calculate the exact byte hash",
-    "explanation": "SHA-256 is a hashing algorithm used to verify whether a file's contents have changed. Since the calculation is based on actual bytes rather than text, the file is read in rb mode. By comparing the hash values, you can reliably determine whether the contents are the same or different, even if the filenames are identical.",
+    "explanation": "SHA-256 consumes bytes, so rb mode lets the loop feed the file's actual bytes to h in blocks without newline conversion or character decoding. Matching digests are strong evidence against accidental changes. A hash alone does not authenticate a source, however, because an attacker may replace both the file and an untrusted digest; use a signature or trusted digest channel for authenticity.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW",
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
@@ -237,10 +237,9 @@
       "Change the file name to a hash"
     ],
     "answer": "Extract the files in the zip file to out_dir",
-    "explanation": "ZipFile.extractall extracts all contents of a compressed file into a specified folder. It is used to extract downloaded files or bundled data into a working folder. Before extracting, you should check for file name conflicts with the destination folder to ensure that existing files are not overwritten.",
+    "explanation": "extractall(out_dir) extracts every archive member under out_dir. Before extracting an untrusted zip, inspect names, expanded sizes, item counts, and links for path traversal, absolute paths, symlinks, or decompression abuse, and use a new isolated directory. Also check for collisions with existing files.",
     "side_card_ids": [
-      "PYF95_A4_PATHLIB_PATH",
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
+      "PYF95_A4_PATHLIB_PATH"
     ],
     "project_context": "This is the basic code needed to check the clean pack, upload pack, and split archives."
   },
@@ -293,7 +292,7 @@
       "Remove the file extension"
     ],
     "answer": "Prevents file names from becoming too long",
-    "explanation": "\"Safe filename\" is a method for reducing issues caused by dangerous characters or excessively long strings in filenames. It can also help mitigate the problem of Windows path length limits. Filename normalization is a defensive measure that is particularly necessary when creating files from downloaded data or user input. Therefore, the expected outcome is to “prevent filenames from becoming too long.”",
+    "explanation": "The first line removes surrounding whitespace, and re.sub replaces several characters forbidden by Windows with underscores. [:120] limits the number of Python characters, not the byte length or full path length. A complete policy must also handle empty names, reserved names such as CON, trailing dots or spaces, Unicode normalization, collisions after normalization, and extension preservation.",
     "side_card_ids": [],
     "project_context": "This is the defense code required when changing the PDF title, web title, or institutional resource name to a file name."
   },
@@ -318,7 +317,7 @@
       "Clear the contents of done.txt"
     ],
     "answer": "Skip items that have already been processed",
-    "explanation": "The \"resume done set\" is a method of recording items that have already been processed as a set. It prevents duplicate processing when resuming a batch job that was interrupted. Since set lookups are fast, this method is well-suited for skipping IDs that have already been processed when handling a large number of items.",
+    "explanation": "An ID already in done_ids is skipped with continue; otherwise process runs and the ID is recorded after success. Set membership is fast on average. If an external effect succeeds but writing the completion marker fails, a resumed job can repeat the effect. Make processing idempotent or commit results and completion state in one transaction, and control duplicate execution by concurrent workers.",
     "side_card_ids": [
       "PYV159_A1_CHECKPOINT_RESUME_FLOW"
     ],
@@ -345,7 +344,7 @@
       "Since `convert` does not run,"
     ],
     "answer": "Since we use try/except to catch errors in each file,",
-    "explanation": "The \"failed list\" is a list that collects files or items that failed to process. If an error is logged in the `except` block and the program moves on to the next file, the entire process does not stop. Therefore, the output is \"because errors for each file are handled using `try/except`.\"",
+    "explanation": "Each convert call is inside try/except, so an Exception records the path and error string in failed and then the loop continues. Catching every Exception identically can make the job repeat after systemic failures such as a full disk or invalid configuration. Catch expected per-item errors, stop on fatal conditions, and sanitize sensitive information from stored error strings.",
     "side_card_ids": [
       "PYV161_A1_BATCH_MEMORY_FLOW"
     ],
@@ -372,7 +371,7 @@
       "Change the file extension to .jsonl"
     ],
     "answer": "Replace the temporary file with the final file location",
-    "explanation": "First, writing the entire file to a temporary file and then replacing the original file can reduce the risk of file corruption caused by a save interruption. An atomic write is a method that first saves the data to a temporary file and then replaces the original file once the process is complete. This reduces the risk of corrupting the original file even if the process fails partway through.",
+    "explanation": "The code writes result.tmp completely, then replace renames it to the result.json location in the same directory. If the operating system and filesystem provide atomic rename, readers are less likely to observe a partial target file. Durable storage may still require flush/fsync and a directory fsync policy, and replace can fail because of permissions, filesystem behavior, or another process.",
     "side_card_ids": [],
     "project_context": "It can be used to securely store important manifests, progress reports, and verification results."
   },
@@ -425,7 +424,7 @@
       "Changing the File Extension"
     ],
     "answer": "Fail early and clearly when there is no input file",
-    "explanation": "A \"file exists\" guard is a defensive piece of code that first checks whether the required file exists. It clearly identifies the cause of the problem before any strange errors occur in subsequent steps. By placing the guard at the beginning, you can safely halt the process while guiding the user to the correct filename and path.",
+    "explanation": "If exists is false, the function stops early with a FileNotFoundError containing the path. However, exists is also true for a directory with that name, so use input_path.is_file() when a regular file is required. The file can also disappear after the check, so the actual open error still needs handling.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],

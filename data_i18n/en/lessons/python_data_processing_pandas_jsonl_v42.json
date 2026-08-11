@@ -19,7 +19,7 @@
       "Tab character"
     ],
     "answer": "Tab character",
-    "explanation": "CSV stands for comma-separated values, and TSV stands for tab-separated values. CSV and TSV are formats for storing tabular data as text. Since CSV uses commas and TSV uses tabs to separate columns, you must consider whether the data contains commas. Therefore, the correct answer is “tab character.”",
+    "explanation": "CSV and TSV store tabular records as text with comma and tab as their usual delimiters. Fields containing a delimiter, quote, or line break use quoting and escaping rules, so plain split(',') or split('\\t') is not a safe parser. Use a CSV parser with the file's dialect and encoding.",
     "side_card_ids": [
       "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -40,13 +40,13 @@
     "question_type": "meaning_choice",
     "question": "What are the features of JSONL?",
     "choices": [
-      "It always stores only one large array.",
-      "Table data can never be saved",
-      "Cannot be read in Python",
-      "Store one JSON object per line"
+      "Put one independently parseable JSON value on each line",
+      "Make the entire file one required JSON array",
+      "Put Python code on each line",
+      "Make only the last line valid JSON"
     ],
-    "answer": "Store one JSON object per line",
-    "explanation": "JSONL is well-suited for processing large volumes of data, such as log files, LLM outputs, and shard results, one line at a time. While JSON is suitable for storing a single large structure, JSONL stores independent JSON objects on each line. JSONL is convenient when reading and processing large volumes of data, such as log files or training data, one line at a time.",
+    "answer": "Put one independently parseable JSON value on each line",
+    "explanation": "A JSON document contains one JSON value, such as an array or object. JSONL stores one independently parseable JSON value on each non-blank line. Records are commonly objects, but other JSON values are syntactically possible. It supports line streaming and appending, while the whole file is not itself one ordinary JSON value.",
     "side_card_ids": [
       "PYV158_A1_JSON_FLOW"
     ],
@@ -72,7 +72,7 @@
       "The header on the first line"
     ],
     "answer": "The header on the first line",
-    "explanation": "DictReader reads each row as a dictionary, using the header names as keys. csv.DictReader is a tool that reads CSV rows as dictionaries. Since it uses column names as keys, you must first verify that the column names are correct. Therefore, the output is “the header from the first row.”",
+    "explanation": "When fieldnames is omitted, csv.DictReader reads the first row as header keys and does not return that row as data. If fieldnames is supplied explicitly, the first row is ordinary data instead. Also validate duplicate or empty headers and unexpected columns.",
     "side_card_ids": [
       "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -153,7 +153,7 @@
       "To avoid loading large files into memory all at once"
     ],
     "answer": "To avoid loading large files into memory all at once",
-    "explanation": "`chunksize` allows you to split large datasets into multiple smaller DataFrames for processing. It is an option that processes large files in chunks of a specified size rather than reading the entire file at once. It is used to reduce memory usage and ensure the stability of long-running tasks.",
+    "explanation": "pd.read_csv(..., chunksize=10000) returns a TextFileReader whose iteration reads DataFrames of up to about 10,000 rows, avoiding all rows in memory at once. Operations such as global sorting, deduplication, or grouping still need intermediate aggregation or external storage across chunk boundaries.",
     "side_card_ids": [
       "PYV161_A1_BATCH_MEMORY_FLOW"
     ],
@@ -179,7 +179,7 @@
       "This is because the entire file is not loaded into memory all at once."
     ],
     "answer": "This is because the entire file is not loaded into memory all at once.",
-    "explanation": "Streaming JSONL processes files by reading them one line at a time. Since it does not require loading the entire file into memory, it can reliably handle even large output files. As long as the rule that each line represents a single record is followed, it is easy to resume processing after an intermediate failure.",
+    "explanation": "File iteration reads one line at a time, so the whole JSONL file is not loaded into memory. Handle malformed or blank lines with line numbers, and atomically checkpoint only after process output is safely stored. Line-oriented input alone does not automatically provide resume behavior.",
     "side_card_ids": [
       "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -196,7 +196,7 @@
       "validation"
     ],
     "reading_goal": "Understand schema checks, which verify that all required fields are present in the data.",
-    "code": "required = {'id', 'title', 'answer'}\nmissing = required - set(row.keys())\nif missing:\n    raise ValueError(missing)",
+    "code": "required = {'id', 'title', 'answer'}\nmissing = required - row.keys()\nif missing:\n    raise ValueError(f\"missing fields: {sorted(missing)}\")\nif not isinstance(row['id'], str):\n    raise TypeError(\"id must be a string\")",
     "question_type": "meaning_choice",
     "question": "What is the purpose of a schema check?",
     "choices": [
@@ -206,7 +206,7 @@
       "Quickly identifying missing required columns or fields"
     ],
     "answer": "Quickly identifying missing required columns or fields",
-    "explanation": "A schema check is a step that verifies whether the data meets the required field and type specifications. It catches issues early on that might otherwise cause unexpected errors later in the process. By identifying missing required columns or type errors early, you can reduce failures in subsequent aggregation and storage steps.",
+    "explanation": "The first check finds missing required keys, and the second validates the id type. Presence alone does not catch nulls, empty strings, or wrong types. A real schema also defines each field's type, allowed values, nested shape, and extra-field policy.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW",
       "PYV158_A1_SCHEMA_FLOW"
@@ -227,13 +227,13 @@
     "question_type": "meaning_choice",
     "question": "What does `df['label'].isna().sum()` count?",
     "choices": [
-      "Total number of files",
-      "Number of Git commits",
-      "Number of server requests",
-      "Number of empty values in the \"label\" column"
+      "NaN, None, and similar missing values in label",
+      "Only empty strings",
+      "All rows",
+      "Duplicate IDs"
     ],
-    "answer": "Number of empty values in the \"label\" column",
-    "explanation": "`isna` converts the presence of missing values to True or False, and `sum` counts the number of True values. A \"missing value\" refers to a value in the data that is empty or has not been recorded. When reading the analysis code, you must check whether empty values are removed, filled with default values, or left as is. Therefore, the output is “the number of empty values in the ‘label’ column.”",
+    "answer": "NaN, None, and similar missing values in label",
+    "explanation": "isna() marks values pandas recognizes as missing, such as NaN, None, and NaT, and sum() counts True values. An ordinary empty string may not be missing in this calculation, so define whitespace normalization and empty-string policy separately.",
     "side_card_ids": [
       "PYV160_A1_FLOAT_NUMERIC_NAN_FLOW"
     ],
@@ -259,7 +259,7 @@
       "Rows with the same 'id' column are treated as duplicates"
     ],
     "answer": "Rows with the same 'id' column are treated as duplicates",
-    "explanation": "Deduplication is a process that removes duplicate data. To ensure consistent results, you must specify which column or hash to use as the basis for determining whether data is identical. If you set `subset` to ['id'], the system will treat records as the same entry—and remove duplicates—if their `id` values match, even if other columns differ.",
+    "explanation": "drop_duplicates(subset=['id']) groups rows by equal id and keeps the first by default. It may silently discard conflicting values in other columns, and missing IDs can be treated as duplicates, so inspect duplicate groups and validate required IDs before removal.",
     "side_card_ids": [
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
@@ -285,7 +285,7 @@
       "Count the number of rows by `status` value"
     ],
     "answer": "Count the number of rows by `status` value",
-    "explanation": "`groupby` is a Pandas function that groups rows with the same values and aggregates them. It is frequently used when examining validation results, label distributions, and failure cause distributions. By combining it with `size()`, you can count the number of rows in each group and create a table showing the count by status. Therefore, the correct answer is “count the number of rows by status value.”",
+    "explanation": "groupby('status').size() groups rows by each non-missing status and counts group size. pandas excludes a NaN status group by default; use dropna=False or a separate count when missing statuses matter. reset_index(name='count') returns a DataFrame with status and count columns.",
     "side_card_ids": [
       "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
     ],
@@ -311,7 +311,7 @@
       "This is because we need to decide which rows to link together."
     ],
     "answer": "This is because we need to decide which rows to link together.",
-    "explanation": "A merge/join is the process of combining two tables based on a common key. If the keys are incorrect, data may be lost or incorrectly merged, so validation is necessary. By checking the number of rows and any missing values before and after the merge, you can quickly detect whether data has been lost due to key mismatches. Therefore, the correct answer is “because it determines which rows to join.”",
+    "explanation": "left_on and right_on determine which key values connect rows. A left join retains all nodes rows, but repeated matching keys in edges can increase the result count, while no match produces missing right-side values. Check key uniqueness, validate= policy, row counts, and unmatched rates to catch accidental many-to-many joins.",
     "side_card_ids": [
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
@@ -389,7 +389,7 @@
       "Always reduce the number of cards"
     ],
     "answer": "You can track later which ones passed and which ones failed.",
-    "explanation": "An audit TSV is a tabular report that allows humans to review the results of an automated process. It is useful for tracking issue cards, lengths, and source files. Since TSV files are easy to open in Excel or a text editor, they are ideal for quickly reviewing the results of automated processing. Therefore, the correct answer is “It allows you to track later what passed and what failed.”",
+    "explanation": "This audit.tsv structures each id's status, reason, and checked_at so pass/fail outcomes and reasons can be filtered and aggregated later. Length and source file are not shown, so add those columns or separate provenance if they must be traced. Tool version and input hash further improve reproducibility.",
     "side_card_ids": [
       "PYV102_A7_DATAFRAME_CSV_CLEANING",
       "PYV102_A7_FILE_SAFE_WRITE"
@@ -416,7 +416,7 @@
       "To hide file extensions"
     ],
     "answer": "To catch corrupted data before it spreads to later stages",
-    "explanation": "Pipeline data quality refers to the criteria used to verify that the data maintains the expected format and volume at each processing stage. Since it becomes increasingly difficult to trace the source of data issues as they move further down the pipeline, intermediate validation is crucial. Therefore, the correct answer is “to catch corrupted data before it spreads to later stages.”",
+    "explanation": "Schema checks catch required fields and types early, and deduplication applies an explicit identity rule before bad data can multiply through a merge. Row counts do not need to remain constant at every transformation, so record expected changes, key uniqueness, rejected rows, and provenance separately.",
     "side_card_ids": [
       "PYV158_A1_VALIDATION_FLOW",
       "PYV158_A1_PIPELINE_FLOW"

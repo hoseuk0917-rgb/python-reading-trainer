@@ -38,7 +38,7 @@
       "training"
     ],
     "reading_goal": "입력 x와 정답 y를 함께 쓰는 학습 흐름을 읽는다.",
-    "code": "for x, y in train_loader:\n    pred = model(x)\n    loss = loss_fn(pred, y)\n    loss.backward()\n    optimizer.step()",
+    "code": "for x, y in train_loader:\n    optimizer.zero_grad()\n    pred = model(x)\n    loss = loss_fn(pred, y)\n    loss.backward()\n    optimizer.step()",
     "question_type": "meaning_choice",
     "question": "여기서 y의 역할은?",
     "choices": [
@@ -48,7 +48,7 @@
       "정답 label"
     ],
     "answer": "정답 label",
-    "explanation": "지도학습은 정답이 있는 데이터로 모델을 학습하는 방식이다. 모델 예측 pred와 정답 y를 비교해 loss를 계산하고 줄여 간다. y는 모델이 맞혀야 할 기준값이므로 입력 X와 구분해서 읽어야 학습 코드의 방향이 보인다. 따라서 정답은 ‘정답 label’이다.",
+    "explanation": "train_loader는 입력 x와 그에 대응하는 정답 label y를 묶어 준다. model(x)의 예측 pred와 y를 loss_fn이 비교하고, backward와 optimizer.step이 그 loss를 줄이는 방향으로 parameter를 갱신한다. y는 모델 입력이 아니라 학습 목표다. 일반 loop에서는 이전 gradient가 누적되지 않도록 새 batch 전에 zero_grad도 필요하다.",
     "side_card_ids": [
       "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
     ],
@@ -119,7 +119,7 @@
       "agent"
     ],
     "reading_goal": "행동과 보상을 통해 정책을 개선하는 구조를 이해한다.",
-    "code": "state = env.reset()\naction = policy(state)\nnext_state, reward, done, info = env.step(action)",
+    "code": "state, info = env.reset()\naction = policy(state)\nnext_state, reward, terminated, truncated, info = env.step(action)\ndone = terminated or truncated",
     "question_type": "meaning_choice",
     "question": "reward의 역할은?",
     "choices": [
@@ -129,10 +129,8 @@
       "행동이 좋았는지 나빴는지 알려주는 신호"
     ],
     "answer": "행동이 좋았는지 나빴는지 알려주는 신호",
-    "explanation": "강화학습은 행동의 결과로 받은 보상을 기준으로 정책을 개선하는 학습 방식이다. 목표는 장기적으로 더 큰 보상을 얻는 행동을 찾는 것이다. agent, action, reward, environment 관계를 함께 보면 지도학습과 다른 점을 쉽게 구분할 수 있다. 따라서 정답은 ‘행동이 좋았는지 나빴는지 알려주는 신호’이다.",
-    "side_card_ids": [
-      "PYV161_A1_EVIDENCE_LINEAGE_FLOW"
-    ],
+    "explanation": "agent는 state에서 action을 선택하고 environment는 다음 state와 reward를 돌려준다. reward는 한 행동 직후의 숫자 feedback이며, policy의 목표는 보통 한 번의 reward가 아니라 시간에 걸친 누적 return을 크게 하는 것이다. terminated는 과제가 끝난 경우, truncated는 시간 제한 같은 외부 조건으로 episode가 끊긴 경우라서 둘 중 하나면 reset을 준비한다.",
+    "side_card_ids": [],
     "project_context": "로봇/자율주행/게임/정책 최적화 설명을 읽을 때 필요하다."
   },
   {
@@ -146,7 +144,7 @@
       "alignment"
     ],
     "reading_goal": "LLM 정렬 학습에서 사람 선호 데이터를 쓰는 두 흐름을 비교한다.",
-    "code": "RLHF: 사람 선호 -> reward model -> 강화학습으로 모델 조정\nDPO: 선택된 답변/거부된 답변 쌍으로 직접 선호를 반영해 조정",
+    "code": "RLHF example: human preferences -> reward model -> policy optimization\nDPO: preferred/rejected answer pairs -> direct preference objective with a reference policy",
     "question_type": "meaning_choice",
     "question": "DPO 설명으로 가장 가까운 것은?",
     "choices": [
@@ -156,7 +154,7 @@
       "선호 답변 쌍을 이용해 모델을 직접 조정한다"
     ],
     "answer": "선호 답변 쌍을 이용해 모델을 직접 조정한다",
-    "explanation": "DPO는 별도의 reward model/강화학습 루프를 단순화한 선호 최적화 방식으로 이해하면 된다. RLHF와 DPO는 모델 선호도를 맞추는 방식이다. RLHF는 보상 모델과 강화학습을 쓰고, DPO는 선호 쌍 데이터로 직접 최적화한다.",
+    "explanation": "RLHF는 사람 feedback을 이용해 model을 조정하는 넓은 계열이며, 대표 pipeline은 preference로 reward model을 학습한 뒤 reinforcement-learning algorithm으로 policy를 최적화한다. DPO는 같은 종류의 chosen/rejected pair와 reference policy를 사용해 별도 reward model과 online RL loop 없이 preference objective를 직접 최적화한다. 둘 다 data 품질과 기준 model에 따라 결과가 달라지며 선호 사실이 곧 진실·안전을 보장하지는 않는다.",
     "side_card_ids": [
       "PYV102_A7_AI_ML_TOOLCHAIN",
       "PYV102_A7_SYSTEMS_CONCEPTS"
@@ -239,7 +237,7 @@
       "LoRA를 붙일 모델 내부 모듈 이름"
     ],
     "answer": "LoRA를 붙일 모델 내부 모듈 이름",
-    "explanation": "q_proj/v_proj 같은 attention 관련 모듈에 LoRA를 붙이는 설정이 자주 보인다. LoRA 설정 코드는 큰 모델 전체를 바꾸지 않고 작은 어댑터만 학습하도록 정한다. rank, target modules, learning rate가 품질과 비용에 영향을 준다.",
+    "explanation": "target_modules는 base model에서 LoRA의 low-rank update를 삽입할 module 이름을 고른다. q_proj와 v_proj는 일부 transformer architecture의 attention projection 이름이지만 모든 model이 같은 이름을 쓰지는 않는다. 이름이 실제 module과 일치하는지와 지원 type을 확인해야 한다. r은 adapter rank, lora_alpha는 update scale에 관여하며 learning rate는 trainer·optimizer에서 별도로 정한다.",
     "side_card_ids": [
       "AI_lora_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -284,7 +282,7 @@
       "vram"
     ],
     "reading_goal": "정밀도와 메모리 사용량의 trade-off를 비교한다.",
-    "code": "fp32: 정확하지만 메모리 큼\nfp16/bfloat16: 메모리 절약, GPU 추론/학습에서 흔함\nint8/4bit: 더 큰 메모리 절약, 품질 저하 가능성도 있음",
+    "code": "fp32: 넓은 정밀도, 가중치당 메모리 큼\nfp16/bfloat16: reduced precision, 지원 GPU의 학습·추론에서 흔함\nint8/4bit quantization: 가중치 메모리를 더 줄일 수 있으나 지원·품질·속도 검증 필요",
     "question_type": "meaning_choice",
     "question": "4bit 양자화의 주된 목적은?",
     "choices": [
@@ -294,7 +292,7 @@
       "모델 메모리 사용량을 크게 줄인다"
     ],
     "answer": "모델 메모리 사용량을 크게 줄인다",
-    "explanation": "양자화는 수를 더 적은 비트로 표현해 VRAM/저장공간을 줄이는 대신 품질/속도 trade-off가 있을 수 있다. 양자화는 모델 숫자 정밀도를 낮춰 메모리와 속도를 줄이는 기법이다. fp32, fp16, int8, 4bit는 품질과 자원 사용량의 균형이 다르다.",
+    "explanation": "4-bit quantization의 주된 목적은 지원되는 model weight를 적은 bit로 표현해 memory footprint를 크게 줄이는 것이다. fp16·bfloat16 사용은 흔히 mixed/reduced precision이라 부르며 int8·4bit 양자화와 구현 방식이 같다고 볼 수 없다. 낮은 bit가 항상 더 빠른 것도 아니고 일부 layer·activation·compute dtype은 더 높은 정밀도를 유지할 수 있으므로 hardware 지원, 실제 memory, latency와 품질을 측정한다.",
     "side_card_ids": [
       "PYV102_A7_AI_ML_TOOLCHAIN",
       "PYV102_A7_SYSTEMS_CONCEPTS"
@@ -312,7 +310,7 @@
       "compression"
     ],
     "reading_goal": "큰 teacher 모델의 출력을 작은 student 모델이 배우는 방식을 이해한다.",
-    "code": "teacher_logits = teacher_model(x)\nstudent_logits = student_model(x)\nloss = distill_loss(student_logits, teacher_logits)",
+    "code": "with torch.no_grad():\n    teacher_logits = teacher_model(x)\nstudent_logits = student_model(x)\nloss = distill_loss(student_logits, teacher_logits)",
     "question_type": "meaning_choice",
     "question": "distillation의 목적에 가까운 것은?",
     "choices": [
@@ -322,7 +320,7 @@
       "큰 모델의 행동을 작은 모델이 배우게 한다"
     ],
     "answer": "큰 모델의 행동을 작은 모델이 배우게 한다",
-    "explanation": "지식증류는 큰 모델의 출력을 작은 모델이 따라 배우게 하는 방식이다. 모델 압축이나 경량화가 필요할 때 자주 쓰는 개념이다. Knowledge distillation은 큰 모델의 출력이나 판단 방식을 작은 모델이 배우게 하는 방법이다. 작은 모델을 더 빠르게 쓰면서 성능을 보존하려는 목적이다.",
+    "explanation": "teacher model의 logits 같은 soft target을 student 출력과 비교하는 loss를 만들고 student를 학습시키는 흐름이다. teacher는 보통 고정하므로 no_grad로 graph를 만들지 않는다. 실제 distillation은 정답 loss와 teacher loss의 가중치, temperature, 같은 입력·tokenizer 호환성을 함께 정한다. 작은 student가 항상 teacher 성능을 그대로 보존하는 것은 아니다.",
     "side_card_ids": [
       "PYV102_A7_AI_ML_TOOLCHAIN",
       "PYV102_A7_SYSTEMS_CONCEPTS"
@@ -340,7 +338,7 @@
       "knowledge_update"
     ],
     "reading_goal": "지식을 외부 검색으로 넣을지, 모델 가중치에 반영할지 구분한다.",
-    "code": "RAG: 질문 때 관련 문서를 검색해 prompt에 넣는다.\nFine-tuning: 학습 데이터로 모델의 응답 습관/지식/형식을 조정한다.",
+    "code": "RAG: 질문 때 관련 문서를 검색해 근거와 함께 prompt에 넣는다.\nFine-tuning: 학습 데이터로 model의 응답 행동·형식·과제 수행 방식을 조정한다.",
     "question_type": "meaning_choice",
     "question": "최신 문서를 자주 바꿔야 할 때 일반적으로 먼저 고려할 방식은?",
     "choices": [
@@ -350,7 +348,7 @@
       "RAG"
     ],
     "answer": "RAG",
-    "explanation": "자주 바뀌는 지식은 모델 재학습보다 검색/DB 업데이트가 더 실용적인 경우가 많다. RAG는 외부 자료를 검색해 답변에 붙이는 방식이고, fine-tuning은 모델 자체의 응답 습관을 바꾸는 방식이다. 목적과 비용이 다르므로 구분해야 한다.",
+    "explanation": "최신 문서가 자주 바뀌면 문서 저장소와 index를 갱신해 요청 때 근거를 찾는 RAG를 먼저 고려하기 쉽다. fine-tuning은 응답 형식이나 특정 과제 행동을 조정하는 데 유용하지만 새 사실의 정확한 저장·출처 제시·즉시 갱신을 보장하지 않는다. RAG도 검색 실패와 오래된 문서를 검증해야 하며, 요구에 따라 두 방법을 함께 쓸 수 있다.",
     "side_card_ids": [
       "AI_retrieval_001"
     ],
@@ -368,7 +366,7 @@
       "strategy"
     ],
     "reading_goal": "문제 상황에 따라 어떤 조정 방법이 적절한지 비교한다.",
-    "code": "Prompting: 코드 변경/학습 없이 지시문으로 조정\nRAG: 외부 지식 검색을 붙임\nLoRA: 작은 adapter로 스타일/과제 습관 학습\nFull fine-tuning: 전체 가중치 조정, 비용/리스크 큼",
+    "code": "Prompting: 학습 없이 사람이 작성한 지시문으로 조정\nPrompt tuning: 작은 학습 가능 soft-prompt vector를 학습\nRAG: 외부 지식 검색 결과를 요청에 포함\nLoRA: 선택한 module에 작은 trainable adapter를 학습\nFull fine-tuning: 전체 또는 대부분의 model weight를 조정",
     "question_type": "meaning_choice",
     "question": "외부 문서 근거를 매번 붙여 답하게 하고 싶을 때 가장 가까운 방식은?",
     "choices": [
@@ -378,7 +376,7 @@
       "RAG"
     ],
     "answer": "RAG",
-    "explanation": "prompt tuning은 모델 전체를 크게 바꾸지 않고 입력 쪽 학습 가능한 prompt를 조정하는 방식이다. RAG와 달리 검색 근거를 붙이는 구조는 아니다.",
+    "explanation": "Prompting은 사람이 읽을 수 있는 지시문을 작성하는 것이고, prompt tuning은 base model을 고정한 채 입력 앞에 붙는 작은 continuous prompt parameter를 학습하는 PEFT 방식이다. 둘 다 매 요청마다 최신 외부 문서를 검색해 근거로 붙이는 RAG와 다르다. 따라서 질문처럼 외부 문서 근거가 핵심이면 RAG가 가장 가깝고, 필요하면 prompting이나 fine-tuning과 조합한다.",
     "side_card_ids": [
       "AI_retrieval_001"
     ],
@@ -458,7 +456,7 @@
       "훈련 데이터에는 잘 맞지만 새 데이터 일반화가 약하다"
     ],
     "answer": "훈련 데이터에는 잘 맞지만 새 데이터 일반화가 약하다",
-    "explanation": "validation 성능이 나빠지면 모델이 훈련 데이터 특이점만 외우는지 의심할 수 있다. overfitting은 모델이 학습 데이터에는 잘 맞지만 새 데이터에는 약해지는 현상이다. 훈련 점수와 검증 점수 차이가 커지는지 확인해야 한다.",
+    "explanation": "overfitting은 training data에 대한 error는 낮지만 같은 목표 분포의 보지 않은 data에서는 성능이 충분히 일반화되지 않는 상태다. train loss가 계속 줄면서 validation loss가 반복적으로 나빠지는 것은 한 신호지만 단 한 번의 변동만으로 확정하지 않는다. train/validation 분포, leakage, metric, 여러 epoch와 seed를 함께 확인한다.",
     "side_card_ids": [
       "AI_eval_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -476,7 +474,7 @@
       "training"
     ],
     "reading_goal": "학습에 쓰는 loss와 사람이 해석하는 metric을 구분한다.",
-    "code": "loss = loss_fn(pred, y)   # optimizer가 줄이려는 값\naccuracy = correct / total # 사람이 성능을 보기 쉬운 지표",
+    "code": "loss = loss_fn(pred, y)    # gradient를 만들 학습 objective\naccuracy = correct / total  # 해석·보고에 쓰는 metric 예",
     "question_type": "meaning_choice",
     "question": "loss의 역할은?",
     "choices": [
@@ -486,7 +484,7 @@
       "optimizer가 줄이려고 하는 학습 목표값"
     ],
     "answer": "optimizer가 줄이려고 하는 학습 목표값",
-    "explanation": "metric은 평가/해석용이고, loss는 학습 업데이트에 직접 쓰이는 경우가 많다. loss는 학습 중 모델이 얼마나 틀렸는지 줄이기 위한 값이고, metric은 사용자가 이해하기 쉬운 평가 지표다. 둘이 항상 같은 방향으로 움직이지는 않는다. 따라서 정답은 ‘optimizer가 줄이려고 하는 학습 목표값’이다.",
+    "explanation": "loss는 backward가 미분해 optimizer update 방향을 만드는 objective다. prediction error 외에 regularization이나 여러 항의 가중합을 포함할 수 있으므로 단순히 틀린 개수와 같지는 않다. metric은 accuracy처럼 사람이 목표 성능을 해석·비교하도록 계산하며 미분 가능할 필요가 없다. 두 값의 정의가 다르면 항상 같은 방향으로 움직이지 않는다.",
     "side_card_ids": [
       "AI_eval_001"
     ],
@@ -513,7 +511,7 @@
       "해당 파라미터를 학습 업데이트하지 않는다"
     ],
     "answer": "해당 파라미터를 학습 업데이트하지 않는다",
-    "explanation": "LoRA/adapter 방식에서는 base model을 freeze하고 작은 학습 파라미터만 조정하는 경우가 많다. freeze는 모델의 일부 파라미터를 학습하지 않게 고정하는 것이다. trainable parameter만 업데이트되므로 비용을 줄이고 기존 지식을 보존할 수 있다.",
+    "explanation": "각 parameter의 requires_grad를 False로 바꾸면 이후 autograd가 그 parameter용 gradient를 만들지 않아 일반적인 optimizer가 update하지 않는다. 이는 parameter gradient를 freeze하는 것이지 model.eval()을 호출하거나 dropout·batchnorm buffer의 train-mode 동작까지 고정하는 것은 아니다. optimizer를 만들 때 trainable parameter만 포함됐는지도 확인한다.",
     "side_card_ids": [
       "AI_lora_001",
       "PYV102_A7_AI_ML_TOOLCHAIN"
@@ -531,7 +529,7 @@
       "training"
     ],
     "reading_goal": "VRAM이 부족할 때 작은 batch를 여러 번 모아 업데이트하는 방식을 이해한다.",
-    "code": "loss = loss / accumulation_steps\nloss.backward()\nif step % accumulation_steps == 0:\n    optimizer.step()\n    optimizer.zero_grad()",
+    "code": "optimizer.zero_grad()\nfor step, batch in enumerate(loader, start=1):\n    loss = compute_loss(batch) / accumulation_steps\n    loss.backward()\n    if step % accumulation_steps == 0 or step == len(loader):\n        optimizer.step()\n        optimizer.zero_grad()",
     "question_type": "meaning_choice",
     "question": "gradient accumulation의 목적에 가까운 것은?",
     "choices": [
@@ -541,7 +539,7 @@
       "작은 batch 여러 번을 모아 큰 batch처럼 업데이트한다"
     ],
     "answer": "작은 batch 여러 번을 모아 큰 batch처럼 업데이트한다",
-    "explanation": "gradient accumulation은 여러 작은 batch의 기울기를 누적한 뒤 한 번에 갱신하는 방식이다. VRAM이 부족할 때 effective batch size를 키우는 데 쓴다.",
+    "explanation": "각 micro-batch loss를 accumulation_steps로 나눠 backward하면 gradient가 parameter.grad에 누적된다. 지정 횟수 또는 마지막 남은 batch에서만 optimizer.step을 호출하고 그 뒤 gradient를 비운다. 이 방식은 한 번에 큰 batch를 올리지 않고 비슷한 effective batch를 만들지만 activation memory는 줄여도 model·optimizer memory는 그대로이며, loss scaling·scheduler step·gradient clipping 위치를 일관되게 맞춰야 한다.",
     "side_card_ids": [
       "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
     ],
@@ -558,7 +556,7 @@
       "state_dict"
     ],
     "reading_goal": "중간 저장점에서 학습을 이어가는 구조를 이해한다.",
-    "code": "checkpoint = torch.load(\"checkpoint.pt\")\nmodel.load_state_dict(checkpoint[\"model\"])\noptimizer.load_state_dict(checkpoint[\"optimizer\"])\nstart_step = checkpoint[\"step\"]",
+    "code": "checkpoint = torch.load(\"checkpoint.pt\", map_location=device)\nmodel.load_state_dict(checkpoint[\"model\"])\noptimizer.load_state_dict(checkpoint[\"optimizer\"])\nstart_step = checkpoint[\"step\"]",
     "question_type": "meaning_choice",
     "question": "이 코드의 목적은?",
     "choices": [
@@ -568,7 +566,7 @@
       "저장된 학습 상태를 불러와 이어서 학습한다"
     ],
     "answer": "저장된 학습 상태를 불러와 이어서 학습한다",
-    "explanation": "checkpoint resume은 중단된 학습을 이어가기 위한 저장/복원 절차다. 모델뿐 아니라 optimizer, step 정보까지 저장해야 안정적으로 재개할 수 있다. 따라서 정답은 ‘저장된 학습 상태를 불러와 이어서 학습한다’이다.",
+    "explanation": "checkpoint dict에서 model weight, optimizer 내부 상태와 step을 복원해 이어갈 출발점을 만든다. model·optimizer 객체는 호환되는 구조로 먼저 생성돼 있어야 하고, optimizer state tensor의 device도 확인한다. 정확한 재현에는 scheduler·AMP scaler·random generator·data sampler 상태 등이 더 필요할 수 있다. torch.load는 신뢰할 수 없는 checkpoint에 사용하지 않는다.",
     "side_card_ids": [
       "PYV159_A1_CHECKPOINT_RESUME_FLOW",
       "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
@@ -596,7 +594,7 @@
       "Embedding model"
     ],
     "answer": "Embedding model",
-    "explanation": "Embedding model은 의미검색을 위한 벡터를 만들고, LLM은 답변 텍스트를 생성한다. Embedding model은 텍스트를 벡터로 바꿔 검색과 유사도 계산에 쓰이고, LLM은 문장을 생성하거나 추론한다. RAG에서는 둘의 역할이 다르다.",
+    "explanation": "embedding model은 query와 document를 같은 vector space의 숫자 배열로 바꿔 similarity search에 사용한다. LLM은 prompt token을 바탕으로 다음 token을 생성한다. RAG에서는 embedding 또는 다른 retriever가 근거 후보를 찾고 LLM이 선택된 context로 답을 만들지만, vector가 가깝다는 사실이나 LLM 출력이 정답을 보장하지 않으므로 retrieval·generation을 각각 평가한다.",
     "side_card_ids": [
       "AI_embedding_001",
       "AI_vector_db_001"

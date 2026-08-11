@@ -19,7 +19,7 @@
       "DB Table Data"
     ],
     "answer": "Python packages and versions to install",
-    "explanation": "`requirements.txt` is a list of dependencies to be installed using `pip install -r`. `requirements.txt` lists the packages required to run the project. It serves as a reference for determining which libraries are needed before running the code, and you should also check whether specific versions are required.",
+    "explanation": "A `requirements.txt` file lists Python dependencies that can be installed with a command such as `pip install -r requirements.txt`. Here, `==` requests the shown versions of FastAPI, Uvicorn, and pandas. These lines identify direct packages and versions, but they do not by themselves lock the Python version, operating system, and every transitive dependency; a lock file or additional environment metadata may be needed for full reproducibility.",
     "side_card_ids": [
       "DEV_package_manager_001"
     ],
@@ -35,7 +35,7 @@
       "metadata"
     ],
     "reading_goal": "Reads the file structure that declares the project name, version, and dependencies.",
-    "code": "# Excerpt from pyproject.toml [project] name = \"reading-trainer\" version = \"0.1.0\" dependencies = [\"fastapi\", \"pandas\"]",
+    "code": "# pyproject.toml excerpt\n[project]\nname = \"reading-trainer\"\nversion = \"0.1.0\"\ndependencies = [\"fastapi\", \"pandas\"]",
     "question_type": "meaning_choice",
     "question": "What goes into \"dependencies\"?",
     "choices": [
@@ -45,7 +45,7 @@
       "Execution Log"
     ],
     "answer": "List of Required Packages",
-    "explanation": "pyproject.toml is a file that specifies the build settings and dependencies for a Python project. The `dependencies` section contains a list of packages required for execution. Keeping dependencies in one place makes it easier to reproduce the package setup in a new environment.",
+    "explanation": "Inside the `[project]` table, `name` and `version` are project metadata, while `dependencies` lists direct packages needed when the project is installed. A `pyproject.toml` file may also contain a `build-system` table and tool-specific settings. Because this example gives no version ranges, it allows current compatible releases and is not the same as a lock file that reproduces one exact environment.",
     "side_card_ids": [
       "DEV_package_manager_001"
     ],
@@ -71,7 +71,7 @@
       "GitHub Issues"
     ],
     "answer": "The module in `app/services/search.py`",
-    "explanation": "\"from app.services.search import search_docs\" imports the function along the package path. The module import path is the standard Python uses to locate files and packages. If the current execution location does not match the package structure, even the same code may result in an import error.",
+    "explanation": "`app.services.search` usually maps to the module `app/services/search.py` or to an `app/services/search` package, and `search_docs` is the name imported from it. The import succeeds only when the parent of the `app` package is on Python's module search path and that name is actually defined. Check the package layout and how the project is launched instead of inferring the path from the current directory alone.",
     "side_card_ids": [
       "SC_import_pm_reading"
     ],
@@ -116,15 +116,15 @@
     "reading_goal": "Read about how paths and functions are linked in the APIRouter file.",
     "code": "# app/api/routes.py\nfrom fastapi import APIRouter\n\nrouter = APIRouter()\n\n@router.get(\"/health\")\ndef health():\n    return {\"ok\": True}",
     "question_type": "meaning_choice",
-    "question": "Why is the final path /api/health?",
+    "question": "Why does the final path become `/api/health`?",
     "choices": [
-      "The prefix and router path in main.py are combined, so",
-      "Since the \"health\" function name determines the entire URL,",
-      "If it's a GET request, \"/api\" is automatically appended, so",
-      "If the response is in JSON, the path changes automatically, so"
+      "The prefix in main.py and the router path are combined",
+      "The health function name determines the entire URL",
+      "Every GET request automatically receives /api",
+      "A JSON response automatically changes the path"
     ],
-    "answer": "The prefix and router path in main.py are combined, so",
-    "explanation": "`include_router(prefix='/api')` and `@router.get('/health')` are combined. APIRouter is a tool in FastAPI for grouping related endpoints. Splitting the router into separate files by functionality keeps `main.py` concise and makes it easier to navigate the API structure.",
+    "answer": "The prefix in main.py and the router path are combined",
+    "explanation": "The main app includes this router with `prefix=\"/api\"`, and the router declares `@router.get(\"/health\")`. FastAPI combines those two path parts to produce `/api/health`; the function name and JSON return value do not change the URL. `APIRouter` lets related endpoints live in a separate module while the main app controls their shared prefix.",
     "side_card_ids": [
       "PL_endpoint_001"
     ],
@@ -150,7 +150,7 @@
       "Error"
     ],
     "answer": "gpt-4o-mini",
-    "explanation": "Since `os.environ.get('MODEL', default)` is used, the default value is applied if the variable is not set. The `Settings` class is designed to centralize and manage multiple configuration values. When reading the code, you can distinguish between the default value, values overridden by environment variables, and the property actually used at runtime. Therefore, the output is “gpt-4o-mini.”",
+    "explanation": "The class body evaluates `os.environ.get(\"MODEL\", \"gpt-4o-mini\")` when `Settings` is defined. Because `MODEL` is absent, the class attribute `model` stores the default \"gpt-4o-mini\", and `settings.model` prints it. This code does not reread the environment for every instance, and a missing `api_key` remains `None`, so required-setting validation would need to be added separately.",
     "side_card_ids": [
       "PL_env_001",
       "DEV_api_key_001"
@@ -167,7 +167,7 @@
       "venv"
     ],
     "reading_goal": "It reads the file and folder paths to exclude from Git.",
-    "code": "# .gitignore some .env .venv/ __pycache__/ outputs/",
+    "code": "# .gitignore excerpt\n.env\n.venv/\n__pycache__/\noutputs/",
     "question_type": "meaning_choice",
     "question": "Why is the .env file added to .gitignore?",
     "choices": [
@@ -177,7 +177,7 @@
       "DB Query Optimization"
     ],
     "answer": "Preventing the Leakage of Confidential Settings",
-    "explanation": "The `.gitignore` file specifies patterns for files that should not be committed to Git. Since the `.env` file may contain sensitive values such as API keys, it is typically excluded. Because sensitive values can be logged once they are pushed to a remote repository, it is safer to include them in the ignore list from the start. Therefore, the correct answer is “to prevent the leakage of sensitive settings.”",
+    "explanation": "The `.env` pattern reduces the chance that an untracked `.env` file containing API keys will be added to a commit, so the answer is ‘Preventing the Leakage of Confidential Settings.’ It does not stop Git from tracking a file that was already committed. If a key has reached a remote or history, revoke and replace it immediately rather than treating `.gitignore` as a secret store or relying only on history cleanup.",
     "side_card_ids": [
       "DEV_dotenv_001"
     ],
@@ -193,7 +193,7 @@
       "yaml"
     ],
     "reading_goal": "Read about the structure that triggers automated tasks when pushing to the main branch.",
-    "code": "# GitHub Actions workflow excerpt on: push: branches: [main] jobs: test: runs-on: ubuntu-latest",
+    "code": "# GitHub Actions workflow excerpt\non:\n  push:\n    branches: [main]\n\njobs:\n  test:\n    runs-on: ubuntu-latest",
     "question_type": "meaning_choice",
     "question": "When is this workflow run?",
     "choices": [
@@ -255,7 +255,7 @@
       "Applying CSS"
     ],
     "answer": "Convert the response body to a JavaScript object or array",
-    "explanation": "`fetch` is a function that sends HTTP requests from the browser. Calling `json()` on the response converts the JSON body into a JavaScript object or array for use.",
+    "explanation": "`fetch(...)` returns a Promise, and `res` in the first `then` is an HTTP `Response`. `res.json()` reads the body, parses it as JSON, and returns another Promise that resolves to the resulting JavaScript value; the next `then` receives that value as `cards`. JSON can produce values other than objects and arrays, and `res.json()` does not check HTTP error statuses such as 404, so production code normally checks `res.ok` and handles parse failures.",
     "side_card_ids": [
       "WEB_html_css_js_001"
     ],
@@ -281,7 +281,7 @@
       "Git push"
     ],
     "answer": "Open Cache Storage",
-    "explanation": "The service worker's installation phase runs when the app is first installed. During this phase, the service worker can prepare cache space and preload the necessary static files. Caching key files during the installation phase allows the home screen to open even if the network connection is unstable. Therefore, the correct answer is “Open cache storage.”",
+    "explanation": "During the install event, `event.waitUntil(...)` extends installation until the supplied Promise settles. `caches.open(\"app-v1\")` opens the named Cache or creates it when absent, so the answer is ‘Open Cache Storage.’ This code stores no files because it never calls `cache.add`, `addAll`, or `put`; offline behavior also requires a fetch strategy that reads from the cache.",
     "side_card_ids": [
       "WEB_pwa_001",
       "PL_cache_001"
@@ -291,25 +291,25 @@
   {
     "id": "PY6_L10_openai_client_001",
     "level": 10,
-    "title": "Understanding the OpenAI Client Call Structure",
+    "title": "Reading an OpenAI Responses API call",
     "concepts": [
       "openai",
       "llm",
       "api",
       "client"
     ],
-    "reading_goal": "Read the structure for sending messages to the LLM API client.",
-    "code": "from openai import OpenAI\n\nclient = OpenAI(api_key=api_key)\nresponse = client.chat.completions.create(\n    model=\"gpt-4o-mini\",\n    messages=[{\"role\": \"user\", \"content\": \"hello\"}]\n)",
+    "reading_goal": "Understand how a Responses API client sends a role-labeled input message and reads the generated text.",
+    "code": "import os\nfrom openai import OpenAI\n\nclient = OpenAI(api_key=os.environ[\"OPENAI_API_KEY\"])\nresponse = client.responses.create(\n    model=\"gpt-5.6\",\n    input=[{\"role\": \"user\", \"content\": \"hello\"}]\n)\nprint(response.output_text)",
     "question_type": "meaning_choice",
-    "question": "What is the `messages` array most similar to?",
+    "question": "What does the `input` array represent?",
     "choices": [
-      "Dialogue input to send to the model",
+      "Input messages to send to the model",
       "DB Table",
       "List of File Paths",
       "CSS Rules"
     ],
-    "answer": "Dialogue input to send to the model",
-    "explanation": "An OpenAI client call typically passes a list of messages in the form of “role” and “content.” The model reads these conversation messages and generates the next response. Distinguishing between the “system,” “user,” and “assistant” roles allows for a clearer conveyance of the meaning behind instructions, questions, and previous responses. Therefore, the correct answer is “conversation input to be sent to the model.”",
+    "answer": "Input messages to send to the model",
+    "explanation": "The Responses API is recommended for new text-generation integrations. Its `input` can be a single string or, as here, a list of messages with `role` and `content`. This example sends \"hello\" with the user role and reads the SDK's aggregated text convenience property, `response.output_text`. A real call also requires a configured API key, network access, account permission, billing, and access to the selected model.",
     "side_card_ids": [
       "AI_llm_001",
       "DEV_api_key_001"
@@ -327,7 +327,7 @@
       "api"
     ],
     "reading_goal": "Read the workflow for invoking a model using AWS Bedrock Runtime.",
-    "code": "import boto3\n\nclient = boto3.client(\"bedrock-runtime\", region_name=\"us-east-1\")\nresult = client.invoke_model(\n    modelId=model_id,\n    body=body_json\n)",
+    "code": "import boto3\n\nclient = boto3.client(\"bedrock-runtime\", region_name=\"us-east-1\")\nresult = client.invoke_model(\n    modelId=model_id,\n    contentType=\"application/json\",\n    body=body_json\n)",
     "question_type": "meaning_choice",
     "question": "What does `modelId` specify?",
     "choices": [
@@ -337,7 +337,7 @@
       "Browser address"
     ],
     "answer": "Model to call",
-    "explanation": "Bedrock's `invoke_model` method executes a model by accepting the model ID to be called and the input body. It reads the results from the response body and performs post-processing. Since input formats may vary by model, it is recommended to separate the body configuration and response parsing into adapters.",
+    "explanation": "`modelId` identifies the Bedrock model, inference profile, or deployment resource to invoke. `body` contains the model-specific prompt and inference parameters as JSON, and `contentType=\"application/json\"` declares that request format. The returned `result` is not the generated text itself; its `body` stream must be read and parsed. Because request and response schemas differ by model, isolating them behind an adapter is safer.",
     "side_card_ids": [
       "AI_llm_001",
       "PL_endpoint_001"
@@ -358,15 +358,15 @@
     "reading_goal": "Read the code for splitting the data into training, validation, and test sets.",
     "code": "def split_dataset(rows):\n    train = rows[:80]\n    valid = rows[80:90]\n    test = rows[90:]\n    return train, valid, test",
     "question_type": "meaning_choice",
-    "question": "What range is included in `test`?",
+    "question": "Which index range is included in `test`?",
     "choices": [
-      "After the 90th",
+      "Index 90 through the end",
       "The first 80",
       "80–89",
       "Empty List"
     ],
-    "answer": "After the 90th",
-    "explanation": "Dataset splitting is the process of dividing the data into training and validation sets. rows[90:] means to extract the rows starting from index 90 through the end and use them as the validation set. Model evaluation is more reliable when the training and validation sets are kept separate. Therefore, the result returned/called is “from the 90th row onward.”",
+    "answer": "Index 90 through the end",
+    "explanation": "A slice includes its start index, so `rows[90:]` puts index 90—the 91st element—through the end into `test`. `train` contains indexes 0–79 and `valid` contains 80–89, so the three ranges do not overlap. This code uses fixed counts rather than proportions and does not shuffle the rows, so an existing sort order can bias the split.",
     "side_card_ids": [
       "AI_eval_001"
     ],
@@ -392,7 +392,7 @@
       "Save to the database"
     ],
     "answer": "Repeat the process of matching predictions with the correct answers",
-    "explanation": "Accuracy refers to the proportion of correct predictions out of the total. It is calculated by counting the number of correct predictions—where the predicted value and the actual value match at the same position—and dividing that number by the total number of predictions. `zip(preds, labels)` pairs the predictions and the actual values side by side so they can be compared one pair at a time.",
+    "explanation": "`zip(preds, labels)` pairs values at the same positions and stops at the end of the shorter input. Matching pairs increment `correct`, which is then divided by the number of labels. If the lengths differ, some values are never compared and the metric may be misleading; an empty `labels` list also causes `ZeroDivisionError`. A production evaluator should validate equal, nonzero lengths first.",
     "side_card_ids": [
       "AI_eval_001"
     ],
@@ -418,7 +418,7 @@
       "FileNotFoundError"
     ],
     "answer": "timeout",
-    "explanation": "Error parsing is the process of identifying and categorizing root cause keywords in error messages. In this code, since the second condition is true, it returns \"timeout.\" By categorizing error strings, it is possible to create response workflows based on common root causes without requiring humans to read through all the logs.",
+    "explanation": "When the line contains \"Timeout\" and the earlier `FileNotFoundError` test is false, the second branch returns \"timeout\". If both strings occur, the first return wins and produces \"missing_file\", so condition order matters. This is a case-sensitive substring heuristic; structured exception types and explicit priority rules are more reliable for production log classification.",
     "side_card_ids": [
       "DEV_debugging_001"
     ],
@@ -444,7 +444,7 @@
       "Period"
     ],
     "answer": "Tab",
-    "explanation": "A manifest TSV file is a file that organizes a list of data files and their metadata into a table. Since TSV stands for “tab-separated values,” the columns are separated by tab characters. Tab-separated files can be simpler than CSV files when dealing with titles or descriptions that contain commas.",
+    "explanation": "`split(\"\\t\")` separates each line on tab characters, so the answer is Tab. Assigning the result to `doc_id, file_path` requires exactly two fields on every line; fewer or additional tabs raise `ValueError`. For quoted fields, embedded tabs, headers, or other real TSV rules, using the `csv` module with `delimiter=\"\\t\"` is safer than a plain string split.",
     "side_card_ids": [
       "DATA_metadata_001"
     ],
@@ -470,7 +470,7 @@
       "DOC_001"
     ],
     "answer": "doc_001",
-    "explanation": "Use `strip` to remove spaces, `lower` to convert to lowercase, and `replace` to replace spaces with underscores. An ID normalization function serves to convert different inputs into a common, comparable format. You must check the order in which rules are applied—such as converting to lowercase, removing spaces, and handling special characters. Therefore, the output is ‘doc_001’.",
+    "explanation": "`strip()` first removes the outer spaces, producing \"Doc 001\". `lower()` makes it \"doc 001\", and `replace(\" \", \"_\")` changes the remaining space to produce `doc_001`. This function normalizes only case and spaces; it does not handle slashes, punctuation, or repeated separators. Real ID policies also need collision checks because different inputs can normalize to the same result.",
     "side_card_ids": [
       "SC_normalization"
     ],
@@ -496,7 +496,7 @@
       "notes"
     ],
     "answer": "ai---rag-notes",
-    "explanation": "A slug is a value that converts a title or path into a safe, short identifier. Lowercasing the text and replacing “/” and spaces with “-” makes it easier to use in filenames or URLs. This is useful for separating the long title visible to users from the stable identifier used by the system. Therefore, the output is “ai---rag-notes.”",
+    "explanation": "After lowercasing, the slash becomes one hyphen and the spaces on both sides become two more, producing `ai---rag-notes`. That is the correct output for this input, but the function does not clean every punctuation character or collapse repeated hyphens, so it does not guarantee a generally safe URL or filename slug. A production policy should also handle allowed characters, empty results, and collisions.",
     "side_card_ids": [
       "WEB_routing_001"
     ],
@@ -522,7 +522,7 @@
       "Return only the score"
     ],
     "answer": "Select only the first limit items",
-    "explanation": "\"Top items\" is a step where only the top items are selected based on score or priority. It takes the first `limit` items from a pre-sorted list and uses them as the result. Slicing is a method of extracting only the necessary range from the original list and treating it as a new list, so it is frequently used to limit the number of recommendations. Therefore, the result returned or called is “select only the first limit items.”",
+    "explanation": "`sorted(..., reverse=True)` creates a new list ordered from highest to lowest `score`, and `items[:limit]` returns at most the first `limit` entries. The caller's original list is not reordered here. If fewer entries exist, they are all returned; a missing `score` raises `KeyError`, and a negative limit no longer matches the intended ‘top N’ meaning.",
     "side_card_ids": [
       "PL_curation_001"
     ],
@@ -537,7 +537,7 @@
       "filter",
       "domain"
     ],
-    "reading_goal": "I'm noticing a trend where people are creating reading lists by selecting only the topics they're interested in from among the available options.",
+    "reading_goal": "Read how allowed domains are collected in their original order and limited to a ten-item reading queue.",
     "code": "def build_reading_queue(candidates):\n    queue = []\n    for item in candidates:\n        if item[\"domain\"] in [\"UAM\", \"AI\", \"Robotics\"]:\n            queue.append(item)\n    return queue[:10]",
     "question_type": "meaning_choice",
     "question": "What are the conditions for being added to the queue?",
@@ -548,11 +548,11 @@
       "Item without a URL"
     ],
     "answer": "The domain is one of UAM, AI, or Robotics",
-    "explanation": "The reading queue is a list where users collect items they want to read. Only items that pass the domain filter are added to the queue, thereby reducing the number of unnecessary items. The queue is a mechanism that does not display the entire dataset at once but narrows it down to a prioritized set of items for the user to read next. Therefore, the return/call result is “domain is one of UAM, AI, or Robotics.”",
+    "explanation": "The loop keeps each item whose `domain` is UAM, AI, or Robotics, preserving candidate order. `queue[:10]` then returns at most the first ten matching items. The code performs no score sort or deduplication, and bracket access raises `KeyError` for an item without `domain`.",
     "side_card_ids": [
       "PL_curation_001"
     ],
-    "project_context": "It's linked to your daily reading queue and the content selection in your learning app."
+    "project_context": "It is linked to a user's daily reading queue and content selection in the learning app."
   },
   {
     "id": "PY6_L07_count_by_level_001",
@@ -574,7 +574,7 @@
       "answer"
     ],
     "answer": "level",
-    "explanation": "Counting by level is a piece of code that groups cards by difficulty to view their status. It uses the value of `card['level']` as a key and increments the count each time a card of the same level is encountered.",
+    "explanation": "Each card's `level` becomes a key in `counts`. For a level not seen before, `counts.get(level, 0)` starts at 0; later cards at that level reuse the current count and add 1. The result has the form `{level: card count}`. A card without a `level` key raises `KeyError`, so schema validation should precede a bulk count.",
     "side_card_ids": [
       "DATA_metadata_001"
     ],
@@ -600,9 +600,9 @@
       "Error"
     ],
     "answer": "None",
-    "explanation": "The `find_card` function iterates through the list of cards to find the card with the specified ID. If it cannot find the card by the end of the list, it returns `None` to indicate that the card does not exist. Returning `None` allows the calling side to clearly handle the \"card not found\" condition.",
+    "explanation": "The function checks cards from the beginning and immediately returns the first dictionary whose `card[\"id\"]` equals `card_id`. Only when no match is found does execution reach the final `return None`. This is a linear scan, not a hash-table lookup; for frequent searches across many cards, an `id`-to-card index may be more efficient.",
     "side_card_ids": [
-      "CS_hash_table_001"
+      "PYV97_A1_LOOP_01"
     ],
     "project_context": "This connects to the flow of finding the current card, related cards, or note targets within the app."
   },
@@ -626,7 +626,7 @@
       "Delete All"
     ],
     "answer": "Use an empty dict",
-    "explanation": "Progress migration is the process of converting the old storage format to the new one. `old.get('confused', {})` uses an empty dictionary as the default value when the existing value does not exist.",
+    "explanation": "When the `confused` key is absent, `old.get(\"confused\", {})` returns a new empty dictionary, so the answer is ‘Use an empty dict.’ If the key exists with the value `None`, the default is not used. The existing `seen`, `correct`, and `confused` dictionaries are also reused rather than copied, so a production migration should validate types and decide whether copies are required.",
     "side_card_ids": [
       "WEB_localstorage_001"
     ],
@@ -652,7 +652,7 @@
       "List of Side Cards"
     ],
     "answer": "List of Missing Required Keys",
-    "explanation": "Schema validation checks whether the card contains all required fields. It compiles a list of missing fields by collecting only the keys that are marked as required but are not present in the card.",
+    "explanation": "The list comprehension tests each required name with `key not in card` and collects only absent keys. The result is therefore a list of missing required keys, or an empty list when all are present. This validates presence only; it does not check empty values, the type of `level`, or whether `answer` occurs in `choices`.",
     "side_card_ids": [
       "DATA_schema_001"
     ],

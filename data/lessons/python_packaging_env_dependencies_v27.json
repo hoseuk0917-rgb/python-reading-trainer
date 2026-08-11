@@ -45,7 +45,7 @@
       "requirements.txt를 자동 번역한다"
     ],
     "answer": "현재 프로젝트에 가상환경 폴더를 만든다",
-    "explanation": "venv는 프로젝트마다 독립적인 파이썬 실행 환경을 만드는 도구다. 패키지 버전 충돌을 줄이고 재현 가능한 개발 환경을 만들기 위해 사용한다. 활성화한 venv 안에 패키지를 설치하면 전역 파이썬 환경을 더럽히지 않고 프로젝트별 의존성을 관리할 수 있다. 따라서 정답은 ‘현재 프로젝트에 가상환경 폴더를 만든다’이다.",
+    "explanation": "python -m venv .venv는 선택한 Python으로 project-local environment를 만든다. activation은 현재 shell의 PATH 등을 바꿔 python과 pip가 그 environment를 가리키게 하는 편의 기능이지 필수는 아니다. .venv의 Python을 직접 호출할 수도 있고, venv 자체는 dependency version을 기록하지 않으므로 lock이나 requirement file이 별도로 필요하다.",
     "side_card_ids": [
       "DEV_venv_001",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -62,7 +62,7 @@
       "dependency"
     ],
     "reading_goal": "requirements.txt에 적힌 패키지를 한 번에 설치하는 명령을 이해한다.",
-    "code": "pip install -r requirements.txt",
+    "code": "python -m pip install -r requirements.txt",
     "question_type": "meaning_choice",
     "question": "-r requirements.txt의 의미는?",
     "choices": [
@@ -72,7 +72,7 @@
       "GitHub repo를 만든다"
     ],
     "answer": "requirements.txt 파일을 읽어 패키지를 설치한다",
-    "explanation": "pip install -r requirements.txt는 파일에 적힌 의존성을 한 번에 설치하는 명령이다. 새 환경을 만들 때 필요한 패키지를 빠르게 맞출 수 있다.",
+    "explanation": "-r은 requirements file의 각 requirement를 읽어 resolver가 package와 dependencies를 설치하게 한다. python -m pip 형태는 현재 선택한 Python environment의 pip를 사용한다는 점을 명확히 한다. file이 exact lock이 아니면 platform과 index 시점에 따라 다른 transitive version이 설치될 수 있다.",
     "side_card_ids": [
       "PYV160_A1_PACKAGING_DEPENDENCY_FLOW"
     ],
@@ -88,7 +88,7 @@
       "dependency_snapshot"
     ],
     "reading_goal": "현재 환경에 설치된 패키지 목록을 파일로 저장하는 명령을 이해한다.",
-    "code": "pip freeze > requirements.txt",
+    "code": "python -m pip freeze > requirements.txt",
     "question_type": "meaning_choice",
     "question": "이 명령의 결과는?",
     "choices": [
@@ -98,7 +98,7 @@
       "Python이 업그레이드된다"
     ],
     "answer": "현재 설치된 패키지 목록이 requirements.txt에 저장된다",
-    "explanation": "pip freeze는 현재 환경의 패키지와 버전을 출력한다. > 는 그 출력을 파일에 저장한다. pip freeze는 현재 환경에 설치된 패키지와 버전을 목록으로 출력한다. 재현 가능한 설치 파일을 만들 때 사용하지만 불필요한 패키지도 섞일 수 있다.",
+    "explanation": "현재 environment에서 pip가 인식한 설치 distribution과 version 목록을 stdout으로 내고 >가 requirements.txt를 덮어쓴다. direct와 transitive, 실험용 package와 platform-specific entry가 모두 섞일 수 있어 project dependency intent나 cross-platform lock과 같지 않다. 생성 diff를 review하고 목적에 맞는 lock tool을 선택한다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -125,7 +125,7 @@
       "FastAPI 실행 포트를 1150으로 바꾼다"
     ],
     "answer": "FastAPI를 정확히 0.115.0 버전으로 설치한다",
-    "explanation": "version pin은 패키지 버전을 고정하거나 범위를 정하는 방식이다. ==는 정확한 버전 고정이고, >=는 최소 버전 조건을 뜻한다. 배포 환경을 재현하려면 핵심 패키지는 너무 넓은 범위보다 검증된 버전으로 고정하는 편이 안전하다. 따라서 정답은 ‘FastAPI를 정확히 0.115.0 버전으로 설치한다’이다.",
+    "explanation": "==0.115.0은 해당 FastAPI release만 허용한다. 반면 uvicorn>=0.30.0은 상한이 없고 requests는 version 제약이 없어 미래 incompatible release가 선택될 수 있다. direct pin만으로 transitive dependency와 artifact hash가 고정되는 것은 아니므로 tested lock과 update process를 함께 둔다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -152,7 +152,7 @@
       "로컬 캐시를 삭제한다"
     ],
     "answer": "프로젝트 실행에 필요한 패키지를 적는다",
-    "explanation": "pyproject.toml은 프로젝트 이름, 버전, 의존성, 빌드 설정 등을 담는 표준 설정 파일이다. pyproject.toml 기본 구조는 프로젝트 이름, 빌드 설정, 도구 설정을 담는다. 어떤 도구가 어느 섹션을 읽는지 구분하면 설정을 찾기 쉽다. 따라서 정답은 ‘프로젝트 실행에 필요한 패키지를 적는다’이다.",
+    "explanation": "[project] dependencies는 이 distribution의 runtime requirements를 선언한다. pyproject.toml은 [build-system]과 tool-specific table도 담을 수 있으며 모든 setting이 [project]에 들어가는 것은 아니다. version 제약이 없는 fastapi와 uvicorn은 설치 시점에 다른 release가 선택될 수 있어 reproducibility 정책이 별도로 필요하다.",
     "side_card_ids": [
       "DATA_metadata_001",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -170,7 +170,7 @@
       "debugging"
     ],
     "reading_goal": "모듈을 찾지 못하는 오류가 환경 문제인지 경로 문제인지 판단하는 관점을 익힌다.",
-    "code": "ModuleNotFoundError: No module named \"sentence_transformers\"\n\n# check\npython -c \"import sys; print(sys.executable)\"\npip show sentence-transformers",
+    "code": "ModuleNotFoundError: No module named \"sentence_transformers\"\n\n# check\npython -c \"import sys; print(sys.executable)\"\npython -m pip show sentence-transformers",
     "question_type": "meaning_choice",
     "question": "sys.executable을 확인하는 이유는?",
     "choices": [
@@ -180,7 +180,7 @@
       "JSON을 압축하려고"
     ],
     "answer": "현재 실행 중인 Python 경로를 확인하려고",
-    "explanation": "패키지를 설치한 Python과 실제 실행하는 Python이 다르면 import 오류가 날 수 있다. ModuleNotFoundError 디버깅은 설치 여부, 가상환경 활성화, 현재 실행 위치를 함께 확인해야 한다. 같은 패키지도 다른 venv에서는 없을 수 있다.",
+    "explanation": "sys.executable은 code를 실행하는 interpreter path를 보여 주고 같은 python -m pip show는 그 environment에 distribution이 설치됐는지 확인한다. import name sentence_transformers와 distribution name sentence-transformers처럼 이름이 다를 수 있다. 설치 여부 외에 package version, shadowing local file과 import path도 확인한다.",
     "side_card_ids": [
       "PYV158_A1_DEBUGGING_FLOW"
     ],
@@ -206,7 +206,7 @@
       "Git remote를 뜻한다"
     ],
     "answer": "문자열을 raw string으로 취급한다",
-    "explanation": "raw string은 역슬래시를 이스케이프 문자로 덜 해석하게 해 Windows 경로에서 편하다. Windows 경로는 역슬래시 때문에 문자열 이스케이프와 헷갈릴 수 있다. raw string이나 슬래시 변환을 사용하면 경로 오류를 줄일 수 있다. 따라서 정답은 ‘문자열을 raw string으로 취급한다’이다.",
+    "explanation": "r prefix는 대부분의 backslash escape를 문자 그대로 보존해 Windows path를 읽기 쉽게 한다. raw string도 quote 처리 규칙은 있고 홀수 개 backslash로 끝날 수 없으므로 모든 path 문제를 없애는 것은 아니다. pathlib.Path와 / 결합을 사용하면 separator 처리를 줄일 수 있으며 이 code는 path object만 만들고 directory를 생성하지 않는다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
@@ -232,7 +232,7 @@
       "Python 버전을 고정한다"
     ],
     "answer": "현재 사용자 범위에서 정책을 바꾼다",
-    "explanation": "PowerShell 실행 정책은 스크립트 실행을 제한할 수 있다. 그래서 venv 활성화 스크립트가 막히면 현재 프로세스 범위에서 우회 설정을 쓰기도 한다. 범위를 좁혀 설정하면 전체 PC 보안 정책을 과하게 바꾸지 않고 필요한 작업만 진행할 수 있다.",
+    "explanation": "-Scope CurrentUser는 현재 user account의 execution policy를 지속적으로 바꾸며 현재 process에만 한정되지 않는다. RemoteSigned도 security boundary가 아니고 organization Group Policy가 우선할 수 있다. 정책 변경이 허용되는지 먼저 확인하고, 임시 필요라면 더 좁은 Process scope나 venv Python 직접 호출처럼 activation script가 필요 없는 방법을 고려한다.",
     "side_card_ids": [],
     "project_context": "새 Windows 서버/노트북에서 가상환경 활성화가 안 될 때 자주 확인한다."
   },
@@ -247,7 +247,7 @@
       "server"
     ],
     "reading_goal": "프로젝트 루트로 이동한 뒤 서버를 실행하는 스크립트 구조를 읽는다.",
-    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\npython -m http.server 8790 --bind 127.0.0.1",
+    "code": "$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path\nSet-Location $scriptDir\npython -m http.server 8790 --bind 127.0.0.1",
     "question_type": "meaning_choice",
     "question": "Set-Location을 먼저 하는 이유는?",
     "choices": [
@@ -257,7 +257,7 @@
       "브라우저 캐시를 초기화하기 위해"
     ],
     "answer": "상대경로 기준을 프로젝트 루트로 맞추기 위해",
-    "explanation": "정적 서버는 현재 폴더를 기준으로 파일을 제공하므로 프로젝트 루트에서 실행해야 경로가 맞는다. portable run script는 다른 PC에서도 같은 방식으로 실행되도록 경로와 환경을 정리한 스크립트다. 하드코딩된 개인 경로를 줄이는 것이 중요하다. 따라서 정답은 ‘상대경로 기준을 프로젝트 루트로 맞추기 위해’이다.",
+    "explanation": "script 자신의 directory를 계산해 그곳으로 이동하므로 사용자별 D: 경로를 hard-code하지 않고 상대 file serving root를 맞춘다. 그래도 python command가 원하는 interpreter인지와 port 사용 여부를 확인해야 한다. http.server는 localhost 개발용이지 production server가 아니다.",
     "side_card_ids": [
       "PYV159_A1_FASTAPI_SERVER_FLOW"
     ],
@@ -300,7 +300,7 @@
       "documentation"
     ],
     "reading_goal": "README에 설치/실행/검증 명령을 남기는 이유를 이해한다.",
-    "code": "## Run locally\n\nSet-Location D:\\projects\\python-reading-trainer\n.\\run_local_server.ps1\n\nOpen http://localhost:8790/src/pwa/index.html",
+    "code": "## Run locally\n\n1. Clone the repository and create the documented Python environment.\n2. Run `./run_local_server.ps1` from the repository root.\n3. Open `http://localhost:8790/src/pwa/index.html`.",
     "question_type": "meaning_choice",
     "question": "README의 Run locally 섹션이 중요한 이유는?",
     "choices": [
@@ -310,7 +310,7 @@
       "커밋을 되돌리기 위해"
     ],
     "answer": "나중에 같은 실행 절차를 빠르게 재현하기 위해",
-    "explanation": "프로젝트가 커질수록 실행 명령을 README/runbook에 남겨야 다시 시작할 때 덜 헤맨다. README 실행법 섹션은 처음 보는 사람이 앱을 실행할 수 있게 하는 안내다. 설치, 검증, 로컬 서버 실행 명령을 순서대로 적어야 한다. 따라서 정답은 ‘나중에 같은 실행 절차를 빠르게 재현하기 위해’이다.",
+    "explanation": "Run section은 새 reader가 prerequisite, environment 생성, dependency 설치, validation과 launch를 순서대로 재현하게 해야 한다. 개인 absolute path 대신 repository root 기준 command와 지원 OS/shell, expected output, stop 방법과 common error link를 적어야 실제 runbook이 된다.",
     "side_card_ids": [
       "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
     ],
@@ -336,7 +336,7 @@
       "Git push가 빨라진다"
     ],
     "answer": "다른 PC에서도 같은 버전 조합을 재현하기 쉽다",
-    "explanation": "버전이 바뀌면 코드가 갑자기 깨질 수 있으므로 중요한 프로젝트는 버전 고정이 도움이 된다. dependency lock은 설치되는 패키지 버전을 고정해 실행 환경을 재현하기 쉽게 만든다. 개발 PC와 CI에서 같은 버전이 쓰이는지 확인하는 데 중요하다.",
+    "explanation": "세 direct package의 exact version은 이 세 requirement가 다른 PC에서도 같은 release를 선택하게 돕는다. 하지만 transitive dependencies, artifact hash, Python/platform marker가 완전히 고정되지 않아 엄밀한 lock file은 아니다. resolver로 생성한 lock, trusted index와 hash, 정기 update·security review를 함께 사용한다.",
     "side_card_ids": [],
     "project_context": "GPU 서버/노트북/로컬 PC에서 같은 결과를 만들려면 의존성 재현성이 중요하다."
   },
@@ -360,7 +360,7 @@
       "CSS 파일"
     ],
     "answer": "tools.validate 모듈의 main 함수",
-    "explanation": "project.scripts는 CLI 명령 이름을 Python 함수에 연결하는 설정이다. package entrypoint는 패키지를 명령처럼 실행할 때 시작되는 함수나 모듈이다. pyproject 설정과 실제 실행 함수가 어떻게 연결되는지 확인해야 한다. 따라서 정답은 ‘tools.validate 모듈의 main 함수’이다.",
+    "explanation": "package를 install하면 packaging tool이 py-reader-validate command를 만들고 실행 시 import 가능한 tools.validate module의 main callable을 부른다. module path가 package에 포함되어야 하고 main은 argument·exit code를 CLI 규약에 맞게 처리해야 한다. 이 table을 적는 것만으로 source checkout에서 command가 즉시 생기지는 않는다.",
     "side_card_ids": [
       "PYV160_A1_PACKAGING_DEPENDENCY_FLOW"
     ],
@@ -387,7 +387,7 @@
       "오류"
     ],
     "answer": "http://127.0.0.1:8000",
-    "explanation": "env file load는 .env 같은 파일에서 환경변수를 읽어오는 절차다. os.getenv의 두 번째 인자는 값이 없을 때 사용할 기본값이다. 기본값을 두면 설정이 없을 때도 앱이 바로 실패하지 않고 예측 가능한 값으로 동작한다. 따라서 정답은 ‘http://127.0.0.1:8000’이다.",
+    "explanation": "load_dotenv는 기본적으로 기존 environment value를 덮어쓰지 않고 .env에서 아직 없는 값을 채운다. os.getenv의 default는 variable이 아예 없을 때만 쓰이며 값이 empty string이면 empty string을 반환한다. production에서 잘못된 missing setting을 조용히 localhost로 보내지 않도록 environment별 required validation을 두고 .env secret은 commit하지 않는다.",
     "side_card_ids": [
       "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
     ],
@@ -413,7 +413,7 @@
       "패키지 목록 무시"
     ],
     "answer": "venv 활성화 후 의존성 설치",
-    "explanation": "repro setup checklist는 다른 PC에서도 같은 환경을 재현하기 위한 순서표다. 환경 생성, 활성화, 패키지 설치, 검증 명령을 함께 적어 둔다. 체크리스트가 있으면 새 장비나 다른 사람이 같은 프로젝트를 실행할 때 시행착오가 줄어든다.",
+    "explanation": "venv 생성 뒤에는 해당 shell에서 activate하고 그 interpreter의 python -m pip로 verified requirements를 설치하는 흐름이 흔하다. activation 없이 .venv Python을 직접 호출해도 된다. 재현성을 위해 repository revision, Python version, lock/hash, OS prerequisite, validation result까지 기록하며 local server는 개발용으로 제한한다.",
     "side_card_ids": [
       "PYV161_A1_ENV_MAIN_CHECKLIST_FLOW"
     ],

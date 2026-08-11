@@ -122,7 +122,7 @@
     "id": "PYV103_ENV_VENV_REASON",
     "type": "dev_environment_foundation",
     "title": "venv is a Python toolbox used separately for each project.",
-    "body": "It’s easy to think of `venv` as a separate Python toolbox for each project. If you’re working on multiple projects on the same computer, the required packages and versions may differ. Project A might need an older version of pandas, while Project B might need the latest version. If you install all packages into the global Python environment, it becomes difficult to track which version was installed for which project, and code that worked yesterday might suddenly break today. When working with a virtual environment, think of the Python executable, pip, and installed packages as a single, isolated package. `python -m venv .venv` creates a `.venv` folder within the current project; when activated, the Python interpreter and pip in the current terminal will point to that environment. Therefore, it’s important to check which venv is active before running `pip install`. Even the same package may not be present in a different venv. A common source of confusion for beginners is thinking of a venv as a virtual machine. A venv is not a copy of the entire operating system; rather, it is a tool that isolates the Python execution environment and the package installation location. Also, creating a venv does not automatically activate it. If you run `pip install` without activating a venv, the package may be installed in the global Python environment or another environment. When practicing, create a `.venv` directory for each project, activate it, and then run `python -m pip --version` to verify which path pip is pointing to. Once you install the packages listed in `requirements.txt`, deactivate the environment, and then reactivate it, you’ll get a sense of how the environments are isolated. Understanding venv allows you to resolve issues like `ModuleNotFoundError`, package conflicts, and problems with setting up a new computer much more calmly.",
+    "body": "venv does not copy the operating system; it isolates a project-specific Python path and site-packages. Activation is a PATH convenience, and an explicit environment interpreter works without it. Pins and tests are also needed for stronger reproducibility.",
     "related_concepts": [
       "venv",
       "virtual_environment",
@@ -131,14 +131,14 @@
       "isolation"
     ],
     "level_hint": "Beginner-Friendly Development Environment",
-    "when_to_show": "가상환경을 왜 쓰는지 설명할 때",
-    "detail": "venv is a tool that isolates Python execution environments and package installation locations for each project, rather than cloning the entire operating system. Since the required package versions may vary by project, installing them in the global environment can cause conflicts. You need to check which venv Python and pip are currently pointing to."
+    "when_to_show": "When reviewing venv, virtual_environment, python, dependency",
+    "detail": "venv does not copy the operating system; it isolates a project-specific Python path and site-packages. Activation is a PATH convenience, and an explicit environment interpreter works without it. Pins and tests are also needed for stronger reproducibility."
   },
   {
     "id": "PYV103_ENV_ACTIVATE_DEACTIVATE",
     "type": "dev_environment_foundation",
     "title": "\"activate\" and \"deactivate\" change which Python environment the current terminal is using.",
-    "body": "\"activate\" is the command used to enable a virtual environment in the current terminal session. In Windows PowerShell, `.\\.venv\\Scripts\\Activate.ps1` is commonly used, while in Ubuntu Bash, `source .venv/bin/activate` is frequently used. Once activated, the environment name (e.g., .venv) appears at the beginning of the terminal, and the `python` and `pip` commands point to the executables within that environment. `deactivate` is the command used to exit the currently active virtual environment. When learning these commands, it’s important to remember that `activate` is not a command for creating a new project, but rather a command for connecting an existing environment to the current terminal. The correct sequence is to create the environment using `python -m venv .venv`, activate it with `activate`, and then install packages into that environment using `pip install`. If you open a new terminal window, the environment you previously activated may not be automatically retained, so you may need to reactivate it. A common mistake made by beginners is assuming that because the `venv` folder exists, the environment is automatically active. In reality, it must be explicitly activated in the current terminal. Also, if `Activate.ps1` is blocked due to PowerShell execution policies, the issue may not be with Python but with Windows script execution policies. In this case, you can work around it by adjusting the execution policy to a more permissive scope or using the `python -m pip` method. When practicing, compare the output of `where python`, `which python`, or `python -m pip --version` before and after activation. If the path changes to point inside the `.venv` folder, the current environment is properly connected. If you check again after running `deactivate`, you’ll see that it has reverted to the global Python. Understanding this process allows you to quickly narrow down issues where a module fails to import despite being installed.",
+    "body": "Activation changes the current shell's PATH so the environment's Python is preferred; deactivation reverses that change. Activation is optional because the environment interpreter can be invoked directly. Verify the real path with sys.executable and python -m pip --version rather than trusting only the prompt label.",
     "related_concepts": [
       "activate",
       "deactivate",
@@ -149,7 +149,7 @@
     ],
     "level_hint": "Beginner-Friendly Development Environment",
     "when_to_show": "When looking at the commands to activate/deactivate a venv",
-    "detail": "\"activate\" connects an existing virtual environment to the current terminal session, while \"deactivate\" disconnects it. Just because a venv folder exists doesn't mean it's automatically applied. You can verify the environment connection by comparing the output of `where python`, `which python`, or `python -m pip --version` before and after activation."
+    "detail": "Activation changes the current shell's PATH so the environment's Python is preferred; deactivation reverses that change. Activation is optional because the environment interpreter can be invoked directly. Verify the real path with sys.executable and python -m pip --version rather than trusting only the prompt label."
   },
   {
     "id": "PYV103_ENV_PYTHON_M_PIP",
@@ -171,7 +171,7 @@
     "id": "PYV103_ENV_REQUIREMENTS_REPRO",
     "type": "dev_environment_foundation",
     "title": "requirements.txt is a list of packages needed to reproduce the new environment.",
-    "body": "`requirements.txt` is a file that lists the Python packages required to run the project. When you run `pip install -r requirements.txt` on a new computer or in a new venv, it reads that list and installs the packages. This file is important when others want to run the same project, or when you need to recreate the environment on new hardware later. It’s not just a simple note; it’s more like a contract for reproducing the execution environment. When using the `requirements` command, remember that the `-r` flag indicates that the file will be read. `pip freeze` lists the packages and versions installed in the current environment, and `> requirements.txt` saves that output to a file. However, the `freeze` output may include unnecessary packages installed during experimentation. Therefore, for important projects, you must identify only the essential dependencies and carefully define the version range to be fixed. A common mistake made by beginners is assuming that having a `requirements.txt` file guarantees the latest environment. In reality, the file may be outdated or incompatible with the current code. Additionally, if the venv used to install the dependencies differs from the one used to run the code, import errors will still occur. For packages with sensitive installation combinations—such as GPU or PyTorch—you must also verify the operating system, Python version, and CUDA build. When practicing, create a new venv, run `python -m pip install -r requirements.txt` to install the packages, and then execute the verification command. Don’t just look for a message indicating that the installation is complete; you must verify that the actual app or script runs. A reproducible environment is complete when it includes the installation list, Python version, execution commands, and verification results.",
+    "body": "requirements.txt supplies package requirements to pip. Version ranges, a different Python or OS, and changing transitive dependencies can produce different environments, so the file alone is not a perfect lock. Install into a clean environment, document runtime constraints, and run real tests.",
     "related_concepts": [
       "requirements.txt",
       "pip",
@@ -181,13 +181,13 @@
     ],
     "level_hint": "Beginner-Friendly Development Environment",
     "when_to_show": "When looking at the requirements, pip freeze, and the reproducible environment",
-    "detail": "`requirements.txt` is a file that lists the Python packages required to run the project. The command `pip install -r requirements.txt` reads that list and installs the packages in a new environment. However, since errors may still occur if the file is outdated or if the packages are installed in a different `venv`, you should verify that everything works by running the actual test commands after installation."
+    "detail": "requirements.txt supplies package requirements to pip. Version ranges, a different Python or OS, and changing transitive dependencies can produce different environments, so the file alone is not a perfect lock. Install into a clean environment, document runtime constraints, and run real tests."
   },
   {
     "id": "PYV103_ENV_MODULE_NOT_FOUND",
     "type": "dev_environment_foundation",
     "title": "When encountering a `ModuleNotFoundError`, you should first suspect a mismatch in the current environment rather than whether the module is installed.",
-    "body": "A `ModuleNotFoundError` means that Python couldn't find the module you're trying to import in the current environment. If you encounter this error, rather than reinstalling right away, you should first check which version of Python you're running. If the environment where you installed the package differs from the one where you’re running the code, the import may fail even though the package is installed. This happens particularly often when using multiple venv environments or when multiple versions of Python are installed on Windows. When analyzing the error, check the import name, the path to the Python interpreter, the pip path, and the current working directory. You can check if a package is present in the current Python environment using `python -m pip show package_name`, and you can easily reproduce the issue with `python -c \"import package_name\"`. If it’s an internal module within your project, the cause might not be a package installation issue but rather a problem with the current working directory or the import path. Beginners often just repeatedly run `pip install` whenever they see a `ModuleNotFoundError`. However, the package might already be installed in a different environment, or the package name and the import name might differ. For example, the pip package name might be `opencv-python`, but the import name is `cv2`. Additionally, if the interpreter selected in VS Code differs from the Python version in the terminal, you’ll get different results. When practicing, summarize the error scenario in four lines: Specify which command was executed, the Python path, which package you were trying to import, and where pip is currently linked. Next, install the package in the required environment and verify it again using the same command to reproduce the issue. This approach transforms installation issues from repetitive tasks into traceable debugging.",
+    "body": "ModuleNotFoundError means Python could not resolve an import name. Causes include an environment mismatch, a typo, launch location, package structure, or a local file shadowing another module. Check sys.executable, python -m pip show, the import path, and filenames in order.",
     "related_concepts": [
       "ModuleNotFoundError",
       "import",
@@ -198,7 +198,7 @@
     ],
     "level_hint": "Beginner-Friendly Development Environment",
     "when_to_show": "When you encounter import errors or package installation issues",
-    "detail": "A `ModuleNotFoundError` means that the Python environment cannot find the module you are trying to import. Rather than immediately repeating the `pip install` command, you should first check the Python interpreter you’re running, the associated pip installation, the active venv, and the current working directory. Since the package name and the import name may differ, it’s best to narrow down the issue using a reproduction command."
+    "detail": "ModuleNotFoundError means Python could not resolve an import name. Causes include an environment mismatch, a typo, launch location, package structure, or a local file shadowing another module. Check sys.executable, python -m pip show, the import path, and filenames in order."
   },
   {
     "id": "PYV103_ENV_GIT_MODEL",
@@ -230,7 +230,7 @@
       "quality_gate"
     ],
     "level_hint": "Beginner-Friendly Development Environment",
-    "when_to_show": "커밋 전 변경 확인 루틴을 볼 때",
+    "when_to_show": "When reviewing git_status, git_diff, git_add, git_commit",
     "detail": "`status`, `diff`, `add`, and `commit` are the basic steps for making a safe commit. Use `status` to view the modified files, use `diff` to verify the actual line changes, and then add only the necessary files before committing. Committing before verification or including temporary files such as `.tmp` makes it difficult to trace the cause of issues later on."
   },
   {
@@ -288,7 +288,7 @@
     "id": "PYV103_ENV_GPU_CUDA_DRIVER",
     "type": "dev_environment_foundation",
     "title": "GPU, NVIDIA driver, CUDA, and PyTorch CUDA build are different layers.",
-    "body": "A GPU is hardware that performs computations, and the NVIDIA driver is software that enables the operating system to recognize and use the NVIDIA GPU. CUDA is a runtime and development ecosystem for performing computations on NVIDIA GPUs, and the CUDA Toolkit includes development tools such as nvcc. A PyTorch CUDA build is a package of PyTorch that has been built to support CUDA. Although the names are similar, they are not the same thing. When checking the environment, you examine the layers from top to bottom. First, verify whether the system has an NVIDIA GPU and whether the driver is installed (as indicated by `nvidia-smi`). Next, check whether the PyTorch installed in your Python environment is a CUDA-enabled build. If `torch.cuda.is_available()` returns `False`, it could be because there is no GPU, there is a driver issue, or you installed a CPU-only version of PyTorch. A common mistake made by beginners is assuming that if `nvidia-smi` works, PyTorch will automatically use the GPU. While `nvidia-smi` displays the driver and GPU status, you must separately verify whether the current Python package is a CUDA-enabled build. Conversely, even if `nvcc` is not present, inference may still work if you’re using a PyTorch wheel that already includes the CUDA runtime. Therefore, you shouldn’t draw conclusions based on a single command. When practicing, log the output of `nvidia-smi` along with `python -c \"import torch; print(torch.cuda.is_available()); print(torch.version.cuda)\"`. Adding the Python version, venv path, and PyTorch version to this makes it easier to reproduce the issue. For a GPU environment to operate stably, the hardware, drivers, Python packages, and code device selection must all be correct.",
+    "body": "Separate GPU hardware, the NVIDIA driver, the PyTorch build in the selected environment, and its compatible CUDA runtime. PyTorch wheels can bundle required runtime components, so a system CUDA toolkit is not always required. Compare nvidia-smi, torch.cuda.is_available(), torch.version.cuda, and sys.executable.",
     "related_concepts": [
       "gpu",
       "cuda",
@@ -299,7 +299,7 @@
     ],
     "level_hint": "Beginner-Friendly Development Environment",
     "when_to_show": "When looking at CUDA installation, GPU servers, and the PyTorch runtime environment",
-    "detail": "For a GPU environment to operate stably, the hardware, NVIDIA driver, CUDA runtime, and PyTorch CUDA build must all be compatible. Just because `nvidia-smi` shows the GPU is available doesn’t necessarily mean PyTorch is using it. You must check `torch.cuda.is_available`, `torch.version.cuda`, and the venv path together to narrow down which layer the problem lies in."
+    "detail": "Separate GPU hardware, the NVIDIA driver, the PyTorch build in the selected environment, and its compatible CUDA runtime. PyTorch wheels can bundle required runtime components, so a system CUDA toolkit is not always required. Compare nvidia-smi, torch.cuda.is_available(), torch.version.cuda, and sys.executable."
   },
   {
     "id": "PYV103_ENV_TORCH_CUDA_CHECK",
@@ -370,7 +370,7 @@
   {
     "id": "PYV107_A1_ENV_ACTIVATE_PIP",
     "title": "You must use pip after running `activate` for the installation to take effect in that environment.",
-    "body": "Simply creating a virtual environment doesn’t mean you’re actually using it yet. You must run `activate` so that the current terminal uses that virtual environment’s Python and pip. Therefore, when installing packages, it’s safest to first activate the .venv and then use the command `python -m pip install package_name`. If you just use `pip install`, the `pip` associated with a different Python installation might occasionally be executed. `python -m pip` instructs the command to use “the pip of the currently running Python,” which helps prevent environment confusion.",
+    "body": "Activation makes python prefer the environment interpreter, which is convenient for installation and execution. It is not required; the environment's Python can be invoked directly. Use python -m pip and sys.executable to confirm that installation and execution target the same interpreter.",
     "tags": [
       "dev-environment",
       "venv",
@@ -381,7 +381,7 @@
       "python_m_pip",
       "pip"
     ],
-    "detail": "Simply creating a virtual environment isn't enough; you must activate it in your current terminal. After activating it, running `python -m pip install` will most likely install the package in the Python environment currently in use. If you've installed the package but can't import it, you should first check whether pip is linked to a different Python installation."
+    "detail": "Activation makes python prefer the environment interpreter, which is convenient for installation and execution. It is not required; the environment's Python can be invoked directly. Use python -m pip and sys.executable to confirm that installation and execution target the same interpreter."
   },
   {
     "id": "PYV107_A1_ENV_REQUIREMENTS_FILE",

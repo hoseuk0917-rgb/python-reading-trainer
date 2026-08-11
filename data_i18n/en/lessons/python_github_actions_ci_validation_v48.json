@@ -95,7 +95,7 @@
       "Delete the lesson file"
     ],
     "answer": "Download the repository files to the CI runtime environment",
-    "explanation": "Since the CI server starts in an empty environment, it must first fetch the repository files before it can run the verification scripts. The `checkout` action in GitHub Actions is the step that downloads the repository code to the runner. Without this step, the test scripts will not be able to find the files they need to check.",
+    "explanation": "actions/checkout places the repository revision for the event in the runner workspace so later steps can read it. High-assurance workflows can pin a reviewed full commit SHA rather than only a movable major tag and update it through a controlled process. Limit credential persistence and fetch depth to what the job needs.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_ARCHITECTURE_DESIGN"
@@ -122,7 +122,7 @@
       "To change the browser port"
     ],
     "answer": "To set up a Python environment for running the verification script,",
-    "explanation": "The `setup-python` action is a step that sets up the desired Python version in the GitHub Actions environment. You should be able to run validation scripts in CI just as you would locally.",
+    "explanation": "setup-python makes the requested Python 3.11 line available on PATH. For tighter reproducibility, pin a patch version and dependency lock and account for changes in the ubuntu-latest image. Using only the standard library does not by itself guarantee identical repository-script behavior.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -176,7 +176,7 @@
       "To change the Git remote address"
     ],
     "answer": "Because the validation criteria can be specified at runtime",
-    "explanation": "CLI args are option values passed to a script from the command line. Even for the same validation script, you can specify different expected versions or card counts as arguments. By accepting these as arguments rather than hard-coding them, it is easy to reuse the same code to validate multiple versions. Therefore, the correct answer is “because the validation conditions can be specified at runtime.”",
+    "explanation": "A CLI option passes a release-specific expected count into the reusable validator. If that value is recomputed from the same actual data, it cannot detect omissions, so source it from a versioned manifest or independent specification. Validate argument type and range and provide useful help and failure output.",
     "side_card_ids": [
       "SC_import_pm_reading",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -283,7 +283,7 @@
       "To delete GitHub Actions"
     ],
     "answer": "To run the validation only when the relevant files change",
-    "explanation": "A path filter is a setting that restricts CI runs to only when specific paths have changed. This helps reduce unnecessary runs, such as when only documentation has changed. By using a path filter, you can ensure that resource-intensive tests or builds are run only when relevant files have changed.",
+    "explanation": "A paths filter saves work by running only for listed changes. Include every path that can affect the result, such as validator, workflow, dependencies, and side-card data, or required validation may be skipped. Also check how filtered required checks behave with branch protection.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -310,7 +310,7 @@
       "To ensure that CI verification always fails"
     ],
     "answer": "To ensure consistency between my computer and the remote storage",
-    "explanation": "If you run the check locally first and then run it again remotely, you’ll reduce the likelihood of broken changes remaining. A local check is a test run on your own computer, while a CI check is a test run in a remote environment, such as GitHub. Be mindful of differences in Python versions and paths between the two environments.",
+    "explanation": "Running the same script locally and in CI reduces rule drift and gives early feedback. OS, Python patch, locale, timezone, dependencies, and environment variables can still differ. Pin the CI environment and document how to reproduce it locally.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -363,7 +363,7 @@
       "You can automatically delete lesson files"
     ],
     "answer": "You don't have to modify the workflow file every time a new version is added.",
-    "explanation": "CI runs based on structural validation, and you can specify the expected number of cards as an argument during local release validation. If you hard-code the `count` in CI, the validation may fail incorrectly when the number of cards changes. The expected value should be specified, but it must be compared against the actual file loading results. Therefore, the output results do not require modifying the workflow file every time a new version is added.",
+    "explanation": "Avoiding a count literal in workflow YAML prevents editing that file for every release, but removing the expectation from CI can miss a disconnected lesson. Put expected files and counts in a versioned manifest or independent metadata read by the validator so regression coverage remains.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
@@ -390,7 +390,7 @@
       "Skipping a file without reading it"
     ],
     "answer": "It validates using the same rules no matter where it is run",
-    "explanation": "If validation criteria are hard-coded, it can help reduce the problem of people verifying them in different ways. Reproducible validation is a principle that ensures the same validation results are produced regardless of who runs the test. Fixed commands, versions, and the expected number of cards must all be managed together.",
+    "explanation": "Reproducible validation aims for the same decision with the same input revision, validator, configuration, runtime, and dependencies. 'Same repo' alone does not fix branch time, generated files, timezone, or network state. Pin tool versions and environment and remove or record external dependencies.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
@@ -416,7 +416,7 @@
       "Hiding the Git log"
     ],
     "answer": "Using only changes that have passed automatic validation as a safe standard",
-    "explanation": "CI as a quality gate is an approach that uses CI success as the minimum quality standard for the main branch. It acts like an automated gatekeeper, preventing broken changes from being pushed. If validation fails, it stops the merge or deployment, allowing errors that humans might have missed to be caught at the repository level.",
+    "explanation": "A CI result becomes an enforced merge gate only when branch protection requires that check. Merely having a workflow or a red status does not automatically block every merge. Review skipped-job behavior, administrator bypass, permissions, and protected-branch settings.",
     "side_card_ids": [
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY",
       "PYV102_A7_DATAFRAME_CSV_CLEANING"
