@@ -6,6 +6,10 @@ from pathlib import Path
 
 from audit_python_reading_graph_ir_v0_1 import CASES
 from export_python_reading_archify_v0_1 import build_archify_workflow
+from python_reading_archify_contract_v0_1 import (
+    assert_workflow_ids_archify_safe,
+    normalize_workflow_ids,
+)
 from python_reading_graph_ir_v0_1 import build_python_reading_graph_ir
 
 
@@ -37,11 +41,14 @@ def main() -> None:
         for locale in ("ko", "en"):
             workflow_path = case_dir / f"{name}.{locale}.workflow.json"
             html_name = f"{name}.{locale}.html"
-            workflow = build_archify_workflow(
-                ir,
-                locale=locale,
-                output_name=html_name,
+            workflow = normalize_workflow_ids(
+                build_archify_workflow(
+                    ir,
+                    locale=locale,
+                    output_name=html_name,
+                )
             )
+            assert_workflow_ids_archify_safe(workflow)
             workflow_path.write_text(
                 json.dumps(workflow, ensure_ascii=False, indent=2) + "\n",
                 encoding="utf-8",
@@ -74,6 +81,7 @@ def main() -> None:
     print(f"OUTPUT_DIR={root}")
     print(f"WORKFLOW_COUNT={len(rows)}")
     print(f"MANIFEST={manifest_path}")
+    print("ARCHIFY_ID_CONTRACT=PASS")
     print("RESULT=PASS_PYTHON_READING_ARCHIFY_MATRIX_GENERATION_V0_1")
 
 
