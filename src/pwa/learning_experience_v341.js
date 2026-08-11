@@ -6,7 +6,7 @@
   // LEARNING_EXPERIENCE_V341_R3_WAIT_FOR_V340_PATH
   // LEARNING_EXPERIENCE_V341_R4_STABLE_ACTIONS_RESET
   // LEARNING_EXPERIENCE_V341_R5_RESET_POSTPROCESS
-  // LEARNING_EXPERIENCE_V341_R6_RUNTIME_TRACE
+  // LEARNING_EXPERIENCE_V341_RELEASE_CLEAN
   const STORAGE_KEY = "python-reading-trainer-learning-experience-v341";
   const PROGRESS_KEY = "python-reading-trainer-progress-v1";
   const REVIEW_KEY = "python-reading-trainer-review-v340";
@@ -230,16 +230,10 @@
   }
 
   function openMission(number) {
-    window.__v341MissionTrace = window.__v341MissionTrace || [];
-    window.__v341MissionTrace.push("entered:" + String(number));
     const runtimeEngine = engine();
-    window.__v341MissionTrace.push("engine:" + Boolean(runtimeEngine));
     if (!runtimeEngine) return;
     const mission = runtimeEngine.missionForCheckpoint(number, locale());
-    window.__v341MissionTrace.push("mission:" + String(mission && mission.kind || ""));
-    window.__v341MissionTrace.push("modalBefore:" + document.querySelectorAll("#missionModalV341").length);
     const modal = ensureMissionModal();
-    window.__v341MissionTrace.push("modalAfterEnsure:" + document.querySelectorAll("#missionModalV341").length);
     modal.dataset.checkpoint = String(number);
     modal.querySelector("h2").textContent = t("실전 체크포인트 ", "Practice checkpoint ") + number;
     modal.querySelector(".mission-v341-question").textContent = mission.question;
@@ -268,7 +262,6 @@
     });
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
-    window.__v341MissionTrace.push("shown:" + String(number) + ":hidden=" + modal.classList.contains("hidden"));
   }
 
   function renderPractice() {
@@ -438,14 +431,10 @@
     document.addEventListener("click", function(event) {
       const button = event.target && event.target.closest ? event.target.closest("#resetBtn") : null;
       if (!button) return;
-      window.__v341ResetTrace = window.__v341ResetTrace || [];
-      window.__v341ResetTrace.push("post-click-seen");
       window.setTimeout(function() {
         const remainingAttempts = attemptedCount();
-        window.__v341ResetTrace.push("post-remaining:" + String(remainingAttempts));
         if (remainingAttempts !== 0) return;
         localStorage.removeItem(STORAGE_KEY);
-        window.__v341ResetTrace.push("post-storage-removed:" + String(localStorage.getItem(STORAGE_KEY) === null));
         renderLearningSummary();
         renderPractice();
       }, 120);
@@ -499,18 +488,13 @@
     if (typeof resetProgress !== "function") return false;
     const original = resetProgress;
     resetProgress = function() {
-      window.__v341ResetTrace = window.__v341ResetTrace || [];
-      window.__v341ResetTrace.push("wrapper-entered");
       const result = original.apply(this, arguments);
-      window.__v341ResetTrace.push("original-returned");
       const progress = safeProgress();
       const remainingAttempts = engine() && Array.isArray(cards)
         ? engine().attemptedCount(cards, progress)
         : 0;
-      window.__v341ResetTrace.push("wrapper-remaining:" + String(remainingAttempts));
       if (remainingAttempts === 0) {
         localStorage.removeItem(STORAGE_KEY);
-        window.__v341ResetTrace.push("wrapper-storage-removed:" + String(localStorage.getItem(STORAGE_KEY) === null));
         renderLearningSummary();
         renderPractice();
       }
@@ -566,5 +550,4 @@
 
   window.renderPracticeV341 = renderPractice;
   window.renderLearningSummaryV341 = renderLearningSummary;
-  window.openPracticeMissionV341 = openMission;
 })();
