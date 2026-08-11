@@ -8,6 +8,7 @@ from python_reading_archify_contract_v0_1 import (
     normalize_workflow_ids,
 )
 from python_reading_archify_layout_v0_1 import (
+    FALSE_BRANCH_LABEL_DX,
     FALSE_BRANCH_LABEL_DY,
     FAR_LEFT_CORRIDOR_X,
     LABEL_DX_BY_ROLE,
@@ -40,7 +41,9 @@ def assert_layout_policy(workflow: dict) -> None:
             )
 
         if edge.get("labelDx") is not None:
-            assert edge["labelDx"] in set(LABEL_DX_BY_ROLE.values()), edge
+            assert edge["labelDx"] in set(LABEL_DX_BY_ROLE.values()) | {
+                FALSE_BRANCH_LABEL_DX,
+            }, edge
 
         if edge.get("labelDy") in set(LABEL_DY_BY_ROLE.values()) | {FALSE_BRANCH_LABEL_DY}:
             assert edge.get("label"), edge
