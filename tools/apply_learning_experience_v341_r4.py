@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 UI = ROOT / "src" / "pwa" / "learning_experience_v341.js"
-VERSION = "v341_r4_release"
+VERSION = "v341_r4_release2"
 MARKER = "LEARNING_EXPERIENCE_V341_R4_STABLE_ACTIONS_RESET"
 
 OLD_CHECKPOINT_BIND = '        button.onclick = function() { openMission(firstPending); };'
@@ -88,7 +88,8 @@ def patch(text: str) -> str:
         if anchor not in out:
             raise RuntimeError("mission delegation insertion anchor missing")
         out = out.replace(anchor, DELEGATE_FN + anchor, 1)
-    out = replace_once(out, OLD_READY_START, NEW_READY_START, "ready delegation")
+    if "bindMissionDelegation();" not in out:
+        out = replace_once(out, OLD_READY_START, NEW_READY_START, "ready delegation")
     out = out.replace(DEBUG_EXPORT, "")
     if MARKER not in out:
         anchor = "  // LEARNING_EXPERIENCE_V341_R3_WAIT_FOR_V340_PATH"
