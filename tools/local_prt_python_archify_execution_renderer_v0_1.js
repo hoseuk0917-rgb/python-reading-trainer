@@ -6,11 +6,12 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-const VERSION = "v0.2";
+const VERSION = "v0.3";
 const MAX_PROCESS_STDOUT_BYTES = 8 * 1024 * 1024;
 const MAX_PROCESS_STDERR_BYTES = 256 * 1024;
 const MAX_ARTIFACT_BYTES = 8 * 1024 * 1024;
 const PROCESS_TIMEOUT_MS = 15000;
+const ARCHIFY_ID_RE = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 
 function fail(message, statusCode, detail) {
   const error = new Error(message);
@@ -135,20 +136,71 @@ function assertRenderedWorkflowContract(projected, structurePayload) {
     throw fail("canonical_projection_contains_duplicates", 422);
   }
 
+  const projectedCanonical = Array.isArray(projected && projected.canonical_execution_node_ids)
+    ? projected.canonical_execution_node_ids.map(String)
+    : [];
+  if (
+    projectedCanonical.length !== canonical.length ||
+    projectedCanonical.some((value, index) => value !== canonical[index])
+  ) {
+    throw fail("projected_canonical_projection_mismatch", 500);
+  }
+
   const workflow = projected && projected.workflow;
   if (!workflow || !Array.isArray(workflow.nodes) || !Array.isArray(workflow.edges)) {
     throw fail("archify_workflow_projection_invalid", 500);
   }
 
+  const workflowSourceNodeIds = Array.isArray(projected && projected.workflow_source_node_ids)
+    ? projected.workflow_source_node_ids.map(String)
+    : [];
+  if (!workflowSourceNodeIds.length || workflowSourceNodeIds.some((value) => !value)) {
+    throw fail("archify_workflow_source_node_id_missing", 500);
+  }
+  if (workflowSourceNodeIds.length !== new Set(workflowSourceNodeIds).size) {
+    throw fail("archify_workflow_source_node_id_duplicate", 500);
+  }
+  if (workflowSourceNodeIds.some((value) => !canonicalSet.has(value))) {
+    throw fail("archify_workflow_source_node_noncanonical", 500);
+  }
+
   const nodeIds = workflow.nodes.map((item) => String(item && item.id || ""));
-  if (nodeIds.some((value) => !value)) {
-    throw fail("archify_workflow_node_id_missing", 500);
+  if (nodeIds.some((value) => !value || !ARCHIFY_ID_RE.test(value))) {
+    throw fail("archify_workflow_node_id_contract_failed", 500);
   }
   if (nodeIds.length !== new Set(nodeIds).size) {
     throw fail("archify_workflow_node_id_duplicate", 500);
   }
-  if (nodeIds.some((value) => !canonicalSet.has(value))) {
-    throw fail("archify_workflow_noncanonical_node", 500);
+  if (nodeIds.length !== workflowSourceNodeIds.length) {
+    throw fail("archify_workflow_source_render_count_mismatch", 500);
+  }
+
+  const workflowIdMap = Array.isArray(projected && projected.workflow_id_map)
+    ? projected.workflow_id_map.map((item) => ({
+        canonicalNodeId: String(item && item.canonical_node_id || ""),
+        archifyNodeId: String(item && item.archify_node_id || "")
+      }))
+    : [];
+  if (workflowIdMap.length !== workflowSourceNodeIds.length) {
+    throw fail("archify_workflow_id_map_count_mismatch", 500);
+  }
+
+  const mappedCanonical = workflowIdMap.map((item) => item.canonicalNodeId);
+  const mappedArchify = workflowIdMap.map((item) => item.archifyNodeId);
+  if (mappedCanonical.some((value) => !value) || mappedArchify.some((value) => !ARCHIFY_ID_RE.test(value))) {
+    throw fail("archify_workflow_id_map_invalid", 500);
+  }
+  if (mappedCanonical.length !== new Set(mappedCanonical).size) {
+    throw fail("archify_workflow_id_map_canonical_duplicate", 500);
+  }
+  if (mappedArchify.length !== new Set(mappedArchify).size) {
+    throw fail("archify_workflow_id_map_render_duplicate", 500);
+  }
+  if (mappedCanonical.some((value, index) => value !== workflowSourceNodeIds[index])) {
+    throw fail("archify_workflow_id_map_source_order_mismatch", 500);
+  }
+  if (mappedArchify.some((value, index) => value !== nodeIds[index])) {
+    throw fail("archify_workflow_id_map_render_order_mismatch", 500);
   }
 
   const collapsedAuxiliaryNodeIds = Array.isArray(projected && projected.collapsed_auxiliary_node_ids)
@@ -160,16 +212,26 @@ function assertRenderedWorkflowContract(projected, structurePayload) {
   if (collapsedAuxiliaryNodeIds.some((value) => canonicalSet.has(value))) {
     throw fail("archify_collapsed_auxiliary_is_canonical", 500);
   }
-  if (collapsedAuxiliaryNodeIds.some((value) => nodeIds.includes(value))) {
+  if (collapsedAuxiliaryNodeIds.some((value) => workflowSourceNodeIds.includes(value))) {
     throw fail("archify_collapsed_auxiliary_leaked", 500);
   }
 
   const edgeIds = workflow.edges.map((item) => String(item && item.id || ""));
-  if (edgeIds.some((value) => !value) || edgeIds.length !== new Set(edgeIds).size) {
+  if (
+    edgeIds.some((value) => !value || !ARCHIFY_ID_RE.test(value)) ||
+    edgeIds.length !== new Set(edgeIds).size
+  ) {
     throw fail("archify_workflow_edge_id_contract_failed", 500);
   }
 
-  return { workflow, nodeIds, edgeIds, collapsedAuxiliaryNodeIds };
+  return {
+    workflow,
+    nodeIds,
+    edgeIds,
+    workflowSourceNodeIds,
+    workflowIdMap,
+    collapsedAuxiliaryNodeIds
+  };
 }
 
 async function renderPythonExecution(options) {
@@ -280,6 +342,8 @@ async function renderPythonExecution(options) {
       authority: structurePayload.authority || {},
       summary: structurePayload.summary || {},
       executionProjectionNodeIds: (structurePayload.executionProjectionNodeIds || []).map(String),
+      workflowSourceNodeIds: contract.workflowSourceNodeIds,
+      workflowIdMap: contract.workflowIdMap,
       collapsedAuxiliaryNodeIds: contract.collapsedAuxiliaryNodeIds,
       workflow: contract.workflow,
       artifact: {
