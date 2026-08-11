@@ -7,8 +7,13 @@ from typing import Any
 
 from export_python_reading_archify_layoutsafe_v0_1 import build_archify_workflow
 from export_python_reading_archify_v0_1 import hidden
+from python_reading_archify_contract_v0_1 import (
+    archify_safe_id,
+    assert_workflow_ids_archify_safe,
+    normalize_workflow_ids,
+)
 
-VERSION = "v0.2"
+VERSION = "v0.3"
 
 
 def load_envelope() -> dict[str, Any]:
@@ -105,25 +110,46 @@ def main() -> None:
         output_name=output_name,
     )
 
-    workflow_node_ids = [str(item.get("id") or "") for item in (workflow.get("nodes") or [])]
-    if any(not value for value in workflow_node_ids):
+    workflow_source_node_ids = [
+        str(item.get("id") or "")
+        for item in (workflow.get("nodes") or [])
+    ]
+    if any(not value for value in workflow_source_node_ids):
         raise ValueError("workflow contains a node without an id")
-    if len(workflow_node_ids) != len(set(workflow_node_ids)):
-        raise ValueError("workflow contains duplicate node ids")
+    if len(workflow_source_node_ids) != len(set(workflow_source_node_ids)):
+        raise ValueError("workflow contains duplicate source node ids")
 
     allowed_ids = set(projection_ids)
-    outside = [value for value in workflow_node_ids if value not in allowed_ids]
+    outside = [value for value in workflow_source_node_ids if value not in allowed_ids]
     if outside:
         raise ValueError("workflow contains non-canonical execution nodes: " + ",".join(outside))
 
     leaked_auxiliary = [
         value for value in collapsed_auxiliary_node_ids
-        if value in set(workflow_node_ids)
+        if value in set(workflow_source_node_ids)
     ]
     if leaked_auxiliary:
         raise ValueError(
             "collapsed auxiliary nodes leaked into workflow: " + ",".join(leaked_auxiliary)
         )
+
+    workflow_id_map = [
+        {
+            "canonical_node_id": source_id,
+            "archify_node_id": archify_safe_id(source_id),
+        }
+        for source_id in workflow_source_node_ids
+    ]
+    archify_ids = [item["archify_node_id"] for item in workflow_id_map]
+    if len(archify_ids) != len(set(archify_ids)):
+        raise ValueError("workflow Archify ID mapping contains collisions")
+
+    workflow = normalize_workflow_ids(workflow)
+    assert_workflow_ids_archify_safe(workflow)
+
+    workflow_node_ids = [str(item.get("id") or "") for item in (workflow.get("nodes") or [])]
+    if workflow_node_ids != archify_ids:
+        raise ValueError("normalized workflow node order does not match ID mapping")
 
     edge_ids = [str(item.get("id") or "") for item in (workflow.get("edges") or [])]
     if any(not value for value in edge_ids):
@@ -137,7 +163,9 @@ def main() -> None:
         "locale": locale,
         "scope_id": scope_id or ir.get("primary_scope_id"),
         "canonical_execution_node_ids": projection_ids,
+        "workflow_source_node_ids": workflow_source_node_ids,
         "workflow_node_ids": workflow_node_ids,
+        "workflow_id_map": workflow_id_map,
         "collapsed_auxiliary_node_ids": collapsed_auxiliary_node_ids,
         "workflow": workflow,
     }
