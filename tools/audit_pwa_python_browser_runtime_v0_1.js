@@ -29,22 +29,23 @@ class FakeWorker {
 
   postMessage(message) {
     this.messages.push(message);
-    const response = message.type === "warmup"
+    const result = message.type === "warmup"
       ? {
-          id: message.id,
           ok: true,
-          result: {
-            ok: true,
-            kind: "python_browser_runtime_ready",
-            workerVersion: "v0.1",
-            pyodideVersion: "314.0.2"
-          }
+          kind: "python_browser_runtime_ready",
+          workerVersion: "v0.1",
+          pyodideVersion: "314.0.2"
         }
-      : {
-          id: message.id,
-          ok: true,
-          result: { ok: true, kind: message.type }
-        };
+      : { ok: true, kind: message.type };
+    const response = {
+      id: message.id,
+      ok: true,
+      runtimeMeta: {
+        workerVersion: "v0.1",
+        pyodideVersion: "314.0.2"
+      },
+      result
+    };
     setTimeout(() => this.emit("message", { data: response }), 0);
   }
 
@@ -57,6 +58,33 @@ class FakeWorker {
   }
 }
 FakeWorker.instances = [];
+
+function createRuntimeApi(runtimeSource) {
+  const document = {
+    baseURI: "https://example.invalid/python-reading-trainer/src/pwa/index.html"
+  };
+  const window = {
+    location: { href: document.baseURI },
+    setTimeout,
+    clearTimeout
+  };
+  const context = vm.createContext({
+    window,
+    document,
+    Worker: FakeWorker,
+    URL,
+    Map,
+    Error,
+    String,
+    Number,
+    Promise,
+    console,
+    setTimeout,
+    clearTimeout
+  });
+  vm.runInContext(runtimeSource, context, { filename: "python_browser_runtime.js" });
+  return window.PythonBrowserRuntime;
+}
 
 async function main() {
   assert(fs.existsSync(RUNTIME_PATH), "browser runtime source missing");
@@ -72,6 +100,7 @@ async function main() {
   assert(/const PYODIDE_VERSION = "314\.0\.2"/.test(workerSource), "Pyodide version not pinned");
   assert(/cdn\.jsdelivr\.net\/pyodide\/v\$\{PYODIDE_VERSION\}\/full\//.test(workerSource), "official jsDelivr Pyodide path missing");
   assert(/await import\(PYODIDE_MODULE_URL\)/.test(workerSource), "Pyodide module import missing");
+  assert(/runtimeMeta:\s*\{[\s\S]*?pyodideVersion:\s*PYODIDE_VERSION/.test(workerSource), "worker success runtime metadata missing");
   console.log("PINNED_PYODIDE_RUNTIME=PASS");
 
   const expectedModules = [
@@ -96,31 +125,7 @@ async function main() {
   assert(!/source[^\n]{0,80}PYODIDE_MODULE_URL|PYODIDE_MODULE_URL[^\n]{0,80}source/i.test(workerSource), "source appears in Pyodide asset URL construction");
   console.log("NO_PERSISTENT_STORAGE_OR_LOCALHOST=PASS");
 
-  const document = {
-    baseURI: "https://example.invalid/python-reading-trainer/src/pwa/index.html"
-  };
-  const window = {
-    location: { href: document.baseURI },
-    setTimeout,
-    clearTimeout
-  };
-  const context = vm.createContext({
-    window,
-    document,
-    Worker: FakeWorker,
-    URL,
-    Map,
-    Error,
-    String,
-    Number,
-    Promise,
-    console,
-    setTimeout,
-    clearTimeout
-  });
-  vm.runInContext(runtimeSource, context, { filename: "python_browser_runtime.js" });
-
-  const api = window.PythonBrowserRuntime;
+  const api = createRuntimeApi(runtimeSource);
   assert(api && api.version === "v0.1", "runtime API missing");
   for (const method of ["warmup", "analyze", "project", "dispose", "getState"]) {
     assert(typeof api[method] === "function", `runtime method missing: ${method}`);
@@ -142,12 +147,21 @@ async function main() {
   await api.project({ ok: true }, "ko");
   assert(instance.messages.some((item) => item.type === "analyze"), "analyze message not posted");
   assert(instance.messages.some((item) => item.type === "project"), "project message not posted");
+  assert(api.getState().pyodideVersion === "314.0.2", "runtime metadata lost after RPC");
   console.log("WORKER_RPC=PASS");
 
   api.dispose();
   assert(instance.terminated === true, "worker not terminated by dispose");
   assert(api.getState().status === "idle", "dispose state mismatch");
   console.log("RUNTIME_DISPOSE=PASS");
+
+  const coldApi = createRuntimeApi(runtimeSource);
+  await coldApi.analyze("print('cold')", { language: "python" }, "python", "pwa_input.py");
+  const coldState = coldApi.getState();
+  assert(coldState.status === "ready" && coldState.usable === true, "cold analyze did not ready runtime");
+  assert(coldState.pyodideVersion === "314.0.2", "cold analyze did not record Pyodide metadata");
+  coldApi.dispose();
+  console.log("COLD_ANALYZE_METADATA=PASS");
 
   console.log("RESULT=PASS_PWA_PYTHON_BROWSER_RUNTIME_V0_1_AUDIT");
 }
