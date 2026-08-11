@@ -5,10 +5,33 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
+    $PSNativeCommandUseErrorActionPreference = $false
+}
+
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $OutputRoot = Join-Path $RepoRoot ".tmp\python_reading_archify_matrix_v0_1"
 $ArchifyCli = Join-Path $ArchifyRoot "archify\bin\archify.mjs"
 $ArtifactChecker = Join-Path $ArchifyRoot "archify\scripts\check-render-output.mjs"
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+
+function Write-Utf8NoBomFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $false)]
+        [object[]]$Lines
+    )
+
+    $Text = ""
+    if ($null -ne $Lines) {
+        $Text = (@($Lines) | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
+    }
+    if ($Text.Length -gt 0) {
+        $Text += [Environment]::NewLine
+    }
+    [System.IO.File]::WriteAllText($Path, $Text, $Utf8NoBom)
+}
 
 Set-Location $RepoRoot
 
@@ -17,6 +40,7 @@ Write-Host "REPO_ROOT=$RepoRoot"
 Write-Host "ARCHIFY_ROOT=$ArchifyRoot"
 Write-Host "TRACKED_SOURCE_WRITE_PLANNED=False"
 Write-Host "OUTPUT_ROOT=$OutputRoot"
+Write-Host "RECEIPT_ENCODING=UTF-8-NO-BOM"
 
 if (-not (Test-Path -LiteralPath $ArchifyCli -PathType Leaf)) {
     throw "ABORT=ARCHIFY_CLI_NOT_FOUND"
@@ -87,43 +111,49 @@ foreach ($Workflow in $WorkflowFiles) {
     $ShowcaseReceipt = "$Base.showcase.json"
     $DeliveryReceipt = "$Base.delivery.json"
     $Html = "$Base.html"
-    $ArtifactReceipt = "$Base.artifact-check.json"
+    $ArtifactReceipt = "$Base.artifact-check.txt"
 
-    node $ArchifyCli `
-        validate workflow `
-        $Workflow.FullName `
-        --quality standard `
-        --json `
-        > $StandardReceipt
-
+    $StandardOutput = @(
+        & node $ArchifyCli `
+            validate workflow `
+            $Workflow.FullName `
+            --quality standard `
+            --json 2>&1
+    )
     $StandardExit = $LASTEXITCODE
+    Write-Utf8NoBomFile -Path $StandardReceipt -Lines $StandardOutput
 
-    node $ArchifyCli `
-        validate workflow `
-        $Workflow.FullName `
-        --quality showcase `
-        --json `
-        > $ShowcaseReceipt
-
+    $ShowcaseOutput = @(
+        & node $ArchifyCli `
+            validate workflow `
+            $Workflow.FullName `
+            --quality showcase `
+            --json 2>&1
+    )
     $ShowcaseExit = $LASTEXITCODE
+    Write-Utf8NoBomFile -Path $ShowcaseReceipt -Lines $ShowcaseOutput
 
     $DeliveryExit = 99
     $ArtifactExit = 99
 
     if ($StandardExit -eq 0) {
-        node $ArchifyCli `
-            deliver workflow `
-            $Workflow.FullName `
-            $Html `
-            --quality standard `
-            --json `
-            > $DeliveryReceipt
-
+        $DeliveryOutput = @(
+            & node $ArchifyCli `
+                deliver workflow `
+                $Workflow.FullName `
+                $Html `
+                --quality standard `
+                --json 2>&1
+        )
         $DeliveryExit = $LASTEXITCODE
+        Write-Utf8NoBomFile -Path $DeliveryReceipt -Lines $DeliveryOutput
 
         if ($DeliveryExit -eq 0) {
-            node $ArtifactChecker $Html > $ArtifactReceipt
+            $ArtifactOutput = @(
+                & node $ArtifactChecker $Html 2>&1
+            )
             $ArtifactExit = $LASTEXITCODE
+            Write-Utf8NoBomFile -Path $ArtifactReceipt -Lines $ArtifactOutput
         }
     }
 
@@ -145,12 +175,30 @@ foreach ($Workflow in $WorkflowFiles) {
         Delivery = $DeliveryExit
         Artifact = $ArtifactExit
         Passed = $Passed
+        StandardReceipt = $StandardReceipt
+        ShowcaseReceipt = $ShowcaseReceipt
     }
 }
 
-$Rows | Format-Table -AutoSize
+$Rows | Select-Object Workflow, Standard, Showcase, Delivery, Artifact, Passed | Format-Table -AutoSize
 
 Write-Host "FAILURE_COUNT=$FailureCount"
+
+if ($FailureCount -ne 0) {
+    Write-Host "`n=== 4B. FAILED WORKFLOW STANDARD RECEIPTS ==="
+
+    foreach ($Row in @($Rows | Where-Object { -not $_.Passed })) {
+        Write-Host "`n--- $($Row.Workflow) ---"
+        Write-Host "STANDARD_EXIT=$($Row.Standard)"
+        Write-Host "SHOWCASE_EXIT=$($Row.Showcase)"
+
+        if (Test-Path -LiteralPath $Row.StandardReceipt -PathType Leaf) {
+            Get-Content -LiteralPath $Row.StandardReceipt -Raw -Encoding UTF8
+        } else {
+            Write-Host "STANDARD_RECEIPT_MISSING=$($Row.StandardReceipt)"
+        }
+    }
+}
 
 Write-Host "`n=== 5. REPO SAFETY ==="
 
