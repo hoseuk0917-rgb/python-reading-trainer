@@ -2,6 +2,11 @@
   "use strict";
 
   const VERSION = "v341_a1";
+  // LEARNING_EXPERIENCE_V341_R2_EXACT_MISSION_MAPPING
+  // LEARNING_EXPERIENCE_V341_R3_WAIT_FOR_V340_PATH
+  // LEARNING_EXPERIENCE_V341_R4_STABLE_ACTIONS_RESET
+  // LEARNING_EXPERIENCE_V341_R5_RESET_POSTPROCESS
+  // LEARNING_EXPERIENCE_V341_R6_RUNTIME_TRACE
   const STORAGE_KEY = "python-reading-trainer-learning-experience-v341";
   const PROGRESS_KEY = "python-reading-trainer-progress-v1";
   const REVIEW_KEY = "python-reading-trainer-review-v340";
@@ -225,9 +230,16 @@
   }
 
   function openMission(number) {
-    if (!engine()) return;
-    const mission = engine().missionForCheckpoint(number, locale());
+    window.__v341MissionTrace = window.__v341MissionTrace || [];
+    window.__v341MissionTrace.push("entered:" + String(number));
+    const runtimeEngine = engine();
+    window.__v341MissionTrace.push("engine:" + Boolean(runtimeEngine));
+    if (!runtimeEngine) return;
+    const mission = runtimeEngine.missionForCheckpoint(number, locale());
+    window.__v341MissionTrace.push("mission:" + String(mission && mission.kind || ""));
+    window.__v341MissionTrace.push("modalBefore:" + document.querySelectorAll("#missionModalV341").length);
     const modal = ensureMissionModal();
+    window.__v341MissionTrace.push("modalAfterEnsure:" + document.querySelectorAll("#missionModalV341").length);
     modal.dataset.checkpoint = String(number);
     modal.querySelector("h2").textContent = t("실전 체크포인트 ", "Practice checkpoint ") + number;
     modal.querySelector(".mission-v341-question").textContent = mission.question;
@@ -256,6 +268,7 @@
     });
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
+    window.__v341MissionTrace.push("shown:" + String(number) + ":hidden=" + modal.classList.contains("hidden"));
   }
 
   function renderPractice() {
@@ -277,7 +290,7 @@
 
     const intro = document.createElement("section");
     intro.className = "practice-v341-card";
-    intro.innerHTML = '<h1 style="margin:0">' + t("실전", "Practice") + '</h1><p>' + t("Python 순차 학습에서 실제로 쌓인 진도만큼 개발 절차·테스트·리뷰 미션이 열립니다. 점수나 배지가 아니라, 어떤 사고를 실제로 통과했는지를 기록합니다.", "Developer workflow, testing, and review missions unlock from actual sequential-learning progress. This records demonstrated reasoning rather than points or badges.") + '</p>';
+    intro.innerHTML = '<h1 style="margin:0">' + t("실전", "Practice") + '</h1><p>' + t("Python 순차 학습에서 실제로 쌓인 진도만큼 개발 절차·테스트·리뷰 미션이 열립니다. 어떤 개발 사고를 실제로 이해하고 통과했는지를 기록합니다.", "Developer workflow, testing, and review missions unlock from actual sequential-learning progress. The record shows which developer reasoning skills you have actually demonstrated.") + '</p>';
 
     const topstats = document.createElement("div");
     topstats.className = "practice-v341-topstats";
@@ -315,7 +328,7 @@
         button.type = "button";
         button.className = "practice-v341-primary";
         button.textContent = t("체크포인트 " + firstPending + " 미션 풀기", "Open checkpoint " + firstPending + " mission");
-        button.onclick = function() { openMission(firstPending); };
+        button.dataset.missionCheckpointV341 = String(firstPending);
         intro.appendChild(button);
       } else {
         const p = document.createElement("p");
@@ -350,10 +363,7 @@
       button.type = "button";
       button.disabled = !module.unlocked;
       button.textContent = module.unlocked ? t("관련 미션 풀기", "Open related mission") : t("아직 잠김", "Locked");
-      button.onclick = function() {
-        const checkpoint = Math.max(1, Math.ceil(module.threshold / engine().CHECKPOINT_INTERVAL));
-        openMission(checkpoint + index);
-      };
+      button.dataset.missionCheckpointV341 = String(Number(module.missionCheckpoint || 1));
       item.appendChild(button);
       moduleList.appendChild(item);
     });
@@ -410,6 +420,39 @@
     }
   }
 
+  function bindMissionDelegation() {
+    if (window.__learningExperienceV341MissionDelegated) return;
+    document.addEventListener("click", function(event) {
+      const button = event.target && event.target.closest
+        ? event.target.closest("[data-mission-checkpoint-v341]")
+        : null;
+      if (!button || button.disabled) return;
+      const number = Number(button.dataset.missionCheckpointV341 || 0);
+      if (number > 0) openMission(number);
+    }, true);
+    window.__learningExperienceV341MissionDelegated = true;
+  }
+
+  function bindResetPostProcess() {
+    if (window.__learningExperienceV341ResetPostProcess) return;
+    document.addEventListener("click", function(event) {
+      const button = event.target && event.target.closest ? event.target.closest("#resetBtn") : null;
+      if (!button) return;
+      window.__v341ResetTrace = window.__v341ResetTrace || [];
+      window.__v341ResetTrace.push("post-click-seen");
+      window.setTimeout(function() {
+        const remainingAttempts = attemptedCount();
+        window.__v341ResetTrace.push("post-remaining:" + String(remainingAttempts));
+        if (remainingAttempts !== 0) return;
+        localStorage.removeItem(STORAGE_KEY);
+        window.__v341ResetTrace.push("post-storage-removed:" + String(localStorage.getItem(STORAGE_KEY) === null));
+        renderLearningSummary();
+        renderPractice();
+      }, 120);
+    }, true);
+    window.__learningExperienceV341ResetPostProcess = true;
+  }
+
   function patchAttemptHandlers() {
     if (window.__learningExperienceV341AttemptPatched) return true;
     if (typeof checkAnswer !== "function" || typeof jumpToConfusedOrNext !== "function") return false;
@@ -456,11 +499,18 @@
     if (typeof resetProgress !== "function") return false;
     const original = resetProgress;
     resetProgress = function() {
-      const before = localStorage.getItem(PROGRESS_KEY);
+      window.__v341ResetTrace = window.__v341ResetTrace || [];
+      window.__v341ResetTrace.push("wrapper-entered");
       const result = original.apply(this, arguments);
-      const after = localStorage.getItem(PROGRESS_KEY);
-      if (before !== null && after === null) {
+      window.__v341ResetTrace.push("original-returned");
+      const progress = safeProgress();
+      const remainingAttempts = engine() && Array.isArray(cards)
+        ? engine().attemptedCount(cards, progress)
+        : 0;
+      window.__v341ResetTrace.push("wrapper-remaining:" + String(remainingAttempts));
+      if (remainingAttempts === 0) {
         localStorage.removeItem(STORAGE_KEY);
+        window.__v341ResetTrace.push("wrapper-storage-removed:" + String(localStorage.getItem(STORAGE_KEY) === null));
         renderLearningSummary();
         renderPractice();
       }
@@ -492,9 +542,11 @@
   function ready() {
     injectStyle();
     patchView();
+    bindMissionDelegation();
+    bindResetPostProcess();
     observeReviewClicks();
     const ok = patchAttemptHandlers() && patchReset();
-    if (!ok || !engine() || !Array.isArray(cards) || cards.length === 0) return false;
+    if (!ok || !engine() || !Array.isArray(cards) || cards.length === 0 || !document.getElementById("learningPathV340")) return false;
     renderLearningSummary();
     renderPractice();
     document.documentElement.dataset.learningExperienceV341 = VERSION;
@@ -514,4 +566,5 @@
 
   window.renderPracticeV341 = renderPractice;
   window.renderLearningSummaryV341 = renderLearningSummary;
+  window.openPracticeMissionV341 = openMission;
 })();

@@ -6,6 +6,7 @@
   "use strict";
 
   const VERSION = "v341_a1";
+  // LEARNING_EXPERIENCE_V341_R2_EXACT_MISSION_MAPPING
   const CHECKPOINT_INTERVAL = 30;
   const WEEKLY_CARD_GOAL = 50;
   const WEEKLY_DAY_GOAL = 5;
@@ -20,14 +21,14 @@
   ];
 
   const PRACTICE_MODULES = [
-    { id: "safe_change", threshold: 30, ko: "안전한 변경 절차", en: "Safe change procedure", descriptionKo: "요구 확인 → 작은 변경 → 테스트 → diff 확인 → commit 순서를 읽습니다.", descriptionEn: "Read the flow from requirement to small change, test, diff, and commit." },
-    { id: "regression", threshold: 60, ko: "회귀 테스트", en: "Regression testing", descriptionKo: "수정한 기능뿐 아니라 예전에 되던 기능이 깨지지 않았는지 확인합니다.", descriptionEn: "Check that previously working behavior still works after a change." },
-    { id: "idempotence", threshold: 90, ko: "멱등성과 재실행 안전성", en: "Idempotence and rerun safety", descriptionKo: "같은 작업을 두 번 실행해도 결과가 더 망가지지 않는 조건을 익힙니다.", descriptionEn: "Learn when running the same operation twice should not create extra damage." },
-    { id: "test_layers", threshold: 120, ko: "단위·통합·스모크 테스트", en: "Unit, integration, and smoke tests", descriptionKo: "테스트가 어디까지 확인하는지 범위를 구분합니다.", descriptionEn: "Distinguish test types by the scope of behavior they verify." },
-    { id: "git_review", threshold: 150, ko: "브랜치·diff·PR 리뷰", en: "Branch, diff, and PR review", descriptionKo: "변경 전후 차이와 영향 범위를 보고 승인 여부를 판단합니다.", descriptionEn: "Use diffs and impact scope to reason about whether a change is safe to approve." },
-    { id: "ci_gate", threshold: 180, ko: "CI 품질 게이트", en: "CI quality gates", descriptionKo: "push 뒤 자동 검사가 왜 필요한지와 실패 시 중단 원칙을 익힙니다.", descriptionEn: "Learn why automated checks run after push and why failed gates should block release." },
-    { id: "reproducibility", threshold: 240, ko: "재현성과 입력 고정", en: "Reproducibility and pinned inputs", descriptionKo: "버전·입력·환경을 고정해 같은 검증을 다시 만들 수 있게 합니다.", descriptionEn: "Pin versions, inputs, and environment so a validation can be reproduced." },
-    { id: "baseline_rollback", threshold: 300, ko: "기준선 비교와 롤백", en: "Baseline comparison and rollback", descriptionKo: "변경 전 기준선을 보존하고 문제가 생기면 안전하게 되돌리는 흐름을 익힙니다.", descriptionEn: "Preserve a baseline and reason about safe rollback after a bad change." }
+    { id: "safe_change", threshold: 30, missionCheckpoint: 1, ko: "안전한 변경 절차", en: "Safe change procedure", descriptionKo: "요구 확인 → 작은 변경 → 테스트 → diff 확인 → commit 순서를 읽습니다.", descriptionEn: "Read the flow from requirement to small change, test, diff, and commit." },
+    { id: "regression", threshold: 60, missionCheckpoint: 2, ko: "회귀 테스트", en: "Regression testing", descriptionKo: "수정한 기능뿐 아니라 예전에 되던 기능이 깨지지 않았는지 확인합니다.", descriptionEn: "Check that previously working behavior still works after a change." },
+    { id: "idempotence", threshold: 90, missionCheckpoint: 3, ko: "멱등성과 재실행 안전성", en: "Idempotence and rerun safety", descriptionKo: "같은 작업을 두 번 실행해도 결과가 더 망가지지 않는 조건을 익힙니다.", descriptionEn: "Learn when running the same operation twice should not create extra damage." },
+    { id: "test_layers", threshold: 120, missionCheckpoint: 4, ko: "단위·통합·스모크 테스트", en: "Unit, integration, and smoke tests", descriptionKo: "테스트가 어디까지 확인하는지 범위를 구분합니다.", descriptionEn: "Distinguish test types by the scope of behavior they verify." },
+    { id: "git_review", threshold: 150, missionCheckpoint: 6, ko: "브랜치·diff·PR 리뷰", en: "Branch, diff, and PR review", descriptionKo: "변경 전후 차이와 영향 범위를 보고 승인 여부를 판단합니다.", descriptionEn: "Use diffs and impact scope to reason about whether a change is safe to approve." },
+    { id: "ci_gate", threshold: 180, missionCheckpoint: 7, ko: "CI 품질 게이트", en: "CI quality gates", descriptionKo: "push 뒤 자동 검사가 왜 필요한지와 실패 시 중단 원칙을 익힙니다.", descriptionEn: "Learn why automated checks run after push and why failed gates should block release." },
+    { id: "reproducibility", threshold: 240, missionCheckpoint: 8, ko: "재현성과 입력 고정", en: "Reproducibility and pinned inputs", descriptionKo: "버전·입력·환경을 고정해 같은 검증을 다시 만들 수 있게 합니다.", descriptionEn: "Pin versions, inputs, and environment so a validation can be reproduced." },
+    { id: "baseline_rollback", threshold: 300, missionCheckpoint: 9, ko: "기준선 비교와 롤백", en: "Baseline comparison and rollback", descriptionKo: "변경 전 기준선을 보존하고 문제가 생기면 안전하게 되돌리는 흐름을 익힙니다.", descriptionEn: "Preserve a baseline and reason about safe rollback after a bad change." }
   ];
 
   const MISSION_TEMPLATES = [
