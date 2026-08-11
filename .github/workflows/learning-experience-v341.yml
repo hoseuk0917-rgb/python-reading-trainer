@@ -18,60 +18,50 @@ jobs:
         with:
           fetch-depth: 0
           ref: feat/learning-experience-v341
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Apply side-card education repair
         run: python tools/repair_sidecard_educational_quality_v341.py --apply
-
       - name: Confirm side-card repair idempotence
         run: python tools/repair_sidecard_educational_quality_v341.py --check
-
       - name: Apply V341 integration
         run: python tools/apply_learning_experience_v341.py --apply
-
       - name: Confirm V341 integration idempotence
         run: python tools/apply_learning_experience_v341.py --check
-
       - name: Apply V341 exact mission mapping
         run: python tools/apply_learning_experience_v341_r2.py --apply
-
       - name: Confirm V341 exact mission mapping idempotence
         run: python tools/apply_learning_experience_v341_r2.py --check
-
       - name: Apply V341 V340-path readiness guard
         run: python tools/apply_learning_experience_v341_r3.py --apply
-
       - name: Confirm V341 V340-path readiness guard idempotence
         run: python tools/apply_learning_experience_v341_r3.py --check
-
       - name: Apply V341 stable mission actions and reset cleanup
         run: python tools/apply_learning_experience_v341_r4.py --apply
-
       - name: Confirm V341 stable actions idempotence
         run: python tools/apply_learning_experience_v341_r4.py --check
-
       - name: Apply V341 reset postprocess
         run: python tools/apply_learning_experience_v341_r5.py --apply
-
       - name: Confirm V341 reset postprocess idempotence
         run: python tools/apply_learning_experience_v341_r5.py --check
-
+      - name: Apply V341 runtime trace
+        run: python tools/apply_learning_experience_v341_r6_trace.py --apply
+      - name: Confirm V341 runtime trace idempotence
+        run: python tools/apply_learning_experience_v341_r6_trace.py --check
       - name: Apply V341 asynchronous browser smoke contract
         run: python tools/apply_learning_experience_v341_smoke_r2.py --apply
-
       - name: Confirm V341 browser smoke contract idempotence
         run: python tools/apply_learning_experience_v341_smoke_r2.py --check
-
       - name: Apply V341 mission browser diagnostic
         run: python tools/apply_learning_experience_v341_smoke_r3.py --apply
-
       - name: Confirm V341 mission browser diagnostic idempotence
         run: python tools/apply_learning_experience_v341_smoke_r3.py --check
-
+      - name: Apply V341 runtime trace report
+        run: python tools/apply_learning_experience_v341_smoke_r4.py --apply
+      - name: Confirm V341 runtime trace report idempotence
+        run: python tools/apply_learning_experience_v341_smoke_r4.py --check
       - name: JavaScript syntax
         run: |
           node --check src/pwa/learning_engine_v341.js
@@ -79,53 +69,38 @@ jobs:
           node --check tools/audit_learning_experience_v341.js
           node --check tools/audit_learning_experience_v341_r2.js
           node --check tools/run_learning_experience_v341_browser_smoke.js
-
       - name: V341 pure engine audit
         run: node tools/audit_learning_experience_v341.js
-
       - name: V341 exact mission mapping audit
         run: node tools/audit_learning_experience_v341_r2.js
-
       - name: Side-card educational quality audit
         run: python tools/audit_sidecard_educational_quality_v341.py
-
       - name: Existing V340 learning regression
         run: node tools/audit_learning_loop_v340.js
-
       - name: Existing lesson validation
         run: python tools/validate_lessons.py
-
       - name: Existing content quality gates
         run: |
           python tools/content_quality_final_pass_v339.py --check
           python tools/content_quality_final_pass_v339_r2.py --check
           python tools/content_quality_final_pass_v339_r4.py --check
           node tools/audit_content_semantic_alignment_v339_r4.js
-
       - name: Patch integrity
         run: git diff --check
-
       - name: Real-browser V341 learning experience smoke
         shell: bash
         run: |
           set -euo pipefail
           python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v341-http.log 2>&1 &
           SERVER_PID=$!
-          cleanup() {
-            kill "$SERVER_PID" 2>/dev/null || true
-          }
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
           trap cleanup EXIT
-
           for i in $(seq 1 100); do
-            if curl -fsS http://127.0.0.1:3377/src/pwa/index.html > /dev/null; then
-              break
-            fi
+            if curl -fsS http://127.0.0.1:3377/src/pwa/index.html > /dev/null; then break; fi
             sleep 0.1
           done
-
           curl -fsS http://127.0.0.1:3377/tools/learning_experience_v341_browser_case.html > /dev/null
           node tools/run_learning_experience_v341_browser_smoke.js
-
       - name: Commit generated V341 integration and quality repair if needed
         shell: bash
         run: |
