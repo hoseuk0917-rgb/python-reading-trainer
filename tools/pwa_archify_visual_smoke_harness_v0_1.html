@@ -55,6 +55,18 @@
     while(Date.now()-start<timeout){ try{ const v=fn(); if(v) return v; }catch(_){} await sleep(120); }
     return null;
   }
+  async function waitForPwaDocument(frame, timeout){
+    return waitFor(()=>{
+      const doc=frame.contentDocument;
+      if(!doc || doc.readyState!=="complete") return null;
+      const input=doc.getElementById("codeInput");
+      const analyze=doc.getElementById("analyzeCodeBtn");
+      const mermaid=doc.getElementById("mermaidDiagram");
+      const pathname=String((doc.location&&doc.location.pathname)||"");
+      if(!/\/src\/pwa\/index\.html$/.test(pathname)) return null;
+      return input&&analyze&&mermaid ? doc : null;
+    },timeout);
+  }
   function check(label, condition, detail, results){
     const ok=Boolean(condition); results.push({label,ok,detail:String(detail||"")}); return ok;
   }
@@ -64,9 +76,10 @@
     const status=document.getElementById(spec.name+"Status");
     const results=[];
 
-    await waitFor(()=>frame.contentDocument && frame.contentDocument.readyState==="complete",15000);
-    const win=frame.contentWindow; const doc=frame.contentDocument;
-    check("PWA_LOAD", !!doc && !!doc.getElementById("codeInput"), "index.html loaded", results);
+    const loadedDoc=await waitForPwaDocument(frame,15000);
+    const win=frame.contentWindow; const doc=loadedDoc||frame.contentDocument;
+    const pathname=doc&&doc.location?String(doc.location.pathname||""):"";
+    check("PWA_LOAD", !!loadedDoc, loadedDoc?"pathname="+pathname:"timeout pathname="+pathname, results);
 
     const codeTab=doc && doc.querySelector('.tab-btn[data-view="code"]');
     if(codeTab) codeTab.click();
