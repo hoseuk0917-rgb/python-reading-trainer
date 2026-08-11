@@ -8,6 +8,7 @@ from export_python_reading_archify_v0_1 import (
     select_scope,
 )
 from python_reading_archify_layout_v0_1 import (
+    FALSE_BRANCH_LABEL_DX,
     FALSE_BRANCH_LABEL_DY,
     SAFE_CORRIDOR_X,
     alternate_left_corridor_route,
@@ -137,6 +138,7 @@ def apply_layout_policy(workflow: dict, ir: dict, scope_id: str | None, locale: 
                 )
                 if edge.get("label"):
                     edge["labelSegment"] = 2
+                    edge["labelDx"] = FALSE_BRANCH_LABEL_DX
                     edge["labelDy"] = FALSE_BRANCH_LABEL_DY
                 continue
 
