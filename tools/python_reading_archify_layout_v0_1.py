@@ -14,6 +14,12 @@ LANE_H = 104
 LANE_GAP = 20
 COL_XS = [88, 220, 300, 430, 500, 625]
 OUTSIDE_RIGHT_X = LANE_X + LANE_W + 12
+SAFE_CORRIDOR_X = LANE_X + LANE_W + 24
+GAP_CORRIDOR_OFFSET = 4
+
+LABEL_DX_BY_ROLE = {
+    "loop_exit": 24,
+}
 
 _FULLWIDTH_RANGES = (
     (0x1100, 0x115F),
@@ -151,33 +157,47 @@ def cross_lane_corridor_route(
     source_col: int,
     target_col: int,
 ) -> dict:
-    """Route a long cross-lane edge through gaps plus the clear right corridor."""
+    """Route a blocked cross-lane edge through a dedicated non-default corridor.
+
+    Archify's default drop router uses the center of each 20px lane gap, and
+    outside-right uses x=692. Use a different y band and x=704 so the corrective
+    route cannot become collinear with those normal routes in showcase mode.
+    """
     source_x = COL_XS[source_col]
     target_x = COL_XS[target_col]
 
     if target_lane_index > source_lane_index:
-        source_gap_y = lane_bottom(source_lane_index) + LANE_GAP / 2
-        target_gap_y = lane_top(target_lane_index) - LANE_GAP / 2
+        source_gap_y = lane_bottom(source_lane_index) + GAP_CORRIDOR_OFFSET
+        target_gap_y = lane_top(target_lane_index) - GAP_CORRIDOR_OFFSET
         return {
             "fromSide": "bottom",
             "toSide": "top",
             "via": [
                 [source_x, source_gap_y],
-                [OUTSIDE_RIGHT_X, source_gap_y],
-                [OUTSIDE_RIGHT_X, target_gap_y],
+                [SAFE_CORRIDOR_X, source_gap_y],
+                [SAFE_CORRIDOR_X, target_gap_y],
                 [target_x, target_gap_y],
             ],
         }
 
-    source_gap_y = lane_top(source_lane_index) - LANE_GAP / 2
-    target_gap_y = lane_bottom(target_lane_index) + LANE_GAP / 2
+    source_gap_y = lane_top(source_lane_index) - GAP_CORRIDOR_OFFSET
+    target_gap_y = lane_bottom(target_lane_index) + GAP_CORRIDOR_OFFSET
     return {
         "fromSide": "top",
         "toSide": "bottom",
         "via": [
             [source_x, source_gap_y],
-            [OUTSIDE_RIGHT_X, source_gap_y],
-            [OUTSIDE_RIGHT_X, target_gap_y],
+            [SAFE_CORRIDOR_X, source_gap_y],
+            [SAFE_CORRIDOR_X, target_gap_y],
             [target_x, target_gap_y],
         ],
     }
+
+
+def apply_label_role_policy(edge: dict, role: str) -> None:
+    """Separate semantic labels without changing relationship geometry."""
+    if not edge.get("label"):
+        return
+    dx = LABEL_DX_BY_ROLE.get(role)
+    if dx is not None:
+        edge["labelDx"] = dx
