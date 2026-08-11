@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PRT V340 Browser Case</title>
+  <style>
+    body{font-family:system-ui,sans-serif;margin:12px;background:#f5f6f8;color:#172033}.summary{padding:10px;border-radius:10px;background:#fff;border:1px solid #d8dee8;margin-bottom:10px}.pass{color:#137333}.fail{color:#b3261e}iframe{display:block;border:1px solid #aab4c3;background:#fff}pre{white-space:pre-wrap;background:#111827;color:#e5e7eb;padding:12px;border-radius:10px;max-height:520px;overflow:auto}
+  </style>
+</head>
+<body>
+  <div id="summary" class="summary">RUNNING</div>
+  <iframe id="appFrame" height="980"></iframe>
+  <pre id="report">RUNNING</pre>
+<script>
+(function(){
+  "use strict";
+  const params = new URLSearchParams(location.search);
+  const caseName = params.get("case") === "narrow" ? "narrow" : "desktop";
+  const width = caseName === "narrow" ? 390 : 1200;
+  const frame = document.getElementById("appFrame");
+  frame.width = String(width);
+  frame.src = "/src/pwa/index.html?v340case=" + caseName + "&b=" + Date.now();
+  const lines = ["=== PRT V340 REAL BROWSER CASE ===", "CASE=" + caseName.toUpperCase(), "WIDTH=" + width];
+  const results = [];
+
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  async function waitFor(fn, timeout=15000) {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      try { const value = fn(); if (value) return value; } catch (_) {}
+      await sleep(80);
+    }
+    return null;
+  }
+  function check(label, ok, detail) {
+    const row = {label, ok:Boolean(ok), detail:String(detail == null ? "" : detail)};
+    results.push(row);
+    lines.push(label + "=" + (row.ok ? "PASS" : "FAIL") + " DETAIL=" + row.detail);
+    return row.ok;
+  }
+  function nextStat(doc) {
+    const el = doc.querySelector("#learningPathV340 [data-role='next'] strong");
+    return el ? el.textContent.trim() : "";
+  }
+
+  async function resetAndReady() {
+    const first = await waitFor(() => frame.contentDocument && frame.contentWindow && frame.contentDocument.readyState === "complete" ? {doc:frame.contentDocument,win:frame.contentWindow} : null, 18000);
+    if (!first) return null;
+    try {
+      first.win.localStorage.clear();
+      first.win.sessionStorage.clear();
+      if (first.win.navigator.serviceWorker && first.win.navigator.serviceWorker.getRegistrations) {
+        const regs = await first.win.navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(reg => reg.unregister()));
+      }
+    } catch (_) {}
+    frame.src = "/src/pwa/index.html?v340case=" + caseName + "&clean=1&b=" + Date.now();
+    return waitFor(() => {
+      const doc = frame.contentDocument;
+      const win = frame.contentWindow;
+      if (!doc || !win || doc.readyState !== "complete") return null;
+      if (doc.documentElement.dataset.learningLoopV340 !== "v340_a1") return null;
+      if (!doc.getElementById("learningPathV340")) return null;
+      if (!doc.querySelectorAll(".choice-btn").length) return null;
+      if (!doc.getElementById("studyToolsV7")) return null;
+      return {doc, win};
+    }, 25000);
+  }
+
+  async function main() {
+    const ready = await resetAndReady();
+    check("PWA_V340_READY", !!ready, ready ? "dataset=v340_a1" : "timeout");
+    if (!ready) return finish();
+    const {doc, win} = ready;
+    const root = doc.documentElement;
+    const path = doc.getElementById("learningPathV340");
+    const legacy = doc.getElementById("studyToolsV7");
+
+    await waitFor(() => legacy.classList.contains("v340-legacy-hidden"), 5000);
+    check("ONE_LEARNING_PATH", doc.querySelectorAll("#learningPathV340").length === 1, "count=" + doc.querySelectorAll("#learningPathV340").length);
+    check("LEGACY_TOOLS_HIDDEN_DEFAULT", legacy.classList.contains("v340-legacy-hidden"), "hidden=" + legacy.classList.contains("v340-legacy-hidden"));
+    check("OLD_RECOMMENDATION_QUICK_HIDDEN", getComputedStyle(doc.getElementById("studyToolsQuickV272") || legacy).display === "none", "quick=" + (doc.getElementById("studyToolsQuickV272") ? getComputedStyle(doc.getElementById("studyToolsQuickV272")).display : "missing"));
+    const oldToday = doc.getElementById("studyToolsToday");
+    check("OLD_TODAY_QUEUE_HIDDEN", !oldToday || getComputedStyle(oldToday).display === "none", oldToday ? "display=" + getComputedStyle(oldToday).display : "missing");
+
+    const initialNext = nextStat(doc);
+    const firstTitle = doc.getElementById("cardTitle").textContent.trim();
+    check("INITIAL_NEXT_IS_FIRST", /^1\s*\/\s*1785$/.test(initialNext), "next=" + initialNext);
+
+    doc.getElementById("nextBtn").click();
+    await sleep(160);
+    const browsedTitle = doc.getElementById("cardTitle").textContent.trim();
+    check("BROWSING_MOVES_VISIBLE_CARD", browsedTitle !== firstTitle, "first=" + firstTitle + " | browsed=" + browsedTitle);
+    check("VIEW_ONLY_DOES_NOT_ADVANCE_SEQUENCE", nextStat(doc) === initialNext, "before=" + initialNext + " after=" + nextStat(doc));
+
+    path.querySelector("[data-action='today']").click();
+    await sleep(220);
+    check("TODAY_RETURNS_TO_NEXT_SEQUENTIAL_CARD", doc.getElementById("cardTitle").textContent.trim() === firstTitle, "title=" + doc.getElementById("cardTitle").textContent.trim());
+    const sessionButtons = Array.from(path.querySelectorAll("[data-role='session'] button"));
+    check("TODAY_SESSION_HAS_TEN_ITEMS", sessionButtons.length === 10, "count=" + sessionButtons.length);
+    check("CLEAN_SESSION_NEW_ITEMS_KEEP_ORDER", sessionButtons.length >= 2 && /^1\./.test(sessionButtons[0].textContent) && /^2\./.test(sessionButtons[1].textContent), sessionButtons.slice(0,2).map(x=>x.textContent).join(" | "));
+
+    const originalQuestion = doc.getElementById("questionText").textContent.trim();
+    doc.getElementById("againBtn").click();
+    const example = await waitFor(() => {
+      const el = doc.getElementById("workedExampleV340");
+      return el && !el.classList.contains("hidden") && el.querySelector(".worked-v340-code") ? el : null;
+    }, 4000);
+    check("UNSURE_REVEALS_WORKED_EXAMPLE", !!example, example ? "visible" : "missing/hidden");
+    const clickable = example ? example.querySelector(".syntax-v340") : null;
+    check("WORKED_EXAMPLE_HAS_CLICKABLE_KNOWN_SYNTAX", !!clickable, clickable ? "syntax=" + clickable.textContent : "none");
+    if (clickable) clickable.click();
+    const syntaxModal = await waitFor(() => {
+      const modal = doc.getElementById("syntaxModalV340");
+      return modal && !modal.classList.contains("hidden") && modal.querySelector(".modal-v340-body").textContent.trim() ? modal : null;
+    }, 3000);
+    check("SYNTAX_POPUP_OPENS", !!syntaxModal, syntaxModal ? "bodyChars=" + syntaxModal.querySelector(".modal-v340-body").textContent.trim().length : "not opened");
+    if (syntaxModal) syntaxModal.querySelector(".modal-v340-close").click();
+
+    const due = Number(path.querySelector("[data-role='review'] strong").textContent.trim());
+    check("UNSURE_CREATES_DUE_VARIANT_REVIEW", due >= 1, "due=" + due);
+    const reviewBtn = path.querySelector("[data-action='review']");
+    check("REVIEW_BUTTON_ENABLED", !reviewBtn.disabled, "disabled=" + reviewBtn.disabled);
+    if (!reviewBtn.disabled) reviewBtn.click();
+    const reviewModal = await waitFor(() => {
+      const modal = doc.getElementById("reviewModalV340");
+      return modal && !modal.classList.contains("hidden") && modal.querySelector(".review-v340-question") ? modal : null;
+    }, 3000);
+    const reviewQuestion = reviewModal ? reviewModal.querySelector(".review-v340-question").textContent.trim() : "";
+    check("VARIANT_REVIEW_MODAL_OPENS", !!reviewModal, reviewModal ? "choices=" + reviewModal.querySelectorAll(".review-v340-choice").length : "not opened");
+    check("VARIANT_REVIEW_NOT_ORIGINAL_QA", !!reviewQuestion && reviewQuestion !== originalQuestion, "original=" + originalQuestion + " | review=" + reviewQuestion);
+    check("VARIANT_REVIEW_HAS_CHOICES", !!reviewModal && reviewModal.querySelectorAll(".review-v340-choice").length >= 2, reviewModal ? "count=" + reviewModal.querySelectorAll(".review-v340-choice").length : "0");
+    if (reviewModal) reviewModal.querySelector(".modal-v340-close").click();
+
+    path.querySelector("[data-action='legacy']").click();
+    await sleep(120);
+    check("SEARCH_FILTER_CAN_BE_OPENED", !legacy.classList.contains("v340-legacy-hidden"), "hidden=" + legacy.classList.contains("v340-legacy-hidden"));
+    check("LEGACY_TITLE_DECLARATIVE", /순차 진도와 별개|separate from sequential progress/i.test(legacy.querySelector(".study-tools-title").textContent), legacy.querySelector(".study-tools-title").textContent);
+
+    try { win.eval("renderCard(); renderCard();"); } catch (_) {}
+    await sleep(150);
+    check("NO_DUPLICATE_LEARNING_PATH", doc.querySelectorAll("#learningPathV340").length === 1, "count=" + doc.querySelectorAll("#learningPathV340").length);
+    check("NO_DUPLICATE_WORKED_EXAMPLE", doc.querySelectorAll("#workedExampleV340").length <= 1, "count=" + doc.querySelectorAll("#workedExampleV340").length);
+    check("NO_DUPLICATE_SYNTAX_MODAL", doc.querySelectorAll("#syntaxModalV340").length === 1, "count=" + doc.querySelectorAll("#syntaxModalV340").length);
+    check("NO_DUPLICATE_REVIEW_MODAL", doc.querySelectorAll("#reviewModalV340").length === 1, "count=" + doc.querySelectorAll("#reviewModalV340").length);
+
+    const rect = path.getBoundingClientRect();
+    check("LEARNING_PATH_WITHIN_VIEWPORT", rect.width > 0 && rect.left >= -1 && rect.right <= root.clientWidth + 1, "left=" + Math.round(rect.left) + " right=" + Math.round(rect.right) + " viewport=" + root.clientWidth);
+    check("NO_OUTER_HORIZONTAL_OVERFLOW", root.scrollWidth <= root.clientWidth + 2, "scrollWidth=" + root.scrollWidth + " clientWidth=" + root.clientWidth);
+    finish();
+  }
+
+  function finish() {
+    const pass = results.length > 0 && results.every(row => row.ok);
+    lines.push("RESULT=" + (pass ? "PASS_LEARNING_LOOP_V340_REAL_BROWSER_CASE" : "FAIL_LEARNING_LOOP_V340_REAL_BROWSER_CASE"));
+    document.getElementById("report").textContent = lines.join("\n");
+    const summary = document.getElementById("summary");
+    summary.textContent = pass ? caseName.toUpperCase() + " PASS" : caseName.toUpperCase() + " FAIL";
+    summary.className = "summary " + (pass ? "pass" : "fail");
+    document.documentElement.dataset.smokeDone = pass ? "pass" : "fail";
+  }
+
+  main().catch(error => {
+    lines.push("HARNESS_ERROR=" + (error && error.stack ? error.stack : String(error)));
+    lines.push("RESULT=FAIL_LEARNING_LOOP_V340_REAL_BROWSER_CASE");
+    document.getElementById("report").textContent = lines.join("\n");
+    document.documentElement.dataset.smokeDone = "fail";
+  });
+})();
+</script>
+</body>
+</html>
