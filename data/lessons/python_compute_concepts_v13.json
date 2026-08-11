@@ -22,9 +22,7 @@
     ],
     "answer": "같은 종류의 연산을 대량 병렬 처리하는 데 강하다",
     "explanation": "GPU는 많은 데이터에 비슷한 산술 연산을 적용하는 행렬·벡터 작업을 높은 병렬성으로 처리하는 데 강하다. CPU는 범용 제어와 지연시간이 중요한 다양한 작업에 유연하고, TPU·NPU는 지원 연산과 배포 환경에 맞춘 전용 가속기다. 장치 이름만으로 속도를 정할 수는 없으며 연산 크기, 메모리 이동, 지원 framework와 하드웨어에 맞게 구현됐는지를 함께 본다.",
-    "side_card_ids": [
-      "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "AI 코드에서 cuda/device/batch_size가 왜 나오는지 이해하기 위한 기본 비교다."
   },
   {
@@ -161,9 +159,7 @@
     ],
     "answer": "CPU가 텍스트/입력을 준비하고 GPU가 모델 연산을 처리한다",
     "explanation": "load_text와 tokenizer는 보통 CPU에서 입력 tensor를 만들고, dict comprehension이 각 tensor를 CUDA memory로 옮긴다. model도 이미 같은 CUDA 장치에 있다는 전제에서 generate의 tensor 연산은 GPU에서 수행된다. model이 CPU에 남아 있으면 device mismatch가 날 수 있다. CPU↔GPU 복사에는 시간이 들므로 loop마다 불필요하게 왕복하지 않는지와 결과를 언제 CPU로 가져오는지 확인한다.",
-    "side_card_ids": [
-      "PYV158_A1_PIPELINE_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "모델 추론이 왜 데이터 준비와 GPU 연산으로 나뉘는지 이해한다."
   },
   {
@@ -189,9 +185,7 @@
     ],
     "answer": "CPU 쪽 데이터를 GPU 메모리로 옮긴다",
     "explanation": "batch가 CPU tensor라면 batch.to(\"cuda\")는 CUDA 장치의 tensor를 반환하고, 재대입한 batch가 model 입력으로 쓰인다. 원래 CPU tensor 자체를 그 자리에서 바꾸는 것이 아니다. 이미 같은 장치와 dtype이면 복사가 생략될 수도 있다. host↔device 전송이 계산보다 자주·작게 일어나면 병목이 되므로 batch 묶음, pinned memory와 non_blocking 조건도 측정해서 판단한다.",
-    "side_card_ids": [
-      "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "GPU가 있는데도 느린 경우 데이터 이동/전처리 병목을 의심할 수 있다."
   },
   {
@@ -218,7 +212,6 @@
     "answer": "많은 벡터 점수를 한꺼번에 계산할 수 있기 때문",
     "explanation": "parallelism은 여러 계산을 동시에 처리하는 방식이다. 벡터와 행렬 연산은 같은 형태의 계산이 반복되어 병렬화하기 좋다. 독립적인 작은 계산을 여러 개로 쪼갤 수 있을수록 병렬 처리의 이점이 커진다. 따라서 정답은 ‘많은 벡터 점수를 한꺼번에 계산할 수 있기 때문’이다.",
     "side_card_ids": [
-      "AI_vector_db_001",
       "CS_matrix_001"
     ],
     "project_context": "벡터검색/임베딩 유사도 계산이 GPU와 잘 맞는 이유다."
@@ -247,9 +240,7 @@
     ],
     "answer": "CPU가 조율하기 좋은 분기/제어 코드",
     "explanation": "이 Python loop는 각 row의 상태에 따라 서로 다른 Python 함수를 호출하는 제어·조율 코드라서 보통 CPU가 실행한다. GPU도 조건 연산을 할 수 있지만 많은 thread가 서로 다른 분기를 택하면 효율이 떨어질 수 있고, 개별 Python 함수 호출을 자동으로 GPU가 맡지는 않는다. 다만 save나 enqueue 내부의 실제 작업 성격은 이 조각만으로 알 수 없다.",
-    "side_card_ids": [
-      "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "배치/큐/재시도/저장 흐름은 GPU보다 CPU 병목일 수 있다."
   },
   {
@@ -304,9 +295,7 @@
     ],
     "answer": "CPU 전처리/I/O/작은 batch가 병목일 수 있다",
     "explanation": "GPU-Util 15%는 측정 구간에 GPU가 바빴던 비율이 낮다는 신호이지 원인을 확정한 값은 아니다. CPU 전처리·disk/network I/O·작은 batch·잦은 동기화·짧은 kernel·device 전송 때문에 GPU가 기다릴 수 있고, workload 자체가 GPU 연산이 적을 수도 있다. 반복 측정과 profiler로 CPU 시간, data loading, kernel 사이 공백과 전송 시간을 나눠 봐야 한다.",
-    "side_card_ids": [
-      "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "노드패스/배치 작업이 생각보다 안 빨라질 때 해석에 필요하다."
   },
   {
@@ -412,9 +401,7 @@
     ],
     "answer": "GPU 또는 TPU",
     "explanation": "대형 tensor·행렬 연산이 반복되는 학습은 지원 framework가 있는 GPU나 TPU가 높은 병렬 처리량을 내기 좋은 workload다. 그러나 실제 선택은 model 지원, accelerator memory, data pipeline, 분산 규모, 비용과 이용 가능성에 따라 달라진다. NPU는 주로 특정 on-device inference에 맞춰져 있어 이 질문의 대형 학습에 자동으로 최선인 선택은 아니다.",
-    "side_card_ids": [
-      "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "AI 개발 환경/서버 선택 감각을 키운다."
   },
   {
@@ -441,9 +428,7 @@
     ],
     "answer": "파일 I/O와 파이썬 제어 흐름이 중심이기 때문",
     "explanation": "GPU는 텐서/행렬 연산에 강하지만 파일 읽기/분기/파싱은 다른 병목이 될 수 있다. GPU가 모든 코드를 빠르게 하는 것은 아니다. 병렬화하기 어려운 작업이나 파일 입출력, 조건 분기가 많은 코드는 CPU가 더 적합할 수 있다. 따라서 정답은 ‘파일 I/O와 파이썬 제어 흐름이 중심이기 때문’이다.",
-    "side_card_ids": [
-      "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "배치 작업 속도 병목을 해석하는 데 중요하다."
   }
 ]

@@ -22,8 +22,7 @@
     "answer": "비동기 작업이 끝날 때까지 기다린다",
     "explanation": "await는 api_get coroutine의 완료까지 현재 fetch_item task를 suspend한다. api_get이 non-blocking I/O 대기 중 event loop에 제어를 돌려주면 다른 준비된 task가 실행될 수 있다. await가 OS thread를 막으며 기다린다는 뜻도, blocking function이나 CPU 계산을 자동으로 비동기로 바꾼다는 뜻도 아니다.",
     "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_ASYNC_CONCURRENCY"
     ],
     "project_context": "API 호출, 파일 처리, 검색 서버 코드에서 자주 보이는 패턴이다."
   },
@@ -135,8 +134,7 @@
     "answer": "동시에 최대 5개 작업만 들어가게 제한한다",
     "explanation": "이 semaphore를 공유하며 async with 영역에 들어오는 cooperating coroutine은 동시에 최대 다섯 개다. block 밖의 작업은 제한되지 않고 여러 process에는 별도 semaphore가 있으므로 system 전체 rate limit은 아니다. 요청/초 단위 제한이 필요하면 time-based limiter도 함께 사용하고, 적절한 timeout과 cancellation을 처리한다.",
     "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_ASYNC_CONCURRENCY"
     ],
     "project_context": "외부 API 호출, 다운로드, 모델 추론 요청을 과하게 몰지 않게 할 때 필요하다."
   },
@@ -171,8 +169,7 @@
     "answer": "여러 worker가 작업을 나눠 처리하게 하려고",
     "explanation": "네 thread가 하나의 thread-safe Queue에서 서로 다른 item을 가져가므로 I/O-bound work를 나눌 수 있다. q.empty 확인 뒤 다른 thread가 item을 가져가는 race를 없애고 sentinel None으로 종료한다. finally의 task_done, q.join과 thread.join으로 실패 없이 가져간 모든 queue item과 thread 종료를 기다린다. process exception을 수집·전파하는 정책은 여전히 별도로 필요하다.",
     "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_ASYNC_CONCURRENCY"
     ],
     "project_context": "다운로드/변환/검증 작업을 병렬화할 때 자주 쓰는 구조다."
   },
@@ -228,9 +225,7 @@
     ],
     "answer": "처리 중 예외가 난 item",
     "explanation": "첫 loop에서 Exception이 난 원래 item object가 failed에 들어가고 두 번째 loop에서 한 번 더 처리된다. broad Exception은 영구 data error와 일시 network error를 구분하지 않으며 retry_process의 exception도 잡지 않는다. error type·attempt count·last error·next retry time을 기록하고 안전한 operation에만 backoff와 dead-letter 정책을 적용한다.",
-    "side_card_ids": [
-      "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "대량 다운로드/모델 호출/카드 생성에서 실패 샘플만 따로 복구할 때 유용하다."
   },
   {
@@ -258,9 +253,7 @@
     ],
     "answer": "error로 저장된다",
     "explanation": "run_long_task가 exception을 내면 error status와 str(e)를 저장하려 한 뒤 exception을 다시 전달한다. error update 자체가 실패하면 running 상태가 남고 원래 exception이 가려질 수 있다. heartbeat/lease와 finally cleanup, sanitized error code, state transition 조건과 durable transaction을 두어 competing worker의 overwrite를 막는다.",
-    "side_card_ids": [
-      "PYV158_A1_DATABASE_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "긴 LoRA/노드패스/수집 작업 상태를 UI에서 보여주기 위한 기본 구조다."
   },
   {
@@ -286,9 +279,7 @@
     ],
     "answer": "세션을 닫지 않고 뒤에서 계속 실행하게 한다",
     "explanation": "tmux detach는 tmux session과 그 안의 process를 유지한 채 현재 client만 분리하고 나중에 attach할 수 있게 한다. nohup은 hangup signal 처리를 바꾸고 &가 shell background로 실행하며 output을 명시한 log로 보낸다. 어느 방식도 crash recovery를 보장하지 않으므로 exit status, disk space, log rotation, checkpoint와 supervisor를 별도로 둔다.",
-    "side_card_ids": [
-      "PYV159_A1_FASTAPI_SERVER_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "EC2/워크스테이션에서 shard를 밤새 돌릴 때 필요한 운영 개념이다."
   },
   {
@@ -314,9 +305,7 @@
     ],
     "answer": "GPU 메모리 부족",
     "explanation": "한 번에 처리하는 input 수가 늘면 model weight 외 activation과 temporary buffer memory가 늘어 GPU OOM이 날 수 있다. 필요한 memory는 sequence length, output length, dtype와 model architecture에도 크게 좌우된다. 또한 실제 library가 list[str]를 직접 받는지 tokenization을 요구하는지 API를 확인하고 측정으로 safe batch size를 정한다.",
-    "side_card_ids": [
-      "PYV159_A1_GPU_TORCH_TRAINING_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "LoRA 추론/노드패스/임베딩 생성에서 속도와 메모리 균형을 볼 때 중요하다."
   },
   {
@@ -342,9 +331,7 @@
     ],
     "answer": "items를 queue에 넣는다",
     "explanation": "producer는 각 item을 queue에 넣고 consumer는 get 후 process한다. 이 queue는 maxsize가 없어 producer가 훨씬 빠르면 memory가 계속 늘 수 있고, consumer는 종료 sentinel이 없어 영원히 기다린다. process가 exception을 내도 task_done이 호출되게 try/finally를 쓰고 bounded queue, 종료·cancellation·error propagation을 설계한다.",
-    "side_card_ids": [
-      "PYV158_A1_PIPELINE_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "수집→정제→임베딩 같은 파이프라인을 흐름으로 나눌 때 쓰는 구조다."
   },
   {
@@ -399,8 +386,7 @@
     "answer": "31, 32 shard는 완료된 것으로 기록됐다",
     "explanation": "completed list는 31과 32가 완료됐다고 manifest에 기록되었다는 뜻이지 실제 output이 유효하다는 증명은 아니다. shard result와 checksum을 확인한 뒤 manifest를 atomic하게 갱신하고, status와 completed가 모순되지 않게 validation한다. 여러 worker가 쓸 때 lock이나 compare-and-swap도 필요하다.",
     "side_card_ids": [
-      "WEB_pwa_001",
-      "PYV102_A7_ASYNC_CONCURRENCY"
+      "WEB_pwa_001"
     ],
     "project_context": "샤드 상태 확인, 재개, 산출물 회수 루틴과 잘 맞는다."
   },

@@ -23,9 +23,7 @@
     ],
     "answer": "이미 끝난 작업은 건너뛰고 남은 작업만 이어서 실행하는 것",
     "explanation": "is_done이 성공 결과와 원자적으로 기록된 신뢰할 수 있는 상태일 때 완료 shard를 건너뛰고 나머지를 실행한다. resume-safe가 되려면 run_shard가 중단 경계에서 재실행돼도 안전해야 하고, checkpoint 손상·version 불일치·병렬 완료 순서를 처리해야 한다. 단순 file 존재 검사는 충분하지 않다.",
-    "side_card_ids": [
-      "PYV158_A1_PIPELINE_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "KG node_pass shard나 대용량 카드 생성 작업처럼 오래 걸리는 작업에 필요하다."
   },
   {
@@ -77,8 +75,7 @@
     "answer": "출력 파일이 존재하는 것과 정상 완료를 구분하기 위해",
     "explanation": "output 존재만으로는 완성을 알 수 없으므로 검증된 완료 상태를 별도 marker로 표현한다. marker에는 output hash·row count·version을 연결하고 output을 durable하게 닫은 뒤 atomic하게 publish해야 한다. 빈 output.done 파일만 따로 생기면 stale marker가 될 수 있다.",
     "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_ASYNC_CONCURRENCY"
     ],
     "project_context": "node_pass output이 존재한다고 바로 완료로 보면 partial output 위험이 생긴다."
   },
@@ -104,8 +101,7 @@
     "answer": "파일은 있어도 결과가 끝까지 쓰이지 않았을 수 있기 때문",
     "explanation": "partial output은 작업이 중간에 끊겨 일부만 저장된 산출물이다. 파일 존재 여부만 보면 완료 파일로 오해할 수 있어 내용 검증이 필요하다. 완료 플래그나 검증 통과 기록을 함께 저장하면 중간 산출물과 최종 산출물을 구분하기 쉽다. 따라서 정답은 ‘파일은 있어도 결과가 끝까지 쓰이지 않았을 수 있기 때문’이다.",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
     "project_context": "AWS/로컬 shard가 중간에 멈췄을 때 output exists skip만 쓰면 누락이 생길 수 있다."
   },
@@ -131,9 +127,7 @@
     ],
     "answer": "깨진 출력이나 일부 출력도 완료로 착각할 수 있기 때문",
     "explanation": "skip 조건은 파일 존재가 아니라 검증 통과나 done marker 기준이어야 안전하다. output exists skip은 결과 파일이 있다는 이유만으로 작업을 건너뛰는 위험을 말한다. 파일이 완성본인지, 중간에 깨진 출력인지 검증해야 한다. 따라서 정답은 ‘깨진 출력이나 일부 출력도 완료로 착각할 수 있기 때문’이다.",
-    "side_card_ids": [
-      "PYV158_A1_VALIDATION_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "이전에 '이미 아웃풋 있다고 스킵하면 안 됨'이라고 점검한 문제와 연결된다."
   },
   {
@@ -157,9 +151,7 @@
     ],
     "answer": "출력 검증이 통과한 뒤",
     "explanation": "run_job의 output을 완전히 기록·닫고 validation을 통과한 뒤 done marker를 atomic하게 publish한다. validation 범위가 schema와 예상 count·hash를 포함하는지도 확인한다. output과 marker가 다른 storage에 있으면 둘 사이 crash를 reconcile하는 복구 절차가 필요하다.",
-    "side_card_ids": [
-      "PYV158_A1_VALIDATION_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "lesson 카드 확장에서도 JSON 생성 후 중복 ID, answer, side_card 참조를 검증한 뒤 커밋했다."
   },
   {
@@ -184,8 +176,7 @@
     "answer": "중간에 끊긴 파일이 최종 output 이름으로 남는 위험을 줄인다",
     "explanation": "같은 filesystem의 임시 파일을 완전히 쓰고 검증한 뒤 replace하면 최종 이름에 partial content가 보이는 window를 줄일 수 있다. rename의 atomicity와 overwrite 동작은 OS·filesystem에 달려 있고, 전원 장애 내구성에는 flush/fsync와 directory sync가 추가로 필요할 수 있다. 임시 파일 정리도 고려한다.",
     "side_card_ids": [
-      "PYV102_A7_FILE_SAFE_WRITE",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_FILE_SAFE_WRITE"
     ],
     "project_context": "대용량 JSONL, manifest, audit TSV를 쓸 때 안전한 출력 패턴이다."
   },
@@ -239,8 +230,7 @@
     "answer": "실패한 항목만 다시 실행하기 위해",
     "explanation": "retry queue는 transient 실패 항목을 전체 작업과 분리해 다시 실행한다. item_id만 저장하면 input version이나 attempt 정보가 사라질 수 있으므로 payload reference, 오류, attempts, next retry time을 함께 둔다. 최대 횟수 뒤에는 dead-letter 또는 사람 검토로 보내고 idempotency를 보장한다.",
     "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_ASYNC_CONCURRENCY"
     ],
     "project_context": "node extraction, edge promotion, lesson validation에서 실패 목록만 재처리할 수 있다."
   },
@@ -267,8 +257,7 @@
     "answer": "성공한 작업을 반복하지 않아 시간과 비용을 줄인다",
     "explanation": "audit에서 실패 ID만 재실행하면 성공 항목의 비용을 줄일 수 있다. audit가 현재 input·code version과 일치하는지, 실패 항목의 upstream dependency가 바뀌지 않았는지 확인해야 한다. 수정이 공통 로직에 영향을 줬다면 성공 항목도 regression 검사가 필요하다.",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
     "project_context": "AWS GPU 비용이나 LLM 호출 비용을 아끼려면 실패분만 다시 돌리는 구조가 중요하다."
   },
@@ -294,8 +283,7 @@
     "answer": "어느 조각이 완료/진행/실패 상태인지 한눈에 보기 위해",
     "explanation": "shard별 total, done, status를 모으면 남은 양과 실패 구간을 볼 수 있다. RUNNING이 실제로 살아 있는지 판단하려면 worker/lease ID와 updated_at 또는 heartbeat가 필요하고, total 정의와 중복 처리 여부도 일관돼야 한다. 상태 전이는 atomic하게 기록한다.",
     "side_card_ids": [
-      "CS_batch_shard_001",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "CS_batch_shard_001"
     ],
     "project_context": "AWS node_pass에서 0031~0100 shard 진행률을 관리했던 방식과 연결된다."
   },
@@ -347,8 +335,7 @@
     "answer": "작업 프로세스가 아직 살아 있는지",
     "explanation": "heartbeat는 해당 timestamp에 loop가 신호를 쓸 수 있었다는 뜻이다. 최근 heartbeat는 process 생존의 단서지만 실제 업무가 진행되거나 결과가 정확하다는 보장은 아니다. stale 판단 threshold는 갱신 주기와 일시 지연을 고려하고 progress counter와 worker lease도 함께 확인한다.",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
     "project_context": "서버에서 장시간 LoRA/node_pass를 돌릴 때 상태 감시용으로 쓸 수 있다."
   },
@@ -400,8 +387,7 @@
     "answer": "최종 산출물의 경로, row 수, hash와 검증 상태를 재확인한다",
     "explanation": "manifest의 output_path, rows, sha256, status, validated_at은 예상 파일과 record 수, 정확한 byte content, 검증 시점을 확인하는 근거다. hash를 신뢰하려면 어떤 algorithm과 생성 version을 썼는지, manifest 자체의 무결성과 입력 provenance도 관리해야 한다.",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
     "project_context": "KG pack, clean text, lesson files, shard outputs를 묶을 때 final manifest가 필요하다."
   },
@@ -428,8 +414,7 @@
     "answer": "jsonl 출력 검증이 통과한 뒤",
     "explanation": "run_node_pass가 output을 durable하게 저장하고 validate_jsonl이 schema·count·참조를 통과한 뒤 mark_done을 atomic하게 기록한다. validation 뒤 marker 전 crash가 나면 재실행될 수 있으므로 node pass와 저장은 idempotent해야 한다. 실패 목록과 input/model version도 shard 상태에 연결한다.",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
     "project_context": "노드 추출, 노드 승격, 엣지 승격 파이프라인을 안정화하는 핵심 습관이다."
   }

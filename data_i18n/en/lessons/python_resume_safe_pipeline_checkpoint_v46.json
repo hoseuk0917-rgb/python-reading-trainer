@@ -23,9 +23,7 @@
     ],
     "answer": "Skipping tasks that have already been completed and continuing with only the remaining tasks",
     "explanation": "Completed shards are skipped only when is_done reflects a trustworthy status recorded atomically with successful output. Resume safety also requires run_shard to tolerate re-execution at crash boundaries and handle checkpoint corruption, version mismatch, and out-of-order parallel completion. File existence alone is insufficient.",
-    "side_card_ids": [
-      "PYV158_A1_PIPELINE_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "It is required for time-consuming tasks such as creating KG node_pass shards or large-capacity cards."
   },
   {
@@ -77,8 +75,7 @@
     "answer": "Distinguish validated completion from mere output-file existence",
     "explanation": "A marker represents validated completion instead of mere file existence. Link it to the output hash, row count, and version, and publish it atomically only after output is durably closed. A detached empty output.done file can itself become a stale marker.",
     "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_ASYNC_CONCURRENCY"
     ],
     "project_context": "If you assume the process is complete just because a `node_pass` output exists, you run the risk of a partial output."
   },
@@ -104,8 +101,7 @@
     "answer": "This is because, even if the file exists, the results may not have been written to the end of the file.",
     "explanation": "A partial output is an output that was saved only partially because the process was interrupted. Since simply checking whether the file exists might lead one to mistakenly believe it is a complete file, the content must be verified. Storing a completion flag or a record of successful verification makes it easy to distinguish between intermediate and final outputs. Therefore, the correct answer is “Because even if the file exists, the results may not have been written to the end.”",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
     "project_context": "If an AWS or local shard stops in the middle, using only `output exists skip` may result in data being missed."
   },
@@ -131,9 +127,7 @@
     ],
     "answer": "This is because you might mistake a corrupted output or a partial output for a completed one",
     "explanation": "For safety, the skip condition should be based on passing validation or a \"done\" marker, rather than the existence of a file. \"Output exists skip\" refers to the risk of skipping a task simply because a result file exists. You must verify whether the file is a final version or a corrupted intermediate output. Therefore, the correct answer is “because corrupted or partial output could be mistaken for a completed result.”",
-    "side_card_ids": [
-      "PYV158_A1_VALIDATION_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "This ties in with the issue we previously identified: \"You shouldn't skip this just because there's already an output.\""
   },
   {
@@ -157,9 +151,7 @@
     ],
     "answer": "After output is durably written and validation passes",
     "explanation": "Fully write and close output, validate it, and then atomically publish the done marker. Ensure validation covers the required schema, expected count, and hash. When output and marker live in different stores, recovery must reconcile a crash between those operations.",
-    "side_card_ids": [
-      "PYV158_A1_VALIDATION_FLOW"
-    ],
+    "side_card_ids": [],
     "project_context": "For the lesson card extension as well, I generated the JSON, verified that there were no duplicate IDs, answers, or side_card references, and then committed the changes."
   },
   {
@@ -184,8 +176,7 @@
     "answer": "Reduces the risk of a file that was interrupted midway being saved under the final output name",
     "explanation": "Writing and validating a temporary file on the same filesystem before replacement reduces the window in which partial content appears under the final name. Rename atomicity and overwrite behavior depend on OS and filesystem, while power-loss durability may also require flush or fsync and directory synchronization. Clean up abandoned temporary files.",
     "side_card_ids": [
-      "PYV102_A7_FILE_SAFE_WRITE",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_FILE_SAFE_WRITE"
     ],
     "project_context": "This is a safe output pattern when writing large JSONL, manifest, and audit TSV files."
   },
@@ -239,8 +230,7 @@
     "answer": "To rerun only the failed items",
     "explanation": "A retry queue separates transient failures for later execution. Store an input-version or payload reference, error, attempt count, and next retry time rather than only item_id. After a maximum, send the job to dead-letter handling or human review, and make processing idempotent.",
     "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_ASYNC_CONCURRENCY"
     ],
     "project_context": "Only the list of failures in node extraction, edge promotion, and lesson validation can be reprocessed."
   },
@@ -267,8 +257,7 @@
     "answer": "We reduce time and costs by not repeating tasks that have already been successfully completed",
     "explanation": "Rerunning only failure IDs can avoid successful-work cost. Confirm that the audit matches the current input and code version and that upstream dependencies for failures have not changed. If a shared implementation changed, successful items still need regression testing.",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
     "project_context": "To save on AWS GPU costs or LLM call costs, it’s important to have a system that only reruns failed runs."
   },
@@ -294,8 +283,7 @@
     "answer": "To see at a glance which pieces are complete, in progress, or failed",
     "explanation": "Per-shard total, done, and status reveal remaining work and failure areas. To know whether RUNNING is alive, include worker or lease ID and updated_at or heartbeat, and keep the definition of total and duplicate handling consistent. Record state transitions atomically.",
     "side_card_ids": [
-      "CS_batch_shard_001",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "CS_batch_shard_001"
     ],
     "project_context": "This ties in with the method used to manage the progress of shards 0031 through 0100 in AWS node_pass."
   },
@@ -347,8 +335,7 @@
     "answer": "The process could emit a liveness signal at that time",
     "explanation": "A heartbeat means the loop could write a signal at that timestamp. A recent heartbeat suggests process liveness but does not prove useful progress or correct durable output. Set staleness thresholds from the expected interval and delays, and compare progress counters and worker leases.",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
     "project_context": "This can be used to monitor the status when running LoRA/node_pass on a server for an extended period of time."
   },
@@ -400,8 +387,7 @@
     "answer": "Recheck final paths, row counts, hashes, and validation status",
     "explanation": "output_path, rows, sha256, status, and validated_at provide evidence for expected files, record counts, exact bytes, and validation time. Also manage hash algorithm, generator version, manifest integrity, and input provenance so that evidence remains trustworthy.",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
     "project_context": "A final manifest is required when bundling KG pack, clean text, lesson files, and shard outputs."
   },
@@ -428,8 +414,7 @@
     "answer": "After durable output passes JSONL validation",
     "explanation": "After run_node_pass stores output durably and validate_jsonl checks schema, count, and references, mark_done records completion atomically. A crash between validation and marker can cause a rerun, so processing and storage must be idempotent. Link failure records and input and model versions to shard state.",
     "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS",
-      "PYV102_A7_RESILIENCE_RECOVERY"
+      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
     "project_context": "These are key habits for stabilizing the node extraction, node promotion, and edge promotion pipelines."
   }

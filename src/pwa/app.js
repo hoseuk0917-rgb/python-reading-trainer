@@ -1,11 +1,15 @@
 // === CACHE BUST START ===
 const APP_DATA_VERSION = "20260812_v339_quality1";
+const CONTENT_QUALITY_DATA_EPOCH_V339 = "20260812_v339_quality3";
 function withDataVersion(path) {
   if (typeof path !== "string") return path;
-  if (path.indexOf("?") >= 0) return path + "&v=" + APP_DATA_VERSION;
-  return path + "?v=" + APP_DATA_VERSION;
+  const versioned = path.indexOf("?") >= 0
+    ? path + "&v=" + APP_DATA_VERSION
+    : path + "?v=" + APP_DATA_VERSION;
+  return versioned + "&cq=" + CONTENT_QUALITY_DATA_EPOCH_V339;
 }
 // === CACHE BUST END ===
+// CONTENT_QUALITY_RELEASE_V339_R4
 let curriculum = null;
 let cards = [];
 let sideCards = [];
@@ -476,6 +480,10 @@ function getCardConceptsV306(card) {
 
 function getPrimaryConceptV306(card, sourceCard) {
   const concepts = getCardConceptsV306(card);
+  const semantics = typeof window !== "undefined" ? window.ContentQualitySemantics : null;
+  if (semantics && typeof semantics.pickPrimaryConcept === "function") {
+    return semantics.pickPrimaryConcept(card || {}, concepts, conceptInfo);
+  }
   for (let i = 0; i < concepts.length; i += 1) {
     if (conceptInfo[concepts[i]]) return concepts[i];
   }
@@ -484,7 +492,12 @@ function getPrimaryConceptV306(card, sourceCard) {
 
 function pickConceptIntroSideCardV306(card) {
   const directIds = Array.isArray(card && card.side_card_ids) ? card.side_card_ids : [];
-  const directCards = directIds.map(getSideCardById).filter(Boolean);
+  const directCards = directIds.map(getSideCardById).filter(Boolean).filter(function(sc) {
+    const semantics = typeof window !== "undefined" ? window.ContentQualitySemantics : null;
+    return semantics && typeof semantics.isSideCardRelevant === "function"
+      ? semantics.isSideCardRelevant(card || {}, sc)
+      : false;
+  });
   const concepts = getCardConceptsV306(card);
 
   if (!directCards.length) return null;
@@ -641,15 +654,13 @@ function markSideSeen(cardId) {
 
 function getBonusSideCards(card, alreadyIds) {
   const seen = loadSideSeen();
-  const concepts = card.concepts || [];
-  const generic = new Set(["python","code","coding","programming","basic","language","syntax"]);
+  const semantics = typeof window !== "undefined" ? window.ContentQualitySemantics : null;
   const pool = sideCards.filter(function(sc) {
     if (!sc || !sc.id || alreadyIds.includes(sc.id)) return false;
-    const related = Array.isArray(sc.related_concepts) ? sc.related_concepts : [];
-    const overlap = related.some(function(concept) {
-      return concepts.includes(concept) && !generic.has(String(concept || "").toLowerCase());
-    });
-    return overlap && (seen[sc.id] || 0) < 3;
+    const relevant = semantics && typeof semantics.isSideCardRelevant === "function"
+      ? semantics.isSideCardRelevant(card || {}, sc)
+      : false;
+    return relevant && (seen[sc.id] || 0) < 3;
   });
   pool.sort(function(a,b) {
     const ac = seen[a.id] || 0, bc = seen[b.id] || 0;
@@ -1204,7 +1215,7 @@ function renderSideCards(card, excludedIntroSideCardIdV306) {
     return sc.id;
   }).concat(Array.from(excludedIntroIdsV306));
 
-  const randomCard = pickRandomBackgroundCard(excludeIds);
+  const randomCard = null; // CONTENT_QUALITY_SEMANTIC_ALIGNMENT_V339_R3: unrelated random knowledge is suppressed during quiz study.
 
   if (randomCard) {
     makeSectionTitle(
