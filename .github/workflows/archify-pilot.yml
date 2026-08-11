@@ -1,0 +1,76 @@
+name: Render Archify pilot
+
+on:
+  push:
+    branches:
+      - feat/archify-pilot
+    paths:
+      - 'docs/archify/**'
+      - '.github/workflows/archify-pilot.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch pinned Archify 2.13.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARCHIFY_COMMIT='2c1f8ac2ca28a26d0b68043ec80c9554e20ff0e3'
+          mkdir -p .tmp/archify
+          git -C .tmp/archify init
+          git -C .tmp/archify remote add origin https://github.com/tt-a1i/archify.git
+          git -C .tmp/archify fetch --depth 1 origin "$ARCHIFY_COMMIT"
+          git -C .tmp/archify checkout --detach FETCH_HEAD
+          test "$(git -C .tmp/archify rev-parse HEAD)" = "$ARCHIFY_COMMIT"
+
+      - name: Validate Archify pilot IR
+        shell: bash
+        run: |
+          set -euo pipefail
+          node .tmp/archify/archify/bin/archify.mjs validate \
+            workflow \
+            docs/archify/code-explainer-flow.workflow.json \
+            --quality standard \
+            --json
+
+      - name: Deliver verified Archify artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p src/pwa/archify
+          node .tmp/archify/archify/bin/archify.mjs deliver \
+            workflow \
+            docs/archify/code-explainer-flow.workflow.json \
+            src/pwa/archify/code-explainer-flow.html \
+            --quality standard \
+            --json
+
+      - name: Commit generated artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- src/pwa/archify/code-explainer-flow.html; then
+            echo 'ARCHIFY_ARTIFACT_CHANGED=false'
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/pwa/archify/code-explainer-flow.html
+          git commit -m 'build: generate Archify pilot artifact'
+          git push
