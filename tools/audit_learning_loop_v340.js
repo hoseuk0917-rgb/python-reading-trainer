@@ -17,6 +17,8 @@ const cards = [
 
 const conceptInfo = {
   print: { definition: "print는 값을 화면에 출력한다.", example: "print('hello')" },
+  len: { definition: "len은 항목 개수를 돌려준다.", example: "items = ['a', 'b']\nprint(len(items))" },
+  list: { definition: "list는 여러 값을 순서대로 담는다.", example: "items = ['a', 'b']\nprint(items[0])" },
   variable: { definition: "변수는 값을 가리키는 이름이다.", example: "x = 1\nprint(x)" },
   if: { definition: "if는 조건이 참일 때 블록을 실행한다.", example: "if True:\n    print('yes')" },
   def: { definition: "def는 함수를 정의한다.", example: "def hello():\n    return 'hi'" },
@@ -85,6 +87,26 @@ const safeExample = engine.pickSafeExample(cards[2], cards, 2, conceptInfo);
 assert(safeExample && safeExample.code);
 assert(engine.exampleUsesOnlyKnownNamedSyntax(safeExample.code, allowedAt2));
 pass("WORKED_EXAMPLE_USES_KNOWN_NAMED_SYNTAX");
+
+const mixedCard = {
+  id: "mixed_len",
+  title: "len()으로 개수 읽기",
+  question: "len(items)의 출력은?",
+  answer: "2",
+  concepts: ["print", "len", "list"],
+  code: "items = ['a', 'b']\nprint(len(items))"
+};
+const mixedCards = [mixedCard];
+const primaryExample = engine.pickSafeExample(mixedCard, mixedCards, 0, conceptInfo, "len");
+assert.strictEqual(primaryExample.concept, "len");
+assert(/\blen\s*\(/.test(primaryExample.code));
+pass("WORKED_EXAMPLE_PRIORITIZES_PRIMARY_CONCEPT");
+
+const primaryReview = engine.makeReviewVariant(mixedCard, mixedCards, 0, conceptInfo, { stage: 0, lapses: 1 }, "len");
+assert.strictEqual(primaryReview.primaryConcept, "len");
+assert.strictEqual(primaryReview.answer, "len");
+assert.notStrictEqual(primaryReview.question, mixedCard.question);
+pass("VARIANT_REVIEW_USES_PRIMARY_CONCEPT");
 
 const defAllowed = engine.allowedConceptsAt(cards, 3);
 const unsafeDefExample = conceptInfo.def.example;
