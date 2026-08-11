@@ -18,62 +18,60 @@ jobs:
         with:
           fetch-depth: 0
           ref: feat/learning-experience-v341
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Apply side-card education repair
         run: python tools/repair_sidecard_educational_quality_v341.py --apply
+
       - name: Confirm side-card repair idempotence
         run: python tools/repair_sidecard_educational_quality_v341.py --check
-      - name: Apply V341 integration
+
+      - name: Apply V341 PWA integration
         run: python tools/apply_learning_experience_v341.py --apply
-      - name: Confirm V341 integration idempotence
+
+      - name: Confirm V341 PWA integration idempotence
         run: python tools/apply_learning_experience_v341.py --check
-      - name: Apply V341 exact mission mapping
+
+      - name: Apply exact practice mission mapping
         run: python tools/apply_learning_experience_v341_r2.py --apply
-      - name: Confirm V341 exact mission mapping idempotence
+
+      - name: Confirm exact mission mapping idempotence
         run: python tools/apply_learning_experience_v341_r2.py --check
-      - name: Apply V341 V340-path readiness guard
+
+      - name: Apply V340-path readiness guard
         run: python tools/apply_learning_experience_v341_r3.py --apply
-      - name: Confirm V341 V340-path readiness guard idempotence
+
+      - name: Confirm readiness guard idempotence
         run: python tools/apply_learning_experience_v341_r3.py --check
-      - name: Apply V341 stable mission actions and reset cleanup
+
+      - name: Apply internal delegated mission routing
         run: python tools/apply_learning_experience_v341_r4.py --apply
-      - name: Confirm V341 stable actions idempotence
+
+      - name: Confirm delegated routing idempotence
         run: python tools/apply_learning_experience_v341_r4.py --check
-      - name: Apply V341 reset postprocess
+
+      - name: Apply reset postprocess
         run: python tools/apply_learning_experience_v341_r5.py --apply
-      - name: Confirm V341 reset postprocess idempotence
+
+      - name: Confirm reset postprocess idempotence
         run: python tools/apply_learning_experience_v341_r5.py --check
-      - name: Apply V341 runtime trace
-        run: python tools/apply_learning_experience_v341_r6_trace.py --apply
-      - name: Confirm V341 runtime trace idempotence
-        run: python tools/apply_learning_experience_v341_r6_trace.py --check
-      - name: Apply V341 asynchronous browser smoke contract
-        run: python tools/apply_learning_experience_v341_smoke_r2.py --apply
-      - name: Confirm V341 browser smoke contract idempotence
-        run: python tools/apply_learning_experience_v341_smoke_r2.py --check
-      - name: Apply V341 mission browser diagnostic
-        run: python tools/apply_learning_experience_v341_smoke_r3.py --apply
-      - name: Confirm V341 mission browser diagnostic idempotence
-        run: python tools/apply_learning_experience_v341_smoke_r3.py --check
-      - name: Apply V341 runtime trace report
-        run: python tools/apply_learning_experience_v341_smoke_r4.py --apply
-      - name: Confirm V341 runtime trace report idempotence
-        run: python tools/apply_learning_experience_v341_smoke_r4.py --check
-      - name: Apply current iframe context browser smoke
-        run: python tools/apply_learning_experience_v341_smoke_r5.py --apply
-      - name: Confirm current iframe context smoke idempotence
-        run: python tools/apply_learning_experience_v341_smoke_r5.py --check
-      - name: Reacquire current controls in browser smoke
-        run: python tools/apply_learning_experience_v341_smoke_r6.py --apply
-      - name: Confirm current-control smoke idempotence
-        run: python tools/apply_learning_experience_v341_smoke_r6.py --check
-      - name: Wait for live controls in browser smoke
-        run: python tools/apply_learning_experience_v341_smoke_r7.py --apply
-      - name: Confirm live-control smoke idempotence
-        run: python tools/apply_learning_experience_v341_smoke_r7.py --check
+
+      - name: Remove runtime diagnostics for release
+        run: python tools/apply_learning_experience_v341_release_cleanup.py --apply
+
+      - name: Confirm release cleanup idempotence
+        run: python tools/apply_learning_experience_v341_release_cleanup.py --check
+
+      - name: Make real-browser smoke release-strict
+        run: python tools/apply_learning_experience_v341_smoke_release.py --apply
+
+      - name: Confirm release smoke idempotence
+        run: python tools/apply_learning_experience_v341_smoke_release.py --check
+
       - name: JavaScript syntax
         run: |
           node --check src/pwa/learning_engine_v341.js
@@ -81,25 +79,48 @@ jobs:
           node --check tools/audit_learning_experience_v341.js
           node --check tools/audit_learning_experience_v341_r2.js
           node --check tools/run_learning_experience_v341_browser_smoke.js
+
       - name: V341 pure engine audit
         run: node tools/audit_learning_experience_v341.js
-      - name: V341 exact mission mapping audit
+
+      - name: V341 exact mission routing audit
         run: node tools/audit_learning_experience_v341_r2.js
+
+      - name: Assert release code has no diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -Eq '__v341MissionTrace|__v341ResetTrace|openPracticeMissionV341|LEARNING_EXPERIENCE_V341_R6_RUNTIME_TRACE' src/pwa/learning_experience_v341.js; then
+            echo "V341_RELEASE_DIAGNOSTICS_ABSENT=FAIL"
+            exit 1
+          fi
+          if grep -Eq 'MISSION_DIRECT_|MISSION_TRACE=|RESET_TRACE=|openPracticeMissionV341|__v341MissionTrace|__v341ResetTrace' tools/learning_experience_v341_browser_case.html; then
+            echo "V341_RELEASE_SMOKE_DIAGNOSTICS_ABSENT=FAIL"
+            exit 1
+          fi
+          echo "V341_RELEASE_DIAGNOSTICS_ABSENT=PASS"
+          echo "V341_RELEASE_SMOKE_DIAGNOSTICS_ABSENT=PASS"
+
       - name: Side-card educational quality audit
         run: python tools/audit_sidecard_educational_quality_v341.py
+
       - name: Existing V340 learning regression
         run: node tools/audit_learning_loop_v340.js
+
       - name: Existing lesson validation
         run: python tools/validate_lessons.py
-      - name: Existing content quality gates
+
+      - name: Existing V339 content quality gates
         run: |
           python tools/content_quality_final_pass_v339.py --check
           python tools/content_quality_final_pass_v339_r2.py --check
           python tools/content_quality_final_pass_v339_r4.py --check
           node tools/audit_content_semantic_alignment_v339_r4.js
+
       - name: Patch integrity
         run: git diff --check
-      - name: Real-browser V341 learning experience smoke
+
+      - name: Real-browser V341 release smoke
         shell: bash
         run: |
           set -euo pipefail
@@ -113,7 +134,8 @@ jobs:
           done
           curl -fsS http://127.0.0.1:3377/tools/learning_experience_v341_browser_case.html > /dev/null
           node tools/run_learning_experience_v341_browser_smoke.js
-      - name: Commit generated V341 integration and quality repair if needed
+
+      - name: Commit release-clean integration if needed
         shell: bash
         run: |
           if git diff --quiet; then
@@ -123,6 +145,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/pwa/index.html src/pwa/learning_engine_v341.js src/pwa/learning_experience_v341.js tools/learning_experience_v341_browser_case.html data/side_cards data_i18n/en/side_cards
-          git commit -m "Finalize V341 evidence-based learning experience"
+          git commit -m "Remove V341 diagnostics and finalize release behavior"
           git push origin HEAD:feat/learning-experience-v341
-          echo "V341_INTEGRATION_COMMIT_PUSHED=True"
+          echo "V341_RELEASE_CLEAN_COMMIT_PUSHED=True"
