@@ -131,6 +131,16 @@ function validateArchifyPayload(name, payload) {
   const projectionSet = new Set(projection);
   assert(nodeIds.every((id) => projectionSet.has(id)), `${name}: noncanonical workflow node`);
 
+  const collapsed = Array.isArray(payload.collapsedAuxiliaryNodeIds)
+    ? payload.collapsedAuxiliaryNodeIds.map(String)
+    : [];
+  assert(collapsed.length === new Set(collapsed).size, `${name}: duplicate collapsed auxiliary id`);
+  assert(collapsed.every((id) => !projectionSet.has(id)), `${name}: canonical node collapsed as auxiliary`);
+  assert(collapsed.every((id) => !nodeIds.includes(id)), `${name}: collapsed auxiliary leaked into workflow`);
+  if (name === "loop_continue") {
+    assert(collapsed.length >= 1, `${name}: expected loop_source auxiliary collapse`);
+  }
+
   const artifact = payload.artifact || {};
   assert(typeof artifact.html === "string" && /<svg\b/i.test(artifact.html), `${name}: SVG artifact missing`);
   assert(Number(artifact.bytes || 0) > 0, `${name}: invalid artifact bytes`);
@@ -145,6 +155,7 @@ function validateArchifyPayload(name, payload) {
   return {
     nodes: nodes.length,
     edges: edges.length,
+    collapsed: collapsed.length,
     bytes: Number(artifact.bytes || 0)
   };
 }
@@ -198,10 +209,10 @@ async function main() {
         sourceName: `${name}.py`,
         locale: "ko"
       });
-      assert(response.statusCode === 200, `${name}: render status ${response.statusCode} ${JSON.stringify(response.value).slice(0, 800)}`);
+      assert(response.statusCode === 200, `${name}: render status ${response.statusCode} ${JSON.stringify(response.value).slice(0, 1200)}`);
       const stats = validateArchifyPayload(name, response.value);
       console.log(
-        `CASE=${name} NODES=${stats.nodes} EDGES=${stats.edges} BYTES=${stats.bytes} ARCHIFY_ENDPOINT=PASS`
+        `CASE=${name} NODES=${stats.nodes} EDGES=${stats.edges} COLLAPSED_AUX=${stats.collapsed} BYTES=${stats.bytes} ARCHIFY_ENDPOINT=PASS`
       );
     }
 
@@ -230,8 +241,9 @@ async function main() {
     assert(unavailableGuard, "missing Archify runtime guard failed");
     console.log("ARCHIFY_RUNTIME_UNAVAILABLE_GUARD=PASS");
 
+    console.log("CANONICAL_AUXILIARY_COLLAPSE_GUARD=PASS");
     console.log("CASES=5");
-    console.log("RESULT=PASS_LOCAL_PRT_PYTHON_ARCHIFY_EXECUTION_ENDPOINT_V0_1_AUDIT");
+    console.log("RESULT=PASS_LOCAL_PRT_PYTHON_ARCHIFY_EXECUTION_ENDPOINT_V0_2_AUDIT");
   } finally {
     if (child.exitCode === null) {
       try { child.kill("SIGTERM"); } catch (_) {}
