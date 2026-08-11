@@ -8,9 +8,12 @@ from python_reading_archify_contract_v0_1 import (
     normalize_workflow_ids,
 )
 from python_reading_archify_layout_v0_1 import (
+    FALSE_BRANCH_LABEL_DY,
     LABEL_DX_BY_ROLE,
+    LABEL_DY_BY_ROLE,
     LABEL_UNIT_BUDGET,
     SAFE_CORRIDOR_X,
+    SAFE_LEFT_CORRIDOR_X,
     SUBLABEL_UNIT_BUDGET,
     archify_text_units,
 )
@@ -23,17 +26,26 @@ def assert_layout_policy(workflow: dict) -> None:
         if node.get("sublabel"):
             assert archify_text_units(node["sublabel"]) <= SUBLABEL_UNIT_BUDGET, node
 
+    has_right_corridor = False
     for edge in workflow["edges"]:
         via = edge.get("via") or []
         if via:
             assert edge.get("fromSide") in {"top", "bottom", "left", "right"}
             assert edge.get("toSide") in {"top", "bottom", "left", "right"}
-            assert any(point[0] == SAFE_CORRIDOR_X for point in via), edge
             for left, right in zip(via, via[1:]):
                 assert left[0] == right[0] or left[1] == right[1], edge
+            has_right_corridor = has_right_corridor or any(
+                point[0] == SAFE_CORRIDOR_X for point in via
+            )
 
         if edge.get("labelDx") is not None:
             assert edge["labelDx"] in set(LABEL_DX_BY_ROLE.values()), edge
+
+        if edge.get("labelDy") in set(LABEL_DY_BY_ROLE.values()) | {FALSE_BRANCH_LABEL_DY}:
+            assert edge.get("label"), edge
+
+    if has_right_corridor:
+        assert not any(edge.get("route") == "outside-right" for edge in workflow["edges"]), workflow
 
 
 def main() -> None:
@@ -59,22 +71,42 @@ def main() -> None:
                 assert edge["to"] in node_ids
             assert "mainPath" not in workflow
             assert all(node["width"] == 96 for node in workflow["nodes"])
-            corridor_edges = sum(1 for edge in workflow["edges"] if edge.get("via"))
-            shifted_labels = sum(
+
+            right_corridors = sum(
                 1 for edge in workflow["edges"]
-                if edge.get("labelDx") in set(LABEL_DX_BY_ROLE.values())
+                if any(point[0] == SAFE_CORRIDOR_X for point in (edge.get("via") or []))
+            )
+            left_corridors = sum(
+                1 for edge in workflow["edges"]
+                if any(point[0] == SAFE_LEFT_CORRIDOR_X for point in (edge.get("via") or []))
+            )
+            branch_gaps = sum(
+                1 for edge in workflow["edges"]
+                if len(edge.get("via") or []) == 2
+                and not any(
+                    point[0] in {SAFE_CORRIDOR_X, SAFE_LEFT_CORRIDOR_X}
+                    for point in (edge.get("via") or [])
+                )
+            )
+            label_offsets = sum(
+                1 for edge in workflow["edges"]
+                if edge.get("labelDx") is not None or edge.get("labelDy") in {
+                    *LABEL_DY_BY_ROLE.values(),
+                    FALSE_BRANCH_LABEL_DY,
+                }
             )
             print(
                 f"CASE={name} LOCALE={locale} "
                 f"NODES={len(workflow['nodes'])} EDGES={len(workflow['edges'])} "
-                f"CORRIDOR_EDGES={corridor_edges} SHIFTED_LABELS={shifted_labels} "
-                "ARCHIFY_IDS=PASS TEXT_FIT=PASS CORRIDOR_POLICY=PASS"
+                f"RIGHT_CORRIDORS={right_corridors} LEFT_CORRIDORS={left_corridors} "
+                f"BRANCH_GAPS={branch_gaps} LABEL_OFFSETS={label_offsets} "
+                "ARCHIFY_IDS=PASS TEXT_FIT=PASS ROUTE_SEPARATION=PASS"
             )
     print("CASES=5")
     print("LOCALES=2")
     print("ARCHIFY_ID_CONTRACT=PASS")
     print("ARCHIFY_TEXT_FIT_CONTRACT=PASS")
-    print("ARCHIFY_SHOWCASE_CORRIDOR_POLICY=PASS")
+    print("ARCHIFY_SHOWCASE_ROUTE_SEPARATION=PASS")
     print("RESULT=PASS_PYTHON_READING_ARCHIFY_PROJECTION_V0_1_AUDIT")
 
 
