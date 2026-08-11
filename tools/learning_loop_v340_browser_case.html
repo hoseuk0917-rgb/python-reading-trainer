@@ -108,8 +108,10 @@
       return el && !el.classList.contains("hidden") && el.querySelector(".worked-v340-code") ? el : null;
     }, 4000);
     check("UNSURE_REVEALS_WORKED_EXAMPLE", !!example, example ? "visible" : "missing/hidden");
-    const clickable = example ? example.querySelector(".syntax-v340") : null;
-    check("WORKED_EXAMPLE_HAS_CLICKABLE_KNOWN_SYNTAX", !!clickable, clickable ? "syntax=" + clickable.textContent : "none");
+    const exampleCode = example ? example.querySelector(".worked-v340-code").textContent : "";
+    check("FIRST_WORKED_EXAMPLE_IS_PRIMARY_LEN", /\blen\s*\(/.test(exampleCode), "code=" + exampleCode.replace(/\s+/g, " ").slice(0, 120));
+    const clickable = example ? example.querySelector('.syntax-v340[data-concept="len"]') : null;
+    check("WORKED_EXAMPLE_HAS_CLICKABLE_PRIMARY_SYNTAX", !!clickable, clickable ? "syntax=" + clickable.textContent : "none");
     if (clickable) clickable.click();
     const syntaxModal = await waitFor(() => {
       const modal = doc.getElementById("syntaxModalV340");
@@ -129,6 +131,7 @@
     }, 3000);
     const reviewQuestion = reviewModal ? reviewModal.querySelector(".review-v340-question").textContent.trim() : "";
     check("VARIANT_REVIEW_MODAL_OPENS", !!reviewModal, reviewModal ? "choices=" + reviewModal.querySelectorAll(".review-v340-choice").length : "not opened");
+    check("VARIANT_REVIEW_PRIMARY_IS_LEN", !!reviewModal && reviewModal.dataset.primaryConcept === "len", reviewModal ? "primary=" + reviewModal.dataset.primaryConcept : "missing");
     check("VARIANT_REVIEW_NOT_ORIGINAL_QA", !!reviewQuestion && reviewQuestion !== originalQuestion, "original=" + originalQuestion + " | review=" + reviewQuestion);
     check("VARIANT_REVIEW_HAS_CHOICES", !!reviewModal && reviewModal.querySelectorAll(".review-v340-choice").length >= 2, reviewModal ? "count=" + reviewModal.querySelectorAll(".review-v340-choice").length : "0");
     if (reviewModal) reviewModal.querySelector(".modal-v340-close").click();

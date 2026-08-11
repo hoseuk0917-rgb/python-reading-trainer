@@ -202,7 +202,7 @@
       return;
     }
     const index = getCardIndex(card);
-    const example = engine().pickSafeExample(card, cards, index, conceptInfo || {});
+    const example = engine().pickSafeExample(card, cards, index, conceptInfo || {}, primaryConcept(card));
     if (!example || !example.code) {
       box.classList.add("hidden");
       return;
@@ -230,8 +230,9 @@
     const index = getCardIndex(card);
     const state = loadReviewState();
     const row = state[cardId] || { stage: 0, lapses: 0 };
-    const variant = e.makeReviewVariant(card, cards, index, conceptInfo || {}, row);
+    const variant = e.makeReviewVariant(card, cards, index, conceptInfo || {}, row, primaryConcept(card));
     const modal = ensureModal("reviewModalV340");
+    modal.dataset.primaryConcept = variant.primaryConcept || "";
     modal.querySelector("h2").textContent = t("변형 복습", "Variant review") + " · " + card.title;
     const body = modal.querySelector(".modal-v340-body");
     body.innerHTML = "";

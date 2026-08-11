@@ -145,10 +145,14 @@
     }) || concepts[0] || "";
   }
 
-  function pickSafeExample(card, cards, index, conceptInfo) {
+  function pickSafeExample(card, cards, index, conceptInfo, primaryConceptOverride) {
     const allowed = allowedConceptsAt(cards, index);
     const candidates = [];
-    listConcepts(card).forEach(function(concept) {
+    const primary = primaryConceptOverride || pickPrimaryConcept(card, conceptInfo);
+    const orderedCurrent = [primary].concat(listConcepts(card).filter(function(concept) {
+      return concept !== primary;
+    }));
+    orderedCurrent.forEach(function(concept) {
       const info = conceptInfo && conceptInfo[concept];
       if (info && info.example) candidates.push({ concept: concept, code: info.example, source: "current" });
     });
@@ -203,8 +207,8 @@
       });
   }
 
-  function makeReviewVariant(card, cards, index, conceptInfo, reviewRow) {
-    const primary = pickPrimaryConcept(card, conceptInfo);
+  function makeReviewVariant(card, cards, index, conceptInfo, reviewRow, primaryConceptOverride) {
+    const primary = primaryConceptOverride || pickPrimaryConcept(card, conceptInfo);
     const allowed = Array.from(allowedConceptsAt(cards, index)).filter(function(concept) {
       return concept !== primary && conceptInfo && conceptInfo[concept] && conceptInfo[concept].definition;
     });
