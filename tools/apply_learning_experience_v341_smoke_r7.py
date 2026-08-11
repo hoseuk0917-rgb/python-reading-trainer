@@ -76,10 +76,11 @@ def patch(text: str) -> str:
 def audit(text: str) -> list[str]:
     errors = []
     required = [
-        '.practice-v341-primary[data-mission-checkpoint-v341=\\"1\\"]',
-        'button[data-mission-checkpoint-v341=\\"2\\"]',
         "const checkpointButton = await waitFor",
         "const regressionOpen = await waitFor",
+        'checkpointButton.dataset.missionCheckpointV341 === "1"',
+        "const regressionButton = regressionOpen",
+        "if (regressionButton) regressionButton.click();",
         MARKER,
     ]
     for value in required:
