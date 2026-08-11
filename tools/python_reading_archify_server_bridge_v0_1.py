@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import copy
 import json
 import sys
 from typing import Any
 
 from export_python_reading_archify_layoutsafe_v0_1 import build_archify_workflow
+from export_python_reading_archify_v0_1 import hidden
 
-VERSION = "v0.1"
+VERSION = "v0.2"
 
 
 def load_envelope() -> dict[str, Any]:
@@ -17,6 +19,46 @@ def load_envelope() -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError("stdin JSON envelope must be an object")
     return value
+
+
+def prepare_renderer_ir(
+    ir: dict[str, Any],
+    projection_ids: list[str],
+) -> tuple[dict[str, Any], list[str]]:
+    """Collapse non-canonical AST helpers in a renderer-only copy.
+
+    The reconciliation projection is the registration authority. Existing Archify
+    path projection is allowed to traverse hidden helper nodes, but it must never
+    surface one as a learner execution node. Marking only otherwise-visible,
+    non-canonical nodes as ``merge`` preserves their control-flow connectivity
+    while reusing the exporter's established hidden-node traversal behavior.
+    The source Graph IR is never mutated.
+    """
+
+    renderer_ir = copy.deepcopy(ir)
+    canonical_ids = set(projection_ids)
+    collapsed: list[str] = []
+
+    for scope in renderer_ir.get("scopes") or []:
+        for node in scope.get("nodes") or []:
+            node_id = str(node.get("id") or "")
+            if not node_id or node_id in canonical_ids:
+                continue
+            if hidden(node):
+                continue
+
+            original_kind = str(node.get("kind") or "")
+            node["kind"] = "merge"
+            node["renderer_projection"] = {
+                "collapsed_auxiliary": True,
+                "original_kind": original_kind,
+            }
+            collapsed.append(node_id)
+
+    if len(collapsed) != len(set(collapsed)):
+        raise ValueError("collapsed auxiliary node ids contain duplicates")
+
+    return renderer_ir, collapsed
 
 
 def main() -> None:
@@ -54,8 +96,10 @@ def main() -> None:
     output_name = str(envelope.get("output_name") or "python_execution_archify.html")
     scope_id = envelope.get("scope_id") or None
 
+    renderer_ir, collapsed_auxiliary_node_ids = prepare_renderer_ir(ir, projection_ids)
+
     workflow = build_archify_workflow(
-        ir,
+        renderer_ir,
         scope_id=scope_id,
         locale=locale,
         output_name=output_name,
@@ -72,6 +116,15 @@ def main() -> None:
     if outside:
         raise ValueError("workflow contains non-canonical execution nodes: " + ",".join(outside))
 
+    leaked_auxiliary = [
+        value for value in collapsed_auxiliary_node_ids
+        if value in set(workflow_node_ids)
+    ]
+    if leaked_auxiliary:
+        raise ValueError(
+            "collapsed auxiliary nodes leaked into workflow: " + ",".join(leaked_auxiliary)
+        )
+
     edge_ids = [str(item.get("id") or "") for item in (workflow.get("edges") or [])]
     if any(not value for value in edge_ids):
         raise ValueError("workflow contains an edge without an id")
@@ -85,6 +138,7 @@ def main() -> None:
         "scope_id": scope_id or ir.get("primary_scope_id"),
         "canonical_execution_node_ids": projection_ids,
         "workflow_node_ids": workflow_node_ids,
+        "collapsed_auxiliary_node_ids": collapsed_auxiliary_node_ids,
         "workflow": workflow,
     }
     sys.stdout.write(json.dumps(payload, ensure_ascii=False))
