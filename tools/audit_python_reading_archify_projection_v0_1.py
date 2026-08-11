@@ -9,6 +9,7 @@ from python_reading_archify_contract_v0_1 import (
 )
 from python_reading_archify_layout_v0_1 import (
     FALSE_BRANCH_LABEL_DY,
+    FAR_LEFT_CORRIDOR_X,
     LABEL_DX_BY_ROLE,
     LABEL_DY_BY_ROLE,
     LABEL_UNIT_BUDGET,
@@ -78,13 +79,20 @@ def main() -> None:
             )
             left_corridors = sum(
                 1 for edge in workflow["edges"]
-                if any(point[0] == SAFE_LEFT_CORRIDOR_X for point in (edge.get("via") or []))
+                if any(
+                    point[0] in {SAFE_LEFT_CORRIDOR_X, FAR_LEFT_CORRIDOR_X}
+                    for point in (edge.get("via") or [])
+                )
             )
             branch_gaps = sum(
                 1 for edge in workflow["edges"]
                 if len(edge.get("via") or []) == 2
                 and not any(
-                    point[0] in {SAFE_CORRIDOR_X, SAFE_LEFT_CORRIDOR_X}
+                    point[0] in {
+                        SAFE_CORRIDOR_X,
+                        SAFE_LEFT_CORRIDOR_X,
+                        FAR_LEFT_CORRIDOR_X,
+                    }
                     for point in (edge.get("via") or [])
                 )
             )
