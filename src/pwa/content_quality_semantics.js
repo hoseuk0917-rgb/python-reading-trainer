@@ -1,0 +1,144 @@
+(function() {
+  "use strict";
+
+  const VERSION = "v339_r3";
+  const GENERIC = new Set(["python", "code", "coding", "programming", "basic", "language", "syntax"]);
+
+  const FAMILY = {
+    comment: "comment",
+    print: "output", output: "output",
+    variable: "assignment", assignment: "assignment", reassign: "assignment", trace: "assignment",
+    str: "string", string: "string", text: "string", split: "string",
+    int: "number", integer: "number", float: "number", number: "number", numeric: "number",
+    type: "type", value: "type", bool: "condition", comparison: "condition",
+    if: "condition", elif: "condition", else: "condition", condition: "condition",
+    for: "loop", while: "loop", loop: "loop", range: "loop", iteration: "loop", break: "loop", continue: "loop", accumulate: "loop",
+    list: "list", index: "list", append: "list",
+    dict: "dict", key: "dict", mapping: "dict",
+    tuple: "tuple", set: "set",
+    def: "function", function: "function", call: "function", parameter: "function", argument: "function", return: "function", scope: "function",
+    class: "object", object: "object", method: "object", self: "object", mutable: "object",
+    import: "module", module: "module", package: "module",
+    file: "file", open: "file", path: "file", pathlib: "file", encoding: "file", csv: "file", json: "file",
+    exception: "exception", error: "exception", raise: "exception", try_except: "exception",
+    input: "input", indentation: "indentation", none: "none", None: "none"
+  };
+
+  const TOKENS = {
+    comment: ["comment", "주석", "#"],
+    print: ["print", "출력", "화면"], output: ["output", "출력", "화면"],
+    variable: ["variable", "변수"], assignment: ["assignment", "대입", "저장", "다시 대입"],
+    str: ["str", "string", "문자열", "텍스트"], int: ["int", "integer", "정수"], float: ["float", "실수", "소수"],
+    type: ["type", "자료형", "타입"], bool: ["bool", "boolean", "true", "false", "참", "거짓"],
+    comparison: ["comparison", "비교", "==", "!=", ">=", "<=", "보다 크", "보다 작"],
+    if: ["if", "조건문", "조건"], else: ["else", "그렇지 않으면"], while: ["while", "조건 반복"],
+    for: ["for", "반복문", "반복"], range: ["range", "범위"], break: ["break", "반복 종료"], continue: ["continue", "건너뛰"],
+    list: ["list", "리스트", "목록"], index: ["index", "인덱스", "위치"], append: ["append", "추가"],
+    dict: ["dict", "dictionary", "딕셔너리"], key: ["key", "키"], value: ["value", "값"], tuple: ["tuple", "튜플"], set: ["set", "집합"],
+    def: ["def", "함수 정의", "함수 만들"], function: ["function", "함수"], return: ["return", "반환", "돌려"],
+    parameter: ["parameter", "매개변수"], argument: ["argument", "인자"], scope: ["scope", "스코프", "범위", "지역 변수", "전역"],
+    class: ["class", "클래스"], object: ["object", "객체"], method: ["method", "메서드"], self: ["self"], mutable: ["mutable", "변경 가능"],
+    import: ["import", "불러오"], module: ["module", "모듈"], file: ["file", "파일"], open: ["open", "파일 열"], path: ["path", "pathlib", "경로"],
+    exception: ["exception", "예외", "오류"], try_except: ["try", "except", "예외 처리"], json: ["json"], csv: ["csv"], encoding: ["encoding", "인코딩", "utf-8"],
+    input: ["input", "입력"], indentation: ["indentation", "들여쓰기"], None: ["none", "값 없음"]
+  };
+
+  function norm(value) {
+    return String(value == null ? "" : value).toLowerCase().replace(/\s+/g, " ").trim();
+  }
+
+  function family(value) {
+    const key = String(value == null ? "" : value);
+    return FAMILY[key] || FAMILY[key.toLowerCase()] || key.toLowerCase();
+  }
+
+  function meaningfulConcepts(values) {
+    return (Array.isArray(values) ? values : [])
+      .map(function(value) { return String(value || "").trim(); })
+      .filter(Boolean)
+      .filter(function(value) { return !GENERIC.has(value.toLowerCase()); });
+  }
+
+  function tokenScore(text, tokens, weight) {
+    let score = 0;
+    tokens.forEach(function(token) {
+      if (token && text.includes(String(token).toLowerCase())) score += weight;
+    });
+    return score;
+  }
+
+  function codeSignal(concept, code) {
+    const c = String(concept || "");
+    const text = String(code || "");
+    const lines = text.split(/\r?\n/);
+    if (c === "comment") return lines.some(function(line) { return /^\s*#/.test(line); }) ? 2 : 0;
+    if (c === "print" || c === "output") return /\bprint\s*\(/.test(text) ? 1 : 0;
+    if (c === "if") return /^\s*if\b/m.test(text) ? 2 : 0;
+    if (c === "else") return /^\s*else\s*:/m.test(text) ? 2 : 0;
+    if (c === "for") return /^\s*for\b/m.test(text) ? 2 : 0;
+    if (c === "while") return /^\s*while\b/m.test(text) ? 2 : 0;
+    if (c === "def" || c === "function") return /^\s*def\b/m.test(text) ? 2 : 0;
+    if (c === "return") return /^\s*return\b/m.test(text) ? 2 : 0;
+    if (c === "class") return /^\s*class\b/m.test(text) ? 2 : 0;
+    if (c === "import" || c === "module") return /^\s*(?:from\s+\S+\s+)?import\b/m.test(text) ? 2 : 0;
+    if (c === "try_except" || c === "exception") return /^\s*(?:try|except)\b/m.test(text) ? 2 : 0;
+    if (c === "range") return /\brange\s*\(/.test(text) ? 2 : 0;
+    if (c === "break") return /^\s*break\s*$/m.test(text) ? 2 : 0;
+    if (c === "continue") return /^\s*continue\s*$/m.test(text) ? 2 : 0;
+    return 0;
+  }
+
+  function scoreConcept(card, concept, index) {
+    const tokens = TOKENS[concept] || TOKENS[String(concept || "").toLowerCase()] || [String(concept || "")];
+    const title = norm(card && card.title);
+    const goal = norm(card && card.reading_goal);
+    const question = norm(card && card.question);
+    const context = norm(card && card.project_context);
+    let score = 0;
+    score += tokenScore(title, tokens, 10);
+    score += tokenScore(goal, tokens, 7);
+    score += tokenScore(question, tokens, 5);
+    score += tokenScore(context, tokens, 1);
+    score += codeSignal(concept, card && card.code);
+    score += Math.max(0, 0.2 - index * 0.01);
+    return score;
+  }
+
+  function pickPrimaryConcept(card, concepts, conceptInfo) {
+    const candidates = (Array.isArray(concepts) ? concepts : []).filter(function(concept) {
+      return conceptInfo && conceptInfo[concept];
+    });
+    if (!candidates.length) return (Array.isArray(concepts) && concepts[0]) || "";
+    let best = candidates[0];
+    let bestScore = scoreConcept(card || {}, best, 0);
+    candidates.forEach(function(concept, index) {
+      const score = scoreConcept(card || {}, concept, index);
+      if (score > bestScore) {
+        best = concept;
+        bestScore = score;
+      }
+    });
+    return best;
+  }
+
+  function isSideCardRelevant(card, sideCard) {
+    if (!card || !sideCard) return false;
+    const lessonConcepts = meaningfulConcepts(card.concepts).map(family);
+    const sideConcepts = meaningfulConcepts(sideCard.related_concepts || sideCard.concepts).map(family);
+    if (!lessonConcepts.length || !sideConcepts.length) return false;
+    const lessonSet = new Set(lessonConcepts);
+    return sideConcepts.some(function(value) { return lessonSet.has(value); });
+  }
+
+  const api = {
+    version: VERSION,
+    pickPrimaryConcept: pickPrimaryConcept,
+    isSideCardRelevant: isSideCardRelevant,
+    family: family,
+    meaningfulConcepts: meaningfulConcepts,
+    scoreConcept: scoreConcept
+  };
+
+  if (typeof window !== "undefined") window.ContentQualitySemantics = api;
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+})();
