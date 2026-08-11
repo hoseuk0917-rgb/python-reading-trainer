@@ -10,6 +10,7 @@ const PORT = Number.parseInt(process.env.PRT_ARCHIFY_AUDIT_PORT || "3382", 10);
 const HOST = "127.0.0.1";
 const BASE = `http://${HOST}:${PORT}`;
 const ARCHIFY_ROOT = process.env.PRT_ARCHIFY_ROOT || "";
+const ARCHIFY_ID_RE = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 
 const CASES = {
   loop_continue: `import json
@@ -118,6 +119,7 @@ function validateArchifyPayload(name, payload) {
     : [];
   assert(projection.length > 0, `${name}: empty canonical projection`);
   assert(projection.length === new Set(projection).size, `${name}: duplicate canonical projection`);
+  const projectionSet = new Set(projection);
 
   const workflow = payload.workflow || {};
   const nodes = Array.isArray(workflow.nodes) ? workflow.nodes : [];
@@ -126,17 +128,49 @@ function validateArchifyPayload(name, payload) {
   assert(edges.length >= 0, `${name}: invalid workflow edges`);
 
   const nodeIds = nodes.map((item) => String(item && item.id || ""));
-  assert(nodeIds.every(Boolean), `${name}: missing workflow node id`);
+  assert(nodeIds.every((id) => ARCHIFY_ID_RE.test(id)), `${name}: unsafe Archify workflow node id`);
   assert(nodeIds.length === new Set(nodeIds).size, `${name}: duplicate workflow node id`);
-  const projectionSet = new Set(projection);
-  assert(nodeIds.every((id) => projectionSet.has(id)), `${name}: noncanonical workflow node`);
+
+  const sourceNodeIds = Array.isArray(payload.workflowSourceNodeIds)
+    ? payload.workflowSourceNodeIds.map(String)
+    : [];
+  assert(sourceNodeIds.length === nodeIds.length, `${name}: source/render node count mismatch`);
+  assert(sourceNodeIds.length === new Set(sourceNodeIds).size, `${name}: duplicate workflow source node id`);
+  assert(sourceNodeIds.every((id) => projectionSet.has(id)), `${name}: noncanonical workflow source node`);
+
+  const idMap = Array.isArray(payload.workflowIdMap) ? payload.workflowIdMap : [];
+  assert(idMap.length === nodeIds.length, `${name}: workflow id map count mismatch`);
+  const mappedCanonical = idMap.map((item) => String(item && item.canonicalNodeId || ""));
+  const mappedArchify = idMap.map((item) => String(item && item.archifyNodeId || ""));
+  assert(mappedCanonical.every(Boolean), `${name}: empty canonical id in mapping`);
+  assert(mappedArchify.every((id) => ARCHIFY_ID_RE.test(id)), `${name}: unsafe Archify id in mapping`);
+  assert(mappedCanonical.length === new Set(mappedCanonical).size, `${name}: duplicate canonical mapping id`);
+  assert(mappedArchify.length === new Set(mappedArchify).size, `${name}: duplicate Archify mapping id`);
+  assert(mappedCanonical.every((id, index) => id === sourceNodeIds[index]), `${name}: canonical mapping order mismatch`);
+  assert(mappedArchify.every((id, index) => id === nodeIds[index]), `${name}: Archify mapping order mismatch`);
+
+  const normalizedChanged = idMap.some((item) => item.canonicalNodeId !== item.archifyNodeId);
+  assert(normalizedChanged, `${name}: expected renderer-facing ID normalization was not observed`);
+
+  for (const edge of edges) {
+    assert(ARCHIFY_ID_RE.test(String(edge && edge.id || "")), `${name}: unsafe Archify edge id`);
+    assert(nodeIds.includes(String(edge && edge.from || "")), `${name}: edge from unknown rendered node`);
+    assert(nodeIds.includes(String(edge && edge.to || "")), `${name}: edge to unknown rendered node`);
+  }
+
+  for (const view of ((workflow.meta || {}).views || [])) {
+    for (const focusId of (view.focus || [])) {
+      assert(nodeIds.includes(String(focusId)), `${name}: view focus unknown rendered node`);
+      assert(ARCHIFY_ID_RE.test(String(focusId)), `${name}: unsafe view focus id`);
+    }
+  }
 
   const collapsed = Array.isArray(payload.collapsedAuxiliaryNodeIds)
     ? payload.collapsedAuxiliaryNodeIds.map(String)
     : [];
   assert(collapsed.length === new Set(collapsed).size, `${name}: duplicate collapsed auxiliary id`);
   assert(collapsed.every((id) => !projectionSet.has(id)), `${name}: canonical node collapsed as auxiliary`);
-  assert(collapsed.every((id) => !nodeIds.includes(id)), `${name}: collapsed auxiliary leaked into workflow`);
+  assert(collapsed.every((id) => !sourceNodeIds.includes(id)), `${name}: collapsed auxiliary leaked into workflow source ids`);
   if (name === "loop_continue") {
     assert(collapsed.length >= 1, `${name}: expected loop_source auxiliary collapse`);
   }
@@ -156,6 +190,7 @@ function validateArchifyPayload(name, payload) {
     nodes: nodes.length,
     edges: edges.length,
     collapsed: collapsed.length,
+    mapped: idMap.length,
     bytes: Number(artifact.bytes || 0)
   };
 }
@@ -209,10 +244,10 @@ async function main() {
         sourceName: `${name}.py`,
         locale: "ko"
       });
-      assert(response.statusCode === 200, `${name}: render status ${response.statusCode} ${JSON.stringify(response.value).slice(0, 1200)}`);
+      assert(response.statusCode === 200, `${name}: render status ${response.statusCode} ${JSON.stringify(response.value).slice(0, 1400)}`);
       const stats = validateArchifyPayload(name, response.value);
       console.log(
-        `CASE=${name} NODES=${stats.nodes} EDGES=${stats.edges} COLLAPSED_AUX=${stats.collapsed} BYTES=${stats.bytes} ARCHIFY_ENDPOINT=PASS`
+        `CASE=${name} NODES=${stats.nodes} EDGES=${stats.edges} ID_MAP=${stats.mapped} COLLAPSED_AUX=${stats.collapsed} BYTES=${stats.bytes} ARCHIFY_ENDPOINT=PASS`
       );
     }
 
@@ -241,9 +276,10 @@ async function main() {
     assert(unavailableGuard, "missing Archify runtime guard failed");
     console.log("ARCHIFY_RUNTIME_UNAVAILABLE_GUARD=PASS");
 
+    console.log("ARCHIFY_ID_NORMALIZATION_TRACEABILITY=PASS");
     console.log("CANONICAL_AUXILIARY_COLLAPSE_GUARD=PASS");
     console.log("CASES=5");
-    console.log("RESULT=PASS_LOCAL_PRT_PYTHON_ARCHIFY_EXECUTION_ENDPOINT_V0_2_AUDIT");
+    console.log("RESULT=PASS_LOCAL_PRT_PYTHON_ARCHIFY_EXECUTION_ENDPOINT_V0_3_AUDIT");
   } finally {
     if (child.exitCode === null) {
       try { child.kill("SIGTERM"); } catch (_) {}
