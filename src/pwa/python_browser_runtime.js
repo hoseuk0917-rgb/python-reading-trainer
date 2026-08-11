@@ -64,21 +64,19 @@
       window.clearTimeout(entry.timer);
 
       if (message.ok === true) {
-        if (message.result && message.result.kind === "python_browser_runtime_ready") {
-          state = {
-            status: "ready",
-            usable: true,
-            error: null,
-            pyodideVersion: String(message.result.pyodideVersion || "")
-          };
-        } else if (state.usable !== true) {
-          state = {
-            status: "ready",
-            usable: true,
-            error: null,
-            pyodideVersion: state.pyodideVersion
-          };
-        }
+        const runtimeMeta = message.runtimeMeta || {};
+        const readyVersion = message.result && message.result.kind === "python_browser_runtime_ready"
+          ? message.result.pyodideVersion
+          : null;
+        const reportedVersion = String(
+          runtimeMeta.pyodideVersion || readyVersion || state.pyodideVersion || ""
+        );
+        state = {
+          status: "ready",
+          usable: true,
+          error: null,
+          pyodideVersion: reportedVersion || null
+        };
         entry.resolve(message.result);
         return;
       }
