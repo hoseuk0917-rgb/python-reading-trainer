@@ -1318,13 +1318,25 @@ function jumpToConfusedOrNext() {
 
 
 function resetProgress() {
-  const ok = confirm("진도만 초기화합니다. 메모는 유지됩니다. 계속할까요?");
+  const ok = confirm("학습 진도와 복습 일정을 초기화합니다. 메모는 유지됩니다. 계속할까요?");
   if (!ok) {
     return;
   }
+
   localStorage.removeItem(progressKey);
+  localStorage.removeItem("python-reading-trainer-review-v340");
+  localStorage.removeItem("python-reading-trainer-session-v340");
+  try {
+    sessionStorage.removeItem("python-reading-trainer-attempts-v340");
+  } catch (_) {}
+
+  currentIndex = 0;
   renderCard();
   renderProgress();
+
+  if (typeof window !== "undefined" && typeof window.refreshLearningPathV340 === "function") {
+    window.refreshLearningPathV340();
+  }
 }
 
 function getAllConcepts() {

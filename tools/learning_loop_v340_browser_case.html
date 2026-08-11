@@ -141,6 +141,24 @@
     check("SEARCH_FILTER_CAN_BE_OPENED", !legacy.classList.contains("v340-legacy-hidden"), "hidden=" + legacy.classList.contains("v340-legacy-hidden"));
     check("LEGACY_TITLE_DECLARATIVE", /순차 진도와 별개|separate from sequential progress/i.test(legacy.querySelector(".study-tools-title").textContent), legacy.querySelector(".study-tools-title").textContent);
 
+    win.confirm = function() { return true; };
+    const resetBtn = doc.getElementById("resetBtn");
+    check("RESET_BUTTON_PRESENT", !!resetBtn, resetBtn ? "present" : "missing");
+    if (resetBtn) resetBtn.click();
+    await sleep(180);
+    const resetNext = nextStat(doc);
+    const resetDue = Number(path.querySelector("[data-role='review'] strong").textContent.trim());
+    const resetSessionCount = path.querySelectorAll("[data-role='session'] button").length;
+    const reviewRaw = win.localStorage.getItem("python-reading-trainer-review-v340");
+    const sessionRaw = win.localStorage.getItem("python-reading-trainer-session-v340");
+    const attemptRaw = win.sessionStorage.getItem("python-reading-trainer-attempts-v340");
+    check("RESET_RETURNS_TO_FIRST_CARD", doc.getElementById("cardTitle").textContent.trim() === firstTitle, "title=" + doc.getElementById("cardTitle").textContent.trim());
+    check("RESET_RETURNS_SEQUENCE_TO_FIRST", /^1\s*\/\s*1785$/.test(resetNext), "next=" + resetNext);
+    check("RESET_CLEARS_DUE_REVIEWS", resetDue === 0, "due=" + resetDue);
+    check("RESET_CLEARS_TODAY_SESSION", resetSessionCount === 0, "count=" + resetSessionCount);
+    check("RESET_CLEARS_REVIEW_STORAGE", reviewRaw === null, "value=" + String(reviewRaw));
+    check("RESET_CLEARS_SESSION_STORAGE", sessionRaw === null && attemptRaw === null, "session=" + String(sessionRaw) + " attempt=" + String(attemptRaw));
+
     try { win.eval("renderCard(); renderCard();"); } catch (_) {}
     await sleep(150);
     check("NO_DUPLICATE_LEARNING_PATH", doc.querySelectorAll("#learningPathV340").length === 1, "count=" + doc.querySelectorAll("#learningPathV340").length);

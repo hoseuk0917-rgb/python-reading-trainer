@@ -493,6 +493,7 @@
     patchAnswerFlow();
     ensureModal("syntaxModalV340");
     ensureModal("reviewModalV340");
+    window.refreshLearningPathV340 = refreshLearningPath;
     document.documentElement.dataset.learningLoopV340 = VERSION;
     return true;
   }
