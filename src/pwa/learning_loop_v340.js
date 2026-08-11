@@ -94,6 +94,7 @@
       .learning-v340-session button { background:#fff; color:#0f172a; border:1px solid rgba(148,163,184,.35); font-size:12px; }
       .learning-v340-session button.review { border-color:rgba(245,158,11,.45); background:#fffbeb; }
       #studyToolsV7.v340-legacy-hidden { display:none !important; }
+      #studyToolsV7 #studyToolsQuickV272, #studyToolsV7 #studyToolsToday { display:none !important; }
       #workedExampleV340 { margin-top:14px; padding:13px; border:1px solid rgba(16,185,129,.25); border-radius:16px; background:#f0fdf4; }
       #workedExampleV340.hidden { display:none; }
       .worked-v340-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
@@ -322,11 +323,43 @@
     });
   }
 
+  function syncLegacyToolsVisibility() {
+    const panel = document.getElementById("studyToolsV7");
+    if (!panel) return false;
+    const state = localStorage.getItem(LEGACY_PANEL_KEY);
+    panel.classList.toggle("v340-legacy-hidden", state !== "shown");
+
+    const title = panel.querySelector(".study-tools-title");
+    if (title) {
+      title.textContent = t("검색·필터 · 순차 진도와 별개", "Search & filters · separate from sequential progress");
+    }
+    return true;
+  }
+
+  function watchLegacyToolsVisibility() {
+    if (window.__learningLoopV340LegacyWatch) return;
+    window.__learningLoopV340LegacyWatch = true;
+
+    if (syncLegacyToolsVisibility()) return;
+
+    let attempts = 0;
+    const timer = window.setInterval(function() {
+      attempts += 1;
+      if (syncLegacyToolsVisibility() || attempts >= 80) {
+        window.clearInterval(timer);
+      }
+    }, 100);
+  }
+
   function toggleLegacyTools() {
     const panel = document.getElementById("studyToolsV7");
-    if (!panel) return;
-    const hidden = panel.classList.toggle("v340-legacy-hidden");
-    localStorage.setItem(LEGACY_PANEL_KEY, hidden ? "hidden" : "shown");
+    if (!panel) {
+      watchLegacyToolsVisibility();
+      return;
+    }
+    const currentlyHidden = panel.classList.contains("v340-legacy-hidden");
+    localStorage.setItem(LEGACY_PANEL_KEY, currentlyHidden ? "shown" : "hidden");
+    syncLegacyToolsVisibility();
   }
 
   function refreshLearningPath() {
@@ -352,6 +385,7 @@
     reviewBtn.disabled = due.length === 0;
     reviewBtn.onclick = function() { if (due[0]) openReview(due[0]); };
     renderSessionList(box.querySelector("[data-role='session']"));
+    syncLegacyToolsVisibility();
   }
 
   function injectLearningPath() {
@@ -380,8 +414,8 @@
       box.querySelector("[data-action='today']").onclick = startTodaySession;
       box.querySelector("[data-action='legacy']").onclick = toggleLegacyTools;
     }
-    const legacy = document.getElementById("studyToolsV7");
-    if (legacy && localStorage.getItem(LEGACY_PANEL_KEY) !== "shown") legacy.classList.add("v340-legacy-hidden");
+    syncLegacyToolsVisibility();
+    watchLegacyToolsVisibility();
     refreshLearningPath();
     return true;
   }
@@ -434,6 +468,13 @@
       refreshLearningPath();
       return result;
     };
+
+    const againBtn = document.getElementById("againBtn");
+    if (againBtn) {
+      // app.js binds the original function object before this enhancement loads.
+      // Rebind the onclick property so the V340 wrapper actually runs.
+      againBtn.onclick = jumpToConfusedOrNext;
+    }
 
     const originalRender = renderCard;
     renderCard = function() {
