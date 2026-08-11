@@ -160,7 +160,15 @@ self.addEventListener("message", async (event) => {
       throw new Error(`unsupported_worker_message:${type}`);
     }
 
-    self.postMessage({ id, ok: true, result });
+    self.postMessage({
+      id,
+      ok: true,
+      runtimeMeta: {
+        workerVersion: VERSION,
+        pyodideVersion: PYODIDE_VERSION
+      },
+      result
+    });
   } catch (error) {
     self.postMessage({
       id,
