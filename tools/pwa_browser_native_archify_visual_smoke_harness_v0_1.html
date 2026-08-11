@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PRT Browser-Native Archify B3 Visual Smoke</title>
+  <style>
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:20px;background:#f5f6f8;color:#17191d}
+    h1{margin:0 0 8px}.muted{color:#626975}.summary{padding:12px 14px;border-radius:10px;background:#fff;border:1px solid #d8dce3;margin:12px 0 18px}
+    .grid{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}.case{background:#fff;border:1px solid #d8dce3;border-radius:12px;padding:14px;overflow:auto}
+    .head{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.badge{font-weight:700}.pass{color:#137333}.fail{color:#b3261e}.pending{color:#7a5c00}
+    .frame-wrap{margin-top:12px;max-width:100%;overflow:auto;background:#eceff3;padding:8px;border-radius:10px}.frame-wrap iframe{display:block;border:1px solid #aeb4bf;background:white}
+    table{border-collapse:collapse;width:100%;margin-top:10px;font-size:14px}th,td{border-bottom:1px solid #e4e7ec;padding:7px;text-align:left;vertical-align:top}pre{white-space:pre-wrap;background:#111827;color:#e5e7eb;padding:12px;border-radius:10px;max-height:360px;overflow:auto}
+    button{padding:8px 12px;border-radius:8px;border:1px solid #aeb4bf;background:#fff;cursor:pointer}
+  </style>
+</head>
+<body>
+  <h1>Python Reading Trainer — Browser-Native Archify B3</h1>
+  <div class="muted">Local PRT Server 없이 브라우저 CPython AST + browser Archify 경로를 데스크톱/좁은 화면에서 확인합니다. 첫 실행은 Pyodide WebAssembly 다운로드 때문에 시간이 걸릴 수 있습니다.</div>
+  <div id="summary" class="summary pending">검사 준비 중…</div>
+  <div class="grid">
+    <section class="case" data-case="desktop">
+      <div class="head"><strong>Desktop 1200px</strong><span id="desktopStatus" class="badge pending">PENDING</span></div>
+      <div class="frame-wrap"><iframe id="desktopFrame" width="1200" height="900" src="/src/pwa/index.html"></iframe></div>
+      <table><tbody id="desktopResults"></tbody></table>
+    </section>
+    <section class="case" data-case="narrow">
+      <div class="head"><strong>Narrow 390px</strong><span id="narrowStatus" class="badge pending">PENDING</span></div>
+      <div class="frame-wrap"><iframe id="narrowFrame" width="390" height="900" src="/src/pwa/index.html"></iframe></div>
+      <table><tbody id="narrowResults"></tbody></table>
+    </section>
+  </div>
+  <h2>복사용 결과</h2>
+  <button id="copyReport" type="button">결과 복사</button>
+  <pre id="report">RUNNING</pre>
+<script>
+(function(){
+  "use strict";
+  const SAMPLE = `import json\nfrom pathlib import Path\n\nrows = []\nfor line in Path("manifest.jsonl").read_text(encoding="utf-8").splitlines():\n    if not line.strip():\n        continue\n    rows.append(json.loads(line))\n\nprint(len(rows))\n`;
+  const cases = [
+    {name:"desktop", frameId:"desktopFrame", expectedWidth:1200, expectedFrameHeight:520},
+    {name:"narrow", frameId:"narrowFrame", expectedWidth:390, expectedFrameHeight:440}
+  ];
+  const reportLines = ["=== PWA BROWSER-NATIVE ARCHIFY B3 VISUAL SMOKE ==="];
+
+  function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+  function row(target,label,pass,detail){
+    const tr=document.createElement("tr");
+    const a=document.createElement("td"),b=document.createElement("td"),c=document.createElement("td");
+    a.textContent=label;b.textContent=pass?"PASS":"FAIL";b.className=pass?"pass":"fail";c.textContent=detail||"";
+    tr.append(a,b,c);target.appendChild(tr);
+  }
+  async function waitFor(fn,timeout){
+    const start=Date.now();
+    while(Date.now()-start<timeout){try{const value=fn();if(value)return value;}catch(_){}await sleep(150);}
+    return null;
+  }
+  async function waitForPwaDocument(frame,timeout){
+    return waitFor(()=>{
+      const doc=frame.contentDocument;
+      if(!doc||doc.readyState!=="complete")return null;
+      const pathname=String((doc.location&&doc.location.pathname)||"");
+      if(!/\/src\/pwa\/index\.html$/.test(pathname))return null;
+      const input=doc.getElementById("codeInput"),analyze=doc.getElementById("analyzeCodeBtn"),mermaid=doc.getElementById("mermaidDiagram");
+      return input&&analyze&&mermaid?doc:null;
+    },timeout);
+  }
+  function check(label,condition,detail,results){const ok=Boolean(condition);results.push({label,ok,detail:String(detail||"")});return ok;}
+
+  function installLocalhostBlock(win){
+    const original=win.fetch.bind(win);
+    let calls=0;
+    win.fetch=function(input,init){
+      const url=String(typeof input==="string"?input:(input&&input.url)||"");
+      if(/^http:\/\/(127\.0\.0\.1|localhost):3377\/(analyze-python-structure|render-python-execution)/.test(url)){
+        calls+=1;
+        return Promise.reject(new Error("B3_HARNESS_BLOCKED_LOCAL_PRT:"+url));
+      }
+      return original(input,init);
+    };
+    return ()=>calls;
+  }
+
+  async function runCase(spec){
+    const frame=document.getElementById(spec.frameId);
+    const resultBody=document.getElementById(spec.name+"Results");
+    const status=document.getElementById(spec.name+"Status");
+    const results=[];
+
+    const loadedDoc=await waitForPwaDocument(frame,20000);
+    const win=frame.contentWindow,doc=loadedDoc||frame.contentDocument;
+    const pathname=doc&&doc.location?String(doc.location.pathname||""):"";
+    check("PWA_LOAD",!!loadedDoc,loadedDoc?"pathname="+pathname:"timeout pathname="+pathname,results);
+    if(!loadedDoc){return finishCase(spec,status,resultBody,results);}
+
+    const browserGlobals=await waitFor(()=>win.PythonBrowserRuntime&&win.PythonArchifyBrowserRenderer&&win.PythonReadingStructureBridge&&win.PythonExecutionLens,12000);
+    check("BROWSER_GLOBALS_READY",!!browserGlobals,browserGlobals?"runtime+renderer+bridges ready":"missing global",results);
+
+    const getLocalCalls=installLocalhostBlock(win);
+
+    const tabHandlerReady=await waitFor(()=>{
+      const tab=doc.querySelector('.tab-btn[data-view="code"]');
+      return tab&&typeof tab.onclick==="function"?tab:null;
+    },12000);
+    check("CODE_TAB_HANDLER_READY",!!tabHandlerReady,tabHandlerReady?"onclick=ready":"timeout",results);
+    if(tabHandlerReady)tabHandlerReady.click();
+
+    const codeViewReady=await waitFor(()=>{
+      const tab=doc.querySelector('.tab-btn[data-view="code"]');
+      const view=doc.getElementById("codeView");
+      if(tab&&typeof tab.onclick==="function"&&view){
+        const rect=view.getBoundingClientRect();
+        if(!view.classList.contains("active-view")||rect.width<=0||rect.height<=0)tab.click();
+      }
+      if(!view||!view.classList.contains("active-view"))return null;
+      const rect=view.getBoundingClientRect();
+      return rect.width>0&&rect.height>0?view:null;
+    },12000);
+    const codeViewRect=codeViewReady?codeViewReady.getBoundingClientRect():null;
+    check("CODE_VIEW_VISIBLE",!!codeViewReady,codeViewRect?"width="+Math.round(codeViewRect.width)+" height="+Math.round(codeViewRect.height):"timeout/hidden",results);
+
+    const input=doc.getElementById("codeInput"),lang=doc.getElementById("codeLangSelect"),analyze=doc.getElementById("analyzeCodeBtn");
+    input.value=SAMPLE;lang.value="python";analyze.click();
+
+    const ready=await waitFor(()=>{
+      const state=win.PythonExecutionLens&&win.PythonExecutionLens.getState?win.PythonExecutionLens.getState():null;
+      return state&&state.status==="ready"&&state.usable===true?state:null;
+    },90000);
+    check("ARCHIFY_READY",!!ready,ready?"state=ready":"timeout/fallback",results);
+
+    const structureState=win.PythonReadingStructureBridge&&win.PythonReadingStructureBridge.getState?win.PythonReadingStructureBridge.getState():null;
+    check("STRUCTURE_RUNTIME_BROWSER",!!structureState&&structureState.status==="ready"&&structureState.runtime==="browser",structureState?"status="+structureState.status+" runtime="+structureState.runtime:"missing",results);
+
+    const runtimeState=win.PythonBrowserRuntime&&win.PythonBrowserRuntime.getState?win.PythonBrowserRuntime.getState():null;
+    check("PYODIDE_RUNTIME_READY",!!runtimeState&&runtimeState.usable===true&&runtimeState.pyodideVersion==="314.0.2",runtimeState?"status="+runtimeState.status+" pyodide="+runtimeState.pyodideVersion:"missing",results);
+
+    const lensState=win.PythonExecutionLens&&win.PythonExecutionLens.getState?win.PythonExecutionLens.getState():null;
+    check("EXECUTION_RUNTIME_BROWSER",!!lensState&&lensState.runtime==="browser",lensState?"runtime="+lensState.runtime:"missing",results);
+    check("RENDERER_RUNTIME_BROWSER",!!(lensState&&lensState.payload&&lensState.payload.rendererRuntime==="browser"),lensState&&lensState.payload?"rendererRuntime="+lensState.payload.rendererRuntime:"missing",results);
+    check("NO_LOCAL_SERVER_USAGE_FLAG",!!(lensState&&lensState.payload&&lensState.payload.privacy&&lensState.payload.privacy.localServerUsed===false),lensState&&lensState.payload&&lensState.payload.privacy?"localServerUsed="+lensState.payload.privacy.localServerUsed:"missing",results);
+    check("LOCAL_ENDPOINT_CALLS_ZERO",getLocalCalls()===0,"calls="+getLocalCalls(),results);
+
+    const card=doc.getElementById("pythonExecutionLensCard"),archifyFrame=doc.getElementById("pythonExecutionArchifyFrame"),mermaid=doc.getElementById("mermaidDiagram"),mermaidCard=mermaid&&mermaid.parentNode;
+    check("ONE_LENS_CARD",doc.querySelectorAll("#pythonExecutionLensCard").length===1,"count="+doc.querySelectorAll("#pythonExecutionLensCard").length,results);
+    check("ONE_ARCHIFY_IFRAME",doc.querySelectorAll("#pythonExecutionArchifyFrame").length===1,"count="+doc.querySelectorAll("#pythonExecutionArchifyFrame").length,results);
+    check("MERMAID_PRESERVED",!!mermaid&&!!mermaidCard,"existing Mermaid card present",results);
+    check("LENS_VISIBLE",!!card&&card.hidden===false,card?"hidden="+card.hidden:"missing",results);
+
+    if(card&&mermaidCard&&card.parentNode===mermaidCard.parentNode){
+      const children=Array.from(card.parentNode.children),c=children.indexOf(card),m=children.indexOf(mermaidCard);
+      check("ARCHIFY_BEFORE_MERMAID",c>=0&&m>=0&&c<m,"indices="+c+","+m,results);
+    }else check("ARCHIFY_BEFORE_MERMAID",false,"cards not comparable",results);
+
+    if(card){
+      const rect=card.getBoundingClientRect();
+      check("CARD_WITHIN_VIEWPORT",rect.width>0&&rect.height>0&&rect.left>=-1&&rect.right<=doc.documentElement.clientWidth+1,"left="+Math.round(rect.left)+" right="+Math.round(rect.right)+" width="+Math.round(rect.width)+" viewport="+doc.documentElement.clientWidth,results);
+    }else check("CARD_WITHIN_VIEWPORT",false,"card missing",results);
+
+    const root=doc.documentElement;
+    check("NO_OUTER_HORIZONTAL_OVERFLOW",root.scrollWidth<=root.clientWidth+2,"scrollWidth="+root.scrollWidth+" clientWidth="+root.clientWidth,results);
+
+    if(archifyFrame&&card){
+      const fr=archifyFrame.getBoundingClientRect(),cr=card.getBoundingClientRect();
+      check("IFRAME_FITS_CARD",fr.width>0&&cr.width>0&&fr.width<=cr.width+1&&fr.left>=cr.left-1&&fr.right<=cr.right+1,"iframe="+Math.round(fr.width)+" card="+Math.round(cr.width),results);
+      check("VIEWPORT_HEIGHT_POLICY",Math.abs(fr.height-spec.expectedFrameHeight)<=2,"height="+Math.round(fr.height)+" expected="+spec.expectedFrameHeight,results);
+      check("SANDBOX_STATIC",archifyFrame.getAttribute("sandbox")==="","sandbox=\""+(archifyFrame.getAttribute("sandbox")||"")+"\"",results);
+      const srcdoc=String(archifyFrame.srcdoc||"");
+      check("SRCDOC_HAS_SVG",/<svg\b/i.test(srcdoc),"bytes="+srcdoc.length,results);
+      check("SRCDOC_HAS_NO_SCRIPT",!/<script\b/i.test(srcdoc),"static browser artifact",results);
+      const parsed=new DOMParser().parseFromString(srcdoc,"text/html"),svg=parsed.querySelector("svg");
+      check("SVG_VIEWBOX_R7",!!svg&&svg.getAttribute("viewBox")==="0 0 720 652",svg?"viewBox="+(svg.getAttribute("viewBox")||""):"svg missing",results);
+    }else{
+      ["IFRAME_FITS_CARD","VIEWPORT_HEIGHT_POLICY","SANDBOX_STATIC","SRCDOC_HAS_SVG","SRCDOC_HAS_NO_SCRIPT","SVG_VIEWBOX_R7"].forEach(k=>check(k,false,"iframe/card missing",results));
+    }
+
+    check("CANONICAL_PAYLOAD_PRESENT",!!(lensState&&lensState.payload&&Array.isArray(lensState.payload.workflowIdMap)&&lensState.payload.workflowIdMap.length>0),lensState&&lensState.payload?"idMap="+(lensState.payload.workflowIdMap||[]).length:"missing",results);
+    return finishCase(spec,status,resultBody,results);
+  }
+
+  function finishCase(spec,status,resultBody,results){
+    for(const r of results)row(resultBody,r.label,r.ok,r.detail);
+    const pass=results.length>0&&results.every(r=>r.ok);
+    status.textContent=pass?"PASS":"FAIL";status.className="badge "+(pass?"pass":"fail");
+    reportLines.push("CASE="+spec.name.toUpperCase()+" WIDTH="+spec.expectedWidth+" RESULT="+(pass?"PASS":"FAIL"));
+    results.forEach(r=>reportLines.push(spec.name.toUpperCase()+"_"+r.label+"="+(r.ok?"PASS":"FAIL")+" DETAIL="+r.detail));
+    return pass;
+  }
+
+  async function main(){
+    const outcomes=[];
+    for(const spec of cases)outcomes.push(await runCase(spec));
+    const pass=outcomes.every(Boolean);
+    reportLines.push("RESULT="+(pass?"PASS_PWA_BROWSER_NATIVE_ARCHIFY_B3_VISUAL_SMOKE":"FAIL_PWA_BROWSER_NATIVE_ARCHIFY_B3_VISUAL_SMOKE"));
+    document.getElementById("report").textContent=reportLines.join("\n");
+    const summary=document.getElementById("summary");
+    summary.className="summary "+(pass?"pass":"fail");
+    summary.textContent=pass?"B3 browser-native visual smoke PASS — Local PRT Server 없이 실행됐습니다.":"B3 browser-native visual smoke에서 FAIL이 있습니다. 아래 표와 실제 화면을 확인하세요.";
+  }
+
+  document.getElementById("copyReport").addEventListener("click",async()=>{
+    const value=document.getElementById("report").textContent;
+    try{await navigator.clipboard.writeText(value);}catch(_){window.prompt("복사하세요",value);}
+  });
+  main().catch(err=>{
+    reportLines.push("HARNESS_ERROR="+(err&&err.stack?err.stack:String(err)));
+    reportLines.push("RESULT=FAIL_PWA_BROWSER_NATIVE_ARCHIFY_B3_VISUAL_SMOKE");
+    document.getElementById("report").textContent=reportLines.join("\n");
+    const summary=document.getElementById("summary");summary.className="summary fail";summary.textContent="HARNESS ERROR";
+  });
+})();
+</script>
+</body>
+</html>
