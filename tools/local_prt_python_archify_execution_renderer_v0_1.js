@@ -6,7 +6,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-const VERSION = "v0.1";
+const VERSION = "v0.2";
 const MAX_PROCESS_STDOUT_BYTES = 8 * 1024 * 1024;
 const MAX_PROCESS_STDERR_BYTES = 256 * 1024;
 const MAX_ARTIFACT_BYTES = 8 * 1024 * 1024;
@@ -151,12 +151,25 @@ function assertRenderedWorkflowContract(projected, structurePayload) {
     throw fail("archify_workflow_noncanonical_node", 500);
   }
 
+  const collapsedAuxiliaryNodeIds = Array.isArray(projected && projected.collapsed_auxiliary_node_ids)
+    ? projected.collapsed_auxiliary_node_ids.map(String)
+    : [];
+  if (collapsedAuxiliaryNodeIds.length !== new Set(collapsedAuxiliaryNodeIds).size) {
+    throw fail("archify_collapsed_auxiliary_duplicate", 500);
+  }
+  if (collapsedAuxiliaryNodeIds.some((value) => canonicalSet.has(value))) {
+    throw fail("archify_collapsed_auxiliary_is_canonical", 500);
+  }
+  if (collapsedAuxiliaryNodeIds.some((value) => nodeIds.includes(value))) {
+    throw fail("archify_collapsed_auxiliary_leaked", 500);
+  }
+
   const edgeIds = workflow.edges.map((item) => String(item && item.id || ""));
   if (edgeIds.some((value) => !value) || edgeIds.length !== new Set(edgeIds).size) {
     throw fail("archify_workflow_edge_id_contract_failed", 500);
   }
 
-  return { workflow, nodeIds, edgeIds };
+  return { workflow, nodeIds, edgeIds, collapsedAuxiliaryNodeIds };
 }
 
 async function renderPythonExecution(options) {
@@ -267,6 +280,7 @@ async function renderPythonExecution(options) {
       authority: structurePayload.authority || {},
       summary: structurePayload.summary || {},
       executionProjectionNodeIds: (structurePayload.executionProjectionNodeIds || []).map(String),
+      collapsedAuxiliaryNodeIds: contract.collapsedAuxiliaryNodeIds,
       workflow: contract.workflow,
       artifact: {
         html: artifactHtml,
