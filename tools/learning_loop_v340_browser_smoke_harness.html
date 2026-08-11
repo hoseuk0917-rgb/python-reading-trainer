@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PRT V340 Learning Loop Browser Smoke</title>
+  <style>
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:18px;background:#f5f6f8;color:#172033}
+    h1{margin:0 0 6px}.muted{color:#64748b}.summary{padding:12px 14px;border-radius:12px;background:#fff;border:1px solid #d8dee8;margin:12px 0 18px}
+    .case{background:#fff;border:1px solid #d8dee8;border-radius:14px;padding:12px;margin-bottom:18px;overflow:auto}.head{display:flex;justify-content:space-between;gap:12px;align-items:center}.pass{color:#137333}.fail{color:#b3261e}.pending{color:#7a5c00}
+    .frame-wrap{margin-top:10px;padding:8px;background:#e8edf3;border-radius:10px;max-width:100%;overflow:auto}.frame-wrap iframe{display:block;background:#fff;border:1px solid #aab4c3}
+    table{border-collapse:collapse;width:100%;margin-top:10px;font-size:13px}td{border-bottom:1px solid #edf0f5;padding:6px;vertical-align:top}pre{white-space:pre-wrap;background:#111827;color:#e5e7eb;padding:12px;border-radius:10px;max-height:360px;overflow:auto}
+  </style>
+</head>
+<body>
+  <h1>Python Reading Trainer — V340 Learning Loop Browser Smoke</h1>
+  <div class="muted">실제 브라우저 레이아웃 엔진으로 순차 학습·예제 스크립트·문법 팝업·변형 복습을 검사합니다.</div>
+  <div id="summary" class="summary pending">RUNNING</div>
+
+  <section class="case">
+    <div class="head"><strong>Desktop 1200px</strong><span id="desktopStatus" class="pending">PENDING</span></div>
+    <div class="frame-wrap"><iframe id="desktopFrame" width="1200" height="900" src="/src/pwa/index.html?v340smoke=desktop"></iframe></div>
+    <table><tbody id="desktopResults"></tbody></table>
+  </section>
+
+  <section class="case">
+    <div class="head"><strong>Narrow 390px</strong><span id="narrowStatus" class="pending">PENDING</span></div>
+    <div class="frame-wrap"><iframe id="narrowFrame" width="390" height="900" src="/src/pwa/index.html?v340smoke=narrow"></iframe></div>
+    <table><tbody id="narrowResults"></tbody></table>
+  </section>
+
+  <h2>자동 결과</h2>
+  <pre id="report">RUNNING</pre>
+<script>
+(function(){
+  "use strict";
+
+  const CASES = [
+    {name:"desktop", frameId:"desktopFrame", width:1200},
+    {name:"narrow", frameId:"narrowFrame", width:390}
+  ];
+  const REPORT = ["=== PRT V340 LEARNING LOOP REAL BROWSER SMOKE ==="];
+  const STORAGE_KEYS = [
+    "python-reading-trainer-progress-v1",
+    "python-reading-trainer-review-v340",
+    "python-reading-trainer-session-v340",
+    "python-reading-trainer-attempts-v340",
+    "python-reading-trainer-legacy-tools-v340",
+    "python-reading-trainer-study-tools-v7"
+  ];
+
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  async function waitFor(fn, timeout=15000) {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      try {
+        const value = fn();
+        if (value) return value;
+      } catch (_) {}
+      await sleep(100);
+    }
+    return null;
+  }
+
+  function record(results, label, ok, detail) {
+    results.push({label, ok:Boolean(ok), detail:String(detail == null ? "" : detail)});
+    return Boolean(ok);
+  }
+
+  function renderRows(target, results) {
+    target.innerHTML = "";
+    results.forEach(r => {
+      const tr = document.createElement("tr");
+      const a = document.createElement("td");
+      const b = document.createElement("td");
+      const c = document.createElement("td");
+      a.textContent = r.label;
+      b.textContent = r.ok ? "PASS" : "FAIL";
+      b.className = r.ok ? "pass" : "fail";
+      c.textContent = r.detail;
+      tr.append(a,b,c);
+      target.appendChild(tr);
+    });
+  }
+
+  function nextStatText(doc) {
+    const el = doc.querySelector("#learningPathV340 [data-role='next'] strong");
+    return el ? el.textContent.trim() : "";
+  }
+
+  async function waitReady(frame) {
+    return waitFor(() => {
+      const doc = frame.contentDocument;
+      const win = frame.contentWindow;
+      if (!doc || !win || doc.readyState !== "complete") return null;
+      if (doc.documentElement.dataset.learningLoopV340 !== "v340_a1") return null;
+      if (!doc.getElementById("learningPathV340")) return null;
+      if (!doc.getElementById("cardTitle") || /loading/i.test(doc.getElementById("cardTitle").textContent)) return null;
+      if (!doc.querySelectorAll(".choice-btn").length) return null;
+      return {doc, win};
+    }, 25000);
+  }
+
+  async function resetFrame(frame, name) {
+    const first = await waitFor(() => frame.contentDocument && frame.contentWindow && frame.contentDocument.readyState === "complete" ? {doc:frame.contentDocument,win:frame.contentWindow} : null, 15000);
+    if (!first) return null;
+    try {
+      STORAGE_KEYS.forEach(key => first.win.localStorage.removeItem(key));
+      first.win.sessionStorage.clear();
+      if (first.win.navigator.serviceWorker && first.win.navigator.serviceWorker.getRegistrations) {
+        const regs = await first.win.navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(reg => reg.unregister()));
+      }
+    } catch (_) {}
+    frame.src = "/src/pwa/index.html?v340smoke=" + encodeURIComponent(name) + "&b=" + Date.now();
+    return waitReady(frame);
+  }
+
+  async function runCase(spec) {
+    const frame = document.getElementById(spec.frameId);
+    const results = [];
+    const ready = await resetFrame(frame, spec.name);
+    record(results, "PWA_V340_READY", !!ready, ready ? "dataset=v340_a1" : "timeout");
+    if (!ready) return finish(spec, results);
+
+    const {doc, win} = ready;
+    const root = doc.documentElement;
+    const path = doc.getElementById("learningPathV340");
+    const legacy = doc.getElementById("studyToolsV7");
+
+    record(results, "ONE_LEARNING_PATH", doc.querySelectorAll("#learningPathV340").length === 1, "count=" + doc.querySelectorAll("#learningPathV340").length);
+    record(results, "LEGACY_TOOLS_HIDDEN_DEFAULT", !!legacy && legacy.classList.contains("v340-legacy-hidden"), legacy ? "hidden=" + legacy.classList.contains("v340-legacy-hidden") : "missing");
+
+    const initialNext = nextStatText(doc);
+    record(results, "INITIAL_NEXT_IS_FIRST", /^1\s*\/\s*\d+/.test(initialNext), "next=" + initialNext);
+
+    const firstTitle = doc.getElementById("cardTitle").textContent.trim();
+    const nextButton = doc.getElementById("nextBtn");
+    if (nextButton) nextButton.click();
+    await sleep(180);
+    const browsedTitle = doc.getElementById("cardTitle").textContent.trim();
+    const afterBrowseNext = nextStatText(doc);
+    record(results, "BROWSING_MOVES_VISIBLE_CARD", firstTitle !== browsedTitle, "first=" + firstTitle + " | browsed=" + browsedTitle);
+    record(results, "VIEW_ONLY_DOES_NOT_ADVANCE_SEQUENCE", afterBrowseNext === initialNext, "before=" + initialNext + " after=" + afterBrowseNext);
+
+    const today = path.querySelector("[data-action='today']");
+    if (today) today.click();
+    await sleep(220);
+    const titleAfterToday = doc.getElementById("cardTitle").textContent.trim();
+    const sessionButtons = Array.from(path.querySelectorAll("[data-role='session'] button"));
+    record(results, "TODAY_RETURNS_TO_NEXT_SEQUENTIAL_CARD", titleAfterToday === firstTitle, "title=" + titleAfterToday);
+    record(results, "TODAY_SESSION_HAS_TEN_ITEMS", sessionButtons.length === 10, "count=" + sessionButtons.length);
+    record(results, "CLEAN_SESSION_HAS_NO_REVIEW_LABELS", sessionButtons.every(btn => !btn.classList.contains("review")), "reviewCount=" + sessionButtons.filter(btn => btn.classList.contains("review")).length);
+
+    const originalQuestion = doc.getElementById("questionText").textContent.trim();
+    const unsure = doc.getElementById("againBtn");
+    if (unsure) unsure.click();
+
+    const example = await waitFor(() => {
+      const el = doc.getElementById("workedExampleV340");
+      return el && !el.classList.contains("hidden") && el.querySelector(".worked-v340-code") ? el : null;
+    }, 5000);
+    record(results, "ANSWER_REVEALS_WORKED_EXAMPLE", !!example, example ? "visible" : "missing/hidden");
+
+    const clickable = example ? example.querySelector(".syntax-v340") : null;
+    record(results, "WORKED_EXAMPLE_HAS_CLICKABLE_KNOWN_SYNTAX", !!clickable, clickable ? "syntax=" + clickable.textContent : "none");
+    if (clickable) clickable.click();
+    const syntaxModal = await waitFor(() => {
+      const modal = doc.getElementById("syntaxModalV340");
+      return modal && !modal.classList.contains("hidden") && modal.querySelector(".modal-v340-body").textContent.trim() ? modal : null;
+    }, 3000);
+    record(results, "SYNTAX_POPUP_OPENS", !!syntaxModal, syntaxModal ? "bodyChars=" + syntaxModal.querySelector(".modal-v340-body").textContent.trim().length : "not opened");
+    if (syntaxModal) syntaxModal.querySelector(".modal-v340-close").click();
+
+    const reviewStat = path.querySelector("[data-role='review'] strong");
+    const reviewCount = reviewStat ? Number(reviewStat.textContent.trim()) : 0;
+    record(results, "WRONG_OR_UNSURE_CREATES_DUE_REVIEW", reviewCount >= 1, "due=" + reviewCount);
+
+    const reviewButton = path.querySelector("[data-action='review']");
+    record(results, "REVIEW_BUTTON_ENABLED", !!reviewButton && !reviewButton.disabled, reviewButton ? "disabled=" + reviewButton.disabled : "missing");
+    if (reviewButton && !reviewButton.disabled) reviewButton.click();
+    const reviewModal = await waitFor(() => {
+      const modal = doc.getElementById("reviewModalV340");
+      return modal && !modal.classList.contains("hidden") && modal.querySelector(".review-v340-question") ? modal : null;
+    }, 3000);
+    const reviewQuestion = reviewModal ? reviewModal.querySelector(".review-v340-question").textContent.trim() : "";
+    record(results, "VARIANT_REVIEW_MODAL_OPENS", !!reviewModal, reviewModal ? "choices=" + reviewModal.querySelectorAll(".review-v340-choice").length : "not opened");
+    record(results, "VARIANT_REVIEW_IS_NOT_ORIGINAL_QUESTION", !!reviewQuestion && reviewQuestion !== originalQuestion, "original=" + originalQuestion + " | review=" + reviewQuestion);
+    record(results, "VARIANT_REVIEW_HAS_CHOICES", !!reviewModal && reviewModal.querySelectorAll(".review-v340-choice").length >= 2, reviewModal ? "count=" + reviewModal.querySelectorAll(".review-v340-choice").length : "0");
+    if (reviewModal) reviewModal.querySelector(".modal-v340-close").click();
+
+    const legacyToggle = path.querySelector("[data-action='legacy']");
+    if (legacyToggle) legacyToggle.click();
+    record(results, "LEGACY_SEARCH_FILTER_CAN_BE_OPENED", !!legacy && !legacy.classList.contains("v340-legacy-hidden"), legacy ? "hidden=" + legacy.classList.contains("v340-legacy-hidden") : "missing");
+
+    try { win.eval("renderCard(); renderCard();"); } catch (_) {}
+    await sleep(180);
+    record(results, "NO_DUPLICATE_LEARNING_PATH_AFTER_RERENDER", doc.querySelectorAll("#learningPathV340").length === 1, "count=" + doc.querySelectorAll("#learningPathV340").length);
+    record(results, "NO_DUPLICATE_WORKED_EXAMPLE", doc.querySelectorAll("#workedExampleV340").length <= 1, "count=" + doc.querySelectorAll("#workedExampleV340").length);
+    record(results, "NO_DUPLICATE_SYNTAX_MODAL", doc.querySelectorAll("#syntaxModalV340").length === 1, "count=" + doc.querySelectorAll("#syntaxModalV340").length);
+    record(results, "NO_DUPLICATE_REVIEW_MODAL", doc.querySelectorAll("#reviewModalV340").length === 1, "count=" + doc.querySelectorAll("#reviewModalV340").length);
+
+    const pathRect = path.getBoundingClientRect();
+    record(results, "LEARNING_PATH_WITHIN_VIEWPORT", pathRect.width > 0 && pathRect.left >= -1 && pathRect.right <= root.clientWidth + 1, "left=" + Math.round(pathRect.left) + " right=" + Math.round(pathRect.right) + " viewport=" + root.clientWidth);
+    record(results, "NO_OUTER_HORIZONTAL_OVERFLOW", root.scrollWidth <= root.clientWidth + 2, "scrollWidth=" + root.scrollWidth + " clientWidth=" + root.clientWidth);
+
+    return finish(spec, results);
+  }
+
+  function finish(spec, results) {
+    renderRows(document.getElementById(spec.name + "Results"), results);
+    const pass = results.length > 0 && results.every(r => r.ok);
+    const status = document.getElementById(spec.name + "Status");
+    status.textContent = pass ? "PASS" : "FAIL";
+    status.className = pass ? "pass" : "fail";
+    REPORT.push("CASE=" + spec.name.toUpperCase() + " WIDTH=" + spec.width + " RESULT=" + (pass ? "PASS" : "FAIL"));
+    results.forEach(r => REPORT.push(spec.name.toUpperCase() + "_" + r.label + "=" + (r.ok ? "PASS" : "FAIL") + " DETAIL=" + r.detail));
+    return pass;
+  }
+
+  async function main() {
+    const outcomes = [];
+    for (const spec of CASES) outcomes.push(await runCase(spec));
+    const pass = outcomes.every(Boolean);
+    REPORT.push("RESULT=" + (pass ? "PASS_LEARNING_LOOP_V340_REAL_BROWSER_SMOKE" : "FAIL_LEARNING_LOOP_V340_REAL_BROWSER_SMOKE"));
+    document.getElementById("report").textContent = REPORT.join("\n");
+    const summary = document.getElementById("summary");
+    summary.textContent = pass ? "V340 real-browser smoke PASS" : "V340 real-browser smoke FAIL";
+    summary.className = "summary " + (pass ? "pass" : "fail");
+    document.documentElement.dataset.smokeDone = pass ? "pass" : "fail";
+  }
+
+  main().catch(error => {
+    REPORT.push("HARNESS_ERROR=" + (error && error.stack ? error.stack : String(error)));
+    REPORT.push("RESULT=FAIL_LEARNING_LOOP_V340_REAL_BROWSER_SMOKE");
+    document.getElementById("report").textContent = REPORT.join("\n");
+    document.getElementById("summary").textContent = "HARNESS ERROR";
+    document.getElementById("summary").className = "summary fail";
+    document.documentElement.dataset.smokeDone = "fail";
+  });
+})();
+</script>
+</body>
+</html>
