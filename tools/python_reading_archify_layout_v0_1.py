@@ -16,9 +16,12 @@ COL_XS = [88, 220, 300, 430, 500, 625]
 OUTSIDE_RIGHT_X = LANE_X + LANE_W + 12
 SAFE_CORRIDOR_X = LANE_X + LANE_W + 24
 SAFE_LEFT_CORRIDOR_X = LANE_X - 12
+FAR_LEFT_CORRIDOR_X = LANE_X - 24
 GAP_CORRIDOR_OFFSET = 4
 ALT_GAP_CORRIDOR_OFFSET = LANE_GAP - GAP_CORRIDOR_OFFSET
 OUTER_APPROACH_OFFSET = 8
+TOP_EXTERIOR_Y = LANE_Y - OUTER_APPROACH_OFFSET
+BOTTOM_EXTERIOR_Y = LANE_Y + 3 * (LANE_H + LANE_GAP) + LANE_H + OUTER_APPROACH_OFFSET
 
 LABEL_DX_BY_ROLE = {
     "loop_exit": 24,
@@ -202,21 +205,19 @@ def alternate_left_corridor_route(
     source_col: int,
     target_col: int,
 ) -> dict:
-    """Separate a second long route onto the opposite outer corridor."""
+    """Separate a second long route onto a farther left exterior corridor."""
     source_x = COL_XS[source_col]
     target_x = COL_XS[target_col]
 
     if target_lane_index > source_lane_index:
-        source_gap_y = lane_bottom(source_lane_index) + ALT_GAP_CORRIDOR_OFFSET
-        target_gap_y = lane_top(target_lane_index) - ALT_GAP_CORRIDOR_OFFSET
         return {
-            "fromSide": "bottom",
-            "toSide": "top",
+            "fromSide": "top",
+            "toSide": "bottom",
             "via": [
-                [source_x, source_gap_y],
-                [SAFE_LEFT_CORRIDOR_X, source_gap_y],
-                [SAFE_LEFT_CORRIDOR_X, target_gap_y],
-                [target_x, target_gap_y],
+                [source_x, TOP_EXTERIOR_Y],
+                [FAR_LEFT_CORRIDOR_X, TOP_EXTERIOR_Y],
+                [FAR_LEFT_CORRIDOR_X, BOTTOM_EXTERIOR_Y],
+                [target_x, BOTTOM_EXTERIOR_Y],
             ],
         }
 
@@ -227,8 +228,8 @@ def alternate_left_corridor_route(
         "toSide": "bottom",
         "via": [
             [source_x, source_gap_y],
-            [SAFE_LEFT_CORRIDOR_X, source_gap_y],
-            [SAFE_LEFT_CORRIDOR_X, target_gap_y],
+            [FAR_LEFT_CORRIDOR_X, source_gap_y],
+            [FAR_LEFT_CORRIDOR_X, target_gap_y],
             [target_x, target_gap_y],
         ],
     }
@@ -242,10 +243,9 @@ def outer_left_branch_route(
 ) -> dict:
     """Detour an adjacent branch around a long relationship occupying their shared gap.
 
-    The branch first exits on the side of the source lane opposite the target,
-    travels on the clear left exterior, then approaches the target from its
-    far side. It therefore never has to cross the long route's horizontal band
-    in the shared source/target lane gap.
+    Downward branches use the full top/bottom exterior bands so they do not
+    intersect incoming edges above the source lane or loop-back labels below
+    the target lane. Upward branches retain the smaller local exterior detour.
     """
     if abs(target_lane_index - source_lane_index) != 1:
         raise ValueError(
@@ -256,16 +256,14 @@ def outer_left_branch_route(
     target_x = COL_XS[target_col]
 
     if target_lane_index > source_lane_index:
-        source_outer_y = lane_top(source_lane_index) - GAP_CORRIDOR_OFFSET
-        target_outer_y = lane_bottom(target_lane_index) + OUTER_APPROACH_OFFSET
         return {
             "fromSide": "top",
             "toSide": "bottom",
             "via": [
-                [source_x, source_outer_y],
-                [SAFE_LEFT_CORRIDOR_X, source_outer_y],
-                [SAFE_LEFT_CORRIDOR_X, target_outer_y],
-                [target_x, target_outer_y],
+                [source_x, TOP_EXTERIOR_Y],
+                [SAFE_LEFT_CORRIDOR_X, TOP_EXTERIOR_Y],
+                [SAFE_LEFT_CORRIDOR_X, BOTTOM_EXTERIOR_Y],
+                [target_x, BOTTOM_EXTERIOR_Y],
             ],
         }
 
