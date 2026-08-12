@@ -204,7 +204,11 @@
       await requireWait("manual review close", () => reviewModal.classList.contains("hidden"));
     }
     await sleep(80);
-    add("REVIEW_DIALOG_FOCUS_RETURNS", doc().activeElement === reviewLauncher, doc().activeElement && `${doc().activeElement.tagName}#${doc().activeElement.id}`);
+    const currentReviewLauncher = await requireWait("review focus return", () => {
+      const current = doc().getElementById("nextActionPrimaryV346");
+      return current && doc().activeElement === current ? current : null;
+    }, 2500);
+    add("REVIEW_DIALOG_FOCUS_RETURNS", !!currentReviewLauncher && doc().activeElement === currentReviewLauncher, doc().activeElement && `${doc().activeElement.tagName}#${doc().activeElement.id}`);
 
     clickTopTab("progress");
     await requireWait("review action again", () => doc().getElementById("nextActionV346") && doc().getElementById("nextActionV346").dataset.kind === "review");
@@ -224,10 +228,15 @@
     if (reviewClose) reviewClose.click();
 
     clickTopTab("progress");
-    await requireWait("new-card decision after review", () => win().StudyQualityV346.getNextActionState().kind === "new");
+    const nextNewButton = await requireWait("new-card action after review", () => {
+      const state = win().StudyQualityV346.getNextActionState();
+      const panel = doc().getElementById("nextActionV346");
+      const button = doc().getElementById("nextActionPrimaryV346");
+      return state.kind === "new" && state.nextIndex === 1 && panel && panel.dataset.kind === "new" && button ? button : null;
+    });
     const afterReview = win().StudyQualityV346.getNextActionState();
     add("AFTER_REVIEW_RETURNS_TO_SEQUENCE", afterReview.kind === "new" && afterReview.nextIndex === 1, JSON.stringify({ kind: afterReview.kind, next: afterReview.nextIndex }));
-    doc().getElementById("nextActionPrimaryV346").click();
+    nextNewButton.click();
     await requireWait("card 2 quiz", () => /^2\s*\/\s*/.test(doc().getElementById("progressText").textContent.trim()));
     add("NEXT_ACTION_OPENS_CARD_2", /^2\s*\/\s*/.test(doc().getElementById("progressText").textContent.trim()), doc().getElementById("progressText").textContent.trim());
 
@@ -244,14 +253,16 @@
     win().StudyQualityV346.refresh();
 
     clickTopTab("progress");
-    await requireWait("checkpoint next action", () => {
+    const checkpointActionButton = await requireWait("checkpoint next action", () => {
       const state = win().StudyQualityV346.getNextActionState();
-      return state.kind === "checkpoint" && state.pendingCheckpoint === 1 ? state : null;
+      const panel = doc().getElementById("nextActionV346");
+      const button = doc().getElementById("nextActionPrimaryV346");
+      return state.kind === "checkpoint" && state.pendingCheckpoint === 1 && panel && panel.dataset.kind === "checkpoint" && button ? button : null;
     });
     const checkpointState = win().StudyQualityV346.getNextActionState();
     add("CARD_30_UNLOCKS_CHECKPOINT_1", checkpointState.kind === "checkpoint" && checkpointState.pendingCheckpoint === 1, JSON.stringify({ kind: checkpointState.kind, pending: checkpointState.pendingCheckpoint, next: checkpointState.nextIndex }));
 
-    doc().getElementById("nextActionPrimaryV346").click();
+    checkpointActionButton.click();
     await requireWait("practice view", () => doc().querySelector(".tab-btn[data-view='practice']").classList.contains("active") && visible(doc().getElementById("practiceDashboardV341")));
     const checkpointButton = await requireWait("checkpoint 1 button", () => doc().querySelector("[data-mission-checkpoint-v341='1']"));
     add("CHECKPOINT_BUTTON_VISIBLE", visible(checkpointButton), checkpointButton.textContent);
@@ -267,7 +278,11 @@
     await sleep(100);
     add("CHECKPOINT_DIALOG_ESCAPE_CLOSE", missionModal.classList.contains("hidden"), missionModal.className);
     await sleep(80);
-    add("CHECKPOINT_DIALOG_FOCUS_RETURNS", doc().activeElement === checkpointButton, doc().activeElement && `${doc().activeElement.tagName}.${doc().activeElement.className}`);
+    const currentCheckpointButton = await requireWait("checkpoint focus return", () => {
+      const current = doc().querySelector("[data-mission-checkpoint-v341=\'1\']");
+      return current && doc().activeElement === current ? current : null;
+    }, 2500);
+    add("CHECKPOINT_DIALOG_FOCUS_RETURNS", !!currentCheckpointButton && doc().activeElement === currentCheckpointButton, doc().activeElement && `${doc().activeElement.tagName}.${doc().activeElement.className}`);
     if (!missionModal.classList.contains("hidden")) {
       const close = missionModal.querySelector(".mission-v341-close");
       if (close) close.click();
@@ -363,6 +378,9 @@
     await reload("../src/pwa/index.html?lang=ko&v347=boot");
     await waitRuntime();
     note("CASE_VIEWPORT", `${window.innerWidth}x${window.innerHeight}`);
+    const caseName = new URLSearchParams(location.search).get("case") || "desktop";
+    if (caseName === "narrow") add("APP_VIEWPORT_390", win().innerWidth === 390, win().innerWidth);
+    else add("APP_VIEWPORT_DESKTOP", win().innerWidth >= 1000, win().innerWidth);
     await freshWrongReviewJourney();
     await checkpointPracticeBackupJourney();
     await englishResumeJourney();
