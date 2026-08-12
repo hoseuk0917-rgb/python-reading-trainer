@@ -57,7 +57,8 @@
     if (!portal) {
       portal = document.createElement("section");
       portal.id = "learningSupportInlineV353";
-      portal.className = "side v353-inline-support";
+      /* Do not use the legacy .side class: V345 intentionally hides .side in focus mode. */
+      portal.className = "v353-inline-support";
       portal.hidden = true;
       portal.tabIndex = -1;
       portal.setAttribute("role", "region");
