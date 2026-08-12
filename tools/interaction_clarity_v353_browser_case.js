@@ -40,14 +40,12 @@
   }
 
   async function run() {
-    try {
-      localStorage.removeItem("python-reading-trainer-focus-v345");
-    } catch (_) {}
+    try { localStorage.removeItem("python-reading-trainer-focus-v345"); } catch (_) {}
 
     frame.src = "../src/pwa/index.html?v353case=" + Date.now();
     await waitFor(function () {
       const doc = frame.contentDocument;
-      return doc && doc.documentElement.dataset.interactionClarityV353 === "v353_a1" && doc.getElementById("consumerNavV349");
+      return doc && doc.documentElement.dataset.interactionClarityV353 === "v353_a2" && doc.getElementById("consumerNavV349");
     }, 60000);
 
     const win = frame.contentWindow;
@@ -61,8 +59,10 @@
         doc.getElementById("studyFocusV345");
     }, 15000);
 
+    const learn = doc.getElementById("learnView");
     const focus = doc.getElementById("focusModeToggleV345");
     const supportToggle = doc.getElementById("learningSupportToggleV349");
+    const supportRegion = doc.getElementById("learningSupportRegionV349");
     const bar = doc.getElementById("studyFocusV345");
     const legacyHelp = doc.getElementById("focusHelpV345");
 
@@ -71,34 +71,60 @@
     log("FOCUS_LABEL_HAS_NO_ON_OFF", pseudoText(win, focus) === "집중 모드", "label=" + pseudoText(win, focus));
     log("SUPPORT_LABEL_HAS_NO_OPEN_CLOSE", pseudoText(win, supportToggle) === "보조 자료", "label=" + pseudoText(win, supportToggle));
 
-    await waitFor(function () { return focus.getAttribute("aria-pressed") === "true"; }, 5000);
+    await waitFor(function () {
+      return learn.classList.contains("v345-focus-on") && focus.dataset.v353Active === "true";
+    }, 5000);
     const focusActiveBg = win.getComputedStyle(focus).backgroundColor;
+    log("FOCUS_COLOR_MEANS_ACTUALLY_ON", focus.dataset.v353Active === "true" && learn.classList.contains("v345-focus-on"), "bg=" + focusActiveBg);
+
     focus.click();
-    await waitFor(function () { return focus.getAttribute("aria-pressed") === "false"; }, 5000);
+    await waitFor(function () {
+      return !learn.classList.contains("v345-focus-on") && focus.dataset.v353Active === "false" && focus.getAttribute("aria-pressed") === "false";
+    }, 5000);
     const focusInactiveBg = win.getComputedStyle(focus).backgroundColor;
-    log("FOCUS_ACTIVE_USES_COLOR", focusActiveBg !== focusInactiveBg, "active=" + focusActiveBg + " inactive=" + focusInactiveBg);
+    log("FOCUS_OFF_IS_NEUTRAL", focusActiveBg !== focusInactiveBg && focus.dataset.v353Active === "false", "active=" + focusActiveBg + " inactive=" + focusInactiveBg);
+
     focus.click();
-    await waitFor(function () { return focus.getAttribute("aria-pressed") === "true" && supportToggle.getAttribute("aria-expanded") === "false"; }, 5000);
+    await waitFor(function () {
+      return learn.classList.contains("v345-focus-on") && focus.dataset.v353Active === "true" && supportToggle.dataset.v353Active === "false";
+    }, 5000);
 
     const supportInactiveBg = win.getComputedStyle(supportToggle).backgroundColor;
-    const supportRegion = doc.getElementById("learningSupportRegionV349");
     supportToggle.click();
     await waitFor(function () {
-      return supportToggle.getAttribute("aria-expanded") === "true" && visible(win, supportRegion);
+      return learn.classList.contains("v349-support-open") &&
+        supportToggle.dataset.v353Active === "true" &&
+        supportToggle.getAttribute("aria-expanded") === "true" &&
+        visible(win, supportRegion);
     }, 5000);
-    await new Promise(function (resolve) { setTimeout(resolve, 140); });
+    await new Promise(function (resolve) { setTimeout(resolve, 120); });
 
     const supportActiveBg = win.getComputedStyle(supportToggle).backgroundColor;
     const supportStyle = win.getComputedStyle(supportRegion);
     const supportRect = supportRegion.getBoundingClientRect();
-    log("SUPPORT_ACTIVE_USES_COLOR", supportActiveBg !== supportInactiveBg, "active=" + supportActiveBg + " inactive=" + supportInactiveBg);
-    log("SUPPORT_REGION_FOCUSED", doc.activeElement === supportRegion, "active=" + (doc.activeElement && doc.activeElement.id));
+    log("SUPPORT_COLOR_MEANS_ACTUALLY_OPEN", supportActiveBg !== supportInactiveBg && supportToggle.dataset.v353Active === "true" && learn.classList.contains("v349-support-open"), "active=" + supportActiveBg + " inactive=" + supportInactiveBg);
 
     if (narrow) {
-      log("SUPPORT_USES_LIVE_REGION", supportRegion.parentElement === doc.getElementById("learnView") && supportRegion.children.length > 0, "children=" + supportRegion.children.length);
+      const close = doc.getElementById("supportSheetCloseV353");
+      log("SUPPORT_USES_LIVE_REGION", supportRegion.parentElement === learn && supportRegion.children.length > 0, "children=" + supportRegion.children.length);
       log("SUPPORT_IS_IMMEDIATE_SHEET", supportStyle.position === "fixed" && supportRegion.classList.contains("v353-manual-support-sheet"), "position=" + supportStyle.position);
       log("SUPPORT_SHEET_IN_VIEWPORT", supportRect.top >= 0 && supportRect.top < win.innerHeight - 120 && supportRect.bottom <= win.innerHeight - 70, "top=" + Math.round(supportRect.top) + " bottom=" + Math.round(supportRect.bottom) + " vh=" + win.innerHeight);
-      log("LEGACY_SUPPORT_SHELL_PRESERVED", supportRegion.parentElement === doc.getElementById("learnView"));
+      log("SUPPORT_CLOSE_VISIBLE", close && visible(win, close));
+      log("SUPPORT_CLOSE_FOCUSED", doc.activeElement === close, "active=" + (doc.activeElement && doc.activeElement.id));
+
+      close.click();
+      await waitFor(function () {
+        return !learn.classList.contains("v349-support-open") &&
+          supportToggle.dataset.v353Active === "false" &&
+          supportToggle.getAttribute("aria-expanded") === "false" &&
+          !supportRegion.classList.contains("v353-manual-support-sheet");
+      }, 5000);
+      const supportClosedBg = win.getComputedStyle(supportToggle).backgroundColor;
+      log("SUPPORT_CLOSE_TURNS_STATE_OFF", supportClosedBg === supportInactiveBg && supportToggle.dataset.v353Active === "false", "closed=" + supportClosedBg);
+      log("SUPPORT_CLOSE_RETURNS_TO_TOGGLE", doc.activeElement === supportToggle, "active=" + (doc.activeElement && doc.activeElement.id));
+      log("SUPPORT_SHEET_CLOSED", !visible(win, supportRegion));
+    } else {
+      log("SUPPORT_REGION_FOCUSED_DESKTOP", doc.activeElement === supportRegion, "active=" + (doc.activeElement && doc.activeElement.id));
     }
 
     const conceptMeta = doc.querySelector(".concept-intro-note-v306");
