@@ -3,13 +3,23 @@ import argparse
 from pathlib import Path
 
 CSS_ANCHOR = '  <link rel="stylesheet" href="./contextual_practice_v351.css?v=20260813_v351_a1">\n'
-CSS_LINE = '  <link rel="stylesheet" href="./interaction_clarity_v353.css?v=20260813_v353_a1">\n'
+CSS_LINE = '  <link rel="stylesheet" href="./interaction_clarity_v353.css?v=20260813_v353_a2">\n'
 JS_ANCHOR = '  <script src="./contextual_practice_v351.js?v=20260813_v351_a1"></script>\n'
-JS_LINE = '  <script src="./interaction_clarity_v353.js?v=20260813_v353_a1"></script>\n'
+JS_LINE = '  <script src="./interaction_clarity_v353.js?v=20260813_v353_a2"></script>\n'
+OLD_CSS_LINES = [
+    '  <link rel="stylesheet" href="./interaction_clarity_v353.css?v=20260813_v353_a1">\n',
+]
+OLD_JS_LINES = [
+    '  <script src="./interaction_clarity_v353.js?v=20260813_v353_a1"></script>\n',
+]
 
 
 def integrate(text: str) -> str:
     out = text
+    for line in OLD_CSS_LINES:
+        out = out.replace(line, "")
+    for line in OLD_JS_LINES:
+        out = out.replace(line, "")
     if CSS_LINE not in out:
         if CSS_ANCHOR not in out:
             raise SystemExit("FAIL: V351 CSS anchor not found")
@@ -38,6 +48,7 @@ def main() -> None:
     js_count = after.count(JS_LINE.strip())
     css_after_v351 = after.find(CSS_LINE.strip()) > after.find(CSS_ANCHOR.strip())
     js_after_v351 = after.find(JS_LINE.strip()) > after.find(JS_ANCHOR.strip())
+    old_asset_count = sum(after.count(line.strip()) for line in OLD_CSS_LINES + OLD_JS_LINES)
 
     print("=== V353 INTERACTION CLARITY INTEGRATION ===")
     print("APPLY=" + str(bool(args.apply)))
@@ -45,9 +56,10 @@ def main() -> None:
     print("JS_COUNT=" + str(js_count))
     print("CSS_AFTER_V351=" + str(css_after_v351))
     print("JS_AFTER_V351=" + str(js_after_v351))
+    print("OLD_ASSET_COUNT=" + str(old_asset_count))
     print("CHANGED=" + str(before != after))
 
-    if css_count != 1 or js_count != 1 or not css_after_v351 or not js_after_v351:
+    if css_count != 1 or js_count != 1 or not css_after_v351 or not js_after_v351 or old_asset_count != 0:
         raise SystemExit("FAIL_V353_INTEGRATION_CONTRACT")
 
     if args.apply:
