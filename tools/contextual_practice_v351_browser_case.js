@@ -75,6 +75,10 @@
       const modal = doc.getElementById("missionModalV341");
       return doc.getElementById("practiceView").classList.contains("active-view") && visible(win, doc.getElementById("contextPracticeReturnV351")) && modal && !modal.classList.contains("hidden");
     }, 15000);
+    await waitFor(function () {
+      return doc.body.classList.contains("v350-practice-context") && doc.getElementById("consumerLearnV349").getAttribute("aria-current") === "page";
+    }, 10000);
+
     const returnBar = doc.getElementById("contextPracticeReturnV351");
     const modal = doc.getElementById("missionModalV341");
     log("CONTEXT_PRACTICE_OPENS_RECOMMENDED_MODULE", String(modal.dataset.practiceModule || "") === moduleId, "module=" + moduleId);
