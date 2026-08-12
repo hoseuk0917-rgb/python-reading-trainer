@@ -20,12 +20,13 @@ check("V353_AFTER_V351_JS", index.indexOf("interaction_clarity_v353.js") > index
 check("FOCUS_VISUAL_LABEL_CONSTANT", css.includes('content: "집중 모드"') && css.includes('content: "Focus mode"'));
 check("SUPPORT_VISUAL_LABEL_CONSTANT", css.includes('content: "보조 자료"') && css.includes('content: "Support"'));
 check("FOCUS_ACTIVE_BY_ARIA", css.includes('#focusModeToggleV345[aria-pressed="true"]'));
+check("FOCUS_INACTIVE_BY_ARIA", css.includes('#focusModeToggleV345[aria-pressed="false"]'));
 check("SUPPORT_ACTIVE_BY_ARIA", css.includes('#learningSupportToggleV349[aria-expanded="true"]'));
 check("DUPLICATE_HELP_HIDDEN", css.includes("#focusHelpV345") && css.includes("display: none !important"));
 check("META_COPY_REMOVED", css.includes(".concept-intro-note-v306") && css.includes(".mobile-sidecards-note") && css.includes(".side-section-note"));
 check("SUPPORT_MOVED_TO_CONTROL_CLUSTER", js.includes('support.parentElement !== bar') && js.includes('bar.appendChild(support)'));
-check("SUPPORT_SCROLLS_TO_REGION", js.includes("scrollIntoView") && js.includes("focusSupportRegion"));
-check("SUPPORT_FOCUS_AFTER_SCROLL", js.includes('support.focus({ preventScroll: true })'));
+check("SUPPORT_IMMEDIATE_POSITIONING", js.includes("alignSupportRegion") && js.includes("window.scrollTo") && js.includes('behavior: "auto"'));
+check("SUPPORT_FOCUS_AFTER_POSITION", js.includes('support.focus({ preventScroll: true })'));
 check("NO_STORAGE_MUTATION", !/localStorage\.(?:setItem|removeItem|clear)|sessionStorage\.(?:setItem|removeItem|clear)/.test(js));
 check("NO_LEARNING_STATE_MUTATION", !/\b(?:correct|confused|seen|currentIndex)\s*[=+]/.test(js));
 
