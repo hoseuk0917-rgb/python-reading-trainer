@@ -9,15 +9,22 @@ VERSION = "v344_explanation_support_r4"
 
 VERSION_OLD = 'const VERSION = "v344_explanation_support_r3";'
 VERSION_NEW = f'const VERSION = "{VERSION}";'
+LATER_VERSIONS = (
+    'const VERSION = "v344_explanation_support_r5";',
+)
 
 OLD_BLOCK = '''    window.setTimeout(function () {\n      if (focus && typeof focus.focus === "function" && document.contains(focus)) {\n        focus.focus();\n        return;\n      }\n      if (termId) {\n        const fallback = document.querySelector('.explanation-term-v344[data-term="' + CSS.escape(termId) + '"]');\n        if (fallback && typeof fallback.focus === "function") fallback.focus();\n      }\n    }, 0);'''
 
 NEW_BLOCK = '''    const active = document.activeElement;\n    if (active && modal.contains(active) && typeof active.blur === "function") active.blur();\n    const restoreFocus = function () {\n      let candidate = focus && document.contains(focus) ? focus : null;\n      if (!candidate && termId) {\n        candidate = document.querySelector('.explanation-term-v344[data-term="' + CSS.escape(termId) + '"]');\n      }\n      if (!candidate || typeof candidate.focus !== "function") return;\n      if (document.activeElement === candidate) return;\n      try { candidate.focus({ preventScroll: true }); }\n      catch (_) { candidate.focus(); }\n    };\n    restoreFocus();\n    if (typeof queueMicrotask === "function") queueMicrotask(restoreFocus);\n    if (typeof window.requestAnimationFrame === "function") {\n      window.requestAnimationFrame(function () {\n        restoreFocus();\n        window.setTimeout(restoreFocus, 0);\n      });\n    } else {\n      window.setTimeout(restoreFocus, 0);\n    }'''
 
 
+def _version_compatible(text: str) -> bool:
+    return VERSION_NEW in text or any(version in text for version in LATER_VERSIONS)
+
+
 def transform(text: str) -> tuple[str, int]:
     changes = 0
-    if VERSION_NEW not in text:
+    if not _version_compatible(text):
         if VERSION_OLD not in text:
             raise RuntimeError("R3 version anchor not found")
         text = text.replace(VERSION_OLD, VERSION_NEW, 1)
@@ -32,14 +39,13 @@ def transform(text: str) -> tuple[str, int]:
 
 def validate(text: str) -> bool:
     required = [
-        VERSION_NEW,
         'modal.contains(active)',
         'const restoreFocus = function ()',
         'queueMicrotask(restoreFocus)',
         'window.requestAnimationFrame(function ()',
         'candidate.focus({ preventScroll: true })',
     ]
-    return all(item in text for item in required)
+    return _version_compatible(text) and all(item in text for item in required)
 
 
 def main() -> None:
@@ -62,6 +68,7 @@ def main() -> None:
     print(f"APPLY={args.apply}")
     print(f"CHANGES={changes}")
     print(f"VALID={ok}")
+    print(f"LATER_VERSION_COMPATIBLE={any(version in final for version in LATER_VERSIONS)}")
     if args.check:
         print(f"IDEMPOTENT={idempotent}")
     if not ok or (args.check and not idempotent):
