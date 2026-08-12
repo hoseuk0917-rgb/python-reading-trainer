@@ -3,9 +3,16 @@
 
   const VERSION = "v353_a1";
   let refreshQueued = false;
+  let supportOriginalParent = null;
+  let supportOriginalNextSibling = null;
 
   function t(ko, en) {
     return document.documentElement.lang === "en" ? en : ko;
+  }
+
+  function mobileLayout() {
+    try { return !!(window.matchMedia && window.matchMedia("(max-width: 820px)").matches); }
+    catch (_) { return window.innerWidth <= 820; }
   }
 
   function visible(el) {
@@ -45,6 +52,49 @@
     return true;
   }
 
+  function rememberSupportHome(support) {
+    const learn = document.getElementById("learnView");
+    if (!support || !learn || supportOriginalParent) return;
+    if (support.parentElement === learn) {
+      supportOriginalParent = learn;
+      supportOriginalNextSibling = support.nextSibling;
+    }
+  }
+
+  function restoreSupportRegion() {
+    const support = document.getElementById("learningSupportRegionV349");
+    if (!support || !support.classList.contains("v353-inline-support")) return false;
+    const learn = document.getElementById("learnView");
+    const home = supportOriginalParent && supportOriginalParent.isConnected ? supportOriginalParent : learn;
+    if (!home) return false;
+    support.classList.remove("v353-inline-support");
+    if (supportOriginalNextSibling && supportOriginalNextSibling.parentElement === home) {
+      home.insertBefore(support, supportOriginalNextSibling);
+    } else {
+      home.appendChild(support);
+    }
+    return true;
+  }
+
+  function placeManualSupportInline() {
+    const learn = document.getElementById("learnView");
+    const support = document.getElementById("learningSupportRegionV349");
+    const toggle = document.getElementById("learningSupportToggleV349");
+    const bar = document.getElementById("studyFocusV345");
+    if (!learn || !support || !toggle || !bar) return false;
+    rememberSupportHome(support);
+    const manualOpen = toggle.getAttribute("aria-expanded") === "true" && learn.classList.contains("v349-support-open");
+    if (!mobileLayout() || !manualOpen) {
+      restoreSupportRegion();
+      return false;
+    }
+    if (support.previousElementSibling !== bar || support.parentElement !== bar.parentElement) {
+      bar.insertAdjacentElement("afterend", support);
+    }
+    support.classList.add("v353-inline-support");
+    return true;
+  }
+
   function alignSupportRegion(support) {
     if (!support || !visible(support)) return false;
     const targetTop = Math.max(0, support.getBoundingClientRect().top + window.scrollY - 10);
@@ -56,17 +106,16 @@
   function focusSupportRegion() {
     const support = document.getElementById("learningSupportRegionV349");
     const toggle = document.getElementById("learningSupportToggleV349");
-    if (!support || !toggle || toggle.getAttribute("aria-expanded") !== "true" || !visible(support)) return false;
+    if (!support || !toggle || toggle.getAttribute("aria-expanded") !== "true") return false;
+    placeManualSupportInline();
+    if (!visible(support)) return false;
     support.setAttribute("tabindex", "-1");
     support.classList.add("v353-support-arrival");
-
-    /* Immediate positioning is intentional: the button is far from the support area on mobile. */
     alignSupportRegion(support);
-    window.setTimeout(function () { alignSupportRegion(support); }, 90);
     window.setTimeout(function () {
       try { support.focus({ preventScroll: true }); } catch (_) { try { support.focus(); } catch (_) {} }
       alignSupportRegion(support);
-    }, 140);
+    }, 80);
     window.setTimeout(function () { support.classList.remove("v353-support-arrival"); }, 1300);
     return true;
   }
@@ -74,6 +123,7 @@
   function refresh() {
     groupLearningControls();
     syncControlLabels();
+    placeManualSupportInline();
     document.documentElement.dataset.interactionClarityV353 = VERSION;
   }
 
@@ -94,10 +144,14 @@
       if (target.id === "learningSupportToggleV349" && target.getAttribute("aria-expanded") === "true") {
         focusSupportRegion();
       }
-    }, 60);
+    }, 40);
   });
 
+  window.addEventListener("resize", scheduleRefresh, { passive: true });
+
   function start() {
+    const initialSupport = document.getElementById("learningSupportRegionV349");
+    rememberSupportHome(initialSupport);
     refresh();
     if (!document.body || window.__interactionClarityV353Observer) return;
     const observer = new MutationObserver(scheduleRefresh);
@@ -111,6 +165,7 @@
   window.InteractionClarityV353 = {
     version: VERSION,
     refresh: refresh,
-    focusSupportRegion: focusSupportRegion
+    focusSupportRegion: focusSupportRegion,
+    restoreSupportRegion: restoreSupportRegion
   };
 })();
