@@ -1,61 +1,68 @@
-name: learning-flow-v350
+name: contextual-practice-v351
 
 on:
   push:
     branches:
-      - agent/v349-consumer-ux-simplification
+      - agent/v351-contextual-practice
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: learning-flow-v350-branch
+  group: contextual-practice-v351-branch
   cancel-in-progress: true
 
 jobs:
-  v350-learning-flow:
+  v351-contextual-practice:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout V350 branch
+      - name: Checkout V351 branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: agent/v349-consumer-ux-simplification
+          ref: agent/v351-contextual-practice
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Apply V349 and V350 integrations
+      - name: Apply V349 through V351 integrations
         run: |
           python tools/apply_consumer_ux_v349.py --apply
           python tools/apply_consumer_ux_v349_r2.py --apply
           python tools/apply_learning_flow_v350.py --apply
+          python tools/apply_contextual_practice_v351.py --apply
 
       - name: Confirm integration idempotence
         run: |
           python tools/apply_consumer_ux_v349.py --check
           python tools/apply_consumer_ux_v349_r2.py --check
           python tools/apply_learning_flow_v350.py --check
+          python tools/apply_contextual_practice_v351.py --check
 
-      - name: V349 and V350 syntax checks
+      - name: V349 through V351 syntax checks
         run: |
-          python -m py_compile tools/apply_consumer_ux_v349.py tools/apply_consumer_ux_v349_r2.py tools/apply_learning_flow_v350.py
+          python -m py_compile tools/apply_consumer_ux_v349.py tools/apply_consumer_ux_v349_r2.py tools/apply_learning_flow_v350.py tools/apply_contextual_practice_v351.py
           node --check src/pwa/consumer_ux_v349.js
           node --check src/pwa/consumer_ux_v349_compat_r2.js
           node --check src/pwa/learning_flow_v350.js
+          node --check src/pwa/contextual_practice_v351.js
           node --check tools/audit_consumer_ux_v349.js
           node --check tools/audit_learning_flow_v350.js
-          node --check tools/learning_flow_v350_browser_case.js
-          node --check tools/run_learning_flow_v350_browser_smoke.js
+          node --check tools/audit_contextual_practice_v351.js
+          node --check tools/contextual_practice_v351_browser_case.js
+          node --check tools/run_contextual_practice_v351_browser_smoke.js
 
       - name: V349 consumer UX contract audit
         run: node tools/audit_consumer_ux_v349.js
 
       - name: V350 learning flow contract audit
         run: node tools/audit_learning_flow_v350.js
+
+      - name: V351 contextual practice contract audit
+        run: node tools/audit_contextual_practice_v351.js
 
       - name: Existing lesson validation
         run: python tools/validate_lessons.py
@@ -99,7 +106,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v350-regression-http.log 2>&1 &
+          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v351-regression-http.log 2>&1 &
           SERVER_PID=$!
           cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
           trap cleanup EXIT
@@ -112,12 +119,13 @@ jobs:
           node tools/run_study_experience_v345_browser_smoke.js
           node tools/run_study_quality_v346_browser_smoke.js
           node tools/run_e2e_learning_flow_v347_browser_smoke.js
+          node tools/run_learning_flow_v350_browser_smoke.js
 
-      - name: V350 learning flow real browser smoke
+      - name: V351 contextual practice real browser smoke
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v350-http.log 2>&1 &
+          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v351-http.log 2>&1 &
           SERVER_PID=$!
           cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
           trap cleanup EXIT
@@ -125,18 +133,18 @@ jobs:
             if curl -fsS http://127.0.0.1:3377/src/pwa/index.html > /dev/null; then break; fi
             sleep 0.1
           done
-          node tools/run_learning_flow_v350_browser_smoke.js
+          node tools/run_contextual_practice_v351_browser_smoke.js
 
-      - name: Commit V350 generated integration if needed
+      - name: Commit V351 generated integration if needed
         if: success()
         run: |
           if git diff --quiet; then
-            echo "V350_ALREADY_CLEAN=True"
+            echo "V351_ALREADY_CLEAN=True"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/pwa/index.html
-          git commit -m "Integrate V350 learning flow UX"
-          git push origin HEAD:agent/v349-consumer-ux-simplification
-          echo "V350_CHANGES_PUSHED=True"
+          git commit -m "Integrate V351 contextual practice UX"
+          git push origin HEAD:agent/v351-contextual-practice
+          echo "V351_CHANGES_PUSHED=True"
