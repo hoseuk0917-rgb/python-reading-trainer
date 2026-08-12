@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "v347_a9";
+  const VERSION = "v347_a10";
   const REVIEW_KEY = "python-reading-trainer-review-v340";
   const dialogOpeners = new WeakMap();
   const proactivelyRestoredDialogs = new WeakSet();
@@ -163,6 +163,7 @@
     if (!lease) return;
     lease.cancelled = true;
     try { lease.observer.disconnect(); } catch (_) {}
+    try { document.removeEventListener("focusin", lease.focusinHandler, true); } catch (_) {}
     activeFocusLease = null;
   }
 
@@ -174,49 +175,70 @@
     const lease = {
       cancelled: false,
       scheduled: false,
-      initialAttempts: 0,
       firstSuccess: false,
-      observer: null
+      observer: null,
+      focusinHandler: null
     };
     activeFocusLease = lease;
+
+    function finishFirstSuccess() {
+      if (lease.firstSuccess) return;
+      lease.firstSuccess = true;
+      if (typeof onFirstSuccess === "function") onFirstSuccess();
+    }
+
+    function reconcile() {
+      if (lease.cancelled) return;
+      const target = resolveControl(descriptor);
+      if (!target || !controlVisible(target)) return;
+
+      const active = document.activeElement;
+      if (active === target) {
+        finishFirstSuccess();
+        return;
+      }
+
+      // BODY means the browser lost focus because the semantic button was hidden
+      // or replaced during V346's deferred rerenders. Reconnect only in that case.
+      // Any other focused control represents an intentional focus destination and
+      // terminates the lease instead of stealing focus back from the learner.
+      if (active && active !== document.body && !insideTrackedDialog(active)) {
+        cancelFocusLease();
+        return;
+      }
+
+      if (focusResolvedControl(descriptor)) finishFirstSuccess();
+    }
 
     function schedule() {
       if (lease.cancelled || lease.scheduled) return;
       lease.scheduled = true;
       window.requestAnimationFrame(function () {
         lease.scheduled = false;
-        if (lease.cancelled) return;
-        lease.initialAttempts += 1;
-        const target = resolveControl(descriptor);
-        if (!target || !controlVisible(target)) {
-          if (!lease.firstSuccess && lease.initialAttempts < 12) schedule();
-          return;
-        }
-
-        try { target.focus({ preventScroll: true }); } catch (_) {}
-        window.requestAnimationFrame(function () {
-          if (lease.cancelled) return;
-          const current = resolveControl(descriptor);
-          const focused = current === target && target.isConnected && controlVisible(target) && document.activeElement === target;
-          if (focused && !lease.firstSuccess) {
-            lease.firstSuccess = true;
-            if (typeof onFirstSuccess === "function") onFirstSuccess();
-          } else if (!lease.firstSuccess && lease.initialAttempts < 12) {
-            schedule();
-          }
-        });
+        reconcile();
       });
     }
 
-    lease.observer = new MutationObserver(function () {
-      if (!lease.cancelled) schedule();
-    });
+    lease.focusinHandler = function (event) {
+      if (lease.cancelled) return;
+      const target = resolveControl(descriptor);
+      if (event.target === target) {
+        finishFirstSuccess();
+        return;
+      }
+      if (event.target && event.target !== document.body && !insideTrackedDialog(event.target)) cancelFocusLease();
+    };
+    document.addEventListener("focusin", lease.focusinHandler, true);
+
+    lease.observer = new MutationObserver(schedule);
     lease.observer.observe(observedRoot, {
       subtree: true,
       childList: true,
       attributes: true,
       attributeFilter: ["class", "hidden", "aria-hidden", "disabled"]
     });
+
+    reconcile();
     schedule();
   }
 
@@ -238,9 +260,6 @@
   function restoreV346ReviewOrigin(descriptor) {
     if (!descriptor) return;
     returnToProgressForReviewOrigin();
-    // setView() is synchronous for visibility. Focus immediately when possible,
-    // then keep a semantic lease because V346 can replace the button later.
-    focusResolvedControl(descriptor);
     startSemanticFocusLease(descriptor, document.getElementById("progressDashboard") || document.documentElement, function () {
       pendingReviewOpener = null;
     });
@@ -268,9 +287,6 @@
     const explicitReviewOpener = modal.id === "reviewModalV340" ? pendingReviewOpener : null;
     const close = modal.querySelector(".modal-v340-close");
 
-    // Escape is an explicit V347-controlled close path. Restore the V346 origin
-    // synchronously after the canonical close click rather than waiting for the
-    // mutation observer to notice that the modal became hidden.
     if (explicitReviewOpener) proactivelyRestoredDialogs.add(modal);
     if (close && typeof close.click === "function") close.click();
     else modal.classList.add("hidden");
@@ -295,9 +311,11 @@
     const selectors = ["#reviewModalV340", "#syntaxModalV340", "#missionModalV341"];
     const known = new Map();
 
-    document.addEventListener("pointerdown", function () { cancelFocusLease(); }, true);
-    document.addEventListener("click", function () { cancelFocusLease(); }, true);
-    document.addEventListener("keydown", function () { cancelFocusLease(); }, true);
+    // Only trusted learner input releases a semantic focus lease. Internal
+    // programmatic clicks and synthetic test events must not cancel restoration.
+    document.addEventListener("pointerdown", function (event) { if (event.isTrusted) cancelFocusLease(); }, true);
+    document.addEventListener("click", function (event) { if (event.isTrusted) cancelFocusLease(); }, true);
+    document.addEventListener("keydown", function (event) { if (event.isTrusted) cancelFocusLease(); }, true);
     document.addEventListener("click", captureV346ReviewOpener, true);
 
     document.addEventListener("focusin", function (event) {
