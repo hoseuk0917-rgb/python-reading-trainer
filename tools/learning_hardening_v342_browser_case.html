@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PRT V342 Hardening Browser Case</title>
+  <style>
+    body{font-family:system-ui,sans-serif;margin:12px;background:#f5f6f8;color:#172033}.summary{padding:10px;border-radius:10px;background:#fff;border:1px solid #d8dee8;margin-bottom:10px}.pass{color:#137333}.fail{color:#b3261e}iframe{display:block;border:1px solid #aab4c3;background:#fff}pre{white-space:pre-wrap;background:#111827;color:#e5e7eb;padding:12px;border-radius:10px;max-height:640px;overflow:auto}
+  </style>
+</head>
+<body>
+  <div id="summary" class="summary">RUNNING</div>
+  <iframe id="appFrame" height="1600"></iframe>
+  <pre id="report">RUNNING</pre>
+<script>
+(function(){
+  "use strict";
+  const params = new URLSearchParams(location.search);
+  const caseName = params.get("case") === "narrow" ? "narrow" : "desktop";
+  const width = caseName === "narrow" ? 390 : 1200;
+  const frame = document.getElementById("appFrame");
+  frame.width = String(width);
+  const lines = ["=== PRT V342 HARDENING REAL BROWSER CASE ===", "CASE=" + caseName.toUpperCase(), "WIDTH=" + width];
+  const results = [];
+  const PROGRESS_KEY = "python-reading-trainer-progress-v1";
+  const V341_KEY = "python-reading-trainer-learning-experience-v341";
+  const LANG_KEY = "pythonReadingTrainer.language";
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  async function waitFor(fn, timeout=25000) {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      try { const value = fn(); if (value) return value; } catch (_) {}
+      await sleep(80);
+    }
+    return null;
+  }
+  function check(label, ok, detail) {
+    const row = {label, ok:Boolean(ok), detail:String(detail == null ? "" : detail)};
+    results.push(row);
+    lines.push(label + "=" + (row.ok ? "PASS" : "FAIL") + " DETAIL=" + row.detail);
+    return row.ok;
+  }
+  function appUrl(tag, lang) {
+    const query = new URLSearchParams();
+    query.set("v342case", caseName);
+    query.set("phase", tag + "-" + Date.now());
+    if (lang) query.set("lang", lang);
+    return "/src/pwa/index.html?" + query.toString();
+  }
+  async function waitReady(expectedLang) {
+    return waitFor(() => {
+      const doc = frame.contentDocument, win = frame.contentWindow;
+      if (!doc || !win || doc.readyState !== "complete") return null;
+      if (doc.documentElement.dataset.learningLoopV340 !== "v340_a1") return null;
+      if (doc.documentElement.dataset.learningExperienceV341 !== "v341_a2") return null;
+      if (!win.LearningEngineV341 || win.LearningEngineV341.VERSION !== "v341_a2") return null;
+      if (!win.ContentQualitySemantics || !doc.getElementById("practiceDashboardV341")) return null;
+      if (!doc.querySelectorAll(".choice-btn").length) return null;
+      if (expectedLang && doc.documentElement.lang !== expectedLang) return null;
+      return {doc, win};
+    }, 35000);
+  }
+  async function bootstrapClean() {
+    frame.src = appUrl("bootstrap", "ko");
+    const first = await waitReady("ko");
+    if (!first) return null;
+    first.win.localStorage.clear();
+    first.win.sessionStorage.clear();
+    frame.src = appUrl("clean", "ko");
+    return waitReady("ko");
+  }
+  async function reload(tag, lang) {
+    frame.src = appUrl(tag, lang);
+    return waitReady(lang || null);
+  }
+  function clickTab(doc, view) {
+    const button = doc.querySelector('.tab-btn[data-view="' + view + '"]');
+    if (button) button.click();
+    return button;
+  }
+  function cardIds(win, count) {
+    return JSON.parse(win.eval("JSON.stringify(cards.slice(0," + Number(count) + ").map(function(c){return c.id;}))"));
+  }
+  function allCardIds(win) {
+    return JSON.parse(win.eval("JSON.stringify(cards.map(function(c){return c.id;}))"));
+  }
+  function seedProgress(win, ids) {
+    const now = Date.now();
+    const progress = {seen:{},correct:{},confused:{},lastSeenAt:{}};
+    ids.forEach((id,index) => {
+      progress.seen[id] = now - index;
+      progress.correct[id] = index % 9 === 0 ? 0 : 1;
+      if (index % 9 === 0) progress.confused[id] = 1;
+      progress.lastSeenAt[id] = now - index;
+    });
+    win.localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    return progress;
+  }
+  function summaryText(doc) {
+    const node = doc.getElementById("learningSummaryV341");
+    return node ? node.textContent.replace(/\s+/g," ").trim() : "";
+  }
+  function expectedCheckpoint(win, number, locale) {
+    return win.eval(`LearningEngineV341.missionForCheckpoint(${Number(number)}, ${JSON.stringify(locale)}, cards, function(card){return ContentQualitySemantics.pickPrimaryConcept(card || {}, card && card.concepts || [], conceptInfo || {});})`);
+  }
+  function v342ScriptState(doc) {
+    const srcs = Array.from(doc.scripts).map(s => s.getAttribute("src") || "");
+    return {
+      semantic: srcs.find(s => s.includes("content_quality_semantics.js")) || "",
+      engine: srcs.find(s => s.includes("learning_engine_v341.js")) || "",
+      experience: srcs.find(s => s.includes("learning_experience_v341.js")) || ""
+    };
+  }
+
+  async function main() {
+    let ready = await bootstrapClean();
+    check("COLD_START_READY", !!ready, ready ? "ready" : "timeout");
+    if (!ready) return finish();
+    let {doc, win} = ready;
+
+    const scripts = v342ScriptState(doc);
+    check("V342_SEMANTIC_CACHE_EPOCH", /[?&]h=20260812_v342_a1/.test(scripts.semantic), scripts.semantic);
+    check("V342_ENGINE_CACHE_EPOCH", /[?&]h=20260812_v342_a1/.test(scripts.engine), scripts.engine);
+    check("V342_EXPERIENCE_CACHE_EPOCH", /[?&]h=20260812_v342_a1/.test(scripts.experience), scripts.experience);
+    check("NO_SERVICE_WORKER_CONTROLLER", !win.navigator.serviceWorker || !win.navigator.serviceWorker.controller, "controller=" + Boolean(win.navigator.serviceWorker && win.navigator.serviceWorker.controller));
+
+    const firstId = cardIds(win,1)[0];
+    const existingIds = cardIds(win,45);
+    seedProgress(win, existingIds);
+    const oldState = {events:[{kind:"lesson_attempt",cardId:existingIds[0],at:Date.now()-10000}],completedCheckpoints:[1],lastToastKey:"v341-existing"};
+    win.localStorage.setItem(V341_KEY, JSON.stringify(oldState));
+    win.localStorage.setItem("python-reading-trainer-card-memo:" + firstId, "existing-user-memo");
+    win.localStorage.setItem(LANG_KEY, "ko");
+
+    ready = await reload("existing-user", "ko");
+    check("EXISTING_V341_STATE_RELOAD_READY", !!ready, ready ? "ready" : "timeout");
+    if (!ready) return finish();
+    doc = ready.doc; win = ready.win;
+    const loadedProgress = JSON.parse(win.localStorage.getItem(PROGRESS_KEY) || "{}");
+    const loadedState = JSON.parse(win.localStorage.getItem(V341_KEY) || "{}");
+    check("EXISTING_PROGRESS_45_PRESERVED", Object.keys(loadedProgress.seen || {}).length === 45, "seen=" + Object.keys(loadedProgress.seen || {}).length);
+    check("EXISTING_CHECKPOINT_HISTORY_PRESERVED", Array.isArray(loadedState.completedCheckpoints) && loadedState.completedCheckpoints.includes(1), JSON.stringify(loadedState.completedCheckpoints || []));
+    check("EXISTING_EVENT_HISTORY_PRESERVED", Array.isArray(loadedState.events) && loadedState.events.length >= 1, "events=" + ((loadedState.events || []).length));
+    check("EXISTING_CARD_MEMO_PRESERVED", win.localStorage.getItem("python-reading-trainer-card-memo:" + firstId) === "existing-user-memo", String(win.localStorage.getItem("python-reading-trainer-card-memo:" + firstId)));
+    const existingSummary = await waitFor(() => /순차 학습\s*45\s*\/\s*1785/.test(summaryText(frame.contentDocument)) ? summaryText(frame.contentDocument) : null, 5000);
+    check("EXISTING_SEQUENCE_SUMMARY_45", !!existingSummary, existingSummary || summaryText(doc));
+
+    const enButton = doc.querySelector('#languageToggleV334A9 button[data-lang="en"]');
+    check("LANGUAGE_EN_BUTTON_PRESENT", !!enButton, enButton ? "present" : "missing");
+    if (enButton) enButton.click();
+    ready = await waitReady("en");
+    check("KO_TO_EN_RELOAD", !!ready, ready ? "lang=" + ready.doc.documentElement.lang : "timeout");
+    if (!ready) return finish();
+    doc = ready.doc; win = ready.win;
+    check("EN_PROGRESS_PRESERVED", Object.keys(JSON.parse(win.localStorage.getItem(PROGRESS_KEY)||"{}").seen || {}).length === 45, "seen=" + Object.keys(JSON.parse(win.localStorage.getItem(PROGRESS_KEY)||"{}").seen || {}).length);
+    check("EN_MEMO_PRESERVED", win.localStorage.getItem("python-reading-trainer-card-memo:" + firstId) === "existing-user-memo", "memo preserved");
+    const koButton = doc.querySelector('#languageToggleV334A9 button[data-lang="ko"]');
+    check("LANGUAGE_KO_BUTTON_PRESENT", !!koButton, koButton ? "present" : "missing");
+    if (koButton) koButton.click();
+    ready = await waitReady("ko");
+    check("EN_TO_KO_RELOAD", !!ready, ready ? "lang=" + ready.doc.documentElement.lang : "timeout");
+    if (!ready) return finish();
+    doc = ready.doc; win = ready.win;
+
+    const ids = allCardIds(win);
+    seedProgress(win, ids);
+    const passed = Array.from({length:59},(_,i)=>i+1);
+    win.localStorage.setItem(V341_KEY, JSON.stringify({events:oldState.events,completedCheckpoints:passed,lastToastKey:""}));
+    ready = await reload("final-progress", "ko");
+    check("FINAL_PROGRESS_RELOAD_READY", !!ready, ready ? "ready" : "timeout");
+    if (!ready) return finish();
+    doc = ready.doc; win = ready.win;
+    const finalSummary = await waitFor(() => /순차 학습\s*1785\s*\/\s*1785/.test(summaryText(frame.contentDocument)) ? summaryText(frame.contentDocument) : null, 6000);
+    check("FINAL_SEQUENCE_1785_OF_1785", !!finalSummary, finalSummary || summaryText(doc));
+    const finalState = win.LearningEngineV341.nextCheckpoint(1785,1785);
+    check("FINAL_ENGINE_UNLOCKS_60", win.LearningEngineV341.unlockedCheckpointCount(1785,1785) === 60, "count=" + win.LearningEngineV341.unlockedCheckpointCount(1785,1785));
+    check("FINAL_ENGINE_COMPLETE_STATE", finalState.complete === true && finalState.remaining === 0 && finalState.target === 1785, JSON.stringify(finalState));
+
+    clickTab(doc,"practice");
+    await sleep(300);
+    const expectedCurated = JSON.parse(win.eval('JSON.stringify(Object.keys(conceptInfo).filter(function(key){return cards.some(function(card){return Array.isArray(card.concepts)&&card.concepts.includes(key);});}))'));
+    const masteryRows = doc.querySelectorAll(".mastery-v341-row").length;
+    check("CURATED_MASTERY_ALL_VISIBLE", masteryRows === expectedCurated.length && masteryRows > 0, "rows=" + masteryRows + " expected=" + expectedCurated.length);
+    check("MASTERY_NOT_RAW_2001_FLOOD", masteryRows < 200, "rows=" + masteryRows);
+    const masteryCopy = doc.querySelector(".mastery-v341") ? doc.querySelector(".mastery-v341").textContent.replace(/\s+/g," ") : "";
+    check("MASTERY_COPY_EXPLAINS_CURATED_VIEW", /핵심 개념/.test(masteryCopy), masteryCopy.slice(0,180));
+
+    const devRef = doc.getElementById("developmentWorkflowReferenceV341");
+    const devItems = devRef ? Array.from(devRef.querySelectorAll("details.devflow-v341-item")) : [];
+    check("DEV_REFERENCE_16_STILL_SEPARATE", devItems.length === 16, "count=" + devItems.length);
+    check("DEV_REFERENCE_ITEMS_DEFAULT_COLLAPSED", devItems.length === 16 && devItems.every(item => !item.open), "open=" + devItems.filter(item=>item.open).length);
+
+    const cp60Button = await waitFor(() => frame.contentDocument && frame.contentDocument.querySelector('.practice-v341-primary[data-mission-checkpoint-v341="60"]'), 5000);
+    check("FINAL_CHECKPOINT_60_BUTTON_VISIBLE", !!cp60Button, cp60Button ? "present" : "missing");
+    const expected60 = expectedCheckpoint(win,60,"ko");
+    if (cp60Button) cp60Button.click();
+    const modal = await waitFor(() => {
+      const m = frame.contentDocument && frame.contentDocument.getElementById("missionModalV341");
+      return m && !m.classList.contains("hidden") ? m : null;
+    },4000);
+    doc = frame.contentDocument; win = frame.contentWindow;
+    const question60 = modal ? modal.querySelector(".mission-v341-question").textContent.trim() : "";
+    const code60 = modal ? modal.querySelector(".mission-v341-code").textContent.trim() : "";
+    check("FINAL_CHECKPOINT_60_OPENS", !!modal, modal ? "open" : "missing");
+    check("FINAL_CHECKPOINT_60_MATCHES_ENGINE", !!modal && question60 === expected60.question && code60 === String(expected60.code||"").trim() && expected60.boundary === 1785, expected60.id + ":boundary=" + expected60.boundary);
+    if (modal) modal.querySelector(".mission-v341-close").click();
+
+    check("NO_BADGE_XP_CURRENCY_UI", !/(배지|\bXP\b|\bbadge\b|\bcoin\b|loot)/i.test((doc.getElementById("practiceView")||{}).textContent||""), "no reward currency");
+    check("ONE_PRACTICE_DASHBOARD", doc.querySelectorAll("#practiceDashboardV341").length === 1, "count=" + doc.querySelectorAll("#practiceDashboardV341").length);
+    check("ONE_MISSION_MODAL", doc.querySelectorAll("#missionModalV341").length === 1, "count=" + doc.querySelectorAll("#missionModalV341").length);
+    const root = doc.documentElement;
+    const practice = doc.getElementById("practiceView");
+    const rect = practice.getBoundingClientRect();
+    check("PRACTICE_WITHIN_VIEWPORT", rect.left >= -1 && rect.right <= root.clientWidth + 1, "left=" + Math.round(rect.left) + " right=" + Math.round(rect.right) + " viewport=" + root.clientWidth);
+    check("NO_HORIZONTAL_OVERFLOW", root.scrollWidth <= root.clientWidth + 2, "scrollWidth=" + root.scrollWidth + " clientWidth=" + root.clientWidth);
+
+    finish();
+  }
+  function finish() {
+    const pass = results.length > 0 && results.every(row => row.ok);
+    lines.push("RESULT=" + (pass ? "PASS_LEARNING_HARDENING_V342_REAL_BROWSER_CASE" : "FAIL_LEARNING_HARDENING_V342_REAL_BROWSER_CASE"));
+    document.getElementById("report").textContent = lines.join("\n");
+    const summary = document.getElementById("summary");
+    summary.textContent = pass ? caseName.toUpperCase() + " PASS" : caseName.toUpperCase() + " FAIL";
+    summary.className = "summary " + (pass ? "pass" : "fail");
+    document.documentElement.dataset.smokeDone = pass ? "pass" : "fail";
+  }
+  main().catch(error => {
+    lines.push("HARNESS_ERROR=" + (error && error.stack ? error.stack : String(error)));
+    lines.push("RESULT=FAIL_LEARNING_HARDENING_V342_REAL_BROWSER_CASE");
+    document.getElementById("report").textContent = lines.join("\n");
+    document.documentElement.dataset.smokeDone = "fail";
+  });
+})();
+</script>
+</body>
+</html>
