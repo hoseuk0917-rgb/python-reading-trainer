@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "v344_explanation_support_a1";
+  const VERSION = "v344_explanation_support_r5";
   const MAX_TERMS_PER_BLOCK = 4;
   const EXCLUDED_SELECTOR = "code, pre, button, a, input, textarea, select, option, script, style, [contenteditable='true'], .syntax-token-v340, .explanation-term-v344, #explanationRefresherV344";
   const TARGET_SELECTORS = [
@@ -199,7 +199,7 @@
     const style = document.createElement("style");
     style.id = "explanationSupportStyleV344";
     style.textContent = `
-      .explanation-term-v344{border:0;background:transparent;color:#2459d3;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;font:inherit;font-weight:700;padding:0 1px;cursor:pointer}
+      .explanation-term-v344{border:0;background:transparent;color:#2459d3;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;font:inherit;font-weight:700;padding:0 1px;cursor:pointer;white-space:normal;overflow-wrap:anywhere;word-break:normal;max-width:100%;vertical-align:baseline}
       .explanation-term-v344:hover,.explanation-term-v344:focus{background:#eaf1ff;border-radius:4px;outline:none}
       #explanationRefresherV344{position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:18px}
       #explanationRefresherV344.hidden{display:none}
@@ -211,6 +211,8 @@
       .explanation-refresher-section-v344{margin:10px 0 0}
       .explanation-refresher-section-v344 strong{display:block;margin-bottom:4px}
       .explanation-refresher-example-v344{background:#f6f8fb;border-radius:10px;padding:10px;white-space:pre-wrap;overflow-wrap:anywhere}
+      #learnView .external-resource-card .side-card-detail,
+      #learnView .external-resource-card .side-card-detail *{min-width:0;max-width:100%;white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word}
       @media(max-width:520px){#explanationRefresherV344{padding:10px}.explanation-refresher-card-v344{border-radius:14px;padding:16px;max-height:84vh}}
     `;
     document.head.appendChild(style);
@@ -244,6 +246,7 @@
   }
 
   let returnFocus = null;
+  let returnTermId = "";
   function openTerm(termId, sourceButton) {
     const entry = GLOSSARY[termId];
     if (!entry) return;
@@ -251,6 +254,7 @@
     const en = isEnglish();
     const values = en ? entry.en : entry.ko;
     returnFocus = sourceButton || document.activeElement;
+    returnTermId = sourceButton && sourceButton.dataset ? (sourceButton.dataset.term || "") : "";
     modal.querySelector("#explanationRefresherTitleV344").textContent = en ? "Quick refresher" : "빠른 복습";
     modal.querySelector(".explanation-refresher-close-v344").textContent = en ? "Close" : "닫기";
     modal.querySelector("[data-label='definition']").textContent = en ? "One-line definition" : "한 줄 정의";
@@ -271,8 +275,31 @@
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
     const focus = returnFocus;
+    const termId = returnTermId;
     returnFocus = null;
-    if (focus && typeof focus.focus === "function" && document.contains(focus)) focus.focus();
+    returnTermId = "";
+    const active = document.activeElement;
+    if (active && modal.contains(active) && typeof active.blur === "function") active.blur();
+    const restoreFocus = function () {
+      let candidate = focus && document.contains(focus) ? focus : null;
+      if (!candidate && termId) {
+        candidate = document.querySelector('.explanation-term-v344[data-term="' + CSS.escape(termId) + '"]');
+      }
+      if (!candidate || typeof candidate.focus !== "function") return;
+      if (document.activeElement === candidate) return;
+      try { candidate.focus({ preventScroll: true }); }
+      catch (_) { candidate.focus(); }
+    };
+    restoreFocus();
+    if (typeof queueMicrotask === "function") queueMicrotask(restoreFocus);
+    if (typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(function () {
+        restoreFocus();
+        window.setTimeout(restoreFocus, 0);
+      });
+    } else {
+      window.setTimeout(restoreFocus, 0);
+    }
   }
 
   function currentTopicText() {
