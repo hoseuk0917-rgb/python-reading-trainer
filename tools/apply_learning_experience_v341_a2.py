@@ -8,8 +8,9 @@ ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "src" / "pwa" / "app.js"
 INDEX = ROOT / "src" / "pwa" / "index.html"
 
-VERSION = "v341_a2_integration_a2"
-EPOCH = "20260812_v341_a2"
+VERSION = "v341_a2_integration_a3"
+A2_EPOCH = "20260812_v341_a2"
+V339_EPOCH = "20260812_v339_quality3"
 REFERENCE_REL = "../../data/reference_side_cards/python_development_workflow_side_cards_v341_a2.json"
 REFERENCE_PATH = f'    "{REFERENCE_REL}",\n'
 OLD_REFERENCE_REL = "../../data/side_cards/python_development_workflow_side_cards_v341_a2.json"
@@ -44,28 +45,29 @@ def patch_app(text: str) -> tuple[str, list[str]]:
     changed: list[str] = []
     out = text
 
-    old_epoch = 'const CONTENT_QUALITY_DATA_EPOCH_V339 = "20260812_v339_quality3";'
-    new_epoch = f'const CONTENT_QUALITY_DATA_EPOCH_V339 = "{EPOCH}";'
-    if new_epoch not in out:
-        if old_epoch not in out:
-            raise RuntimeError("APP_EPOCH_ANCHOR_NOT_FOUND")
-        out = out.replace(old_epoch, new_epoch, 1)
-        changed.append("app_epoch")
+    historical_epoch = f'const CONTENT_QUALITY_DATA_EPOCH_V339 = "{V339_EPOCH}";'
+    if historical_epoch not in out:
+        raise RuntimeError("V339_HISTORICAL_EPOCH_MISSING")
 
+    # V341 A2 deliberately does not replace the historical V339 data epoch.
+    # The reference side-card file is a new URL, while app.js itself receives
+    # an A2 cache marker in index.html so the new file list is discovered.
     if OLD_REFERENCE_REL in out:
         out = out.replace(OLD_REFERENCE_PATH, REFERENCE_PATH, 1)
-        changed.append("side_file_location")
+        changed.append("reference_file_location")
     elif REFERENCE_REL not in out:
         anchor = '    "../../data/side_cards/dev_environment_cards_v1.json",\n'
         if anchor not in out:
-            raise RuntimeError("SIDE_FILE_ANCHOR_NOT_FOUND")
+            raise RuntimeError("REFERENCE_FILE_ANCHOR_NOT_FOUND")
         out = out.replace(anchor, anchor + REFERENCE_PATH, 1)
-        changed.append("side_file")
+        changed.append("reference_file")
 
     if out.count(REFERENCE_REL) != 1:
         raise RuntimeError(f"REFERENCE_FILE_COUNT={out.count(REFERENCE_REL)}")
     if OLD_REFERENCE_REL in out:
         raise RuntimeError("OLD_REFERENCE_PATH_STILL_PRESENT")
+    if historical_epoch not in out:
+        raise RuntimeError("V339_EPOCH_CHANGED_BY_A2")
     return out, changed
 
 
@@ -73,13 +75,13 @@ def patch_index(text: str) -> tuple[str, list[str]]:
     changed: list[str] = []
     out = text
 
-    old_app = '<script src="./app.js?v=20260812_v339_quality1&cq=20260812_v339_quality3"></script>'
-    new_app = f'<script src="./app.js?v=20260812_v339_quality1&cq={EPOCH}"></script>'
-    if new_app not in out:
-        if old_app not in out:
+    app_base = f'<script src="./app.js?v=20260812_v339_quality1&cq={V339_EPOCH}"></script>'
+    app_a2 = f'<script src="./app.js?v=20260812_v339_quality1&cq={V339_EPOCH}&le={A2_EPOCH}"></script>'
+    if app_a2 not in out:
+        if app_base not in out:
             raise RuntimeError("INDEX_APP_CACHE_ANCHOR_NOT_FOUND")
-        out = out.replace(old_app, new_app, 1)
-        changed.append("index_app_cache")
+        out = out.replace(app_base, app_a2, 1)
+        changed.append("index_app_a2_cache")
 
     old_engine = '<script src="./learning_engine_v341.js?v=20260812_v341_a1"></script>'
     new_engine = '<script src="./learning_engine_v341.js?v=20260812_v341_a2"></script>'
@@ -97,8 +99,10 @@ def patch_index(text: str) -> tuple[str, list[str]]:
         out = out.replace(old_ui, new_ui, 1)
         changed.append("index_ui_cache")
 
-    if out.count(new_engine) != 1 or out.count(new_ui) != 1 or out.count(new_app) != 1:
+    if out.count(new_engine) != 1 or out.count(new_ui) != 1 or out.count(app_a2) != 1:
         raise RuntimeError("INDEX_SCRIPT_COUNT_INVALID")
+    if f'cq={V339_EPOCH}' not in out:
+        raise RuntimeError("V339_INDEX_EPOCH_CHANGED_BY_A2")
     return out, changed
 
 
@@ -112,6 +116,8 @@ def run(apply: bool) -> int:
 
     print(f"PATCH_VERSION={VERSION}")
     print(f"APPLY={apply}")
+    print(f"V339_EPOCH_PRESERVED={V339_EPOCH}")
+    print(f"V341_A2_EPOCH={A2_EPOCH}")
     print(f"CHANGES={len(changes)}")
     for item in changes:
         print("CHANGE=" + item)
