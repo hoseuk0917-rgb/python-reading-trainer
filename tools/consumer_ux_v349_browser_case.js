@@ -69,12 +69,14 @@
     log("QUIZ_SUPPORT_DISCLOSURE_WORKS", learn.classList.contains("v349-support-open") && visible(win, support));
     supportToggle.click();
 
-    await waitFor(function () { return doc.getElementById("studyToolsV7"); }, 10000);
+    await waitFor(function () {
+      return doc.getElementById("studyToolsV7") && doc.getElementById("studyToolsDisclosureV349") && doc.querySelector("#studyToolsV7 .study-tools-controls");
+    }, 10000);
     const studyControls = doc.querySelector("#studyToolsV7 .study-tools-controls");
     const studyToggle = doc.getElementById("studyToolsDisclosureV349");
-    log("STUDY_TOOLS_COLLAPSED_DEFAULT", studyToggle && studyControls && !visible(win, studyControls));
+    log("STUDY_TOOLS_COLLAPSED_DEFAULT", visible(win, studyToggle) && studyControls && !visible(win, studyControls));
     studyToggle.click();
-    await new Promise(function (r) { setTimeout(r, 100); });
+    await waitFor(function () { return visible(win, studyControls); }, 5000);
     log("STUDY_TOOLS_DISCLOSURE_WORKS", visible(win, studyControls));
     studyToggle.click();
 
