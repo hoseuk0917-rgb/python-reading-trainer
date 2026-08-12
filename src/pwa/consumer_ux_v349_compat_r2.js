@@ -14,17 +14,23 @@
     return active.id.slice(0, -4);
   }
 
-  function setLegacyToolsState(viewName) {
+  function setClassState(el, className, shouldHave) {
+    if (!el || el.classList.contains(className) === shouldHave) return false;
+    el.classList.toggle(className, shouldHave);
+    return true;
+  }
+
+  function projectLegacyToolState(viewName) {
+    const toolButtons = Array.from(document.querySelectorAll("#toolsMenuV345 .tab-btn[data-view]"));
+    toolButtons.forEach(function (button) {
+      setClassState(button, "active", TOOL_VIEWS.has(viewName) && button.dataset.view === viewName);
+    });
     const toggle = document.getElementById("toolsToggleV345");
-    if (!toggle) return;
-    const shouldBeActive = TOOL_VIEWS.has(viewName);
-    if (toggle.classList.contains("active") !== shouldBeActive) {
-      toggle.classList.toggle("active", shouldBeActive);
-    }
+    setClassState(toggle, "active", TOOL_VIEWS.has(viewName));
   }
 
   function syncLegacyToolsState() {
-    setLegacyToolsState(activeViewName());
+    projectLegacyToolState(activeViewName());
   }
 
   function syncSupportState() {
@@ -69,7 +75,7 @@
 
     const legacyTab = closest(".tab-btn[data-view]");
     if (legacyTab && legacyTab.dataset.view) {
-      setLegacyToolsState(legacyTab.dataset.view);
+      projectLegacyToolState(legacyTab.dataset.view);
       scheduleSync();
     }
   }, true);
@@ -77,7 +83,7 @@
   document.addEventListener("click", function (event) {
     const legacyTab = event.target && event.target.closest ? event.target.closest(".tab-btn[data-view]") : null;
     if (!legacyTab || !legacyTab.dataset.view) return;
-    setLegacyToolsState(legacyTab.dataset.view);
+    projectLegacyToolState(legacyTab.dataset.view);
     scheduleSync();
   });
 
