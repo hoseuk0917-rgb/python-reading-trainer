@@ -10,24 +10,32 @@ ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "src" / "pwa" / "index.html"
 RUNTIME = ROOT / "src" / "pwa" / "learning_flow_hardening_v347.js"
 ANCHOR = '  <script src="./study_progress_v346.js?v=20260812_v346_a1"></script>'
-SCRIPT = '  <script src="./learning_flow_hardening_v347.js?v=20260812_v347_a1"></script>'
+SCRIPT = '  <script src="./learning_flow_hardening_v347.js?v=20260812_v347_a2"></script>'
+OLD_SCRIPTS = [
+    '  <script src="./learning_flow_hardening_v347.js?v=20260812_v347_a1"></script>',
+]
 
 
 def planned_text(text: str) -> str:
-    count = text.count(SCRIPT)
+    out = text
+    for old in OLD_SCRIPTS:
+        out = out.replace(old + "\n", "").replace("\n" + old, "")
+    count = out.count(SCRIPT)
     if count == 1:
-        return text
+        return out
     if count > 1:
         raise RuntimeError(f"duplicate V347 runtime script: {count}")
-    if ANCHOR not in text:
+    if ANCHOR not in out:
         raise RuntimeError("V346 script anchor not found")
-    return text.replace(ANCHOR, ANCHOR + "\n" + SCRIPT, 1)
+    return out.replace(ANCHOR, ANCHOR + "\n" + SCRIPT, 1)
 
 
 def validate(text: str) -> bool:
     if not RUNTIME.exists():
         return False
     if text.count(SCRIPT) != 1:
+        return False
+    if any(old in text for old in OLD_SCRIPTS):
         return False
     return text.index(ANCHOR) < text.index(SCRIPT)
 
@@ -50,7 +58,7 @@ def main() -> int:
     valid = validate(actual)
     idempotent = planned_text(actual) == actual
 
-    print("PATCH_VERSION=v347_a1")
+    print("PATCH_VERSION=v347_a2")
     print(f"APPLY={args.apply}")
     print(f"CHANGES={changes}")
     print(f"VALID={valid}")
