@@ -1,0 +1,126 @@
+name: consumer-ux-v349
+
+on:
+  push:
+    branches:
+      - agent/v349-consumer-ux-simplification
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  v349-consumer-ux:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout V349 branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/v349-consumer-ux-simplification
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Apply V349 index integration
+        run: python tools/apply_consumer_ux_v349.py --apply
+
+      - name: Confirm V349 integration idempotence
+        run: python tools/apply_consumer_ux_v349.py --check
+
+      - name: V349 syntax checks
+        run: |
+          python -m py_compile tools/apply_consumer_ux_v349.py
+          node --check src/pwa/consumer_ux_v349.js
+          node --check tools/audit_consumer_ux_v349.js
+          node --check tools/consumer_ux_v349_browser_case.js
+          node --check tools/run_consumer_ux_v349_browser_smoke.js
+
+      - name: V349 consumer UX contract audit
+        run: node tools/audit_consumer_ux_v349.js
+
+      - name: Existing lesson validation
+        run: python tools/validate_lessons.py
+
+      - name: Existing V339 content quality
+        run: |
+          python tools/content_quality_final_pass_v339.py --check
+          python tools/content_quality_final_pass_v339_r2.py --check
+          python tools/content_quality_final_pass_v339_r4.py --check
+          node tools/audit_content_semantic_alignment_v339_r4.js
+
+      - name: Existing V340 through V348 architecture gates
+        run: |
+          node tools/audit_learning_loop_v340.js
+          node tools/audit_learning_experience_v341.js
+          node tools/audit_learning_experience_v341_r2.js
+          python tools/audit_development_workflow_sidecards_v341_a2.py
+          python tools/audit_sidecard_educational_quality_v341.py
+          node tools/audit_learning_hardening_v342_r2.js
+          python tools/content_context_review_v343.py --check
+          python tools/apply_explanation_quality_v344_r2.py --check
+          python tools/apply_explanation_support_v344_r3.py --check
+          python tools/apply_explanation_support_v344_r4.py --check
+          python tools/apply_explanation_support_v344_r5.py --check
+          node tools/audit_explanation_quality_v344.js
+          python tools/apply_study_experience_v345.py --check
+          python tools/apply_study_experience_v345_r2.py --check
+          node tools/audit_study_experience_v345.js
+          python tools/apply_study_quality_v346.py --check
+          python tools/apply_study_quality_v346_r2.py --check
+          python tools/apply_study_quality_v346_r3.py --check
+          python tools/repair_future_terminology_v346.py --check
+          node tools/audit_study_quality_v346.js
+          python tools/audit_terminology_guard_v346.py
+          node tools/audit_learning_runtime_v348.js
+
+      - name: Diff integrity
+        run: git diff --check
+
+      - name: Existing real browser regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v349-regression-http.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3377/src/pwa/index.html > /dev/null; then break; fi
+            sleep 0.1
+          done
+          node tools/run_learning_home_v343_browser_smoke.js
+          node tools/run_explanation_quality_v344_browser_smoke.js
+          node tools/run_study_experience_v345_browser_smoke.js
+          node tools/run_study_quality_v346_browser_smoke.js
+          node tools/run_e2e_learning_flow_v347_browser_smoke.js
+
+      - name: V349 consumer UX real browser smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v349-http.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3377/src/pwa/index.html > /dev/null; then break; fi
+            sleep 0.1
+          done
+          node tools/run_consumer_ux_v349_browser_smoke.js
+
+      - name: Commit V349 generated integration if needed
+        if: success()
+        run: |
+          if git diff --quiet; then
+            echo "V349_ALREADY_CLEAN=True"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pwa/index.html
+          git commit -m "Integrate V349 consumer UX layer"
+          git push origin HEAD:agent/v349-consumer-ux-simplification
+          echo "V349_CHANGES_PUSHED=True"
