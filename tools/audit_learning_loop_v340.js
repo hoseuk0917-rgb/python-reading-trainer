@@ -17,7 +17,7 @@ const cards = [
 
 const conceptInfo = {
   print: { definition: "print는 값을 화면에 출력한다.", example: "print('hello')" },
-  len: { definition: "len은 항목 개수를 돌려준다.", example: "items = ['a', 'b']\nprint(len(items))" },
+  len: { definition: "len은 항목 개수를 돌려준다.", example: "items = ['a', 'b', 'c']\nprint(len(items))" },
   list: { definition: "list는 여러 값을 순서대로 담는다.", example: "items = ['a', 'b']\nprint(items[0])" },
   variable: { definition: "변수는 값을 가리키는 이름이다.", example: "x = 1\nprint(x)" },
   if: { definition: "if는 조건이 참일 때 블록을 실행한다.", example: "if True:\n    print('yes')" },
@@ -100,6 +100,7 @@ const mixedCards = [mixedCard];
 const primaryExample = engine.pickSafeExample(mixedCard, mixedCards, 0, conceptInfo, "len");
 assert.strictEqual(primaryExample.concept, "len");
 assert(/\blen\s*\(/.test(primaryExample.code));
+assert(engine.isWorkedExampleDistinct(mixedCard.code, primaryExample.code));
 pass("WORKED_EXAMPLE_PRIORITIZES_PRIMARY_CONCEPT");
 
 const primaryReview = engine.makeReviewVariant(mixedCard, mixedCards, 0, conceptInfo, { stage: 0, lapses: 1 }, "len");

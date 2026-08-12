@@ -321,7 +321,7 @@ Object.assign(conceptInfo, {
   "range": {definition: "range()는 반복할 숫자의 흐름을 만든다. range(3)은 0, 1, 2를 차례로 만든다.", example: "for i in range(3):\n    print(i)"},
   "break": {definition: "break는 현재 반복문을 바로 끝낸다. 반복 뒤의 코드는 계속 실행된다.", example: "for x in items:\n    if x == target:\n        break"},
   "continue": {definition: "continue는 현재 반복의 남은 줄을 건너뛰고 다음 반복으로 넘어간다.", example: "for x in items:\n    if not x:\n        continue"},
-  "tuple": {definition: "tuple은 여러 값을 순서대로 묶는 자료형이다. list와 비슷하지만 만든 뒤 항목을 바꿀 수 없다.", example: "point = (10, 20)"},
+  "tuple": {definition: "tuple은 여러 값을 순서대로 묶는 자료형이다. list와 비슷하지만 만든 뒤 항목을 바꿀 수 없다.", example: "coords = (4, 9)\nsecond = coords[1]\nprint(second)"},
   "index": {definition: "인덱스는 순서가 있는 자료에서 항목의 위치를 나타내는 번호다. Python의 첫 번째 위치는 0이다.", example: "items = [\"a\", \"b\"]\nprint(items[0])"},
   "key": {definition: "dict의 key는 값을 찾기 위한 이름표다. data[\"name\"]에서 \"name\"이 key다.", example: "data = {\"name\": \"Mina\"}"},
   "value": {definition: "value는 변수나 자료구조에 실제로 들어 있는 값이다. dict에서는 key를 이용해 연결된 value를 꺼낸다.", example: "data = {\"name\": \"Mina\"}"},

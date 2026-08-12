@@ -145,6 +145,57 @@
     }) || concepts[0] || "";
   }
 
+
+  function normalizeWorkedExampleCode(value) {
+    return String(value || "")
+      .replace(/\r\n/g, "\n")
+      .split("\n")
+      .map(function(line) { return line.trim(); })
+      .filter(Boolean)
+      .join("\n")
+      .replace(/[ \t]+/g, " ")
+      .trim();
+  }
+
+  function compactWorkedExampleCode(value) {
+    return normalizeWorkedExampleCode(value).replace(/\s+/g, "");
+  }
+
+  function workedExampleEditDistance(a, b) {
+    const aa = String(a || "");
+    const bb = String(b || "");
+    if (aa === bb) return 0;
+    if (!aa.length) return bb.length;
+    if (!bb.length) return aa.length;
+    let prev = Array.from({ length: bb.length + 1 }, function(_, index) { return index; });
+    for (let i = 1; i <= aa.length; i += 1) {
+      const cur = [i];
+      for (let j = 1; j <= bb.length; j += 1) {
+        const cost = aa[i - 1] === bb[j - 1] ? 0 : 1;
+        cur[j] = Math.min(cur[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+      }
+      prev = cur;
+    }
+    return prev[bb.length];
+  }
+
+  function workedExampleSimilarity(problemCode, exampleCode) {
+    const problem = compactWorkedExampleCode(problemCode);
+    const example = compactWorkedExampleCode(exampleCode);
+    const longest = Math.max(problem.length, example.length);
+    if (!longest) return 1;
+    return 1 - workedExampleEditDistance(problem, example) / longest;
+  }
+
+  function isWorkedExampleDistinct(problemCode, exampleCode) {
+    const problem = compactWorkedExampleCode(problemCode);
+    const example = compactWorkedExampleCode(exampleCode);
+    if (!problem || !example) return false;
+    if (problem === example) return false;
+    if (Math.min(problem.length, example.length) >= 20 && workedExampleSimilarity(problem, example) >= 0.92) return false;
+    return true;
+  }
+
   function pickSafeExample(card, cards, index, conceptInfo, primaryConceptOverride) {
     const allowed = allowedConceptsAt(cards, index);
     const candidates = [];
@@ -166,16 +217,11 @@
       });
     }
 
+    const problemCode = String(card && card.code || "");
     const safe = candidates.find(function(candidate) {
-      return exampleUsesOnlyKnownNamedSyntax(candidate.code, allowed);
+      return isWorkedExampleDistinct(problemCode, candidate.code) && exampleUsesOnlyKnownNamedSyntax(candidate.code, allowed);
     });
-    if (safe) return safe;
-
-    return {
-      concept: pickPrimaryConcept(card, conceptInfo),
-      code: String(card && card.code || ""),
-      source: "current-card"
-    };
+    return safe || null;
   }
 
   function exampleUsesOnlyKnownNamedSyntax(code, allowedConcepts) {
@@ -291,6 +337,8 @@
     buildSequentialSession: buildSequentialSession,
     pickPrimaryConcept: pickPrimaryConcept,
     pickSafeExample: pickSafeExample,
+    isWorkedExampleDistinct: isWorkedExampleDistinct,
+    workedExampleSimilarity: workedExampleSimilarity,
     exampleUsesOnlyKnownNamedSyntax: exampleUsesOnlyKnownNamedSyntax,
     syntaxHits: syntaxHits,
     makeReviewVariant: makeReviewVariant,
