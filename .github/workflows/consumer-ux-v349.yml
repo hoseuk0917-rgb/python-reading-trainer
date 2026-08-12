@@ -1,4 +1,4 @@
-name: consumer-ux-v349
+name: learning-flow-v350
 
 on:
   push:
@@ -10,14 +10,14 @@ permissions:
   contents: write
 
 concurrency:
-  group: consumer-ux-v349-branch
+  group: learning-flow-v350-branch
   cancel-in-progress: true
 
 jobs:
-  v349-consumer-ux:
+  v350-learning-flow:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout V349 branch
+      - name: Checkout V350 branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -28,27 +28,34 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Apply V349 integrations
+      - name: Apply V349 and V350 integrations
         run: |
           python tools/apply_consumer_ux_v349.py --apply
           python tools/apply_consumer_ux_v349_r2.py --apply
+          python tools/apply_learning_flow_v350.py --apply
 
-      - name: Confirm V349 integration idempotence
+      - name: Confirm integration idempotence
         run: |
           python tools/apply_consumer_ux_v349.py --check
           python tools/apply_consumer_ux_v349_r2.py --check
+          python tools/apply_learning_flow_v350.py --check
 
-      - name: V349 syntax checks
+      - name: V349 and V350 syntax checks
         run: |
-          python -m py_compile tools/apply_consumer_ux_v349.py tools/apply_consumer_ux_v349_r2.py
+          python -m py_compile tools/apply_consumer_ux_v349.py tools/apply_consumer_ux_v349_r2.py tools/apply_learning_flow_v350.py
           node --check src/pwa/consumer_ux_v349.js
           node --check src/pwa/consumer_ux_v349_compat_r2.js
+          node --check src/pwa/learning_flow_v350.js
           node --check tools/audit_consumer_ux_v349.js
-          node --check tools/consumer_ux_v349_browser_case.js
-          node --check tools/run_consumer_ux_v349_browser_smoke.js
+          node --check tools/audit_learning_flow_v350.js
+          node --check tools/learning_flow_v350_browser_case.js
+          node --check tools/run_learning_flow_v350_browser_smoke.js
 
       - name: V349 consumer UX contract audit
         run: node tools/audit_consumer_ux_v349.js
+
+      - name: V350 learning flow contract audit
+        run: node tools/audit_learning_flow_v350.js
 
       - name: Existing lesson validation
         run: python tools/validate_lessons.py
@@ -92,7 +99,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v349-regression-http.log 2>&1 &
+          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v350-regression-http.log 2>&1 &
           SERVER_PID=$!
           cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
           trap cleanup EXIT
@@ -106,11 +113,11 @@ jobs:
           node tools/run_study_quality_v346_browser_smoke.js
           node tools/run_e2e_learning_flow_v347_browser_smoke.js
 
-      - name: V349 consumer UX real browser smoke
+      - name: V350 learning flow real browser smoke
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v349-http.log 2>&1 &
+          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v350-http.log 2>&1 &
           SERVER_PID=$!
           cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
           trap cleanup EXIT
@@ -118,18 +125,18 @@ jobs:
             if curl -fsS http://127.0.0.1:3377/src/pwa/index.html > /dev/null; then break; fi
             sleep 0.1
           done
-          node tools/run_consumer_ux_v349_browser_smoke.js
+          node tools/run_learning_flow_v350_browser_smoke.js
 
-      - name: Commit V349 generated integration if needed
+      - name: Commit V350 generated integration if needed
         if: success()
         run: |
           if git diff --quiet; then
-            echo "V349_ALREADY_CLEAN=True"
+            echo "V350_ALREADY_CLEAN=True"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/pwa/index.html
-          git commit -m "Integrate V349 consumer UX layer"
+          git commit -m "Integrate V350 learning flow UX"
           git push origin HEAD:agent/v349-consumer-ux-simplification
-          echo "V349_CHANGES_PUSHED=True"
+          echo "V350_CHANGES_PUSHED=True"
