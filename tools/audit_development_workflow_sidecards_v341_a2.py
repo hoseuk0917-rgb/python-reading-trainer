@@ -9,10 +9,13 @@ ROOT = Path(__file__).resolve().parents[1]
 KO = ROOT / "data" / "reference_side_cards" / "python_development_workflow_side_cards_v341_a2.json"
 EN = ROOT / "data_i18n" / "en" / "reference_side_cards" / "python_development_workflow_side_cards_v341_a2.json"
 APP = ROOT / "src" / "pwa" / "app.js"
+INDEX = ROOT / "src" / "pwa" / "index.html"
 UI = ROOT / "src" / "pwa" / "learning_experience_v341.js"
 ENGINE = ROOT / "src" / "pwa" / "learning_engine_v341.js"
 
 VERSION = "v341_a2_development_workflow_reference_audit"
+V339_EPOCH = "20260812_v339_quality3"
+A2_EPOCH = "20260812_v341_a2"
 EXPECTED_IDS = {
     "DEVFLOW_OVERVIEW_001", "DEVFLOW_REQUIREMENT_001", "DEVFLOW_REPRODUCE_001",
     "DEVFLOW_BASELINE_001", "DEVFLOW_IMPACT_001", "DEVFLOW_BRANCH_001",
@@ -84,6 +87,7 @@ def main() -> int:
                 errors.append(f"DETAIL_TOO_LONG:{lang}:{cid}:{len(detail)}")
 
     app = APP.read_text(encoding="utf-8")
+    index = INDEX.read_text(encoding="utf-8")
     ui = UI.read_text(encoding="utf-8")
     engine = ENGINE.read_text(encoding="utf-8")
     side_path = '../../data/reference_side_cards/python_development_workflow_side_cards_v341_a2.json'
@@ -91,6 +95,15 @@ def main() -> int:
         errors.append(f"APP_REFERENCE_FILE_COUNT={app.count(side_path)}")
     if '../../data/side_cards/python_development_workflow_side_cards_v341_a2.json' in app:
         errors.append("REFERENCE_LEAKED_INTO_FROZEN_V339_SIDE_DIR")
+    if f'const CONTENT_QUALITY_DATA_EPOCH_V339 = "{V339_EPOCH}";' not in app:
+        errors.append("V339_HISTORICAL_DATA_EPOCH_NOT_PRESERVED")
+    expected_app_tag_fragment = f'app.js?v=20260812_v339_quality1&cq={V339_EPOCH}&le={A2_EPOCH}'
+    if expected_app_tag_fragment not in index:
+        errors.append("V341_A2_APP_CACHE_LAYER_MISSING")
+    if f'content_quality_semantics.js?v={V339_EPOCH}' not in index:
+        errors.append("V339_SEMANTIC_CACHE_LAYER_NOT_PRESERVED")
+    if 'learning_engine_v341.js?v=20260812_v341_a2' not in index or 'learning_experience_v341.js?v=20260812_v341_a2' not in index:
+        errors.append("V341_A2_RUNTIME_CACHE_LAYER_MISSING")
     if 'card.type === "development_workflow"' not in ui:
         errors.append("UI_REFERENCE_FILTER_MISSING")
     if 'developmentWorkflowReferenceV341' not in ui:
@@ -108,6 +121,7 @@ def main() -> int:
     print(f"AUDIT_VERSION={VERSION}")
     print(f"KO_REFERENCE_CARDS={len(ko)} EN_REFERENCE_CARDS={len(en)}")
     print("PHASE_COUNTS=" + ",".join(f"{k}:{EXPECTED_PHASES[k]}" for k in ("before", "during", "verify", "release")))
+    print(f"V339_EPOCH={V339_EPOCH} V341_A2_EPOCH={A2_EPOCH}")
     print(f"ERRORS={len(errors)}")
     for item in errors[:200]:
         print("ERROR=" + item)
