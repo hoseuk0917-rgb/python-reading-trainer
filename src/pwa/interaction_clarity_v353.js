@@ -8,11 +8,6 @@
     return document.documentElement.lang === "en" ? en : ko;
   }
 
-  function reducedMotion() {
-    try { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
-    catch (_) { return false; }
-  }
-
   function visible(el) {
     if (!el || el.hidden) return false;
     const style = window.getComputedStyle(el);
@@ -50,20 +45,28 @@
     return true;
   }
 
+  function alignSupportRegion(support) {
+    if (!support || !visible(support)) return false;
+    const targetTop = Math.max(0, support.getBoundingClientRect().top + window.scrollY - 10);
+    try { window.scrollTo({ top: targetTop, left: 0, behavior: "auto" }); }
+    catch (_) { window.scrollTo(0, targetTop); }
+    return true;
+  }
+
   function focusSupportRegion() {
     const support = document.getElementById("learningSupportRegionV349");
     const toggle = document.getElementById("learningSupportToggleV349");
     if (!support || !toggle || toggle.getAttribute("aria-expanded") !== "true" || !visible(support)) return false;
     support.setAttribute("tabindex", "-1");
     support.classList.add("v353-support-arrival");
-    try {
-      support.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth", block: "start" });
-    } catch (_) {
-      support.scrollIntoView();
-    }
+
+    /* Immediate positioning is intentional: the button is far from the support area on mobile. */
+    alignSupportRegion(support);
+    window.setTimeout(function () { alignSupportRegion(support); }, 90);
     window.setTimeout(function () {
       try { support.focus({ preventScroll: true }); } catch (_) { try { support.focus(); } catch (_) {} }
-    }, reducedMotion() ? 0 : 180);
+      alignSupportRegion(support);
+    }, 140);
     window.setTimeout(function () { support.classList.remove("v353-support-arrival"); }, 1300);
     return true;
   }
