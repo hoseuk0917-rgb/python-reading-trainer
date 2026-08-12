@@ -2,11 +2,12 @@
 (function () {
   "use strict";
 
-  const VERSION = "v347_a7";
+  const VERSION = "v347_a8";
   const REVIEW_KEY = "python-reading-trainer-review-v340";
   const dialogOpeners = new WeakMap();
   let lastOutsideFocus = null;
   let pendingReviewOpener = null;
+  let activeFocusLease = null;
 
   function loadReviewState() {
     try {
@@ -156,72 +157,65 @@
     return document.activeElement === target;
   }
 
-  function restoreStableSemanticFocus(descriptor, root, onSuccess) {
-    if (!descriptor) return;
-    let stopped = false;
-    let scheduled = false;
-    let attempts = 0;
-    let stableTarget = null;
-    let stableFrames = 0;
-    let mutationRevision = 0;
-    const observedRoot = root || document.documentElement;
+  function cancelFocusLease() {
+    const lease = activeFocusLease;
+    if (!lease) return;
+    lease.cancelled = true;
+    try { lease.observer.disconnect(); } catch (_) {}
+    activeFocusLease = null;
+  }
 
-    function finish() {
-      if (stopped) return;
-      stopped = true;
-      observer.disconnect();
-      if (typeof onSuccess === "function") onSuccess();
-    }
+  function startSemanticFocusLease(descriptor, root, onFirstSuccess) {
+    if (!descriptor) return;
+    cancelFocusLease();
+
+    const observedRoot = root || document.documentElement;
+    const lease = {
+      cancelled: false,
+      scheduled: false,
+      initialAttempts: 0,
+      firstSuccess: false,
+      observer: null
+    };
+    activeFocusLease = lease;
 
     function schedule() {
-      if (stopped || scheduled) return;
-      scheduled = true;
+      if (lease.cancelled || lease.scheduled) return;
+      lease.scheduled = true;
       window.requestAnimationFrame(function () {
-        scheduled = false;
-        if (stopped) return;
-        attempts += 1;
-        const revisionBefore = mutationRevision;
+        lease.scheduled = false;
+        if (lease.cancelled) return;
+        lease.initialAttempts += 1;
         const target = resolveControl(descriptor);
         if (!target || !controlVisible(target)) {
-          stableTarget = null;
-          stableFrames = 0;
-          if (attempts < 12) schedule();
-          else observer.disconnect();
+          if (!lease.firstSuccess && lease.initialAttempts < 12) schedule();
           return;
         }
 
         try { target.focus({ preventScroll: true }); } catch (_) {}
         window.requestAnimationFrame(function () {
-          if (stopped) return;
+          if (lease.cancelled) return;
           const current = resolveControl(descriptor);
-          const stable = mutationRevision === revisionBefore
-            && current === target
-            && target.isConnected
-            && controlVisible(target)
-            && document.activeElement === target;
-          if (stable) {
-            stableFrames = stableTarget === target ? stableFrames + 1 : 1;
-            stableTarget = target;
-            if (stableFrames >= 2) {
-              finish();
-              return;
-            }
-          } else {
-            stableTarget = null;
-            stableFrames = 0;
+          const focused = current === target && target.isConnected && controlVisible(target) && document.activeElement === target;
+          if (focused && !lease.firstSuccess) {
+            lease.firstSuccess = true;
+            if (typeof onFirstSuccess === "function") onFirstSuccess();
+          } else if (!lease.firstSuccess && lease.initialAttempts < 12) {
+            schedule();
           }
-          if (attempts < 12) schedule();
-          else observer.disconnect();
         });
       });
     }
 
-    const observer = new MutationObserver(function () {
-      mutationRevision += 1;
-      stableFrames = 0;
-      schedule();
+    lease.observer = new MutationObserver(function () {
+      if (!lease.cancelled) schedule();
     });
-    observer.observe(observedRoot, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "hidden", "aria-hidden", "disabled"] });
+    lease.observer.observe(observedRoot, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class", "hidden", "aria-hidden", "disabled"]
+    });
     schedule();
   }
 
@@ -238,9 +232,6 @@
         if (progressTab) progressTab.click();
       } catch (_) {}
     }
-    try {
-      if (window.StudyQualityV346 && typeof window.StudyQualityV346.refresh === "function") window.StudyQualityV346.refresh();
-    } catch (_) {}
   }
 
   function restoreDialogFocus(modal) {
@@ -250,13 +241,13 @@
     dialogOpeners.delete(modal);
     if (!descriptor) return;
 
-    // V346 moves from Progress to Learn before delegating to the V340 review.
-    // When that delegated review closes, restore the origin view first and then
-    // follow the current semantic button across any V346 rerenders until focus
-    // remains stable for two paint turns. Direct V340 reviews keep their view.
+    // V346 can replace its action button several times after returning to the
+    // Progress view (queued refreshes + progress mutation observer). Keep a
+    // semantic focus lease through those replacements, then release it on the
+    // learner's next real input so later UI refreshes cannot steal focus.
     if (explicitReviewOpener) {
       returnToProgressForReviewOrigin();
-      restoreStableSemanticFocus(descriptor, document.getElementById("progressDashboard") || document.documentElement, function () {
+      startSemanticFocusLease(descriptor, document.getElementById("progressDashboard") || document.documentElement, function () {
         pendingReviewOpener = null;
       });
       return;
@@ -291,6 +282,9 @@
     const selectors = ["#reviewModalV340", "#syntaxModalV340", "#missionModalV341"];
     const known = new Map();
 
+    document.addEventListener("pointerdown", function () { cancelFocusLease(); }, true);
+    document.addEventListener("click", function () { cancelFocusLease(); }, true);
+    document.addEventListener("keydown", function () { cancelFocusLease(); }, true);
     document.addEventListener("click", captureV346ReviewOpener, true);
 
     document.addEventListener("focusin", function (event) {
