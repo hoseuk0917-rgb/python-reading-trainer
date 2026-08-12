@@ -2,9 +2,10 @@
 (function () {
   "use strict";
 
-  const VERSION = "v347_a2";
+  const VERSION = "v347_a3";
   const REVIEW_KEY = "python-reading-trainer-review-v340";
   const dialogOpeners = new WeakMap();
+  let lastOutsideFocus = null;
 
   function loadReviewState() {
     try {
@@ -73,6 +74,45 @@
     return !!modal && !modal.classList.contains("hidden") && modal.getAttribute("aria-hidden") !== "true";
   }
 
+  function insideTrackedDialog(element) {
+    if (!element || !element.closest) return false;
+    return !!element.closest("#reviewModalV340, #syntaxModalV340, #missionModalV341");
+  }
+
+  function describeControl(element) {
+    if (!element || element === document.body || typeof element.focus !== "function") return null;
+    return {
+      element: element,
+      id: element.id || "",
+      action: element.dataset ? (element.dataset.action || "") : "",
+      checkpoint: element.dataset ? (element.dataset.missionCheckpointV341 || "") : "",
+      moduleId: element.dataset ? (element.dataset.practiceModuleV341 || "") : "",
+      view: element.dataset ? (element.dataset.view || "") : ""
+    };
+  }
+
+  function findByData(attribute, value) {
+    if (!value) return null;
+    const nodes = document.querySelectorAll("[" + attribute + "]");
+    for (const node of nodes) {
+      if (node.getAttribute(attribute) === value) return node;
+    }
+    return null;
+  }
+
+  function resolveControl(descriptor) {
+    if (!descriptor) return null;
+    if (descriptor.element && descriptor.element.isConnected && typeof descriptor.element.focus === "function") return descriptor.element;
+    if (descriptor.id) {
+      const byId = document.getElementById(descriptor.id);
+      if (byId && typeof byId.focus === "function") return byId;
+    }
+    return findByData("data-action", descriptor.action)
+      || findByData("data-mission-checkpoint-v341", descriptor.checkpoint)
+      || findByData("data-practice-module-v341", descriptor.moduleId)
+      || findByData("data-view", descriptor.view);
+  }
+
   function firstDialogControl(modal) {
     if (!modal) return null;
     return modal.querySelector(
@@ -85,7 +125,10 @@
   function focusDialog(modal) {
     if (!modal || !isOpenDialog(modal)) return false;
     const active = document.activeElement;
-    if (active && active !== document.body && !modal.contains(active)) dialogOpeners.set(modal, active);
+    if (!dialogOpeners.has(modal)) {
+      const activeDescriptor = active && active !== document.body && !modal.contains(active) ? describeControl(active) : null;
+      dialogOpeners.set(modal, activeDescriptor || lastOutsideFocus);
+    }
     if (active && modal.contains(active)) return true;
     const target = firstDialogControl(modal);
     if (!target || typeof target.focus !== "function") return false;
@@ -95,11 +138,12 @@
 
   function restoreDialogFocus(modal) {
     if (!modal) return;
-    const opener = dialogOpeners.get(modal);
+    const descriptor = dialogOpeners.get(modal) || lastOutsideFocus;
     dialogOpeners.delete(modal);
-    if (!opener || !opener.isConnected || typeof opener.focus !== "function") return;
     window.setTimeout(function () {
-      try { opener.focus({ preventScroll: true }); } catch (_) {}
+      const target = resolveControl(descriptor);
+      if (!target) return;
+      try { target.focus({ preventScroll: true }); } catch (_) {}
     }, 0);
   }
 
@@ -108,6 +152,7 @@
     const close = modal.querySelector(".modal-v340-close");
     if (close && typeof close.click === "function") {
       close.click();
+      window.setTimeout(function () { restoreDialogFocus(modal); }, 0);
       return true;
     }
     modal.classList.add("hidden");
@@ -119,6 +164,13 @@
     if (window.__learningFlowV347DialogHardening) return;
     const selectors = ["#reviewModalV340", "#syntaxModalV340", "#missionModalV341"];
     const known = new Map();
+
+    document.addEventListener("focusin", function (event) {
+      const target = event.target;
+      if (!target || target === document.body || insideTrackedDialog(target)) return;
+      const descriptor = describeControl(target);
+      if (descriptor) lastOutsideFocus = descriptor;
+    }, true);
 
     function scan() {
       selectors.forEach(function (selector) {
