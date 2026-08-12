@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>V343 smoke</title></head>
+<body>
+<pre id="report">RUNNING</pre>
+<iframe id="app" src="../src/pwa/index.html?lang=ko&v343smoke=1" style="width:100%;height:900px;border:0"></iframe>
+<script>
+(async function() {
+  const report = document.getElementById('report');
+  const frame = document.getElementById('app');
+  const lines = ['=== PRT V343 LEARNING HOME REAL BROWSER CASE ==='];
+  let failed = false;
+  function add(name, ok, detail) { lines.push(name + '=' + (ok ? 'PASS' : 'FAIL') + ' DETAIL=' + detail); if (!ok) failed = true; }
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  async function waitFor(fn, timeout=12000) { const start=Date.now(); while (Date.now()-start<timeout) { try { const v=fn(); if(v) return v; } catch(_) {} await sleep(60); } return null; }
+  async function waitLoad() { return new Promise(resolve => { const done=()=>resolve(); frame.addEventListener('load', done, {once:true}); setTimeout(resolve, 12000); }); }
+  function win() { return frame.contentWindow; }
+  function doc() { return frame.contentDocument; }
+  function evalIn(code) { return win().eval(code); }
+
+  await waitFor(() => doc() && doc().documentElement.dataset.learningHomeV343 === 'v343_a1');
+  const total = Number(evalIn('cards.length'));
+  const ids = evalIn('cards.slice(0,2).map(function(c){return c.id;})');
+  const now = new Date().toISOString();
+  const p = {seen:{},correct:{},confused:{},lastSeenAt:{}};
+  ids.forEach(id => { p.seen[id]=1; p.correct[id]=1; p.lastSeenAt[id]=now; });
+  win().localStorage.setItem('python-reading-trainer-progress-v1', JSON.stringify(p));
+  const loaded = waitLoad();
+  frame.src = '../src/pwa/index.html?lang=ko&v343smoke=2';
+  await loaded;
+  await waitFor(() => doc() && doc().documentElement.dataset.learningHomeV343 === 'v343_a1');
+
+  add('TOTAL_CARDS', total === 1785, total);
+  add('DEFAULT_HOME_MODE', doc().getElementById('learnView').classList.contains('v343-home-mode'), doc().documentElement.dataset.learningHomeModeV343 || '');
+  const home = doc().getElementById('learningHomeV343');
+  add('HOME_VISIBLE', !!home && !home.classList.contains('hidden'), !!home);
+  const nextTitle = home ? (home.querySelector('.home-v343-next-title') || {}).textContent || '' : '';
+  add('HOME_NEXT_IS_CARD_3', nextTitle.includes('3 / 1785'), nextTitle);
+  const primary = home && home.querySelector('.home-v343-primary');
+  add('CONTINUE_LABEL_IS_CARD_3', !!primary && primary.textContent.includes('3번'), primary ? primary.textContent : 'missing');
+  add('OLD_PATH_HIDDEN_ON_HOME', (() => { const x=doc().getElementById('learningPathV340'); return !x || getComputedStyle(x).display==='none'; })(), 'checked');
+
+  if (primary) primary.click();
+  await waitFor(() => doc().documentElement.dataset.learningHomeModeV343 === 'quiz' && doc().getElementById('progressText').textContent.includes('3 / 1785'));
+  add('CONTINUE_OPENS_CARD_3', doc().getElementById('progressText').textContent.includes('3 / 1785'), doc().getElementById('progressText').textContent);
+  add('QUIZ_QUICK_STRIP_VISIBLE', !!doc().getElementById('learningQuickV343'), 'quick-strip');
+
+  const learnTab = doc().querySelector('.tab-btn[data-view="learn"]');
+  if (learnTab) learnTab.click();
+  await waitFor(() => doc().documentElement.dataset.learningHomeModeV343 === 'home');
+  add('LEARN_TAB_RETURNS_HOME', doc().documentElement.dataset.learningHomeModeV343 === 'home', doc().documentElement.dataset.learningHomeModeV343 || '');
+
+  evalIn('currentIndex=0; renderCard(); setView("learn")');
+  await waitFor(() => doc().documentElement.dataset.learningHomeModeV343 === 'quiz');
+  add('INTENTIONAL_BROWSE_NOT_FORCED_TO_NEXT', doc().getElementById('progressText').textContent.includes('1 / 1785'), doc().getElementById('progressText').textContent);
+
+  const root = doc().documentElement;
+  add('NO_HORIZONTAL_OVERFLOW', root.scrollWidth <= root.clientWidth + 1, root.scrollWidth + '/' + root.clientWidth);
+  add('ONE_HOME', doc().querySelectorAll('#learningHomeV343').length === 1, doc().querySelectorAll('#learningHomeV343').length);
+
+  lines.push('RESULT=' + (failed ? 'FAIL_LEARNING_HOME_V343_REAL_BROWSER_CASE' : 'PASS_LEARNING_HOME_V343_REAL_BROWSER_CASE'));
+  report.textContent = lines.join('\n');
+})();
+</script>
+</body>
+</html>
