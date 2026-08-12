@@ -2,10 +2,11 @@
 (function () {
   "use strict";
 
-  const VERSION = "v347_a4";
+  const VERSION = "v347_a5";
   const REVIEW_KEY = "python-reading-trainer-review-v340";
   const dialogOpeners = new WeakMap();
   let lastOutsideFocus = null;
+  let pendingReviewOpener = null;
 
   function loadReviewState() {
     try {
@@ -126,8 +127,9 @@
     if (!modal || !isOpenDialog(modal)) return false;
     const active = document.activeElement;
     if (!dialogOpeners.has(modal)) {
+      const explicitReviewOpener = modal.id === "reviewModalV340" ? pendingReviewOpener : null;
       const activeDescriptor = active && active !== document.body && !modal.contains(active) ? describeControl(active) : null;
-      dialogOpeners.set(modal, activeDescriptor || lastOutsideFocus);
+      dialogOpeners.set(modal, explicitReviewOpener || activeDescriptor || lastOutsideFocus);
     }
     if (active && modal.contains(active)) return true;
     const target = firstDialogControl(modal);
@@ -145,21 +147,18 @@
 
   function restoreDialogFocus(modal) {
     if (!modal) return;
-    const descriptor = dialogOpeners.get(modal) || lastOutsideFocus;
+    const explicitReviewOpener = modal.id === "reviewModalV340" ? pendingReviewOpener : null;
+    const descriptor = explicitReviewOpener || dialogOpeners.get(modal) || lastOutsideFocus;
     dialogOpeners.delete(modal);
     if (!descriptor) return;
 
     // Hiding a focused modal can move focus to BODY after the mutation itself.
-    // Restore only after two paint turns, then retry once if the browser's own
-    // hidden-focus cleanup wins the first race. Each attempt resolves the current
-    // semantic control so a rerendered button is handled safely.
+    // Resolve the current semantic control after two paint turns so rerendered
+    // action buttons are targeted rather than stale DOM elements.
     window.requestAnimationFrame(function () {
       window.requestAnimationFrame(function () {
-        focusResolvedControl(descriptor);
-        window.setTimeout(function () {
-          const active = document.activeElement;
-          if (active === document.body || insideTrackedDialog(active)) focusResolvedControl(descriptor);
-        }, 80);
+        const restored = focusResolvedControl(descriptor);
+        if (restored && modal.id === "reviewModalV340") pendingReviewOpener = null;
       });
     });
   }
@@ -177,10 +176,20 @@
     return true;
   }
 
+  function captureV346ReviewOpener(event) {
+    const button = event.target && event.target.closest ? event.target.closest("#nextActionPrimaryV346") : null;
+    if (!button) return;
+    const panel = button.closest("#nextActionV346");
+    if (!panel || panel.dataset.kind !== "review") return;
+    pendingReviewOpener = describeControl(button);
+  }
+
   function installDialogHardening() {
     if (window.__learningFlowV347DialogHardening) return;
     const selectors = ["#reviewModalV340", "#syntaxModalV340", "#missionModalV341"];
     const known = new Map();
+
+    document.addEventListener("click", captureV346ReviewOpener, true);
 
     document.addEventListener("focusin", function (event) {
       const target = event.target;
