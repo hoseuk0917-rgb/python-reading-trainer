@@ -8,6 +8,10 @@
     return document.documentElement.lang === "en" ? en : ko;
   }
 
+  function setText(el, value) {
+    if (el && el.textContent !== value) el.textContent = value;
+  }
+
   function navigate(viewName, options) {
     try {
       if (window.ConsumerUxV349 && typeof window.ConsumerUxV349.navigate === "function") {
@@ -47,7 +51,7 @@
       topbar.appendChild(wrap);
     }
     const originalText = String(original.textContent || "").replace(/\s+/g, " ").trim();
-    button.textContent = originalText || (document.documentElement.lang === "en" ? "KO" : "EN");
+    setText(button, originalText || (document.documentElement.lang === "en" ? "KO" : "EN"));
     button.setAttribute("aria-label", t("언어 전환", "Switch language"));
     return true;
   }
@@ -135,7 +139,7 @@
     });
     const primary = shell.querySelector(".home-v343-primary");
     if (primary && /^(실전 열기|Open practice)$/.test(String(primary.textContent || "").trim())) {
-      primary.textContent = t("배운 내용 연습 시작", "Start practice");
+      setText(primary, t("배운 내용 연습 시작", "Start practice"));
     }
     return true;
   }
@@ -173,7 +177,7 @@
     }
     const title = host.querySelector("h1");
     if (title && /^(실전|Practice)$/.test(String(title.textContent || "").trim())) {
-      title.textContent = t("배운 내용 연습", "Practice what you learned");
+      setText(title, t("배운 내용 연습", "Practice what you learned"));
     }
 
     const isPractice = activeViewName() === "practice";
