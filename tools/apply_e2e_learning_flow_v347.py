@@ -10,12 +10,13 @@ ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "src" / "pwa" / "index.html"
 RUNTIME = ROOT / "src" / "pwa" / "learning_flow_hardening_v347.js"
 ANCHOR = '  <script src="./study_progress_v346.js?v=20260812_v346_a1"></script>'
-SCRIPT = '  <script src="./learning_flow_hardening_v347.js?v=20260812_v347_a5"></script>'
+SCRIPT = '  <script src="./learning_flow_hardening_v347.js?v=20260812_v347_a6"></script>'
 OLD_SCRIPTS = [
     '  <script src="./learning_flow_hardening_v347.js?v=20260812_v347_a1"></script>',
     '  <script src="./learning_flow_hardening_v347.js?v=20260812_v347_a2"></script>',
     '  <script src="./learning_flow_hardening_v347.js?v=20260812_v347_a3"></script>',
     '  <script src="./learning_flow_hardening_v347.js?v=20260812_v347_a4"></script>',
+    '  <script src="./learning_flow_hardening_v347.js?v=20260812_v347_a5"></script>',
 ]
 
 
@@ -61,7 +62,7 @@ def main() -> int:
     valid = validate(actual)
     idempotent = planned_text(actual) == actual
 
-    print("PATCH_VERSION=v347_a5")
+    print("PATCH_VERSION=v347_a6")
     print(f"APPLY={args.apply}")
     print(f"CHANGES={changes}")
     print(f"VALID={valid}")
