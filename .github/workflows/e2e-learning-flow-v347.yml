@@ -42,18 +42,19 @@ jobs:
       - name: Confirm V347 checkpoint lifecycle harness idempotence
         run: python tools/apply_e2e_learning_flow_v347_r3.py --check
 
-      - name: Apply V347 review-focus diagnostics
-        run: python tools/apply_e2e_learning_flow_v347_r4.py --apply
+      - name: Apply V347 exact viewport harness patch
+        run: python tools/apply_e2e_learning_flow_v347_r5.py --apply
 
-      - name: Confirm V347 review-focus diagnostics idempotence
-        run: python tools/apply_e2e_learning_flow_v347_r4.py --check
+      - name: Confirm V347 exact viewport harness idempotence
+        run: python tools/apply_e2e_learning_flow_v347_r5.py --check
 
-      - name: V347 harness syntax
+      - name: V347 syntax checks
         run: |
-          python -m py_compile tools/apply_e2e_learning_flow_v347.py tools/apply_e2e_learning_flow_v347_r2.py tools/apply_e2e_learning_flow_v347_r3.py tools/apply_e2e_learning_flow_v347_r4.py
+          python -m py_compile tools/apply_e2e_learning_flow_v347.py tools/apply_e2e_learning_flow_v347_r2.py tools/apply_e2e_learning_flow_v347_r3.py tools/apply_e2e_learning_flow_v347_r5.py
           node --check src/pwa/learning_flow_hardening_v347.js
           node --check tools/e2e_learning_flow_v347_browser_case.js
           node --check tools/run_e2e_learning_flow_v347_browser_smoke.js
+          node --check tools/audit_e2e_learning_flow_v347.js
 
       - name: Existing lesson validation
         run: python tools/validate_lessons.py
@@ -104,8 +105,28 @@ jobs:
           node tools/audit_study_quality_v346.js
           python tools/audit_terminology_guard_v346.py
 
+      - name: V347 release contract audit
+        run: node tools/audit_e2e_learning_flow_v347.js
+
       - name: Diff integrity
         run: git diff --check
+
+      - name: V343 through V346 real browser regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v347-regression-http.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3377/src/pwa/index.html > /dev/null; then break; fi
+            sleep 0.1
+          done
+          node tools/run_learning_home_v343_browser_smoke.js
+          node tools/run_explanation_quality_v344_browser_smoke.js
+          node tools/run_study_experience_v345_browser_smoke.js
+          node tools/run_study_quality_v346_browser_smoke.js
 
       - name: V347 real browser end-to-end journey
         shell: bash
@@ -131,6 +152,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/pwa/index.html tools/e2e_learning_flow_v347_browser_case.js
-          git commit -m "Apply V347 learning flow integration"
+          git commit -m "Apply V347 learning flow release integration"
           git push origin HEAD:feat/e2e-learning-flow-v347
           echo "V347_CHANGES_PUSHED=True"
