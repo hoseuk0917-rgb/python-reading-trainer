@@ -17,6 +17,26 @@
   function win() { return frame.contentWindow; }
   function doc() { return frame.contentDocument; }
   function evalIn(code) { return win().eval(code); }
+  function overflowOffenders() {
+    const d = doc();
+    const width = d.documentElement.clientWidth;
+    return Array.from(d.querySelectorAll('body *')).map(function(el) {
+      const r = el.getBoundingClientRect();
+      return {
+        tag: el.tagName.toLowerCase(),
+        id: el.id || '',
+        cls: String(el.className || '').slice(0,100),
+        left: Math.round(r.left),
+        right: Math.round(r.right),
+        width: Math.round(r.width),
+        scrollWidth: el.scrollWidth,
+        clientWidth: el.clientWidth,
+        overflowX: getComputedStyle(el).overflowX
+      };
+    }).filter(function(row) {
+      return row.right > width + 1 || row.left < -1 || row.scrollWidth > row.clientWidth + 1 && row.overflowX === 'visible';
+    }).sort(function(a,b) { return (b.right-width)-(a.right-width); }).slice(0,12);
+  }
 
   await waitFor(() => doc() && doc().documentElement.dataset.learningHomeV343 === 'v343_a1');
   const total = Number(evalIn('cards.length'));
@@ -55,7 +75,9 @@
   add('INTENTIONAL_BROWSE_NOT_FORCED_TO_NEXT', doc().getElementById('progressText').textContent.includes('1 / 1785'), doc().getElementById('progressText').textContent);
 
   const root = doc().documentElement;
-  add('NO_HORIZONTAL_OVERFLOW', root.scrollWidth <= root.clientWidth + 1, root.scrollWidth + '/' + root.clientWidth);
+  const overflowOk = root.scrollWidth <= root.clientWidth + 1;
+  add('NO_HORIZONTAL_OVERFLOW', overflowOk, root.scrollWidth + '/' + root.clientWidth);
+  if (!overflowOk) lines.push('OVERFLOW_OFFENDERS=' + JSON.stringify(overflowOffenders()));
   add('ONE_HOME', doc().querySelectorAll('#learningHomeV343').length === 1, doc().querySelectorAll('#learningHomeV343').length);
 
   lines.push('RESULT=' + (failed ? 'FAIL_LEARNING_HOME_V343_REAL_BROWSER_CASE' : 'PASS_LEARNING_HOME_V343_REAL_BROWSER_CASE'));
