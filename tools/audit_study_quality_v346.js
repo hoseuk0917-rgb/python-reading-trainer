@@ -25,7 +25,12 @@ check("NEXT_ACTION_USES_V340_REVIEW_ACTION", runtime.includes("#learningPathV340
 check("NEXT_ACTION_USES_V341_CHECKPOINT", runtime.includes("unlockedCheckpointCount") && runtime.includes("completedCheckpoints"), "pending checkpoint state");
 check("NEXT_ACTION_FIXED_SEQUENCE", runtime.includes("firstUnseenIndex") && runtime.includes("nextCardTitle"), "first unseen new card");
 check("NEXT_ACTION_USES_V343_SEQUENTIAL_API", runtime.includes('typeof window.openSequentialLearningV343 === "function"') && runtime.includes("window.openSequentialLearningV343();"), "canonical V343 sequential-learning route");
-check("NEXT_ACTION_NO_FIXED_HOME_DELAY", !/function openLearningCard\(\)[\s\S]*?setTimeout[\s\S]*?home-v343-primary/.test(runtime), "no timing-dependent home-button route");
+const openLearningStart = runtime.indexOf("function openLearningCard()");
+const startDueReviewStart = runtime.indexOf("function startDueReview()", openLearningStart);
+const openLearningBlock = openLearningStart >= 0 && startDueReviewStart > openLearningStart
+  ? runtime.slice(openLearningStart, startDueReviewStart)
+  : "";
+check("NEXT_ACTION_NO_FIXED_HOME_DELAY", !!openLearningBlock && !openLearningBlock.includes("setTimeout") && !openLearningBlock.includes("home-v343-primary"), "no timing-dependent home-button route");
 check("TODAY_SUMMARY_REUSES_V345", runtime.includes("StudyExperienceV345.showSessionSummary"), "existing summary API");
 check("PROGRESS_RUNTIME_READ_ONLY", !/localStorage\.setItem|sessionStorage\.setItem|saveProgress\s*\(/.test(runtime), "V346 does not write learning state");
 const visibleRewardTerms = /["'`](?:[^"'`]*(?:\bXP\b|coins?|loot|developer badge|achievement badge|배지|코인|전리품)[^"'`]*)["'`]/i;
