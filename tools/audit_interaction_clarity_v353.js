@@ -26,13 +26,13 @@ check("SUPPORT_INACTIVE_BY_ARIA", css.includes('#learningSupportToggleV349[aria-
 check("DUPLICATE_HELP_HIDDEN", css.includes("#focusHelpV345") && css.includes("display: none !important"));
 check("META_COPY_REMOVED", css.includes(".concept-intro-note-v306") && css.includes(".mobile-sidecards-note") && css.includes(".side-section-note"));
 check("SUPPORT_TOGGLE_MOVED_TO_CONTROL_CLUSTER", js.includes('support.parentElement !== bar') && js.includes('bar.appendChild(support)'));
-check("SUPPORT_INLINE_PORTAL_CREATED", js.includes('portal.id = "learningSupportInlineV353"') && js.includes('bar.insertAdjacentElement("afterend", portal)'));
-check("SUPPORT_LIVE_CONTENT_PORTALED", js.includes('while (support.firstChild) portal.appendChild(support.firstChild)'));
-check("LEGACY_SUPPORT_SHELL_PRESERVED", js.includes('support.classList.add("v353-ported-out")') && !js.includes('bar.insertAdjacentElement("afterend", support)'));
-check("SUPPORT_ARIA_CONTROLS_PORTAL", js.includes('toggle.setAttribute("aria-controls", "learningSupportInlineV353")') && js.includes('toggle.setAttribute("aria-controls", "learningSupportRegionV349")'));
-check("SUPPORT_IMMEDIATE_POSITIONING", js.includes("alignSupportSurface") && js.includes("window.scrollTo") && js.includes('behavior: "auto"'));
-check("SUPPORT_FOCUS_AFTER_POSITION", js.includes('surface.focus({ preventScroll: true })') && js.includes("alignSupportSurface(surface)"));
-check("SUPPORT_RESTORES_LIVE_CHILDREN", js.includes('while (portal.firstChild) support.appendChild(portal.firstChild)'));
+check("SUPPORT_USES_EXISTING_LIVE_REGION", js.includes('document.getElementById("learningSupportRegionV349")') && !js.includes("learningSupportInlineV353"));
+check("SUPPORT_SHEET_STATE_CLASS", js.includes('support.classList.toggle("v353-manual-support-sheet", sheet)'));
+check("SUPPORT_SHEET_FIXED_MOBILE", css.includes("#learningSupportRegionV349.v353-manual-support-sheet") && css.includes("position: fixed !important") && css.includes("max-height: min(62vh, 560px)"));
+check("SUPPORT_SHEET_NAV_CLEARANCE", css.includes("bottom: calc(84px + env(safe-area-inset-bottom, 0px))"));
+check("SUPPORT_FOCUS", js.includes('support.focus({ preventScroll: true })'));
+check("SUPPORT_ARIA_CONTROLS_STABLE", js.includes('support.setAttribute("aria-controls", "learningSupportRegionV349")'));
+check("NO_CONTENT_PORTAL_OR_COPY", !/appendChild\(support\.firstChild\)|cloneNode\(|learningSupportInlineV353/.test(js));
 check("NO_STORAGE_MUTATION", !/localStorage\.(?:setItem|removeItem|clear)|sessionStorage\.(?:setItem|removeItem|clear)/.test(js));
 check("NO_LEARNING_STATE_MUTATION", !/\b(?:correct|confused|seen|currentIndex)\s*[=+]/.test(js));
 
