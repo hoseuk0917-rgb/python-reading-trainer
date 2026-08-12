@@ -39,8 +39,12 @@ def dedupe_paragraphs(value: object) -> tuple[str, int]:
     return "\n\n".join(out), removed
 
 
+def split_sentences(text: str) -> list[str]:
+    return [s.strip() for s in re.split(r"(?<=[.!?。다요])\s+", str(text or "")) if s.strip()]
+
+
 def sentence_lengths(text: str) -> list[int]:
-    return [len(s.strip()) for s in re.split(r"(?<=[.!?。다요])\s+", text) if s.strip()]
+    return [len(s) for s in split_sentences(text)]
 
 
 def load_cards(root: Path) -> tuple[list[tuple[Path, dict]], list[str]]:
@@ -61,13 +65,14 @@ def load_cards(root: Path) -> tuple[list[tuple[Path, dict]], list[str]]:
     return cards, errors
 
 
-def card_risks(card: dict, lang: str) -> list[str]:
-    """Return contextual-review signals only.
+def anchor_text(value: object) -> str:
+    text = str(value or "").lower()
+    text = re.sub(r"[_\-./]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
 
-    Structural validity (required fields, answer/choice normalization, side-card refs,
-    levels, etc.) remains authoritative in tools/validate_lessons.py.  This V343
-    review intentionally does not redefine those contracts with a second parser.
-    """
+
+def card_risks(card: dict, lang: str) -> list[str]:
+    """Contextual/educational signals only; canonical structure stays in validate_lessons.py."""
     risks: list[str] = []
     title = norm(card.get("title"))
     goal = norm(card.get("reading_goal"))
@@ -84,7 +89,9 @@ def card_risks(card: dict, lang: str) -> list[str]:
     if title and q and title == q:
         risks.append("title_equals_question")
 
-    choices = [norm(v) for v in card.get("choices", [])]
+    # Preserve whitespace and case here. Cards such as " hi " vs "hi" and
+    # "YES" vs "yes" intentionally test exactly those differences.
+    choices = [str(v) for v in card.get("choices", [])]
     if len(choices) != len(set(choices)):
         risks.append("duplicate_choices_candidate")
     if not exp:
@@ -98,32 +105,54 @@ def card_risks(card: dict, lang: str) -> list[str]:
     if any(length > dense_limit for length in sentence_lengths(str(card.get("explanation") or ""))):
         risks.append("dense_explanation_sentence")
 
-    # This is deliberately a weak signal. A declared concept can be valid even if
-    # its literal tag never appears, so findings go to the review queue, not FAIL.
-    blob = " ".join([title, goal, q, exp, code])
-    concepts = [norm(c) for c in card.get("concepts", []) if norm(c)]
-    aliases = {
-        "comment": ["comment", "주석", "#"],
-        "indentation": ["indent", "들여쓰기"],
-        "assignment": ["assignment", "대입", "="],
-        "condition": ["condition", "조건", "if"],
-        "loop": ["loop", "반복", "for", "while"],
-        "function": ["function", "함수", "def"],
-        "type": ["type", "자료형"],
-    }
-    if concepts:
+    # Concept tags are English metadata. Literal anchoring is useful only for the
+    # English mirror; applying it to Korean text created predictable false positives.
+    if lang == "en":
+        blob = anchor_text(" ".join([title, goal, q, exp, code]))
+        concepts = [anchor_text(c) for c in card.get("concepts", []) if anchor_text(c)]
+        aliases = {
+            "comment": ["comment", "#"],
+            "indentation": ["indent", "indentation"],
+            "assignment": ["assignment", "assign", "="],
+            "condition": ["condition", "if"],
+            "loop": ["loop", "for", "while"],
+            "function": ["function", "def"],
+            "type": ["type", "data type"],
+        }
         anchored = False
-        for c in concepts:
-            tokens = aliases.get(c, [c.replace("_", " "), c])
-            if any(token and token in blob for token in tokens):
+        for concept in concepts:
+            tokens = aliases.get(concept, [concept])
+            parts = [p for p in concept.split() if len(p) >= 3]
+            tokens = list(dict.fromkeys(tokens + parts))
+            if any(token and anchor_text(token) in blob for token in tokens):
                 anchored = True
                 break
-        if not anchored:
+        if concepts and not anchored:
             risks.append("declared_concepts_not_textually_anchored")
     return risks
 
 
-def run(apply_changes: bool) -> tuple[int, int, int, list[str], collections.Counter, list[tuple[str, str, str, list[str]]]]:
+def repeated_sentence_groups() -> list[tuple[str, str, int, list[str]]]:
+    groups: list[tuple[str, str, int, list[str]]] = []
+    for lang, root in (("ko", KO_ROOT), ("en", EN_ROOT)):
+        seen: dict[str, list[str]] = collections.defaultdict(list)
+        display: dict[str, str] = {}
+        rows, _ = load_cards(root)
+        for _, card in rows:
+            cid = str(card.get("id", ""))
+            for sentence in split_sentences(str(card.get("explanation") or "")):
+                key = norm(sentence)
+                if len(key) < 70:
+                    continue
+                seen[key].append(cid)
+                display[key] = sentence
+        for key, ids in seen.items():
+            if len(ids) >= 3:
+                groups.append((lang, display[key], len(ids), ids[:8]))
+    return sorted(groups, key=lambda row: (-row[2], row[0], row[1]))
+
+
+def run(apply_changes: bool) -> tuple[int, int, int, list[str], collections.Counter, list[tuple[str, str, str, list[str]]], list[tuple[str, str, int, list[str]]]]:
     total = 0
     changed_cards = 0
     changed_files: set[Path] = set()
@@ -132,8 +161,6 @@ def run(apply_changes: bool) -> tuple[int, int, int, list[str], collections.Coun
 
     for lang, root in (("ko", KO_ROOT), ("en", EN_ROOT)):
         _, load_errors = load_cards(root)
-        # Only inability to read the corpus is a V343 hard error. The canonical
-        # structural validator runs later in CI and remains the source of truth.
         hard_errors.extend(f"{lang}:{e}" for e in load_errors)
         file_payloads: dict[Path, list[dict]] = {}
         for path in sorted(root.glob("*.json")):
@@ -169,8 +196,9 @@ def run(apply_changes: bool) -> tuple[int, int, int, list[str], collections.Coun
                 if apply_changes:
                     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    # Whole-card duplicate signals. These remain review candidates because some
-    # deliberate drills share wording while testing different contexts.
+    # Whole-card duplicate signals. Same code is allowed, but the same code,
+    # question, and answer is a strong indication that the learner is repeating
+    # the same task rather than seeing a variation.
     for lang, root in (("ko", KO_ROOT), ("en", EN_ROOT)):
         rows, _ = load_cards(root)
         exact = collections.defaultdict(list)
@@ -191,6 +219,7 @@ def run(apply_changes: bool) -> tuple[int, int, int, list[str], collections.Coun
                 for fname, cid in group:
                     all_findings.append((lang, fname, cid, [f"duplicate_problem_group_{len(group)}"]))
 
+    repeated = repeated_sentence_groups()
     counts = collections.Counter(r for _, _, _, risks in all_findings for r in risks)
     lines = [
         "# V343 Corpus Context Review",
@@ -202,12 +231,20 @@ def run(apply_changes: bool) -> tuple[int, int, int, list[str], collections.Coun
         f"- files changed: {len(changed_files)}",
         f"- hard read/parse errors: {len(hard_errors)}",
         f"- review candidates: {len(all_findings)}",
+        f"- repeated explanation sentence groups (3+): {len(repeated)}",
         "",
         "## Finding counts",
         "",
     ]
     for key, count in counts.most_common():
         lines.append(f"- `{key}`: {count}")
+    lines.extend(["", "## Repeated explanation sentences", ""])
+    if repeated:
+        for lang, sentence, count, ids in repeated[:60]:
+            short = sentence if len(sentence) <= 260 else sentence[:257] + "..."
+            lines.append(f"- `{lang}` · {count} cards · {', '.join(ids)} · {short}")
+    else:
+        lines.append("- none")
     lines.extend(["", "## Highest-priority candidates", ""])
     priority = {
         "goal_equals_explanation": 8,
@@ -234,7 +271,7 @@ def run(apply_changes: bool) -> tuple[int, int, int, list[str], collections.Coun
         lines.append("- none")
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return total, changed_cards, len(changed_files), hard_errors, counts, all_findings
+    return total, changed_cards, len(changed_files), hard_errors, counts, all_findings, repeated
 
 
 def main() -> None:
@@ -244,14 +281,15 @@ def main() -> None:
     args = parser.parse_args()
     if args.apply == args.check:
         raise SystemExit("choose exactly one of --apply/--check")
-    total, changed_cards, changed_files, hard_errors, counts, findings = run(args.apply)
-    print("REVIEW_VERSION=v343_context_review_a2")
+    total, changed_cards, changed_files, hard_errors, counts, findings, repeated = run(args.apply)
+    print("REVIEW_VERSION=v343_context_review_a3")
     print(f"APPLY={args.apply}")
     print(f"CARDS_SCANNED={total}")
     print(f"CARDS_CHANGED={changed_cards}")
     print(f"FILES_CHANGED={changed_files}")
     print(f"HARD_READ_PARSE_ERRORS={len(hard_errors)}")
     print(f"REVIEW_CANDIDATES={len(findings)}")
+    print(f"REPEATED_SENTENCE_GROUPS={len(repeated)}")
     for key, count in counts.most_common(20):
         print(f"FINDING_{key.upper()}={count}")
     if args.check:
