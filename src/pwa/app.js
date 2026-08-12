@@ -2278,6 +2278,7 @@ async function init() {
     "../../data/side_cards/ai_architecture_cards_v1.json",
     "../../data/side_cards/data_system_cards_v1.json",
     "../../data/side_cards/dev_environment_cards_v1.json",
+    "../../data/reference_side_cards/python_development_workflow_side_cards_v341_a2.json",
     "../../data/side_cards/python_dev_environment_foundation_side_cards_v103_a1.json",
     "../../data/side_cards/python_foundation_side_cards_v94_a1_part1.json",
     "../../data/side_cards/python_foundation_side_cards_v94_a1_part2.json",
