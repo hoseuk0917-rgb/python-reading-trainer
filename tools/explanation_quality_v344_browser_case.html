@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>V344 explanation smoke</title></head>
+<body>
+<pre id="report">RUNNING</pre>
+<iframe id="app" src="../src/pwa/index.html?lang=ko&v344smoke=1" style="width:100%;height:900px;border:0"></iframe>
+<script>
+(async function(){
+  const report=document.getElementById('report');
+  const frame=document.getElementById('app');
+  const lines=['=== PRT V344 EXPLANATION QUALITY REAL BROWSER CASE ==='];
+  let failed=false;
+  function add(name,ok,detail){lines.push(name+'='+(ok?'PASS':'FAIL')+' DETAIL='+detail);if(!ok)failed=true;}
+  function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+  async function waitFor(fn,timeout=15000){const s=Date.now();while(Date.now()-s<timeout){try{const v=fn();if(v)return v;}catch(_){}await sleep(60);}return null;}
+  async function waitLoad(){return new Promise(resolve=>{frame.addEventListener('load',resolve,{once:true});setTimeout(resolve,15000);});}
+  function win(){return frame.contentWindow;}
+  function doc(){return frame.contentDocument;}
+  function overflow(){const d=doc();return d.documentElement.scrollWidth<=d.documentElement.clientWidth+1;}
+
+  await waitFor(()=>doc()&&win().ExplanationSupportV344&&doc().getElementById('explanationRefresherV344'));
+  add('SUPPORT_RUNTIME',!!win().ExplanationSupportV344,win().ExplanationSupportV344&&win().ExplanationSupportV344.version);
+  const progressKey='python-reading-trainer-progress-v1';
+  const memoKey='python-reading-trainer-card-memo:v344-smoke';
+  const progressValue='{"seen":{"keep":1},"correct":{},"confused":{},"lastSeenAt":{}}';
+  win().localStorage.setItem(progressKey,progressValue);
+  win().localStorage.setItem(memoKey,'keep memo');
+
+  const target=doc().getElementById('conceptDefinition');
+  target.textContent='CPython은 Python 코드를 bytecode로 바꾼 뒤 runtime에서 처리할 수 있다. 이 과정에는 object, reference, protocol, interpreter 같은 용어도 나온다.';
+  win().ExplanationSupportV344.annotateAll();
+  await waitFor(()=>target.querySelector('.explanation-term-v344[data-term="bytecode"]'));
+  const terms=target.querySelectorAll('.explanation-term-v344');
+  add('SUPPORT_TERM_ANNOTATED',!!target.querySelector('[data-term="bytecode"]'),Array.from(terms).map(x=>x.dataset.term).join(','));
+  add('DENSITY_CAP',terms.length<=4,terms.length);
+
+  const excluded=doc().createElement('pre');
+  excluded.id='v344ExcludedFixture';
+  excluded.textContent='bytecode runtime object reference';
+  target.parentElement.appendChild(excluded);
+  win().ExplanationSupportV344.annotateAll();
+  add('CODE_PRE_EXCLUDED',!excluded.querySelector('.explanation-term-v344'),excluded.innerHTML);
+
+  const button=target.querySelector('[data-term="bytecode"]');
+  button.focus();button.click();
+  await waitFor(()=>!doc().getElementById('explanationRefresherV344').classList.contains('hidden'));
+  const modal=doc().getElementById('explanationRefresherV344');
+  const modalText=modal.textContent.replace(/\s+/g,' ').trim();
+  add('POPUP_THREE_LAYER_KO',/한 줄 정의/.test(modalText)&&/작은 예/.test(modalText)&&/지금 왜 나왔나요/.test(modalText),modalText.slice(0,180));
+  add('BYTECODE_DEFINED_KO',/중간 명령/.test(modalText),modalText.slice(0,180));
+  add('PROGRESS_UNCHANGED_AFTER_OPEN',win().localStorage.getItem(progressKey)===progressValue,win().localStorage.getItem(progressKey));
+  modal.querySelector('.explanation-refresher-close-v344').click();
+  await waitFor(()=>modal.classList.contains('hidden'));
+  add('FOCUS_RETURNS',doc().activeElement===button,doc().activeElement&&doc().activeElement.dataset.term||doc().activeElement&&doc().activeElement.tagName);
+  add('MEMO_UNCHANGED',win().localStorage.getItem(memoKey)==='keep memo',win().localStorage.getItem(memoKey));
+
+  const codeTab=doc().querySelector('.tab-btn[data-view="code"]'); if(codeTab)codeTab.click();
+  await sleep(100);
+  const select=doc().getElementById('codeLangSelect'); select.value='python';
+  doc().getElementById('loadCodeSampleBtn').click();
+  doc().getElementById('analyzeCodeBtn').click();
+  await waitFor(()=>{const t=doc().getElementById('codeSummary').textContent.trim();return t&& !/아직 분석/.test(t);});
+  const summary=doc().getElementById('codeSummary').textContent.replace(/\s+/g,' ').trim();
+  add('CODE_EXPLAINER_BEHAVIOR_FIRST',summary.length>0&&!/^(AST|CallExpression|Abstract Syntax Tree)/i.test(summary),summary.slice(0,180));
+
+  add('NO_DUPLICATE_MODAL',doc().querySelectorAll('#explanationRefresherV344').length===1,doc().querySelectorAll('#explanationRefresherV344').length);
+  add('NO_HORIZONTAL_OVERFLOW_KO',overflow(),doc().documentElement.scrollWidth+'/'+doc().documentElement.clientWidth);
+
+  const enLoad=waitLoad(); frame.src='../src/pwa/index.html?lang=en&v344smoke=2'; await enLoad;
+  await waitFor(()=>doc()&&win().ExplanationSupportV344&&doc().documentElement.lang==='en');
+  const enTarget=doc().getElementById('conceptDefinition');
+  enTarget.textContent='CPython can convert source code to bytecode before the runtime executes it.';
+  win().ExplanationSupportV344.annotateAll();
+  await waitFor(()=>enTarget.querySelector('[data-term="bytecode"]'));
+  const enButton=enTarget.querySelector('[data-term="bytecode"]');enButton.click();
+  await waitFor(()=>!doc().getElementById('explanationRefresherV344').classList.contains('hidden'));
+  const enText=doc().getElementById('explanationRefresherV344').textContent.replace(/\s+/g,' ').trim();
+  add('POPUP_THREE_LAYER_EN',/One-line definition/.test(enText)&&/Tiny example/.test(enText)&&/Why is it here/.test(enText),enText.slice(0,180));
+  add('BYTECODE_DEFINED_EN',/intermediate instruction form/i.test(enText),enText.slice(0,180));
+  add('NO_HORIZONTAL_OVERFLOW_EN',overflow(),doc().documentElement.scrollWidth+'/'+doc().documentElement.clientWidth);
+
+  lines.push('RESULT='+(failed?'FAIL_EXPLANATION_QUALITY_V344_REAL_BROWSER_CASE':'PASS_EXPLANATION_QUALITY_V344_REAL_BROWSER_CASE'));
+  report.textContent=lines.join('\n');
+})();
+</script>
+</body>
+</html>
