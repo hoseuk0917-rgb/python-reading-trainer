@@ -1,0 +1,96 @@
+name: e2e-learning-flow-v347
+
+on:
+  push:
+    branches:
+      - feat/e2e-learning-flow-v347
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  v347-e2e-learning-flow:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout V347 branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: feat/e2e-learning-flow-v347
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: V347 harness syntax
+        run: |
+          node --check tools/e2e_learning_flow_v347_browser_case.js
+          node --check tools/run_e2e_learning_flow_v347_browser_smoke.js
+
+      - name: Existing lesson validation
+        run: python tools/validate_lessons.py
+
+      - name: Existing V339 content quality
+        run: |
+          python tools/content_quality_final_pass_v339.py --check
+          python tools/content_quality_final_pass_v339_r2.py --check
+          python tools/content_quality_final_pass_v339_r4.py --check
+          node tools/audit_content_semantic_alignment_v339_r4.js
+
+      - name: Existing V340 learning loop
+        run: node tools/audit_learning_loop_v340.js
+
+      - name: Existing V341 learning experience
+        run: |
+          node tools/audit_learning_experience_v341.js
+          node tools/audit_learning_experience_v341_r2.js
+          python tools/audit_development_workflow_sidecards_v341_a2.py
+          python tools/audit_sidecard_educational_quality_v341.py
+
+      - name: Existing V342 hardening
+        run: node tools/audit_learning_hardening_v342_r2.js
+
+      - name: Existing V343 context review
+        run: python tools/content_context_review_v343.py --check
+
+      - name: Existing V344 explanation quality
+        run: |
+          python tools/apply_explanation_quality_v344_r2.py --check
+          python tools/apply_explanation_support_v344_r3.py --check
+          python tools/apply_explanation_support_v344_r4.py --check
+          python tools/apply_explanation_support_v344_r5.py --check
+          node tools/audit_explanation_quality_v344.js
+
+      - name: Existing V345 study experience
+        run: |
+          python tools/apply_study_experience_v345.py --check
+          python tools/apply_study_experience_v345_r2.py --check
+          node tools/audit_study_experience_v345.js
+
+      - name: Existing V346 study quality
+        run: |
+          python tools/apply_study_quality_v346.py --check
+          python tools/apply_study_quality_v346_r2.py --check
+          python tools/apply_study_quality_v346_r3.py --check
+          python tools/repair_future_terminology_v346.py --check
+          node tools/audit_study_quality_v346.js
+          python tools/audit_terminology_guard_v346.py
+
+      - name: Diff integrity
+        run: git diff --check
+
+      - name: V347 real browser end-to-end journey
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v347-http.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3377/src/pwa/index.html > /dev/null; then break; fi
+            sleep 0.1
+          done
+          node tools/run_e2e_learning_flow_v347_browser_smoke.js
