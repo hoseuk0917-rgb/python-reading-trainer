@@ -90,7 +90,8 @@
     return button;
   }
   function dispatchEscape() {
-    doc().dispatchEvent(new win().KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    const KeyboardEventCtor = win().KeyboardEvent;
+    doc().dispatchEvent(new KeyboardEventCtor("keydown", { key: "Escape", bubbles: true }));
   }
   function activeInside(selector) {
     const active = doc().activeElement;
@@ -118,7 +119,7 @@
   }
 
   async function waitRuntime() {
-    await requireWait("V347 prerequisite runtimes", () => doc() && win().LearningEngineV340 && win().LearningEngineV341 && win().StudyExperienceV345 && win().StudyQualityV346);
+    await requireWait("V347 prerequisite runtimes", () => doc() && win().LearningEngineV340 && win().LearningEngineV341 && win().StudyExperienceV345 && win().StudyQualityV346 && win().LearningFlowHardeningV347);
     await requireWait("1785-card corpus", () => {
       const state = win().StudyQualityV346.getNextActionState();
       return state && state.total === 1785 ? state : null;
@@ -202,6 +203,8 @@
       if (close) close.click();
       await requireWait("manual review close", () => reviewModal.classList.contains("hidden"));
     }
+    await sleep(80);
+    add("REVIEW_DIALOG_FOCUS_RETURNS", doc().activeElement === reviewLauncher, doc().activeElement && `${doc().activeElement.tagName}#${doc().activeElement.id}`);
 
     clickTopTab("progress");
     await requireWait("review action again", () => doc().getElementById("nextActionV346") && doc().getElementById("nextActionV346").dataset.kind === "review");
@@ -263,6 +266,8 @@
     dispatchEscape();
     await sleep(100);
     add("CHECKPOINT_DIALOG_ESCAPE_CLOSE", missionModal.classList.contains("hidden"), missionModal.className);
+    await sleep(80);
+    add("CHECKPOINT_DIALOG_FOCUS_RETURNS", doc().activeElement === checkpointButton, doc().activeElement && `${doc().activeElement.tagName}.${doc().activeElement.className}`);
     if (!missionModal.classList.contains("hidden")) {
       const close = missionModal.querySelector(".mission-v341-close");
       if (close) close.click();
