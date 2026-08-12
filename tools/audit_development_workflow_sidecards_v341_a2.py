@@ -6,8 +6,8 @@ from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-KO = ROOT / "data" / "side_cards" / "python_development_workflow_side_cards_v341_a2.json"
-EN = ROOT / "data_i18n" / "en" / "side_cards" / "python_development_workflow_side_cards_v341_a2.json"
+KO = ROOT / "data" / "reference_side_cards" / "python_development_workflow_side_cards_v341_a2.json"
+EN = ROOT / "data_i18n" / "en" / "reference_side_cards" / "python_development_workflow_side_cards_v341_a2.json"
 APP = ROOT / "src" / "pwa" / "app.js"
 UI = ROOT / "src" / "pwa" / "learning_experience_v341.js"
 ENGINE = ROOT / "src" / "pwa" / "learning_engine_v341.js"
@@ -58,6 +58,7 @@ def main() -> int:
         sequences = sorted(int(row.get("sequence") or 0) for row in rows)
         if sequences != list(range(1, 17)):
             errors.append(f"{lang.upper()}_SEQUENCE={sequences}")
+        bodies: set[str] = set()
         for row in rows:
             cid = str(row.get("id") or "")
             if row.get("type") != "development_workflow":
@@ -65,8 +66,14 @@ def main() -> int:
             for field in ("title", "body", "detail", "related_concepts", "level_hint", "when_to_show"):
                 if not row.get(field):
                     errors.append(f"MISSING_{field.upper()}:{lang}:{cid}")
-            body = str(row.get("body") or "")
-            detail = str(row.get("detail") or "")
+            body = str(row.get("body") or "").strip()
+            detail = str(row.get("detail") or "").strip()
+            normalized = " ".join(body.lower().split())
+            if normalized in bodies:
+                errors.append(f"DUPLICATE_BODY:{lang}:{cid}")
+            bodies.add(normalized)
+            if body and detail and " ".join(detail.lower().split()) == normalized:
+                errors.append(f"BODY_DETAIL_DUPLICATE:{lang}:{cid}")
             if lang == "ko" and len(body) > 200:
                 errors.append(f"BODY_TOO_LONG:{lang}:{cid}:{len(body)}")
             if lang == "ko" and len(detail) > 460:
@@ -79,9 +86,11 @@ def main() -> int:
     app = APP.read_text(encoding="utf-8")
     ui = UI.read_text(encoding="utf-8")
     engine = ENGINE.read_text(encoding="utf-8")
-    side_path = '../../data/side_cards/python_development_workflow_side_cards_v341_a2.json'
+    side_path = '../../data/reference_side_cards/python_development_workflow_side_cards_v341_a2.json'
     if app.count(side_path) != 1:
-        errors.append(f"APP_SIDE_FILE_COUNT={app.count(side_path)}")
+        errors.append(f"APP_REFERENCE_FILE_COUNT={app.count(side_path)}")
+    if '../../data/side_cards/python_development_workflow_side_cards_v341_a2.json' in app:
+        errors.append("REFERENCE_LEAKED_INTO_FROZEN_V339_SIDE_DIR")
     if 'card.type === "development_workflow"' not in ui:
         errors.append("UI_REFERENCE_FILTER_MISSING")
     if 'developmentWorkflowReferenceV341' not in ui:
