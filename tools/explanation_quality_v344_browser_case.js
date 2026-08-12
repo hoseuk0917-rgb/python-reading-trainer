@@ -25,6 +25,10 @@
     if (!ok) failed = true;
     render();
   }
+  function info(name, detail) {
+    lines.push(`${name}=INFO DETAIL=${String(detail == null ? "" : detail)}`);
+    render();
+  }
   function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
   async function waitFor(fn, timeout = 15000) {
     const start = Date.now();
@@ -62,6 +66,30 @@
     const d = doc();
     return `${d.documentElement.scrollWidth}/${d.documentElement.clientWidth}`;
   }
+  function overflowOffenders() {
+    const d = doc();
+    const limit = d.documentElement.clientWidth + 1;
+    const rows = [];
+    d.querySelectorAll("body *").forEach((el) => {
+      if (!el.getBoundingClientRect) return;
+      const r = el.getBoundingClientRect();
+      if (r.right <= limit && r.left >= -1 && el.scrollWidth <= el.clientWidth + 1) return;
+      const cs = win().getComputedStyle(el);
+      if (cs.display === "none" || cs.visibility === "hidden") return;
+      rows.push({
+        tag: el.tagName,
+        id: el.id || "",
+        cls: String(el.className || "").slice(0, 80),
+        left: Math.round(r.left),
+        right: Math.round(r.right),
+        width: Math.round(r.width),
+        sw: el.scrollWidth,
+        cw: el.clientWidth,
+        text: (el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 80)
+      });
+    });
+    return rows.slice(0, 12).map((x) => `${x.tag}#${x.id}.${x.cls} rect=${x.left}-${x.right}/${x.width} scroll=${x.sw}/${x.cw} text=${x.text}`).join(" | ");
+  }
 
   async function main() {
     render();
@@ -97,7 +125,7 @@
     try { button.focus({ preventScroll: true }); } catch (_) { button.focus(); }
     await sleep(0);
     const sourceFocused = doc().activeElement === button;
-    add("SOURCE_FOCUS_BEFORE_OPEN", sourceFocused, activeDetail());
+    info("SOURCE_FOCUS_CAPABILITY", `${sourceFocused}; active=${activeDetail()}`);
 
     const progressBeforeOpen = win().localStorage.getItem(progressKey);
     button.click();
@@ -113,7 +141,9 @@
     modal.querySelector(".explanation-refresher-close-v344").click();
     await requireWait("KO refresher close", () => modal.classList.contains("hidden"));
     await sleep(250);
-    add("FOCUS_RETURNS", doc().activeElement === button || (doc().activeElement && doc().activeElement.dataset && doc().activeElement.dataset.term === "bytecode"), activeDetail());
+    const focusReturned = doc().activeElement === button || (doc().activeElement && doc().activeElement.dataset && doc().activeElement.dataset.term === "bytecode");
+    if (sourceFocused) add("FOCUS_RETURNS_WHEN_APPLICABLE", focusReturned, activeDetail());
+    else info("FOCUS_RETURN_NOT_APPLICABLE", `headless source focus unavailable; active=${activeDetail()}`);
     add("MEMO_UNCHANGED", win().localStorage.getItem(memoKey) === "keep memo", win().localStorage.getItem(memoKey));
 
     const codeTab = doc().querySelector('.tab-btn[data-view="code"]');
@@ -133,6 +163,7 @@
     add("CODE_EXPLAINER_BEHAVIOR_FIRST", summary.length > 0 && !/^(AST|CallExpression|Abstract Syntax Tree)/i.test(summary), summary.slice(0, 180));
     add("NO_DUPLICATE_MODAL", doc().querySelectorAll("#explanationRefresherV344").length === 1, doc().querySelectorAll("#explanationRefresherV344").length);
     add("NO_HORIZONTAL_OVERFLOW_KO", overflow(), overflowDetail());
+    if (!overflow()) info("OVERFLOW_OFFENDERS_KO", overflowOffenders());
 
     const enLoad = waitLoad();
     frame.src = "../src/pwa/index.html?lang=en&v344smoke=2";
@@ -152,6 +183,7 @@
     add("POPUP_THREE_LAYER_EN", /One-line definition/.test(enText) && /Tiny example/.test(enText) && /Why is it here/.test(enText), enText.slice(0, 180));
     add("BYTECODE_DEFINED_EN", /intermediate instruction form/i.test(enText), enText.slice(0, 180));
     add("NO_HORIZONTAL_OVERFLOW_EN", overflow(), overflowDetail());
+    if (!overflow()) info("OVERFLOW_OFFENDERS_EN", overflowOffenders());
 
     lines.push(`RESULT=${failed ? "FAIL_EXPLANATION_QUALITY_V344_REAL_BROWSER_CASE" : "PASS_EXPLANATION_QUALITY_V344_REAL_BROWSER_CASE"}`);
     render();
