@@ -1,0 +1,144 @@
+name: study-experience-v345
+
+on:
+  push:
+    branches:
+      - feat/ui-study-experience-v345
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  v345-study-experience:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout V345 branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: feat/ui-study-experience-v345
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Apply V345 integration
+        run: python tools/apply_study_experience_v345.py --apply
+
+      - name: Confirm V345 integration idempotence
+        run: python tools/apply_study_experience_v345.py --check
+
+      - name: Apply V345 navigation accessibility hardening
+        run: python tools/apply_study_experience_v345_r2.py --apply
+
+      - name: Confirm V345 hardening idempotence
+        run: python tools/apply_study_experience_v345_r2.py --check
+
+      - name: JavaScript syntax
+        run: |
+          node --check src/pwa/study_experience_v345.js
+          node --check tools/audit_study_experience_v345.js
+          node --check tools/study_experience_v345_browser_case.js
+          node --check tools/run_study_experience_v345_browser_smoke.js
+          node --check src/pwa/app.js
+
+      - name: V345 study experience contract audit
+        run: node tools/audit_study_experience_v345.js
+
+      - name: Existing lesson validation
+        run: python tools/validate_lessons.py
+
+      - name: Existing V339 content quality gates
+        run: |
+          python tools/content_quality_final_pass_v339.py --check
+          python tools/content_quality_final_pass_v339_r2.py --check
+          python tools/content_quality_final_pass_v339_r4.py --check
+          node tools/audit_content_semantic_alignment_v339_r4.js
+
+      - name: Existing V340 learning regression
+        run: node tools/audit_learning_loop_v340.js
+
+      - name: Existing V341 learning experience regression
+        run: |
+          node tools/audit_learning_experience_v341.js
+          node tools/audit_learning_experience_v341_r2.js
+          python tools/audit_development_workflow_sidecards_v341_a2.py
+          python tools/audit_sidecard_educational_quality_v341.py
+
+      - name: Existing V342 hardening regression
+        run: node tools/audit_learning_hardening_v342_r2.js
+
+      - name: Existing V343 corpus regression
+        run: |
+          python tools/content_context_review_v343.py --check
+          node --check src/pwa/learning_home_v343.js
+
+      - name: Existing V344 explanation regression
+        run: |
+          python tools/apply_explanation_quality_v344_r2.py --check
+          python tools/apply_explanation_support_v344_r3.py --check
+          python tools/apply_explanation_support_v344_r4.py --check
+          python tools/apply_explanation_support_v344_r5.py --check
+          node tools/audit_explanation_quality_v344.js
+          node tools/smoke_explainer_regression_v323_a6.js
+          node tools/quality_gate_explainer_v324_a1.js
+
+      - name: Diff integrity
+        run: git diff --check
+
+      - name: V343 real browser home regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v343-v345-http.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3377/src/pwa/index.html > /dev/null; then break; fi
+            sleep 0.1
+          done
+          node tools/run_learning_home_v343_browser_smoke.js
+
+      - name: V344 real browser explanation regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v344-v345-http.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3377/src/pwa/index.html > /dev/null; then break; fi
+            sleep 0.1
+          done
+          node tools/run_explanation_quality_v344_browser_smoke.js
+
+      - name: V345 real browser study experience smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v345-http.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3377/src/pwa/index.html > /dev/null; then break; fi
+            sleep 0.1
+          done
+          node tools/run_study_experience_v345_browser_smoke.js
+
+      - name: Commit V345 generated changes if needed
+        run: |
+          if git diff --quiet; then
+            echo "V345_ALREADY_CLEAN=True"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pwa/index.html src/pwa/study_experience_v345.js
+          git commit -m "Apply V345 study experience contract"
+          git push origin HEAD:feat/ui-study-experience-v345
+          echo "V345_CHANGES_PUSHED=True"
