@@ -5,8 +5,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function() {
   "use strict";
 
-  const VERSION = "v341_a1";
-  // LEARNING_EXPERIENCE_V341_R2_EXACT_MISSION_MAPPING
+  const VERSION = "v341_a2";
   const CHECKPOINT_INTERVAL = 30;
   const WEEKLY_CARD_GOAL = 50;
   const WEEKLY_DAY_GOAL = 5;
@@ -20,122 +19,390 @@
     { key: "consolidated", ko: "정착", en: "Consolidated", rank: 5 }
   ];
 
-  const PRACTICE_MODULES = [
-    { id: "safe_change", threshold: 30, missionCheckpoint: 1, ko: "안전한 변경 절차", en: "Safe change procedure", descriptionKo: "요구 확인 → 작은 변경 → 테스트 → diff 확인 → commit 순서를 읽습니다.", descriptionEn: "Read the flow from requirement to small change, test, diff, and commit." },
-    { id: "regression", threshold: 60, missionCheckpoint: 2, ko: "회귀 테스트", en: "Regression testing", descriptionKo: "수정한 기능뿐 아니라 예전에 되던 기능이 깨지지 않았는지 확인합니다.", descriptionEn: "Check that previously working behavior still works after a change." },
-    { id: "idempotence", threshold: 90, missionCheckpoint: 3, ko: "멱등성과 재실행 안전성", en: "Idempotence and rerun safety", descriptionKo: "같은 작업을 두 번 실행해도 결과가 더 망가지지 않는 조건을 익힙니다.", descriptionEn: "Learn when running the same operation twice should not create extra damage." },
-    { id: "test_layers", threshold: 120, missionCheckpoint: 4, ko: "단위·통합·스모크 테스트", en: "Unit, integration, and smoke tests", descriptionKo: "테스트가 어디까지 확인하는지 범위를 구분합니다.", descriptionEn: "Distinguish test types by the scope of behavior they verify." },
-    { id: "git_review", threshold: 150, missionCheckpoint: 6, ko: "브랜치·diff·PR 리뷰", en: "Branch, diff, and PR review", descriptionKo: "변경 전후 차이와 영향 범위를 보고 승인 여부를 판단합니다.", descriptionEn: "Use diffs and impact scope to reason about whether a change is safe to approve." },
-    { id: "ci_gate", threshold: 180, missionCheckpoint: 7, ko: "CI 품질 게이트", en: "CI quality gates", descriptionKo: "push 뒤 자동 검사가 왜 필요한지와 실패 시 중단 원칙을 익힙니다.", descriptionEn: "Learn why automated checks run after push and why failed gates should block release." },
-    { id: "reproducibility", threshold: 240, missionCheckpoint: 8, ko: "재현성과 입력 고정", en: "Reproducibility and pinned inputs", descriptionKo: "버전·입력·환경을 고정해 같은 검증을 다시 만들 수 있게 합니다.", descriptionEn: "Pin versions, inputs, and environment so a validation can be reproduced." },
-    { id: "baseline_rollback", threshold: 300, missionCheckpoint: 9, ko: "기준선 비교와 롤백", en: "Baseline comparison and rollback", descriptionKo: "변경 전 기준선을 보존하고 문제가 생기면 안전하게 되돌리는 흐름을 익힙니다.", descriptionEn: "Preserve a baseline and reason about safe rollback after a bad change." }
-  ];
+  const CONCEPT_FAMILY = {
+    print: "output", output: "output", len: "basic",
+    variable: "assignment", assignment: "assignment", reassign: "assignment", trace: "assignment",
+    str: "string", string: "string", text: "string", split: "string",
+    int: "number", integer: "number", float: "number", number: "number", numeric: "number",
+    type: "type", value: "type", bool: "condition", comparison: "condition",
+    if: "condition", elif: "condition", else: "condition", condition: "condition",
+    for: "loop", while: "loop", loop: "loop", range: "loop", iteration: "loop", break: "loop", continue: "loop", accumulate: "loop",
+    list: "list", index: "list", append: "list",
+    dict: "dict", key: "dict", mapping: "dict", get: "dict",
+    tuple: "tuple", set: "set",
+    def: "function", function: "function", call: "function", parameter: "function", argument: "function", return: "function", scope: "function",
+    class: "object", object: "object", method: "object", self: "object", mutable: "object",
+    import: "module", module: "module", package: "module",
+    file: "file", open: "file", path: "file", pathlib: "file", encoding: "file", csv: "file", json: "file", "json.loads": "file", "json.dumps": "file",
+    exception: "exception", error: "exception", raise: "exception", try_except: "exception",
+    input: "input", indentation: "indentation", comment: "comment", none: "none"
+  };
 
-  const MISSION_TEMPLATES = [
+  const PRACTICE_MODULES = [
     {
-      kind: "change_procedure",
-      ko: "작은 기능을 수정한 뒤 가장 안전한 다음 순서는?",
-      en: "After a small feature change, which next sequence is safest?",
-      choicesKo: ["테스트 → diff 확인 → commit", "commit → 테스트 생략 → 배포", "main 직접 수정 → 문제 생기면 기억으로 복구"],
-      choicesEn: ["Test → inspect diff → commit", "Commit → skip tests → deploy", "Edit main directly → recover from memory if needed"],
-      answerIndex: 0,
-      explainKo: "작은 변경 뒤에는 먼저 동작을 검증하고, 실제 변경 범위를 diff로 확인한 다음 저장하는 순서가 안전합니다.",
-      explainEn: "After a small change, verify behavior first, inspect the actual diff, then save the change."
+      id: "basics",
+      ko: "값·자료형·출력 읽기",
+      en: "Values, types, and output",
+      descriptionKo: "변수에 어떤 값이 들어가고 표현식이 어떤 결과를 만드는지 한 줄씩 추적합니다.",
+      descriptionEn: "Trace values, expressions, and output one line at a time.",
+      matchConcepts: ["len", "print", "output", "variable", "assignment", "str", "string", "int", "float", "number", "type", "bool", "comment", "input", "none"],
+      matchFamilies: ["output", "assignment", "string", "number", "type", "input", "comment", "none"]
     },
     {
-      kind: "regression",
-      ko: "버그를 고쳤다. 회귀 테스트가 특히 확인해야 하는 것은?",
-      en: "A bug was fixed. What should regression testing especially verify?",
-      choicesKo: ["예전에 정상 동작하던 기능이 그대로 동작하는지", "새 파일 이름이 예쁜지", "커밋 메시지가 긴지"],
-      choicesEn: ["Previously working behavior still works", "The new filename looks nice", "The commit message is long"],
-      answerIndex: 0,
-      explainKo: "회귀 테스트의 핵심은 수정 때문에 기존 정상 기능이 다시 깨지지 않았는지 확인하는 것입니다.",
-      explainEn: "Regression testing checks that a change did not break behavior that worked before."
+      id: "condition",
+      ko: "조건 흐름 추적",
+      en: "Conditional flow tracing",
+      descriptionKo: "조건이 참인지 거짓인지 판단하고 실제로 실행되는 분기만 따라갑니다.",
+      descriptionEn: "Evaluate conditions and follow only the branch that actually runs.",
+      matchConcepts: ["if", "elif", "else", "comparison", "bool", "condition"],
+      matchFamilies: ["condition"]
     },
     {
-      kind: "idempotence",
-      ko: "폴더 생성 스크립트를 같은 입력으로 두 번 실행했다. 멱등적인 동작에 가장 가까운 결과는?",
-      en: "A folder-creation script runs twice with the same input. Which result is closest to idempotent behavior?",
-      choicesKo: ["두 번째 실행도 같은 최종 상태를 유지한다", "두 번째 실행 때 폴더를 하나 더 복제한다", "두 번째 실행 때 첫 결과를 삭제한다"],
-      choicesEn: ["The second run keeps the same final state", "The second run duplicates the folder", "The second run deletes the first result"],
-      answerIndex: 0,
-      explainKo: "멱등성은 같은 요청을 반복해도 최종 상태가 불필요하게 계속 변하지 않는 성질입니다.",
-      explainEn: "Idempotence means repeating the same request does not keep changing the final state unnecessarily."
+      id: "loop",
+      ko: "반복 흐름 추적",
+      en: "Loop flow tracing",
+      descriptionKo: "반복 횟수와 매 회차 값 변화를 추적해 마지막 상태를 예측합니다.",
+      descriptionEn: "Trace iteration counts and value changes to predict the final state.",
+      matchConcepts: ["for", "while", "range", "break", "continue", "loop", "iteration"],
+      matchFamilies: ["loop"]
     },
     {
-      kind: "test_scope",
-      ko: "앱이 실제 브라우저에서 열리고 핵심 버튼이 눌리는지 빠르게 확인하는 검사는?",
-      en: "Which test quickly checks that the app opens in a real browser and core buttons work?",
-      choicesKo: ["스모크 테스트", "변수 이름 검사", "README 맞춤법 검사"],
-      choicesEn: ["Smoke test", "Variable-name check", "README spelling check"],
-      answerIndex: 0,
-      explainKo: "스모크 테스트는 배포본이나 통합된 앱이 최소 핵심 경로를 실행할 수 있는지 빠르게 확인합니다.",
-      explainEn: "A smoke test quickly verifies that an integrated or deployed app can run its essential path."
+      id: "collections",
+      ko: "컬렉션 읽기",
+      en: "Collection reading",
+      descriptionKo: "list·dict·tuple·set에서 어떤 값이 선택되고 바뀌는지 읽습니다.",
+      descriptionEn: "Read how values are selected and changed in lists, dicts, tuples, and sets.",
+      matchConcepts: ["list", "index", "append", "dict", "key", "get", "tuple", "set"],
+      matchFamilies: ["list", "dict", "tuple", "set"]
     },
     {
-      kind: "bug_hunt",
-      ko: "다음 중 재실행할수록 데이터가 중복될 위험이 가장 큰 패턴은?",
-      en: "Which pattern has the greatest risk of duplicating data on every rerun?",
-      choicesKo: ["기존 목록을 읽지 않고 매번 같은 행을 append", "exist_ok=True로 폴더 생성", "같은 입력의 해시를 다시 계산"],
-      choicesEn: ["Append the same row every time without checking existing data", "Create a folder with exist_ok=True", "Recalculate a hash for the same input"],
-      answerIndex: 0,
-      explainKo: "기존 결과를 확인하지 않고 append만 반복하면 같은 입력으로 실행할 때 중복이 계속 늘어날 수 있습니다.",
-      explainEn: "Blindly appending without checking existing output can grow duplicates on every rerun."
+      id: "functions",
+      ko: "함수 호출과 반환",
+      en: "Function calls and returns",
+      descriptionKo: "인자가 어디로 들어가고 return 값이 어디로 돌아오는지 호출 순서대로 읽습니다.",
+      descriptionEn: "Follow arguments into functions and return values back to their callers.",
+      matchConcepts: ["def", "function", "call", "parameter", "argument", "return", "scope"],
+      matchFamilies: ["function"]
     },
     {
-      kind: "pr_review",
-      ko: "PR에서 코드 2줄만 바뀌었다. 리뷰할 때 가장 먼저 볼 것은?",
-      en: "Only two lines changed in a PR. What should review focus on first?",
-      choicesKo: ["두 줄이 영향을 주는 실행 경로와 테스트", "줄 수가 적으니 바로 승인", "작성자 프로필 사진"],
-      choicesEn: ["The execution paths and tests affected by those lines", "Approve immediately because the diff is small", "The author's profile photo"],
-      answerIndex: 0,
-      explainKo: "변경 줄 수보다 영향 범위가 중요합니다. 작은 diff도 공통 함수나 데이터 형식을 바꾸면 큰 회귀를 만들 수 있습니다.",
-      explainEn: "Impact matters more than line count. A tiny diff can cause a large regression if it changes shared behavior."
+      id: "file_error",
+      ko: "파일·경로·예외 처리",
+      en: "Files, paths, and exceptions",
+      descriptionKo: "파일을 여는 과정과 실패했을 때 예외가 어디에서 처리되는지 추적합니다.",
+      descriptionEn: "Trace file operations and where failures are handled.",
+      matchConcepts: ["file", "open", "path", "pathlib", "encoding", "exception", "error", "raise", "try_except"],
+      matchFamilies: ["file", "exception"]
     },
     {
-      kind: "ci_gate",
-      ko: "CI에서 회귀 테스트가 실패했다. release 전에 가장 적절한 행동은?",
-      en: "A regression test fails in CI. What is the best action before release?",
-      choicesKo: ["실패 원인을 해결하거나 정당한 기준 변경을 검토한 뒤 다시 검증", "실패한 테스트만 삭제", "경고를 숨기고 배포"],
-      choicesEn: ["Resolve the cause or review a justified baseline change, then rerun validation", "Delete the failing test", "Hide the warning and deploy"],
-      answerIndex: 0,
-      explainKo: "품질 게이트 실패는 원인을 이해하기 전까지 release를 막는 신호로 다뤄야 합니다.",
-      explainEn: "A failed quality gate should block release until the cause is understood and handled."
+      id: "object_module",
+      ko: "객체·모듈 코드 읽기",
+      en: "Objects and modules",
+      descriptionKo: "class·method·import가 코드 구조를 어떻게 나누는지 실제 호출 관계로 읽습니다.",
+      descriptionEn: "Read how classes, methods, and imports organize actual call relationships.",
+      matchConcepts: ["class", "object", "method", "self", "import", "module", "package"],
+      matchFamilies: ["object", "module"]
     },
     {
-      kind: "reproducibility",
-      ko: "어제 PASS한 검증을 오늘 다시 재현하려면 무엇을 남기는 것이 가장 도움이 되는가?",
-      en: "What most helps reproduce yesterday's passing validation today?",
-      choicesKo: ["입력 버전·코드 SHA·실행 환경·검증 명령", "결과가 좋았다는 기억", "브라우저 탭을 열어둔 상태"],
-      choicesEn: ["Input version, code SHA, environment, and validation command", "A memory that it passed", "Leaving a browser tab open"],
-      answerIndex: 0,
-      explainKo: "재현성은 같은 입력과 코드·환경·절차를 다시 만들 수 있어야 확보됩니다.",
-      explainEn: "Reproducibility requires enough evidence to reconstruct the same input, code, environment, and procedure."
-    },
-    {
-      kind: "baseline",
-      ko: "성능 개선 전후를 비교할 때 가장 중요한 기준은?",
-      en: "What is most important when comparing performance before and after a change?",
-      choicesKo: ["같은 입력과 같은 측정 조건의 기준선", "서로 다른 데이터로 더 높은 숫자 선택", "가장 최근 실행 하나만 보기"],
-      choicesEn: ["A baseline measured with the same input and conditions", "Pick the higher number from different data", "Look only at the most recent run"],
-      answerIndex: 0,
-      explainKo: "조건이 달라지면 변화가 코드 때문인지 입력 때문인지 구분하기 어렵습니다.",
-      explainEn: "If conditions change, it becomes hard to tell whether the difference came from code or input."
-    },
-    {
-      kind: "rollback",
-      ko: "새 배포에서 치명적 오류가 발견됐다. 안전한 롤백을 위해 미리 보존해야 할 것은?",
-      en: "A critical error appears after release. What should have been preserved for safe rollback?",
-      choicesKo: ["직전 정상 버전과 배포 기준 SHA", "브라우저 방문 기록", "임시 메모 한 줄"],
-      choicesEn: ["The last known-good version and release SHA", "Browser history", "A one-line temporary note"],
-      answerIndex: 0,
-      explainKo: "되돌릴 정확한 기준점이 있어야 기억이나 수작업에 의존하지 않고 안전하게 복구할 수 있습니다.",
-      explainEn: "A precise known-good reference lets rollback avoid guesswork and manual reconstruction."
+      id: "data_tools",
+      ko: "데이터·도구 코드 읽기",
+      en: "Data and tool code",
+      descriptionKo: "JSON·CSV·정규식·CLI·외부 라이브러리처럼 실무에서 자주 만나는 코드를 읽습니다.",
+      descriptionEn: "Read practical code using JSON, CSV, regex, CLI tools, and common libraries.",
+      matchConcepts: ["json", "json.loads", "json.dumps", "csv", "pandas", "requests", "datetime", "regex", "argparse", "pathlib"],
+      matchFamilies: []
     }
   ];
 
+  const PRACTICE_TEMPLATES = [
+    {
+      id: "len_count", moduleId: "basics", kind: "output_prediction",
+      requires: [["len"], ["list"], ["print", "output"]],
+      code: 'items = ["A", "B", "C"]\nprint(len(items))',
+      questionKo: "이 코드를 실행하면 무엇이 출력될까요?",
+      questionEn: "What will this code print?",
+      choicesKo: ["3", "2", "[\"A\", \"B\", \"C\"]"],
+      choicesEn: ["3", "2", "[\"A\", \"B\", \"C\"]"],
+      answerIndex: 0,
+      explainKo: "len(items)는 리스트 안의 항목 수 3을 돌려주고 print()가 그 값을 출력합니다.",
+      explainEn: "len(items) returns the three-item count, and print() displays that value."
+    },
+    {
+      id: "reassign_value", moduleId: "basics", kind: "value_trace",
+      requires: [["variable", "assignment", "reassign"], ["print", "output"]],
+      code: "count = 2\ncount = count + 3\nprint(count)",
+      questionKo: "마지막 줄에서 count의 값은 무엇일까요?",
+      questionEn: "What is the value of count on the final line?",
+      choicesKo: ["2", "5", "23"],
+      choicesEn: ["2", "5", "23"],
+      answerIndex: 1,
+      explainKo: "두 번째 줄은 기존 2에 3을 더한 5를 count에 다시 저장합니다.",
+      explainEn: "The second line adds 3 to the old value 2 and stores 5 back in count."
+    },
+    {
+      id: "string_join", moduleId: "basics", kind: "output_prediction",
+      requires: [["str", "string"], ["print", "output"]],
+      code: 'left = "Py"\nright = "thon"\nprint(left + right)',
+      questionKo: "+ 연산 뒤 출력되는 문자열은 무엇일까요?",
+      questionEn: "Which string is printed after the + operation?",
+      choicesKo: ["Py thon", "Python", "Py+thon"],
+      choicesEn: ["Py thon", "Python", "Py+thon"],
+      answerIndex: 1,
+      explainKo: "문자열끼리 +를 사용하면 사이에 공백을 자동으로 넣지 않고 그대로 이어 붙입니다.",
+      explainEn: "Using + on strings joins them directly without automatically inserting a space."
+    },
+    {
+      id: "comment_effect", moduleId: "basics", kind: "code_reading",
+      requires: [["comment"], ["print", "output"]],
+      code: '# print("A")\nprint("B")',
+      questionKo: "실제로 실행되어 출력되는 값은 무엇일까요?",
+      questionEn: "Which value is actually executed and printed?",
+      choicesKo: ["A", "B", "A와 B 모두"],
+      choicesEn: ["A", "B", "Both A and B"],
+      answerIndex: 1,
+      explainKo: "#로 시작한 첫 줄은 주석이므로 실행되지 않고 두 번째 print()만 실행됩니다.",
+      explainEn: "The first line starts with #, so it is a comment and only the second print() runs."
+    },
+    {
+      id: "if_branch", moduleId: "condition", kind: "branch_trace",
+      requires: [["if", "condition"], ["print", "output"]],
+      code: 'score = 7\nif score >= 5:\n    print("pass")\nelse:\n    print("retry")',
+      questionKo: "조건을 계산한 뒤 실제로 실행되는 분기는 어느 쪽일까요?",
+      questionEn: "After evaluating the condition, which branch actually runs?",
+      choicesKo: ["pass 분기", "retry 분기", "두 분기 모두"],
+      choicesEn: ["The pass branch", "The retry branch", "Both branches"],
+      answerIndex: 0,
+      explainKo: "7 >= 5는 참이므로 if 블록만 실행되고 else 블록은 건너뜁니다.",
+      explainEn: "7 >= 5 is true, so only the if block runs and the else block is skipped."
+    },
+    {
+      id: "for_sum", moduleId: "loop", kind: "loop_trace",
+      requires: [["for", "loop"], ["list"], ["print", "output"]],
+      code: "total = 0\nfor n in [1, 2, 3]:\n    total = total + n\nprint(total)",
+      questionKo: "반복이 모두 끝난 뒤 total은 얼마일까요?",
+      questionEn: "What is total after the loop finishes?",
+      choicesKo: ["3", "6", "0"],
+      choicesEn: ["3", "6", "0"],
+      answerIndex: 1,
+      explainKo: "total은 0→1→3→6 순서로 바뀌므로 마지막 값은 6입니다.",
+      explainEn: "total changes 0→1→3→6, so the final value is 6."
+    },
+    {
+      id: "range_trace", moduleId: "loop", kind: "loop_trace",
+      requires: [["range"], ["for", "loop"]],
+      code: "values = []\nfor n in range(3):\n    values.append(n)",
+      questionKo: "반복이 끝난 뒤 values와 같은 것은 무엇일까요?",
+      questionEn: "Which value matches values after the loop?",
+      choicesKo: ["[1, 2, 3]", "[0, 1, 2]", "[0, 1, 2, 3]"],
+      choicesEn: ["[1, 2, 3]", "[0, 1, 2]", "[0, 1, 2, 3]"],
+      answerIndex: 1,
+      explainKo: "range(3)은 0, 1, 2를 만들고 3은 포함하지 않습니다.",
+      explainEn: "range(3) produces 0, 1, and 2; it does not include 3."
+    },
+    {
+      id: "while_trace", moduleId: "loop", kind: "loop_trace",
+      requires: [["while"], ["print", "output"]],
+      code: "n = 1\nwhile n < 4:\n    n = n + 1\nprint(n)",
+      questionKo: "while문이 끝난 직후 n의 값은 무엇일까요?",
+      questionEn: "What is n immediately after the while loop ends?",
+      choicesKo: ["3", "4", "5"],
+      choicesEn: ["3", "4", "5"],
+      answerIndex: 1,
+      explainKo: "n이 4가 되는 순간 n < 4가 거짓이 되어 반복이 끝납니다.",
+      explainEn: "When n reaches 4, n < 4 becomes false and the loop stops."
+    },
+    {
+      id: "list_index", moduleId: "collections", kind: "collection_lookup",
+      requires: [["list"]],
+      code: 'items = ["red", "green", "blue"]\nselected = items[1]',
+      questionKo: "selected에 저장되는 값은 무엇일까요?",
+      questionEn: "Which value is stored in selected?",
+      choicesKo: ["red", "green", "blue"],
+      choicesEn: ["red", "green", "blue"],
+      answerIndex: 1,
+      explainKo: "리스트 인덱스는 0부터 시작하므로 items[1]은 두 번째 항목 green입니다.",
+      explainEn: "List indexes start at 0, so items[1] is the second item, green."
+    },
+    {
+      id: "append_change", moduleId: "collections", kind: "state_change",
+      requires: [["list"], ["append"]],
+      code: "items = [1, 2]\nitems.append(3)",
+      questionKo: "두 번째 줄 실행 뒤 items의 상태는 무엇일까요?",
+      questionEn: "What is the state of items after the second line?",
+      choicesKo: ["[1, 2]", "[1, 2, 3]", "[3, 1, 2]"],
+      choicesEn: ["[1, 2]", "[1, 2, 3]", "[3, 1, 2]"],
+      answerIndex: 1,
+      explainKo: "append(3)은 기존 리스트 끝에 3 하나를 추가합니다.",
+      explainEn: "append(3) adds a single 3 to the end of the existing list."
+    },
+    {
+      id: "dict_lookup", moduleId: "collections", kind: "collection_lookup",
+      requires: [["dict"]],
+      code: 'node = {"name": "LiDAR", "count": 2}\nvalue = node["name"]',
+      questionKo: "value에 저장되는 값은 무엇일까요?",
+      questionEn: "Which value is stored in value?",
+      choicesKo: ["name", "LiDAR", "2"],
+      choicesEn: ["name", "LiDAR", "2"],
+      answerIndex: 1,
+      explainKo: "dict의 대괄호 조회는 지정한 key에 연결된 value를 가져옵니다.",
+      explainEn: "Bracket lookup on a dict returns the value connected to the requested key."
+    },
+    {
+      id: "dict_get", moduleId: "collections", kind: "collection_lookup",
+      requires: [["dict"], ["get"]],
+      code: 'row = {"name": "A"}\nvalue = row.get("count", 0)',
+      questionKo: "count 키가 없을 때 value는 무엇이 될까요?",
+      questionEn: "What does value become when the count key is missing?",
+      choicesKo: ["0", "None만 가능", "KeyError"],
+      choicesEn: ["0", "It must be None", "KeyError"],
+      answerIndex: 0,
+      explainKo: "get()의 두 번째 인자는 키가 없을 때 사용할 기본값이므로 0이 반환됩니다.",
+      explainEn: "The second argument to get() is the default used when the key is missing, so it returns 0."
+    },
+    {
+      id: "set_dedup", moduleId: "collections", kind: "collection_reasoning",
+      requires: [["set"]],
+      code: "values = {1, 1, 2, 3}",
+      questionKo: "이 set에 실제로 남는 서로 다른 값의 개수는 몇 개일까요?",
+      questionEn: "How many distinct values remain in this set?",
+      choicesKo: ["4", "3", "2"],
+      choicesEn: ["4", "3", "2"],
+      answerIndex: 1,
+      explainKo: "set은 같은 값을 하나만 보관하므로 1, 2, 3 세 값이 남습니다.",
+      explainEn: "A set keeps each equal value once, so the remaining values are 1, 2, and 3."
+    },
+    {
+      id: "tuple_index", moduleId: "collections", kind: "collection_lookup",
+      requires: [["tuple"]],
+      code: 'point = (10, 20)\ny = point[1]',
+      questionKo: "y에 저장되는 값은 무엇일까요?",
+      questionEn: "Which value is stored in y?",
+      choicesKo: ["10", "20", "1"],
+      choicesEn: ["10", "20", "1"],
+      answerIndex: 1,
+      explainKo: "tuple도 인덱스가 0부터 시작하므로 point[1]은 두 번째 값 20입니다.",
+      explainEn: "Tuple indexes also start at 0, so point[1] is the second value, 20."
+    },
+    {
+      id: "function_return", moduleId: "functions", kind: "call_trace",
+      requires: [["def", "function"], ["return"]],
+      code: "def double(x):\n    return x * 2\n\nresult = double(4)",
+      questionKo: "함수 호출이 끝난 뒤 result의 값은 무엇일까요?",
+      questionEn: "What is result after the function call finishes?",
+      choicesKo: ["4", "8", "None"],
+      choicesEn: ["4", "8", "None"],
+      answerIndex: 1,
+      explainKo: "4가 x에 들어가고 return x * 2가 8을 호출한 곳으로 돌려줍니다.",
+      explainEn: "4 is passed into x, and return x * 2 sends 8 back to the caller."
+    },
+    {
+      id: "function_scope", moduleId: "functions", kind: "scope_trace",
+      requires: [["def", "function"], ["scope"]],
+      code: "x = 10\ndef change():\n    x = 3\n    return x\n\nresult = change()",
+      questionKo: "change() 안의 x를 읽을 때 먼저 보는 값은 무엇일까요?",
+      questionEn: "Which x is read first inside change()?",
+      choicesKo: ["함수 안에서 만든 x = 3", "항상 바깥 x = 10", "x는 사용할 수 없음"],
+      choicesEn: ["The local x = 3", "Always the outer x = 10", "x cannot be used"],
+      answerIndex: 0,
+      explainKo: "함수 안에서 x에 값을 대입했으므로 그 함수의 지역 이름 x가 먼저 사용됩니다.",
+      explainEn: "Because x is assigned inside the function, that local x is used there."
+    },
+    {
+      id: "file_with", moduleId: "file_error", kind: "resource_flow",
+      requires: [["open", "file"], ["with"]],
+      code: 'with open("note.txt", "r", encoding="utf-8") as f:\n    text = f.read()',
+      questionKo: "with 블록을 벗어날 때 파일 객체 f는 어떻게 되는 것이 핵심일까요?",
+      questionEn: "What is the key behavior of file object f when the with block ends?",
+      choicesKo: ["자동으로 정리되어 닫힌다", "항상 새 파일로 복사된다", "문자열로 자동 변환된다"],
+      choicesEn: ["It is cleaned up and closed", "It is always copied to a new file", "It is automatically converted to a string"],
+      answerIndex: 0,
+      explainKo: "with는 블록이 끝날 때 파일 같은 자원을 정리하도록 도와줍니다.",
+      explainEn: "with helps clean up resources such as files when the block ends."
+    },
+    {
+      id: "exception_route", moduleId: "file_error", kind: "exception_trace",
+      requires: [["exception", "try_except", "error"]],
+      code: 'try:\n    number = int("x")\nexcept ValueError:\n    number = 0',
+      questionKo: "int(\"x\")에서 ValueError가 나면 다음에 실행되는 곳은 어디일까요?",
+      questionEn: "If int(\"x\") raises ValueError, what runs next?",
+      choicesKo: ["except ValueError 블록", "try 블록의 첫 줄부터 무한 반복", "프로그램이 반드시 바로 종료"],
+      choicesEn: ["The except ValueError block", "The try block repeats forever", "The program must immediately terminate"],
+      answerIndex: 0,
+      explainKo: "잡도록 지정한 ValueError가 발생했으므로 해당 except 블록으로 흐름이 이동합니다.",
+      explainEn: "Because ValueError is the exception being handled, control moves to that except block."
+    },
+    {
+      id: "class_method", moduleId: "object_module", kind: "call_trace",
+      requires: [["class", "object"], ["def", "function"], ["return"]],
+      code: 'class Box:\n    def label(self):\n        return "box"\n\nb = Box()\nresult = b.label()',
+      questionKo: "마지막 줄의 result에 들어가는 값은 무엇일까요?",
+      questionEn: "Which value is stored in result on the final line?",
+      choicesKo: ["Box", "box", "label"],
+      choicesEn: ["Box", "box", "label"],
+      answerIndex: 1,
+      explainKo: "b.label()이 method 본문을 실행하고 return \"box\"가 호출 결과가 됩니다.",
+      explainEn: "b.label() runs the method body and return \"box\" becomes the call result."
+    },
+    {
+      id: "import_module", moduleId: "object_module", kind: "module_reading",
+      requires: [["import", "module"]],
+      code: "import math\nresult = math.sqrt(9)",
+      questionKo: "math.sqrt를 읽을 때 math는 무엇을 가리킬까요?",
+      questionEn: "When reading math.sqrt, what does math refer to?",
+      choicesKo: ["불러온 모듈 이름", "문자열 변수", "반복문"],
+      choicesEn: ["The imported module name", "A string variable", "A loop"],
+      answerIndex: 0,
+      explainKo: "import math가 math 모듈을 그 이름으로 사용할 수 있게 하고 sqrt는 그 모듈의 기능입니다.",
+      explainEn: "import math makes the module available under that name, and sqrt is a function from it."
+    },
+    {
+      id: "json_loads", moduleId: "data_tools", kind: "data_conversion",
+      requires: [["json", "json.loads"], ["dict"]],
+      code: 'import json\ntext = "{\\\"count\\\": 2}"\nrow = json.loads(text)',
+      questionKo: "json.loads(text) 뒤 row의 형태에 가장 가까운 것은 무엇일까요?",
+      questionEn: "After json.loads(text), which value is closest to row?",
+      choicesKo: ['{"count": 2} 형태의 dict', "JSON 문자열 그대로", "파일 객체"],
+      choicesEn: ['A dict like {"count": 2}', "The unchanged JSON string", "A file object"],
+      answerIndex: 0,
+      explainKo: "json.loads()는 JSON 문자열을 해석해 이 경우 Python dict로 바꿉니다.",
+      explainEn: "json.loads() parses the JSON string into a Python dict in this case."
+    },
+    {
+      id: "pathlib_path", moduleId: "data_tools", kind: "path_reasoning",
+      requires: [["pathlib"]],
+      code: 'from pathlib import Path\npath = Path("data") / "items.json"',
+      questionKo: "두 번째 줄의 / 연산이 하는 일에 가장 가까운 것은 무엇일까요?",
+      questionEn: "What is the / operation on the second line doing?",
+      choicesKo: ["경로 조각을 이어 붙인다", "숫자 나눗셈만 수행한다", "파일 내용을 읽는다"],
+      choicesEn: ["Join path parts", "Only perform numeric division", "Read the file contents"],
+      answerIndex: 0,
+      explainKo: "Path 객체에서 /는 경로 조각을 자연스럽게 이어 새 경로를 만드는 데 사용됩니다.",
+      explainEn: "For Path objects, / joins path parts to form a new path."
+    },
+    {
+      id: "regex_match", moduleId: "data_tools", kind: "pattern_reading",
+      requires: [["regex"]],
+      code: 'import re\nmatched = bool(re.fullmatch(r"\\d+", "123"))',
+      questionKo: "matched 값은 무엇일까요?",
+      questionEn: "What is the value of matched?",
+      choicesKo: ["True", "False", "None"],
+      choicesEn: ["True", "False", "None"],
+      answerIndex: 0,
+      explainKo: "\\d+는 숫자 문자가 하나 이상인 문자열 전체와 맞고 \"123\"은 그 조건을 만족합니다.",
+      explainEn: "\\d+ matches one or more digit characters, and \"123\" satisfies the full pattern."
+    }
+  ];
+
+  function normalizeConcept(value) {
+    return String(value == null ? "" : value).trim().toLowerCase();
+  }
+
   function listConcepts(card) {
     return Array.isArray(card && card.concepts) ? card.concepts.filter(Boolean) : [];
+  }
+
+  function familyOf(concept) {
+    const key = normalizeConcept(concept);
+    return CONCEPT_FAMILY[key] || key;
   }
 
   function attempted(progress, cardId) {
@@ -201,25 +468,228 @@
     return { unlocked: unlocked, target: target, remaining: Math.max(0, target - value), progress: Math.min(CHECKPOINT_INTERVAL, value - unlocked * CHECKPOINT_INTERVAL) };
   }
 
-  function missionForCheckpoint(checkpointNumber, locale) {
-    const number = Math.max(1, Number(checkpointNumber || 1));
-    const template = MISSION_TEMPLATES[(number - 1) % MISSION_TEMPLATES.length];
-    const en = locale === "en";
+  function primaryConceptFor(card, index, primaryResolver) {
+    const resolved = typeof primaryResolver === "function" ? primaryResolver(card, index) : "";
+    return normalizeConcept(resolved || listConcepts(card)[0] || "");
+  }
+
+  function buildLearningContext(cards, count, primaryResolver) {
+    const rows = Array.isArray(cards) ? cards : [];
+    const boundary = Math.max(0, Math.min(rows.length, Number(count || 0)));
+    const concepts = new Set();
+    const families = new Set();
+    const primaryConcepts = [];
+    const primaryFamilies = [];
+    const recentConcepts = new Set();
+    const recentFamilies = new Set();
+    const recentStart = Math.max(0, boundary - CHECKPOINT_INTERVAL);
+
+    for (let i = 0; i < boundary; i += 1) {
+      listConcepts(rows[i]).forEach(function(concept) {
+        const key = normalizeConcept(concept);
+        if (!key) return;
+        concepts.add(key);
+        families.add(familyOf(key));
+      });
+      const primary = primaryConceptFor(rows[i], i, primaryResolver);
+      if (primary) {
+        primaryConcepts.push(primary);
+        primaryFamilies.push(familyOf(primary));
+        concepts.add(primary);
+        families.add(familyOf(primary));
+        if (i >= recentStart) {
+          recentConcepts.add(primary);
+          recentFamilies.add(familyOf(primary));
+        }
+      }
+    }
+
     return {
-      checkpoint: number,
+      boundary: boundary,
+      concepts: concepts,
+      families: families,
+      primaryConcepts: primaryConcepts,
+      primaryFamilies: primaryFamilies,
+      recentConcepts: recentConcepts,
+      recentFamilies: recentFamilies
+    };
+  }
+
+  function requirementMatches(group, context, recentOnly) {
+    const concepts = recentOnly ? context.recentConcepts : context.concepts;
+    const families = recentOnly ? context.recentFamilies : context.families;
+    return (group || []).some(function(token) {
+      const value = normalizeConcept(token);
+      if (!value) return false;
+      if (value.charAt(0) === "@") return families.has(value.slice(1));
+      return concepts.has(value);
+    });
+  }
+
+  function templateAvailable(template, context) {
+    return (template.requires || []).every(function(group) {
+      return requirementMatches(group, context, false);
+    });
+  }
+
+  function templateRecencyScore(template, context) {
+    let score = 0;
+    (template.requires || []).forEach(function(group) {
+      if (requirementMatches(group, context, true)) score += 4;
+    });
+    const module = PRACTICE_MODULES.find(function(row) { return row.id === template.moduleId; });
+    if (module) {
+      if ((module.matchFamilies || []).some(function(family) { return context.recentFamilies.has(family); })) score += 3;
+      if ((module.matchConcepts || []).some(function(concept) { return context.recentConcepts.has(normalizeConcept(concept)); })) score += 3;
+    }
+    return score;
+  }
+
+  function simpleHash(text) {
+    let h = 2166136261;
+    const value = String(text || "");
+    for (let i = 0; i < value.length; i += 1) {
+      h ^= value.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  function shuffledChoices(choices, answerIndex, seed) {
+    const rows = (choices || []).map(function(text, index) {
+      return { text: text, correct: index === answerIndex, score: simpleHash(seed + "|" + index + "|" + text) };
+    }).sort(function(a, b) { return a.score - b.score; });
+    return {
+      choices: rows.map(function(row) { return row.text; }),
+      answerIndex: Math.max(0, rows.findIndex(function(row) { return row.correct; }))
+    };
+  }
+
+  function localizeTemplate(template, locale, seed) {
+    const en = locale === "en";
+    const rawChoices = en ? template.choicesEn : template.choicesKo;
+    const shuffled = shuffledChoices(rawChoices, template.answerIndex, seed);
+    return {
+      id: template.id,
       kind: template.kind,
-      question: en ? template.en : template.ko,
-      choices: (en ? template.choicesEn : template.choicesKo).slice(),
-      answerIndex: template.answerIndex,
+      moduleId: template.moduleId,
+      code: template.code || "",
+      question: en ? template.questionEn : template.questionKo,
+      choices: shuffled.choices,
+      answerIndex: shuffled.answerIndex,
       explanation: en ? template.explainEn : template.explainKo
     };
   }
 
-  function unlockedPracticeModules(count) {
+  function chooseTemplate(candidates, context, seed) {
+    if (!candidates.length) return null;
+    return candidates.slice().sort(function(a, b) {
+      const scoreDiff = templateRecencyScore(b, context) - templateRecencyScore(a, context);
+      if (scoreDiff) return scoreDiff;
+      return simpleHash(a.id + "|" + seed) - simpleHash(b.id + "|" + seed);
+    })[0];
+  }
+
+  function fallbackMission(context, cards, locale, primaryResolver, moduleId, seed) {
+    const rows = Array.isArray(cards) ? cards : [];
+    const start = Math.max(0, context.boundary - CHECKPOINT_INTERVAL);
+    const recent = [];
+    for (let i = context.boundary - 1; i >= start; i -= 1) {
+      const concept = primaryConceptFor(rows[i], i, primaryResolver);
+      if (!concept) continue;
+      const module = moduleId ? PRACTICE_MODULES.find(function(row) { return row.id === moduleId; }) : null;
+      const family = familyOf(concept);
+      if (module) {
+        const matched = (module.matchConcepts || []).map(normalizeConcept).includes(concept) || (module.matchFamilies || []).includes(family);
+        if (!matched) continue;
+      }
+      if (!recent.some(function(row) { return row.concept === concept; })) recent.push({ concept: concept, card: rows[i] });
+    }
+    if (!recent.length) {
+      for (let i = context.boundary - 1; i >= 0; i -= 1) {
+        const concept = primaryConceptFor(rows[i], i, primaryResolver);
+        if (concept) { recent.push({ concept: concept, card: rows[i] }); break; }
+      }
+    }
+    const focus = recent[0] || { concept: "python", card: null };
+    const distractorPool = [];
+    for (let i = context.primaryConcepts.length - 1; i >= 0; i -= 1) {
+      const concept = context.primaryConcepts[i];
+      if (concept !== focus.concept && !distractorPool.includes(concept)) distractorPool.push(concept);
+      if (distractorPool.length >= 6) break;
+    }
+    const raw = [focus.concept].concat(distractorPool.slice(0, 3));
+    while (raw.length < 3) raw.push(raw.length === 1 ? "value" : "flow");
+    const shuffled = shuffledChoices(raw, 0, seed + "|fallback");
+    return {
+      id: "fallback_recent_concept",
+      kind: "concept_trace",
+      moduleId: moduleId || "recent",
+      code: String(focus.card && focus.card.code || ""),
+      question: locale === "en" ? "Which learned concept should you trace first in this code?" : "이 코드를 읽을 때 먼저 추적할 학습 개념은 무엇일까요?",
+      choices: shuffled.choices,
+      answerIndex: shuffled.answerIndex,
+      explanation: locale === "en" ? "This checkpoint reuses a concept that already appeared in your learning sequence: " + focus.concept + "." : "이 체크포인트는 이미 학습 순서에 등장한 개념인 " + focus.concept + "을 다시 추적합니다."
+    };
+  }
+
+  function missionForCheckpoint(checkpointNumber, locale, cards, primaryResolver) {
+    const number = Math.max(1, Number(checkpointNumber || 1));
+    const rows = Array.isArray(cards) ? cards : [];
+    const context = buildLearningContext(rows, Math.min(rows.length, number * CHECKPOINT_INTERVAL), primaryResolver);
+    const candidates = PRACTICE_TEMPLATES.filter(function(template) { return templateAvailable(template, context); });
+    const template = chooseTemplate(candidates, context, "checkpoint:" + number);
+    const mission = template
+      ? localizeTemplate(template, locale, "checkpoint:" + number + ":" + template.id)
+      : fallbackMission(context, rows, locale, primaryResolver, "", "checkpoint:" + number);
+    mission.checkpoint = number;
+    mission.boundary = context.boundary;
+    return mission;
+  }
+
+  function moduleMatches(module, concept) {
+    const key = normalizeConcept(concept);
+    const family = familyOf(key);
+    return (module.matchConcepts || []).map(normalizeConcept).includes(key) || (module.matchFamilies || []).includes(family);
+  }
+
+  function moduleFirstIndex(module, cards, primaryResolver) {
+    const rows = Array.isArray(cards) ? cards : [];
+    for (let i = 0; i < rows.length; i += 1) {
+      if (moduleMatches(module, primaryConceptFor(rows[i], i, primaryResolver))) return i;
+    }
+    return -1;
+  }
+
+  function unlockedPracticeModules(count, cards, primaryResolver) {
     const value = Math.max(0, Number(count || 0));
     return PRACTICE_MODULES.map(function(module) {
-      return Object.assign({}, module, { unlocked: value >= module.threshold, remaining: Math.max(0, module.threshold - value) });
+      const firstIndex = moduleFirstIndex(module, cards, primaryResolver);
+      const unlockAt = firstIndex >= 0 ? firstIndex + 1 : null;
+      return Object.assign({}, module, {
+        unlockAt: unlockAt,
+        unlocked: unlockAt != null && value >= unlockAt,
+        remaining: unlockAt == null ? null : Math.max(0, unlockAt - value)
+      });
     });
+  }
+
+  function missionForPracticeModule(moduleId, count, locale, cards, primaryResolver) {
+    const rows = Array.isArray(cards) ? cards : [];
+    const module = PRACTICE_MODULES.find(function(row) { return row.id === moduleId; });
+    const context = buildLearningContext(rows, Math.min(rows.length, Math.max(0, Number(count || 0))), primaryResolver);
+    if (!module) return fallbackMission(context, rows, locale, primaryResolver, "", "module:unknown:" + count);
+    const candidates = PRACTICE_TEMPLATES.filter(function(template) {
+      return template.moduleId === moduleId && templateAvailable(template, context);
+    });
+    const template = chooseTemplate(candidates, context, "module:" + moduleId + ":" + count);
+    const mission = template
+      ? localizeTemplate(template, locale, "module:" + moduleId + ":" + count + ":" + template.id)
+      : fallbackMission(context, rows, locale, primaryResolver, moduleId, "module:" + moduleId + ":" + count);
+    mission.checkpoint = 0;
+    mission.boundary = context.boundary;
+    mission.moduleId = moduleId;
+    return mission;
   }
 
   function startOfWeek(now) {
@@ -274,13 +744,17 @@
     WEEKLY_DAY_GOAL: WEEKLY_DAY_GOAL,
     MASTERY_LEVELS: MASTERY_LEVELS.map(function(row) { return Object.assign({}, row); }),
     PRACTICE_MODULES: PRACTICE_MODULES.map(function(row) { return Object.assign({}, row); }),
+    PRACTICE_TEMPLATES: PRACTICE_TEMPLATES.map(function(row) { return Object.assign({}, row); }),
     attemptedCount: attemptedCount,
     masteryForCard: masteryForCard,
     conceptMastery: conceptMastery,
     unlockedCheckpointCount: unlockedCheckpointCount,
     nextCheckpoint: nextCheckpoint,
+    buildLearningContext: buildLearningContext,
     missionForCheckpoint: missionForCheckpoint,
     unlockedPracticeModules: unlockedPracticeModules,
+    missionForPracticeModule: missionForPracticeModule,
+    familyOf: familyOf,
     startOfWeek: startOfWeek,
     weeklyStatus: weeklyStatus,
     appendEvent: appendEvent,
