@@ -32,6 +32,7 @@
       const open = support.getAttribute("aria-expanded") === "true";
       support.setAttribute("aria-label", open ? t("보조 자료 열림", "Support open") : t("보조 자료 닫힘", "Support closed"));
       support.title = open ? t("보조 자료 닫기", "Close support") : t("보조 자료 보기", "Show support");
+      support.setAttribute("aria-controls", "learningSupportRegionV349");
     }
   }
 
@@ -50,97 +51,52 @@
     return true;
   }
 
-  function ensureInlinePortal() {
-    const bar = document.getElementById("studyFocusV345");
-    if (!bar || !bar.parentElement) return null;
-    let portal = document.getElementById("learningSupportInlineV353");
-    if (!portal) {
-      portal = document.createElement("section");
-      portal.id = "learningSupportInlineV353";
-      /* Do not use the legacy .side class: V345 intentionally hides .side in focus mode. */
-      portal.className = "v353-inline-support";
-      portal.hidden = true;
-      portal.tabIndex = -1;
-      portal.setAttribute("role", "region");
-      portal.setAttribute("aria-label", t("보조 자료", "Support"));
-      portal.setAttribute("aria-hidden", "true");
-      bar.insertAdjacentElement("afterend", portal);
-    } else if (portal.previousElementSibling !== bar) {
-      bar.insertAdjacentElement("afterend", portal);
-    }
-    return portal;
-  }
-
-  function restoreSupportContents() {
-    const support = document.getElementById("learningSupportRegionV349");
-    const portal = document.getElementById("learningSupportInlineV353");
-    const toggle = document.getElementById("learningSupportToggleV349");
-    if (!support || !portal) return false;
-    while (portal.firstChild) support.appendChild(portal.firstChild);
-    portal.hidden = true;
-    portal.setAttribute("aria-hidden", "true");
-    support.classList.remove("v353-ported-out");
-    support.removeAttribute("aria-hidden");
-    if (toggle) toggle.setAttribute("aria-controls", "learningSupportRegionV349");
-    return true;
-  }
-
-  function placeManualSupportInline() {
+  function manualSupportOpen() {
     const learn = document.getElementById("learnView");
-    const support = document.getElementById("learningSupportRegionV349");
     const toggle = document.getElementById("learningSupportToggleV349");
-    if (!learn || !support || !toggle) return null;
-    const manualOpen = toggle.getAttribute("aria-expanded") === "true" && learn.classList.contains("v349-support-open");
-    if (!mobileLayout() || !manualOpen) {
-      restoreSupportContents();
-      return null;
-    }
-    const portal = ensureInlinePortal();
-    if (!portal) return null;
-    while (support.firstChild) portal.appendChild(support.firstChild);
-    support.classList.add("v353-ported-out");
-    support.setAttribute("aria-hidden", "true");
-    portal.hidden = false;
-    portal.setAttribute("aria-hidden", "false");
-    toggle.setAttribute("aria-controls", "learningSupportInlineV353");
-    return portal;
+    return !!(
+      learn && toggle &&
+      toggle.getAttribute("aria-expanded") === "true" &&
+      learn.classList.contains("v349-support-open")
+    );
   }
 
-  function supportSurface() {
-    const portal = document.getElementById("learningSupportInlineV353");
-    if (portal && visible(portal)) return portal;
-    return document.getElementById("learningSupportRegionV349");
-  }
-
-  function alignSupportSurface(surface) {
-    if (!surface || !visible(surface)) return false;
-    const targetTop = Math.max(0, surface.getBoundingClientRect().top + window.scrollY - 10);
-    try { window.scrollTo({ top: targetTop, left: 0, behavior: "auto" }); }
-    catch (_) { window.scrollTo(0, targetTop); }
-    return true;
+  function syncSupportPresentation() {
+    const support = document.getElementById("learningSupportRegionV349");
+    if (!support) return false;
+    const sheet = mobileLayout() && manualSupportOpen();
+    support.classList.toggle("v353-manual-support-sheet", sheet);
+    support.setAttribute("role", "region");
+    support.setAttribute("aria-label", t("보조 자료", "Support"));
+    if (sheet) support.setAttribute("tabindex", "-1");
+    return sheet;
   }
 
   function focusSupportRegion() {
-    const toggle = document.getElementById("learningSupportToggleV349");
-    if (!toggle || toggle.getAttribute("aria-expanded") !== "true") return false;
-    placeManualSupportInline();
-    const surface = supportSurface();
-    if (!surface || !visible(surface)) return false;
-    surface.setAttribute("tabindex", "-1");
-    surface.classList.add("v353-support-arrival");
-    alignSupportSurface(surface);
+    const support = document.getElementById("learningSupportRegionV349");
+    if (!support || !manualSupportOpen()) return false;
+    syncSupportPresentation();
+    if (!visible(support)) return false;
+    support.setAttribute("tabindex", "-1");
+    support.classList.add("v353-support-arrival");
+
+    if (!mobileLayout()) {
+      try { support.scrollIntoView({ behavior: "auto", block: "start" }); }
+      catch (_) { try { support.scrollIntoView(); } catch (_) {} }
+    }
+
     window.setTimeout(function () {
-      try { surface.focus({ preventScroll: true }); } catch (_) { try { surface.focus(); } catch (_) {} }
-      alignSupportSurface(surface);
-    }, 80);
-    window.setTimeout(function () { surface.classList.remove("v353-support-arrival"); }, 1300);
+      try { support.focus({ preventScroll: true }); }
+      catch (_) { try { support.focus(); } catch (_) {} }
+    }, 40);
+    window.setTimeout(function () { support.classList.remove("v353-support-arrival"); }, 1100);
     return true;
   }
 
   function refresh() {
     groupLearningControls();
     syncControlLabels();
-    placeManualSupportInline();
+    syncSupportPresentation();
     document.documentElement.dataset.interactionClarityV353 = VERSION;
   }
 
@@ -161,7 +117,7 @@
       if (target.id === "learningSupportToggleV349" && target.getAttribute("aria-expanded") === "true") {
         focusSupportRegion();
       }
-    }, 40);
+    }, 30);
   });
 
   window.addEventListener("resize", scheduleRefresh, { passive: true });
@@ -181,7 +137,6 @@
     version: VERSION,
     refresh: refresh,
     focusSupportRegion: focusSupportRegion,
-    restoreSupportContents: restoreSupportContents,
-    supportSurface: supportSurface
+    syncSupportPresentation: syncSupportPresentation
   };
 })();
