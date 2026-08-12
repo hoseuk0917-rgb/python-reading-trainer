@@ -70,3 +70,7 @@ The V347 deferred refactor debt is resolved as follows:
 - **Repeated dialog CSS in older UI layers:** resolved for the common shell by centralizing overlay/card presentation in `study_ui_v348.css`; feature-specific styling remains local by design.
 
 No content rewrite is part of V348. Existing V339 relevance and V346 terminology gates remain authoritative.
+
+## Deployment promotion
+
+The validated V348 closure tree is promoted through a documentation-only main commit so legacy GitHub Pages receives a normal main push event. This promotion changes no product runtime, UI/CSS, lesson content, test harness, or learning-state behavior after the successful zero-change closure run.
