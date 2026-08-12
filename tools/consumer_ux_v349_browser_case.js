@@ -52,7 +52,13 @@
     }, 30000);
 
     const navButtons = Array.from(doc.querySelectorAll("#consumerNavV349 > .consumer-nav-button-v349"));
-    log("PRIMARY_NAV_COUNT_4", navButtons.length === 4 && navButtons.every(function (b) { return visible(win, b); }), "count=" + navButtons.length);
+    const v350Active = doc.documentElement.dataset.learningFlowV350 === "v350_a1";
+    const visibleNavButtons = navButtons.filter(function (b) { return visible(win, b); });
+    const practiceNav = doc.getElementById("consumerPracticeV349");
+    const navContractOk = v350Active
+      ? navButtons.length === 4 && visibleNavButtons.length === 3 && practiceNav && !visible(win, practiceNav)
+      : navButtons.length === 4 && visibleNavButtons.length === 4;
+    log("PRIMARY_NAV_CONTRACT", navContractOk, "v350=" + v350Active + " dom=" + navButtons.length + " visible=" + visibleNavButtons.length);
     const legacyTabs = doc.querySelector("nav.tabs");
     log("LEGACY_EIGHT_TABS_HIDDEN", legacyTabs && !visible(win, legacyTabs));
 
@@ -70,9 +76,12 @@
     const supportToggle = doc.getElementById("learningSupportToggleV349");
     log("QUIZ_SUPPORT_HIDDEN_DEFAULT", support && !visible(win, support) && visible(win, supportToggle));
     supportToggle.click();
-    await new Promise(function (r) { setTimeout(r, 120); });
-    log("QUIZ_SUPPORT_DISCLOSURE_WORKS", learn.classList.contains("v349-support-open") && visible(win, support));
+    await new Promise(function (r) { setTimeout(r, 160); });
+    const supportPortalV353 = doc.getElementById("learningSupportInlineV353");
+    const supportSurfaceVisible = visible(win, support) || visible(win, supportPortalV353);
+    log("QUIZ_SUPPORT_DISCLOSURE_WORKS", learn.classList.contains("v349-support-open") && supportSurfaceVisible, `legacy=${visible(win, support)} portal=${visible(win, supportPortalV353)}`);
     supportToggle.click();
+    await new Promise(function (r) { setTimeout(r, 120); });
 
     await waitFor(function () {
       return doc.getElementById("studyToolsV7") && doc.getElementById("studyToolsDisclosureV349") && doc.querySelector("#studyToolsV7 .study-tools-controls");
@@ -87,13 +96,30 @@
 
     const settings = doc.getElementById("consumerHeaderMenuBtnV349");
     const reset = doc.getElementById("resetBtn");
-    log("RESET_HIDDEN_FROM_HEADER", settings && reset && !visible(win, reset));
-    settings.click();
-    await new Promise(function (r) { setTimeout(r, 80); });
-    log("RESET_AVAILABLE_IN_MORE_MENU", visible(win, reset));
-    win.document.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-    await new Promise(function (r) { setTimeout(r, 80); });
-    log("HEADER_MENU_ESCAPE_RETURN", !visible(win, reset) && doc.activeElement === settings);
+    log("RESET_HIDDEN_FROM_HEADER", reset && !visible(win, reset));
+    if (v350Active) {
+      const consumerHeader = doc.getElementById("consumerHeaderV349");
+      log("HEADER_OVERFLOW_HIDDEN_V350", consumerHeader && !visible(win, consumerHeader));
+      const libraryForData = doc.getElementById("consumerLibraryV349");
+      libraryForData.click();
+      await new Promise(function (r) { setTimeout(r, 80); });
+      const libraryForDataMenu = doc.getElementById("consumerLibraryMenuV349");
+      const dataEntry = doc.getElementById("learningDataMenuV350");
+      log("STUDY_DATA_MENU_ENTRY_V350", visible(win, libraryForDataMenu) && dataEntry && visible(win, dataEntry));
+      dataEntry.click();
+      await waitFor(function () {
+        return doc.getElementById("progressView").classList.contains("active-view") && visible(win, doc.getElementById("resetProgressV350"));
+      }, 5000);
+      log("RESET_AVAILABLE_IN_STUDY_DATA_V350", visible(win, doc.getElementById("resetProgressV350")));
+    } else {
+      log("HEADER_OVERFLOW_AVAILABLE_V349", settings && visible(win, settings));
+      settings.click();
+      await new Promise(function (r) { setTimeout(r, 80); });
+      log("RESET_AVAILABLE_IN_MORE_MENU", visible(win, reset));
+      win.document.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      await new Promise(function (r) { setTimeout(r, 80); });
+      log("HEADER_MENU_ESCAPE_RETURN", !visible(win, reset) && doc.activeElement === settings);
+    }
 
     const toolsBtn = doc.getElementById("consumerToolsV349");
     toolsBtn.click();

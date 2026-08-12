@@ -120,11 +120,22 @@
     const goal = doc().getElementById("readingGoalWrap");
     add("FOCUS_DEFAULT_CONTRACT", api.focusEnabled() === true, api.focusEnabled());
     add("FOCUS_HIDES_SUPPORT_PREANSWER", !visible(side) && !visible(goal), `side=${visible(side)} goal=${visible(goal)}`);
-    add("FOCUS_HELP_AVAILABLE", visible(doc().getElementById("focusHelpV345")), doc().getElementById("focusHelpV345").hidden);
+    const legacyFocusHelp = doc().getElementById("focusHelpV345");
+    const consumerSupportHelp = doc().getElementById("learningSupportToggleV349");
+    const manualHelp = visible(legacyFocusHelp) ? legacyFocusHelp : (visible(consumerSupportHelp) ? consumerSupportHelp : null);
+    add("FOCUS_HELP_AVAILABLE", !!manualHelp, manualHelp ? manualHelp.id : "none");
 
-    doc().getElementById("focusHelpV345").click();
-    await sleep(60);
-    add("FOCUS_HELP_REVEALS_SUPPORT", visible(side) && learn.classList.contains("v345-support-revealed"), `side=${visible(side)} class=${learn.className}`);
+    if (!manualHelp) throw new Error("manual support entry missing");
+    manualHelp.click();
+    await sleep(120);
+    const inlineSupport = doc().getElementById("learningSupportInlineV353");
+    const supportVisible = visible(side) || visible(inlineSupport);
+    const supportRevealClass = learn.classList.contains("v345-support-revealed") || learn.classList.contains("v349-support-open");
+    add("FOCUS_HELP_REVEALS_SUPPORT", supportVisible && supportRevealClass, `entry=${manualHelp.id} side=${visible(side)} inline=${visible(inlineSupport)} class=${learn.className}`);
+    if (manualHelp === consumerSupportHelp && consumerSupportHelp.getAttribute("aria-expanded") === "true") {
+      consumerSupportHelp.click();
+      await sleep(120);
+    }
     api.setFocusMode(false);
     api.setFocusMode(true);
     await sleep(60);
