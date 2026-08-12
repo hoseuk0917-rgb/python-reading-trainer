@@ -117,9 +117,9 @@
       .mastery-v341-bar { height:7px; border-radius:999px; background:#e2e8f0; overflow:hidden; }
       .mastery-v341-bar span { display:block; height:100%; border-radius:999px; background:#10b981; }
       .mastery-v341-state { font-size:12px; color:#475569; text-align:right; }
-      .mission-v341 { position:fixed; inset:0; z-index:10120; display:flex; align-items:center; justify-content:center; background:rgba(15,23,42,.58); padding:16px; }
+      .mission-v341 { z-index:10120; padding:16px; }
       .mission-v341.hidden { display:none; }
-      .mission-v341-card { width:min(680px,100%); max-height:88vh; overflow:auto; background:#fff; border-radius:20px; padding:18px; box-sizing:border-box; box-shadow:0 24px 70px rgba(15,23,42,.35); }
+      .mission-v341-card { width:min(680px,100%); padding:18px; }
       .mission-v341-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
       .mission-v341-top h2 { margin:0; font-size:19px; }
       .mission-v341-close { width:34px; height:34px; border:0; border-radius:999px; cursor:pointer; }

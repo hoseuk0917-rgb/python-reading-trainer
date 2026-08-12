@@ -621,9 +621,9 @@
       .v345-data-panel h2 { margin:0 0 6px; }
       .v345-data-panel p { margin:0; color:#64748b; line-height:1.6; }
       .v345-data-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
-      .v345-modal { position:fixed; inset:0; z-index:10500; display:flex; align-items:center; justify-content:center; padding:16px; background:rgba(15,23,42,.58); }
+      .v345-modal { z-index:10500; padding:16px; }
       .v345-modal.hidden { display:none !important; }
-      .v345-modal-card { width:min(620px,100%); max-height:88vh; overflow:auto; border-radius:20px; background:#fff; padding:18px; box-shadow:0 24px 70px rgba(15,23,42,.35); }
+      .v345-modal-card { width:min(620px,100%); padding:18px; }
       .v345-modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
       .v345-modal-head h2 { margin:0; }
       .v345-modal-close { min-width:40px; min-height:44px; border:0; border-radius:999px; background:#f1f5f9; cursor:pointer; font-size:20px; }

@@ -105,9 +105,9 @@
       .syntax-v340:focus { outline:2px solid #93c5fd; }
       .recall-v340 { margin-top:10px; padding:10px 12px; border-radius:12px; background:#fff; border:1px dashed rgba(16,185,129,.45); font-size:13px; line-height:1.5; }
       .recall-v340 button { margin-left:6px; border:0; border-radius:999px; padding:5px 9px; cursor:pointer; font-weight:800; }
-      .modal-v340 { position:fixed; inset:0; z-index:10050; display:flex; align-items:center; justify-content:center; padding:18px; background:rgba(15,23,42,.58); }
+      .modal-v340 { z-index:10050; padding:18px; }
       .modal-v340.hidden { display:none; }
-      .modal-v340-card { width:min(720px,100%); max-height:88vh; overflow:auto; border-radius:20px; background:#fff; box-shadow:0 24px 70px rgba(15,23,42,.35); padding:18px; box-sizing:border-box; }
+      .modal-v340-card { width:min(720px,100%); padding:18px; }
       .modal-v340-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
       .modal-v340-top h2 { margin:0; font-size:19px; }
       .modal-v340-close { border:0; border-radius:999px; width:34px; height:34px; cursor:pointer; }
