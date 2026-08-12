@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "v347_a6";
+  const VERSION = "v347_a7";
   const REVIEW_KEY = "python-reading-trainer-review-v340";
   const dialogOpeners = new WeakMap();
   let lastOutsideFocus = null;
@@ -114,6 +114,17 @@
       || findByData("data-view", descriptor.view);
   }
 
+  function controlVisible(element) {
+    if (!element || !element.isConnected) return false;
+    try {
+      const style = window.getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return !element.hidden && style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
   function firstDialogControl(modal) {
     if (!modal) return null;
     return modal.querySelector(
@@ -140,9 +151,78 @@
 
   function focusResolvedControl(descriptor) {
     const target = resolveControl(descriptor);
-    if (!target || typeof target.focus !== "function") return false;
+    if (!target || !controlVisible(target) || typeof target.focus !== "function") return false;
     try { target.focus({ preventScroll: true }); } catch (_) { return false; }
     return document.activeElement === target;
+  }
+
+  function restoreStableSemanticFocus(descriptor, root, onSuccess) {
+    if (!descriptor) return;
+    let stopped = false;
+    let scheduled = false;
+    let attempts = 0;
+    let stableTarget = null;
+    let stableFrames = 0;
+    let mutationRevision = 0;
+    const observedRoot = root || document.documentElement;
+
+    function finish() {
+      if (stopped) return;
+      stopped = true;
+      observer.disconnect();
+      if (typeof onSuccess === "function") onSuccess();
+    }
+
+    function schedule() {
+      if (stopped || scheduled) return;
+      scheduled = true;
+      window.requestAnimationFrame(function () {
+        scheduled = false;
+        if (stopped) return;
+        attempts += 1;
+        const revisionBefore = mutationRevision;
+        const target = resolveControl(descriptor);
+        if (!target || !controlVisible(target)) {
+          stableTarget = null;
+          stableFrames = 0;
+          if (attempts < 12) schedule();
+          else observer.disconnect();
+          return;
+        }
+
+        try { target.focus({ preventScroll: true }); } catch (_) {}
+        window.requestAnimationFrame(function () {
+          if (stopped) return;
+          const current = resolveControl(descriptor);
+          const stable = mutationRevision === revisionBefore
+            && current === target
+            && target.isConnected
+            && controlVisible(target)
+            && document.activeElement === target;
+          if (stable) {
+            stableFrames = stableTarget === target ? stableFrames + 1 : 1;
+            stableTarget = target;
+            if (stableFrames >= 2) {
+              finish();
+              return;
+            }
+          } else {
+            stableTarget = null;
+            stableFrames = 0;
+          }
+          if (attempts < 12) schedule();
+          else observer.disconnect();
+        });
+      });
+    }
+
+    const observer = new MutationObserver(function () {
+      mutationRevision += 1;
+      stableFrames = 0;
+      schedule();
+    });
+    observer.observe(observedRoot, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "hidden", "aria-hidden", "disabled"] });
+    schedule();
   }
 
   function returnToProgressForReviewOrigin() {
@@ -170,17 +250,20 @@
     dialogOpeners.delete(modal);
     if (!descriptor) return;
 
-    // V346 intentionally moves from Progress to Learn before opening V340 review.
-    // If the learner cancels that delegated review, restore the originating view
-    // before restoring focus. Direct V340 reviews have no explicit V346 opener
-    // and therefore keep their existing view/lifecycle unchanged.
-    if (explicitReviewOpener) returnToProgressForReviewOrigin();
+    // V346 moves from Progress to Learn before delegating to the V340 review.
+    // When that delegated review closes, restore the origin view first and then
+    // follow the current semantic button across any V346 rerenders until focus
+    // remains stable for two paint turns. Direct V340 reviews keep their view.
+    if (explicitReviewOpener) {
+      returnToProgressForReviewOrigin();
+      restoreStableSemanticFocus(descriptor, document.getElementById("progressDashboard") || document.documentElement, function () {
+        pendingReviewOpener = null;
+      });
+      return;
+    }
 
     window.requestAnimationFrame(function () {
-      window.requestAnimationFrame(function () {
-        const restored = focusResolvedControl(descriptor);
-        if (restored && explicitReviewOpener) pendingReviewOpener = null;
-      });
+      focusResolvedControl(descriptor);
     });
   }
 
@@ -189,11 +272,9 @@
     const close = modal.querySelector(".modal-v340-close");
     if (close && typeof close.click === "function") {
       close.click();
-      restoreDialogFocus(modal);
       return true;
     }
     modal.classList.add("hidden");
-    restoreDialogFocus(modal);
     return true;
   }
 
