@@ -360,7 +360,9 @@
 
   function refresh() {
     renderProgressAction();
-    adoptExistingComponents();
+    // V348 owns shared-component adoption after startup. Retain this only as
+    // a boot-time fallback while the final runtime has not loaded yet.
+    if (!window.LearningRuntimeV348) adoptExistingComponents();
   }
 
   function queueRefresh() {

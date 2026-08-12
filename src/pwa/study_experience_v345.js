@@ -339,8 +339,6 @@
     });
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
-    const target = actionBox.querySelector("button") || modal.querySelector(".v345-modal-close");
-    if (target) target.focus();
   }
 
   function closeModal() {
@@ -348,11 +346,6 @@
     if (!modal || modal.classList.contains("hidden")) return;
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
-    const target = modalReturnFocus;
-    modalReturnFocus = null;
-    if (target && document.contains(target) && typeof target.focus === "function") {
-      window.setTimeout(function () { try { target.focus({ preventScroll: true }); } catch (_) { target.focus(); } }, 0);
-    }
   }
 
   function showSessionSummary() {
@@ -655,81 +648,14 @@
     document.head.appendChild(style);
   }
 
-  function visibleDialog() {
-    const candidates = Array.from(document.querySelectorAll('[role="dialog"]'));
-    return candidates.reverse().find(function (dialog) {
-      const hiddenParent = dialog.closest(".hidden,[aria-hidden='true']");
-      if (hiddenParent && hiddenParent !== dialog) return false;
-      const rect = dialog.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
-    }) || null;
-  }
-
-  function trapDialogFocus(event) {
-    if (event.key !== "Tab") return;
-    const dialog = visibleDialog();
-    if (!dialog) return;
-    const focusables = Array.from(dialog.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])')).filter(function (el) {
-      return !el.hidden && el.getBoundingClientRect().width > 0 && el.getBoundingClientRect().height > 0;
-    });
-    if (!focusables.length) return;
-    const first = focusables[0];
-    const last = focusables[focusables.length - 1];
-    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-  }
-
-  function closeKnownDialogOnEscape(event) {
-    if (event.key !== "Escape") return;
-    const own = document.getElementById("studyModalV345");
-    if (own && !own.classList.contains("hidden")) { closeModal(); return; }
-    const mission = document.getElementById("missionModalV341");
-    if (mission && !mission.classList.contains("hidden")) {
-      const btn = mission.querySelector(".mission-v341-close");
-      if (btn) btn.click();
-      return;
-    }
-    const diagram = document.getElementById("diagramLargeModal");
-    if (diagram && !diagram.classList.contains("hidden")) {
-      const btn = document.getElementById("closeLargeDiagramBtn");
-      if (btn) btn.click();
-    }
-  }
-
   function enhanceA11y() {
     const result = document.getElementById("resultBox");
     if (result) { result.setAttribute("role", "status"); result.setAttribute("aria-live", "polite"); }
-    document.addEventListener("keydown", trapDialogFocus);
-    document.addEventListener("keydown", closeKnownDialogOnEscape);
   }
 
   function installAnswerActivityHooks() {
-    document.addEventListener("click", function (event) {
-      const choice = event.target && event.target.closest ? event.target.closest(".choice-btn") : null;
-      if (choice && !choice.disabled) {
-        const card = currentCardSafe();
-        if (!card) return;
-        const p = progressSafe();
-        const wasAttempted = !!(p.correct[card.id] || p.confused[card.id]);
-        window.setTimeout(function () {
-          const outcome = choice.classList.contains("correct") ? "correct" : choice.classList.contains("wrong") ? "confused" : "";
-          if (outcome) recordActivity({ cardId: card.id, outcome: outcome, newCard: !wasAttempted });
-          if (outcome) revealSupport();
-        }, 0);
-        return;
-      }
-      const again = event.target && event.target.closest ? event.target.closest("#againBtn") : null;
-      if (again) {
-        const card = currentCardSafe();
-        if (!card) return;
-        const p = progressSafe();
-        const wasAttempted = !!(p.correct[card.id] || p.confused[card.id]);
-        window.setTimeout(function () {
-          recordActivity({ cardId: card.id, outcome: "confused", newCard: !wasAttempted });
-          revealSupport();
-        }, 0);
-      }
-    }, true);
+    // V348 owns lesson-attempt capture. V345 keeps only the activity API.
+    window.__studyExperienceV345AttemptDelegatedToV348 = true;
   }
 
   function installObservers() {
@@ -784,7 +710,9 @@
     getTodaySummary: getTodaySummary,
     setFocusMode: setFocusMode,
     focusEnabled: focusEnabled,
-    showSessionSummary: showSessionSummary
+    showSessionSummary: showSessionSummary,
+    recordActivity: recordActivity,
+    revealSupport: revealSupport
   });
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });

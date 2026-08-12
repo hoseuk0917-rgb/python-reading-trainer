@@ -216,6 +216,9 @@
   }
 
   function scheduleWrongCard(card) {
+    // V348 owns lesson-attempt side effects in one delegated event pipeline.
+    // Keep the legacy path only as a boot-time fallback if V348 did not load.
+    if (window.LearningRuntimeV348) return;
     const e = engine();
     if (!e || !card) return;
     saveReviewState(e.scheduleWrong(loadReviewState(), card.id, Date.now()));

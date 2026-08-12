@@ -51,6 +51,16 @@
     }
   }
 
+  function cardAttemptedSafe(card) {
+    if (!card || !card.id) return false;
+    try {
+      const progress = typeof loadProgress === "function" ? loadProgress() : { correct: {}, confused: {} };
+      return !!((progress.correct && progress.correct[card.id]) || (progress.confused && progress.confused[card.id]));
+    } catch (_) {
+      return false;
+    }
+  }
+
   function refreshLearningSurfaces() {
     try { if (typeof window.refreshLearningPathV340 === "function") window.refreshLearningPathV340(); } catch (_) {}
     try { if (typeof window.renderLearningSummaryV341 === "function") window.renderLearningSummaryV341(); } catch (_) {}
@@ -68,7 +78,7 @@
     return true;
   }
 
-  function recordAttemptEffects(card, outcome, beforeAttempted) {
+  function recordAttemptEffects(card, outcome, beforeAttempted, wasAttempted) {
     if (!card || !outcome) return;
     if (outcome === "confused") recordWrong(card);
 
@@ -80,10 +90,6 @@
 
     try {
       if (window.StudyExperienceV345 && typeof window.StudyExperienceV345.recordActivity === "function") {
-        const progress = typeof loadProgress === "function" ? loadProgress() : { correct: {}, confused: {} };
-        const wasAttempted = Number(beforeAttempted || 0) >= attemptedCountSafe() ? false : !!(
-          progress && ((progress.correct && progress.correct[card.id]) || (progress.confused && progress.confused[card.id]))
-        );
         window.StudyExperienceV345.recordActivity({
           cardId: String(card.id || ""),
           outcome: outcome,
@@ -110,11 +116,12 @@
         const card = currentCardSafe();
         if (!card) return;
         const beforeAttempted = attemptedCountSafe();
+        const wasAttempted = cardAttemptedSafe(card);
         window.setTimeout(function () {
           const outcome = choice.classList.contains("correct")
             ? "correct"
             : (choice.classList.contains("wrong") ? "confused" : "");
-          if (outcome) recordAttemptEffects(card, outcome, beforeAttempted);
+          if (outcome) recordAttemptEffects(card, outcome, beforeAttempted, wasAttempted);
         }, 0);
         return;
       }
@@ -124,8 +131,9 @@
         const card = currentCardSafe();
         if (!card) return;
         const beforeAttempted = attemptedCountSafe();
+        const wasAttempted = cardAttemptedSafe(card);
         window.setTimeout(function () {
-          recordAttemptEffects(card, "confused", beforeAttempted);
+          recordAttemptEffects(card, "confused", beforeAttempted, wasAttempted);
         }, 0);
       }
     }, true);
@@ -270,6 +278,18 @@
     return modal.contains(document.activeElement);
   }
 
+  function focusDialogOnOpen(modal) {
+    if (!modal || !isOpenDialog(modal)) return;
+    if (focusDialog(modal)) return;
+    let frame = 0;
+    function retry() {
+      if (!isOpenDialog(modal) || focusDialog(modal)) return;
+      frame += 1;
+      if (frame < 3) window.requestAnimationFrame(retry);
+    }
+    window.requestAnimationFrame(retry);
+  }
+
   function goProgress() {
     try {
       if (typeof setView === "function") { setView("progress"); return; }
@@ -351,7 +371,7 @@
           ? pendingReviewOpener
           : (active && active !== document.body && !modal.contains(active) ? describeControl(active) : lastOutsideFocus);
         if (descriptor) dialogOpeners.set(modal, descriptor);
-        window.requestAnimationFrame(function () { focusDialog(modal); });
+        focusDialogOnOpen(modal);
       } else if (!open && before) {
         const descriptor = dialogOpeners.get(modal) || lastOutsideFocus;
         dialogOpeners.delete(modal);

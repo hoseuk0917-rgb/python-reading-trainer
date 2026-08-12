@@ -550,31 +550,17 @@
     window.__learningExperienceV341ResetPostProcess = true;
   }
 
+  function recordLessonAttempt(cardId, beforeCount) {
+    appendActivity("lesson_attempt", cardId || "");
+    const after = attemptedCount();
+    maybeToastMilestones(Number(beforeCount || 0), after);
+    window.setTimeout(function() { renderLearningSummary(); renderPractice(); }, 30);
+  }
+
   function patchAttemptHandlers() {
+    // V348 owns the single lesson-attempt event pipeline. V341 now exposes
+    // its learning-experience side effect instead of wrapping app handlers.
     if (window.__learningExperienceV341AttemptPatched) return true;
-    if (typeof checkAnswer !== "function" || typeof jumpToConfusedOrNext !== "function") return false;
-    const originalCheckAnswer = checkAnswer;
-    const originalUnsure = jumpToConfusedOrNext;
-    checkAnswer = function() {
-      const before = attemptedCount();
-      const card = typeof getCurrentCard === "function" ? getCurrentCard() : null;
-      const result = originalCheckAnswer.apply(this, arguments);
-      appendActivity("lesson_attempt", card && card.id);
-      const after = attemptedCount();
-      maybeToastMilestones(before, after);
-      window.setTimeout(function() { renderLearningSummary(); renderPractice(); }, 30);
-      return result;
-    };
-    jumpToConfusedOrNext = function() {
-      const before = attemptedCount();
-      const card = typeof getCurrentCard === "function" ? getCurrentCard() : null;
-      const result = originalUnsure.apply(this, arguments);
-      appendActivity("lesson_attempt", card && card.id);
-      const after = attemptedCount();
-      maybeToastMilestones(before, after);
-      window.setTimeout(function() { renderLearningSummary(); renderPractice(); }, 30);
-      return result;
-    };
     window.__learningExperienceV341AttemptPatched = true;
     return true;
   }
@@ -657,6 +643,10 @@
     }
   }, 100);
 
+  window.LearningExperienceV341 = Object.freeze({
+    version: VERSION,
+    recordLessonAttempt: recordLessonAttempt
+  });
   window.renderPracticeV341 = renderPractice;
   window.renderLearningSummaryV341 = renderLearningSummary;
 })();
