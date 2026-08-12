@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "v347_a10";
+  const VERSION = "v347_a11";
   const REVIEW_KEY = "python-reading-trainer-review-v340";
   const dialogOpeners = new WeakMap();
   const proactivelyRestoredDialogs = new WeakSet();
@@ -198,16 +198,13 @@
         return;
       }
 
-      // BODY means the browser lost focus because the semantic button was hidden
-      // or replaced during V346's deferred rerenders. Reconnect only in that case.
-      // Any other focused control represents an intentional focus destination and
-      // terminates the lease instead of stealing focus back from the learner.
-      if (active && active !== document.body && !insideTrackedDialog(active)) {
-        cancelFocusLease();
-        return;
+      // Reconnect only when focus has fallen to BODY (the common result of a
+      // rerender replacing the focused semantic button). Internal programmatic
+      // focus churn is not treated as learner intent; trusted pointer/key/click
+      // events below own cancellation of this lease.
+      if (!active || active === document.body || insideTrackedDialog(active)) {
+        if (focusResolvedControl(descriptor)) finishFirstSuccess();
       }
-
-      if (focusResolvedControl(descriptor)) finishFirstSuccess();
     }
 
     function schedule() {
@@ -222,11 +219,7 @@
     lease.focusinHandler = function (event) {
       if (lease.cancelled) return;
       const target = resolveControl(descriptor);
-      if (event.target === target) {
-        finishFirstSuccess();
-        return;
-      }
-      if (event.target && event.target !== document.body && !insideTrackedDialog(event.target)) cancelFocusLease();
+      if (event.target === target) finishFirstSuccess();
     };
     document.addEventListener("focusin", lease.focusinHandler, true);
 
