@@ -12,7 +12,10 @@ TARGET = ROOT / "tools" / "e2e_learning_flow_v347_browser_case.js"
 REPLACEMENTS = [
     (
         '    add("REVIEW_DIALOG_FOCUS_RETURNS", doc().activeElement === reviewLauncher, doc().activeElement && `${doc().activeElement.tagName}#${doc().activeElement.id}`);',
-        '    const currentReviewLauncher = doc().getElementById("nextActionPrimaryV346");\n'
+        '    const currentReviewLauncher = await requireWait("review focus return", () => {\n'
+        '      const current = doc().getElementById("nextActionPrimaryV346");\n'
+        '      return current && doc().activeElement === current ? current : null;\n'
+        '    }, 2500);\n'
         '    add("REVIEW_DIALOG_FOCUS_RETURNS", !!currentReviewLauncher && doc().activeElement === currentReviewLauncher, doc().activeElement && `${doc().activeElement.tagName}#${doc().activeElement.id}`);',
     ),
     (
@@ -34,7 +37,10 @@ REPLACEMENTS = [
     ),
     (
         '    add("CHECKPOINT_DIALOG_FOCUS_RETURNS", doc().activeElement === checkpointButton, doc().activeElement && `${doc().activeElement.tagName}.${doc().activeElement.className}`);',
-        '    const currentCheckpointButton = doc().querySelector("[data-mission-checkpoint-v341=\\\'1\\\']");\n'
+        '    const currentCheckpointButton = await requireWait("checkpoint focus return", () => {\n'
+        '      const current = doc().querySelector("[data-mission-checkpoint-v341=\\\'1\\\']");\n'
+        '      return current && doc().activeElement === current ? current : null;\n'
+        '    }, 2500);\n'
         '    add("CHECKPOINT_DIALOG_FOCUS_RETURNS", !!currentCheckpointButton && doc().activeElement === currentCheckpointButton, doc().activeElement && `${doc().activeElement.tagName}.${doc().activeElement.className}`);',
     ),
 ]
