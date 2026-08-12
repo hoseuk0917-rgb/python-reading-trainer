@@ -26,11 +26,14 @@ check("V345_NO_DIALOG_KEYDOWN_DUPLICATION", !study.includes('document.addEventLi
 check("V346_COMPONENT_ADOPTION_DELEGATED", progress.includes("if (!window.LearningRuntimeV348) adoptExistingComponents();"), "boot fallback only");
 check("V347_COMPAT_ONLY", compat.includes('const VERSION = "v347_compat"') && !compat.includes("MutationObserver") && !compat.includes("addEventListener") && !compat.includes("scheduleWrong(loadReviewState"), "no active hardening layer");
 check("DIALOG_CONTROLLER_COVERS_V340_V341_V345", ["reviewModalV340", "syntaxModalV340", "missionModalV341", "studyModalV345"].every((id) => runtime.includes(id)), "tracked dialogs");
+check("DIALOG_INITIAL_FOCUS_RECONCILIATION", runtime.includes("focusDialogOnOpen") && runtime.includes("if (focusDialog(modal)) return;") && runtime.includes("window.requestAnimationFrame(retry)"), "immediate focus + bounded frame reconciliation");
 check("DIALOG_FOCUS_TRAP", runtime.includes("trapDialogFocus") && runtime.includes('event.key !== "Tab"'), "single trap");
 check("DIALOG_ESCAPE", runtime.includes('event.key !== "Escape"') && runtime.includes("closeTrackedDialog"), "single Escape controller");
 check("SEMANTIC_FOCUS_RETURN", runtime.includes("startSemanticFocusLease") && runtime.includes("pendingReviewOpener") && runtime.includes("goProgress"), "rerender-safe V346 return");
 check("SHARED_COMPONENT_ADOPTION", runtime.includes("adoptSharedComponents") && runtime.includes("prt-dialog-overlay") && runtime.includes("prt-action"), "V340/V341/V345 shared classes");
-check("SHARED_DIALOG_CSS", css.includes(".prt-dialog-overlay") && css.includes(".prt-dialog-overlay > .prt-dialog") && css.includes("prefers-reduced-motion"), "common dialog presentation");
+check("SHARED_DIALOG_CSS", css.includes(".prt-dialog-overlay") && css.includes(".modal-v340,") && css.includes(".mission-v341,") && css.includes(".v345-modal {") && css.includes("prefers-reduced-motion"), "common legacy + shared dialog presentation");
+check("LEGACY_DIALOG_OVERLAY_DUPLICATES_REMOVED", !loop.includes(".modal-v340 { position:fixed; inset:0;") && !experience.includes(".mission-v341 { position:fixed; inset:0;") && !study.includes(".v345-modal { position:fixed; inset:0;"), "overlay geometry centralized");
+check("LEGACY_DIALOG_CARD_DUPLICATES_REMOVED", !loop.includes(".modal-v340-card { width:min(720px,100%); max-height:88vh;") && !experience.includes(".mission-v341-card { width:min(680px,100%); max-height:88vh;") && !study.includes(".v345-modal-card { width:min(620px,100%); max-height:88vh;"), "card shell centralized");
 check("INDEX_V348_CSS_ONCE", count(index, "study_ui_v348.css?v=20260812_v348_a1") === 1, "1");
 check("INDEX_V348_RUNTIME_ONCE", count(index, "learning_runtime_v348.js?v=20260812_v348_a1") === 1, "1");
 check("INDEX_V347_COMPAT", count(index, "learning_flow_hardening_v347.js?v=20260812_v347_compat") === 1, "compat facade");
