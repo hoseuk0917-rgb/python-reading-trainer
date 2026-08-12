@@ -81,29 +81,29 @@
     await waitFor(function () { return focus.getAttribute("aria-pressed") === "true" && supportToggle.getAttribute("aria-expanded") === "false"; }, 5000);
 
     const supportInactiveBg = win.getComputedStyle(supportToggle).backgroundColor;
-    const legacyRegion = doc.getElementById("learningSupportRegionV349");
+    const supportRegion = doc.getElementById("learningSupportRegionV349");
     supportToggle.click();
-    const supportSurface = await waitFor(function () {
-      if (supportToggle.getAttribute("aria-expanded") !== "true") return null;
-      const portal = doc.getElementById("learningSupportInlineV353");
-      if (narrow && portal && visible(win, portal)) return portal;
-      return legacyRegion && visible(win, legacyRegion) ? legacyRegion : null;
+    await waitFor(function () {
+      return supportToggle.getAttribute("aria-expanded") === "true" && visible(win, supportRegion);
     }, 5000);
-    await new Promise(function (resolve) { setTimeout(resolve, 180); });
+    await new Promise(function (resolve) { setTimeout(resolve, 140); });
+
     const supportActiveBg = win.getComputedStyle(supportToggle).backgroundColor;
+    const supportStyle = win.getComputedStyle(supportRegion);
+    const supportRect = supportRegion.getBoundingClientRect();
     log("SUPPORT_ACTIVE_USES_COLOR", supportActiveBg !== supportInactiveBg, "active=" + supportActiveBg + " inactive=" + supportInactiveBg);
-    log("SUPPORT_REGION_FOCUSED", doc.activeElement === supportSurface, "surface=" + supportSurface.id);
+    log("SUPPORT_REGION_FOCUSED", doc.activeElement === supportRegion, "active=" + (doc.activeElement && doc.activeElement.id));
 
     if (narrow) {
-      const afterTop = supportSurface.getBoundingClientRect().top;
-      log("SUPPORT_PORTAL_IS_LIVE_CONTENT", supportSurface.id === "learningSupportInlineV353" && supportSurface.children.length > 0, "children=" + supportSurface.children.length);
-      log("SUPPORT_CLICK_MOVES_TO_CONTENT", afterTop >= 0 && afterTop < 180, "after=" + Math.round(afterTop));
-      log("LEGACY_SUPPORT_SHELL_PRESERVED", legacyRegion && legacyRegion.parentElement === doc.getElementById("learnView"));
+      log("SUPPORT_USES_LIVE_REGION", supportRegion.parentElement === doc.getElementById("learnView") && supportRegion.children.length > 0, "children=" + supportRegion.children.length);
+      log("SUPPORT_IS_IMMEDIATE_SHEET", supportStyle.position === "fixed" && supportRegion.classList.contains("v353-manual-support-sheet"), "position=" + supportStyle.position);
+      log("SUPPORT_SHEET_IN_VIEWPORT", supportRect.top >= 0 && supportRect.top < win.innerHeight - 120 && supportRect.bottom <= win.innerHeight - 70, "top=" + Math.round(supportRect.top) + " bottom=" + Math.round(supportRect.bottom) + " vh=" + win.innerHeight);
+      log("LEGACY_SUPPORT_SHELL_PRESERVED", supportRegion.parentElement === doc.getElementById("learnView"));
     }
 
     const conceptMeta = doc.querySelector(".concept-intro-note-v306");
     const mobileMeta = doc.querySelector(".mobile-sidecards-note");
-    const externalMeta = supportSurface && supportSurface.querySelector(".side-section-note");
+    const externalMeta = supportRegion.querySelector(".side-section-note");
     log("CONCEPT_META_COPY_HIDDEN", !conceptMeta || !visible(win, conceptMeta));
     log("MOBILE_META_COPY_HIDDEN", !mobileMeta || !visible(win, mobileMeta));
     log("EXTERNAL_META_COPY_HIDDEN", !externalMeta || !visible(win, externalMeta));
