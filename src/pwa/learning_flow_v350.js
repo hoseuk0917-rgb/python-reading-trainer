@@ -34,25 +34,18 @@
     const original = document.getElementById("languageToggleV334A9");
     if (!topbar || !original) return false;
     let wrap = document.getElementById("headerLanguageV350");
-    let button = document.getElementById("headerLanguageToggleV350");
     if (!wrap) {
       wrap = document.createElement("div");
       wrap.id = "headerLanguageV350";
       wrap.className = "header-language-v350";
-      button = document.createElement("button");
-      button.type = "button";
-      button.id = "headerLanguageToggleV350";
-      button.className = "header-language-toggle-v350";
-      button.addEventListener("click", function () {
-        original.click();
-        window.setTimeout(scheduleRefresh, 0);
-      });
-      wrap.appendChild(button);
       topbar.appendChild(wrap);
     }
-    const originalText = String(original.textContent || "").replace(/\s+/g, " ").trim();
-    setText(button, originalText || (document.documentElement.lang === "en" ? "KO" : "EN"));
-    button.setAttribute("aria-label", t("언어 전환", "Switch language"));
+    if (original.parentElement !== wrap) wrap.appendChild(original);
+    original.style.display = "inline-flex";
+    original.style.margin = "0";
+    original.style.position = "static";
+    original.style.transform = "none";
+    original.setAttribute("aria-label", t("언어 전환", "Language switcher"));
     return true;
   }
 
@@ -221,7 +214,7 @@
     try {
       refresh();
       startObserver();
-      if ((document.getElementById("consumerNavV349") && document.getElementById("headerLanguageToggleV350")) || tries > 200) {
+      if ((document.getElementById("consumerNavV349") && document.getElementById("headerLanguageV350")) || tries > 200) {
         window.clearInterval(timer);
       }
     } catch (error) {
