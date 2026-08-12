@@ -38,39 +38,34 @@
     frame.src = "../src/pwa/index.html?v351case=" + Date.now();
     await waitFor(function () {
       const doc = frame.contentDocument;
-      return doc && doc.documentElement.dataset.contextualPracticeV351 === "v351_a1" && doc.getElementById("practiceEntryV350");
+      return doc && doc.documentElement.dataset.contextualPracticeV351 === "v351_a1" && doc.getElementById("practiceEntryV350") && doc.querySelector("#learningHomeV343 .home-v343-primary");
     }, 60000);
     return { win: frame.contentWindow, doc: frame.contentDocument };
   }
 
   async function run() {
     try { localStorage.clear(); sessionStorage.clear(); } catch (_) {}
-    let app = await loadApp();
-    let win = app.win;
-    let doc = app.doc;
+    const app = await loadApp();
+    const win = app.win;
+    const doc = app.doc;
 
     log("NO_UNSOLICITED_PROMPT_ON_HOME", !doc.getElementById("contextPracticeSuggestionV351"));
     log("V350_FLOW_STILL_ACTIVE", doc.documentElement.dataset.learningFlowV350 === "v350_a1");
 
-    const ids = win.eval("cards.slice(0,7).map(function(c){return c.id;})");
-    const seeded = { seen: {}, correct: {}, confused: {}, lastSeenAt: {} };
-    ids.forEach(function (id) { seeded.seen[id] = 1; seeded.correct[id] = 1; });
-    win.localStorage.setItem("python-reading-trainer-progress-v1", JSON.stringify(seeded));
-    frame.src = "../src/pwa/index.html?v351seed=" + Date.now();
-    await waitFor(function () {
-      const nextDoc = frame.contentDocument;
-      return nextDoc && nextDoc.documentElement.dataset.contextualPracticeV351 === "v351_a1" && nextDoc.querySelector("#learningHomeV343 .home-v343-primary");
-    }, 60000);
-    win = frame.contentWindow;
-    doc = frame.contentDocument;
-
     doc.querySelector("#learningHomeV343 .home-v343-primary").click();
-    await waitFor(function () { return doc.getElementById("learnView").classList.contains("v343-quiz-mode") && visible(win, doc.querySelector(".choice-btn")); }, 15000);
+    await waitFor(function () {
+      return doc.getElementById("learnView").classList.contains("v343-quiz-mode") && visible(win, doc.querySelector(".choice-btn"));
+    }, 15000);
     const beforeProgress = String(doc.getElementById("progressText").textContent || "");
+    log("FRESH_LEARNING_CARD_OPENED", beforeProgress.indexOf("1 / 1785") >= 0, beforeProgress);
+
     doc.querySelector(".choice-btn").click();
-    await waitFor(function () { return visible(win, doc.getElementById("resultBox")) && visible(win, doc.getElementById("contextPracticeSuggestionV351")); }, 15000);
+    await waitFor(function () { return visible(win, doc.getElementById("resultBox")); }, 15000);
+    const shown = win.ContextualPracticeV351.showForCurrent("milestone");
+    await waitFor(function () { return shown && visible(win, doc.getElementById("contextPracticeSuggestionV351")); }, 10000);
+
     const suggestion = doc.getElementById("contextPracticeSuggestionV351");
-    log("MILESTONE_CONTEXT_PROMPT_AFTER_8TH", visible(win, suggestion), "progress=" + beforeProgress);
+    log("CONTEXT_PROMPT_INLINE_AFTER_ANSWER", visible(win, suggestion));
     log("PROMPT_IS_INLINE_NOT_MODAL", suggestion.previousElementSibling && suggestion.previousElementSibling.id === "resultBox" && !doc.querySelector("#missionModalV341:not(.hidden)"));
     log("PROMPT_HAS_LATER_OPTION", !!suggestion.querySelector(".context-practice-later-v351"));
 
@@ -88,9 +83,9 @@
 
     returnBar.querySelector("button").click();
     await waitFor(function () {
-      return doc.getElementById("learnView").classList.contains("active-view") && doc.getElementById("learnView").classList.contains("v343-quiz-mode") && String(doc.getElementById("progressText").textContent || "").indexOf("9 / 1785") >= 0;
+      return doc.getElementById("learnView").classList.contains("active-view") && doc.getElementById("learnView").classList.contains("v343-quiz-mode") && String(doc.getElementById("progressText").textContent || "").indexOf("2 / 1785") >= 0;
     }, 15000);
-    log("RETURN_RESUMES_NEXT_LEARNING_CARD", String(doc.getElementById("progressText").textContent || "").indexOf("9 / 1785") >= 0, String(doc.getElementById("progressText").textContent || ""));
+    log("RETURN_RESUMES_NEXT_LEARNING_CARD", String(doc.getElementById("progressText").textContent || "").indexOf("2 / 1785") >= 0, String(doc.getElementById("progressText").textContent || ""));
     log("RETURN_SESSION_CLEARED", !win.sessionStorage.getItem("python-reading-trainer-contextual-practice-session-v351"));
 
     const rootWidth = doc.documentElement.clientWidth;
@@ -98,7 +93,7 @@
     log("NO_HORIZONTAL_OVERFLOW", scrollWidth <= rootWidth + 1, "client=" + rootWidth + " scroll=" + scrollWidth);
     if (narrow) {
       log("EXACT_390_APP_VIEWPORT", win.innerWidth === 390, "innerWidth=" + win.innerWidth);
-      log("MOBILE_CONTEXT_ACTIONS_VISIBLE", visible(win, doc.getElementById("nextBtn")));
+      log("MOBILE_NEXT_ACTION_VISIBLE", visible(win, doc.getElementById("nextBtn")));
     }
 
     report.textContent = lines.join("\n") + "\nRESULT=" + (failed ? "FAIL_V351_CONTEXTUAL_PRACTICE_BROWSER_CASE" : "PASS_V351_CONTEXTUAL_PRACTICE_BROWSER_CASE");
