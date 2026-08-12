@@ -72,6 +72,12 @@
   function directTabOrder() {
     return Array.from(doc().querySelectorAll("nav.tabs > .tab-btn")).map((x) => x.dataset.view).join(",");
   }
+  function keydownEvent(key) {
+    const event = doc().createEvent("Event");
+    event.initEvent("keydown", true, true);
+    Object.defineProperty(event, "key", { value: key });
+    return event;
+  }
 
   async function testKorean() {
     await requireWait("V345 runtime", () => doc() && win().StudyExperienceV345 && doc().getElementById("toolsToggleV345"));
@@ -142,7 +148,7 @@
     });
     const summaryText = summaryModal.textContent.replace(/\s+/g, " ").trim();
     add("SESSION_SUMMARY_UI", /오늘 답한 문제/.test(summaryText) && /처음 완료한 새 문제/.test(summaryText) && /다시 볼 필요 표시/.test(summaryText), summaryText.slice(0, 220));
-    doc().dispatchEvent(new win().KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    doc().dispatchEvent(keydownEvent("Escape"));
     await requireWait("summary closes with Escape", () => summaryModal.classList.contains("hidden"));
     add("MODAL_ESCAPE_CLOSE", summaryModal.classList.contains("hidden"), summaryModal.className);
 
@@ -170,7 +176,7 @@
     learnTab.click();
     await requireWait("learn view", () => doc().getElementById("learnView").classList.contains("active-view"));
     learnTab.focus();
-    learnTab.dispatchEvent(new win().KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    learnTab.dispatchEvent(keydownEvent("ArrowRight"));
     await requireWait("arrow key changes tab", () => doc().getElementById("practiceView").classList.contains("active-view"));
     add("TAB_ARROW_KEYBOARD", doc().querySelector('nav.tabs > .tab-btn[data-view="practice"]').getAttribute("aria-selected") === "true", doc().querySelector('nav.tabs > .tab-btn[data-view="practice"]').getAttribute("aria-selected"));
 
