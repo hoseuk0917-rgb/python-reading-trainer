@@ -24,8 +24,15 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Apply prototype-safe semantic lookup
+        run: python tools/apply_semantic_lookup_hardening_v342.py --apply
+
+      - name: Confirm semantic lookup idempotence
+        run: python tools/apply_semantic_lookup_hardening_v342.py --check
+
       - name: JavaScript syntax
         run: |
+          node --check src/pwa/content_quality_semantics.js
           node --check src/pwa/learning_engine_v341.js
           node --check src/pwa/learning_experience_v341.js
           node --check tools/audit_learning_hardening_v342.js
@@ -55,3 +62,16 @@ jobs:
 
       - name: Diff integrity
         run: git diff --check
+
+      - name: Commit hardening changes if needed
+        run: |
+          if git diff --quiet; then
+            echo "V342_HARDENING_ALREADY_CLEAN=True"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pwa/content_quality_semantics.js src/pwa/index.html src/pwa/learning_engine_v341.js src/pwa/learning_experience_v341.js
+          git commit -m "Harden V342 learning runtime"
+          git push origin HEAD:feat/final-learning-hardening-v342
+          echo "V342_HARDENING_COMMIT_PUSHED=True"
