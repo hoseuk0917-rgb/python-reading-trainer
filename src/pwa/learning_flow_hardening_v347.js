@@ -2,8 +2,9 @@
 (function () {
   "use strict";
 
-  const VERSION = "v347_a1";
+  const VERSION = "v347_a2";
   const REVIEW_KEY = "python-reading-trainer-review-v340";
+  const dialogOpeners = new WeakMap();
 
   function loadReviewState() {
     try {
@@ -68,14 +69,98 @@
     window.__learningFlowV347WrongAnswerBridge = true;
   }
 
+  function isOpenDialog(modal) {
+    return !!modal && !modal.classList.contains("hidden") && modal.getAttribute("aria-hidden") !== "true";
+  }
+
+  function firstDialogControl(modal) {
+    if (!modal) return null;
+    return modal.querySelector(
+      ".review-v340-choice:not([disabled]), .mission-v341-choice:not([disabled]), " +
+      ".syntax-v340-choice:not([disabled]), button:not([disabled]), [href], input:not([disabled]), " +
+      "select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
+    );
+  }
+
+  function focusDialog(modal) {
+    if (!modal || !isOpenDialog(modal)) return false;
+    const active = document.activeElement;
+    if (active && active !== document.body && !modal.contains(active)) dialogOpeners.set(modal, active);
+    if (active && modal.contains(active)) return true;
+    const target = firstDialogControl(modal);
+    if (!target || typeof target.focus !== "function") return false;
+    target.focus({ preventScroll: true });
+    return modal.contains(document.activeElement);
+  }
+
+  function restoreDialogFocus(modal) {
+    if (!modal) return;
+    const opener = dialogOpeners.get(modal);
+    dialogOpeners.delete(modal);
+    if (!opener || !opener.isConnected || typeof opener.focus !== "function") return;
+    window.setTimeout(function () {
+      try { opener.focus({ preventScroll: true }); } catch (_) {}
+    }, 0);
+  }
+
+  function closeV340Modal(modal) {
+    if (!modal || !isOpenDialog(modal)) return false;
+    const close = modal.querySelector(".modal-v340-close");
+    if (close && typeof close.click === "function") {
+      close.click();
+      return true;
+    }
+    modal.classList.add("hidden");
+    restoreDialogFocus(modal);
+    return true;
+  }
+
+  function installDialogHardening() {
+    if (window.__learningFlowV347DialogHardening) return;
+    const selectors = ["#reviewModalV340", "#syntaxModalV340", "#missionModalV341"];
+    const known = new Map();
+
+    function scan() {
+      selectors.forEach(function (selector) {
+        const modal = document.querySelector(selector);
+        if (!modal) return;
+        const open = isOpenDialog(modal);
+        const before = known.get(modal) === true;
+        known.set(modal, open);
+        if (open && !before) window.setTimeout(function () { focusDialog(modal); }, 0);
+        if (!open && before) restoreDialogFocus(modal);
+      });
+    }
+
+    const observer = new MutationObserver(scan);
+    observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "aria-hidden"] });
+    scan();
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape") return;
+      const review = document.getElementById("reviewModalV340");
+      const syntax = document.getElementById("syntaxModalV340");
+      const target = isOpenDialog(review) ? review : (isOpenDialog(syntax) ? syntax : null);
+      if (!target) return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeV340Modal(target);
+    }, true);
+
+    window.__learningFlowV347DialogObserver = observer;
+    window.__learningFlowV347DialogHardening = true;
+  }
+
   function init() {
     installWrongAnswerBridge();
+    installDialogHardening();
     document.documentElement.dataset.learningFlowV347 = VERSION;
   }
 
   window.LearningFlowHardeningV347 = Object.freeze({
     version: VERSION,
-    ensureWrongReview: ensureWrongReview
+    ensureWrongReview: ensureWrongReview,
+    focusDialog: focusDialog
   });
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
