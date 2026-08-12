@@ -165,17 +165,19 @@
   }
 
   function openLearningCard() {
-    goView("learn");
-    window.setTimeout(function () {
-      const primary = document.querySelector("#learningHomeV343 .home-v343-primary");
-      if (primary && visible(primary)) primary.click();
-    }, 40);
+    if (typeof window.openSequentialLearningV343 === "function") {
+      window.openSequentialLearningV343();
+      return;
+    }
+    const learnTab = document.querySelector('nav.tabs > .tab-btn[data-view="learn"]');
+    if (learnTab) learnTab.click();
+    else goView("learn");
   }
 
   function startDueReview() {
     goView("learn");
     window.setTimeout(function () {
-      const review = document.querySelector(".learning-v340-session button.review:not([disabled])");
+      const review = document.querySelector("#learningPathV340 [data-action='review']:not([disabled])");
       if (review) {
         review.click();
         return;
