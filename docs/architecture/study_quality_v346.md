@@ -55,3 +55,5 @@ V346 uses these directly and adopts them onto key V340/V341/V345 surfaces at run
 - V339 through V345 regression gates stay green.
 - real Chrome passes at desktop and 390 px width.
 - final closure run produces no generated changes before main is fast-forwarded.
+
+Closure validation is intentionally triggered only after the generated V346 product/data commit is present, so every apply step must start clean rather than becoming clean during the run.
