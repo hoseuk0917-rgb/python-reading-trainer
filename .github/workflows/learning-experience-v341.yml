@@ -1,4 +1,4 @@
-name: Learning experience V341 gate
+name: Learning experience V341 A2 gate
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  learning-experience-v341:
+  learning-experience-v341-a2:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -30,47 +30,11 @@ jobs:
       - name: Confirm side-card repair idempotence
         run: python tools/repair_sidecard_educational_quality_v341.py --check
 
-      - name: Apply V341 PWA integration
-        run: python tools/apply_learning_experience_v341.py --apply
+      - name: Apply V341 A2 data and cache integration
+        run: python tools/apply_learning_experience_v341_a2.py --apply
 
-      - name: Confirm V341 PWA integration idempotence
-        run: python tools/apply_learning_experience_v341.py --check
-
-      - name: Apply exact practice mission mapping
-        run: python tools/apply_learning_experience_v341_r2.py --apply
-
-      - name: Confirm exact mission mapping idempotence
-        run: python tools/apply_learning_experience_v341_r2.py --check
-
-      - name: Apply V340-path readiness guard
-        run: python tools/apply_learning_experience_v341_r3.py --apply
-
-      - name: Confirm readiness guard idempotence
-        run: python tools/apply_learning_experience_v341_r3.py --check
-
-      - name: Apply internal delegated mission routing
-        run: python tools/apply_learning_experience_v341_r4.py --apply
-
-      - name: Confirm delegated routing idempotence
-        run: python tools/apply_learning_experience_v341_r4.py --check
-
-      - name: Apply reset postprocess
-        run: python tools/apply_learning_experience_v341_r5.py --apply
-
-      - name: Confirm reset postprocess idempotence
-        run: python tools/apply_learning_experience_v341_r5.py --check
-
-      - name: Remove runtime diagnostics for release
-        run: python tools/apply_learning_experience_v341_release_cleanup.py --apply
-
-      - name: Confirm release cleanup idempotence
-        run: python tools/apply_learning_experience_v341_release_cleanup.py --check
-
-      - name: Make real-browser smoke release-strict
-        run: python tools/apply_learning_experience_v341_smoke_release.py --apply
-
-      - name: Confirm release smoke idempotence
-        run: python tools/apply_learning_experience_v341_smoke_release.py --check
+      - name: Confirm V341 A2 integration idempotence
+        run: python tools/apply_learning_experience_v341_a2.py --check
 
       - name: JavaScript syntax
         run: |
@@ -80,11 +44,17 @@ jobs:
           node --check tools/audit_learning_experience_v341_r2.js
           node --check tools/run_learning_experience_v341_browser_smoke.js
 
-      - name: V341 pure engine audit
+      - name: V341 learned-topic engine audit
         run: node tools/audit_learning_experience_v341.js
 
-      - name: V341 exact mission routing audit
+      - name: V341 Python-topic routing separation audit
         run: node tools/audit_learning_experience_v341_r2.js
+
+      - name: Development workflow reference side-card audit
+        run: python tools/audit_development_workflow_sidecards_v341_a2.py
+
+      - name: General side-card educational quality audit
+        run: python tools/audit_sidecard_educational_quality_v341.py
 
       - name: Assert release code has no diagnostics
         shell: bash
@@ -100,9 +70,6 @@ jobs:
           fi
           echo "V341_RELEASE_DIAGNOSTICS_ABSENT=PASS"
           echo "V341_RELEASE_SMOKE_DIAGNOSTICS_ABSENT=PASS"
-
-      - name: Side-card educational quality audit
-        run: python tools/audit_sidecard_educational_quality_v341.py
 
       - name: Existing V340 learning regression
         run: node tools/audit_learning_loop_v340.js
@@ -120,11 +87,11 @@ jobs:
       - name: Patch integrity
         run: git diff --check
 
-      - name: Real-browser V341 release smoke
+      - name: Real-browser V341 A2 smoke
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v341-http.log 2>&1 &
+          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v341-a2-http.log 2>&1 &
           SERVER_PID=$!
           cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
           trap cleanup EXIT
@@ -135,16 +102,16 @@ jobs:
           curl -fsS http://127.0.0.1:3377/tools/learning_experience_v341_browser_case.html > /dev/null
           node tools/run_learning_experience_v341_browser_smoke.js
 
-      - name: Commit release-clean integration if needed
+      - name: Commit A2 integration if needed
         shell: bash
         run: |
           if git diff --quiet; then
-            echo "V341_INTEGRATION_ALREADY_CLEAN=True"
+            echo "V341_A2_INTEGRATION_ALREADY_CLEAN=True"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/pwa/index.html src/pwa/learning_engine_v341.js src/pwa/learning_experience_v341.js tools/learning_experience_v341_browser_case.html data/side_cards data_i18n/en/side_cards
-          git commit -m "Remove V341 diagnostics and finalize release behavior"
+          git add src/pwa/app.js src/pwa/index.html data/side_cards data_i18n/en/side_cards
+          git commit -m "Register V341 A2 topic practice and workflow references"
           git push origin HEAD:feat/learning-experience-v341
-          echo "V341_RELEASE_CLEAN_COMMIT_PUSHED=True"
+          echo "V341_A2_INTEGRATION_COMMIT_PUSHED=True"
