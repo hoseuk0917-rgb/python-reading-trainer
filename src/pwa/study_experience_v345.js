@@ -536,6 +536,10 @@
       const btn = nav.querySelector('.tab-btn[data-view="' + view + '"]');
       if (btn) btn.classList.add("v345-secondary-tab");
     });
+    ["learn", "practice", "progress", "outline", "notes"].forEach(function (view) {
+      const btn = nav.querySelector('.tab-btn[data-view="' + view + '"]');
+      if (btn) nav.appendChild(btn);
+    });
 
     const wrap = document.createElement("div");
     wrap.id = "toolsWrapV345";
@@ -605,13 +609,13 @@
       .v345-nav > .v345-primary-tab { font-weight:900; }
       .v345-nav > .v345-secondary-tab { background:#f8fafc; color:#475569; }
       .v345-tools-wrap { position:relative; flex:0 0 auto; }
-      .v345-tools-toggle { min-height:40px; border:1px solid var(--line,#dfe4ee); border-radius:999px; background:#fff; color:var(--text,#172033); padding:8px 14px; font-weight:800; cursor:pointer; }
+      .v345-tools-toggle { min-height:44px; border:1px solid var(--line,#dfe4ee); border-radius:999px; background:#fff; color:var(--text,#172033); padding:8px 14px; font-weight:800; cursor:pointer; }
       .v345-tools-toggle.active { border-color:var(--accent,#355cff); color:var(--accent,#355cff); }
       .v345-tools-menu { position:absolute; z-index:10400; right:0; top:calc(100% + 8px); width:min(230px,calc(100vw - 24px)); padding:7px; border:1px solid #dbe4f0; border-radius:14px; background:#fff; box-shadow:0 18px 45px rgba(15,23,42,.18); }
       .v345-tools-menu[hidden] { display:none !important; }
       .v345-tools-menu .tab-btn { display:block; width:100%; border:0; border-radius:10px; text-align:left; margin:0; padding:10px 11px; }
       .v345-focus-toolbar { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; margin:8px 0 12px; }
-      .v345-focus-toolbar button, .v345-primary, .v345-secondary { min-height:40px; border-radius:999px; padding:8px 12px; font-weight:800; cursor:pointer; }
+      .v345-focus-toolbar button, .v345-primary, .v345-secondary { min-height:44px; border-radius:999px; padding:8px 12px; font-weight:800; cursor:pointer; }
       .v345-focus-toolbar button, .v345-secondary { border:1px solid #dbe4f0; background:#fff; color:#0f172a; }
       .v345-primary { border:1px solid #2563eb; background:#2563eb; color:#fff; }
       #learnView.v343-quiz-mode.v345-focus-on:not(.v345-support-revealed) .side,
@@ -629,7 +633,7 @@
       .v345-modal-card { width:min(620px,100%); max-height:88vh; overflow:auto; border-radius:20px; background:#fff; padding:18px; box-shadow:0 24px 70px rgba(15,23,42,.35); }
       .v345-modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
       .v345-modal-head h2 { margin:0; }
-      .v345-modal-close { min-width:40px; min-height:40px; border:0; border-radius:999px; background:#f1f5f9; cursor:pointer; font-size:20px; }
+      .v345-modal-close { min-width:40px; min-height:44px; border:0; border-radius:999px; background:#f1f5f9; cursor:pointer; font-size:20px; }
       .v345-modal-body { margin-top:12px; line-height:1.65; color:#334155; }
       .v345-modal-actions { display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap; margin-top:16px; }
       .v345-summary-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
@@ -637,7 +641,7 @@
       .v345-summary-item strong { display:block; font-size:22px; color:#0f172a; }
       .v345-summary-item span { display:block; margin-top:3px; color:#64748b; font-size:12px; }
       button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible { outline:3px solid #f59e0b !important; outline-offset:3px !important; }
-      .tab-btn, .choice-btn, .actions button, .ghost-btn, .mini-actions button, .note-tools button, .related-card-btn, .outline-item, .v345-tools-toggle, .v345-tools-menu button { min-height:40px; }
+      .tab-btn, .choice-btn, .actions button, .ghost-btn, .mini-actions button, .note-tools button, .related-card-btn, .outline-item, .v345-tools-toggle, .v345-tools-menu button { min-height:44px; }
       @media (max-width:640px) {
         .v345-nav { gap:6px; padding:8px 10px; }
         .v345-nav > .tab-btn, .v345-tools-toggle { padding:7px 10px; font-size:13px; }
