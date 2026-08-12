@@ -95,6 +95,7 @@
       tries += 1;
       const panel = document.getElementById("studyDataV345");
       if (panel) {
+        ensureStudyDataDestination();
         panel.setAttribute("tabindex", "-1");
         panel.scrollIntoView({ block: "start", behavior: "auto" });
         panel.focus({ preventScroll: true });
@@ -178,8 +179,8 @@
     if (isPractice) {
       const learn = document.getElementById("consumerLearnV349");
       const practice = document.getElementById("consumerPracticeV349");
-      if (learn) learn.setAttribute("aria-current", "page");
-      if (practice) practice.removeAttribute("aria-current");
+      if (learn && learn.getAttribute("aria-current") !== "page") learn.setAttribute("aria-current", "page");
+      if (practice && practice.hasAttribute("aria-current")) practice.removeAttribute("aria-current");
     }
     return true;
   }
@@ -204,7 +205,7 @@
   function startObserver() {
     if (!document.body || window.__learningFlowV350Observer) return;
     const observer = new MutationObserver(scheduleRefresh);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "aria-current"] });
     window.__learningFlowV350Observer = observer;
   }
 

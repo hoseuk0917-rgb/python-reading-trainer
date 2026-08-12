@@ -86,7 +86,9 @@
     const dataItem = doc.getElementById("learningDataMenuV350");
     log("STUDY_DATA_MENU_ENTRY_VISIBLE", visible(win, libraryMenu) && visible(win, dataItem));
     dataItem.click();
-    await waitFor(function () { return doc.getElementById("progressView").classList.contains("active-view") && doc.getElementById("studyDataV345"); }, 10000);
+    await waitFor(function () {
+      return doc.getElementById("progressView").classList.contains("active-view") && doc.getElementById("studyDataV345") && doc.getElementById("resetProgressV350");
+    }, 10000);
     const dataPanel = doc.getElementById("studyDataV345");
     const resetProxy = doc.getElementById("resetProgressV350");
     log("STUDY_DATA_ROUTE", doc.getElementById("progressView").classList.contains("active-view") && visible(win, dataPanel));
@@ -97,7 +99,10 @@
     const practiceEntry = doc.getElementById("practiceEntryV350");
     log("PRACTICE_ENTRY_IN_LEARNING_HOME", visible(win, practiceEntry));
     practiceEntry.querySelector("button").click();
-    await waitFor(function () { return doc.getElementById("practiceView").classList.contains("active-view") && doc.body.classList.contains("v350-practice-context"); }, 10000);
+    await waitFor(function () {
+      const learnNav = doc.getElementById("consumerLearnV349");
+      return doc.getElementById("practiceView").classList.contains("active-view") && doc.body.classList.contains("v350-practice-context") && learnNav && learnNav.getAttribute("aria-current") === "page";
+    }, 10000);
     const flowHeader = doc.getElementById("practiceFlowHeaderV350");
     const learnNav = doc.getElementById("consumerLearnV349");
     log("PRACTICE_IS_LEARNING_SUBFLOW", visible(win, flowHeader) && learnNav.getAttribute("aria-current") === "page");
