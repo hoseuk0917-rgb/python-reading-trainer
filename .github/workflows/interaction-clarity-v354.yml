@@ -1,0 +1,100 @@
+name: interaction-clarity-v354
+
+on:
+  push:
+    branches:
+      - agent/v354-toggle-sheet-state-fix
+    paths:
+      - 'src/pwa/interaction_clarity_v353.js'
+      - 'src/pwa/interaction_clarity_v353.css'
+      - 'tools/apply_interaction_clarity_v353.py'
+      - 'tools/audit_interaction_clarity_v353.js'
+      - 'tools/interaction_clarity_v353_browser_case.js'
+      - 'tools/run_interaction_clarity_v353_browser_smoke.js'
+      - '.github/workflows/interaction-clarity-v354.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: interaction-clarity-v354-branch
+  cancel-in-progress: true
+
+jobs:
+  v354-toggle-sheet-state:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout V354 branch
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: agent/v354-toggle-sheet-state-fix
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Apply V353 A2 asset revision
+        run: python tools/apply_interaction_clarity_v353.py --apply
+
+      - name: Confirm integration idempotence
+        run: python tools/apply_interaction_clarity_v353.py --check
+
+      - name: Syntax checks
+        run: |
+          python -m py_compile tools/apply_interaction_clarity_v353.py
+          node --check src/pwa/interaction_clarity_v353.js
+          node --check tools/audit_interaction_clarity_v353.js
+          node --check tools/interaction_clarity_v353_browser_case.js
+          node --check tools/run_interaction_clarity_v353_browser_smoke.js
+
+      - name: Interaction state and close-control audit
+        run: node tools/audit_interaction_clarity_v353.js
+
+      - name: Existing lesson validation
+        run: python tools/validate_lessons.py
+
+      - name: Existing learning UX architecture gates
+        run: |
+          node tools/audit_study_experience_v345.js
+          node tools/audit_study_quality_v346.js
+          node tools/audit_learning_runtime_v348.js
+          node tools/audit_consumer_ux_v349.js
+          node tools/audit_learning_flow_v350.js
+          node tools/audit_contextual_practice_v351.js
+          node tools/audit_worked_example_dedup_v352.js
+
+      - name: Diff integrity
+        run: git diff --check
+
+      - name: Real browser toggle and support regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v354-http.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3377/src/pwa/index.html > /dev/null; then break; fi
+            sleep 0.1
+          done
+          node tools/run_interaction_clarity_v353_browser_smoke.js
+          node tools/run_study_experience_v345_browser_smoke.js
+          node tools/run_consumer_ux_v349_browser_smoke.js
+
+      - name: Commit generated index revision if needed
+        if: success()
+        run: |
+          if git diff --quiet; then
+            echo "V354_ALREADY_CLEAN=True"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pwa/index.html
+          git commit -m "Integrate V353 A2 interaction state fix"
+          git push origin HEAD:agent/v354-toggle-sheet-state-fix
+          echo "V354_CHANGES_PUSHED=True"
