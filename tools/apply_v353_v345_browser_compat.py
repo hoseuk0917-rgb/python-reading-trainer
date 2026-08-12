@@ -22,12 +22,14 @@ NEW = '''    add("FOCUS_DEFAULT_CONTRACT", api.focusEnabled() === true, api.focu
 
     if (!manualHelp) throw new Error("manual support entry missing");
     manualHelp.click();
-    await sleep(80);
+    await sleep(120);
+    const inlineSupport = doc().getElementById("learningSupportInlineV353");
+    const supportVisible = visible(side) || visible(inlineSupport);
     const supportRevealClass = learn.classList.contains("v345-support-revealed") || learn.classList.contains("v349-support-open");
-    add("FOCUS_HELP_REVEALS_SUPPORT", visible(side) && supportRevealClass, `entry=${manualHelp.id} side=${visible(side)} class=${learn.className}`);
+    add("FOCUS_HELP_REVEALS_SUPPORT", supportVisible && supportRevealClass, `entry=${manualHelp.id} side=${visible(side)} inline=${visible(inlineSupport)} class=${learn.className}`);
     if (manualHelp === consumerSupportHelp && consumerSupportHelp.getAttribute("aria-expanded") === "true") {
       consumerSupportHelp.click();
-      await sleep(80);
+      await sleep(120);
     }
     api.setFocusMode(false);
     api.setFocusMode(true);
@@ -56,7 +58,8 @@ def main() -> None:
     changed = before != after
     good = (
         'const manualHelp = visible(legacyFocusHelp)' in after
-        and 'manualHelp.id' in after
+        and 'learningSupportInlineV353' in after
+        and 'const supportVisible = visible(side) || visible(inlineSupport);' in after
         and 'learn.classList.contains("v349-support-open")' in after
         and 'consumerSupportHelp.click();' in after
     )
