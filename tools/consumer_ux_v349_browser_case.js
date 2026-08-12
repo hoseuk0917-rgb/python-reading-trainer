@@ -44,7 +44,12 @@
 
     const win = frame.contentWindow;
     const doc = frame.contentDocument;
-    await waitFor(function () { return doc.querySelector("#learningHomeV343 .home-v343-primary"); }, 30000);
+    await waitFor(function () {
+      return doc.querySelector("#learningHomeV343 .home-v343-primary") &&
+        doc.querySelector("#learningHomeV343 .home-v343-stats") &&
+        doc.querySelector("#learningHomeV343 .home-details-toggle-v349") &&
+        doc.querySelector("#learningHomeV343 .home-v343-shell.v349-home-simplified");
+    }, 30000);
 
     const navButtons = Array.from(doc.querySelectorAll("#consumerNavV349 > .consumer-nav-button-v349"));
     log("PRIMARY_NAV_COUNT_4", navButtons.length === 4 && navButtons.every(function (b) { return visible(win, b); }), "count=" + navButtons.length);
