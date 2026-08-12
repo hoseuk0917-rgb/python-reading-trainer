@@ -6,6 +6,8 @@ const path = require("path");
 const root = path.resolve(__dirname, "..");
 const runtime = fs.readFileSync(path.join(root, "src/pwa/study_experience_v345.js"), "utf8");
 const index = fs.readFileSync(path.join(root, "src/pwa/index.html"), "utf8");
+const v348Path = path.join(root, "src/pwa/learning_runtime_v348.js");
+const runtimeV348 = fs.existsSync(v348Path) ? fs.readFileSync(v348Path, "utf8") : "";
 
 const rows = [];
 let failed = false;
@@ -39,12 +41,18 @@ check("NO_XP_BADGE_CURRENCY", !/\bXP\b|coin|coins|loot|badge/i.test(runtime), "e
 check("FOCUS_DEFAULT_ON", runtime.includes('return raw === null ? true : raw !== "off";'), "default-on");
 check("FOCUS_PREANSWER_HIDE", runtime.includes("v345-focus-on:not(.v345-support-revealed)") && runtime.includes("#readingGoalWrap") && runtime.includes(".side"), "hide support before answer");
 check("FOCUS_HELP_ESCAPE", runtime.includes("focusHelpV345") && runtime.includes("revealSupport"), "manual help");
-check("FOCUS_REVEALS_AFTER_ANSWER", runtime.includes('choice.classList.contains("correct")') && runtime.includes("if (outcome) revealSupport()"), "answer reveal");
+const localAnswerReveal = runtime.includes('choice.classList.contains("correct")') && runtime.includes("if (outcome) revealSupport()");
+const delegatedAnswerReveal = runtimeV348.includes('target.closest(".choice-btn")') && runtimeV348.includes("StudyExperienceV345.revealSupport");
+check("FOCUS_REVEALS_AFTER_ANSWER", localAnswerReveal || delegatedAnswerReveal, delegatedAnswerReveal ? "delegated to V348" : "V345 local");
 
 check("TABLIST_ARIA", runtime.includes('nav.setAttribute("role", "tablist")') && runtime.includes('btn.setAttribute("role", "tab")') && runtime.includes('aria-selected'), "tabs");
 check("TAB_KEYBOARD", runtime.includes("ArrowRight") && runtime.includes("ArrowLeft") && runtime.includes('event.key === "Home"') && runtime.includes('event.key === "End"'), "arrow/home/end");
-check("MODAL_ESCAPE", runtime.includes("closeKnownDialogOnEscape") && runtime.includes('event.key !== "Escape"'), "escape");
-check("MODAL_FOCUS_TRAP", runtime.includes("trapDialogFocus") && runtime.includes('event.key !== "Tab"'), "tab loop");
+const localEscape = runtime.includes("closeKnownDialogOnEscape") && runtime.includes('event.key !== "Escape"');
+const sharedEscape = runtimeV348.includes('event.key !== "Escape"') && runtimeV348.includes("closeTrackedDialog");
+check("MODAL_ESCAPE", localEscape || sharedEscape, sharedEscape ? "shared V348 controller" : "V345 local");
+const localTrap = runtime.includes("trapDialogFocus") && runtime.includes('event.key !== "Tab"');
+const sharedTrap = runtimeV348.includes("trapDialogFocus") && runtimeV348.includes('event.key !== "Tab"');
+check("MODAL_FOCUS_TRAP", localTrap || sharedTrap, sharedTrap ? "shared V348 controller" : "V345 local");
 check("FOCUS_VISIBLE", runtime.includes(":focus-visible") && runtime.includes("outline:3px solid"), "visible keyboard focus");
 check("REDUCED_MOTION", runtime.includes("prefers-reduced-motion"), "motion preference");
 check("TOUCH_TARGET", runtime.includes("min-height:44px") && !runtime.includes("min-height:40px"), "44px minimum control height");
