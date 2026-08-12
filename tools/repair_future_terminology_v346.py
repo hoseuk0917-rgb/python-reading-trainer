@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 APP_JS = ROOT / "src/pwa/app.js"
-PATCH_VERSION = "v346_future_terminology_a1"
+PATCH_VERSION = "v346_future_terminology_a2"
 
 CHOICE_REPLACEMENTS = {
     "ko": {
@@ -25,6 +25,9 @@ CHOICE_REPLACEMENTS = {
         },
         "PY_L06_pathlib_glob_001": {
             "API Endpoints": "Program execution logs"
+        },
+        "PY3_L03_join_001": {
+            "Assuming a runtime error has occurred": "The list name \"items\" with brackets"
         },
     },
 }
