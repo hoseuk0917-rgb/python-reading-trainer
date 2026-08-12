@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "v347_a3";
+  const VERSION = "v347_a4";
   const REVIEW_KEY = "python-reading-trainer-review-v340";
   const dialogOpeners = new WeakMap();
   let lastOutsideFocus = null;
@@ -136,15 +136,32 @@
     return modal.contains(document.activeElement);
   }
 
+  function focusResolvedControl(descriptor) {
+    const target = resolveControl(descriptor);
+    if (!target || typeof target.focus !== "function") return false;
+    try { target.focus({ preventScroll: true }); } catch (_) { return false; }
+    return document.activeElement === target;
+  }
+
   function restoreDialogFocus(modal) {
     if (!modal) return;
     const descriptor = dialogOpeners.get(modal) || lastOutsideFocus;
     dialogOpeners.delete(modal);
-    window.setTimeout(function () {
-      const target = resolveControl(descriptor);
-      if (!target) return;
-      try { target.focus({ preventScroll: true }); } catch (_) {}
-    }, 0);
+    if (!descriptor) return;
+
+    // Hiding a focused modal can move focus to BODY after the mutation itself.
+    // Restore only after two paint turns, then retry once if the browser's own
+    // hidden-focus cleanup wins the first race. Each attempt resolves the current
+    // semantic control so a rerendered button is handled safely.
+    window.requestAnimationFrame(function () {
+      window.requestAnimationFrame(function () {
+        focusResolvedControl(descriptor);
+        window.setTimeout(function () {
+          const active = document.activeElement;
+          if (active === document.body || insideTrackedDialog(active)) focusResolvedControl(descriptor);
+        }, 80);
+      });
+    });
   }
 
   function closeV340Modal(modal) {
@@ -152,7 +169,7 @@
     const close = modal.querySelector(".modal-v340-close");
     if (close && typeof close.click === "function") {
       close.click();
-      window.setTimeout(function () { restoreDialogFocus(modal); }, 0);
+      restoreDialogFocus(modal);
       return true;
     }
     modal.classList.add("hidden");
