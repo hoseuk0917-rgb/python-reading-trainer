@@ -21,6 +21,7 @@ check("VERSION", runtime.includes('const VERSION = "v346_a1"'), "v346_a1");
 check("NEXT_ACTION_PANEL", runtime.includes('panel.id = "nextActionV346"'), "progress action panel");
 check("NEXT_ACTION_REVIEW_PRIORITY", /if \(due\.length\) kind = "review";\s*else if \(checkpoint\.pending\) kind = "checkpoint";\s*else if \(nextIndex < list\.length\) kind = "new";/.test(runtime), "review > checkpoint > new > complete");
 check("NEXT_ACTION_USES_V340_REVIEW", runtime.includes("LearningEngineV340.dueReviewIds"), "due review state");
+check("NEXT_ACTION_USES_V340_REVIEW_ACTION", runtime.includes("#learningPathV340 [data-action='review']:not([disabled])") && !runtime.includes(".learning-v340-session button.review:not([disabled])"), "canonical V340 review button");
 check("NEXT_ACTION_USES_V341_CHECKPOINT", runtime.includes("unlockedCheckpointCount") && runtime.includes("completedCheckpoints"), "pending checkpoint state");
 check("NEXT_ACTION_FIXED_SEQUENCE", runtime.includes("firstUnseenIndex") && runtime.includes("nextCardTitle"), "first unseen new card");
 check("TODAY_SUMMARY_REUSES_V345", runtime.includes("StudyExperienceV345.showSessionSummary"), "existing summary API");
