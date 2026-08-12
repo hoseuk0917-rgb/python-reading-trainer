@@ -18,6 +18,27 @@ NEW_NAV = '''    const navButtons = Array.from(doc.querySelectorAll("#consumerNa
     const legacyTabs = doc.querySelector("nav.tabs");
 '''
 
+OLD_SUPPORT = '''    const support = doc.getElementById("learningSupportRegionV349");
+    const supportToggle = doc.getElementById("learningSupportToggleV349");
+    log("QUIZ_SUPPORT_HIDDEN_DEFAULT", support && !visible(win, support) && visible(win, supportToggle));
+    supportToggle.click();
+    await new Promise(function (r) { setTimeout(r, 120); });
+    log("QUIZ_SUPPORT_DISCLOSURE_WORKS", learn.classList.contains("v349-support-open") && visible(win, support));
+    supportToggle.click();
+'''
+
+NEW_SUPPORT = '''    const support = doc.getElementById("learningSupportRegionV349");
+    const supportToggle = doc.getElementById("learningSupportToggleV349");
+    log("QUIZ_SUPPORT_HIDDEN_DEFAULT", support && !visible(win, support) && visible(win, supportToggle));
+    supportToggle.click();
+    await new Promise(function (r) { setTimeout(r, 160); });
+    const supportPortalV353 = doc.getElementById("learningSupportInlineV353");
+    const supportSurfaceVisible = visible(win, support) || visible(win, supportPortalV353);
+    log("QUIZ_SUPPORT_DISCLOSURE_WORKS", learn.classList.contains("v349-support-open") && supportSurfaceVisible, `legacy=${visible(win, support)} portal=${visible(win, supportPortalV353)}`);
+    supportToggle.click();
+    await new Promise(function (r) { setTimeout(r, 120); });
+'''
+
 OLD_RESET = '''    const settings = doc.getElementById("consumerHeaderMenuBtnV349");
     const reset = doc.getElementById("resetBtn");
     log("RESET_HIDDEN_FROM_HEADER", settings && reset && !visible(win, reset));
@@ -68,6 +89,10 @@ def transform(text: str) -> str:
         if OLD_NAV not in out:
             raise SystemExit("FAIL: V349 nav browser snippet not found")
         out = out.replace(OLD_NAV, NEW_NAV, 1)
+    if NEW_SUPPORT not in out:
+        if OLD_SUPPORT not in out:
+            raise SystemExit("FAIL: V349 support browser snippet not found")
+        out = out.replace(OLD_SUPPORT, NEW_SUPPORT, 1)
     if NEW_RESET not in out:
         if OLD_RESET not in out:
             raise SystemExit("FAIL: V349 reset browser snippet not found")
@@ -90,6 +115,8 @@ def main() -> None:
     good = (
         'const v350Active = doc.documentElement.dataset.learningFlowV350 === "v350_a1";' in after
         and 'visibleNavButtons.length === 3' in after
+        and 'learningSupportInlineV353' in after
+        and 'supportSurfaceVisible' in after
         and 'RESET_AVAILABLE_IN_STUDY_DATA_V350' in after
         and 'HEADER_OVERFLOW_HIDDEN_V350' in after
     )
