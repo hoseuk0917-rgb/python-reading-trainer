@@ -2,9 +2,10 @@
 (function () {
   "use strict";
 
-  const VERSION = "v347_a8";
+  const VERSION = "v347_a9";
   const REVIEW_KEY = "python-reading-trainer-review-v340";
   const dialogOpeners = new WeakMap();
+  const proactivelyRestoredDialogs = new WeakSet();
   let lastOutsideFocus = null;
   let pendingReviewOpener = null;
   let activeFocusLease = null;
@@ -234,6 +235,17 @@
     }
   }
 
+  function restoreV346ReviewOrigin(descriptor) {
+    if (!descriptor) return;
+    returnToProgressForReviewOrigin();
+    // setView() is synchronous for visibility. Focus immediately when possible,
+    // then keep a semantic lease because V346 can replace the button later.
+    focusResolvedControl(descriptor);
+    startSemanticFocusLease(descriptor, document.getElementById("progressDashboard") || document.documentElement, function () {
+      pendingReviewOpener = null;
+    });
+  }
+
   function restoreDialogFocus(modal) {
     if (!modal) return;
     const explicitReviewOpener = modal.id === "reviewModalV340" ? pendingReviewOpener : null;
@@ -241,15 +253,8 @@
     dialogOpeners.delete(modal);
     if (!descriptor) return;
 
-    // V346 can replace its action button several times after returning to the
-    // Progress view (queued refreshes + progress mutation observer). Keep a
-    // semantic focus lease through those replacements, then release it on the
-    // learner's next real input so later UI refreshes cannot steal focus.
     if (explicitReviewOpener) {
-      returnToProgressForReviewOrigin();
-      startSemanticFocusLease(descriptor, document.getElementById("progressDashboard") || document.documentElement, function () {
-        pendingReviewOpener = null;
-      });
+      restoreV346ReviewOrigin(descriptor);
       return;
     }
 
@@ -260,12 +265,20 @@
 
   function closeV340Modal(modal) {
     if (!modal || !isOpenDialog(modal)) return false;
+    const explicitReviewOpener = modal.id === "reviewModalV340" ? pendingReviewOpener : null;
     const close = modal.querySelector(".modal-v340-close");
-    if (close && typeof close.click === "function") {
-      close.click();
-      return true;
+
+    // Escape is an explicit V347-controlled close path. Restore the V346 origin
+    // synchronously after the canonical close click rather than waiting for the
+    // mutation observer to notice that the modal became hidden.
+    if (explicitReviewOpener) proactivelyRestoredDialogs.add(modal);
+    if (close && typeof close.click === "function") close.click();
+    else modal.classList.add("hidden");
+
+    if (explicitReviewOpener) {
+      dialogOpeners.delete(modal);
+      restoreV346ReviewOrigin(explicitReviewOpener);
     }
-    modal.classList.add("hidden");
     return true;
   }
 
@@ -302,7 +315,10 @@
         const before = known.get(modal) === true;
         known.set(modal, open);
         if (open && !before) window.setTimeout(function () { focusDialog(modal); }, 0);
-        if (!open && before) restoreDialogFocus(modal);
+        if (!open && before) {
+          if (proactivelyRestoredDialogs.has(modal)) proactivelyRestoredDialogs.delete(modal);
+          else restoreDialogFocus(modal);
+        }
       });
     }
 
