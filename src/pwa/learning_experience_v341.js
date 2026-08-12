@@ -1,12 +1,7 @@
 (function() {
   "use strict";
 
-  const VERSION = "v341_a1";
-  // LEARNING_EXPERIENCE_V341_R2_EXACT_MISSION_MAPPING
-  // LEARNING_EXPERIENCE_V341_R3_WAIT_FOR_V340_PATH
-  // LEARNING_EXPERIENCE_V341_R4_STABLE_ACTIONS_RESET
-  // LEARNING_EXPERIENCE_V341_R5_RESET_POSTPROCESS
-  // LEARNING_EXPERIENCE_V341_RELEASE_CLEAN
+  const VERSION = "v341_a2";
   const STORAGE_KEY = "python-reading-trainer-learning-experience-v341";
   const PROGRESS_KEY = "python-reading-trainer-progress-v1";
   const REVIEW_KEY = "python-reading-trainer-review-v340";
@@ -128,15 +123,25 @@
       .mission-v341-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
       .mission-v341-top h2 { margin:0; font-size:19px; }
       .mission-v341-close { width:34px; height:34px; border:0; border-radius:999px; cursor:pointer; }
+      .mission-v341-code { margin:14px 0 0; padding:13px; border-radius:12px; background:#0f172a; color:#e2e8f0; overflow:auto; white-space:pre; line-height:1.55; font-size:13px; }
+      .mission-v341-code.hidden { display:none; }
       .mission-v341-question { margin:14px 0 10px; font-weight:900; line-height:1.6; color:#0f172a; }
       .mission-v341-choices { display:grid; gap:8px; }
       .mission-v341-choice { text-align:left; border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc; padding:11px 12px; cursor:pointer; font-weight:700; }
       .mission-v341-choice.correct { border-color:#34d399; background:#ecfdf5; }
       .mission-v341-choice.wrong { border-color:#f87171; background:#fef2f2; }
       .mission-v341-result { margin-top:10px; line-height:1.55; font-size:13px; color:#334155; }
+      .devflow-v341 { margin-top:14px; }
+      .devflow-v341-groups { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:12px; }
+      .devflow-v341-group { border:1px solid #e2e8f0; border-radius:14px; padding:12px; background:#f8fafc; }
+      .devflow-v341-group h3 { margin:0 0 8px; font-size:14px; color:#0f172a; }
+      .devflow-v341-item { background:#fff; border:1px solid #e2e8f0; border-radius:10px; margin-top:7px; overflow:hidden; }
+      .devflow-v341-item summary { cursor:pointer; padding:10px 11px; font-weight:800; color:#0f172a; }
+      .devflow-v341-body { padding:0 11px 11px; color:#475569; font-size:13px; line-height:1.62; }
+      .devflow-v341-detail { margin-top:7px; color:#64748b; }
       #toastV341 { position:fixed; z-index:10200; left:50%; bottom:22px; transform:translateX(-50%); max-width:min(520px,calc(100vw - 28px)); padding:10px 14px; border-radius:999px; background:#0f172a; color:#fff; font-size:13px; font-weight:800; box-shadow:0 12px 34px rgba(15,23,42,.28); opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease; }
       #toastV341.show { opacity:1; transform:translateX(-50%) translateY(-4px); }
-      @media (max-width:820px) { .practice-v341-grid { grid-template-columns:1fr; } .practice-v341-topstats { grid-template-columns:1fr; } .mastery-v341-row { grid-template-columns:minmax(80px,1fr) minmax(90px,1.2fr); } .mastery-v341-state { grid-column:2; } }
+      @media (max-width:820px) { .practice-v341-grid, .devflow-v341-groups { grid-template-columns:1fr; } .practice-v341-topstats { grid-template-columns:1fr; } .mastery-v341-row { grid-template-columns:minmax(80px,1fr) minmax(90px,1.2fr); } .mastery-v341-state { grid-column:2; } }
     `;
     document.head.appendChild(style);
   }
@@ -202,7 +207,7 @@
     modal.id = "missionModalV341";
     modal.className = "mission-v341 hidden";
     modal.setAttribute("aria-hidden", "true");
-    modal.innerHTML = '<div class="mission-v341-card" role="dialog" aria-modal="true"><div class="mission-v341-top"><h2></h2><button type="button" class="mission-v341-close" aria-label="close">×</button></div><div class="mission-v341-question"></div><div class="mission-v341-choices"></div><div class="mission-v341-result"></div></div>';
+    modal.innerHTML = '<div class="mission-v341-card" role="dialog" aria-modal="true"><div class="mission-v341-top"><h2></h2><button type="button" class="mission-v341-close" aria-label="close">×</button></div><pre class="mission-v341-code hidden"></pre><div class="mission-v341-question"></div><div class="mission-v341-choices"></div><div class="mission-v341-result"></div></div>';
     modal.querySelector(".mission-v341-close").onclick = function() { closeMission(); };
     modal.onclick = function(event) { if (event.target === modal) closeMission(); };
     document.body.appendChild(modal);
@@ -229,13 +234,22 @@
     renderLearningSummary();
   }
 
-  function openMission(number) {
+  function openMission(number, moduleId) {
     const runtimeEngine = engine();
-    if (!runtimeEngine) return;
-    const mission = runtimeEngine.missionForCheckpoint(number, locale());
+    if (!runtimeEngine || !Array.isArray(cards)) return;
+    const count = attemptedCount();
+    const mission = moduleId
+      ? runtimeEngine.missionForPracticeModule(moduleId, count, locale(), cards, function(card) { return primaryConcept(card); })
+      : runtimeEngine.missionForCheckpoint(number, locale(), cards, function(card) { return primaryConcept(card); });
     const modal = ensureMissionModal();
-    modal.dataset.checkpoint = String(number);
-    modal.querySelector("h2").textContent = t("실전 체크포인트 ", "Practice checkpoint ") + number;
+    modal.dataset.checkpoint = moduleId ? "" : String(number);
+    modal.dataset.practiceModule = moduleId || "";
+    modal.querySelector("h2").textContent = moduleId
+      ? t("Python 실전 연습", "Python practice")
+      : t("실전 체크포인트 ", "Practice checkpoint ") + number;
+    const code = modal.querySelector(".mission-v341-code");
+    code.textContent = String(mission.code || "");
+    code.classList.toggle("hidden", !mission.code);
     modal.querySelector(".mission-v341-question").textContent = mission.question;
     const choices = modal.querySelector(".mission-v341-choices");
     const result = modal.querySelector(".mission-v341-result");
@@ -255,13 +269,74 @@
           if (correctButton) correctButton.classList.add("correct");
         }
         result.textContent = (correct ? t("정답. ", "Correct. ") : t("다시 읽어볼 포인트. ", "Review point. ")) + mission.explanation;
-        appendActivity(correct ? "mission_correct" : "mission_wrong", "checkpoint:" + number);
-        if (correct) completeCheckpoint(number);
+        if (moduleId) {
+          appendActivity(correct ? "practice_correct" : "practice_wrong", "module:" + moduleId + ":" + mission.id);
+          if (correct) showToast(t("실전 연습 완료 · 다음 문제에서도 같은 흐름을 찾아보세요.", "Practice complete · look for the same flow in the next problem."));
+        } else {
+          appendActivity(correct ? "mission_correct" : "mission_wrong", "checkpoint:" + number + ":" + mission.id);
+          if (correct) completeCheckpoint(number);
+        }
       };
       choices.appendChild(button);
     });
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
+  }
+
+  function developmentWorkflowCards() {
+    if (!Array.isArray(sideCards)) return [];
+    return sideCards.filter(function(card) { return card && card.type === "development_workflow"; })
+      .slice()
+      .sort(function(a, b) { return Number(a.sequence || 999) - Number(b.sequence || 999) || String(a.id || "").localeCompare(String(b.id || "")); });
+  }
+
+  function renderDevelopmentWorkflowReference(host) {
+    const refs = developmentWorkflowCards();
+    if (!refs.length) return;
+    const section = document.createElement("section");
+    section.className = "practice-v341-card devflow-v341";
+    section.id = "developmentWorkflowReferenceV341";
+    section.innerHTML = '<h2>' + t("개발 절차 참고 카드", "Development workflow reference cards") + '</h2><p>' + t("Python 실전 체크포인트와는 별도의 보조 학습입니다. 필요할 때 개발 전·중·검증·배포 절차를 펼쳐 확인하세요.", "These are supporting references separate from Python practice checkpoints. Open them when you need the before, during, validation, or release workflow.") + '</p>';
+    const wrap = document.createElement("div");
+    wrap.className = "devflow-v341-groups";
+    const phases = [
+      ["before", t("개발 전", "Before coding")],
+      ["during", t("개발 중", "During coding")],
+      ["verify", t("검증·리뷰", "Validation and review")],
+      ["release", t("배포·운영", "Release and operation")]
+    ];
+    phases.forEach(function(pair) {
+      const rows = refs.filter(function(card) { return card.phase === pair[0]; });
+      if (!rows.length) return;
+      const group = document.createElement("div");
+      group.className = "devflow-v341-group";
+      const title = document.createElement("h3");
+      title.textContent = pair[1] + " · " + rows.length;
+      group.appendChild(title);
+      rows.forEach(function(card) {
+        const details = document.createElement("details");
+        details.className = "devflow-v341-item";
+        const summary = document.createElement("summary");
+        summary.textContent = String(card.title || card.id || "");
+        details.appendChild(summary);
+        const body = document.createElement("div");
+        body.className = "devflow-v341-body";
+        const primary = document.createElement("div");
+        primary.textContent = String(card.body || card.summary || "");
+        body.appendChild(primary);
+        if (card.detail) {
+          const detail = document.createElement("div");
+          detail.className = "devflow-v341-detail";
+          detail.textContent = String(card.detail);
+          body.appendChild(detail);
+        }
+        details.appendChild(body);
+        group.appendChild(details);
+      });
+      wrap.appendChild(group);
+    });
+    section.appendChild(wrap);
+    host.appendChild(section);
   }
 
   function renderPractice() {
@@ -276,14 +351,14 @@
     const weekly = engine().weeklyStatus(state.events, Date.now());
     const completion = engine().completionSummary(state.completedCheckpoints, checkpointCount);
     const mastery = engine().conceptMastery(cards, progress, reviews, function(card) { return primaryConcept(card); });
-    const modules = engine().unlockedPracticeModules(count);
+    const modules = engine().unlockedPracticeModules(count, cards, function(card) { return primaryConcept(card); });
     const consolidated = mastery.filter(function(row) { return row.level.key === "consolidated"; }).length;
 
     host.innerHTML = "";
 
     const intro = document.createElement("section");
     intro.className = "practice-v341-card";
-    intro.innerHTML = '<h1 style="margin:0">' + t("실전", "Practice") + '</h1><p>' + t("Python 순차 학습에서 실제로 쌓인 진도만큼 개발 절차·테스트·리뷰 미션이 열립니다. 어떤 개발 사고를 실제로 이해하고 통과했는지를 기록합니다.", "Developer workflow, testing, and review missions unlock from actual sequential-learning progress. The record shows which developer reasoning skills you have actually demonstrated.") + '</p>';
+    intro.innerHTML = '<h1 style="margin:0">' + t("실전", "Practice") + '</h1><p>' + t("현재까지 실제로 배운 Python 개념만 사용해 결과 예측·흐름 추적·버그 찾기·코드 읽기를 연습합니다. 30문제마다 최근 학습 범위를 섞은 체크포인트가 열립니다.", "Practice output prediction, flow tracing, bug finding, and code reading using only Python concepts already encountered. Every 30 cards unlocks a checkpoint that mixes the recent learning range.") + '</p>';
 
     const topstats = document.createElement("div");
     topstats.className = "practice-v341-topstats";
@@ -326,7 +401,7 @@
       } else {
         const p = document.createElement("p");
         p.style.marginTop = "10px";
-        p.textContent = t("현재 열린 체크포인트 미션은 모두 통과했습니다. 다음 체크포인트까지 " + next.remaining + "문제 남았습니다.", "All currently unlocked checkpoint missions are passed. " + next.remaining + " cards remain until the next checkpoint.");
+        p.textContent = t("현재 열린 체크포인트는 모두 통과했습니다. 다음 체크포인트까지 " + next.remaining + "문제 남았습니다.", "All currently unlocked checkpoints are passed. " + next.remaining + " cards remain until the next checkpoint.");
         intro.appendChild(p);
       }
     } else {
@@ -343,20 +418,25 @@
 
     const modulesCard = document.createElement("section");
     modulesCard.className = "practice-v341-card";
-    modulesCard.innerHTML = '<h2>' + t("개발 실전 감각", "Developer practice") + '</h2><p>' + t("현재 학습 진도에 맞춰 하나씩 열립니다. 문법 암기보다 변경·검증·리뷰 판단을 연습합니다.", "Modules unlock gradually from current learning progress and focus on change, validation, and review reasoning.") + '</p>';
+    modulesCard.innerHTML = '<h2>' + t("Python 실전 주제", "Python practice topics") + '</h2><p>' + t("카드 번호로 억지로 여는 것이 아니라, 순차 학습에서 해당 주제를 실제로 만난 시점부터 열립니다.", "Topics unlock when they actually appear in the sequential curriculum, not at arbitrary fixed card numbers.") + '</p>';
     const moduleList = document.createElement("div");
     moduleList.className = "practice-v341-modules";
-    modules.forEach(function(module, index) {
+    modules.forEach(function(module) {
       const item = document.createElement("div");
       item.className = "practice-v341-module" + (module.unlocked ? "" : " locked");
+      item.dataset.practiceModuleId = module.id;
       const name = locale() === "en" ? module.en : module.ko;
       const description = locale() === "en" ? module.descriptionEn : module.descriptionKo;
-      item.innerHTML = '<div class="practice-v341-module-top"><div class="practice-v341-module-title">' + name + '</div><div class="practice-v341-module-meta">' + (module.unlocked ? t("열림", "Open") : t(module.remaining + "문제 후", "After " + module.remaining + " cards")) + '</div></div><p>' + description + '</p>';
+      let meta;
+      if (module.unlocked) meta = t("열림", "Open");
+      else if (module.remaining == null) meta = t("후속 과정", "Later curriculum");
+      else meta = t(module.remaining + "문제 후", "After " + module.remaining + " cards");
+      item.innerHTML = '<div class="practice-v341-module-top"><div class="practice-v341-module-title">' + name + '</div><div class="practice-v341-module-meta">' + meta + '</div></div><p>' + description + '</p>';
       const button = document.createElement("button");
       button.type = "button";
       button.disabled = !module.unlocked;
-      button.textContent = module.unlocked ? t("관련 미션 풀기", "Open related mission") : t("아직 잠김", "Locked");
-      button.dataset.missionCheckpointV341 = String(Number(module.missionCheckpoint || 1));
+      button.textContent = module.unlocked ? t("이 주제로 연습", "Practice this topic") : t("아직 잠김", "Locked");
+      button.dataset.practiceModuleV341 = module.id;
       item.appendChild(button);
       moduleList.appendChild(item);
     });
@@ -391,6 +471,7 @@
     grid.appendChild(modulesCard);
     grid.appendChild(masteryCard);
     host.appendChild(grid);
+    renderDevelopmentWorkflowReference(host);
   }
 
   function maybeToastMilestones(beforeCount, afterCount) {
@@ -417,11 +498,16 @@
     if (window.__learningExperienceV341MissionDelegated) return;
     document.addEventListener("click", function(event) {
       const button = event.target && event.target.closest
-        ? event.target.closest("[data-mission-checkpoint-v341]")
+        ? event.target.closest("[data-mission-checkpoint-v341], [data-practice-module-v341]")
         : null;
       if (!button || button.disabled) return;
+      const moduleId = String(button.dataset.practiceModuleV341 || "");
+      if (moduleId) {
+        openMission(0, moduleId);
+        return;
+      }
       const number = Number(button.dataset.missionCheckpointV341 || 0);
-      if (number > 0) openMission(number);
+      if (number > 0) openMission(number, "");
     }, true);
     window.__learningExperienceV341MissionDelegated = true;
   }
