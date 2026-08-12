@@ -5,24 +5,66 @@ on:
     branches:
       - agent/v352-worked-example-dedup-audit
     paths:
-      - 'src/pwa/app.js'
-      - 'src/pwa/learning_engine_v340.js'
-      - 'data/lessons/**'
-      - 'data_i18n/en/lessons/**'
+      - 'tools/apply_worked_example_dedup_v352.py'
       - 'tools/audit_worked_example_dedup_v352.js'
       - '.github/workflows/worked-example-dedup-v352.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  audit:
+  audit-and-apply:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout audit branch
+      - name: Checkout V352 branch
         uses: actions/checkout@v5
-      - name: Node syntax
-        run: node --check tools/audit_worked_example_dedup_v352.js
-      - name: Full KO EN worked-example audit
-        run: node tools/audit_worked_example_dedup_v352.js
+        with:
+          fetch-depth: 0
+          ref: agent/v352-worked-example-dedup-audit
+
+      - name: Apply V352 dedup fix
+        run: python tools/apply_worked_example_dedup_v352.py --apply
+
+      - name: Confirm V352 idempotence
+        run: python tools/apply_worked_example_dedup_v352.py --check
+
+      - name: Syntax checks
+        run: |
+          python -m py_compile tools/apply_worked_example_dedup_v352.py
+          node --check src/pwa/learning_engine_v340.js
+          node --check tools/audit_learning_loop_v340.js
+          node --check tools/audit_worked_example_dedup_v352.js
+
+      - name: Existing V340 engine regression
+        run: node tools/audit_learning_loop_v340.js
+
+      - name: Full KO EN worked-example audit must be clean
+        run: |
+          node tools/audit_worked_example_dedup_v352.js | tee /tmp/v352-worked-example-audit.log
+          grep -q '^TOTAL_FINDINGS=0$' /tmp/v352-worked-example-audit.log
+          grep -q '^KO_FINDINGS=0$' /tmp/v352-worked-example-audit.log
+          grep -q '^EN_FINDINGS=0$' /tmp/v352-worked-example-audit.log
+
+      - name: Existing lesson validation
+        run: python tools/validate_lessons.py
+
+      - name: Existing learning hardening and runtime audits
+        run: |
+          node tools/audit_learning_hardening_v342_r2.js
+          node tools/audit_learning_runtime_v348.js
+
+      - name: Diff integrity
+        run: git diff --check
+
+      - name: Commit validated V352 generated changes
+        run: |
+          if git diff --quiet; then
+            echo 'V352_ALREADY_CLEAN=True'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/pwa/learning_engine_v340.js src/pwa/app.js tools/audit_learning_loop_v340.js
+          git commit -m 'Prevent worked examples from duplicating lesson problems'
+          git push origin HEAD:agent/v352-worked-example-dedup-audit
