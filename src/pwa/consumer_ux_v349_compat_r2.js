@@ -44,6 +44,21 @@
     if (button.textContent !== label) button.textContent = label;
   }
 
+  function syncStudyToolsDisclosure() {
+    const panel = document.getElementById("studyToolsV7");
+    if (!panel) return;
+    const shouldOpen = panel.classList.contains("v349-expanded");
+    const legacyCollapsed = panel.classList.contains("study-tools-collapsed-v272");
+    if (shouldOpen === legacyCollapsed) {
+      const legacyToggle = document.getElementById("studyToolsToggleV272");
+      if (legacyToggle && typeof legacyToggle.click === "function") {
+        legacyToggle.click();
+      } else {
+        panel.classList.toggle("study-tools-collapsed-v272", !shouldOpen);
+      }
+    }
+  }
+
   function sync() {
     syncLegacyToolsState();
     syncSupportState();
@@ -81,6 +96,13 @@
   }, true);
 
   document.addEventListener("click", function (event) {
+    const studyToggle = event.target && event.target.closest ? event.target.closest("#studyToolsDisclosureV349") : null;
+    if (studyToggle) {
+      syncStudyToolsDisclosure();
+      scheduleSync();
+      return;
+    }
+
     const legacyTab = event.target && event.target.closest ? event.target.closest(".tab-btn[data-view]") : null;
     if (!legacyTab || !legacyTab.dataset.view) return;
     projectLegacyToolState(legacyTab.dataset.view);
