@@ -173,6 +173,19 @@
     );
   }
 
+  function masteryDisplayRows(rows) {
+    const source = Array.isArray(rows) ? rows : [];
+    try {
+      if (typeof conceptInfo === "object" && conceptInfo) {
+        const curated = source.filter(function(row) {
+          return row && Object.prototype.hasOwnProperty.call(conceptInfo, row.concept);
+        });
+        if (curated.length) return curated;
+      }
+    } catch (_) {}
+    return source.filter(function(row) { return row && row.primaryCards > 0; });
+  }
+
   function renderLearningSummary() {
     const parent = document.getElementById("learningPathV340");
     if (!parent || !engine() || !Array.isArray(cards)) return;
@@ -183,10 +196,11 @@
       parent.appendChild(strip);
     }
     const count = attemptedCount();
-    const next = engine().nextCheckpoint(count);
+    const next = engine().nextCheckpoint(count, cards.length);
     const weekly = engine().weeklyStatus(loadState().events, Date.now());
     const mastery = engine().conceptMastery(cards, safeProgress(), reviewState(), function(card) { return primaryConcept(card); });
-    const consolidated = mastery.filter(function(row) { return row.level.key === "consolidated"; }).length;
+    const displayMastery = masteryDisplayRows(mastery);
+    const consolidated = displayMastery.filter(function(row) { return row.level.key === "consolidated"; }).length;
     strip.innerHTML = "";
     [
       [t("순차 학습", "Sequential"), count + " / " + cards.length],
@@ -346,13 +360,14 @@
     const progress = safeProgress();
     const reviews = reviewState();
     const count = engine().attemptedCount(cards, progress);
-    const checkpointCount = engine().unlockedCheckpointCount(count);
-    const next = engine().nextCheckpoint(count);
+    const checkpointCount = engine().unlockedCheckpointCount(count, cards.length);
+    const next = engine().nextCheckpoint(count, cards.length);
     const weekly = engine().weeklyStatus(state.events, Date.now());
     const completion = engine().completionSummary(state.completedCheckpoints, checkpointCount);
     const mastery = engine().conceptMastery(cards, progress, reviews, function(card) { return primaryConcept(card); });
+    const displayMastery = masteryDisplayRows(mastery);
     const modules = engine().unlockedPracticeModules(count, cards, function(card) { return primaryConcept(card); });
-    const consolidated = mastery.filter(function(row) { return row.level.key === "consolidated"; }).length;
+    const consolidated = displayMastery.filter(function(row) { return row.level.key === "consolidated"; }).length;
 
     host.innerHTML = "";
 
@@ -365,7 +380,7 @@
     [
       [count + " / " + cards.length, t("순차 학습 시도", "Sequential attempts")],
       [completion.passed + " / " + completion.available, t("통과한 체크포인트", "Passed checkpoints")],
-      [consolidated + " / " + mastery.length, t("정착 개념", "Consolidated concepts")]
+      [consolidated + " / " + displayMastery.length, t("정착 개념", "Consolidated concepts")]
     ].forEach(function(pair) {
       const box = document.createElement("div");
       box.className = "practice-v341-stat";
@@ -444,10 +459,10 @@
 
     const masteryCard = document.createElement("section");
     masteryCard.className = "practice-v341-card";
-    masteryCard.innerHTML = '<h2>' + t("개념 숙련도 지도", "Concept mastery map") + '</h2><p>' + t("정답 수가 아니라 실제 학습·변형복습 근거로 상태를 표시합니다.", "States reflect actual learning and variant-review evidence rather than raw points.") + '</p>';
+    masteryCard.innerHTML = '<h2>' + t("개념 숙련도 지도", "Concept mastery map") + '</h2><p>' + t("모든 세부 개념의 학습 증거는 내부에 집계하고, 여기에는 설명이 준비된 핵심 개념을 빠짐없이 표시합니다.", "Evidence is tracked for every detailed concept; this map shows every core concept with a prepared explanation, without an arbitrary cutoff.") + '</p>';
     const masteryList = document.createElement("div");
     masteryList.className = "mastery-v341-list";
-    mastery.slice(0, 80).forEach(function(row) {
+    displayMastery.forEach(function(row) {
       const item = document.createElement("div");
       item.className = "mastery-v341-row";
       const name = document.createElement("div");
@@ -476,8 +491,8 @@
 
   function maybeToastMilestones(beforeCount, afterCount) {
     if (!engine() || afterCount <= beforeCount) return;
-    const beforeUnlocked = engine().unlockedCheckpointCount(beforeCount);
-    const afterUnlocked = engine().unlockedCheckpointCount(afterCount);
+    const beforeUnlocked = engine().unlockedCheckpointCount(beforeCount, Array.isArray(cards) ? cards.length : 0);
+    const afterUnlocked = engine().unlockedCheckpointCount(afterCount, Array.isArray(cards) ? cards.length : 0);
     if (afterUnlocked > beforeUnlocked) {
       showToast(t("실전 체크포인트 " + afterUnlocked + "이 열렸습니다.", "Practice checkpoint " + afterUnlocked + " is now available."));
       return;

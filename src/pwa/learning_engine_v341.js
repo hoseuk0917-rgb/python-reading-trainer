@@ -35,7 +35,8 @@
     import: "module", module: "module", package: "module",
     file: "file", open: "file", path: "file", pathlib: "file", encoding: "file", csv: "file", json: "file", "json.loads": "file", "json.dumps": "file",
     exception: "exception", error: "exception", raise: "exception", try_except: "exception",
-    input: "input", indentation: "indentation", comment: "comment", none: "none"
+    input: "input", indentation: "indentation", comment: "comment", none: "none",
+    with: "file", enumerate: "loop", zip: "loop", sorted: "list", finally: "exception"
   };
 
   const PRACTICE_MODULES = [
@@ -175,6 +176,42 @@
       explainEn: "7 >= 5 is true, so only the if block runs and the else block is skipped."
     },
     {
+      id: "if_false_branch", moduleId: "condition", kind: "branch_trace",
+      requires: [["if", "condition"], ["print", "output"]],
+      code: 'temperature = 18\nif temperature >= 20:\n    print("warm")\nelse:\n    print("cool")',
+      questionKo: "조건을 계산한 뒤 실제로 출력되는 값은 무엇일까요?",
+      questionEn: "After evaluating the condition, what is actually printed?",
+      choicesKo: ["warm", "cool", "둘 다"],
+      choicesEn: ["warm", "cool", "Both"],
+      answerIndex: 1,
+      explainKo: "18 >= 20은 거짓이므로 if 블록을 건너뛰고 else 블록의 cool을 출력합니다.",
+      explainEn: "18 >= 20 is false, so the if block is skipped and the else branch prints cool."
+    },
+    {
+      id: "if_value_after_branch", moduleId: "condition", kind: "value_trace",
+      requires: [["if", "condition"], ["variable", "assignment"], ["print", "output"]],
+      code: 'count = 2\nif count > 0:\n    label = "ready"\nelse:\n    label = "empty"\nprint(label)',
+      questionKo: "마지막 줄에서 출력되는 label 값은 무엇일까요?",
+      questionEn: "Which label value is printed on the last line?",
+      choicesKo: ["ready", "empty", "2"],
+      choicesEn: ["ready", "empty", "2"],
+      answerIndex: 0,
+      explainKo: "count > 0이 참이므로 label에 ready가 저장되고 마지막 print가 그 값을 출력합니다.",
+      explainEn: "count > 0 is true, so label becomes ready and the final print displays it."
+    },
+    {
+      id: "elif_route", moduleId: "condition", kind: "branch_trace",
+      requires: [["if", "condition"], ["elif"], ["print", "output"]],
+      code: 'score = 70\nif score >= 90:\n    print("A")\nelif score >= 60:\n    print("B")\nelse:\n    print("C")',
+      questionKo: "위에서부터 조건을 검사할 때 실제로 선택되는 분기는 무엇일까요?",
+      questionEn: "Which branch is selected when conditions are checked from top to bottom?",
+      choicesKo: ["A", "B", "C"],
+      choicesEn: ["A", "B", "C"],
+      answerIndex: 1,
+      explainKo: "첫 조건은 거짓이고 70 >= 60은 참이므로 elif 분기의 B가 출력됩니다.",
+      explainEn: "The first condition is false and 70 >= 60 is true, so the elif branch prints B."
+    },
+    {
       id: "for_sum", moduleId: "loop", kind: "loop_trace",
       requires: [["for", "loop"], ["list"], ["print", "output"]],
       code: "total = 0\nfor n in [1, 2, 3]:\n    total = total + n\nprint(total)",
@@ -209,6 +246,42 @@
       answerIndex: 1,
       explainKo: "n이 4가 되는 순간 n < 4가 거짓이 되어 반복이 끝납니다.",
       explainEn: "When n reaches 4, n < 4 becomes false and the loop stops."
+    },
+    {
+      id: "for_last_value", moduleId: "loop", kind: "value_trace",
+      requires: [["for", "loop"], ["list"], ["print", "output"]],
+      code: 'last = ""\nfor name in ["A", "B", "C"]:\n    last = name\nprint(last)',
+      questionKo: "반복이 모두 끝난 뒤 last에 남아 출력되는 값은 무엇일까요?",
+      questionEn: "What remains in last and is printed after the loop finishes?",
+      choicesKo: ["A", "B", "C"],
+      choicesEn: ["A", "B", "C"],
+      answerIndex: 2,
+      explainKo: "반복할 때마다 last가 현재 name으로 바뀌므로 마지막 항목 C가 남습니다.",
+      explainEn: "last is replaced by the current name on every iteration, so the final item C remains."
+    },
+    {
+      id: "break_exit", moduleId: "loop", kind: "loop_trace",
+      requires: [["for", "loop"], ["range"], ["break"], ["print", "output"]],
+      code: 'value = -1\nfor n in range(5):\n    value = n\n    if n == 2:\n        break\nprint(value)',
+      questionKo: "break로 반복이 끝난 뒤 출력되는 value는 무엇일까요?",
+      questionEn: "What value is printed after break stops the loop?",
+      choicesKo: ["1", "2", "4"],
+      choicesEn: ["1", "2", "4"],
+      answerIndex: 1,
+      explainKo: "n이 2인 회차에서 value에 2가 저장된 뒤 break가 실행되어 반복이 끝납니다.",
+      explainEn: "When n reaches 2, value becomes 2 and break ends the loop."
+    },
+    {
+      id: "continue_skip", moduleId: "loop", kind: "loop_trace",
+      requires: [["for", "loop"], ["range"], ["continue"], ["print", "output"]],
+      code: 'total = 0\nfor n in range(4):\n    if n == 2:\n        continue\n    total = total + n\nprint(total)',
+      questionKo: "n == 2 회차를 건너뛴 뒤 total의 최종 값은 무엇일까요?",
+      questionEn: "What is the final total after the n == 2 iteration is skipped?",
+      choicesKo: ["4", "6", "3"],
+      choicesEn: ["4", "6", "3"],
+      answerIndex: 0,
+      explainKo: "0, 1, 3만 더하므로 total은 4가 됩니다.",
+      explainEn: "Only 0, 1, and 3 are added, so total becomes 4."
     },
     {
       id: "list_index", moduleId: "collections", kind: "collection_lookup",
@@ -307,6 +380,18 @@
       explainEn: "Because x is assigned inside the function, that local x is used there."
     },
     {
+      id: "function_parameter_flow", moduleId: "functions", kind: "call_trace",
+      requires: [["def", "function"], ["parameter", "argument"], ["return"]],
+      code: 'def add_tax(price):\n    return price + 1\n\nresult = add_tax(4)',
+      questionKo: "4가 매개변수 price로 들어간 뒤 result에 저장되는 값은 무엇일까요?",
+      questionEn: "After 4 is passed into parameter price, what is stored in result?",
+      choicesKo: ["4", "5", "None"],
+      choicesEn: ["4", "5", "None"],
+      answerIndex: 1,
+      explainKo: "호출 인자 4가 price에 들어가고 return price + 1이 5를 호출한 곳으로 돌려줍니다.",
+      explainEn: "Argument 4 is bound to price, and return price + 1 sends 5 back to the caller."
+    },
+    {
       id: "file_with", moduleId: "file_error", kind: "resource_flow",
       requires: [["open", "file"], ["with"]],
       code: 'with open("note.txt", "r", encoding="utf-8") as f:\n    text = f.read()',
@@ -400,9 +485,13 @@
     return Array.isArray(card && card.concepts) ? card.concepts.filter(Boolean) : [];
   }
 
+  function ownValue(map, key) {
+    return map && Object.prototype.hasOwnProperty.call(map, key) ? map[key] : undefined;
+  }
+
   function familyOf(concept) {
     const key = normalizeConcept(concept);
-    return CONCEPT_FAMILY[key] || key;
+    return ownValue(CONCEPT_FAMILY, key) || key;
   }
 
   function attempted(progress, cardId) {
@@ -457,15 +546,27 @@
     });
   }
 
-  function unlockedCheckpointCount(count) {
-    return Math.floor(Math.max(0, Number(count || 0)) / CHECKPOINT_INTERVAL);
+  function unlockedCheckpointCount(count, totalCards) {
+    const value = Math.max(0, Number(count || 0));
+    const total = Math.max(0, Number(totalCards || 0));
+    let unlocked = Math.floor(value / CHECKPOINT_INTERVAL);
+    if (total > 0 && total % CHECKPOINT_INTERVAL !== 0 && value >= total) {
+      unlocked = Math.max(unlocked, Math.ceil(total / CHECKPOINT_INTERVAL));
+    }
+    return unlocked;
   }
 
-  function nextCheckpoint(count) {
+  function nextCheckpoint(count, totalCards) {
     const value = Math.max(0, Number(count || 0));
-    const unlocked = unlockedCheckpointCount(value);
-    const target = (unlocked + 1) * CHECKPOINT_INTERVAL;
-    return { unlocked: unlocked, target: target, remaining: Math.max(0, target - value), progress: Math.min(CHECKPOINT_INTERVAL, value - unlocked * CHECKPOINT_INTERVAL) };
+    const total = Math.max(0, Number(totalCards || 0));
+    const unlocked = unlockedCheckpointCount(value, total);
+    if (total > 0 && value >= total) {
+      return { unlocked: unlocked, target: total, remaining: 0, progress: total % CHECKPOINT_INTERVAL || CHECKPOINT_INTERVAL, complete: true };
+    }
+    let target = (unlocked + 1) * CHECKPOINT_INTERVAL;
+    if (total > 0) target = Math.min(target, total);
+    const base = unlocked * CHECKPOINT_INTERVAL;
+    return { unlocked: unlocked, target: target, remaining: Math.max(0, target - value), progress: Math.max(0, Math.min(CHECKPOINT_INTERVAL, value - base)), complete: false };
   }
 
   function primaryConceptFor(card, index, primaryResolver) {
@@ -581,13 +682,20 @@
     };
   }
 
-  function chooseTemplate(candidates, context, seed) {
+  function chooseTemplate(candidates, context, seed, rotationIndex) {
     if (!candidates.length) return null;
-    return candidates.slice().sort(function(a, b) {
-      const scoreDiff = templateRecencyScore(b, context) - templateRecencyScore(a, context);
-      if (scoreDiff) return scoreDiff;
-      return simpleHash(a.id + "|" + seed) - simpleHash(b.id + "|" + seed);
-    })[0];
+    const scored = candidates.map(function(template) {
+      return { template: template, score: templateRecencyScore(template, context) };
+    }).sort(function(a, b) {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.template.id.localeCompare(b.template.id);
+    });
+    let pool = scored.filter(function(row) { return row.score > 0; });
+    if (pool.length < Math.min(4, scored.length)) pool = scored.slice(0, Math.min(6, scored.length));
+    pool = pool.sort(function(a, b) { return a.template.id.localeCompare(b.template.id); });
+    const hasRotation = Number.isFinite(Number(rotationIndex));
+    const rawIndex = hasRotation ? Math.max(0, Number(rotationIndex)) * 5 + 1 : simpleHash(seed);
+    return pool[rawIndex % pool.length].template;
   }
 
   function fallbackMission(context, cards, locale, primaryResolver, moduleId, seed) {
@@ -638,7 +746,7 @@
     const rows = Array.isArray(cards) ? cards : [];
     const context = buildLearningContext(rows, Math.min(rows.length, number * CHECKPOINT_INTERVAL), primaryResolver);
     const candidates = PRACTICE_TEMPLATES.filter(function(template) { return templateAvailable(template, context); });
-    const template = chooseTemplate(candidates, context, "checkpoint:" + number);
+    const template = chooseTemplate(candidates, context, "checkpoint:" + number, number - 1);
     const mission = template
       ? localizeTemplate(template, locale, "checkpoint:" + number + ":" + template.id)
       : fallbackMission(context, rows, locale, primaryResolver, "", "checkpoint:" + number);

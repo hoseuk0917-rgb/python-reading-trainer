@@ -47,9 +47,13 @@
     return String(value == null ? "" : value).toLowerCase().replace(/\s+/g, " ").trim();
   }
 
+  function ownValue(map, key) {
+    return map && Object.prototype.hasOwnProperty.call(map, key) ? map[key] : undefined;
+  }
+
   function family(value) {
     const key = String(value == null ? "" : value);
-    return FAMILY[key] || FAMILY[key.toLowerCase()] || key.toLowerCase();
+    return ownValue(FAMILY, key) || ownValue(FAMILY, key.toLowerCase()) || key.toLowerCase();
   }
 
   function meaningfulConcepts(values) {
@@ -89,7 +93,9 @@
   }
 
   function scoreConcept(card, concept, index) {
-    const tokens = TOKENS[concept] || TOKENS[String(concept || "").toLowerCase()] || [String(concept || "")];
+    const directTokens = ownValue(TOKENS, concept);
+    const lowerTokens = ownValue(TOKENS, String(concept || "").toLowerCase());
+    const tokens = Array.isArray(directTokens) ? directTokens : (Array.isArray(lowerTokens) ? lowerTokens : [String(concept || "")]);
     const title = norm(card && card.title);
     const goal = norm(card && card.reading_goal);
     const question = norm(card && card.question);
@@ -121,7 +127,7 @@
 
   function pickPrimaryConcept(card, concepts, conceptInfo) {
     const candidates = (Array.isArray(concepts) ? concepts : []).filter(function(concept) {
-      return conceptInfo && conceptInfo[concept];
+      return conceptInfo && Object.prototype.hasOwnProperty.call(conceptInfo, concept);
     });
     if (!candidates.length) return (Array.isArray(concepts) && concepts[0]) || "";
     let best = candidates[0];
