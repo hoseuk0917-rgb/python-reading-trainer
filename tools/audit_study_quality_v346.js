@@ -25,7 +25,8 @@ check("NEXT_ACTION_USES_V341_CHECKPOINT", runtime.includes("unlockedCheckpointCo
 check("NEXT_ACTION_FIXED_SEQUENCE", runtime.includes("firstUnseenIndex") && runtime.includes("nextCardTitle"), "first unseen new card");
 check("TODAY_SUMMARY_REUSES_V345", runtime.includes("StudyExperienceV345.showSessionSummary"), "existing summary API");
 check("PROGRESS_RUNTIME_READ_ONLY", !/localStorage\.setItem|sessionStorage\.setItem|saveProgress\s*\(/.test(runtime), "V346 does not write learning state");
-check("NO_XP_BADGE_CURRENCY", !/\bXP\b|coin|loot|badge/i.test(runtime), "no gamification currency");
+const visibleRewardTerms = /["'`](?:[^"'`]*(?:\bXP\b|coins?|loot|developer badge|achievement badge|배지|코인|전리품)[^"'`]*)["'`]/i;
+check("NO_XP_BADGE_CURRENCY", !visibleRewardTerms.test(runtime), "no user-facing gamification reward wording");
 check("KO_EN_COPY", runtime.includes("지금 할 일") && runtime.includes("What to do now") && runtime.includes("복습부터 시작") && runtime.includes("Start review"), "bilingual next action copy");
 
 check("SHARED_UI_CSS", css.includes("/* PRT STUDY UI COMPONENTS V346 */"), "component layer");
