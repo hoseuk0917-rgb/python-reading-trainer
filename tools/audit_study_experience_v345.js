@@ -21,6 +21,7 @@ check("SCRIPT_AFTER_V344", index.indexOf("explanation_support_v344.js") >= 0 && 
 
 check("NAV_PRIMARY_VIEWS", /\["learn", "practice", "progress"\]/.test(runtime), "learn/practice/progress");
 check("NAV_SUPPORT_VIEWS", /\["outline", "notes"\]/.test(runtime), "outline/notes");
+check("NAV_DOM_ORDER", runtime.includes('["learn", "practice", "progress", "outline", "notes"].forEach'), "learn>practice>progress>outline>notes>tools");
 check("TOOLS_GROUP", /\["code", "command", "project"\]/.test(runtime) && runtime.includes('aria-haspopup", "menu"'), "code/command/project");
 check("TOOLS_KEEP_REAL_TAB_BUTTONS", runtime.includes('menu.appendChild(btn)') && runtime.includes('.tab-btn[data-view="'), "moved existing buttons");
 
@@ -46,7 +47,7 @@ check("MODAL_ESCAPE", runtime.includes("closeKnownDialogOnEscape") && runtime.in
 check("MODAL_FOCUS_TRAP", runtime.includes("trapDialogFocus") && runtime.includes('event.key !== "Tab"'), "tab loop");
 check("FOCUS_VISIBLE", runtime.includes(":focus-visible") && runtime.includes("outline:3px solid"), "visible keyboard focus");
 check("REDUCED_MOTION", runtime.includes("prefers-reduced-motion"), "motion preference");
-check("TOUCH_TARGET", runtime.includes("min-height:40px"), "minimum control height");
+check("TOUCH_TARGET", runtime.includes("min-height:44px") && !runtime.includes("min-height:40px"), "44px minimum control height");
 check("RESULT_LIVE_REGION", runtime.includes('result.setAttribute("aria-live", "polite")'), "answer announcement");
 
 rows.forEach((row) => console.log(row));
