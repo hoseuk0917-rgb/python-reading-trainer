@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "v347_a5";
+  const VERSION = "v347_a6";
   const REVIEW_KEY = "python-reading-trainer-review-v340";
   const dialogOpeners = new WeakMap();
   let lastOutsideFocus = null;
@@ -145,6 +145,24 @@
     return document.activeElement === target;
   }
 
+  function returnToProgressForReviewOrigin() {
+    try {
+      if (typeof setView === "function") setView("progress");
+      else {
+        const progressTab = document.querySelector('nav.tabs > .tab-btn[data-view="progress"]');
+        if (progressTab) progressTab.click();
+      }
+    } catch (_) {
+      try {
+        const progressTab = document.querySelector('nav.tabs > .tab-btn[data-view="progress"]');
+        if (progressTab) progressTab.click();
+      } catch (_) {}
+    }
+    try {
+      if (window.StudyQualityV346 && typeof window.StudyQualityV346.refresh === "function") window.StudyQualityV346.refresh();
+    } catch (_) {}
+  }
+
   function restoreDialogFocus(modal) {
     if (!modal) return;
     const explicitReviewOpener = modal.id === "reviewModalV340" ? pendingReviewOpener : null;
@@ -152,13 +170,16 @@
     dialogOpeners.delete(modal);
     if (!descriptor) return;
 
-    // Hiding a focused modal can move focus to BODY after the mutation itself.
-    // Resolve the current semantic control after two paint turns so rerendered
-    // action buttons are targeted rather than stale DOM elements.
+    // V346 intentionally moves from Progress to Learn before opening V340 review.
+    // If the learner cancels that delegated review, restore the originating view
+    // before restoring focus. Direct V340 reviews have no explicit V346 opener
+    // and therefore keep their existing view/lifecycle unchanged.
+    if (explicitReviewOpener) returnToProgressForReviewOrigin();
+
     window.requestAnimationFrame(function () {
       window.requestAnimationFrame(function () {
         const restored = focusResolvedControl(descriptor);
-        if (restored && modal.id === "reviewModalV340") pendingReviewOpener = null;
+        if (restored && explicitReviewOpener) pendingReviewOpener = null;
       });
     });
   }
