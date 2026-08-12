@@ -43,7 +43,9 @@ check('LEARNING_CONTEXT_BLOCKS_FUTURE_TOPICS', !context30.concepts.has('if') && 
 
 const mission1 = engine.missionForCheckpoint(1, 'ko', cards, primary);
 check('CHECKPOINT_HAS_PYTHON_CODE', Boolean(mission1.code) && /len|print|items/.test(mission1.code), mission1.id + ':' + mission1.code.replace(/\n/g, '|'));
-check('CHECKPOINT_USES_LEARNED_TOPICS_ONLY', ['output_prediction', 'value_trace', 'code_reading', 'concept_trace'].includes(mission1.kind), mission1.kind);
+const mission1UsesFutureSyntax = /^\s*(?:if|elif|else|for|while|def|class|try|except)\b/m.test(String(mission1.code || '')) || /\b(?:row|get)\s*[.(]/.test(String(mission1.code || ''));
+const mission1UsesLearnedModule = ['basics', 'collections'].includes(String(mission1.moduleId || ''));
+check('CHECKPOINT_USES_LEARNED_TOPICS_ONLY', !mission1UsesFutureSyntax && mission1UsesLearnedModule, mission1.moduleId + ':' + mission1.kind);
 const devKinds = new Set(['change_procedure', 'regression', 'idempotence', 'test_scope', 'pr_review', 'ci_gate', 'reproducibility', 'baseline', 'rollback']);
 check('CHECKPOINT_NOT_DEVELOPMENT_WORKFLOW_TOPIC', !devKinds.has(mission1.kind), mission1.kind);
 check('CHECKPOINT_BOUNDARY_30', mission1.boundary === 30, String(mission1.boundary));
