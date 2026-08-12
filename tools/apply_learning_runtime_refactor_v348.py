@@ -153,7 +153,7 @@ def patch_study_experience(text: str) -> tuple[str, int]:
 '''
         text = text[:start] + replacement + text[end:]
         changes += 1
-    elif 'V348 owns dialog focus' not in text:
+    elif '  function enhanceA11y() {' not in text or '  function visibleDialog() {' in text:
         raise RuntimeError("study_experience dialog a11y block anchor missing")
 
     old = '''  function installAnswerActivityHooks() {
