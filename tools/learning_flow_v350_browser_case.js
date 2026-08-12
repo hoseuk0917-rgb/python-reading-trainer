@@ -42,10 +42,10 @@
       return doc && doc.documentElement.dataset.learningFlowV350 === "v350_a1" && doc.getElementById("consumerNavV349");
     }, 60000);
 
-    const win = frame.contentWindow;
-    const doc = frame.contentDocument;
+    let win = frame.contentWindow;
+    let doc = frame.contentDocument;
     await waitFor(function () {
-      return doc.querySelector("#learningHomeV343 .home-v343-primary") && doc.getElementById("practiceEntryV350") && doc.getElementById("headerLanguageToggleV350");
+      return doc.querySelector("#learningHomeV343 .home-v343-primary") && doc.getElementById("practiceEntryV350") && doc.getElementById("headerLanguageV350");
     }, 30000);
 
     const navButtons = Array.from(doc.querySelectorAll("#consumerNavV349 > .consumer-nav-button-v349"));
@@ -54,20 +54,31 @@
     log("PRACTICE_REMOVED_FROM_GLOBAL_NAV", !visible(win, doc.getElementById("consumerPracticeV349")));
     log("LEGACY_EIGHT_TABS_HIDDEN", !visible(win, doc.querySelector("nav.tabs")));
 
-    const language = doc.getElementById("headerLanguageToggleV350");
+    const languageWrap = doc.getElementById("headerLanguageV350");
+    const language = doc.getElementById("languageToggleV334A9");
     const overflow = doc.getElementById("consumerHeaderV349");
     const originalReset = doc.getElementById("resetBtn");
-    log("DIRECT_LANGUAGE_VISIBLE", visible(win, language));
+    log("DIRECT_LANGUAGE_VISIBLE", visible(win, languageWrap) && visible(win, language));
+    log("DIRECT_LANGUAGE_HAS_KO_EN", language && language.querySelectorAll("button[data-lang]").length === 2);
     log("HEADER_OVERFLOW_REMOVED", overflow && !visible(win, overflow));
     log("RESET_NOT_IN_HEADER", originalReset && !visible(win, originalReset));
-    const beforeLang = doc.documentElement.lang;
-    language.click();
-    await waitFor(function () { return doc.documentElement.lang !== beforeLang; }, 5000);
-    const switchedLang = doc.documentElement.lang;
-    language.click();
-    await waitFor(function () { return doc.documentElement.lang === beforeLang; }, 5000);
-    log("DIRECT_LANGUAGE_TOGGLE_WORKS", switchedLang !== beforeLang && doc.documentElement.lang === beforeLang, "before=" + beforeLang + " switched=" + switchedLang);
 
+    const beforeLang = doc.documentElement.lang;
+    const targetLang = beforeLang === "en" ? "ko" : "en";
+    const targetButton = language.querySelector('button[data-lang="' + targetLang + '"]');
+    const beforeDoc = doc;
+    targetButton.click();
+    await waitFor(function () {
+      const nextDoc = frame.contentDocument;
+      return nextDoc && nextDoc !== beforeDoc && nextDoc.documentElement.lang === targetLang && nextDoc.documentElement.dataset.learningFlowV350 === "v350_a1" && nextDoc.getElementById("headerLanguageV350");
+    }, 20000);
+    win = frame.contentWindow;
+    doc = frame.contentDocument;
+    log("DIRECT_LANGUAGE_TOGGLE_WORKS", doc.documentElement.lang === targetLang, "before=" + beforeLang + " after=" + doc.documentElement.lang);
+
+    await waitFor(function () {
+      return doc.getElementById("consumerLibraryV349") && doc.getElementById("learningDataMenuV350") && doc.getElementById("practiceEntryV350");
+    }, 10000);
     const library = doc.getElementById("consumerLibraryV349");
     library.click();
     await new Promise(function (r) { setTimeout(r, 80); });
@@ -79,7 +90,7 @@
     const dataPanel = doc.getElementById("studyDataV345");
     const resetProxy = doc.getElementById("resetProgressV350");
     log("STUDY_DATA_ROUTE", doc.getElementById("progressView").classList.contains("active-view") && visible(win, dataPanel));
-    log("RESET_AVAILABLE_IN_STUDY_DATA", visible(win, resetProxy) && !visible(win, originalReset));
+    log("RESET_AVAILABLE_IN_STUDY_DATA", visible(win, resetProxy) && !visible(win, doc.getElementById("resetBtn")));
 
     doc.getElementById("consumerLearnV349").click();
     await waitFor(function () { return doc.getElementById("learnView").classList.contains("v343-home-mode") && visible(win, doc.getElementById("practiceEntryV350")); }, 10000);
