@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: consumer-ux-v349-branch
+  cancel-in-progress: true
+
 jobs:
   v349-consumer-ux:
     runs-on: ubuntu-24.04
@@ -24,16 +28,21 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Apply V349 index integration
-        run: python tools/apply_consumer_ux_v349.py --apply
+      - name: Apply V349 integrations
+        run: |
+          python tools/apply_consumer_ux_v349.py --apply
+          python tools/apply_consumer_ux_v349_r2.py --apply
 
       - name: Confirm V349 integration idempotence
-        run: python tools/apply_consumer_ux_v349.py --check
+        run: |
+          python tools/apply_consumer_ux_v349.py --check
+          python tools/apply_consumer_ux_v349_r2.py --check
 
       - name: V349 syntax checks
         run: |
-          python -m py_compile tools/apply_consumer_ux_v349.py
+          python -m py_compile tools/apply_consumer_ux_v349.py tools/apply_consumer_ux_v349_r2.py
           node --check src/pwa/consumer_ux_v349.js
+          node --check src/pwa/consumer_ux_v349_compat_r2.js
           node --check tools/audit_consumer_ux_v349.js
           node --check tools/consumer_ux_v349_browser_case.js
           node --check tools/run_consumer_ux_v349_browser_smoke.js
