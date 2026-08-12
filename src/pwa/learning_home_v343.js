@@ -132,6 +132,18 @@
       #learningQuickV343 strong { color:#0f172a; }
       #learningQuickV343 button { margin-left:auto; border:0; border-radius:999px; padding:6px 10px; background:#e2e8f0; color:#0f172a; font-weight:800; cursor:pointer; }
       #learnView.v343-quiz-mode #learningPathV340 { display:none !important; }
+      /* V343_SIDE_CARD_OVERFLOW_GUARD */
+      #learnView .side,
+      #learnView #sideCards,
+      #learnView .side-card,
+      #learnView .side-card-body,
+      #learnView .side-card-detail,
+      #learnView .external-resource-card {
+        min-width:0;
+        max-width:100%;
+        overflow-wrap:anywhere;
+        word-break:break-word;
+      }
       @media (max-width:820px) {
         .home-v343-shell { padding:17px; border-radius:18px; }
         .home-v343-title { font-size:22px; }

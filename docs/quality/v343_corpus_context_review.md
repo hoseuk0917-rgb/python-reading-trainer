@@ -1,0 +1,183 @@
+# V343 Corpus Context Review
+
+This report is a contextual/educational review queue. Structural validity remains governed by `tools/validate_lessons.py`.
+
+- lesson cards scanned (KO+EN): 3570
+- auto-fixed cards: 0
+- files changed: 0
+- hard read/parse errors: 0
+- review candidates: 160
+
+## Finding counts
+
+- `dense_explanation_sentence`: 93
+- `declared_concepts_not_textually_anchored`: 38
+- `duplicate_choices_candidate`: 36
+- `duplicate_problem_group_2`: 2
+
+## Highest-priority candidates
+
+- score 7 · `ko` · `python_dev_environment_foundation_v103_a1.json` · `PY103_L08_requirements_install_001` · duplicate_problem_group_2
+- score 7 · `ko` · `python_packaging_env_dependencies_v27.json` · `PY27_L08_pip_install_requirements_001` · duplicate_problem_group_2
+- score 6 · `en` · `python_foundation_beginner_v94_a1_part2.json` · `PYF94_A1_L01_INPUT_007` · duplicate_choices_candidate, dense_explanation_sentence
+- score 6 · `en` · `python_foundation_beginner_v94_a1_part2.json` · `PYF94_A1_L01_INPUT_009` · duplicate_choices_candidate, dense_explanation_sentence
+- score 6 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_013` · duplicate_choices_candidate, dense_explanation_sentence
+- score 6 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_003` · duplicate_choices_candidate, dense_explanation_sentence
+- score 6 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_008` · duplicate_choices_candidate, dense_explanation_sentence
+- score 6 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_010` · duplicate_choices_candidate, dense_explanation_sentence
+- score 6 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_014` · duplicate_choices_candidate, dense_explanation_sentence
+- score 6 · `en` · `python_foundation_level3_v95_a1_functions.json` · `PYF95_A1_FUNC_015_STRING_METHOD_RETURN` · duplicate_choices_candidate, dense_explanation_sentence
+- score 6 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_023_METHOD_CALLS_METHOD` · duplicate_choices_candidate, dense_explanation_sentence
+- score 4 · `en` · `python_accessibility_a11y_ui_v52.json` · `PY52_L09_live_region_001` · declared_concepts_not_textually_anchored
+- score 4 · `en` · `python_analytics_privacy_optin_v60.json` · `PY60_L08_minimal_event_data_001` · declared_concepts_not_textually_anchored
+- score 4 · `en` · `python_auth_security_tokens_permissions_v38.json` · `PY38_L10_server_side_storage_001` · declared_concepts_not_textually_anchored
+- score 4 · `en` · `python_dev_environment_foundation_v103_a1.json` · `PY103_L10_setup_checklist_001` · declared_concepts_not_textually_anchored
+- score 4 · `en` · `python_files_paths_project_structure_v32.json` · `PY32_L09_temp_file_001` · declared_concepts_not_textually_anchored
+- score 4 · `en` · `python_github_actions_ci_validation_v48.json` · `PY48_L10_no_hardcoded_ci_count_001` · declared_concepts_not_textually_anchored
+- score 4 · `en` · `python_llm_api_prompt_validation_v44.json` · `PY44_L08_json_mode_001` · declared_concepts_not_textually_anchored
+- score 4 · `en` · `python_mobile_touch_responsive_ux_v54.json` · `PY54_L08_one_hand_ux_001` · declared_concepts_not_textually_anchored
+- score 4 · `en` · `python_mobile_touch_responsive_ux_v54.json` · `PY54_L10_mobile_first_design_001` · declared_concepts_not_textually_anchored
+- score 4 · `en` · `python_offline_first_sync_conflict_v61.json` · `PY61_L06_local_first_001` · declared_concepts_not_textually_anchored
+- score 4 · `en` · `python_offline_first_sync_conflict_v61.json` · `PY61_L06_offline_first_001` · declared_concepts_not_textually_anchored
+- score 4 · `en` · `python_refactoring_maintainability_v40.json` · `PY40_L10_migration_safe_change_001` · declared_concepts_not_textually_anchored
+- score 4 · `en` · `python_resume_safe_pipeline_checkpoint_v46.json` · `PY46_L07_done_marker_001` · declared_concepts_not_textually_anchored
+- score 4 · `en` · `python_tests_regression_quality_gate_v47.json` · `PY47_L09_pre_commit_check_001` · declared_concepts_not_textually_anchored
+- score 4 · `en` · `python_tests_validation_regression_v34.json` · `PY34_L09_before_after_compare_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_accessibility_a11y_ui_v52.json` · `PY52_L09_live_region_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_analytics_privacy_optin_v60.json` · `PY60_L08_minimal_event_data_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_auth_security_tokens_permissions_v38.json` · `PY38_L10_server_side_storage_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_daily_review_expansion_v9.json` · `PY9_REVIEW_PSPATCH_005` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_debug_logs_cache_git_v17.json` · `PY17_L06_http_server_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_dev_environment_foundation_v103_a1.json` · `PY103_L06_terminal_command_parts_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_dev_environment_foundation_v103_a1.json` · `PY103_L07_absolute_relative_path_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_dev_environment_foundation_v103_a1.json` · `PY103_L10_setup_checklist_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_dev_environment_practical_v113_a1.json` · `PY113_L03_TERMINAL_PROMPT_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_files_paths_project_structure_v32.json` · `PY32_L09_temp_file_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_foundation_micro_gaps_v104_a1.json` · `PY104_L04_REGRESSION_CHECK_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_github_actions_ci_validation_v48.json` · `PY48_L08_validate_lessons_py_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_github_actions_ci_validation_v48.json` · `PY48_L10_no_hardcoded_ci_count_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_llm_api_prompt_validation_v44.json` · `PY44_L08_json_mode_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_offline_first_sync_conflict_v61.json` · `PY61_L06_local_first_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_offline_first_sync_conflict_v61.json` · `PY61_L06_offline_first_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_powershell_automation_reliable_scripts_v45.json` · `PY45_L09_server_log_200_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_pwa_install_update_ux_v51.json` · `PY51_L07_update_available_banner_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_realworld_expansion_v8.json` · `PY8_L05_cache_bust_query_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_realworld_expansion_v8.json` · `PY8_L07_powershell_select_string_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_tests_regression_quality_gate_v47.json` · `PY47_L09_pre_commit_check_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_tests_validation_regression_v34.json` · `PY34_L09_before_after_compare_001` · declared_concepts_not_textually_anchored
+- score 4 · `ko` · `python_tests_validation_regression_v34.json` · `PY34_L09_test_failure_log_001` · declared_concepts_not_textually_anchored
+- score 3 · `en` · `cards_seed_v1.json` · `L05_function_chain_001` · duplicate_choices_candidate
+- score 3 · `en` · `python_beginner_mixed_review_v96_a1.json` · `PYV96_A1_REVIEW_011_DICT_KEY_VALUE` · dense_explanation_sentence
+- score 3 · `en` · `python_beginner_mixed_review_v96_a1.json` · `PYV96_A1_REVIEW_013_IF_ELSE` · dense_explanation_sentence
+- score 3 · `en` · `python_beginner_mixed_review_v96_a1.json` · `PYV96_A1_REVIEW_014_ELIF_FLOW` · dense_explanation_sentence
+- score 3 · `en` · `python_beginner_mixed_review_v96_a1.json` · `PYV96_A1_REVIEW_017_FOR_APPEND` · dense_explanation_sentence
+- score 3 · `en` · `python_beginner_mixed_review_v96_a1.json` · `PYV96_A1_REVIEW_022_JOIN_LIST` · dense_explanation_sentence
+- score 3 · `en` · `python_beginner_mixed_review_v96_a1.json` · `PYV96_A1_REVIEW_029_DICT_COUNT_PATTERN` · dense_explanation_sentence
+- score 3 · `en` · `python_beginner_mixed_review_v96_a1.json` · `PYV96_A1_REVIEW_030_SORTED_REVIEW` · dense_explanation_sentence
+- score 3 · `en` · `python_broad_expansion_v3.json` · `PY3_L08_pandas_apply_001` · duplicate_choices_candidate
+- score 3 · `en` · `python_core_expansion_v1.json` · `PY_L02_fstring_001` · dense_explanation_sentence
+- score 3 · `en` · `python_core_expansion_v1.json` · `PY_L10_pm_trace_001` · dense_explanation_sentence
+- score 3 · `en` · `python_deep_expansion_v4.json` · `PY4_L05_guard_return_001` · duplicate_choices_candidate
+- score 3 · `en` · `python_foundation_beginner_v94_a1_part1.json` · `PYF94_A1_L01_VAR_003` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_beginner_v94_a1_part2.json` · `PYF94_A1_L01_INPUT_001` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_beginner_v94_a1_part2.json` · `PYF94_A1_L01_INPUT_003` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_beginner_v94_a1_part2.json` · `PYF94_A1_L01_INPUT_004` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_beginner_v94_a1_part2.json` · `PYF94_A1_L01_INPUT_006` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_beginner_v94_a1_part2.json` · `PYF94_A1_L01_TYPE_001` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_beginner_v94_a1_part2.json` · `PYF94_A1_L01_TYPE_005` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_beginner_v94_a1_part2.json` · `PYF94_A1_L01_TYPE_010` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_beginner_v94_a1_part2.json` · `PYF94_A1_L01_TYPE_012` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_expansion_v10.json` · `PY10_L04_function_chain_001` · duplicate_choices_candidate
+- score 3 · `en` · `python_foundation_expansion_v10.json` · `PY10_L08_function_loop_result_001` · duplicate_choices_candidate
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_001` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_002` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_003` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_004` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_005` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_008` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_009` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_010` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_011` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_012` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_014` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_015` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_016` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_LIST_001` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_LIST_003` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_LIST_004` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_LIST_006` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_LIST_010` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_LIST_013` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_LIST_015` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_LIST_016` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_LOOP_001` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_LOOP_003` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_LOOP_004` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_LOOP_006` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_LOOP_007` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_LOOP_008` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_LOOP_010` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_LOOP_011` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_LOOP_012` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_LOOP_013` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_LOOP_014` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_LOOP_015` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_LOOP_016` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_001` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_004` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_006` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_007` · duplicate_choices_candidate
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_009` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_011` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_012` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_013` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_016` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level3_v95_a1_functions.json` · `PYF95_A1_FUNC_005_TWO_ARGUMENTS` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level3_v95_a1_functions.json` · `PYF95_A1_FUNC_008_RETURN_NO_PRINT` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level3_v95_a1_functions.json` · `PYF95_A1_FUNC_019_COUNT_WITH_FOR` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level3_v95_a1_functions.json` · `PYF95_A1_FUNC_020_COUNT_PREFIX` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level3_v95_a1_functions.json` · `PYF95_A1_FUNC_022_PARAMETER_NAME_LOCAL` · duplicate_choices_candidate
+- score 3 · `en` · `python_foundation_level3_v95_a1_functions.json` · `PYF95_A1_FUNC_028_FUNCTION_NAME_MEANING` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level3_v95_a4_file_exception_path.json` · `PYF95_A4_FILE_029_PATH_JSON_FLOW` · duplicate_choices_candidate
+- score 3 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_003_SET_ATTRIBUTE_OUTSIDE` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_004_CHANGE_ATTRIBUTE` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_007_METHOD_PRINT` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_008_METHOD_NOT_CALLED` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_009_METHOD_RETURN` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_010_METHOD_USES_ATTRIBUTE` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_013_INIT_TWO_PARAMS` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_014_OBJECTS_IN_LIST` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_016_CLASS_VARIABLE_READ` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_021_METHOD_WITH_ARGUMENT` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_024_ATTRIBUTE_USED_IN_IF` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_025_ATTRIBUTE_DEFAULT_FALSE` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_029_CHOOSE_ATTRIBUTE` · dense_explanation_sentence
+- score 3 · `en` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_030_CHOOSE_METHOD` · dense_explanation_sentence
+- score 3 · `en` · `python_project_expansion_v6.json` · `PY6_L06_gitignore_001` · dense_explanation_sentence
+- score 3 · `en` · `python_project_expansion_v6.json` · `PY6_L06_normalize_id_001` · duplicate_choices_candidate
+- score 3 · `en` · `python_project_expansion_v6.json` · `PY6_L06_requirements_001` · dense_explanation_sentence
+- score 3 · `en` · `python_project_expansion_v6.json` · `PY6_L09_service_worker_install_001` · dense_explanation_sentence
+- score 3 · `en` · `python_rag_kg_pipeline_review_v16.json` · `PY16_L09_sentence_chunking_001` · dense_explanation_sentence
+- score 3 · `ko` · `cards_seed_v1.json` · `L05_function_chain_001` · duplicate_choices_candidate
+- score 3 · `ko` · `python_async_batch_queue_v26.json` · `PY26_L09_checkpoint_resume_001` · dense_explanation_sentence
+- score 3 · `ko` · `python_broad_expansion_v3.json` · `PY3_L08_pandas_apply_001` · duplicate_choices_candidate
+- score 3 · `ko` · `python_deep_expansion_v4.json` · `PY4_L05_guard_return_001` · duplicate_choices_candidate
+- score 3 · `ko` · `python_foundation_beginner_v94_a1_part2.json` · `PYF94_A1_L01_INPUT_007` · duplicate_choices_candidate
+- score 3 · `ko` · `python_foundation_beginner_v94_a1_part2.json` · `PYF94_A1_L01_INPUT_009` · duplicate_choices_candidate
+- score 3 · `ko` · `python_foundation_expansion_v10.json` · `PY10_L04_function_chain_001` · duplicate_choices_candidate
+- score 3 · `ko` · `python_foundation_expansion_v10.json` · `PY10_L08_function_loop_result_001` · duplicate_choices_candidate
+- score 3 · `ko` · `python_foundation_level2_v94_a2_part1.json` · `PYF94_A2_L02_IF_013` · duplicate_choices_candidate
+- score 3 · `ko` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_003` · duplicate_choices_candidate
+- score 3 · `ko` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_007` · duplicate_choices_candidate
+- score 3 · `ko` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_008` · duplicate_choices_candidate
+- score 3 · `ko` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_010` · duplicate_choices_candidate
+- score 3 · `ko` · `python_foundation_level2_v94_a2_part2.json` · `PYF94_A2_L02_STR_014` · duplicate_choices_candidate
+- score 3 · `ko` · `python_foundation_level3_v95_a1_functions.json` · `PYF95_A1_FUNC_015_STRING_METHOD_RETURN` · duplicate_choices_candidate
+- score 3 · `ko` · `python_foundation_level3_v95_a1_functions.json` · `PYF95_A1_FUNC_022_PARAMETER_NAME_LOCAL` · duplicate_choices_candidate
+- score 3 · `ko` · `python_foundation_level3_v95_a4_file_exception_path.json` · `PYF95_A4_FILE_029_PATH_JSON_FLOW` · duplicate_choices_candidate
+- score 3 · `ko` · `python_foundation_level4_v95_a5_oop_basics.json` · `PYF95_A5_OOP_023_METHOD_CALLS_METHOD` · duplicate_choices_candidate
+- score 3 · `ko` · `python_project_expansion_v6.json` · `PY6_L06_normalize_id_001` · duplicate_choices_candidate
+
+## Hard read/parse errors
+
+- none
