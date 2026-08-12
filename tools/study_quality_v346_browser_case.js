@@ -96,19 +96,32 @@
 
   async function seedScenario() {
     await requireWait("initial V346 runtime", () => doc() && win().StudyQualityV346 && win().StudyExperienceV345);
+    await requireWait("initial card corpus", () => {
+      const api = win().StudyQualityV346;
+      if (!api) return null;
+      const state = api.getNextActionState();
+      return state && state.total === 1785 ? state : null;
+    });
+
     clearAppKeys(win().localStorage);
     clearAppKeys(win().sessionStorage);
     win().localStorage.setItem("foreign-v346-sentinel", "keep-foreign");
     win().localStorage.setItem("python-reading-trainer-v346-readonly-sentinel", "keep-app");
+    win().StudyQualityV346.refresh();
 
     const api = win().StudyQualityV346;
-    let state = api.getNextActionState();
+    let state = await requireWait("empty-state first sequential card", () => {
+      const current = api.getNextActionState();
+      return current && current.total === 1785 && current.nextIndex === 0 && current.nextCardId ? current : null;
+    });
     const firstId = state.nextCardId;
-    if (!firstId) throw new Error("first sequential card id missing");
     win().localStorage.setItem("python-reading-trainer-progress-v1", JSON.stringify(progressWith([firstId])));
-    state = api.getNextActionState();
+    state = await requireWait("second sequential card", () => {
+      const current = api.getNextActionState();
+      return current && current.total === 1785 && current.nextIndex === 1 && current.nextCardId ? current : null;
+    });
     const secondId = state.nextCardId;
-    if (!secondId || secondId === firstId) throw new Error("second sequential card id missing");
+    if (secondId === firstId) throw new Error("second sequential card repeated first card");
     win().localStorage.setItem("python-reading-trainer-progress-v1", JSON.stringify(progressWith([firstId, secondId])));
     win().localStorage.setItem("python-reading-trainer-review-v340", JSON.stringify({
       [firstId]: { stage: 0, dueAt: Date.now() - 5000, lapses: 1, mastered: false, lastResult: "wrong" }
@@ -124,6 +137,10 @@
     await reload("../src/pwa/index.html?lang=ko&v346smoke=seeded");
     await requireWait("seeded V346 runtime", () => doc() && win().StudyQualityV346 && doc().getElementById("toolsToggleV345"));
     await requireWait("learning home", () => doc().querySelector("#learningHomeV343 .home-v343-primary"));
+    await requireWait("seeded card corpus", () => {
+      const state = win().StudyQualityV346.getNextActionState();
+      return state && state.total === 1785 && state.nextIndex === 2 ? state : null;
+    });
     await sleep(120);
 
     add("RUNTIME", win().StudyQualityV346.version === "v346_a1", win().StudyQualityV346.version);
@@ -196,6 +213,10 @@
   async function testEnglish() {
     await reload("../src/pwa/index.html?lang=en&v346smoke=en");
     await requireWait("English V346 runtime", () => doc() && win().StudyQualityV346 && doc().documentElement.lang === "en" && doc().getElementById("toolsToggleV345"));
+    await requireWait("English card corpus", () => {
+      const state = win().StudyQualityV346.getNextActionState();
+      return state && state.total === 1785 && state.nextIndex === 2 ? state : null;
+    });
     clickTopTab("progress");
     const panel = await requireWait("English next action panel", () => {
       const node = doc().getElementById("nextActionV346");
