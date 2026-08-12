@@ -30,7 +30,7 @@ check("NO_INNERHTML_TEXT_REWRITE", !/\.innerHTML\s*=.*node\.nodeValue/.test(supp
 check("SUPPORT_DENSITY_CAP", /MAX_TERMS_PER_BLOCK\s*=\s*4/.test(support));
 check("EXCLUDES_CODE_AND_EXISTING_SYNTAX", /code, pre, button, a, input, textarea/.test(support) && /\.syntax-token-v340/.test(support));
 check("TARGETS_LESSON_SIDECARD_EXPLAINER", /#conceptIntro/.test(support) && /#sideCards/.test(support) && /#codeSummary/.test(support) && /#codeSteps \.code-step p/.test(support));
-check("FOCUS_RETURN", /returnFocus/.test(support) && /focus\.focus/.test(support));
+check("FOCUS_RETURN", /returnFocus/.test(support) && /returnTermId/.test(support) && /restoreFocus/.test(support) && /candidate\.focus/.test(support) && /requestAnimationFrame/.test(support), "saved element + term fallback + post-dialog restore");
 check("ESCAPE_CLOSE", /event\.key === "Escape"/.test(support));
 
 check("FOUNDATION_OVERRIDE_PRESENT", /EXPLANATION_QUALITY_FOUNDATION_V344_A1/.test(app));
