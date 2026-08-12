@@ -8,9 +8,36 @@ ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "src" / "pwa" / "app.js"
 INDEX = ROOT / "src" / "pwa" / "index.html"
 
-VERSION = "v341_a2_integration_a1"
+VERSION = "v341_a2_integration_a2"
 EPOCH = "20260812_v341_a2"
-SIDE_PATH = '    "../../data/side_cards/python_development_workflow_side_cards_v341_a2.json",\n'
+REFERENCE_REL = "../../data/reference_side_cards/python_development_workflow_side_cards_v341_a2.json"
+REFERENCE_PATH = f'    "{REFERENCE_REL}",\n'
+OLD_REFERENCE_REL = "../../data/side_cards/python_development_workflow_side_cards_v341_a2.json"
+OLD_REFERENCE_PATH = f'    "{OLD_REFERENCE_REL}",\n'
+
+KO_OLD = ROOT / "data" / "side_cards" / "python_development_workflow_side_cards_v341_a2.json"
+KO_NEW = ROOT / "data" / "reference_side_cards" / "python_development_workflow_side_cards_v341_a2.json"
+EN_OLD = ROOT / "data_i18n" / "en" / "side_cards" / "python_development_workflow_side_cards_v341_a2.json"
+EN_NEW = ROOT / "data_i18n" / "en" / "reference_side_cards" / "python_development_workflow_side_cards_v341_a2.json"
+
+
+def reference_move_changes() -> list[str]:
+    changes: list[str] = []
+    for label, old, new in (("ko_reference_dir", KO_OLD, KO_NEW), ("en_reference_dir", EN_OLD, EN_NEW)):
+        if old.exists() and new.exists():
+            raise RuntimeError(f"REFERENCE_DUPLICATE_LOCATION:{label}")
+        if old.exists() and not new.exists():
+            changes.append(label)
+        elif not old.exists() and not new.exists():
+            raise RuntimeError(f"REFERENCE_FILE_MISSING:{label}")
+    return changes
+
+
+def apply_reference_moves() -> None:
+    for old, new in ((KO_OLD, KO_NEW), (EN_OLD, EN_NEW)):
+        if old.exists() and not new.exists():
+            new.parent.mkdir(parents=True, exist_ok=True)
+            old.replace(new)
 
 
 def patch_app(text: str) -> tuple[str, list[str]]:
@@ -25,15 +52,20 @@ def patch_app(text: str) -> tuple[str, list[str]]:
         out = out.replace(old_epoch, new_epoch, 1)
         changed.append("app_epoch")
 
-    if SIDE_PATH.strip() not in out:
+    if OLD_REFERENCE_REL in out:
+        out = out.replace(OLD_REFERENCE_PATH, REFERENCE_PATH, 1)
+        changed.append("side_file_location")
+    elif REFERENCE_REL not in out:
         anchor = '    "../../data/side_cards/dev_environment_cards_v1.json",\n'
         if anchor not in out:
             raise RuntimeError("SIDE_FILE_ANCHOR_NOT_FOUND")
-        out = out.replace(anchor, anchor + SIDE_PATH, 1)
+        out = out.replace(anchor, anchor + REFERENCE_PATH, 1)
         changed.append("side_file")
 
-    if out.count(SIDE_PATH.strip()) != 1:
-        raise RuntimeError(f"SIDE_FILE_COUNT={out.count(SIDE_PATH.strip())}")
+    if out.count(REFERENCE_REL) != 1:
+        raise RuntimeError(f"REFERENCE_FILE_COUNT={out.count(REFERENCE_REL)}")
+    if OLD_REFERENCE_REL in out:
+        raise RuntimeError("OLD_REFERENCE_PATH_STILL_PRESENT")
     return out, changed
 
 
@@ -75,7 +107,8 @@ def run(apply: bool) -> int:
     index_text = INDEX.read_text(encoding="utf-8")
     new_app, app_changes = patch_app(app_text)
     new_index, index_changes = patch_index(index_text)
-    changes = app_changes + index_changes
+    move_changes = reference_move_changes()
+    changes = move_changes + app_changes + index_changes
 
     print(f"PATCH_VERSION={VERSION}")
     print(f"APPLY={apply}")
@@ -84,6 +117,7 @@ def run(apply: bool) -> int:
         print("CHANGE=" + item)
 
     if apply:
+        apply_reference_moves()
         if new_app != app_text:
             APP.write_text(new_app, encoding="utf-8", newline="\n")
         if new_index != index_text:
