@@ -81,23 +81,29 @@
     await waitFor(function () { return focus.getAttribute("aria-pressed") === "true" && supportToggle.getAttribute("aria-expanded") === "false"; }, 5000);
 
     const supportInactiveBg = win.getComputedStyle(supportToggle).backgroundColor;
-    const region = doc.getElementById("learningSupportRegionV349");
-    const beforeTop = region ? region.getBoundingClientRect().top : -1;
+    const legacyRegion = doc.getElementById("learningSupportRegionV349");
     supportToggle.click();
-    await waitFor(function () { return supportToggle.getAttribute("aria-expanded") === "true" && visible(win, region); }, 5000);
-    await new Promise(function (resolve) { setTimeout(resolve, 700); });
+    const supportSurface = await waitFor(function () {
+      if (supportToggle.getAttribute("aria-expanded") !== "true") return null;
+      const portal = doc.getElementById("learningSupportInlineV353");
+      if (narrow && portal && visible(win, portal)) return portal;
+      return legacyRegion && visible(win, legacyRegion) ? legacyRegion : null;
+    }, 5000);
+    await new Promise(function (resolve) { setTimeout(resolve, 180); });
     const supportActiveBg = win.getComputedStyle(supportToggle).backgroundColor;
     log("SUPPORT_ACTIVE_USES_COLOR", supportActiveBg !== supportInactiveBg, "active=" + supportActiveBg + " inactive=" + supportInactiveBg);
-    log("SUPPORT_REGION_FOCUSED", doc.activeElement === region);
+    log("SUPPORT_REGION_FOCUSED", doc.activeElement === supportSurface, "surface=" + supportSurface.id);
 
     if (narrow) {
-      const afterTop = region.getBoundingClientRect().top;
-      log("SUPPORT_CLICK_MOVES_TO_CONTENT", afterTop < 180 && (beforeTop < 0 || afterTop < beforeTop - 80), "before=" + Math.round(beforeTop) + " after=" + Math.round(afterTop));
+      const afterTop = supportSurface.getBoundingClientRect().top;
+      log("SUPPORT_PORTAL_IS_LIVE_CONTENT", supportSurface.id === "learningSupportInlineV353" && supportSurface.children.length > 0, "children=" + supportSurface.children.length);
+      log("SUPPORT_CLICK_MOVES_TO_CONTENT", afterTop >= 0 && afterTop < 180, "after=" + Math.round(afterTop));
+      log("LEGACY_SUPPORT_SHELL_PRESERVED", legacyRegion && legacyRegion.parentElement === doc.getElementById("learnView"));
     }
 
     const conceptMeta = doc.querySelector(".concept-intro-note-v306");
     const mobileMeta = doc.querySelector(".mobile-sidecards-note");
-    const externalMeta = region && region.querySelector(".side-section-note");
+    const externalMeta = supportSurface && supportSurface.querySelector(".side-section-note");
     log("CONCEPT_META_COPY_HIDDEN", !conceptMeta || !visible(win, conceptMeta));
     log("MOBILE_META_COPY_HIDDEN", !mobileMeta || !visible(win, mobileMeta));
     log("EXTERNAL_META_COPY_HIDDEN", !externalMeta || !visible(win, externalMeta));
