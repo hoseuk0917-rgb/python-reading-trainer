@@ -186,6 +186,13 @@
     return source.filter(function(row) { return row && row.primaryCards > 0; });
   }
 
+  function localizePracticeTab() {
+    const tab = document.querySelector('.tab-btn[data-view="practice"]');
+    if (!tab) return false;
+    tab.textContent = t("실전", "Practice");
+    return true;
+  }
+
   function renderLearningSummary() {
     const parent = document.getElementById("learningPathV340");
     if (!parent || !engine() || !Array.isArray(cards)) return;
@@ -626,6 +633,7 @@
 
   function ready() {
     injectStyle();
+    localizePracticeTab();
     patchView();
     bindMissionDelegation();
     bindResetPostProcess();
