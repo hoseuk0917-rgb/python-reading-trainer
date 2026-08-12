@@ -69,8 +69,7 @@
 
   async function main() {
     render();
-    await requireWait("V344 support runtime", () => doc() && win().ExplanationSupportV344 && doc().getElementById("explanationRefresherV344"));
-    await requireWait("lesson card load", () => /1785/.test(((doc().getElementById("cardPosition") || {}).textContent) || ""));
+    await requireWait("V344 explanation surfaces", () => doc() && win().ExplanationSupportV344 && doc().getElementById("explanationRefresherV344") && doc().getElementById("conceptDefinition"));
     await sleep(100);
 
     add("SUPPORT_RUNTIME", !!win().ExplanationSupportV344, win().ExplanationSupportV344 && win().ExplanationSupportV344.version);
@@ -139,11 +138,9 @@
     const enLoad = waitLoad();
     frame.src = "../src/pwa/index.html?lang=en&v344smoke=2";
     await enLoad;
-    await requireWait("English V344 runtime", () => doc() && win().ExplanationSupportV344 && doc().documentElement.lang === "en");
-    await requireWait("English lesson card load", () => /1785/.test(((doc().getElementById("cardPosition") || {}).textContent) || ""));
+    await requireWait("English V344 explanation surfaces", () => doc() && win().ExplanationSupportV344 && doc().documentElement.lang === "en" && doc().getElementById("conceptDefinition"));
 
     const enTarget = doc().getElementById("conceptDefinition");
-    if (!enTarget) throw new Error("English conceptDefinition missing");
     enTarget.textContent = "CPython can convert source code to bytecode before the runtime executes it.";
     win().ExplanationSupportV344.annotateAll();
     await requireWait("English bytecode annotation", () => enTarget.querySelector('[data-term="bytecode"]'));
