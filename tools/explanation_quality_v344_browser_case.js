@@ -10,7 +10,6 @@
     const out = extra ? lines.concat(extra) : lines;
     report.textContent = out.join("\n");
   }
-
   function failHarness(kind, error) {
     failed = true;
     const message = error && error.stack ? error.stack : String(error || "unknown error");
@@ -18,13 +17,8 @@
     lines.push("RESULT=FAIL_EXPLANATION_QUALITY_V344_REAL_BROWSER_CASE");
     render();
   }
-
-  window.addEventListener("error", (event) => {
-    failHarness("HARNESS_WINDOW_ERROR", event.error || event.message);
-  });
-  window.addEventListener("unhandledrejection", (event) => {
-    failHarness("HARNESS_UNHANDLED_REJECTION", event.reason);
-  });
+  window.addEventListener("error", (event) => failHarness("HARNESS_WINDOW_ERROR", event.error || event.message));
+  window.addEventListener("unhandledrejection", (event) => failHarness("HARNESS_UNHANDLED_REJECTION", event.reason));
 
   function add(name, ok, detail) {
     lines.push(`${name}=${ok ? "PASS" : "FAIL"} DETAIL=${String(detail == null ? "" : detail)}`);
@@ -35,10 +29,7 @@
   async function waitFor(fn, timeout = 15000) {
     const start = Date.now();
     while (Date.now() - start < timeout) {
-      try {
-        const value = fn();
-        if (value) return value;
-      } catch (_) {}
+      try { const value = fn(); if (value) return value; } catch (_) {}
       await sleep(60);
     }
     return null;
@@ -58,6 +49,11 @@
   }
   function win() { return frame.contentWindow; }
   function doc() { return frame.contentDocument; }
+  function activeDetail() {
+    const active = doc() && doc().activeElement;
+    if (!active) return "none";
+    return (active.dataset && active.dataset.term) || active.id || active.className || active.tagName;
+  }
   function overflow() {
     const d = doc();
     return d.documentElement.scrollWidth <= d.documentElement.clientWidth + 1;
@@ -71,7 +67,6 @@
     render();
     await requireWait("V344 explanation surfaces", () => doc() && win().ExplanationSupportV344 && doc().getElementById("explanationRefresherV344") && doc().getElementById("conceptDefinition"));
     await sleep(100);
-
     add("SUPPORT_RUNTIME", !!win().ExplanationSupportV344, win().ExplanationSupportV344 && win().ExplanationSupportV344.version);
 
     const progressKey = "python-reading-trainer-progress-v1";
@@ -85,7 +80,6 @@
     target.textContent = "CPython은 Python 코드를 bytecode로 바꾼 뒤 runtime에서 처리할 수 있다. 이 과정에는 object, reference, protocol, interpreter 같은 용어도 나온다.";
     win().ExplanationSupportV344.annotateAll();
     await requireWait("bytecode annotation", () => target.querySelector('.explanation-term-v344[data-term="bytecode"]'));
-
     const terms = target.querySelectorAll(".explanation-term-v344");
     add("SUPPORT_TERM_ANNOTATED", !!target.querySelector('[data-term="bytecode"]'), Array.from(terms).map((x) => x.dataset.term).join(","));
     add("DENSITY_CAP", terms.length <= 4, terms.length);
@@ -98,8 +92,14 @@
     add("CODE_PRE_EXCLUDED", !excluded.querySelector(".explanation-term-v344"), excluded.innerHTML);
 
     const button = target.querySelector('[data-term="bytecode"]');
+    frame.focus();
+    try { win().focus(); } catch (_) {}
+    try { button.focus({ preventScroll: true }); } catch (_) { button.focus(); }
+    await sleep(0);
+    const sourceFocused = doc().activeElement === button;
+    add("SOURCE_FOCUS_BEFORE_OPEN", sourceFocused, activeDetail());
+
     const progressBeforeOpen = win().localStorage.getItem(progressKey);
-    button.focus();
     button.click();
     const modal = await requireWait("KO refresher open", () => {
       const node = doc().getElementById("explanationRefresherV344");
@@ -112,8 +112,8 @@
 
     modal.querySelector(".explanation-refresher-close-v344").click();
     await requireWait("KO refresher close", () => modal.classList.contains("hidden"));
-    await requireWait("focus return", () => doc().activeElement && doc().activeElement.dataset && doc().activeElement.dataset.term === "bytecode");
-    add("FOCUS_RETURNS", doc().activeElement && doc().activeElement.dataset && doc().activeElement.dataset.term === "bytecode", doc().activeElement && ((doc().activeElement.dataset && doc().activeElement.dataset.term) || doc().activeElement.className || doc().activeElement.tagName));
+    await sleep(250);
+    add("FOCUS_RETURNS", doc().activeElement === button || (doc().activeElement && doc().activeElement.dataset && doc().activeElement.dataset.term === "bytecode"), activeDetail());
     add("MEMO_UNCHANGED", win().localStorage.getItem(memoKey) === "keep memo", win().localStorage.getItem(memoKey));
 
     const codeTab = doc().querySelector('.tab-btn[data-view="code"]');
@@ -131,7 +131,6 @@
     });
     const summary = doc().getElementById("codeSummary").textContent.replace(/\s+/g, " ").trim();
     add("CODE_EXPLAINER_BEHAVIOR_FIRST", summary.length > 0 && !/^(AST|CallExpression|Abstract Syntax Tree)/i.test(summary), summary.slice(0, 180));
-
     add("NO_DUPLICATE_MODAL", doc().querySelectorAll("#explanationRefresherV344").length === 1, doc().querySelectorAll("#explanationRefresherV344").length);
     add("NO_HORIZONTAL_OVERFLOW_KO", overflow(), overflowDetail());
 
@@ -139,7 +138,6 @@
     frame.src = "../src/pwa/index.html?lang=en&v344smoke=2";
     await enLoad;
     await requireWait("English V344 explanation surfaces", () => doc() && win().ExplanationSupportV344 && doc().documentElement.lang === "en" && doc().getElementById("conceptDefinition"));
-
     const enTarget = doc().getElementById("conceptDefinition");
     enTarget.textContent = "CPython can convert source code to bytecode before the runtime executes it.";
     win().ExplanationSupportV344.annotateAll();
