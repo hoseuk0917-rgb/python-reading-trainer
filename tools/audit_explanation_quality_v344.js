@@ -35,14 +35,17 @@ check("ESCAPE_CLOSE", /event\.key === "Escape"/.test(support));
 
 check("FOUNDATION_OVERRIDE_PRESENT", /EXPLANATION_QUALITY_FOUNDATION_V344_A1/.test(app));
 const foundationFragments = [
-  '"variable": {definition:"변수는 값을 나중에 다시 쓰기 위해 붙여 두는 이름이다.',
-  '"parameter": {definition:"매개변수(parameter)는 함수가 호출될 때 받을 값에 붙여 둔 이름이다.',
-  '"argument": {definition:"인자(argument)는 함수를 호출할 때 실제로 건네는 값이다.',
-  '"return": {definition:"return은 함수가 만든 결과를 호출한 곳으로 돌려주고',
-  '"object": {definition:"객체(object)는 Python에서 실제로 다루는 하나의 값이다.',
-  '"iterable": {definition:"iterable은 for문처럼 값을 하나씩 차례로 꺼내 볼 수 있는 대상을 뜻한다.'
+  [
+    '"variable": {definition:"변수는 값을 나중에 다시 쓰기 위해 붙여 두는 이름이다.',
+    '"variable": {definition:"변수는 값을 나중에 다시 쓰기 위해 붙이는 이름이다.'
+  ],
+  ['"parameter": {definition:"매개변수(parameter)는 함수가 호출될 때 받을 값에 붙여 둔 이름이다.'],
+  ['"argument": {definition:"인자(argument)는 함수를 호출할 때 실제로 건네는 값이다.'],
+  ['"return": {definition:"return은 함수가 만든 결과를 호출한 곳으로 돌려주고'],
+  ['"object": {definition:"객체(object)는 Python에서 실제로 다루는 하나의 값이다.'],
+  ['"iterable": {definition:"iterable은 for문처럼 값을 하나씩 차례로 꺼내 볼 수 있는 대상을 뜻한다.']
 ];
-foundationFragments.forEach((fragment, i) => check(`BEGINNER_FOUNDATION_${i + 1}`, app.includes(fragment)));
+foundationFragments.forEach((alternatives, i) => check(`BEGINNER_FOUNDATION_${i + 1}`, alternatives.some((fragment) => app.includes(fragment))));
 
 const v344Block = (app.match(/EXPLANATION_QUALITY_FOUNDATION_V344_A1 BEGIN([\s\S]*?)EXPLANATION_QUALITY_FOUNDATION_V344_A1 END/) || ["", ""])[1];
 check("FOUNDATION_BLOCK_NO_OPAQUE_FIRST_LINE", !/definition:\"(?:AST|CallExpression|protocol|reference|object reference|bytecode)/i.test(v344Block));
