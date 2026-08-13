@@ -70,7 +70,7 @@ def main() -> None:
             reviewed_failures.append(f"{card['id']}:flow_goal")
         if len(explanation) < 45:
             reviewed_failures.append(f"{card['id']}:too_short")
-        if card.get("question_type") == "output_prediction" and not re.search(r"(?:출력|보여|화면|정답)", explanation):
+        if card.get("question_type") == "output_prediction" and not re.search(r"(?:출력|보여|화면|정답|결과)", explanation):
             reviewed_failures.append(f"{card['id']}:no_result_language")
 
     print(f"V356_REVIEWED_FAILURES={len(reviewed_failures)}")
