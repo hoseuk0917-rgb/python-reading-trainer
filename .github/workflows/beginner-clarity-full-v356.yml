@@ -31,24 +31,32 @@ jobs:
       - name: Syntax check full-corpus tools
         run: |
           python -m py_compile tools/apply_beginner_clarity_v356_full.py
+          python -m py_compile tools/apply_concept_clarity_v356_full.py
           python -m py_compile tools/audit_beginner_clarity_v356_full.py
+          python -m py_compile tools/audit_explanation_repetition_v356_full.py
           node --check tools/audit_concept_info_clarity_v356.js
 
       - name: Apply V356 full 1785-card review
-        run: python tools/apply_beginner_clarity_v356_full.py
+        run: |
+          python tools/apply_beginner_clarity_v356_full.py
+          python tools/apply_concept_clarity_v356_full.py
 
       - name: Confirm full-corpus idempotence
         shell: bash
         run: |
           set -euo pipefail
-          git diff -- data/lessons docs/audit > /tmp/v356-full-before.diff
+          git diff -- data/lessons src/pwa/app.js docs/audit > /tmp/v356-full-before.diff
           python tools/apply_beginner_clarity_v356_full.py
-          git diff -- data/lessons docs/audit > /tmp/v356-full-after.diff
+          python tools/apply_concept_clarity_v356_full.py
+          git diff -- data/lessons src/pwa/app.js docs/audit > /tmp/v356-full-after.diff
           cmp /tmp/v356-full-before.diff /tmp/v356-full-after.diff
           echo "V356_FULL_IDEMPOTENCE=PASS"
 
       - name: V356 exact 1785-card clarity audit
         run: python tools/audit_beginner_clarity_v356_full.py
+
+      - name: V356 explanation repetition and specificity audit
+        run: python tools/audit_explanation_repetition_v356_full.py
 
       - name: V356 shared concept guidance exact audit
         run: node tools/audit_concept_info_clarity_v356.js
@@ -124,7 +132,7 @@ jobs:
           if git status --porcelain | grep -q .; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add data/lessons docs/audit/v356_full_exact_manifest.json docs/audit/v356_full_review.json docs/audit/v356_concept_info_review.json docs/audit/v356_line_by_line_progress.md
+            git add data/lessons src/pwa/app.js docs/audit/v356_full_exact_manifest.json docs/audit/v356_full_review.json docs/audit/v356_concept_info_review.json docs/audit/v356_line_by_line_progress.md
             git commit -m "Apply V356 full 1785-card beginner clarity review"
             git push origin HEAD:agent/v356-full-corpus-beginner-clarity
             echo "V356_FULL_CHANGES_PUSHED=True"
