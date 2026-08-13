@@ -37,6 +37,9 @@ jobs:
           python -m py_compile tools/apply_beginner_clarity_v356_level2_remaining.py
           python -m py_compile tools/apply_beginner_clarity_v356_level2_float.py
           python -m py_compile tools/apply_beginner_clarity_v356_level2_result_closure.py
+          python -m py_compile tools/apply_beginner_clarity_v356_level3_functions.py
+          python -m py_compile tools/apply_beginner_clarity_v356_level3_all.py
+          python -m py_compile tools/audit_beginner_clarity_v356_level3.py
           python -m py_compile tools/finalize_beginner_clarity_v356_runtime.py
           python -m py_compile tools/audit_beginner_clarity_v356.py
           python -m py_compile tools/inventory_clarity_levels_v356.py
@@ -44,7 +47,7 @@ jobs:
       - name: Exact V356 level inventory
         run: python tools/inventory_clarity_levels_v356.py
 
-      - name: Apply V356 complete Level 1-2 batches
+      - name: Apply V356 complete Level 1-3 batches
         run: |
           python tools/apply_beginner_clarity_v356.py
           python tools/apply_beginner_clarity_v356_batch2.py
@@ -54,12 +57,14 @@ jobs:
           python tools/apply_beginner_clarity_v356_level2_float.py
           python tools/apply_beginner_clarity_v356_level2_result_closure.py
           python tools/finalize_beginner_clarity_v356_runtime.py
+          python tools/apply_beginner_clarity_v356_level3_functions.py
+          python tools/apply_beginner_clarity_v356_level3_all.py
 
       - name: Confirm V356 apply idempotence
         shell: bash
         run: |
           set -euo pipefail
-          git diff -- src/pwa/app.js data/lessons > /tmp/v356-before.diff
+          git diff -- src/pwa/app.js data/lessons docs/audit/v356_level3_exact_manifest.json > /tmp/v356-before.diff
           python tools/apply_beginner_clarity_v356.py
           python tools/apply_beginner_clarity_v356_batch2.py
           python tools/apply_beginner_clarity_v356_batch3.py
@@ -68,7 +73,9 @@ jobs:
           python tools/apply_beginner_clarity_v356_level2_float.py
           python tools/apply_beginner_clarity_v356_level2_result_closure.py
           python tools/finalize_beginner_clarity_v356_runtime.py
-          git diff -- src/pwa/app.js data/lessons > /tmp/v356-after.diff
+          python tools/apply_beginner_clarity_v356_level3_functions.py
+          python tools/apply_beginner_clarity_v356_level3_all.py
+          git diff -- src/pwa/app.js data/lessons docs/audit/v356_level3_exact_manifest.json > /tmp/v356-after.diff
           cmp /tmp/v356-before.diff /tmp/v356-after.diff
           echo "V356_IDEMPOTENCE=PASS"
 
@@ -77,6 +84,9 @@ jobs:
 
       - name: V356 full-card inventory and Level 1-2 clarity audit
         run: python tools/audit_beginner_clarity_v356.py
+
+      - name: V356 Level 3 exact-set clarity audit
+        run: python tools/audit_beginner_clarity_v356_level3.py
 
       - name: Existing lesson validation
         run: python tools/validate_lessons.py
@@ -148,7 +158,7 @@ jobs:
             kill "$(cat /tmp/prt-v356-http.pid)" 2>/dev/null || true
           fi
 
-      - name: Commit V356 generated Level 1-2 clarity changes if needed
+      - name: Commit V356 generated Level 3 clarity changes if needed
         if: success()
         run: |
           if git diff --quiet; then
@@ -157,17 +167,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/pwa/app.js \
-            data/lessons/python_foundation_beginner_v94_a1_part1.json \
-            data/lessons/python_foundation_beginner_v94_a1_part2.json \
-            data/lessons/python_beginner_mixed_review_v96_a1.json \
-            data/lessons/python_beginner_reading_notes_v96_a2.json \
-            data/lessons/python_foundation_expansion_v10.json \
-            data/lessons/python_core_expansion_v1.json \
-            data/lessons/cards_seed_v1.json \
-            data/lessons/python_foundation_level2_v94_a2_part1.json \
-            data/lessons/python_foundation_level2_v94_a2_part2.json \
-            data/lessons/python_libraries_missing_topics_v11.json
-          git commit -m "Apply V356 Level 1-2 line-by-line clarity pass"
+          git add src/pwa/app.js data/lessons docs/audit/v356_level3_exact_manifest.json
+          git commit -m "Apply V356 Level 3 exact-set clarity pass"
           git push origin HEAD:agent/v356-line-by-line-beginner-clarity
           echo "V356_CHANGES_PUSHED=True"
