@@ -57,6 +57,28 @@
     main: row('def main():\n    print("start")\n\nif __name__ == "__main__":\n    main()', 'start', 'if __name__')
   });
 
+  const CURRENT_CARD_NAMED_SYNTAX = Object.freeze([
+    ["json.loads", /\bjson\.loads\s*\(/],
+    ["json.dumps", /\bjson\.dumps\s*\(/],
+    ["print", /\bprint\s*\(/],
+    ["len", /\blen\s*\(/],
+    ["range", /\brange\s*\(/],
+    ["append", /\.append\s*\(/],
+    ["get", /\.get\s*\(/],
+    ["open", /\bopen\s*\(/],
+    ["with", /\bwith\b/],
+    ["def", /\bdef\b/],
+    ["return", /\breturn\b/],
+    ["for", /\bfor\b/],
+    ["while", /\bwhile\b/],
+    ["if", /\b(?:if|elif|else)\b/],
+    ["class", /\bclass\b/],
+    ["import", /\b(?:import|from)\b/],
+    ["try_except", /\b(?:try|except)\b/],
+    ["bool", /\b(?:True|False)\b/],
+    ["None", /\bNone\b/]
+  ]);
+
   function t(win, ko, en) {
     return win.document.documentElement.lang === "en" ? en : ko;
   }
@@ -72,12 +94,21 @@
     catch (_) { return card && Array.isArray(card.concepts) ? card.concepts[0] || "" : ""; }
   }
 
+  function allowedWithCurrentCardSyntax(engine, cardsValue, index, card) {
+    const allowed = new Set(engine.allowedConceptsAt(cardsValue || [], index));
+    const problemCode = String(card && card.code || "");
+    CURRENT_CARD_NAMED_SYNTAX.forEach(function(entry) {
+      if (entry[1].test(problemCode)) allowed.add(entry[0]);
+    });
+    return allowed;
+  }
+
   function validateCurated(engine, card, cardsValue, index, primary, curated) {
     if (!engine || !curated || !curated.code || !curated.output) return false;
     if (curated.token && curated.code.indexOf(curated.token) < 0) return false;
     if (!engine.isWorkedExampleDistinct(String(card && card.code || ""), curated.code)) return false;
     try {
-      const allowed = engine.allowedConceptsAt(cardsValue || [], index);
+      const allowed = allowedWithCurrentCardSyntax(engine, cardsValue, index, card);
       if (!engine.exampleUsesOnlyKnownNamedSyntax(curated.code, allowed)) return false;
     } catch (_) { return false; }
     return !!primary;
@@ -200,6 +231,7 @@
   return {
     VERSION: VERSION,
     EXAMPLES: EXAMPLES,
+    CURRENT_CARD_NAMED_SYNTAX: CURRENT_CARD_NAMED_SYNTAX,
     install: install,
     validateCurated: validateCurated,
     auditCurrentCorpus: auditCurrentCorpus
