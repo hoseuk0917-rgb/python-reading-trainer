@@ -14,10 +14,6 @@
     if (!ok) failed = true;
     report.textContent = lines.join("\n");
   }
-  function note(name, detail) {
-    lines.push(name + "=" + String(detail || ""));
-    report.textContent = lines.join("\n");
-  }
   function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
   async function waitFor(fn, timeout = 20000) {
     const start = Date.now();
@@ -49,9 +45,6 @@
     doc().querySelector("#learningHomeV343 .home-v343-primary").click();
     await need("quiz", () => doc().getElementById("learnView").classList.contains("v343-quiz-mode") && doc().querySelector("#choices .choice-btn"), 20000);
 
-    const distinctBefore = win().WorkedExampleQualityV355R2.auditDistinctDetails();
-    note("CORPUS_DUPLICATE_DETAILS", JSON.stringify(distinctBefore));
-
     const typeIndex = win().eval('cards.findIndex(function(card) { return Array.isArray(card.concepts) && card.concepts.indexOf("type") >= 0; })');
     add("TYPE_CARD_FOUND", Number(typeIndex) >= 0, "index=" + typeIndex);
     win().eval('currentIndex = ' + Number(typeIndex) + '; renderCard();');
@@ -60,38 +53,20 @@
     add("TYPE_PROBLEM_IS_ORIGINAL", problemCode.includes("type(") && problemCode.includes("value"), problemCode.replace(/\s+/g, " ").slice(0, 160));
 
     doc().querySelector("#choices .choice-btn:not([disabled])").click();
-    await sleep(350);
-    const diagnostic = win().eval(`(function () {
-      var card = cards[currentIndex];
-      var result = document.getElementById("resultBox");
-      var box = document.getElementById("workedExampleV340");
-      var picked = window.LearningEngineV340.pickSafeExample(card, cards, currentIndex, conceptInfo, "type");
-      return {
-        currentIndex: currentIndex,
-        cardId: card && card.id,
-        resultHidden: !!(result && result.classList.contains("hidden")),
-        resultText: result ? String(result.textContent || "").slice(0, 120) : "",
-        picked: picked,
-        last: window.__lastWorkedExampleV355 || null,
-        boxHidden: !!(box && box.classList.contains("hidden")),
-        boxClass: box ? box.className : "",
-        boxHtml: box ? String(box.innerHTML || "").slice(0, 240) : ""
-      };
-    })()`);
-    note("TYPE_RENDER_DIAGNOSTIC", JSON.stringify(diagnostic));
-    win().WorkedExampleQualityV355R2.refresh();
-
-    await need("worked example", () => {
+    await need("owned worked example", () => {
       win().WorkedExampleQualityV355R2.refresh();
-      const box = doc().getElementById("workedExampleV340");
+      const box = doc().getElementById("workedExampleV355");
       return box && visible(box) && box.classList.contains("worked-v355-ready") && box.querySelector(".worked-v355-output");
     }, 12000);
 
-    const box = doc().getElementById("workedExampleV340");
+    const box = doc().getElementById("workedExampleV355");
+    const legacyBox = doc().getElementById("workedExampleV340");
     const exampleCode = box.querySelector(".worked-v340-code").textContent.trim();
     const exampleOutput = box.querySelector(".worked-v355-output").textContent.trim();
     const title = box.querySelector(".worked-v340-head strong").textContent.trim();
-    add("V355_R2_OWNS_RENDER", box.dataset.workedCardV355R2 !== undefined && !!box.dataset.workedSignatureV355R2, box.dataset.workedCardV355R2 || "");
+
+    add("V355_ISOLATED_OWNED_SURFACE", box.id === "workedExampleV355" && box.dataset.workedCardV355R2 !== undefined && !!box.dataset.workedSignatureV355R2, box.dataset.workedCardV355R2 || "");
+    add("LEGACY_WORKED_SURFACE_SUPPRESSED", !legacyBox || !visible(legacyBox), legacyBox ? legacyBox.className : "absent");
     add("EXAMPLE_USES_SAME_FUNCTION", exampleCode.includes("type(number)") && exampleCode.includes("type(word)"), exampleCode.replace(/\s+/g, " "));
     add("EXAMPLE_USES_DIFFERENT_VALUES", exampleCode.includes("number = 8") && exampleCode.includes('word = "hello"') && !exampleCode.includes("value = 3"), exampleCode.replace(/\s+/g, " "));
     add("EXAMPLE_OUTPUT_EXPLICIT", exampleOutput === "<class 'int'>\n<class 'str'>", exampleOutput.replace(/\n/g, " | "));
@@ -99,13 +74,12 @@
     add("OLD_META_NOTE_REMOVED", !box.querySelector(".worked-v340-note") && !box.querySelector(".worked-v340-head .muted"));
     add("EXAMPLE_CONCEPT_EXACT", box.dataset.workedConceptV355 === "type", box.dataset.workedConceptV355 || "");
 
-    const corpus = win().WorkedExampleQualityV355.auditCurrentCorpus(win());
+    const effective = win().WorkedExampleQualityV355R2.auditEffectiveCorpus();
     const distinctAudit = win().WorkedExampleQualityV355R2.auditDistinctDetails();
-    add("CORPUS_CARD_COUNT", corpus.total === 1785, JSON.stringify(corpus));
-    add("CORPUS_CURATED_PRESENT", corpus.curated > 0 && corpus.shown > 0, JSON.stringify(corpus));
-    add("CORPUS_NO_OUTPUT_FAILURES", corpus.outputFailures === 0, JSON.stringify(corpus));
-    add("CORPUS_NO_TOKEN_FAILURES", corpus.tokenFailures === 0, JSON.stringify(corpus));
-    add("CORPUS_NO_DUPLICATE_EXAMPLES", distinctAudit.details.length === 0, JSON.stringify(distinctAudit));
+    add("CORPUS_CARD_COUNT", effective.total === 1785, JSON.stringify(effective));
+    add("CORPUS_CANDIDATE_COUNT", effective.candidates === 1015, JSON.stringify(effective));
+    add("CORPUS_ALL_CANDIDATES_SHOWN", effective.shown === effective.candidates && effective.missing.length === 0, JSON.stringify(effective));
+    add("CORPUS_NO_DUPLICATE_EXAMPLES", effective.duplicate.length === 0 && distinctAudit.details.length === 0, JSON.stringify({ effective: effective.duplicate, distinct: distinctAudit.details }));
 
     const rootWidth = doc().documentElement.clientWidth;
     const scrollWidth = Math.max(doc().documentElement.scrollWidth, doc().body.scrollWidth);
