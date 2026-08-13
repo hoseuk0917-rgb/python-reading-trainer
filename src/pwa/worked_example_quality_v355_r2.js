@@ -17,12 +17,33 @@
   }
 
   function takeUiOwnership() {
-    const legacy = window.__workedExampleQualityV355Observer;
-    if (legacy && typeof legacy.disconnect === "function") {
-      try { legacy.disconnect(); } catch (_) {}
+    const legacyObserver = window.__workedExampleQualityV355Observer;
+    if (legacyObserver && typeof legacyObserver.disconnect === "function") {
+      try { legacyObserver.disconnect(); } catch (_) {}
     }
     window.__workedExampleQualityV355Observer = null;
     document.documentElement.dataset.workedExampleUiOwnerV355 = VERSION;
+  }
+
+  function suppressLegacyBox() {
+    const legacy = document.getElementById("workedExampleV340");
+    if (!legacy) return;
+    legacy.classList.add("hidden");
+    legacy.setAttribute("aria-hidden", "true");
+  }
+
+  function ensureOwnedBox() {
+    let box = document.getElementById("workedExampleV355");
+    if (box) return box;
+    const result = document.getElementById("resultBox");
+    if (!result || !result.parentNode) return null;
+    box = document.createElement("section");
+    box.id = "workedExampleV355";
+    box.className = "worked-v355-box hidden";
+    box.setAttribute("aria-live", "polite");
+    box.setAttribute("aria-hidden", "true");
+    result.insertAdjacentElement("afterend", box);
+    return box;
   }
 
   function currentContext() {
@@ -123,11 +144,12 @@
     }
   }
 
-  function hideWorkedExample() {
-    const box = document.getElementById("workedExampleV340");
+  function hideOwnedBox() {
+    const box = document.getElementById("workedExampleV355");
     if (!box) return;
     box.classList.add("hidden");
     box.classList.remove("worked-v355-ready");
+    box.setAttribute("aria-hidden", "true");
     box.removeAttribute("data-worked-card-v355-r2");
     box.removeAttribute("data-worked-signature-v355-r2");
     if (box.childNodes.length) box.innerHTML = "";
@@ -170,6 +192,7 @@
     box.appendChild(outputWrap);
     box.classList.remove("hidden");
     box.classList.add("worked-v355-ready");
+    box.setAttribute("aria-hidden", "false");
     box.dataset.workedConceptV355 = selected.concept || "";
     box.dataset.workedCardV355R2 = String(cardId || "");
     box.dataset.workedSignatureV355R2 = signature;
@@ -179,19 +202,28 @@
   function reconcileWorkedExample() {
     takeUiOwnership();
     installSpecialFallback();
-    const box = document.getElementById("workedExampleV340");
+    suppressLegacyBox();
+    const box = ensureOwnedBox();
     if (!box) return false;
     if (!resultVisible()) {
-      hideWorkedExample();
+      hideOwnedBox();
       return false;
     }
     const ctx = currentContext();
     const selected = selectCurrentExample(ctx);
     if (!ctx || !selected) {
-      hideWorkedExample();
+      hideOwnedBox();
       return false;
     }
     return buildWorkedExample(box, selected, ctx.card && ctx.card.id);
+  }
+
+  function candidateVariants(api, primary) {
+    return [
+      api && api.EXAMPLES && api.EXAMPLES[primary],
+      api && api.ALTERNATES && api.ALTERNATES[primary],
+      SPECIAL_VARIANTS[primary]
+    ].filter(Boolean);
   }
 
   function auditDistinctDetails() {
@@ -207,11 +239,7 @@
     cardsValue.forEach(function (card, index) {
       const ctx = { cardsValue: cardsValue, index: index, card: card, conceptInfoValue: conceptInfoValue };
       const primary = primaryConcept(ctx);
-      const variants = [
-        api.EXAMPLES && api.EXAMPLES[primary],
-        api.ALTERNATES && api.ALTERNATES[primary],
-        SPECIAL_VARIANTS[primary]
-      ].filter(Boolean);
+      const variants = candidateVariants(api, primary);
       if (!variants.length) return;
       const anyDistinct = variants.some(function (variant) {
         return engine.isWorkedExampleDistinct(String(card && card.code || ""), String(variant.code || ""));
@@ -226,6 +254,36 @@
       }
     });
     return { total: cardsValue.length, details: details };
+  }
+
+  function auditEffectiveCorpus() {
+    const api = window.WorkedExampleQualityV355;
+    const engine = window.LearningEngineV340;
+    let cardsValue = [];
+    let conceptInfoValue = {};
+    try { if (typeof cards !== "undefined" && Array.isArray(cards)) cardsValue = cards; } catch (_) {}
+    try { if (typeof conceptInfo !== "undefined" && conceptInfo) conceptInfoValue = conceptInfo; } catch (_) {}
+    const stats = { total: cardsValue.length, candidates: 0, shown: 0, missing: [], duplicate: [] };
+    if (!api || !engine) return stats;
+
+    cardsValue.forEach(function(card, index) {
+      const ctx = { cardsValue: cardsValue, index: index, card: card, conceptInfoValue: conceptInfoValue };
+      const primary = primaryConcept(ctx);
+      const variants = candidateVariants(api, primary);
+      if (!variants.length) return;
+      stats.candidates += 1;
+      let picked = null;
+      try { picked = engine.pickSafeExample(card, cardsValue, index, conceptInfoValue, primary); } catch (_) {}
+      if (!picked || !picked.code || !picked.output) {
+        stats.missing.push({ index: index, id: String(card && card.id || ""), primary: primary });
+        return;
+      }
+      stats.shown += 1;
+      if (!engine.isWorkedExampleDistinct(String(card && card.code || ""), String(picked.code || ""))) {
+        stats.duplicate.push({ index: index, id: String(card && card.id || ""), primary: primary });
+      }
+    });
+    return stats;
   }
 
   function refresh() {
@@ -251,6 +309,8 @@
   function start() {
     takeUiOwnership();
     installSpecialFallback();
+    suppressLegacyBox();
+    ensureOwnedBox();
     refresh();
     if (!document.body || window.__workedExampleQualityV355R2Observer) return;
     const observer = new MutationObserver(scheduleRefresh);
@@ -277,6 +337,7 @@
     refresh: refresh,
     reconcileWorkedExample: reconcileWorkedExample,
     auditDistinctDetails: auditDistinctDetails,
+    auditEffectiveCorpus: auditEffectiveCorpus,
     takeUiOwnership: takeUiOwnership
   };
 })();
