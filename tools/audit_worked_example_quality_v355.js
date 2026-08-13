@@ -28,6 +28,7 @@ check("EXACT_PRIMARY_ONLY", runtimeText.includes("const curated = EXAMPLES[prima
 check("NO_PREVIOUS_CONCEPT_FALLBACK", !runtimeText.includes('source: "previous"'));
 check("DISTINCTNESS_GATE", runtimeText.includes("isWorkedExampleDistinct"));
 check("KNOWN_SYNTAX_GATE", runtimeText.includes("exampleUsesOnlyKnownNamedSyntax"));
+check("CURRENT_CARD_SYNTAX_REUSE", runtimeText.includes("allowedWithCurrentCardSyntax") && runtimeText.includes('allowed.add(entry[0])') && runtimeText.includes('["print", /\\bprint'));
 check("OUTPUT_UI", runtimeText.includes("worked-v355-output") && runtimeText.includes('t(win, "출력", "Output")'));
 check("NO_OLD_META_NOTE", runtimeText.includes("if (meta) meta.remove()") && runtimeText.includes("if (note) note.remove()"));
 check("NO_STORAGE_MUTATION", !/localStorage\.(?:setItem|removeItem|clear)|sessionStorage\.(?:setItem|removeItem|clear)/.test(runtimeText));
