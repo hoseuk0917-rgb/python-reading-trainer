@@ -11,6 +11,7 @@ MANIFEST = ROOT / "docs/audit/v356_level3_exact_manifest.json"
 EXPECTED_LEVEL3_COUNT = 206
 MIN_EXPLANATION_LENGTH = 70
 MIN_GOAL_LENGTH = 30
+FLOW_MARKERS = ("먼저", "그다음", "마지막", "실행", "반복", "조건", "호출", "return", "저장", "출력", "결과", "읽을 때", "확인")
 
 
 def load_level3_cards():
@@ -130,12 +131,21 @@ def improve_card(card):
         explanation = cleaned
         card["explanation"] = explanation
         changed = True
-    if len(explanation) < MIN_EXPLANATION_LENGTH:
+    needs_flow = not any(marker in explanation for marker in FLOW_MARKERS)
+    if len(explanation) < MIN_EXPLANATION_LENGTH or needs_flow:
         detail = flow_detail(card)
         if detail not in explanation:
             explanation = (explanation.rstrip(". ") + ". " + detail).strip()
             card["explanation"] = explanation
             changed = True
+
+    if not str(card.get("project_context", "")).strip():
+        low = (title + " " + str(card.get("code", "")) + " " + " ".join(concepts(card))).lower()
+        if "venv" in low or "virtual" in low:
+            card["project_context"] = "프로젝트마다 패키지 버전을 분리하는 가상환경을 이해하면 재현 가능한 Python 실행 환경을 구성하고 의존성 충돌을 줄일 수 있다."
+        else:
+            card["project_context"] = f"{concept}을 실제 코드의 실행 흐름과 연결해 읽는 능력은 Python 프로젝트에서 값과 동작을 정확히 추적하는 데 쓰인다."
+        changed = True
     return changed
 
 
