@@ -1,0 +1,120 @@
+name: beginner-clarity-v356
+
+on:
+  push:
+    branches:
+      - agent/v356-line-by-line-beginner-clarity
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: beginner-clarity-v356-branch
+  cancel-in-progress: true
+
+jobs:
+  v356-beginner-clarity:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout V356 branch
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: agent/v356-line-by-line-beginner-clarity
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Syntax check V356 tools
+        run: |
+          python -m py_compile tools/apply_beginner_clarity_v356.py
+          python -m py_compile tools/apply_beginner_clarity_v356_batch2.py
+          python -m py_compile tools/audit_beginner_clarity_v356.py
+
+      - name: Apply V356 reviewed batches
+        run: |
+          python tools/apply_beginner_clarity_v356.py
+          python tools/apply_beginner_clarity_v356_batch2.py
+
+      - name: Confirm V356 apply idempotence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff -- src/pwa/app.js data/lessons/python_foundation_beginner_v94_a1_part1.json data/lessons/python_foundation_beginner_v94_a1_part2.json > /tmp/v356-before.diff
+          python tools/apply_beginner_clarity_v356.py
+          python tools/apply_beginner_clarity_v356_batch2.py
+          git diff -- src/pwa/app.js data/lessons/python_foundation_beginner_v94_a1_part1.json data/lessons/python_foundation_beginner_v94_a1_part2.json > /tmp/v356-after.diff
+          cmp /tmp/v356-before.diff /tmp/v356-after.diff
+          echo "V356_IDEMPOTENCE=PASS"
+
+      - name: JavaScript syntax after concept patch
+        run: node --check src/pwa/app.js
+
+      - name: V356 full-card inventory and reviewed clarity audit
+        run: python tools/audit_beginner_clarity_v356.py
+
+      - name: Existing lesson validation
+        run: python tools/validate_lessons.py
+
+      - name: Existing V339 content quality gates
+        run: |
+          python tools/content_quality_final_pass_v339.py --check
+          python tools/content_quality_final_pass_v339_r2.py --check
+          python tools/content_quality_final_pass_v339_r4.py --check
+          node tools/audit_content_semantic_alignment_v339_r4.js
+
+      - name: Existing learning and explanation regressions
+        run: |
+          node tools/audit_learning_loop_v340.js
+          node tools/audit_learning_experience_v341.js
+          node tools/audit_learning_experience_v341_r2.js
+          node tools/audit_learning_hardening_v342_r2.js
+          node tools/audit_explanation_quality_v344.js
+          node tools/audit_study_experience_v345.js
+          node tools/audit_study_quality_v346.js
+          node tools/audit_learning_runtime_v348.js
+          node tools/audit_consumer_ux_v349.js
+          node tools/audit_learning_flow_v350.js
+          node tools/audit_contextual_practice_v351.js
+          node tools/audit_worked_example_dedup_v352.js
+          node tools/audit_interaction_clarity_v353.js
+          node tools/audit_worked_example_quality_v355.js
+
+      - name: Diff integrity
+        run: git diff --check
+
+      - name: Existing real-browser learning regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v356-http.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3377/src/pwa/index.html > /dev/null; then break; fi
+            sleep 0.1
+          done
+          node tools/run_explanation_quality_v344_browser_smoke.js
+          node tools/run_study_experience_v345_browser_smoke.js
+          node tools/run_consumer_ux_v349_browser_smoke.js
+          node tools/run_worked_example_quality_v355_browser_smoke.js
+
+      - name: Commit V356 generated first two files if needed
+        if: success()
+        run: |
+          if git diff --quiet; then
+            echo "V356_ALREADY_CLEAN=True"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pwa/app.js \
+            data/lessons/python_foundation_beginner_v94_a1_part1.json \
+            data/lessons/python_foundation_beginner_v94_a1_part2.json
+          git commit -m "Apply V356 beginner clarity batches 1-2"
+          git push origin HEAD:agent/v356-line-by-line-beginner-clarity
+          echo "V356_CHANGES_PUSHED=True"
