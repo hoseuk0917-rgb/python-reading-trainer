@@ -40,7 +40,7 @@
   async function run() {
     try { localStorage.clear(); } catch (_) {}
     frame.src = "../src/pwa/index.html?v355case=" + Date.now();
-    await need("V355 runtime", () => doc() && win().WorkedExampleQualityV355 && doc().documentElement.dataset.workedExampleQualityV355 === "v355_a1", 60000);
+    await need("V355 runtime", () => doc() && win().WorkedExampleQualityV355 && win().WorkedExampleQualityV355R2 && doc().documentElement.dataset.workedExampleQualityV355R2 === "v355_r2", 60000);
     await need("learning home", () => doc().querySelector("#learningHomeV343 .home-v343-primary"), 30000);
     doc().querySelector("#learningHomeV343 .home-v343-primary").click();
     await need("quiz", () => doc().getElementById("learnView").classList.contains("v343-quiz-mode") && doc().querySelector("#choices .choice-btn"), 20000);
@@ -54,6 +54,7 @@
 
     doc().querySelector("#choices .choice-btn:not([disabled])").click();
     await need("worked example", () => {
+      win().WorkedExampleQualityV355R2.refresh();
       const box = doc().getElementById("workedExampleV340");
       return box && visible(box) && box.classList.contains("worked-v355-ready") && box.querySelector(".worked-v355-output");
     }, 12000);
@@ -62,6 +63,7 @@
     const exampleCode = box.querySelector(".worked-v340-code").textContent.trim();
     const exampleOutput = box.querySelector(".worked-v355-output").textContent.trim();
     const title = box.querySelector(".worked-v340-head strong").textContent.trim();
+    add("V355_R2_OWNS_RENDER", box.dataset.workedCardV355R2 !== undefined && !!box.dataset.workedSignatureV355R2, box.dataset.workedCardV355R2 || "");
     add("EXAMPLE_USES_SAME_FUNCTION", exampleCode.includes("type(number)") && exampleCode.includes("type(word)"), exampleCode.replace(/\s+/g, " "));
     add("EXAMPLE_USES_DIFFERENT_VALUES", exampleCode.includes("number = 8") && exampleCode.includes('word = "hello"') && !exampleCode.includes("value = 3"), exampleCode.replace(/\s+/g, " "));
     add("EXAMPLE_OUTPUT_EXPLICIT", exampleOutput === "<class 'int'>\n<class 'str'>", exampleOutput.replace(/\n/g, " | "));
@@ -70,11 +72,12 @@
     add("EXAMPLE_CONCEPT_EXACT", box.dataset.workedConceptV355 === "type", box.dataset.workedConceptV355 || "");
 
     const corpus = win().WorkedExampleQualityV355.auditCurrentCorpus(win());
+    const distinctAudit = win().WorkedExampleQualityV355R2.auditDistinctDetails();
     add("CORPUS_CARD_COUNT", corpus.total === 1785, JSON.stringify(corpus));
     add("CORPUS_CURATED_PRESENT", corpus.curated > 0 && corpus.shown > 0, JSON.stringify(corpus));
     add("CORPUS_NO_OUTPUT_FAILURES", corpus.outputFailures === 0, JSON.stringify(corpus));
     add("CORPUS_NO_TOKEN_FAILURES", corpus.tokenFailures === 0, JSON.stringify(corpus));
-    add("CORPUS_NO_DUPLICATE_EXAMPLES", corpus.distinctFailures === 0, JSON.stringify(corpus));
+    add("CORPUS_NO_DUPLICATE_EXAMPLES", distinctAudit.details.length === 0, JSON.stringify(distinctAudit));
 
     const rootWidth = doc().documentElement.clientWidth;
     const scrollWidth = Math.max(doc().documentElement.scrollWidth, doc().body.scrollWidth);
