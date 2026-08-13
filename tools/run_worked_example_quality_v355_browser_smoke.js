@@ -7,6 +7,12 @@ if (!chrome) {
   console.error("CHROME_FOUND=False");
   process.exit(1);
 }
+function ghaEscape(value) {
+  return String(value || "")
+    .replace(/%/g, "%25")
+    .replace(/\r/g, "%0D")
+    .replace(/\n/g, "%0A");
+}
 console.log("=== PRT V355 WORKED EXAMPLE REAL BROWSER SMOKE ===");
 console.log("CHROME=" + chrome);
 const cases = [
@@ -30,7 +36,11 @@ for (const c of cases) {
   console.log(text || "REPORT_NOT_FOUND");
   const ok = out.status === 0 && text.includes("RESULT=PASS_V355_WORKED_EXAMPLE_BROWSER_CASE") && !text.includes("=FAIL");
   console.log(c.name + "_PASS=" + ok);
-  if (!ok) failed = true;
+  if (!ok) {
+    failed = true;
+    const detail = text || (out.error ? out.error.message : "REPORT_NOT_FOUND");
+    console.log("::error title=V355 " + c.name + " browser case::" + ghaEscape(detail));
+  }
 }
 console.log("RESULT=" + (failed ? "FAIL_V355_WORKED_EXAMPLE_BROWSER_SMOKE" : "PASS_V355_WORKED_EXAMPLE_BROWSER_SMOKE"));
 if (failed) process.exit(1);
