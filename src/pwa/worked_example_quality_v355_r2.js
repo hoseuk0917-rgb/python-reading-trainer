@@ -4,8 +4,25 @@
   const VERSION = "v355_r2";
   let refreshQueued = false;
 
+  const SPECIAL_VARIANTS = Object.freeze({
+    main: Object.freeze({
+      code: 'def main():\n    count = 2\n    print(count + 3)\n\nif __name__ == "__main__":\n    main()',
+      output: '5',
+      token: 'if __name__'
+    })
+  });
+
   function t(ko, en) {
     return document.documentElement.lang === "en" ? en : ko;
+  }
+
+  function takeUiOwnership() {
+    const legacy = window.__workedExampleQualityV355Observer;
+    if (legacy && typeof legacy.disconnect === "function") {
+      try { legacy.disconnect(); } catch (_) {}
+    }
+    window.__workedExampleQualityV355Observer = null;
+    document.documentElement.dataset.workedExampleUiOwnerV355 = VERSION;
   }
 
   function currentContext() {
@@ -38,6 +55,48 @@
       }
     } catch (_) {}
     return Array.isArray(ctx.card.concepts) ? String(ctx.card.concepts[0] || "") : "";
+  }
+
+  function installSpecialFallback() {
+    const engine = window.LearningEngineV340;
+    const api = window.WorkedExampleQualityV355;
+    if (!engine || !api || typeof engine.pickSafeExample !== "function" || typeof api.validateCurated !== "function") return false;
+    if (engine.__workedExampleQualityV355R2SpecialPatched) return true;
+
+    const basePicker = engine.pickSafeExample.bind(engine);
+    engine.pickSafeExample = function(card, cardsValue, index, conceptInfoValue, primaryOverride) {
+      const picked = basePicker(card, cardsValue, index, conceptInfoValue, primaryOverride);
+      if (picked && picked.code && picked.output) return picked;
+
+      let primary = primaryOverride || "";
+      if (!primary) {
+        try {
+          if (window.ContentQualitySemantics && typeof window.ContentQualitySemantics.pickPrimaryConcept === "function") {
+            primary = window.ContentQualitySemantics.pickPrimaryConcept(card || {}, card && card.concepts || [], conceptInfoValue || {});
+          }
+        } catch (_) {}
+      }
+      if (!primary) {
+        try { primary = engine.pickPrimaryConcept(card || {}, conceptInfoValue || {}); } catch (_) {}
+      }
+
+      const special = SPECIAL_VARIANTS[primary];
+      if (!special || !api.validateCurated(engine, card, cardsValue, index, primary, special)) {
+        window.__lastWorkedExampleV355 = null;
+        return null;
+      }
+      const selected = {
+        concept: primary,
+        code: special.code,
+        output: special.output,
+        source: "current",
+        quality: VERSION + "-special"
+      };
+      window.__lastWorkedExampleV355 = selected;
+      return selected;
+    };
+    engine.__workedExampleQualityV355R2SpecialPatched = true;
+    return true;
   }
 
   function resultVisible() {
@@ -79,7 +138,8 @@
     if (
       box.dataset.workedSignatureV355R2 === signature &&
       box.classList.contains("worked-v355-ready") &&
-      !box.classList.contains("hidden")
+      !box.classList.contains("hidden") &&
+      box.querySelector(".worked-v355-output")
     ) return true;
 
     box.innerHTML = "";
@@ -117,6 +177,8 @@
   }
 
   function reconcileWorkedExample() {
+    takeUiOwnership();
+    installSpecialFallback();
     const box = document.getElementById("workedExampleV340");
     if (!box) return false;
     if (!resultVisible()) {
@@ -145,7 +207,11 @@
     cardsValue.forEach(function (card, index) {
       const ctx = { cardsValue: cardsValue, index: index, card: card, conceptInfoValue: conceptInfoValue };
       const primary = primaryConcept(ctx);
-      const variants = [api.EXAMPLES && api.EXAMPLES[primary], api.ALTERNATES && api.ALTERNATES[primary]].filter(Boolean);
+      const variants = [
+        api.EXAMPLES && api.EXAMPLES[primary],
+        api.ALTERNATES && api.ALTERNATES[primary],
+        SPECIAL_VARIANTS[primary]
+      ].filter(Boolean);
       if (!variants.length) return;
       const anyDistinct = variants.some(function (variant) {
         return engine.isWorkedExampleDistinct(String(card && card.code || ""), String(variant.code || ""));
@@ -176,7 +242,15 @@
     });
   }
 
+  function scheduleBoundedRefresh() {
+    [0, 40, 120, 300].forEach(function(delay) {
+      window.setTimeout(scheduleRefresh, delay);
+    });
+  }
+
   function start() {
+    takeUiOwnership();
+    installSpecialFallback();
     refresh();
     if (!document.body || window.__workedExampleQualityV355R2Observer) return;
     const observer = new MutationObserver(scheduleRefresh);
@@ -189,7 +263,7 @@
     window.__workedExampleQualityV355R2Observer = observer;
     document.addEventListener("click", function (event) {
       if (event.target && event.target.closest && event.target.closest("#choices, #againBtn, #nextBtn, #prevBtn")) {
-        window.setTimeout(scheduleRefresh, 0);
+        scheduleBoundedRefresh();
       }
     });
   }
@@ -199,8 +273,10 @@
 
   window.WorkedExampleQualityV355R2 = {
     version: VERSION,
+    SPECIAL_VARIANTS: SPECIAL_VARIANTS,
     refresh: refresh,
     reconcileWorkedExample: reconcileWorkedExample,
-    auditDistinctDetails: auditDistinctDetails
+    auditDistinctDetails: auditDistinctDetails,
+    takeUiOwnership: takeUiOwnership
   };
 })();
