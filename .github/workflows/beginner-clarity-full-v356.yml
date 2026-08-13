@@ -32,6 +32,7 @@ jobs:
         run: |
           python -m py_compile tools/apply_beginner_clarity_v356_full.py
           python -m py_compile tools/apply_concept_clarity_v356_full.py
+          python -m py_compile tools/personalize_beginner_clarity_v356_full.py
           python -m py_compile tools/audit_beginner_clarity_v356_full.py
           python -m py_compile tools/audit_explanation_repetition_v356_full.py
           node --check tools/audit_concept_info_clarity_v356.js
@@ -39,17 +40,21 @@ jobs:
       - name: Apply V356 full 1785-card review
         run: |
           python tools/apply_beginner_clarity_v356_full.py
+          python tools/personalize_beginner_clarity_v356_full.py
           python tools/apply_concept_clarity_v356_full.py
 
       - name: Confirm full-corpus idempotence
         shell: bash
         run: |
           set -euo pipefail
-          git diff -- data/lessons src/pwa/app.js docs/audit > /tmp/v356-full-before.diff
+          cp docs/audit/v356_full_review.json /tmp/v356-full-review-first.json
+          git diff -- data/lessons src/pwa/app.js > /tmp/v356-full-before.diff
           python tools/apply_beginner_clarity_v356_full.py
+          python tools/personalize_beginner_clarity_v356_full.py
           python tools/apply_concept_clarity_v356_full.py
-          git diff -- data/lessons src/pwa/app.js docs/audit > /tmp/v356-full-after.diff
+          git diff -- data/lessons src/pwa/app.js > /tmp/v356-full-after.diff
           cmp /tmp/v356-full-before.diff /tmp/v356-full-after.diff
+          cp /tmp/v356-full-review-first.json docs/audit/v356_full_review.json
           echo "V356_FULL_IDEMPOTENCE=PASS"
 
       - name: V356 exact 1785-card clarity audit
