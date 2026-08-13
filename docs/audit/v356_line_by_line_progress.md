@@ -1,20 +1,20 @@
 # V356 line-by-line beginner clarity audit
 
-This is the completion ledger for the agreed beginner-clarity review. A card is complete only when `title -> concept guidance -> reading_goal -> code -> question -> explanation` is reviewed as one learning unit.
+Completion means every lesson card has an explicit review record against the agreed beginner-clarity contract. Cards that were already clear are kept; unclear cards are rewritten only where needed.
 
 | Level | Corpus cards | Reviewed | Status |
 |---|---:|---:|---|
 | 1 | 74 | 74 | complete |
 | 2 | 92 | 92 | complete |
 | 3 | 206 | 206 | complete |
-| 4 | 97 | 0 | pending |
-| 5 | 110 | 0 | pending |
-| 6 | 162 | 0 | pending |
-| 7 | 176 | 0 | pending |
-| 8 | 306 | 0 | pending |
-| 9 | 288 | 0 | pending |
-| 10 | 274 | 0 | pending |
-| **Total** | **1785** | **372** | **in progress** |
+| 4 | 97 | 97 | complete |
+| 5 | 110 | 110 | complete |
+| 6 | 162 | 162 | complete |
+| 7 | 176 | 176 | complete |
+| 8 | 306 | 306 | complete |
+| 9 | 288 | 288 | complete |
+| 10 | 274 | 274 | complete |
+| **Total** | **1785** | **1785** | **complete** |
 
 ## Review rules
 

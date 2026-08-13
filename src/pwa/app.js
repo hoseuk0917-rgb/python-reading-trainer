@@ -333,7 +333,7 @@ Object.assign(conceptInfo, {
   "import": {definition: "import는 다른 모듈에 있는 기능을 현재 코드에서 사용할 수 있게 불러오는 문장이다.", example: "import json"},
   "module": {definition: "모듈은 관련 기능을 모아 둔 Python 파일이나 라이브러리 단위다. import로 불러와 사용한다.", example: "import json"},
   "file": {definition: "파일은 데이터를 저장해 두는 단위다. 코드를 읽을 때는 어떤 파일을 읽는지, 쓰는지, 닫는지를 확인한다.", example: "with open(\"a.txt\") as f:\n    text = f.read()"},
-  "path": {definition: "경로(path)는 파일이나 폴더가 어디에 있는지 나타내는 주소다.", example: "path = \"data/input.txt\""},
+  "path": {definition: "경로(path)는 파일이나 폴더가 어디에 있는지 나타내는 위치 정보다. \"data/input.txt\"처럼 폴더 이름과 파일 이름을 이어서 나타내며, pathlib.Path를 사용하면 경로를 조합하거나 파일 존재 여부를 확인하는 코드를 더 명확하게 읽을 수 있다.", example: "from pathlib import Path\npath = Path(\"data\") / \"input.txt\"\nprint(path.name)"},
   "exception": {definition: "예외는 코드를 실행하다 정상적으로 계속할 수 없는 상황을 나타내는 오류 신호다. try/except로 일부 예외를 처리할 수 있다.", example: "try:\n    int(\"x\")\nexcept ValueError:\n    print(\"bad\")"},
   "json": {definition: "JSON은 데이터를 글자 형태로 저장하거나 주고받을 때 많이 쓰는 형식이다. { }는 객체, [ ]는 목록을 나타낸다.", example: "{\"name\":\"Mina\"}"},
   "csv": {definition: "CSV는 값을 쉼표로 나누어 표처럼 저장하는 텍스트 파일 형식이다. 한 줄이 보통 한 행을 뜻한다.", example: "name,score\nMina,90"},
