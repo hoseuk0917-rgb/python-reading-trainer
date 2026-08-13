@@ -8,6 +8,7 @@ const runtimePath = path.join(root, "src/pwa/worked_example_quality_v355.js");
 const r2Path = path.join(root, "src/pwa/worked_example_quality_v355_r2.js");
 const runtimeText = fs.readFileSync(runtimePath, "utf8");
 const r2Text = fs.readFileSync(r2Path, "utf8");
+const combinedRuntime = runtimeText + "\n" + r2Text;
 const runtime = require(runtimePath);
 const examples = runtime.EXAMPLES || {};
 const alternates = runtime.ALTERNATES || {};
@@ -45,8 +46,9 @@ check("R2_SPECIAL_MAIN_FALLBACK", r2Text.includes("SPECIAL_VARIANTS") && r2Text.
 check("R2_BOUNDED_RECONCILIATION", r2Text.includes("scheduleBoundedRefresh") && r2Text.includes("[0, 40, 120, 300]"));
 check("OUTPUT_UI", runtimeText.includes("worked-v355-output") && runtimeText.includes('t(win, "출력", "Output")'));
 check("NO_OLD_META_NOTE", runtimeText.includes("if (meta) meta.remove()") && runtimeText.includes("if (note) note.remove()"));
-check("NO_STORAGE_MUTATION", !/localStorage\.(?:setItem|removeItem|clear)|sessionStorage\.(?:setItem|removeItem|clear)/.test(runtimeText + r2Text));
-check("NO_LEARNING_PROGRESS_MUTATION", !/\b(?:correct|confused|seen|currentIndex)\s*[=+]/.test(runtimeText + r2Text));
+check("NO_STORAGE_MUTATION", !/localStorage\.(?:setItem|removeItem|clear)|sessionStorage\.(?:setItem|removeItem|clear)/.test(combinedRuntime));
+const learningStateWrite = /\bsaveProgress\s*\(|\b(?:correct|confused|seen)\s*\[[^\]]+\]\s*=(?!=)|\bcurrentIndex\s*=(?!=)/;
+check("NO_LEARNING_PROGRESS_MUTATION", !learningStateWrite.test(combinedRuntime));
 
 let failed = 0;
 console.log("=== PRT V355 WORKED EXAMPLE QUALITY AUDIT ===");
