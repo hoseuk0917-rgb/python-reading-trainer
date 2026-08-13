@@ -57,31 +57,62 @@
     main: row('def main():\n    print("start")\n\nif __name__ == "__main__":\n    main()', 'start', 'if __name__')
   });
 
+  const ALTERNATES = Object.freeze({
+    print: row('status = "done"\nprint(status)', 'done', 'print('),
+    len: row('word = "learn"\nvalues = [2, 4]\nprint(len(word))\nprint(len(values))', '5\n2', 'len('),
+    variable: row('language = "Python"\nprint(language)', 'Python', 'language ='),
+    assignment: row('count = 2\ncount = 11\nprint(count)', '11', 'count ='),
+    type: row('score = 42\nname = "Mina"\nprint(type(score))\nprint(type(name))', "<class 'int'>\n<class 'str'>", 'type('),
+    str: row('word = "python"\nprint(word + "?")', 'python?', '"python"'),
+    int: row('number = int("20")\nprint(number + 2)', '22', 'int('),
+    float: row('price = float("1.25")\nprint(price + 0.75)', '2.0', 'float('),
+    bool: row('ready = 2 == 5\nprint(ready)', 'False', 'ready ='),
+    list: row('animals = ["cat", "dog"]\nprint(animals[0])', 'cat', '['),
+    dict: row('product = {"title": "Book", "price": 12}\nprint(product["title"])', 'Book', '{'),
+    set: row('tags = {"a", "a", "b", "c"}\nprint(len(tags))', '3', '{'),
+    tuple: row('point = (7, 12)\nprint(point[0])', '7', '('),
+    get: row('config = {"mode": "dark"}\nprint(config.get("theme", "light"))', 'light', '.get('),
+    append: row('numbers = [3, 4]\nnumbers.append(8)\nprint(numbers)', '[3, 4, 8]', '.append('),
+    for: row('for letter in ["X", "Y"]:\n    print(letter)', 'X\nY', 'for '),
+    range: row('for number in range(2, 5):\n    print(number)', '2\n3\n4', 'range('),
+    while: row('number = 2\nwhile number <= 4:\n    print(number)\n    number += 1', '2\n3\n4', 'while '),
+    if: row('temperature = 18\nif temperature < 20:\n    print("cold")', 'cold', 'if '),
+    function: row('def greet(name):\n    print("Welcome", name)\n\ngreet("Mina")', 'Welcome Mina', 'def '),
+    def: row('def greet(name):\n    print("Welcome", name)\n\ngreet("Mina")', 'Welcome Mina', 'def '),
+    parameter: row('def add_one(number):\n    print(number + 1)\n\nadd_one(9)', '10', 'def '),
+    argument: row('def greet(name):\n    print("Hello", name)\n\ngreet("Mina")', 'Hello Mina', 'greet('),
+    return: row('def cube(number):\n    return number * number * number\n\nprint(cube(3))', '27', 'return '),
+    scope: row('def show_city():\n    city = "Busan"\n    print(city)\n\nshow_city()', 'Busan', 'def '),
+    method: row('word = "  python  "\nprint(word.strip())', 'python', '.strip('),
+    mutable: row('items = ["X"]\nitems.append("Y")\nprint(items)', "['X', 'Y']", '.append('),
+    iterable: row('for letter in "hi":\n    print(letter)', 'h\ni', 'for '),
+    comment: row('# 설명용 주석입니다.\nprint("world")', 'world', '#'),
+    output: row('print("Ready")\nprint(10 - 4)', 'Ready\n6', 'print('),
+    execution_order: row('value = 10\nvalue = value - 3\nprint(value)', '7', 'print('),
+    None: row('item = None\nprint(item)', 'None', 'None'),
+    class: row('class Cat:\n    pass\n\ncat = Cat()\nprint(type(cat).__name__)', 'Cat', 'class '),
+    object: row('class Cat:\n    pass\n\ncat = Cat()\nprint(type(cat).__name__)', 'Cat', 'Cat('),
+    import: row('import math\nprint(math.ceil(3.2))', '4', 'import '),
+    module: row('import math\nprint(math.sqrt(16))', '4.0', 'import math'),
+    pathlib: row('from pathlib import Path\npath = Path("notes/todo.txt")\nprint(path.suffix)', '.txt', 'Path('),
+    "json.loads": row('import json\ntext = "{\\"score\\": 11}"\ndata = json.loads(text)\nprint(data["score"])', '11', 'json.loads('),
+    "json.dumps": row('import json\ndata = {"age": 20}\nprint(json.dumps(data))', '{"age": 20}', 'json.dumps('),
+    exception: row('try:\n    int("oops")\nexcept ValueError:\n    print("invalid")', 'invalid', 'try:'),
+    try_except: row('try:\n    float("x")\nexcept ValueError:\n    print("bad value")', 'bad value', 'try:'),
+    main: row('def main():\n    print("ready")\n\nif __name__ == "__main__":\n    main()', 'ready', 'if __name__')
+  });
+
   const CURRENT_CARD_NAMED_SYNTAX = Object.freeze([
-    ["json.loads", /\bjson\.loads\s*\(/],
-    ["json.dumps", /\bjson\.dumps\s*\(/],
-    ["print", /\bprint\s*\(/],
-    ["len", /\blen\s*\(/],
-    ["range", /\brange\s*\(/],
-    ["append", /\.append\s*\(/],
-    ["get", /\.get\s*\(/],
-    ["open", /\bopen\s*\(/],
-    ["with", /\bwith\b/],
-    ["def", /\bdef\b/],
-    ["return", /\breturn\b/],
-    ["for", /\bfor\b/],
-    ["while", /\bwhile\b/],
-    ["if", /\b(?:if|elif|else)\b/],
-    ["class", /\bclass\b/],
-    ["import", /\b(?:import|from)\b/],
-    ["try_except", /\b(?:try|except)\b/],
-    ["bool", /\b(?:True|False)\b/],
-    ["None", /\bNone\b/]
+    ["json.loads", /\bjson\.loads\s*\(/], ["json.dumps", /\bjson\.dumps\s*\(/],
+    ["print", /\bprint\s*\(/], ["len", /\blen\s*\(/], ["range", /\brange\s*\(/],
+    ["append", /\.append\s*\(/], ["get", /\.get\s*\(/], ["open", /\bopen\s*\(/],
+    ["with", /\bwith\b/], ["def", /\bdef\b/], ["return", /\breturn\b/],
+    ["for", /\bfor\b/], ["while", /\bwhile\b/], ["if", /\b(?:if|elif|else)\b/],
+    ["class", /\bclass\b/], ["import", /\b(?:import|from)\b/],
+    ["try_except", /\b(?:try|except)\b/], ["bool", /\b(?:True|False)\b/], ["None", /\bNone\b/]
   ]);
 
-  function t(win, ko, en) {
-    return win.document.documentElement.lang === "en" ? en : ko;
-  }
+  function t(win, ko, en) { return win.document.documentElement.lang === "en" ? en : ko; }
 
   function primaryConcept(win, card, conceptInfoValue, engine, override) {
     if (override) return override;
@@ -97,9 +128,7 @@
   function allowedWithCurrentCardSyntax(engine, cardsValue, index, card) {
     const allowed = new Set(engine.allowedConceptsAt(cardsValue || [], index));
     const problemCode = String(card && card.code || "");
-    CURRENT_CARD_NAMED_SYNTAX.forEach(function(entry) {
-      if (entry[1].test(problemCode)) allowed.add(entry[0]);
-    });
+    CURRENT_CARD_NAMED_SYNTAX.forEach(function(entry) { if (entry[1].test(problemCode)) allowed.add(entry[0]); });
     return allowed;
   }
 
@@ -114,25 +143,27 @@
     return !!primary;
   }
 
+  function variantsFor(primary) {
+    return [EXAMPLES[primary], ALTERNATES[primary]].filter(Boolean);
+  }
+
+  function chooseCurated(engine, card, cardsValue, index, primary) {
+    const variants = variantsFor(primary);
+    for (let i = 0; i < variants.length; i += 1) {
+      if (validateCurated(engine, card, cardsValue, index, primary, variants[i])) return variants[i];
+    }
+    return null;
+  }
+
   function patchEngine(win) {
     const engine = win.LearningEngineV340;
     if (!engine || typeof engine.pickSafeExample !== "function") return false;
     if (engine.__workedExampleQualityV355Patched) return true;
-
     engine.pickSafeExample = function(card, cardsValue, index, conceptInfoValue, primaryOverride) {
       const primary = primaryConcept(win, card, conceptInfoValue, engine, primaryOverride);
-      const curated = EXAMPLES[primary];
-      if (!validateCurated(engine, card, cardsValue, index, primary, curated)) {
-        win.__lastWorkedExampleV355 = null;
-        return null;
-      }
-      const selected = {
-        concept: primary,
-        code: curated.code,
-        output: curated.output,
-        source: "current",
-        quality: VERSION
-      };
+      const curated = chooseCurated(engine, card, cardsValue, index, primary);
+      if (!curated) { win.__lastWorkedExampleV355 = null; return null; }
+      const selected = { concept: primary, code: curated.code, output: curated.output, source: "current", quality: VERSION };
       win.__lastWorkedExampleV355 = selected;
       return selected;
     };
@@ -140,26 +171,34 @@
     return true;
   }
 
+  function resultVisible(win) {
+    const result = win.document.getElementById("resultBox");
+    return !!result && !result.classList.contains("hidden") && !!String(result.textContent || "").trim();
+  }
+
+  function ensureBaseWorkedExample(win) {
+    const box = win.document.getElementById("workedExampleV340");
+    if (!box || !box.classList.contains("hidden") || !resultVisible(win)) return false;
+    if (typeof win.renderWorkedExample !== "function") return false;
+    try { win.renderWorkedExample(); } catch (_) { return false; }
+    return !box.classList.contains("hidden");
+  }
+
   function ensureOutputUi(win) {
     const doc = win.document;
     const box = doc.getElementById("workedExampleV340");
-    if (!box || box.classList.contains("hidden")) return false;
+    if (!box) return false;
+    if (box.classList.contains("hidden")) ensureBaseWorkedExample(win);
+    if (box.classList.contains("hidden")) return false;
     const selected = win.__lastWorkedExampleV355;
-    if (!selected || !selected.output) {
-      box.classList.add("hidden");
-      box.innerHTML = "";
-      return false;
-    }
+    if (!selected || !selected.output) { box.classList.add("hidden"); box.innerHTML = ""; return false; }
 
     box.classList.add("worked-v355-ready");
     box.dataset.workedConceptV355 = selected.concept || "";
-
     const head = box.querySelector(".worked-v340-head");
     const title = head && head.querySelector("strong");
     const meta = head && head.querySelector(".muted");
-    if (title && title.textContent !== t(win, "같은 문법 예제", "Same-syntax example")) {
-      title.textContent = t(win, "같은 문법 예제", "Same-syntax example");
-    }
+    if (title && title.textContent !== t(win, "같은 문법 예제", "Same-syntax example")) title.textContent = t(win, "같은 문법 예제", "Same-syntax example");
     if (meta) meta.remove();
     const note = box.querySelector(".worked-v340-note");
     if (note) note.remove();
@@ -168,13 +207,9 @@
     if (!outputWrap) {
       outputWrap = doc.createElement("div");
       outputWrap.className = "worked-v355-output-wrap";
-      const label = doc.createElement("div");
-      label.className = "worked-v355-output-label";
-      const pre = doc.createElement("pre");
-      pre.className = "worked-v355-output";
-      outputWrap.appendChild(label);
-      outputWrap.appendChild(pre);
-      box.appendChild(outputWrap);
+      const label = doc.createElement("div"); label.className = "worked-v355-output-label";
+      const pre = doc.createElement("pre"); pre.className = "worked-v355-output";
+      outputWrap.appendChild(label); outputWrap.appendChild(pre); box.appendChild(outputWrap);
     }
     const label = outputWrap.querySelector(".worked-v355-output-label");
     const pre = outputWrap.querySelector(".worked-v355-output");
@@ -186,20 +221,19 @@
 
   function auditCurrentCorpus(win) {
     const engine = win.LearningEngineV340;
-    let cardsValue = [];
-    let conceptInfoValue = {};
+    let cardsValue = []; let conceptInfoValue = {};
     try { if (typeof cards !== "undefined" && Array.isArray(cards)) cardsValue = cards; } catch (_) {}
     try { if (typeof conceptInfo !== "undefined" && conceptInfo) conceptInfoValue = conceptInfo; } catch (_) {}
     const stats = { total: cardsValue.length, curated: 0, shown: 0, distinctFailures: 0, tokenFailures: 0, outputFailures: 0 };
     cardsValue.forEach(function(card, index) {
       const primary = primaryConcept(win, card, conceptInfoValue, engine, "");
-      const curated = EXAMPLES[primary];
-      if (!curated) return;
+      const variants = variantsFor(primary);
+      if (!variants.length) return;
       stats.curated += 1;
-      if (!curated.output) stats.outputFailures += 1;
-      if (curated.token && curated.code.indexOf(curated.token) < 0) stats.tokenFailures += 1;
-      if (!engine.isWorkedExampleDistinct(String(card && card.code || ""), curated.code)) stats.distinctFailures += 1;
-      if (validateCurated(engine, card, cardsValue, index, primary, curated)) stats.shown += 1;
+      if (variants.some(function(v) { return !v.output; })) stats.outputFailures += 1;
+      if (variants.some(function(v) { return v.token && v.code.indexOf(v.token) < 0; })) stats.tokenFailures += 1;
+      if (!variants.some(function(v) { return engine.isWorkedExampleDistinct(String(card && card.code || ""), v.code); })) stats.distinctFailures += 1;
+      if (chooseCurated(engine, card, cardsValue, index, primary)) stats.shown += 1;
     });
     return stats;
   }
@@ -215,10 +249,7 @@
     function schedule() {
       if (queued) return;
       queued = true;
-      win.requestAnimationFrame(function() {
-        queued = false;
-        refresh();
-      });
+      win.requestAnimationFrame(function() { queued = false; refresh(); });
     }
     refresh();
     if (win.__workedExampleQualityV355Observer || !win.document.body) return true;
@@ -229,11 +260,8 @@
   }
 
   return {
-    VERSION: VERSION,
-    EXAMPLES: EXAMPLES,
+    VERSION: VERSION, EXAMPLES: EXAMPLES, ALTERNATES: ALTERNATES,
     CURRENT_CARD_NAMED_SYNTAX: CURRENT_CARD_NAMED_SYNTAX,
-    install: install,
-    validateCurated: validateCurated,
-    auditCurrentCorpus: auditCurrentCorpus
+    install: install, validateCurated: validateCurated, auditCurrentCorpus: auditCurrentCorpus
   };
 });
