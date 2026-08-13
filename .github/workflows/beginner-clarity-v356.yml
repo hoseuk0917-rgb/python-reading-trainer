@@ -32,31 +32,34 @@ jobs:
         run: |
           python -m py_compile tools/apply_beginner_clarity_v356.py
           python -m py_compile tools/apply_beginner_clarity_v356_batch2.py
+          python -m py_compile tools/apply_beginner_clarity_v356_batch3.py
           python -m py_compile tools/finalize_beginner_clarity_v356_runtime.py
           python -m py_compile tools/audit_beginner_clarity_v356.py
 
-      - name: Apply V356 reviewed batches
+      - name: Apply V356 all Level 1 reviewed batches
         run: |
           python tools/apply_beginner_clarity_v356.py
           python tools/apply_beginner_clarity_v356_batch2.py
+          python tools/apply_beginner_clarity_v356_batch3.py
           python tools/finalize_beginner_clarity_v356_runtime.py
 
       - name: Confirm V356 apply idempotence
         shell: bash
         run: |
           set -euo pipefail
-          git diff -- src/pwa/app.js data/lessons/python_foundation_beginner_v94_a1_part1.json data/lessons/python_foundation_beginner_v94_a1_part2.json > /tmp/v356-before.diff
+          git diff -- src/pwa/app.js data/lessons > /tmp/v356-before.diff
           python tools/apply_beginner_clarity_v356.py
           python tools/apply_beginner_clarity_v356_batch2.py
+          python tools/apply_beginner_clarity_v356_batch3.py
           python tools/finalize_beginner_clarity_v356_runtime.py
-          git diff -- src/pwa/app.js data/lessons/python_foundation_beginner_v94_a1_part1.json data/lessons/python_foundation_beginner_v94_a1_part2.json > /tmp/v356-after.diff
+          git diff -- src/pwa/app.js data/lessons > /tmp/v356-after.diff
           cmp /tmp/v356-before.diff /tmp/v356-after.diff
           echo "V356_IDEMPOTENCE=PASS"
 
       - name: JavaScript syntax after concept patch
         run: node --check src/pwa/app.js
 
-      - name: V356 full-card inventory and reviewed clarity audit
+      - name: V356 full-card inventory and all Level 1 clarity audit
         run: python tools/audit_beginner_clarity_v356.py
 
       - name: Existing lesson validation
@@ -106,7 +109,7 @@ jobs:
           node tools/run_consumer_ux_v349_browser_smoke.js
           node tools/run_worked_example_quality_v355_browser_smoke.js
 
-      - name: Commit V356 generated first two files if needed
+      - name: Commit V356 generated Level 1 clarity changes if needed
         if: success()
         run: |
           if git diff --quiet; then
@@ -117,7 +120,12 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/pwa/app.js \
             data/lessons/python_foundation_beginner_v94_a1_part1.json \
-            data/lessons/python_foundation_beginner_v94_a1_part2.json
-          git commit -m "Apply V356 beginner clarity batches 1-2"
+            data/lessons/python_foundation_beginner_v94_a1_part2.json \
+            data/lessons/python_beginner_mixed_review_v96_a1.json \
+            data/lessons/python_beginner_reading_notes_v96_a2.json \
+            data/lessons/python_foundation_expansion_v10.json \
+            data/lessons/python_core_expansion_v1.json \
+            data/lessons/cards_seed_v1.json
+          git commit -m "Apply V356 Level 1 line-by-line clarity pass"
           git push origin HEAD:agent/v356-line-by-line-beginner-clarity
           echo "V356_CHANGES_PUSHED=True"
