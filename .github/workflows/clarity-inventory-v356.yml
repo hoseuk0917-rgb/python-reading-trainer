@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   inventory:
@@ -19,5 +19,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Print exact level inventory
-        run: python tools/inventory_clarity_levels_v356.py
+      - name: Generate exact level inventory
+        run: |
+          mkdir -p docs/audit
+          python tools/inventory_clarity_levels_v356.py | tee docs/audit/v356_level_inventory.txt
+      - name: Commit temporary inventory snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/audit/v356_level_inventory.txt
+          if git diff --cached --quiet; then
+            echo "V356_INVENTORY_UNCHANGED=True"
+            exit 0
+          fi
+          git commit -m "Record temporary V356 level inventory"
+          git push origin HEAD:agent/v356-line-by-line-beginner-clarity
