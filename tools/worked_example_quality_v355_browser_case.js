@@ -45,10 +45,13 @@
     doc().querySelector("#learningHomeV343 .home-v343-primary").click();
     await need("quiz", () => doc().getElementById("learnView").classList.contains("v343-quiz-mode") && doc().querySelector("#choices .choice-btn"), 20000);
 
-    const typeIndex = win().eval('cards.findIndex(function(card) { return Array.isArray(card.concepts) && card.concepts.indexOf("type") >= 0; })');
+    const typeIndex = win().eval('cards.findIndex(function(card) { return Array.isArray(card.concepts) && card.concepts.indexOf("type") >= 0 && String(card.code || "").indexOf("type(") >= 0; })');
     add("TYPE_CARD_FOUND", Number(typeIndex) >= 0, "index=" + typeIndex);
     win().eval('currentIndex = ' + Number(typeIndex) + '; renderCard();');
-    await need("type card render", () => /type\(\)/.test(doc().getElementById("cardTitle").textContent) && doc().querySelector("#choices .choice-btn:not([disabled])"), 10000);
+    await need("type card render", () => {
+      const code = doc().getElementById("codeBlock").textContent;
+      return code.includes("type(") && doc().querySelector("#choices .choice-btn:not([disabled])");
+    }, 10000);
     const problemCode = doc().getElementById("codeBlock").textContent;
     add("TYPE_PROBLEM_IS_ORIGINAL", problemCode.includes("type(") && problemCode.includes("value"), problemCode.replace(/\s+/g, " ").slice(0, 160));
 
