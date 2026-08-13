@@ -1,0 +1,133 @@
+name: beginner-clarity-full-v356
+
+on:
+  push:
+    branches:
+      - agent/v356-full-corpus-beginner-clarity
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: beginner-clarity-full-v356
+  cancel-in-progress: true
+
+jobs:
+  full-corpus:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout continuation branch
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: agent/v356-full-corpus-beginner-clarity
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Syntax check full-corpus tools
+        run: |
+          python -m py_compile tools/apply_beginner_clarity_v356_full.py
+          python -m py_compile tools/audit_beginner_clarity_v356_full.py
+          node --check tools/audit_concept_info_clarity_v356.js
+
+      - name: Apply V356 full 1785-card review
+        run: python tools/apply_beginner_clarity_v356_full.py
+
+      - name: Confirm full-corpus idempotence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff -- data/lessons docs/audit > /tmp/v356-full-before.diff
+          python tools/apply_beginner_clarity_v356_full.py
+          git diff -- data/lessons docs/audit > /tmp/v356-full-after.diff
+          cmp /tmp/v356-full-before.diff /tmp/v356-full-after.diff
+          echo "V356_FULL_IDEMPOTENCE=PASS"
+
+      - name: V356 exact 1785-card clarity audit
+        run: python tools/audit_beginner_clarity_v356_full.py
+
+      - name: V356 shared concept guidance 65 audit
+        run: node tools/audit_concept_info_clarity_v356.js
+
+      - name: Existing lesson validation
+        run: python tools/validate_lessons.py
+
+      - name: Existing V339 content quality gates
+        run: |
+          python tools/content_quality_final_pass_v339.py --check
+          python tools/content_quality_final_pass_v339_r2.py --check
+          python tools/content_quality_final_pass_v339_r4.py --check
+          node tools/audit_content_semantic_alignment_v339_r4.js
+
+      - name: Existing learning and UX regressions
+        run: |
+          node tools/audit_learning_loop_v340.js
+          node tools/audit_learning_experience_v341.js
+          node tools/audit_learning_experience_v341_r2.js
+          node tools/audit_learning_hardening_v342_r2.js
+          node tools/audit_explanation_quality_v344.js
+          node tools/audit_study_experience_v345.js
+          node tools/audit_study_quality_v346.js
+          node tools/audit_learning_runtime_v348.js
+          node tools/audit_consumer_ux_v349.js
+          node tools/audit_learning_flow_v350.js
+          node tools/audit_contextual_practice_v351.js
+          node tools/audit_worked_example_dedup_v352.js
+          node tools/audit_interaction_clarity_v353.js
+          node tools/audit_worked_example_quality_v355.js
+
+      - name: Diff integrity
+        run: git diff --check
+
+      - name: Start browser server
+        shell: bash
+        run: |
+          set -euo pipefail
+          nohup python3 -m http.server 3377 --bind 127.0.0.1 > /tmp/prt-v356-full-http.log 2>&1 &
+          echo $! > /tmp/prt-v356-full-http.pid
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3377/src/pwa/index.html > /dev/null; then
+              echo "V356_FULL_BROWSER_SERVER=READY"
+              exit 0
+            fi
+            sleep 0.1
+          done
+          exit 1
+
+      - name: Browser V355 worked examples
+        run: node tools/run_worked_example_quality_v355_browser_smoke.js
+
+      - name: Browser V344 explanations
+        run: node tools/run_explanation_quality_v344_browser_smoke.js
+
+      - name: Browser V345 study experience
+        run: node tools/run_study_experience_v345_browser_smoke.js
+
+      - name: Browser V349 consumer UX
+        run: node tools/run_consumer_ux_v349_browser_smoke.js
+
+      - name: Stop browser server
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/prt-v356-full-http.pid ]; then
+            kill "$(cat /tmp/prt-v356-full-http.pid)" 2>/dev/null || true
+          fi
+
+      - name: Commit generated full-corpus clarity changes
+        if: success()
+        run: |
+          if git diff --quiet; then
+            echo "V356_FULL_ALREADY_CLEAN=True"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/lessons docs/audit/v356_full_exact_manifest.json docs/audit/v356_full_review.json docs/audit/v356_line_by_line_progress.md
+          git commit -m "Apply V356 full 1785-card beginner clarity review"
+          git push origin HEAD:agent/v356-full-corpus-beginner-clarity
+          echo "V356_FULL_CHANGES_PUSHED=True"
