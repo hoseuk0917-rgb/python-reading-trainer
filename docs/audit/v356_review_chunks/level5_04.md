@@ -36,7 +36,7 @@ for idx, label in enumerate(labels):
 ```
 - question: 첫 번째 반복에서 idx와 label은?
 - answer: 0과 LiDAR
-- explanation: enumerate는 반복 중인 값과 함께 번호도 같이 준다. 기본 번호는 0부터 시작하므로 인덱스와 값을 동시에 다룰 때 편하다. for idx, label처럼 두 변수를 받으면 왼쪽에는 번호, 오른쪽에는 실제 값이 들어간다고 순서대로 읽으면 된다. 따라서 출력은 ‘0과 LiDAR’이다.
+- explanation: enumerate(labels)는 각 값에 기본 번호 0, 1, ...을 붙여 순서대로 내놓는다. 첫 반복에서 idx에는 0, label에는 첫 값 "LiDAR"가 들어간다. 따라서 첫 print(idx, label)는 번호 0과 문자열 LiDAR를 함께 출력한다.
 - project_context: 카드 번호, row 번호, shard 내부 순번을 만들 때 유용하다.
 
 ## PY11_L05_zip_002
@@ -179,7 +179,7 @@ def remember(key, value, cache={}):
 ```
 - question: 이 코드에서 cache={}가 위험할 수 있는 이유는?
 - answer: cache가 호출 사이에 공유될 수 있기 때문에
-- explanation: dict도 내용이 바뀌는 객체다. 기본값으로 둔 dict가 재사용되면 이전 호출에서 저장한 key/value가 다음 호출에도 남을 수 있다. 따라서 반환/호출 결과는 ‘cache가 호출 사이에 공유될 수 있기 때문에’이다.
+- explanation: def add_flag(flags={})의 빈 dict는 함수가 정의될 때 한 번 만들어지고 이후 호출들이 같은 객체를 재사용한다. 첫 호출이 flags["seen"] = True로 그 dict를 바꾸면 다음 호출에도 변경된 내용이 남는다. 호출마다 새 dict가 필요하면 기본값을 None으로 두고 함수 안에서 새 dict를 만드는 패턴이 안전하다.
 - project_context: 캐시나 설정 dict를 다루는 코드에서 의도치 않은 값 공유를 피하는 데 필요하다.
 
 ## PY115_L05_IS_NONE_001
@@ -281,7 +281,7 @@ print(Dog().speak())
 ```
 - question: Dog().speak()가 동작할 수 있는 이유는?
 - answer: Dog가 Animal의 메서드를 물려받기 때문에
-- explanation: Dog는 Animal을 상속하므로 Animal에 있는 speak 메서드를 사용할 수 있다. 이것이 상속의 기본적인 재사용 흐름이다. 따라서 출력은 ‘Dog가 Animal의 메서드를 물려받기 때문에’이다.
+- explanation: class Dog(Animal):에서 괄호 안의 Animal이 부모 class다. Dog에 speak method를 따로 정의하지 않았으므로 d.speak()를 호출하면 Python이 Dog에서 찾은 뒤 부모 Animal까지 올라가 speak를 찾는다. 그래서 Animal.speak의 반환값 "sound"가 print로 출력된다.
 - project_context: 공통 동작을 부모 class에 두고 여러 자식 class에서 재사용하는 구조를 읽는다.
 
 ## PY116_L05_OVERRIDE_METHOD_001
@@ -303,7 +303,7 @@ class Dog(Animal):
 ```
 - question: Dog의 speak 메서드에 대한 설명으로 알맞은 것은?
 - answer: 부모의 speak 이름을 다시 정의한다
-- explanation: 자식 class에서 부모와 같은 이름의 메서드를 다시 만들면 자식 쪽 동작이 우선된다. 이런 흐름을 override라고 읽을 수 있다. 따라서 반환/호출 결과는 ‘부모의 speak 이름을 다시 정의한다’이다.
+- explanation: Dog는 Animal을 상속하지만 같은 이름의 speak method를 자기 class에 다시 정의한다. d.speak()를 호출하면 Python이 먼저 Dog에서 method를 찾기 때문에 부모의 speak 대신 Dog.speak가 실행된다. 그래서 "woof"가 반환되어 print에 출력된다.
 - project_context: 같은 인터페이스를 유지하면서 객체마다 다른 행동을 만들 때 필요한 감각이다.
 
 ## PY116_L05_SUPER_INIT_001
@@ -358,7 +358,7 @@ print(df.columns)
 ```
 - question: df.columns를 출력하는 이유로 알맞은 것은?
 - answer: 실제 컬럼 이름을 확인하기 위해
-- explanation: df.columns는 DataFrame의 열 이름 목록을 보여 준다. 컬럼명 오타로 KeyError가 날 때 먼저 확인해야 하는 정보다. 따라서 출력은 ‘실제 컬럼 이름을 확인하기 위해’이다.
+- explanation: df.columns에는 DataFrame이 실제로 가진 열 이름들이 들어 있다. print(df.columns)로 CSV를 읽은 직후 열 이름을 확인하면 이후 df["score"] 같은 접근에서 사용할 key가 정확히 존재하는지 점검할 수 있다. 즉 열 이름 오타나 예상과 다른 스키마를 일찍 찾기 위한 확인이다.
 - project_context: pandas 컬럼 선택 전에 실제 열 이름을 확인하는 카드다.
 
 ## PY122_L05_SELECT_COLUMN_001

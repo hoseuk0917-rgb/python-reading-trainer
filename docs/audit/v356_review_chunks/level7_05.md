@@ -130,7 +130,7 @@ queue = [card for card in cards if is_unseen(card, progress)]
 ```
 - question: is_unseen 함수의 역할은?
 - answer: 카드가 아직 안 본 카드인지 판정한다
-- explanation: helper function은 큰 작업 안의 작은 판단이나 반복 로직을 따로 뺀 함수다. 조건 판단을 함수로 분리하면 queue 생성 코드가 읽기 쉬워진다. 작은 helper는 이름만으로 의도를 설명하므로 조건식이 복잡할수록 효과가 커진다. 따라서 반환/호출 결과는 ‘카드가 아직 안 본 카드인지 판정한다’이다.
+- explanation: helper function은 큰 작업에서 반복되거나 독립적으로 설명할 수 있는 작은 단계를 분리한 함수다. 여기서는 normalize_title이 title의 양끝 공백을 제거하고 소문자로 바꾸는 한 가지 일을 맡는다. 이런 작은 함수로 빼면 같은 정규화를 여러 곳에서 재사용하고 그 동작만 따로 테스트하기 쉽다.
 - project_context: 오늘 큐, 복습 우선, 추천 진도 같은 기능을 작게 쪼개는 방식이다.
 
 ## PY33_L07_git_add_001

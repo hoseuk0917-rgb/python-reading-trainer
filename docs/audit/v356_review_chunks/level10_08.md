@@ -159,7 +159,7 @@ def save_settings(settings):
 ```
 - question: load_settings와 save_settings의 관계로 맞는 것은?
 - answer: 같은 설정 데이터를 읽고 저장하는 쌍이다
-- explanation: load/save pair는 저장한 상태를 다시 불러오기 위해 함께 설계하는 함수 쌍이다. 상태를 유지하는 기능은 보통 저장과 복원이 같이 필요하다. 저장 형식이 바뀌면 load 함수도 함께 바뀌어야 하므로 두 함수를 같이 검증해야 한다. 따라서 반환/호출 결과는 ‘같은 설정 데이터를 읽고 저장하는 쌍이다’이다.
+- explanation: load_settings는 settings.json을 읽어 설정 데이터를 반환하고 save_settings는 받은 settings를 같은 파일에 쓴다. 두 함수는 같은 저장 형식을 기준으로 읽기와 쓰기를 각각 맡는 쌍이다. 저장 schema를 바꾸면 load가 새 형식을 다시 읽을 수 있는지도 함께 검증해야 한다.
 - project_context: progress, memo, study tools 상태 저장 구조를 읽는 데 필요하다.
 
 ## PY30_L10_orchestrator_function_001

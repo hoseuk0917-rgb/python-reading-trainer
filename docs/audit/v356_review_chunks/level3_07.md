@@ -286,7 +286,7 @@ print(list(reversed(nums)))
 ```
 - question: 출력 결과는?
 - answer: [3, 2, 1]
-- explanation: reversed(nums)는 원소를 뒤에서부터 꺼내는 iterator를 반환하며 바로 리스트를 만들지는 않는다. list(...)가 그 순서를 소비해 [3, 2, 1]을 만든다. 원래 nums의 순서는 바뀌지 않는다. ‘reversed로 리스트 거꾸로’에서는 reversed이 적용되는 줄과 그 전후의 변수 값을 위에서 아래로 연결해 보면 질문에서 요구한 최종 결과가 어떻게 만들어지는지 확인할 수 있다.
+- explanation: reversed(nums)는 nums를 직접 바꾸지 않고 원소를 뒤에서부터 3, 2, 1 순서로 내놓는 iterator를 만든다. 바깥 list(...)가 그 값을 차례로 받아 [3, 2, 1] 리스트를 만들고, print가 그 리스트를 출력한다. 원래 nums는 [1, 2, 3] 그대로다.
 - project_context: 최근 항목부터 보기처럼 순서를 뒤집어 읽는 코드는 자주 사용된다.
 
 ## PYF95_A3_LOOP_018_REVERSED_ORIGINAL
@@ -304,7 +304,7 @@ print(nums)
 ```
 - question: 출력 결과는?
 - answer: [1, 2, 3]
-- explanation: back은 역순이지만 nums는 그대로 [1, 2, 3]이다. ‘reversed 후 원본 유지’에서는 reversed이 적용되는 줄과 그 전후의 변수 값을 위에서 아래로 연결해 보면 질문에서 요구한 최종 결과가 어떻게 만들어지는지 확인할 수 있다.
+- explanation: reversed(nums)가 nums의 원소를 뒤에서부터 읽는 순서를 만들고 list(...)가 그 결과를 [3, 2, 1]로 만들어 back에 저장한다. 이 과정은 nums 자체를 수정하지 않는다. 마지막 print(nums)는 원본 리스트 [1, 2, 3]을 그대로 출력한다.
 - project_context: 원본 순서를 유지하면서 역순 결과만 따로 쓰는 코드를 구분할 수 있어야 한다.
 
 ## PYF95_A3_LOOP_019_REVERSED_STRING_JOIN
@@ -321,7 +321,7 @@ print("".join(reversed(text)))
 ```
 - question: 출력 결과는?
 - answer: cba
-- explanation: abc를 거꾸로 읽으면 cba가 된다. ‘문자열 reversed와 join’에서는 reversed이 적용되는 줄과 그 전후의 변수 값을 위에서 아래로 연결해 보면 질문에서 요구한 최종 결과가 어떻게 만들어지는지 확인할 수 있다.
+- explanation: 먼저 reversed(text)가 문자열 abc의 글자를 c, b, a 순서로 내놓는다. 이어서 "".join(...)이 그 글자 사이에 구분자를 넣지 않고 하나의 새 문자열 cba로 합친다. 마지막 print가 cba를 출력하며 원래 text는 바뀌지 않는다.
 - project_context: 텍스트 처리에서 글자 순서를 뒤집거나 검사하는 코드와 연결된다.
 
 ## PYF95_A3_LOOP_020_ENUMERATE_BASIC

@@ -185,7 +185,7 @@ print(user.get("name", "unknown"))
 ```
 - question: 출력 결과는?
 - answer: Mina
-- explanation: name key가 있으므로 기본값 unknown 대신 Mina가 나온다. set을 읽을 때는 중복 제거와 포함 여부를 중심으로 판단하고, 순서가 필요한 결과라면 sorted 같은 별도 연산이 있는지 확인해야 출력 순서를 임의로 가정하지 않게 된다.
+- explanation: user에는 name key가 있고 그 value는 Mina다. user.get("name", "unknown")은 먼저 name key를 찾고, key가 있으므로 기본값 unknown은 사용하지 않고 실제 value Mina를 반환한다. 마지막 print가 Mina를 출력한다.
 - project_context: 안전한 설정 읽기나 누락 가능성이 있는 필드 접근에서 get이 자주 사용된다.
 
 ## PYF95_A2_DTS_006_DICT_GET_MISSING
@@ -202,7 +202,7 @@ print(user.get("grade", "unknown"))
 ```
 - question: 출력 결과는?
 - answer: unknown
-- explanation: grade key가 없으므로 get은 기본값 unknown을 돌려준다. set을 읽을 때는 중복 제거와 포함 여부를 중심으로 판단하고, 순서가 필요한 결과라면 sorted 같은 별도 연산이 있는지 확인해야 출력 순서를 임의로 가정하지 않게 된다.
+- explanation: user에는 name key만 있고 grade key는 없다. user.get("grade", "unknown")은 grade를 찾지 못하면 두 번째 argument로 준 기본값 unknown을 반환한다. 대괄호 접근과 달리 이 경우 KeyError가 나지 않고, 마지막 print가 unknown을 출력한다.
 - project_context: 불완전한 JSON이나 사용자 입력 dict를 읽을 때 기본값 처리는 매우 중요하다.
 
 ## PYF95_A2_DTS_007_DICT_KEYS_LIST
@@ -236,7 +236,7 @@ print(list(data.values()))
 ```
 - question: 출력 결과로 맞는 것은?
 - answer: [1, 2]
-- explanation: values는 1과 2 같은 value만 보여준다. set을 읽을 때는 중복 제거와 포함 여부를 중심으로 판단하고, 순서가 필요한 결과라면 sorted 같은 별도 연산이 있는지 확인해야 출력 순서를 임의로 가정하지 않게 된다.
+- explanation: data.values()는 key a와 b가 아니라 그에 연결된 value 1과 2를 dict의 삽입 순서대로 보여 주는 view를 만든다. list(...)가 그 view를 [1, 2] 리스트로 바꾸고, 마지막 print가 [1, 2]를 출력한다.
 - project_context: 점수나 개수만 모아 계산하는 코드에서 values는 유용하게 쓰인다.
 
 ## PYF95_A2_DTS_009_DICT_ITEMS_LIST
@@ -306,7 +306,7 @@ print("name" in user)
 ```
 - question: 출력 결과는?
 - answer: True
-- explanation: name은 dict의 key이므로 True다. set을 읽을 때는 중복 제거와 포함 여부를 중심으로 판단하고, 순서가 필요한 결과라면 sorted 같은 별도 연산이 있는지 확인해야 출력 순서를 임의로 가정하지 않게 된다.
+- explanation: dict에 in을 바로 사용하면 기본적으로 value가 아니라 key가 있는지 검사한다. user에는 name key가 있으므로 "name" in user가 True가 되고, 마지막 print가 Boolean 값 True를 출력한다.
 - project_context: 필수 필드가 있는지 검사하는 코드는 dict membership과 연결된다.
 
 ## PYF95_A2_DTS_013_DICT_IN_VALUE_FALSE
@@ -323,7 +323,7 @@ print("Mina" in user)
 ```
 - question: 출력 결과는?
 - answer: False
-- explanation: Mina는 value이고 key가 아니므로 False다. set을 읽을 때는 중복 제거와 포함 여부를 중심으로 판단하고, 순서가 필요한 결과라면 sorted 같은 별도 연산이 있는지 확인해야 출력 순서를 임의로 가정하지 않게 된다.
+- explanation: user의 key는 name이고 Mina는 그 key에 연결된 value다. dict에 in을 바로 사용하면 key 존재 여부를 검사하므로 "Mina" in user는 False가 된다. value 포함 여부를 보려면 user.values()를 대상으로 검사해야 하며, 이 코드의 print는 False를 출력한다.
 - project_context: 검색 조건이 key인지 value인지 혼동하면 필터링 결과를 잘못 판단할 수 있다.
 
 ## PYF95_A2_DTS_014_NESTED_DICT_READ

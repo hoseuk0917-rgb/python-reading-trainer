@@ -302,7 +302,7 @@ logging.error("curation failed")
 ```
 - question: warning 로그에 가장 가까운 의미는?
 - answer: 즉시 중단은 아니지만 주의가 필요한 상태
-- explanation: INFO는 일반 흐름, WARNING은 주의 상태, ERROR는 실패 상황에 가깝다. logging은 실행 중 일어난 일을 기록하는 방법이다. debug, info, warning, error처럼 수준을 나누어 기록하면 문제 원인을 찾기 쉬워진다. 따라서 반환/호출 결과는 ‘즉시 중단은 아니지만 주의가 필요한 상태’이다.
+- explanation: logging.info("loaded cards=%d", len(cards))는 len(cards)로 현재 카드 수를 계산한 뒤 %d 자리에 그 숫자를 넣어 INFO 수준 로그를 남긴다. print와 달리 logging은 level, formatter, handler 설정에 따라 어떤 메시지를 어디에 기록할지 제어할 수 있어 운영 상태 기록에 적합하다.
 - project_context: 수집/큐레이션/학습 배치의 상태를 읽을 때 로그 레벨 구분이 중요하다.
 
 ## PY25_L07_try_except_log_001

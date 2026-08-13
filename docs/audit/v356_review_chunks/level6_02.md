@@ -182,7 +182,7 @@ print(reader.fieldnames)
 ```
 - question: reader.fieldnames를 출력하는 이유로 알맞은 것은?
 - answer: 실제 인식된 컬럼명을 확인하기 위해
-- explanation: fieldnames에는 DictReader가 읽은 헤더 이름들이 들어 있다. 컬럼명 오타나 공백 문제를 찾을 때 도움이 된다. 따라서 출력은 ‘실제 인식된 컬럼명을 확인하기 위해’이다.
+- explanation: csv.DictReader를 만들면 CSV의 첫 행이 기본적으로 열 이름이 되고 reader.fieldnames에 저장된다. 따라서 print(reader.fieldnames)로 실제로 읽힌 header 목록을 확인하면 expected columns와 이름·순서가 맞는지 빠르게 점검할 수 있다. 헤더 오타나 잘못된 구분자를 찾는 디버깅에 특히 유용하다.
 - project_context: CSV 컬럼 오류를 디버깅할 때 실제 헤더를 먼저 확인하는 습관을 만든다.
 
 ## PY57_L06_copyright_001

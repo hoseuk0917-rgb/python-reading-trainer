@@ -38,7 +38,7 @@ def parse_card_json(text):
 ```
 - question: parse_card_json의 역할은?
 - answer: JSON 문자열을 Python 데이터로 바꾼다
-- explanation: parser는 raw text를 list/dict 같은 구조화된 데이터로 바꾸는 함수다. parser function은 문자열이나 파일 내용을 프로그램이 쓰기 쉬운 구조로 바꾸는 함수다. 입력 형식, 실패 처리, 반환되는 dict나 list의 모양을 함께 확인해야 한다. 따라서 반환/호출 결과는 ‘JSON 문자열을 Python 데이터로 바꾼다’이다.
+- explanation: parser function은 raw 문자열이나 파일 내용을 프로그램이 다루기 쉬운 구조화된 값으로 바꾼다. 이 예시에서는 JSON 문자열을 해석해 Python의 dict/list 같은 데이터로 변환한다. parser를 읽을 때는 어떤 입력 형식을 받는지, 잘못된 입력에서 어떻게 실패하는지, 최종 자료형이 무엇인지 함께 확인한다.
 - project_context: lesson JSON, manifest, API 응답을 읽을 때 parser 함수가 필요하다.
 
 ## PY30_L09_renderer_function_001

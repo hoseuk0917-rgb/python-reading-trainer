@@ -385,5 +385,5 @@ except ValueError:
 
 count = int(args.count)
 - answer: 문자열을 int로 바꿀 수 없을 때
-- explanation: int('abc')처럼 숫자가 아닌 문자열을 정수로 바꾸려 하면 ValueError가 난다. CLI에서는 숫자 옵션을 받을 때 이런 실패를 고려해야 한다. 따라서 출력은 ‘문자열을 int로 바꿀 수 없을 때’이다.
+- explanation: int("abc")는 숫자로 해석할 수 없는 문자열을 정수로 바꾸려 하기 때문에 ValueError를 발생시킨다. 즉 int 변환 함수 자체는 존재하지만 입력값의 내용이 기대 형식에 맞지 않는 상황이다. 숫자 입력을 받는 코드라면 변환 전 검증하거나 ValueError를 잡아 사용자에게 다시 입력하도록 안내할 수 있다.
 - project_context:

@@ -101,7 +101,7 @@ def embed_texts(texts, model):
 ```
 - question: 이 함수의 목적은?
 - answer: 텍스트들을 벡터로 바꾼다
-- explanation: embedding pipeline은 텍스트를 벡터로 바꾸는 흐름이다. 각 text에 model.encode를 적용해 검색이나 유사도 계산에 쓸 vectors를 만든다. 따라서 반환/호출 결과는 ‘텍스트들을 벡터로 바꾼다’이다.
+- explanation: vectors는 빈 리스트로 시작한다. for가 texts의 각 text를 하나씩 꺼내 model.encode(text)로 벡터를 만들고 vectors에 append한다. 모든 텍스트를 처리한 뒤 return vectors가 벡터 목록을 호출자에게 돌려준다. 즉 이 함수의 목적은 여러 텍스트를 같은 순서의 임베딩 벡터 목록으로 바꾸는 것이다.
 - project_context: RAG 검색과 벡터DB 구축의 핵심 흐름이다.
 
 ## PY3_L10_harvest_curate_flow_001
@@ -287,7 +287,7 @@ class CardRepository:
 ```
 - question: CardRepository의 주된 책임은?
 - answer: 카드 데이터를 저장소에서 읽는 것
-- explanation: Repository는 파일/DB/API 같은 저장소 접근을 감싸는 객체로 자주 쓰인다. Repository 객체는 저장소 접근을 담당하는 객체다. 서비스 코드가 직접 SQL이나 storage를 만지지 않고 repository 메서드를 통해 읽고 쓰는지 확인해야 한다. 따라서 반환/호출 결과는 ‘카드 데이터를 저장소에서 읽는 것’이다.
+- explanation: CardRepository는 카드가 어디에 저장되어 있는지와 읽는 방법을 한 객체에 모은다. 생성할 때 path를 self.path에 저장하고 load_cards()가 그 경로를 read_json에 넘겨 카드 데이터를 읽는다. 따라서 서비스 코드가 파일 접근 세부사항을 직접 다루지 않게 하는 저장소 접근 객체라고 이해하면 된다.
 - project_context: FastAPI나 DB가 붙으면 repository 분리가 중요해진다.
 
 ## PY31_L10_service_object_001
@@ -306,7 +306,7 @@ class StudyService:
 ```
 - question: StudyService가 담당하는 일은?
 - answer: 오늘 학습 큐를 만드는 규칙
-- explanation: Service는 저장소 접근보다 비즈니스 규칙, 추천, 판단 로직을 담는 데 적합하다. Service 객체는 여러 세부 함수를 묶어 하나의 업무 흐름을 처리하는 역할을 한다. 입력을 받고 어떤 repository나 helper를 호출하는지 순서대로 보면 된다. 따라서 반환/호출 결과는 ‘오늘 학습 큐를 만드는 규칙’이다.
+- explanation: StudyService.make_today_queue는 cards와 progress를 받아 학습 규칙을 적용한다. 먼저 progress.seen에 없는 카드만 unseen으로 추리고, 그중 앞에서 최대 10개를 반환한다. 저장소 접근 자체보다 '오늘 어떤 카드를 보여 줄지' 같은 업무 규칙을 Service에 분리한 예시다.
 - project_context: 추천 10장, 복습 우선, 레벨 추천 같은 기능을 서비스로 분리할 수 있다.
 
 ## PY31_L10_stateful_object_001
@@ -327,7 +327,7 @@ class Counter:
 ```
 - question: add()를 한 번 호출하면 self.count는 어떻게 되는가?
 - answer: 1 증가한다
-- explanation: stateful object는 내부 상태를 가지고 그 상태가 메서드 호출에 따라 바뀌는 객체다. self.count += 1은 객체 내부 상태를 변경한다. 상태가 있는 객체는 호출 순서에 따라 결과가 달라질 수 있어 테스트에서 초기 상태를 확인해야 한다. 따라서 반환/호출 결과는 ‘1 증가한다’이다.
+- explanation: Counter()를 만들면 __init__이 self.count를 0으로 초기화한다. add()를 한 번 호출하면 self.count += 1이 현재 값 0에 1을 더해 같은 객체의 count를 1로 바꾼다. 이처럼 method 호출 뒤에도 값이 객체 안에 남아 다음 호출에 이어지는 객체를 stateful object라고 볼 수 있다.
 - project_context: 진행률, 큐 위치, 현재 카드 index처럼 상태가 있는 기능을 이해하는 데 필요하다.
 
 ## PY31_L10_to_dict_001
@@ -366,7 +366,7 @@ def normalize_title(title):
 ```
 - question: 이 예시에서 class가 꼭 필요하지 않을 수 있는 이유는?
 - answer: 상태 없이 입력 문자열을 변환만 하기 때문
-- explanation: too early class는 아직 class로 묶을 필요가 없는 코드를 너무 일찍 객체화한 상태다. 상태나 관련 메서드가 적으면 단순 함수가 더 읽기 쉽다. 클래스는 데이터와 동작이 함께 자랄 때 도입하면 코드 구조를 더 자연스럽게 만들 수 있다. 따라서 반환/호출 결과는 ‘상태 없이 입력 문자열을 변환만 하기 때문’이다.
+- explanation: normalize_title은 입력 title을 받아 strip과 lower를 적용한 새 문자열만 반환하고, 호출 사이에 유지해야 할 상태가 없다. 이런 단순 변환은 함수 하나만으로 목적이 분명하므로 class를 추가하면 구조만 더 복잡해질 수 있다. 데이터와 여러 관련 동작을 함께 관리할 필요가 생길 때 class 도입을 검토하면 된다.
 - project_context: 앱 구조를 개선할 때 class와 함수 중 무엇이 더 단순한지 판단해야 한다.
 
 ## PY13_L10_accelerator_choice_001

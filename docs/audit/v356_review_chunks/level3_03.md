@@ -99,7 +99,7 @@ print(items)
 - title: is와 == 차이 맛보기
 - question_type: meaning_choice
 - concepts: ["if","print","is","equals","None"]
-- reading_goal: is와 == 차이 맛보기 코드에서 if 관련 값이 어떤 순서로 바뀌고 최종 결과로 이어지는지 확인한다.
+- reading_goal: value가 None을 가리킬 때 value is None 조건이 True가 되어 if 블록의 print가 실행되는 흐름을 읽는다.
 - code:
 ```python
 value = None
@@ -117,7 +117,7 @@ if value is None:
 - title: 가상환경을 도구상자로 이해하기
 - question_type: concept
 - concepts: ["comment","venv","virtual_environment","dependency"]
-- reading_goal: 가상환경을 도구상자로 이해하기 코드에서 comment 관련 값이 어떤 순서로 바뀌고 최종 결과로 이어지는지 확인한다.
+- reading_goal: python -m venv .venv 명령이 프로젝트 안에 별도 Python 패키지 환경을 준비하는 명령이라는 점을 이해한다.
 - code:
 ```python
 python -m venv .venv
@@ -134,7 +134,7 @@ python -m venv .venv
 - title: 왜 가상환경을 쓰는가
 - question_type: concept
 - concepts: ["venv","dependency_conflict","project_isolation"]
-- reading_goal: 왜 가상환경을 쓰는가 코드에서 venv 관련 값이 어떤 순서로 바뀌고 최종 결과로 이어지는지 확인한다.
+- reading_goal: A와 B 프로젝트가 서로 다른 패키지 버전을 필요로 할 때 각 프로젝트의 .venv를 분리해 충돌을 막는 이유를 이해한다.
 - code:
 ```python
 project_a/.venv  # A 프로젝트 패키지
@@ -142,7 +142,7 @@ project_b/.venv  # B 프로젝트 패키지
 ```
 - question: A 프로젝트와 B 프로젝트가 서로 다른 패키지 버전을 필요로 할 때 가장 안전한 방법은?
 - answer: 각 프로젝트에 가상환경을 따로 만든다
-- explanation: 프로젝트마다 필요한 패키지 버전이 다를 수 있다. 가상환경을 따로 만들면 A 프로젝트의 설치 상태가 B 프로젝트에 섞이지 않아 버전 충돌을 줄일 수 있다. 또한 나중에 requirements.txt로 설치 목록을 남기면 다른 컴퓨터에서도 비슷한 환경을 다시 만들기 쉽다. ‘왜 가상환경을 쓰는가’에서는 venv이 적용되는 줄과 그 전후의 변수 값을 위에서 아래로 연결해 보면 질문에서 요구한 최종 결과가 어떻게 만들어지는지 확인할 수 있다.
+- explanation: A 프로젝트와 B 프로젝트가 서로 다른 패키지 버전을 필요로 할 수 있다. 각 프로젝트에 별도 .venv를 만들면 한 프로젝트에 설치한 패키지와 버전이 다른 프로젝트 환경에 섞이지 않아 충돌을 줄일 수 있다. requirements.txt 같은 의존성 목록까지 남기면 같은 환경을 다시 구성하기도 쉬워진다.
 - project_context: 프로젝트마다 패키지 버전을 분리하는 가상환경을 이해하면 재현 가능한 Python 실행 환경을 구성하고 의존성 충돌을 줄일 수 있다.
 
 ## PY113_L03_SET_LOCATION_001
@@ -222,7 +222,7 @@ for value in values:
 - title: range 반복 읽기
 - question_type: output_prediction
 - concepts: ["print","for","range","loop"]
-- reading_goal: range 반복 읽기 코드에서 for 관련 값이 어떤 순서로 바뀌고 최종 결과로 이어지는지 확인한다.
+- reading_goal: range(3)이 0, 1, 2를 만들고 for가 그 값을 i에 하나씩 넣어 세 번 출력한 뒤 멈추는 흐름을 읽는다.
 - code:
 ```python
 for i in range(3):
@@ -258,7 +258,7 @@ hello()
 - title: 정의만 있고 호출이 없는 함수
 - question_type: output_prediction
 - concepts: ["function","print","def","function call"]
-- reading_goal: 정의만 있고 호출이 없는 함수 코드에서 function 관련 값이 어떤 순서로 바뀌고 최종 결과로 이어지는지 확인한다.
+- reading_goal: def hello()가 함수 본문을 정의하기만 하고 hello() 호출이 없으면 내부 print가 실행되지 않는다는 점을 읽는다.
 - code:
 ```python
 def hello():
@@ -266,7 +266,7 @@ def hello():
 ```
 - question: 이 코드를 실행했을 때 맞는 설명은?
 - answer: 아무것도 출력되지 않는다
-- explanation: hello() 호출이 없으므로 함수 본문은 실행되지 않는다. 따라서 출력은 ‘아무것도 출력되지 않는다’이다. 함수 코드는 정의와 호출을 구분한 뒤 argument가 parameter에 들어가는 순간, 함수 안의 계산, return으로 돌아오는 값을 차례로 연결하면 바깥 코드의 결과까지 추적할 수 있다.
+- explanation: def hello(): 줄은 hello라는 함수를 정의하지만 그 자리에서 함수 본문을 실행하지 않는다. 이 코드에는 이후 hello() 호출이 없으므로 본문의 print("hi")에 도달하지 않는다. 따라서 프로그램을 실행해도 화면에는 아무것도 출력되지 않는다.
 - project_context: 큰 코드 파일에서 함수 정의가 많이 보여도 실제 실행 지점은 호출 흐름에서 따로 찾아야 한다.
 
 ## PYF95_A1_FUNC_003_RETURN_ASSIGN

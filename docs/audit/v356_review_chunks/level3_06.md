@@ -269,7 +269,7 @@ scores = {"Mina": 90, "Jin": 80}
 ```
 - question: Mina의 점수를 바로 찾기 위해 쓰는 기준은?
 - answer: key 이름
-- explanation: dict는 key인 Mina로 value 90을 찾는다. 따라서 정답은 ‘key 이름’이다. set을 읽을 때는 중복 제거와 포함 여부를 중심으로 판단하고, 순서가 필요한 결과라면 sorted 같은 별도 연산이 있는지 확인해야 출력 순서를 임의로 가정하지 않게 된다.
+- explanation: scores는 이름을 key로, 점수를 value로 연결한 dict다. Mina의 점수를 찾을 때는 위치 번호가 아니라 key "Mina"를 사용해 scores["Mina"]처럼 접근하면 value 90을 얻는다. 따라서 질문의 기준은 key 이름이다.
 - project_context: 학생별 점수, 사용자별 설정, 파일별 메타데이터는 key-value 구조로 읽을 때 자연스럽다.
 
 ## PYF95_A2_DTS_031_CHOOSE_TUPLE_STRUCTURE
@@ -318,7 +318,7 @@ value = user.get("grade", 0)
 ```
 - question: grade가 없을 때 value는?
 - answer: 0
-- explanation: grade key가 없으므로 기본값 0이 value에 들어간다. set을 읽을 때는 중복 제거와 포함 여부를 중심으로 판단하고, 순서가 필요한 결과라면 sorted 같은 별도 연산이 있는지 확인해야 출력 순서를 임의로 가정하지 않게 된다.
+- explanation: user에는 grade key가 없다. user.get("grade", 0)은 key를 찾지 못하면 두 번째 argument인 0을 반환하므로 그 값이 바깥 변수 value에 저장된다. 따라서 이 줄 실행 뒤 value는 0이며, 없는 key를 대괄호로 읽을 때처럼 KeyError가 나지 않는다.
 - project_context: 외부 데이터의 일부 필드가 없을 수 있을 때 get 기본값은 안전한 읽기 방식이 된다.
 
 ## PYF95_A3_LOOP_001_WHILE_COUNT

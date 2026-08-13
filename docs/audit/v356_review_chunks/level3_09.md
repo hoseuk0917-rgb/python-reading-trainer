@@ -268,7 +268,7 @@ filename = "missing.txt"
 ```
 - question: 없는 파일을 읽으려고 할 때 자주 만나는 오류 이름은?
 - answer: FileNotFoundError
-- explanation: 없는 파일을 열려고 하면 FileNotFoundError가 자주 발생한다. ‘없는 파일 오류 종류’에서는 FileNotFoundError이 적용되는 줄과 그 전후의 변수 값을 위에서 아래로 연결해 보면 질문에서 요구한 최종 결과가 어떻게 만들어지는지 확인할 수 있다.
+- explanation: filename 변수에는 missing.txt라는 경로 문자열이 들어 있다. 이후 이 경로를 읽기 모드로 open하려는데 실제 파일이 없다면 Python은 보통 FileNotFoundError를 발생시킨다. 변수에 파일 이름을 저장하는 것만으로 오류가 나는 것은 아니고, 실제로 존재하지 않는 파일을 열려고 할 때 오류가 발생한다.
 - project_context: 파일 입력 코드에서는 경로가 맞는지와 파일 존재 여부가 중요하다.
 
 ## PYF95_A4_FILE_025_TRY_FILE_NOT_FOUND
@@ -326,7 +326,7 @@ print(type(text).__name__)
 ```
 - question: 출력 결과는?
 - answer: str
-- explanation: json.dumps의 결과 text는 문자열이다. 따라서 출력은 ‘str’이다. JSON을 읽을 때는 문자열이나 파일 내용이 json 함수에서 파이썬 값으로 바뀌는 지점을 먼저 찾고, 변환 뒤 자료형에서 key나 index로 어떤 값을 꺼내는지 순서대로 확인한다.
+- explanation: data는 Python dict이고 json.dumps(data, ensure_ascii=False)가 그 dict를 JSON 형식의 문자열로 직렬화해 text에 저장한다. 따라서 text의 자료형은 str이다. type(text).__name__은 자료형 이름 문자열 "str"을 만들고 마지막 print가 str을 출력한다.
 - project_context: 데이터를 파일에 저장하거나 전송하기 전에 문자열로 바꾸는 단계가 필요할 수 있다.
 
 ## PYF95_A4_FILE_028_JSON_FILE_FLOW
@@ -368,7 +368,7 @@ print(data["ok"])
 ```
 - question: 출력 결과는?
 - answer: True
-- explanation: JSON의 true는 파이썬 dict에서 True로 파싱된다. JSON을 읽을 때는 문자열이나 파일 내용이 json 함수에서 파이썬 값으로 바뀌는 지점을 먼저 찾고, 변환 뒤 자료형에서 key나 index로 어떤 값을 꺼내는지 순서대로 확인한다.
+- explanation: 먼저 Path("config.json").read_text(...)가 파일 내용 {"ok": true}를 문자열로 읽어 text에 저장한다. json.loads(text)가 그 JSON 문자열을 Python dict로 바꾸면서 JSON의 true는 Boolean True가 된다. 마지막 data["ok"]가 True를 꺼내고 print가 True를 출력한다.
 - project_context: 짧은 설정 파일 로딩은 pathlib과 json을 함께 쓸 수 있다.
 
 ## PYF95_A4_FILE_030_CHOOSE_WITH_REASON

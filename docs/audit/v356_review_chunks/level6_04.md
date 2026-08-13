@@ -21,7 +21,7 @@ else:
 ```
 - question: try / except / else 구조에서 else 블록이 실행되는 경우는?
 - answer: try 블록에서 오류가 나지 않았을 때
-- explanation: else는 try 블록이 성공했을 때만 실행된다. 오류 처리 코드와 정상 처리 코드를 나누고 싶을 때 try/except/else 흐름을 사용할 수 있다. 따라서 출력은 ‘try 블록에서 오류가 나지 않았을 때’이다.
+- explanation: try 안의 int(text)가 성공하면 ValueError가 발생하지 않으므로 except 블록은 건너뛰고 else가 실행된다. 반대로 변환에서 ValueError가 나면 except가 실행되고 else는 실행되지 않는다. 따라서 else는 try가 예외 없이 끝났을 때만 이어서 실행할 코드를 두는 위치다.
 - project_context: 
 
 ## PY19_L06_csv_dictreader_001
@@ -310,7 +310,7 @@ print(result)
 ```
 - question: add(2, 3)이 직접 돌려주는 값은?
 - answer: 5
-- explanation: return은 함수 밖으로 값을 돌려준다. print는 그 값을 화면에 보여주는 역할이다. return은 함수 밖으로 값을 돌려주는 것이고, print는 화면에 보여 주는 동작이다. 다른 코드가 결과를 이어 쓰려면 return이 필요하다. 따라서 출력은 ‘5’이다.
+- explanation: show_result()는 함수 안에서 print를 실행해 화면에 문자를 보여 주지만 return문이 없다. Python 함수가 return 없이 끝나면 호출식의 결과는 None이다. 반대로 return은 값을 호출한 곳으로 돌려줘 변수 저장이나 다른 계산에 사용할 수 있다.
 - project_context: 검증 함수나 필터 함수는 print보다 return으로 결과를 넘기는 편이 재사용하기 좋다.
 
 ## PY33_L06_git_status_001

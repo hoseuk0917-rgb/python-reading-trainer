@@ -270,7 +270,7 @@ print("ok")
 ```
 - question: 이 코드는 어떻게 되는가?
 - answer: AssertionError가 나고 print까지 가지 않는다
-- explanation: assert 조건이 거짓이면 AssertionError가 발생한다. 2+3은 5라서 6과 같지 않으므로 이 검증은 실패한다. assert 실패는 코드가 기대한 조건이 거짓이었다는 신호다. 실패 메시지와 직전 입력값을 함께 보면 어떤 가정이 깨졌는지 찾기 쉽다. 따라서 출력은 ‘AssertionError가 나고 print까지 가지 않는다’이다.
+- explanation: assert condition이 False이면 AssertionError가 발생해 그 줄에서 정상 실행이 멈춘다. 이 코드는 score가 0보다 큰지 확인하므로 score가 0이면 조건이 False다. 따라서 이 assert는 잘못된 값이 뒤 단계로 넘어가기 전에 실행을 실패시키는 guard 역할을 한다.
 - project_context: 검증 실패를 빨리 발견하는 테스트 습관과 연결된다.
 
 ## PY10_L07_env_get_001

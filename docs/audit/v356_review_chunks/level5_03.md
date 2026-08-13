@@ -210,7 +210,7 @@ print(requests.get)
 ```
 - question: 이 구조의 위험은?
 - answer: requests.py가 실제 requests 라이브러리를 가릴 수 있다
-- explanation: 현재 폴더의 파일명이 라이브러리 이름과 같으면 Python이 내 파일을 먼저 잡을 수 있다. 그래서 라이브러리 이름과 같은 파일명은 피하는 게 안전하다. 따라서 출력은 ‘requests.py가 실제 requests 라이브러리를 가릴 수 있다’이다.
+- explanation: 현재 폴더에 requests.py가 있으면 import requests가 설치한 requests 패키지보다 이 로컬 파일을 먼저 찾을 수 있다. 그러면 기대한 패키지 기능이 없거나 import가 꼬여 오류가 날 수 있다. 그래서 같은 이름의 파일을 피하고, 실제로 어느 파일이 import됐는지는 requests.__file__로 확인할 수 있다.
 - project_context: 초보자가 json.py, requests.py, pandas.py 같은 파일명을 만들 때 자주 생기는 문제다.
 
 ## PY127_L05_CSV_DICTREADER_ROWS_001

@@ -228,7 +228,7 @@ def get_card(card_id: str):
 ```
 - question: /cards/PY20_001로 요청하면 card_id는?
 - answer: PY20_001
-- explanation: 중괄호 {card_id} 위치의 URL 값이 함수 인자 card_id로 들어간다. path parameter는 URL 경로 안에 들어가는 값이다. 예를 들어 특정 id를 경로에서 받아 조회할 때 쓰며, 함수 인자로 어떻게 연결되는지 확인해야 한다. 따라서 반환/호출 결과는 ‘PY20_001’이다.
+- explanation: @app.get("/cards/{card_id}")에서 {card_id}는 URL 경로의 한 부분을 변수로 받겠다는 뜻이다. /cards/PY20_001로 요청하면 그 위치의 문자열 PY20_001이 함수 parameter card_id에 들어간다. 함수는 그 값을 dict에 넣어 반환하므로 이 요청에서 card_id 값은 PY20_001이다.
 - project_context: 카드 상세, 문서 상세, 노드 상세 API에서 자주 쓰는 패턴이다.
 
 ## PY20_L08_post_body_pydantic_001

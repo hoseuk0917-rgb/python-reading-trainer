@@ -19,7 +19,7 @@ print(profile(age=10, name='Mina'))
 ```
 - question: 출력 결과는?
 - answer: Mina:10
-- explanation: name은 Mina, age는 10으로 전달되어 Mina:10이 된다. 함수 코드는 정의와 호출을 구분한 뒤 argument가 parameter에 들어가는 순간, 함수 안의 계산, return으로 돌아오는 값을 차례로 연결하면 바깥 코드의 결과까지 추적할 수 있다.
+- explanation: profile(age=10, name='Mina')는 argument 순서가 정의와 달라도 keyword 이름을 기준으로 age에 10, name에 Mina를 연결한다. 함수 안에서 name + ':' + str(age)가 'Mina:10'을 만들고 return하며, 바깥 print가 Mina:10을 출력한다.
 - project_context: 순서가 바뀌어도 이름으로 연결되는 호출문을 이해한다.
 
 ## PYV96_A3_SCOPE_016_SCOPE_CHECKLIST
@@ -59,7 +59,7 @@ print(math.sqrt(9))
 ```
 - question: 이 코드에서 import math의 역할은?
 - answer: math라는 모듈을 찾아 사용할 준비를 한다
-- explanation: import는 지정한 이름의 모듈을 찾아 코드에서 사용할 수 있게 한다. math.sqrt처럼 모듈 안 기능을 점으로 꺼내 쓴다. ‘import는 이름을 찾아온다’에서는 import이 적용되는 줄과 그 전후의 변수 값을 위에서 아래로 연결해 보면 질문에서 요구한 최종 결과가 어떻게 만들어지는지 확인할 수 있다.
+- explanation: import math가 실행되면 Python이 math 모듈을 불러와 현재 코드에서 math라는 이름으로 사용할 수 있게 한다. 그래서 다음 줄의 math.sqrt(9)가 math 모듈 안 sqrt 함수를 찾아 9의 제곱근을 계산할 수 있다. 즉 import math의 역할은 math 모듈을 찾아 사용할 준비를 하는 것이다.
 - project_context: 라이브러리 예제 코드를 읽을 때 import 줄이 무엇을 준비하는지 알아야 한다.
 
 ## PY114_L03_MODULE_PACKAGE_001
@@ -79,7 +79,7 @@ from app.helpers import clean_text
 ```
 - question: 위 구조에서 helpers.py는 무엇에 가깝나?
 - answer: Python 모듈 파일
-- explanation: helpers.py처럼 기능을 담은 .py 파일은 module로 볼 수 있다. app 폴더는 여러 module을 묶는 package 역할을 한다. 따라서 정답은 ‘Python 모듈 파일’이다. ‘module과 package 구분’에서는 module이 적용되는 줄과 그 전후의 변수 값을 위에서 아래로 연결해 보면 질문에서 요구한 최종 결과가 어떻게 만들어지는지 확인할 수 있다.
+- explanation: helpers.py는 Python 코드를 담은 하나의 .py 파일이므로 module에 해당한다. 그 파일을 포함한 app 폴더는 여러 module을 묶는 package 역할을 할 수 있다. from app.helpers import clean_text는 app package 안 helpers module에서 clean_text라는 이름을 가져오는 구조이므로 정답은 Python 모듈 파일이다.
 - project_context: 프로젝트가 커지면 파일 하나가 아니라 여러 모듈/패키지로 나누어 읽게 된다.
 
 ## PY11_L03_if_else_001
@@ -88,7 +88,7 @@ from app.helpers import clean_text
 - title: if else 분기 읽기
 - question_type: output_prediction
 - concepts: ["print","if","else","branch"]
-- reading_goal: if else 분기 읽기 코드에서 if 관련 값이 어떤 순서로 바뀌고 최종 결과로 이어지는지 확인한다.
+- reading_goal: score >= 70 조건을 먼저 계산한 뒤 False이면 else에서 result가 retry로 저장되고 마지막 print로 이어지는 흐름을 읽는다.
 - code:
 ```python
 score = 60
@@ -109,7 +109,7 @@ print(result)
 - title: tuple 기본 읽기
 - question_type: output_prediction
 - concepts: ["print","tuple","index","immutable"]
-- reading_goal: tuple 기본 읽기 코드에서 index 관련 값이 어떤 순서로 바뀌고 최종 결과로 이어지는지 확인한다.
+- reading_goal: point tuple에서 인덱스 1이 두 번째 값 20을 가리키고 print가 그 값을 출력하는 흐름을 읽는다.
 - code:
 ```python
 point = (10, 20)

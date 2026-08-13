@@ -20,7 +20,7 @@ print(df.columns)
 ```
 - question: df.shape가 알려주는 것은?
 - answer: 행 수와 열 수
-- explanation: DataFrame은 표처럼 다루는 데이터 구조이고 shape는 전체 크기를 빠르게 확인하게 해준다. pandas DataFrame은 행과 열로 된 표 데이터를 다루는 구조다. CSV를 읽은 뒤 필터링, 정렬, 집계 같은 처리를 할 때 자주 사용된다. 따라서 출력은 ‘행 수와 열 수’이다.
+- explanation: pd.DataFrame(rows)는 rows에 들어 있는 record들을 표 형태의 DataFrame으로 만든다. 각 dict의 key가 열 이름으로, 각 dict가 한 행으로 대응된다. 그래서 이후 df["score"]처럼 열 단위 계산이나 필터를 적용할 수 있다.
 - project_context: 노드 후보, 엣지 후보, 제출 CSV, 평가 결과를 점검할 때 기본 확인값이다.
 
 ## PY42_L07_read_csv_sep_001
@@ -233,7 +233,7 @@ print(cout)
 ```
 - question: 이 오류의 가장 가능성 높은 원인은?
 - answer: count를 cout으로 잘못 쓴 오타
-- explanation: NameError는 이름이 정의되지 않았다는 뜻이다. 변수명 오타나 import 누락이 흔한 원인이다. NameError는 아직 정의되지 않은 이름을 사용했을 때 나는 오류다. 변수명 오타, import 누락, 함수 안팎의 scope를 순서대로 확인해야 한다. 따라서 출력은 ‘count를 cout으로 잘못 쓴 오타’이다.
+- explanation: print(total)에서 Python은 먼저 total이라는 이름을 현재 scope에서 찾는다. 그런데 앞에서 total에 값을 대입하거나 정의한 적이 없으면 이름을 찾을 수 없어 NameError가 발생한다. 변수명 오타, 실행되지 않은 대입 분기, scope 착각이 없는지 위쪽 코드부터 확인하면 된다.
 - project_context: 짧은 스크립트를 빠르게 고칠 때 가장 자주 만나는 기본 오류다.
 
 ## PY28_L07_type_error_001

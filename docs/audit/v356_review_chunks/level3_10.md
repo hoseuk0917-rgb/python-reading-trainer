@@ -90,7 +90,7 @@ print(items)
 ```
 - question: print(items)의 출력으로 맞는 것은?
 - answer: [1, 2, 3, 4]
-- explanation: items.extend([3, 4])는 전달받은 iterable의 원소 3과 4를 target 리스트 items 끝에 하나씩 추가한다. 따라서 items는 [1, 2, 3, 4]가 된다. append([3, 4])라면 중첩 리스트 하나가 추가된다. extend는 items를 직접 바꾸고 None을 반환하지만, 전달한 iterable 자체를 바꾸지는 않는다. ‘extend()로 여러 값을 한 번에 붙이기’에서는 extend이 적용되는 줄과 그 전후의 변수 값을 위에서 아래로 연결해 보면 질문에서 요구한 최종 결과가 어떻게 만들어지는지 확인할 수 있다.
+- explanation: items.extend([3, 4])는 전달받은 리스트 자체를 한 항목으로 넣지 않고 그 안의 원소 3과 4를 items 끝에 하나씩 추가한다. 그래서 items가 [1, 2, 3, 4]로 직접 변경되고 마지막 print가 그 리스트를 출력한다. append([3, 4])라면 [3, 4]가 한 원소로 들어간다는 점이 다르다.
 - project_context: 여러 JSON 결과나 카드 묶음을 하나의 리스트로 합칠 때 append와 extend의 차이를 모르면 중첩 리스트 버그가 생길 수 있다.
 
 ## PY104_L03_LIST_INSERT_001
@@ -117,7 +117,7 @@ print(steps)
 - title: 정의만 있고 호출 없음
 - question_type: output_prediction
 - concepts: ["print","def","function","call"]
-- reading_goal: 정의만 있고 호출 없음 코드에서 def 관련 값이 어떤 순서로 바뀌고 최종 결과로 이어지는지 확인한다.
+- reading_goal: def hello()가 함수 본문을 정의하기만 하고 hello() 호출이 없으면 내부 print가 실행되지 않는다는 점을 읽는다.
 - code:
 ```python
 def hello():
@@ -144,7 +144,7 @@ print(double(4))
 ```
 - question: 출력 결과는?
 - answer: 8
-- explanation: x는 4이고 x * 2는 8이다. 함수 코드는 정의와 호출을 구분한 뒤 argument가 parameter에 들어가는 순간, 함수 안의 계산, return으로 돌아오는 값을 차례로 연결하면 바깥 코드의 결과까지 추적할 수 있다.
+- explanation: print(double(4))을 계산하려고 먼저 double(4)를 호출하면 argument 4가 parameter x에 들어간다. 함수 안에서 x * 2가 8로 계산되고 return 8이 호출한 곳으로 돌아온다. 가장 바깥 print가 그 반환값 8을 출력한다.
 - project_context: 함수 입력과 결과를 연결하는 기본 문제다.
 
 ## PYV96_A3_SCOPE_003_RETURN_ASSIGN
@@ -164,7 +164,7 @@ print(result)
 ```
 - question: 출력 결과는?
 - answer: 5
-- explanation: add(2, 3)의 return 값 5가 result에 저장된다. 함수 코드는 정의와 호출을 구분한 뒤 argument가 parameter에 들어가는 순간, 함수 안의 계산, return으로 돌아오는 값을 차례로 연결하면 바깥 코드의 결과까지 추적할 수 있다.
+- explanation: result = add(2, 3)에서 먼저 add가 호출되어 argument 2와 3이 parameter a와 b에 들어간다. 함수 안의 a + b가 5로 계산되고 return 5가 호출한 곳으로 돌아와 result에 저장된다. 마지막 print(result)가 5를 출력한다.
 - project_context: 함수 결과를 다음 코드에서 쓰는 패턴이다.
 
 ## PYV96_A3_SCOPE_004_PRINT_NO_RETURN
@@ -226,7 +226,7 @@ print(x)
 ```
 - question: 출력 결과는?
 - answer: 11
-- explanation: change(10)은 11을 return하고 그 값이 x에 저장된다. 함수 코드는 정의와 호출을 구분한 뒤 argument가 parameter에 들어가는 순간, 함수 안의 계산, return으로 돌아오는 값을 차례로 연결하면 바깥 코드의 결과까지 추적할 수 있다.
+- explanation: 처음 바깥 x에는 10이 저장되어 있다. x = change(x)를 실행하면 현재 값 10이 parameter value에 들어가고 함수가 10 + 1인 11을 return한다. 그 반환값을 다시 바깥 x에 대입하므로 x가 11로 바뀌고 마지막 print(x)가 11을 출력한다.
 - project_context: 함수로 값을 바꾸려면 return과 재대입 흐름을 확인해야 한다.
 
 ## PYV96_A3_SCOPE_007_EARLY_RETURN
@@ -247,7 +247,7 @@ print(label(5))
 ```
 - question: 출력 결과는?
 - answer: plus
-- explanation: 5 > 0이 True라서 plus가 return되고 함수는 끝난다. 함수 코드는 정의와 호출을 구분한 뒤 argument가 parameter에 들어가는 순간, 함수 안의 계산, return으로 돌아오는 값을 차례로 연결하면 바깥 코드의 결과까지 추적할 수 있다.
+- explanation: label(5)를 호출하면 argument 5가 parameter n에 들어간다. n > 0 조건은 True이므로 if 안의 return 'plus'가 실행되는 순간 함수가 끝나고 아래 return 'zero'에는 도달하지 않는다. 바깥 print가 반환된 plus를 출력한다.
 - project_context: 여러 return 중 실제 실행되는 하나를 찾는 연습이다.
 
 ## PYV96_A3_SCOPE_008_NO_EARLY_RETURN
@@ -268,7 +268,7 @@ print(label(0))
 ```
 - question: 출력 결과는?
 - answer: zero
-- explanation: 0 > 0은 False라서 아래 return zero가 실행된다. 함수 코드는 정의와 호출을 구분한 뒤 argument가 parameter에 들어가는 순간, 함수 안의 계산, return으로 돌아오는 값을 차례로 연결하면 바깥 코드의 결과까지 추적할 수 있다.
+- explanation: label(0)을 호출하면 argument 0이 parameter n에 들어간다. n > 0 조건은 False이므로 if 안의 return 'plus'를 건너뛰고 다음 return 'zero'가 실행된다. 함수가 돌려준 zero를 바깥 print가 출력한다.
 - project_context: 조건과 return 순서를 함께 보는 복습이다.
 
 ## PYV96_A3_SCOPE_009_LIST_MUTATION
@@ -394,5 +394,5 @@ print(greet())
 ```
 - question: 출력 결과는?
 - answer: Hi Guest
-- explanation: name argument가 없으므로 기본값 Guest가 쓰인다. 따라서 출력은 ‘Hi Guest’이다. 함수 코드는 정의와 호출을 구분한 뒤 argument가 parameter에 들어가는 순간, 함수 안의 계산, return으로 돌아오는 값을 차례로 연결하면 바깥 코드의 결과까지 추적할 수 있다.
+- explanation: greet() 호출에는 name argument가 없으므로 parameter name은 정의에 적힌 기본값 'Guest'를 사용한다. 함수 안에서 'Hi '와 Guest를 이어 붙여 'Hi Guest'를 return하고, 바깥 print가 그 반환 문자열을 출력한다.
 - project_context: 기본 인자는 함수 호출문을 읽을 때 자주 만난다.

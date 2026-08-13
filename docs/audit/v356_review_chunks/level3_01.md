@@ -55,7 +55,7 @@ print(result)
 ```
 - question: 출력 결과는?
 - answer: 7
-- explanation: a는 2, b는 5이고 return 값 7이 result에 저장된다. 함수 코드는 정의와 호출을 구분한 뒤 argument가 parameter에 들어가는 순간, 함수 안의 계산, return으로 돌아오는 값을 차례로 연결하면 바깥 코드의 결과까지 추적할 수 있다.
+- explanation: result = add(2, 5)를 실행하면 argument 2와 5가 parameter a와 b에 들어간다. 함수 안에서 a + b가 7로 계산되고 return 7이 호출한 곳으로 돌아와 result에 저장된다. 마지막 print(result)가 저장된 7을 출력한다.
 - project_context: 함수는 초급에서 중급으로 넘어가는 핵심 연결 개념이다.
 
 ## PYV96_A1_REVIEW_026_FUNCTION_NOT_CALLED
@@ -93,7 +93,7 @@ print(label(50))
 ```
 - question: 출력 결과는?
 - answer: retry
-- explanation: 50은 60 이상이 아니므로 아래 return retry가 실행된다. 함수 코드는 정의와 호출을 구분한 뒤 argument가 parameter에 들어가는 순간, 함수 안의 계산, return으로 돌아오는 값을 차례로 연결하면 바깥 코드의 결과까지 추적할 수 있다.
+- explanation: print(label(50))을 계산하려고 먼저 label(50)을 호출하면 argument 50이 parameter score에 들어간다. score >= 60은 False이므로 if 안의 return "pass"는 건너뛰고 다음 return "retry"가 실행된다. 함수가 돌려준 retry를 바깥 print가 출력한다.
 - project_context: 조건이 있는 함수는 입력값에 따라 다른 결과를 돌려준다.
 
 ## PYV96_A1_REVIEW_028_FUNCTION_LIST_SUM
@@ -134,7 +134,7 @@ print(counts["a"])
 ```
 - question: 출력 결과는?
 - answer: 2
-- explanation: a는 두 번 나오므로 counts['a']는 2다. for에서는 반복 대상에서 값이 어떤 순서로 변수에 들어오는지 보고, 각 반복에서 실행되는 계산이나 출력까지 한 번씩 적용하면 최종 결과를 안정적으로 판단할 수 있다.
+- explanation: counts는 빈 dict로 시작한다. 첫 a에서는 counts.get('a', 0)이 0을 돌려줘 1이 저장되고, b에서는 b가 1로 저장된다. 마지막 a에서는 기존 값 1을 읽어 1을 더하므로 counts['a']가 2가 된다. 반복이 끝난 뒤 print(counts['a'])가 2를 출력한다.
 - project_context: 빈도 세기 패턴은 중급 데이터 처리의 입구다.
 
 ## PYV96_A1_REVIEW_030_SORTED_REVIEW
@@ -235,7 +235,7 @@ print(items[1])
 - title: strip()으로 공백 제거
 - question_type: output_prediction
 - concepts: ["print","str","strip","normalization"]
-- reading_goal: strip()으로 공백 제거 코드에서 strip 관련 값이 어떤 순서로 바뀌고 최종 결과로 이어지는지 확인한다.
+- reading_goal: raw의 문자열이 strip()을 거쳐 양끝 공백이 제거된 새 문자열로 바뀌어 label에 저장되고 출력되는 흐름을 읽는다.
 - code:
 ```python
 raw = "  LiDAR  "
@@ -333,7 +333,7 @@ print(abs(diff))
 ```
 - question: 출력 결과는?
 - answer: 5
-- explanation: diff는 -5이고 abs(-5)는 방향을 제외한 크기 5를 돌려준다. 두 값의 거리나 차이를 양수로 볼 때 자주 쓴다. abs는 음수와 양수의 부호를 제거해 차이의 크기만 남긴다. 거리, 오차, 변화량처럼 방향보다 크기가 중요한 값을 비교할 때 쓴다. ‘abs로 차이의 크기 읽기’에서는 abs이 적용되는 줄과 그 전후의 변수 값을 위에서 아래로 연결해 보면 질문에서 요구한 최종 결과가 어떻게 만들어지는지 확인할 수 있다.
+- explanation: 먼저 2 - 7이 계산되어 diff에 -5가 저장된다. 다음 abs(diff)는 -5의 부호를 없애 차이의 크기 5를 반환한다. 마지막 print가 그 값 5를 출력한다. abs는 원래 diff 값을 바꾸는 것이 아니라 절댓값 결과를 새로 돌려준다.
 - project_context: 예측값과 실제값의 차이를 크기로 비교할 때 abs를 쓸 수 있다.
 
 ## PYV99_A1_GAP_003_ROUND_FLOAT

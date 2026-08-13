@@ -17,7 +17,7 @@ Test-Path ".\data\lessons\missing.json"
 ```
 - question: Test-Path가 True를 반환하면?
 - answer: 해당 경로가 존재한다
-- explanation: Test-Path는 파일이나 폴더가 실제로 존재하는지 확인하는 명령이다. 존재 여부만 알려주므로 JSON 내용 품질 검증은 별도 단계가 필요하다. 파일을 읽기 전에 Test-Path로 guard를 두면 없는 파일 때문에 생기는 오류를 더 친절하게 처리할 수 있다. 따라서 반환/호출 결과는 ‘해당 경로가 존재한다’이다.
+- explanation: Test-Path는 지정한 파일이나 폴더 경로가 존재하는지 검사해 Boolean 값을 돌려준다. 따라서 True가 나오면 그 경로가 현재 파일시스템에 존재한다는 뜻이다. 다만 존재 여부만 확인하므로 파일 내용이나 JSON 문법이 올바른지는 별도 검증이 필요하다.
 - project_context: 패치 전에 대상 파일이 있는지 확인할 때 쓴다.
 
 ## PY10_L08_argparse_store_true_001
@@ -284,7 +284,7 @@ def apply_pipeline(text, steps):
 ```
 - question: 이 함수의 핵심 흐름은?
 - answer: text에 steps를 순서대로 적용한다
-- explanation: pipeline은 여러 처리 단계를 순서대로 연결한 구조다. value가 각 step을 거치며 계속 갱신되어 최종 결과로 이어진다. 각 단계가 입력을 받아 출력으로 넘기는 구조인지 보면 긴 처리 흐름도 작은 조각으로 나누어 읽을 수 있다. 따라서 반환/호출 결과는 ‘text에 steps를 순서대로 적용한다’이다.
+- explanation: 이 코드는 한 값을 여러 처리 단계에 차례로 넘기는 pipeline이다. 먼저 load_data()가 원본을 만들고 clean_data(raw)가 정리된 값을 만든다. 이어서 validate_data(clean)가 검증하고 save_data(clean)이 저장한다. 따라서 실행 순서는 로딩 → 정리 → 검증 → 저장이다.
 - project_context: 수집→정제→청킹→검색 같은 파이프라인을 읽는 기초다.
 
 ## PY10_L08_raise_required_001
@@ -303,7 +303,7 @@ def read_required(row, key):
 ```
 - question: key가 row에 없으면?
 - answer: KeyError를 발생시킨다
-- explanation: 필수 필드가 없을 때 조용히 기본값을 쓰면 데이터 오류를 놓칠 수 있다. 그래서 raise로 명확한 예외를 내는 편이 더 안전한 경우가 있다. 필수 key 검증은 데이터가 다음 단계로 넘어가기 전에 형식 오류를 명확히 드러내는 역할을 한다. 따라서 반환/호출 결과는 ‘KeyError를 발생시킨다’이다.
+- explanation: 함수가 먼저 key가 row에 있는지 검사한다. key가 없으면 if 조건이 True가 되어 raise KeyError(key)가 실행되고 함수는 그 자리에서 정상 반환하지 않는다. 필수 필드를 조용히 기본값으로 넘기지 않고 다음 단계 전에 데이터 형식 오류를 명확히 드러내려는 guard다.
 - project_context: 데이터 품질 검증과 파이프라인 실패 원인 추적에 중요하다.
 
 ## PY10_L08_retry_once_001

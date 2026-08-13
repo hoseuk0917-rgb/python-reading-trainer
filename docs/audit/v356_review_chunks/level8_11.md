@@ -97,7 +97,7 @@ def test_add():
 ```
 - question: test_add 함수의 목적은?
 - answer: add(2,3)이 5인지 검증한다
-- explanation: pytest는 test_로 시작하는 함수를 테스트 함수로 인식한다. 함수 안의 assert가 참이면 통과하고, 거짓이면 실패로 기록된다. 테스트 이름과 assert 식을 함께 보면 무엇을 검증하려는 함수인지 빠르게 파악할 수 있다. 따라서 반환/호출 결과는 ‘add(2,3)이 5인지 검증한다’이다.
+- explanation: pytest는 test_로 시작하는 함수를 테스트 대상으로 실행한다. 이 함수 안의 assert add(2, 3) == 5는 add 호출 결과가 기대값 5와 같은지 직접 검사한다. 조건이 True면 이 검증은 통과하고 False면 테스트 실패가 되므로, 이 테스트의 목적은 add(2, 3)이 5인지 확인하는 것이다.
 - project_context: 데이터 품질검사와 함수 동작검증 자동화에 필요하다.
 
 ## PY11_L08_queue_basic_001
@@ -330,7 +330,7 @@ json.decoder.JSONDecodeError: Expecting value
 ```
 - question: 가장 직접적인 에러 발생 위치는?
 - answer: jobs/curate.py line 18의 json.loads(raw)
-- explanation: traceback의 아래쪽으로 갈수록 실제 예외가 발생한 위치에 가까운 경우가 많다. traceback은 오류가 어디서 시작되어 어떤 함수들을 거쳐 발생했는지 보여 주는 기록이다. 가장 아래쪽 오류 메시지와 파일명, 줄번호를 먼저 확인하면 된다. 따라서 반환/호출 결과는 ‘jobs/curate.py line 18의 json.loads(raw)’이다.
+- explanation: traceback은 예외가 어떤 호출 경로를 거쳐 발생했는지 보여 준다. 보통 가장 아래쪽의 예외 메시지와 마지막 사용자 코드 frame을 먼저 보면 실제 실패 지점에 가깝다. 이 예시에서는 jobs/curate.py 18번째 줄의 json.loads(raw)가 직접 확인할 위치이며, 그다음 위쪽 호출 경로를 따라 왜 그 입력이 들어왔는지 본다.
 - project_context: 붙여넣은 오류 로그에서 원인 줄을 찾는 훈련이다.
 
 ## PY54_L08_mobile_scroll_001

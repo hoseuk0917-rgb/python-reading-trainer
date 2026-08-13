@@ -114,7 +114,7 @@ def get_summary(doc_id):
 ```
 - question: cache의 목적은?
 - answer: 같은 요약을 반복 계산하지 않기
-- explanation: cache dict는 이미 계산한 결과를 저장해 재사용하는 구조다. 같은 입력이 cache에 있으면 summarize를 다시 호출하지 않아도 된다. 비싼 계산이나 API 호출 결과를 저장할 때 특히 효과가 크지만 오래된 값 갱신 기준도 필요하다. 따라서 반환/호출 결과는 ‘같은 요약을 반복 계산하지 않기’이다.
+- explanation: cache dict는 이미 계산한 결과를 key와 함께 저장해 같은 입력이 다시 들어왔을 때 재사용하는 구조다. 먼저 입력이 cache에 있는지 확인하고, 있으면 summarize를 다시 호출하지 않고 저장된 값을 사용한다. 따라서 목적은 같은 요약 계산이나 비싼 API 호출을 반복하지 않는 것이며, 오래된 값을 언제 갱신할지도 함께 정해야 한다.
 - project_context: LLM 비용 절감, API 호출 절감, 앱 속도 개선에 연결된다.
 
 ## PY4_L09_evidence_check_001

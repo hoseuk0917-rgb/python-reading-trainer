@@ -169,7 +169,7 @@ def test_normalize():
 ```
 - question: assert 조건이 False이면 무슨 일이 일어나는가?
 - answer: 테스트가 실패한다
-- explanation: pytest는 test_ 함수 안의 assert가 실패하면 테스트 실패로 표시한다. pytest assert는 기대값과 실제값을 비교해 테스트 실패를 알려 준다. 실패 메시지를 읽을 때는 어떤 값이 예상과 달랐는지 먼저 확인해야 한다. 따라서 반환/호출 결과는 ‘테스트가 실패한다’이다.
+- explanation: pytest는 test_로 시작하는 함수를 테스트로 실행한다. 여기서는 load_all_cards()로 카드 목록을 얻고 assert len(cards) > 0이 카드 수가 0보다 큰지 검사한다. 목록이 비어 있으면 조건이 False가 되어 테스트가 실패하므로, 최소한 카드가 하나 이상 로드되는지 확인하는 smoke 수준의 검증이다.
 - project_context: 정규화, ID 생성, side card 매칭 같은 작은 함수부터 검증할 수 있다.
 
 ## PY34_L07_regression_test_001

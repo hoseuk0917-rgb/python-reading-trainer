@@ -34,7 +34,7 @@ print(name.startswith("py"))
 ```
 - question: 출력 결과는?
 - answer: True
-- explanation: 문자열 python.py의 시작 부분이 정확히 py와 일치하므로 True다. startswith는 기본적으로 대소문자를 구분하고 문자열 전체를 파싱하지 않는다. 여러 접두사를 허용하려면 startswith(('py', 'test_'))처럼 tuple을 전달할 수 있다. ‘startswith로 시작 글자 확인하기’에서는 startswith이 적용되는 줄과 그 전후의 변수 값을 위에서 아래로 연결해 보면 질문에서 요구한 최종 결과가 어떻게 만들어지는지 확인할 수 있다.
+- explanation: name에는 문자열 "python.py"가 저장된다. name.startswith("py")는 문자열의 시작 부분이 py와 같은지 확인하고, 실제로 py로 시작하므로 True를 반환한다. 마지막 print가 True를 출력한다. startswith는 기본적으로 대소문자를 구분한다.
 - project_context: 파일명이나 태그가 특정 접두어로 시작하는지 검사할 때 쓰인다.
 
 ## PYV99_A1_GAP_007_ENDSWITH_SUFFIX

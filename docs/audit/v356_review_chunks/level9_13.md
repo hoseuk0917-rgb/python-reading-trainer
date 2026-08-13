@@ -78,7 +78,7 @@ def get_or_fetch(key, cache, fetch, ttl=3600):
 ```
 - question: time.time() - item['saved_at'] < ttl의 의미는?
 - answer: 저장 후 지난 시간이 ttl보다 작으면 캐시가 유효하다
-- explanation: cache TTL은 저장된 결과가 유효한 시간을 뜻한다. 현재 시간과 저장 시간을 비교해 오래된 캐시를 다시 계산할지 판단한다. 조건이 참이면 아직 캐시를 써도 된다는 뜻이고, 거짓이면 새로 계산하거나 다시 불러와야 한다. 따라서 반환/호출 결과는 ‘저장 후 지난 시간이 ttl보다 작으면 캐시가 유효하다’이다.
+- explanation: TTL은 cache에 저장한 값을 얼마 동안 유효하다고 볼지 정한 시간이다. 현재 시각에서 저장 시각을 뺀 경과 시간이 ttl보다 작으면 조건이 True라서 아직 cache를 사용할 수 있다. ttl 이상 지났다면 오래된 값으로 보고 다시 계산하거나 원본에서 새로 불러오는 쪽으로 넘어간다.
 - project_context: API 비용과 지연을 줄이는 운영 코드에서 자주 보이는 패턴이다.
 
 ## PY16_L09_chunk_id_001

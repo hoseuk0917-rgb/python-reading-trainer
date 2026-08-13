@@ -65,7 +65,7 @@ python -c "import sys; print(sys.path)"
 ```
 - question: 이 명령의 의미로 가장 알맞은 것은?
 - answer: Python이 모듈을 찾는 후보 경로를 본다
-- explanation: sys.path에는 import 때 Python이 확인하는 경로들이 들어 있다. 다만 초보자는 먼저 실행 위치와 가상환경부터 확인하는 것이 안전하다. 따라서 출력은 ‘Python이 모듈을 찾는 후보 경로를 본다’이다.
+- explanation: Python은 import할 모듈을 sys.path에 들어 있는 디렉터리들에서 차례로 찾는다. 그래서 package를 못 찾는 오류가 나면 현재 프로젝트 경로가 검색 목록에 들어 있는지, 다른 경로가 먼저 잡혀 잘못된 모듈을 읽는지 확인할 수 있다. 다만 sys.path를 임의로 늘리기 전에 올바른 환경에 package가 설치됐는지도 함께 확인해야 한다.
 - project_context: 정말 import 경로가 헷갈릴 때만 진단용으로 확인하는 항목이다.
 
 ## PY127_L06_CSV_DICTWRITER_SAVE_001
