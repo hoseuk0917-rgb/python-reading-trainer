@@ -8,11 +8,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LESSON_DIR = ROOT / "data/lessons"
-FIRST_BATCH_FILE = "python_foundation_beginner_v94_a1_part1.json"
 
-FIRST_BATCH_IDS = {
+REVIEWED_IDS = {
     *(f"PYF94_A1_L01_PRINT_{i:03d}" for i in range(1, 13)),
     *(f"PYF94_A1_L01_VAR_{i:03d}" for i in range(1, 13)),
+    *(f"PYF94_A1_L01_TYPE_{i:03d}" for i in range(1, 13)),
+    *(f"PYF94_A1_L01_INPUT_{i:03d}" for i in range(1, 13)),
 }
 
 ABSTRACT_PATTERNS = {
@@ -55,26 +56,26 @@ def main() -> None:
     print(f"V356_DUPLICATE_IDS={len(duplicate_ids)}")
     print("V356_LEVEL_COUNTS=" + ",".join(f"{k}:{v}" for k, v in sorted(level_counts.items())))
 
-    reviewed = [card for card in cards if str(card["id"]) in FIRST_BATCH_IDS]
-    print(f"V356_FIRST_BATCH_EXPECTED={len(FIRST_BATCH_IDS)}")
-    print(f"V356_FIRST_BATCH_FOUND={len(reviewed)}")
+    reviewed = [card for card in cards if str(card["id"]) in REVIEWED_IDS]
+    print(f"V356_REVIEWED_EXPECTED={len(REVIEWED_IDS)}")
+    print(f"V356_REVIEWED_FOUND={len(reviewed)}")
 
-    first_batch_failures: list[str] = []
+    reviewed_failures: list[str] = []
     for card in reviewed:
         explanation = text_of(card, "explanation")
         goal = text_of(card, "reading_goal")
         if "특히" in explanation or "조심해야" in explanation:
-            first_batch_failures.append(f"{card['id']}:warning_formula")
+            reviewed_failures.append(f"{card['id']}:warning_formula")
         if "흐름을 읽" in goal:
-            first_batch_failures.append(f"{card['id']}:flow_goal")
+            reviewed_failures.append(f"{card['id']}:flow_goal")
         if len(explanation) < 45:
-            first_batch_failures.append(f"{card['id']}:too_short")
-        if card.get("question_type") == "output_prediction" and not re.search(r"(?:출력|보여|화면)", explanation):
-            first_batch_failures.append(f"{card['id']}:no_output_language")
+            reviewed_failures.append(f"{card['id']}:too_short")
+        if card.get("question_type") == "output_prediction" and not re.search(r"(?:출력|보여|화면|정답)", explanation):
+            reviewed_failures.append(f"{card['id']}:no_result_language")
 
-    print(f"V356_FIRST_BATCH_FAILURES={len(first_batch_failures)}")
-    for item in first_batch_failures[:50]:
-        print(f"V356_FIRST_BATCH_FAILURE={item}")
+    print(f"V356_REVIEWED_FAILURES={len(reviewed_failures)}")
+    for item in reviewed_failures[:80]:
+        print(f"V356_REVIEWED_FAILURE={item}")
 
     queue: list[tuple[int, str, str, list[str]]] = []
     pattern_counts = Counter()
@@ -92,25 +93,25 @@ def main() -> None:
             reasons.append("long_explanation")
             pattern_counts["long_explanation"] += 1
         level = int(card.get("level") or 999) if str(card.get("level") or "").isdigit() else 999
-        if reasons and str(card["id"]) not in FIRST_BATCH_IDS:
+        if reasons and str(card["id"]) not in REVIEWED_IDS:
             queue.append((level, card["__file"], str(card["id"]), reasons))
 
     queue.sort(key=lambda row: (row[0], row[1], row[2]))
     print("V356_PATTERN_COUNTS=" + ",".join(f"{k}:{v}" for k, v in sorted(pattern_counts.items())))
     print(f"V356_REVIEW_QUEUE_COUNT={len(queue)}")
-    for level, filename, card_id, reasons in queue[:120]:
+    for level, filename, card_id, reasons in queue[:160]:
         print(f"V356_QUEUE=level:{level}|file:{filename}|id:{card_id}|reasons:{'+'.join(reasons)}")
 
     if duplicate_ids:
         raise SystemExit("RESULT=FAIL_DUPLICATE_CARD_IDS")
     if len(cards) != 1785:
         raise SystemExit(f"RESULT=FAIL_CARD_COUNT_EXPECTED_1785_ACTUAL_{len(cards)}")
-    if len(reviewed) != len(FIRST_BATCH_IDS):
-        raise SystemExit("RESULT=FAIL_FIRST_BATCH_ID_COVERAGE")
-    if first_batch_failures:
-        raise SystemExit("RESULT=FAIL_FIRST_BATCH_CLARITY")
+    if len(reviewed) != len(REVIEWED_IDS):
+        raise SystemExit("RESULT=FAIL_REVIEWED_ID_COVERAGE")
+    if reviewed_failures:
+        raise SystemExit("RESULT=FAIL_REVIEWED_CLARITY")
 
-    print("RESULT=PASS_V356_FIRST_BATCH_AND_FULL_INVENTORY")
+    print("RESULT=PASS_V356_REVIEWED_BATCHES_AND_FULL_INVENTORY")
 
 
 if __name__ == "__main__":
