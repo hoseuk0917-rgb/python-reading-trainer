@@ -14,6 +14,23 @@ REVIEWED_IDS = {
     *(f"PYF94_A1_L01_VAR_{i:03d}" for i in range(1, 13)),
     *(f"PYF94_A1_L01_TYPE_{i:03d}" for i in range(1, 13)),
     *(f"PYF94_A1_L01_INPUT_{i:03d}" for i in range(1, 13)),
+    *(f"PYV96_A1_REVIEW_{i:03d}_{suffix}" for i, suffix in [
+        (1, "VAR_REASSIGN"), (2, "PRINT_STRING_NUMBER"), (3, "TYPE_NAME"),
+        (4, "INT_ADD"), (5, "STRING_PLUS"), (6, "BOOL_COMPARE"),
+        (7, "IF_SIMPLE"), (8, "IF_FALSE_NO_ELSE"), (9, "LIST_INDEX_ZERO"),
+        (10, "LIST_APPEND_LEN"), (11, "DICT_KEY_VALUE"), (12, "DICT_UPDATE"),
+    ]),
+    *(f"PYV96_A2_NOTE_{i:03d}_{suffix}" for i, suffix in [
+        (1, "ASSIGNMENT_TRACE"), (2, "PRINT_NOT_STORE"), (3, "TYPE_STRING_INT"),
+        (4, "BOOL_IF"), (5, "LIST_APPEND_INDEX"), (6, "DICT_ASSIGN_READ"),
+        (7, "SPLIT_LIGHT"), (8, "IF_COMPARE"),
+    ]),
+    "PY10_L01_variable_001",
+    "PY10_L01_reassign_001",
+    "PY_L01_comment_001",
+    "PY_L01_type_001",
+    "PY_L01_cast_001",
+    "L01_len_001",
 }
 
 ABSTRACT_PATTERNS = {
@@ -50,11 +67,21 @@ def main() -> None:
     ids = [str(card["id"]) for card in cards]
     duplicate_ids = sorted(card_id for card_id, count in Counter(ids).items() if count > 1)
     level_counts = Counter(str(card.get("level", "?")) for card in cards)
+    actual_level1_ids = {str(card["id"]) for card in cards if str(card.get("level")) == "1"}
 
     print(f"V356_LESSON_FILES={len(file_counts)}")
     print(f"V356_TOTAL_CARDS={len(cards)}")
     print(f"V356_DUPLICATE_IDS={len(duplicate_ids)}")
     print("V356_LEVEL_COUNTS=" + ",".join(f"{k}:{v}" for k, v in sorted(level_counts.items())))
+    print(f"V356_LEVEL1_ACTUAL={len(actual_level1_ids)}")
+    print(f"V356_LEVEL1_REVIEWED_IDS={len(REVIEWED_IDS)}")
+    print(f"V356_LEVEL1_UNREVIEWED={len(actual_level1_ids - REVIEWED_IDS)}")
+    print(f"V356_LEVEL1_NONLEVEL1_IDS={len(REVIEWED_IDS - actual_level1_ids)}")
+
+    for card_id in sorted(actual_level1_ids - REVIEWED_IDS):
+        print(f"V356_LEVEL1_UNREVIEWED_ID={card_id}")
+    for card_id in sorted(REVIEWED_IDS - actual_level1_ids):
+        print(f"V356_LEVEL1_WRONG_REVIEW_ID={card_id}")
 
     reviewed = [card for card in cards if str(card["id"]) in REVIEWED_IDS]
     print(f"V356_REVIEWED_EXPECTED={len(REVIEWED_IDS)}")
@@ -74,7 +101,7 @@ def main() -> None:
             reviewed_failures.append(f"{card['id']}:no_result_language")
 
     print(f"V356_REVIEWED_FAILURES={len(reviewed_failures)}")
-    for item in reviewed_failures[:80]:
+    for item in reviewed_failures[:100]:
         print(f"V356_REVIEWED_FAILURE={item}")
 
     queue: list[tuple[int, str, str, list[str]]] = []
@@ -99,19 +126,23 @@ def main() -> None:
     queue.sort(key=lambda row: (row[0], row[1], row[2]))
     print("V356_PATTERN_COUNTS=" + ",".join(f"{k}:{v}" for k, v in sorted(pattern_counts.items())))
     print(f"V356_REVIEW_QUEUE_COUNT={len(queue)}")
-    for level, filename, card_id, reasons in queue[:160]:
+    for level, filename, card_id, reasons in queue[:200]:
         print(f"V356_QUEUE=level:{level}|file:{filename}|id:{card_id}|reasons:{'+'.join(reasons)}")
 
     if duplicate_ids:
         raise SystemExit("RESULT=FAIL_DUPLICATE_CARD_IDS")
     if len(cards) != 1785:
         raise SystemExit(f"RESULT=FAIL_CARD_COUNT_EXPECTED_1785_ACTUAL_{len(cards)}")
+    if len(actual_level1_ids) != 74:
+        raise SystemExit(f"RESULT=FAIL_LEVEL1_COUNT_EXPECTED_74_ACTUAL_{len(actual_level1_ids)}")
+    if actual_level1_ids != REVIEWED_IDS:
+        raise SystemExit("RESULT=FAIL_LEVEL1_REVIEW_COVERAGE")
     if len(reviewed) != len(REVIEWED_IDS):
         raise SystemExit("RESULT=FAIL_REVIEWED_ID_COVERAGE")
     if reviewed_failures:
         raise SystemExit("RESULT=FAIL_REVIEWED_CLARITY")
 
-    print("RESULT=PASS_V356_REVIEWED_BATCHES_AND_FULL_INVENTORY")
+    print("RESULT=PASS_V356_ALL_LEVEL1_AND_FULL_INVENTORY")
 
 
 if __name__ == "__main__":
