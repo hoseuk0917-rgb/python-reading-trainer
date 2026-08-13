@@ -13,6 +13,9 @@ EXPECTED = 206
 MIN_EXPLANATION = 70
 MIN_GOAL = 30
 FLOW_MARKERS = ("먼저", "그다음", "마지막", "실행", "반복", "조건", "호출", "return", "저장", "출력", "결과", "읽을 때", "확인")
+# Static/concept questions can be clear without narrating runtime steps.
+# Keep the flow-marker heuristic for execution-oriented question types.
+FLOW_EXEMPT_QUESTION_TYPES = {"concept", "concept_reading", "multiple_choice"}
 
 
 def load_rows():
@@ -61,6 +64,7 @@ def main():
     generic_formula = []
     for filename, card in rows:
         card_id = str(card.get("id", ""))
+        question_type = str(card.get("question_type", "")).strip()
         explanation = re.sub(r"\s+", " ", str(card.get("explanation", "")).strip())
         goal = re.sub(r"\s+", " ", str(card.get("reading_goal", "")).strip())
         for field in ("title", "code", "question", "answer", "project_context"):
@@ -70,7 +74,7 @@ def main():
             short_explanations.append(f"{filename}|{card_id}|{len(explanation)}")
         if len(goal) < MIN_GOAL:
             short_goals.append(f"{filename}|{card_id}|{len(goal)}")
-        if not any(marker in explanation for marker in FLOW_MARKERS):
+        if question_type not in FLOW_EXEMPT_QUESTION_TYPES and not any(marker in explanation for marker in FLOW_MARKERS):
             flow_weak.append(f"{filename}|{card_id}")
         if re.search(r"특히 .{0,80}조심해야", explanation):
             generic_formula.append(f"{filename}|{card_id}")
