@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 LESSON_DIR = ROOT / "data/lessons"
 MANIFEST = ROOT / "docs/audit/v356_level3_exact_manifest.json"
+MANUAL_REVIEW_MANIFEST = ROOT / "docs/audit/v356_level3_manual_review.json"
 EXPECTED_LEVEL3_COUNT = 206
 MIN_EXPLANATION_LENGTH = 70
 MIN_GOAL_LENGTH = 30
@@ -56,6 +57,18 @@ def ensure_manifest(entries):
     }
     MANIFEST.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return True
+
+
+def manual_final_ids():
+    if not MANUAL_REVIEW_MANIFEST.exists():
+        return set()
+    payload = json.loads(MANUAL_REVIEW_MANIFEST.read_text(encoding="utf-8"))
+    reviews = payload.get("reviews", []) if isinstance(payload, dict) else []
+    return {
+        str(review.get("id", ""))
+        for review in reviews
+        if isinstance(review, dict) and review.get("decision") == "REWRITE" and review.get("id")
+    }
 
 
 def concepts(card):
@@ -153,9 +166,12 @@ def main():
     rows, payloads = load_level3_cards()
     entries = exact_entries(rows)
     manifest_created = ensure_manifest(entries)
+    human_final = manual_final_ids()
     changed_cards = 0
     changed_files = set()
     for path, card in rows:
+        if str(card.get("id", "")) in human_final:
+            continue
         if improve_card(card):
             changed_cards += 1
             changed_files.add(path)
@@ -164,6 +180,7 @@ def main():
 
     print(f"V356_L3_EXACT_COUNT={len(entries)}")
     print(f"V356_L3_MANIFEST_CREATED={manifest_created}")
+    print(f"V356_L3_HUMAN_FINAL_SKIPPED={len(human_final)}")
     print(f"V356_L3_CHANGED_CARDS={changed_cards}")
     print(f"V356_L3_CHANGED_FILES={len(changed_files)}")
     print("RESULT=PASS_V356_LEVEL3_APPLY")

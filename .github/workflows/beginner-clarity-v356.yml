@@ -41,6 +41,8 @@ jobs:
           python -m py_compile tools/apply_beginner_clarity_v356_level3_all.py
           python -m py_compile tools/apply_beginner_clarity_v356_level3_manual.py
           python -m py_compile tools/apply_beginner_clarity_v356_level4_manual.py
+          python -m py_compile tools/apply_beginner_clarity_v356_levels5_10_manual.py
+          python -m py_compile tools/audit_beginner_clarity_v356_full_manual_review.py
           python -m py_compile tools/audit_beginner_clarity_v356_level3.py
           python -m py_compile tools/finalize_beginner_clarity_v356_runtime.py
           python -m py_compile tools/audit_beginner_clarity_v356.py
@@ -70,7 +72,7 @@ jobs:
             echo "V356_REVIEW_SNAPSHOTS_PUSHED=True"
           fi
 
-      - name: Apply V356 complete Level 1-4 batches
+      - name: Apply V356 complete Level 1-10 batches
         run: |
           python tools/apply_beginner_clarity_v356.py
           python tools/apply_beginner_clarity_v356_batch2.py
@@ -84,12 +86,16 @@ jobs:
           python tools/apply_beginner_clarity_v356_level3_all.py
           python tools/apply_beginner_clarity_v356_level3_manual.py
           python tools/apply_beginner_clarity_v356_level4_manual.py
+          python tools/apply_beginner_clarity_v356_levels5_10_manual.py
+
+      - name: V356 full 1785-card manual exact-set audit
+        run: python tools/audit_beginner_clarity_v356_full_manual_review.py
 
       - name: Confirm V356 apply idempotence
         shell: bash
         run: |
           set -euo pipefail
-          git diff -- src/pwa/app.js data/lessons docs/audit/v356_level3_exact_manifest.json docs/audit/v356_level3_manual_review.json docs/audit/v356_level4_manual_manifest.json > /tmp/v356-before.diff
+          git diff -- src/pwa/app.js data/lessons docs/audit/v356_level3_exact_manifest.json docs/audit/v356_level3_manual_review.json docs/audit/v356_level4_manual_manifest.json docs/audit/v356_levels5_10_manual_review.json docs/audit/v356_full_manual_review.json > /tmp/v356-before.diff
           python tools/apply_beginner_clarity_v356.py
           python tools/apply_beginner_clarity_v356_batch2.py
           python tools/apply_beginner_clarity_v356_batch3.py
@@ -102,7 +108,9 @@ jobs:
           python tools/apply_beginner_clarity_v356_level3_all.py
           python tools/apply_beginner_clarity_v356_level3_manual.py
           python tools/apply_beginner_clarity_v356_level4_manual.py
-          git diff -- src/pwa/app.js data/lessons docs/audit/v356_level3_exact_manifest.json docs/audit/v356_level3_manual_review.json docs/audit/v356_level4_manual_manifest.json > /tmp/v356-after.diff
+          python tools/apply_beginner_clarity_v356_levels5_10_manual.py
+          python tools/audit_beginner_clarity_v356_full_manual_review.py
+          git diff -- src/pwa/app.js data/lessons docs/audit/v356_level3_exact_manifest.json docs/audit/v356_level3_manual_review.json docs/audit/v356_level4_manual_manifest.json docs/audit/v356_levels5_10_manual_review.json docs/audit/v356_full_manual_review.json > /tmp/v356-after.diff
           cmp /tmp/v356-before.diff /tmp/v356-after.diff
           echo "V356_IDEMPOTENCE=PASS"
 
@@ -119,6 +127,9 @@ jobs:
 
       - name: V356 Level 3 exact-set clarity audit
         run: python tools/audit_beginner_clarity_v356_level3.py
+
+      - name: V356 full manual exact-set closure audit
+        run: python tools/audit_beginner_clarity_v356_full_manual_review.py
 
       - name: Existing lesson validation
         run: python tools/validate_lessons.py
@@ -199,7 +210,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/pwa/app.js data/lessons docs/audit/v356_level3_exact_manifest.json docs/audit/v356_level3_manual_review.json docs/audit/v356_level4_manual_manifest.json docs/audit/v356_review_ledger.tsv docs/audit/v356_review_chunks
+          git add src/pwa/app.js data/lessons docs/audit/v356_level3_exact_manifest.json docs/audit/v356_level3_manual_review.json docs/audit/v356_level4_manual_manifest.json docs/audit/v356_levels5_10_manual_review.json docs/audit/v356_full_manual_review.json docs/audit/v356_review_ledger.tsv docs/audit/v356_review_chunks
           git commit -m "Apply V356 generated clarity changes"
           git push origin HEAD:agent/v356-line-by-line-beginner-clarity
           echo "V356_CHANGES_PUSHED=True"
