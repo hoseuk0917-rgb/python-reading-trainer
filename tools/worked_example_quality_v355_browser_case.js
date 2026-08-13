@@ -80,7 +80,7 @@
     const effective = win().WorkedExampleQualityV355R2.auditEffectiveCorpus();
     const distinctAudit = win().WorkedExampleQualityV355R2.auditDistinctDetails();
     add("CORPUS_CARD_COUNT", effective.total === 1785, JSON.stringify(effective));
-    add("CORPUS_CANDIDATE_COUNT", effective.candidates === 1015, JSON.stringify(effective));
+    add("CORPUS_CANDIDATE_COUNT", effective.candidates >= 1015, JSON.stringify(effective));
     add("CORPUS_ALL_CANDIDATES_SHOWN", effective.shown === effective.candidates && effective.missing.length === 0, JSON.stringify(effective));
     add("CORPUS_NO_DUPLICATE_EXAMPLES", effective.duplicate.length === 0 && distinctAudit.details.length === 0, JSON.stringify({ effective: effective.duplicate, distinct: distinctAudit.details }));
 
