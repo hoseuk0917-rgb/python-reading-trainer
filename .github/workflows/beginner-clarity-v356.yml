@@ -51,6 +51,19 @@ jobs:
       - name: Export V356 full semantic review ledger
         run: python tools/export_v356_review_ledger.py
 
+      - name: Commit V356 review ledger snapshot
+        run: |
+          git add docs/audit/v356_review_ledger.tsv
+          if git diff --cached --quiet; then
+            echo "V356_LEDGER_ALREADY_CURRENT=True"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Refresh V356 semantic review ledger"
+            git push origin HEAD:agent/v356-line-by-line-beginner-clarity
+            echo "V356_LEDGER_PUSHED=True"
+          fi
+
       - name: Apply V356 complete Level 1-3 batches
         run: |
           python tools/apply_beginner_clarity_v356.py
@@ -172,6 +185,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/pwa/app.js data/lessons docs/audit/v356_level3_exact_manifest.json docs/audit/v356_review_ledger.tsv
-          git commit -m "Refresh V356 semantic review ledger"
+          git commit -m "Apply V356 generated clarity changes"
           git push origin HEAD:agent/v356-line-by-line-beginner-clarity
           echo "V356_CHANGES_PUSHED=True"
