@@ -58,6 +58,7 @@ def short_answer(answer: object) -> str:
 
 def personalize(sentence: str, card: dict) -> str:
     body = sentence[len("읽을 때는 "):].strip() if sentence.startswith("읽을 때는 ") else sentence
+    body = body.rstrip(". ")
     title = compact(card.get("title")) or "이 카드"
     anchor = code_anchor(str(card.get("code") or ""))
     if anchor:
@@ -67,8 +68,8 @@ def personalize(sentence: str, card: dict) -> str:
     answer = short_answer(card.get("answer"))
     qtype = str(card.get("question_type") or "")
     if answer and qtype != "output_prediction" and answer not in first:
-        first = first.rstrip(". ") + f". 이 순서를 따라가면 이 카드의 정답 `{answer}`가 어느 단계에서 결정되는지도 확인할 수 있다."
-    return first
+        return first + f", 이 순서를 따라가면 이 카드의 정답 `{answer}`가 어느 단계에서 결정되는지도 확인할 수 있다."
+    return first + "."
 
 
 def main() -> None:
@@ -94,12 +95,16 @@ def main() -> None:
             sentences = [x.strip() for x in re.split(r"(?<=[.!?])\s+", explanation) if x.strip()]
             touched = False
             new_sentences = []
+            seen = set()
             for sentence in sentences:
+                candidate = personalize(sentence, card) if sentence.startswith("읽을 때는 ") else sentence
                 if sentence.startswith("읽을 때는 "):
-                    new_sentences.append(personalize(sentence, card))
                     touched = True
-                else:
-                    new_sentences.append(sentence)
+                if candidate in seen:
+                    touched = True
+                    continue
+                seen.add(candidate)
+                new_sentences.append(candidate)
             if not touched:
                 continue
             before_sha = text_hash(card)
