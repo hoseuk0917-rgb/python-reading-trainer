@@ -14,6 +14,10 @@
     if (!ok) failed = true;
     report.textContent = lines.join("\n");
   }
+  function note(name, detail) {
+    lines.push(name + "=" + String(detail || ""));
+    report.textContent = lines.join("\n");
+  }
   function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
   async function waitFor(fn, timeout = 20000) {
     const start = Date.now();
@@ -45,6 +49,9 @@
     doc().querySelector("#learningHomeV343 .home-v343-primary").click();
     await need("quiz", () => doc().getElementById("learnView").classList.contains("v343-quiz-mode") && doc().querySelector("#choices .choice-btn"), 20000);
 
+    const distinctBefore = win().WorkedExampleQualityV355R2.auditDistinctDetails();
+    note("CORPUS_DUPLICATE_DETAILS", JSON.stringify(distinctBefore));
+
     const typeIndex = win().eval('cards.findIndex(function(card) { return Array.isArray(card.concepts) && card.concepts.indexOf("type") >= 0; })');
     add("TYPE_CARD_FOUND", Number(typeIndex) >= 0, "index=" + typeIndex);
     win().eval('currentIndex = ' + Number(typeIndex) + '; renderCard();');
@@ -53,6 +60,27 @@
     add("TYPE_PROBLEM_IS_ORIGINAL", problemCode.includes("type(") && problemCode.includes("value"), problemCode.replace(/\s+/g, " ").slice(0, 160));
 
     doc().querySelector("#choices .choice-btn:not([disabled])").click();
+    await sleep(350);
+    const diagnostic = win().eval(`(function () {
+      var card = cards[currentIndex];
+      var result = document.getElementById("resultBox");
+      var box = document.getElementById("workedExampleV340");
+      var picked = window.LearningEngineV340.pickSafeExample(card, cards, currentIndex, conceptInfo, "type");
+      return {
+        currentIndex: currentIndex,
+        cardId: card && card.id,
+        resultHidden: !!(result && result.classList.contains("hidden")),
+        resultText: result ? String(result.textContent || "").slice(0, 120) : "",
+        picked: picked,
+        last: window.__lastWorkedExampleV355 || null,
+        boxHidden: !!(box && box.classList.contains("hidden")),
+        boxClass: box ? box.className : "",
+        boxHtml: box ? String(box.innerHTML || "").slice(0, 240) : ""
+      };
+    })()`);
+    note("TYPE_RENDER_DIAGNOSTIC", JSON.stringify(diagnostic));
+    win().WorkedExampleQualityV355R2.refresh();
+
     await need("worked example", () => {
       win().WorkedExampleQualityV355R2.refresh();
       const box = doc().getElementById("workedExampleV340");
