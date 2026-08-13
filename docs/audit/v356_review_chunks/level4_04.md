@@ -21,7 +21,7 @@ print(u.active)
 ```
 - question: 출력 결과는?
 - answer: False
-- explanation: __init__에서 self.active가 False로 저장된다.
+- explanation: User()를 호출하면 새 User instance가 만들어지고 __init__의 self가 그 instance를 가리킨다. self.active = False가 active attribute의 초기값을 False로 저장하고, 생성이 끝난 뒤 그 object가 u에 연결된다. 마지막 print(u.active)가 저장된 False를 읽어 출력한다.
 - project_context: 초기 상태를 object에 저장하는 방식은 앱 상태 관리의 기본이다.
 
 ## PYF95_A5_OOP_026_ATTRIBUTE_LIST
@@ -66,7 +66,7 @@ print(p.data["level"])
 ```
 - question: 출력 결과는?
 - answer: 3
-- explanation: p.data는 dict이고 level key의 값은 3이다. 따라서 결과는 3이다.
+- explanation: Profile()을 만들 때 __init__이 {"level": 3} 딕셔너리를 self.data에 저장하고 생성된 object가 p에 연결된다. p.data는 그 딕셔너리를 가리키고, 이어지는 ["level"]이 level key에 연결된 값 3을 꺼낸다. 그래서 print(p.data["level"])은 3을 출력한다.
 - project_context: object 안에 메타데이터 dict를 넣어 관리하는 코드를 이해하는 데 필요하다.
 
 ## PYF95_A5_OOP_028_OBJECT_REPR_TYPE

@@ -188,7 +188,7 @@ print(df.head())
 ```
 - question: df.head()를 쓰는 이유로 알맞은 것은?
 - answer: 데이터 앞부분을 빠르게 확인하기 위해
-- explanation: df.head()는 DataFrame의 앞부분을 보여 준다. 파일을 읽은 직후 행과 열이 예상대로 들어왔는지 확인할 때 유용하다. 따라서 출력은 ‘데이터 앞부분을 빠르게 확인하기 위해’이다.
+- explanation: df.head()는 DataFrame의 앞부분을 보여 준다. CSV를 읽은 직후 사용하면 실제 열 이름과 몇 개의 행이 예상한 형태로 들어왔는지 빠르게 확인할 수 있다. 따라서 이 코드에서 df.head()를 사용하는 이유는 데이터를 본격적으로 처리하기 전에 앞부분을 점검하기 위해서다.
 - project_context: pandas로 읽은 데이터를 바로 처리하지 않고 먼저 확인하는 습관을 만든다.
 
 ## PY122_L04_READ_CSV_BASIC_001
@@ -268,7 +268,7 @@ if m:
 ```
 - question: if m: 확인을 먼저 하는 이유로 알맞은 것은?
 - answer: 매치가 없을 때 group() 오류를 줄이기 위해
-- explanation: re.search()가 패턴을 찾지 못하면 None을 돌려준다. None에는 group()이 없으므로 if m으로 먼저 확인한 뒤 값을 읽어야 안전하다. 따라서 출력은 ‘매치가 없을 때 group() 오류를 줄이기 위해’이다.
+- explanation: re.search()가 패턴을 찾으면 match object를 돌려주지만 찾지 못하면 None을 돌려준다. 따라서 먼저 if m:으로 실제 match object가 있는지 확인해야 한다. 이 확인 없이 m.group(0)을 호출하면 m이 None일 때 오류가 난다. 즉 if m:은 매치가 있을 때만 group을 읽도록 하는 안전 확인이다.
 - project_context: 정규식 추출에서 NoneType 오류를 피하는 안전 흐름이다.
 
 ## PY124_L04_RE_SEARCH_BASIC_001
@@ -305,7 +305,7 @@ print(response.text[:200])
 ```
 - question: response.text[:200]를 출력하는 이유로 알맞은 것은?
 - answer: 실제 응답 내용을 일부 확인하기 위해
-- explanation: response.text는 서버가 돌려준 원문 응답이다. JSON이 아니라 에러 HTML이나 안내문이 왔는지 확인할 때 도움이 된다. 따라서 출력은 ‘실제 응답 내용을 일부 확인하기 위해’이다.
+- explanation: response.status_code로 HTTP 상태를 먼저 확인한 뒤 response.text[:200]은 서버가 돌려준 원문 응답의 앞 200자만 보여 준다. API가 예상한 JSON 대신 오류 HTML이나 안내 문구를 돌려줬는지 빠르게 확인할 수 있어 디버깅에 유용하다. 따라서 이 줄의 목적은 실제 응답 내용을 일부 직접 확인하는 것이다.
 - project_context: API가 실패했을 때 화면에 온 실제 응답을 확인하는 습관을 만든다.
 
 ## PY121_L04_STATUS_CODE_BASIC_001

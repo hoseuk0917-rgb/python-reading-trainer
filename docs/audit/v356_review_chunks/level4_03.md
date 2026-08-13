@@ -409,7 +409,7 @@ print(t.shout())
 ```
 - question: 출력 결과는?
 - answer: HI
-- explanation: self.word()는 hi를 return하고 upper로 HI가 된다.
+- explanation: t.shout()를 호출하면 shout의 self는 t를 가리킨다. shout 안의 self.word()가 같은 object의 word method를 호출해 문자열 "hi"를 돌려준다. 이어서 "hi".upper()가 "HI"를 만들고 shout가 그 값을 return한다. 마지막으로 바깥 print가 "HI"를 출력한다.
 - project_context: class 내부 method들이 서로 연결되는 코드를 읽는 기초다.
 
 ## PYF95_A5_OOP_024_ATTRIBUTE_USED_IN_IF
@@ -433,5 +433,5 @@ else:
 ```
 - question: 출력 결과는?
 - answer: on
-- explanation: u.active는 True이므로 on이 출력된다.
+- explanation: User(True)를 호출하면 True가 active parameter로 들어가고 self.active = active가 u의 active attribute에 True를 저장한다. 다음 if u.active:에서 이 값이 True이므로 if 블록의 print("on")이 실행되고 else 블록은 건너뛴다. 따라서 on이 출력된다.
 - project_context: 사용자 상태나 설정 여부를 object attribute로 판단하는 코드와 연결된다.
