@@ -1,421 +1,996 @@
 [
-  {
-    "id": "PY46_L06_resume_safe_pipeline_001",
-    "level": 6,
-    "title": "resume-safe pipeline 읽기",
-    "concepts": [
-      "if",
-      "for",
-      "continue",
-      "resume_safe",
-      "pipeline",
-      "restart"
-    ],
-    "reading_goal": "중간에 멈춰도 이어서 다시 실행할 수 있는 파이프라인 구조를 이해한다.",
-    "code": "for shard in shards:\n    if is_done(shard):\n        continue\n    run_shard(shard)",
-    "question_type": "meaning_choice",
-    "question": "resume-safe pipeline의 핵심은?",
-    "choices": [
-      "이미 끝난 작업은 건너뛰고 남은 작업만 이어서 실행하는 것",
-      "항상 처음부터 다시 실행하는 것",
-      "완료 파일을 무조건 삭제하는 것",
-      "검증 없이 완료 처리하는 것"
-    ],
-    "answer": "이미 끝난 작업은 건너뛰고 남은 작업만 이어서 실행하는 것",
-    "explanation": "is_done이 성공 결과와 원자적으로 기록된 신뢰할 수 있는 상태일 때 완료 shard를 건너뛰고 나머지를 실행한다. resume-safe가 되려면 run_shard가 중단 경계에서 재실행돼도 안전해야 하고, checkpoint 손상·version 불일치·병렬 완료 순서를 처리해야 한다. 단순 file 존재 검사는 충분하지 않다.",
-    "side_card_ids": [],
-    "project_context": "KG node_pass shard나 대용량 카드 생성 작업처럼 오래 걸리는 작업에 필요하다."
-  },
-  {
-    "id": "PY46_L06_checkpoint_file_001",
-    "level": 6,
-    "title": "checkpoint file 읽기",
-    "concepts": [
-      "checkpoint",
-      "state_file",
-      "progress"
-    ],
-    "reading_goal": "작업 진행 상태를 파일로 남기는 checkpoint 개념을 이해한다.",
-    "code": "checkpoint.json\n{\n  \"last_done\": \"shard_0042\",\n  \"updated_at\": \"2026-05-31\"\n}",
-    "question_type": "meaning_choice",
-    "question": "checkpoint file의 역할은?",
-    "choices": [
-      "어디까지 작업했는지 기록한다",
-      "모든 결과를 삭제한다",
-      "GitHub 계정을 만든다",
-      "브라우저 캐시를 비운다"
-    ],
-    "answer": "어디까지 작업했는지 기록한다",
-    "explanation": "checkpoint는 재시작에 필요한 progress와 입력·code version을 내구성 있게 기록한다. last_done 하나는 작업이 고정 순서로 완료될 때만 안전하며 병렬 또는 순서 변경에서는 아직 안 끝난 shard를 건너뛸 수 있다. 그런 경우 완료 ID 집합이나 shard별 상태를 쓰고 atomic하게 갱신한다.",
-    "side_card_ids": [
-      "PYV159_A1_LEARNING_UX_FLOW",
-      "PYV159_A1_CHECKPOINT_RESUME_FLOW"
-    ],
-    "project_context": "shard 범위, 완료 개수, 마지막 처리 id를 남기면 장애 후 복구가 쉬워진다."
-  },
-  {
-    "id": "PY46_L07_done_marker_001",
-    "level": 7,
-    "title": "done marker 읽기",
-    "concepts": [
-      "done_marker",
-      "completion_flag",
-      "job_status"
-    ],
-    "reading_goal": "작업 완료를 별도 marker로 표시하는 이유를 이해한다.",
-    "code": "output.jsonl\noutput.done",
-    "question_type": "meaning_choice",
-    "question": "output.done 같은 done marker를 따로 두는 이유는?",
-    "choices": [
-      "출력 파일이 존재하는 것과 정상 완료를 구분하기 위해",
-      "출력 파일을 항상 숨기기 위해",
-      "작업을 무조건 실패 처리하기 위해",
-      "Git 로그를 줄이기 위해"
-    ],
-    "answer": "출력 파일이 존재하는 것과 정상 완료를 구분하기 위해",
-    "explanation": "output 존재만으로는 완성을 알 수 없으므로 검증된 완료 상태를 별도 marker로 표현한다. marker에는 output hash·row count·version을 연결하고 output을 durable하게 닫은 뒤 atomic하게 publish해야 한다. 빈 output.done 파일만 따로 생기면 stale marker가 될 수 있다.",
-    "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY"
-    ],
-    "project_context": "node_pass output이 존재한다고 바로 완료로 보면 partial output 위험이 생긴다."
-  },
-  {
-    "id": "PY46_L07_partial_output_001",
-    "level": 7,
-    "title": "partial output 읽기",
-    "concepts": [
-      "partial_output",
-      "incomplete_file",
-      "crash"
-    ],
-    "reading_goal": "중간에 끊긴 출력 파일이 정상 결과처럼 보일 수 있음을 이해한다.",
-    "code": "result.jsonl exists\nbut only 57 / 200 rows written",
-    "question_type": "meaning_choice",
-    "question": "partial output이 위험한 이유는?",
-    "choices": [
-      "파일은 있어도 결과가 끝까지 쓰이지 않았을 수 있기 때문",
-      "파일이 항상 너무 크기 때문",
-      "JSONL은 절대 검증할 수 없기 때문",
-      "PowerShell에서 읽을 수 없기 때문"
-    ],
-    "answer": "파일은 있어도 결과가 끝까지 쓰이지 않았을 수 있기 때문",
-    "explanation": "partial output은 작업이 중간에 끊겨 일부만 저장된 산출물이다. 파일 존재 여부만 보면 완료 파일로 오해할 수 있어 내용 검증이 필요하다. 완료 플래그나 검증 통과 기록을 함께 저장하면 중간 산출물과 최종 산출물을 구분하기 쉽다. 따라서 정답은 ‘파일은 있어도 결과가 끝까지 쓰이지 않았을 수 있기 때문’이다.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "AWS/로컬 shard가 중간에 멈췄을 때 output exists skip만 쓰면 누락이 생길 수 있다."
-  },
-  {
-    "id": "PY46_L07_output_exists_skip_risk_001",
-    "level": 7,
-    "title": "output exists skip 위험 읽기",
-    "concepts": [
-      "if",
-      "output_exists",
-      "skip_risk",
-      "validation"
-    ],
-    "reading_goal": "파일 존재만으로 skip하는 방식의 위험을 이해한다.",
-    "code": "if output_path.exists():\n    skip_job()  # risky",
-    "question_type": "meaning_choice",
-    "question": "이 skip 방식이 위험한 이유는?",
-    "choices": [
-      "깨진 출력이나 일부 출력도 완료로 착각할 수 있기 때문",
-      "파일이 없을 때만 실행되기 때문",
-      "Python 문법이 틀렸기 때문",
-      "Git push가 자동으로 되기 때문"
-    ],
-    "answer": "깨진 출력이나 일부 출력도 완료로 착각할 수 있기 때문",
-    "explanation": "skip 조건은 파일 존재가 아니라 검증 통과나 done marker 기준이어야 안전하다. output exists skip은 결과 파일이 있다는 이유만으로 작업을 건너뛰는 위험을 말한다. 파일이 완성본인지, 중간에 깨진 출력인지 검증해야 한다. 따라서 정답은 ‘깨진 출력이나 일부 출력도 완료로 착각할 수 있기 때문’이다.",
-    "side_card_ids": [],
-    "project_context": "이전에 '이미 아웃풋 있다고 스킵하면 안 됨'이라고 점검한 문제와 연결된다."
-  },
-  {
-    "id": "PY46_L08_validate_before_done_001",
-    "level": 8,
-    "title": "validate before mark done 읽기",
-    "concepts": [
-      "validation",
-      "done_marker",
-      "quality_gate"
-    ],
-    "reading_goal": "완료 표시 전에 결과를 검증해야 하는 이유를 이해한다.",
-    "code": "run_job()\nvalidate_output()\nwrite_done_marker()",
-    "question_type": "meaning_choice",
-    "question": "done marker를 언제 써야 가장 안전한가?",
-    "choices": [
-      "출력 검증이 통과한 뒤",
-      "작업을 시작하기 전",
-      "입력 파일을 보기 전",
-      "항상 실패했을 때"
-    ],
-    "answer": "출력 검증이 통과한 뒤",
-    "explanation": "run_job의 output을 완전히 기록·닫고 validation을 통과한 뒤 done marker를 atomic하게 publish한다. validation 범위가 schema와 예상 count·hash를 포함하는지도 확인한다. output과 marker가 다른 storage에 있으면 둘 사이 crash를 reconcile하는 복구 절차가 필요하다.",
-    "side_card_ids": [],
-    "project_context": "lesson 카드 확장에서도 JSON 생성 후 중복 ID, answer, side_card 참조를 검증한 뒤 커밋했다."
-  },
-  {
-    "id": "PY46_L08_atomic_write_001",
-    "level": 8,
-    "title": "atomic write 읽기",
-    "concepts": [
-      "atomic_write",
-      "temp_file",
-      "rename"
-    ],
-    "reading_goal": "임시 파일에 먼저 쓰고 성공 후 최종 파일명으로 바꾸는 패턴을 이해한다.",
-    "code": "tmp = output.with_suffix('.tmp')\nwrite_result(tmp)\ntmp.replace(output)",
-    "question_type": "meaning_choice",
-    "question": "temp file then rename 패턴의 장점은?",
-    "choices": [
-      "중간에 끊긴 파일이 최종 output 이름으로 남는 위험을 줄인다",
-      "파일을 무조건 숨긴다",
-      "검증을 불가능하게 만든다",
-      "항상 Git 충돌을 만든다"
-    ],
-    "answer": "중간에 끊긴 파일이 최종 output 이름으로 남는 위험을 줄인다",
-    "explanation": "같은 filesystem의 임시 파일을 완전히 쓰고 검증한 뒤 replace하면 최종 이름에 partial content가 보이는 window를 줄일 수 있다. rename의 atomicity와 overwrite 동작은 OS·filesystem에 달려 있고, 전원 장애 내구성에는 flush/fsync와 directory sync가 추가로 필요할 수 있다. 임시 파일 정리도 고려한다.",
-    "side_card_ids": [
-      "PYV102_A7_FILE_SAFE_WRITE"
-    ],
-    "project_context": "대용량 JSONL, manifest, audit TSV를 쓸 때 안전한 출력 패턴이다."
-  },
-  {
-    "id": "PY46_L08_idempotent_job_001",
-    "level": 8,
-    "title": "idempotent job 읽기",
-    "concepts": [
-      "comment",
-      "idempotent",
-      "rerun_safe",
-      "automation"
-    ],
-    "reading_goal": "같은 작업을 다시 실행해도 결과가 꼬이지 않는 idempotent 개념을 이해한다.",
-    "code": "upsert(item)\n# run once or twice -> final state is same",
-    "question_type": "meaning_choice",
-    "question": "idempotent job의 의미는?",
-    "choices": [
-      "여러 번 실행해도 최종 상태가 불필요하게 중복되지 않는다",
-      "한 번만 실행 가능하다는 뜻",
-      "항상 결과가 랜덤이라는 뜻",
-      "검증을 하면 안 된다는 뜻"
-    ],
-    "answer": "여러 번 실행해도 최종 상태가 불필요하게 중복되지 않는다",
-    "explanation": "idempotent 작업은 같은 입력과 idempotency key로 한 번 또는 여러 번 적용해도 관찰되는 최종 상태가 같다. upsert도 올바른 UNIQUE key와 update 의미가 있어야 하고 email 전송 같은 외부 side effect는 별도 dedup 기록이 필요하다. 완료 항목을 skip하는 것은 최적화이지 idempotence 정의 자체는 아니다.",
-    "side_card_ids": [
-      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
-    ],
-    "project_context": "v41~v45 스크립트의 already exists, already linked guard가 idempotent 안전장치다."
-  },
-  {
-    "id": "PY46_L08_retry_queue_001",
-    "level": 8,
-    "title": "retry queue 읽기",
-    "concepts": [
-      "if",
-      "retry_queue",
-      "failed_items",
-      "rerun"
-    ],
-    "reading_goal": "실패한 항목만 따로 모아 다시 처리하는 retry queue를 이해한다.",
-    "code": "if job_failed(item):\n    retry_queue.append(item_id)",
-    "question_type": "meaning_choice",
-    "question": "retry queue의 목적은?",
-    "choices": [
-      "실패한 항목만 다시 실행하기 위해",
-      "성공한 항목을 삭제하기 위해",
-      "모든 항목을 무조건 처음부터 다시 하기 위해",
-      "Git commit을 자동 취소하기 위해"
-    ],
-    "answer": "실패한 항목만 다시 실행하기 위해",
-    "explanation": "retry queue는 transient 실패 항목을 전체 작업과 분리해 다시 실행한다. item_id만 저장하면 input version이나 attempt 정보가 사라질 수 있으므로 payload reference, 오류, attempts, next retry time을 함께 둔다. 최대 횟수 뒤에는 dead-letter 또는 사람 검토로 보내고 idempotency를 보장한다.",
-    "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY"
-    ],
-    "project_context": "node extraction, edge promotion, lesson validation에서 실패 목록만 재처리할 수 있다."
-  },
-  {
-    "id": "PY46_L09_failed_only_rerun_001",
-    "level": 9,
-    "title": "failed items only rerun 읽기",
-    "concepts": [
-      "for",
-      "failed_only_rerun",
-      "selective_retry",
-      "cost_saving"
-    ],
-    "reading_goal": "실패한 항목만 선별 재실행하는 방식의 장점을 이해한다.",
-    "code": "failed_ids = load_failed_ids('audit.tsv')\nfor item_id in failed_ids:\n    rerun(item_id)",
-    "question_type": "meaning_choice",
-    "question": "failed only rerun의 장점은?",
-    "choices": [
-      "성공한 작업을 반복하지 않아 시간과 비용을 줄인다",
-      "실패 원인을 숨긴다",
-      "검증 로그를 삭제한다",
-      "항상 더 많은 중복을 만든다"
-    ],
-    "answer": "성공한 작업을 반복하지 않아 시간과 비용을 줄인다",
-    "explanation": "audit에서 실패 ID만 재실행하면 성공 항목의 비용을 줄일 수 있다. audit가 현재 input·code version과 일치하는지, 실패 항목의 upstream dependency가 바뀌지 않았는지 확인해야 한다. 수정이 공통 로직에 영향을 줬다면 성공 항목도 regression 검사가 필요하다.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "AWS GPU 비용이나 LLM 호출 비용을 아끼려면 실패분만 다시 돌리는 구조가 중요하다."
-  },
-  {
-    "id": "PY46_L09_shard_status_001",
-    "level": 9,
-    "title": "shard status 읽기",
-    "concepts": [
-      "shard",
-      "status",
-      "batch_job"
-    ],
-    "reading_goal": "여러 shard의 진행 상태를 표로 관리하는 방식을 이해한다.",
-    "code": "shard_id | total | done | status\n0031     | 200   | 200  | DONE\n0067     | 200   | 154  | RUNNING",
-    "question_type": "meaning_choice",
-    "question": "shard status 표가 필요한 이유는?",
-    "choices": [
-      "어느 조각이 완료/진행/실패 상태인지 한눈에 보기 위해",
-      "모든 shard를 삭제하기 위해",
-      "GPU 사용을 금지하기 위해",
-      "파일 인코딩을 바꾸기 위해"
-    ],
-    "answer": "어느 조각이 완료/진행/실패 상태인지 한눈에 보기 위해",
-    "explanation": "shard별 total, done, status를 모으면 남은 양과 실패 구간을 볼 수 있다. RUNNING이 실제로 살아 있는지 판단하려면 worker/lease ID와 updated_at 또는 heartbeat가 필요하고, total 정의와 중복 처리 여부도 일관돼야 한다. 상태 전이는 atomic하게 기록한다.",
-    "side_card_ids": [
-      "CS_batch_shard_001"
-    ],
-    "project_context": "AWS node_pass에서 0031~0100 shard 진행률을 관리했던 방식과 연결된다."
-  },
-  {
-    "id": "PY46_L09_progress_log_001",
-    "level": 9,
-    "title": "progress log 읽기",
-    "concepts": [
-      "print",
-      "progress_log",
-      "observability",
-      "long_running_job"
-    ],
-    "reading_goal": "오래 걸리는 작업에서 진행 로그를 남기는 이유를 이해한다.",
-    "code": "print(f'DONE {done}/{total} shard={shard_id}')",
-    "question_type": "meaning_choice",
-    "question": "progress log가 중요한 이유는?",
-    "choices": [
-      "작업이 멈춘 것인지 진행 중인지 판단할 수 있기 때문",
-      "결과 검증을 생략할 수 있기 때문",
-      "항상 속도가 빨라지기 때문",
-      "GitHub 저장소가 자동 생성되기 때문"
-    ],
-    "answer": "작업이 멈춘 것인지 진행 중인지 판단할 수 있기 때문",
-    "explanation": "progress log는 마지막으로 관찰된 done과 shard를 알려 주어 진단에 도움을 준다. 오래된 buffered log나 반복 출력만으로 process가 건강하거나 결과가 durable하다고 증명할 수는 없다. timestamp, attempt, worker ID를 남기고 checkpoint·heartbeat·실제 output과 함께 본다.",
-    "side_card_ids": [],
-    "project_context": "node_pass status 메시지의 done, running_processes, GPU util 같은 로그가 이에 해당한다."
-  },
-  {
-    "id": "PY46_L09_heartbeat_001",
-    "level": 9,
-    "title": "heartbeat 읽기",
-    "concepts": [
-      "while",
-      "heartbeat",
-      "liveness",
-      "watchdog"
-    ],
-    "reading_goal": "프로세스가 살아 있음을 주기적으로 표시하는 heartbeat를 이해한다.",
-    "code": "while running:\n    write_heartbeat(now())\n    sleep(60)",
-    "question_type": "meaning_choice",
-    "question": "heartbeat가 알려주는 것은?",
-    "choices": [
-      "작업 프로세스가 아직 살아 있는지",
-      "정답이 항상 맞는지",
-      "파일이 압축됐는지",
-      "Git 원격 주소가 바뀌었는지"
-    ],
-    "answer": "작업 프로세스가 아직 살아 있는지",
-    "explanation": "heartbeat는 해당 timestamp에 loop가 신호를 쓸 수 있었다는 뜻이다. 최근 heartbeat는 process 생존의 단서지만 실제 업무가 진행되거나 결과가 정확하다는 보장은 아니다. stale 판단 threshold는 갱신 주기와 일시 지연을 고려하고 progress counter와 worker lease도 함께 확인한다.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "서버에서 장시간 LoRA/node_pass를 돌릴 때 상태 감시용으로 쓸 수 있다."
-  },
-  {
-    "id": "PY46_L10_crash_recovery_001",
-    "level": 10,
-    "title": "crash recovery 읽기",
-    "concepts": [
-      "crash_recovery",
-      "restart",
-      "checkpoint"
-    ],
-    "reading_goal": "프로그램이 죽은 뒤 checkpoint와 output 검증으로 복구하는 흐름을 이해한다.",
-    "code": "on_start:\n  load checkpoint\n  scan outputs\n  validate done markers\n  resume pending jobs",
-    "question_type": "meaning_choice",
-    "question": "crash recovery에서 먼저 해야 할 일은?",
-    "choices": [
-      "checkpoint와 기존 output 상태를 다시 확인한다",
-      "무조건 모든 결과를 삭제한다",
-      "검증 없이 완료 처리한다",
-      "Git push부터 한다"
-    ],
-    "answer": "checkpoint와 기존 output 상태를 다시 확인한다",
-    "explanation": "시작 시 checkpoint, output, done marker를 입력·code version과 함께 reconcile해 어느 상태가 authoritative한지 정한다. 유효한 hash·schema·count를 가진 완료 output만 보존하고 partial·stale 상태는 격리하거나 idempotent하게 다시 처리한다. checkpoint만 무조건 믿으면 누락이 생길 수 있다.",
-    "side_card_ids": [
-      "PYV159_A1_CHECKPOINT_RESUME_FLOW"
-    ],
-    "project_context": "중간에 끊긴 shard, partial JSONL, 누락된 done marker를 점검하는 루틴이다."
-  },
-  {
-    "id": "PY46_L10_final_manifest_001",
-    "level": 10,
-    "title": "final manifest 읽기",
-    "concepts": [
-      "final_manifest",
-      "audit",
-      "reproducibility"
-    ],
-    "reading_goal": "최종 산출물 목록과 검증 결과를 manifest로 남기는 이유를 이해한다.",
-    "code": "final_manifest.tsv\noutput_path\trows\tsha256\tstatus\tvalidated_at",
-    "question_type": "meaning_choice",
-    "question": "final manifest가 있으면 좋은 점은?",
-    "choices": [
-      "최종 산출물의 경로, row 수, hash와 검증 상태를 재확인한다",
-      "모든 파일 내용을 자동 수정한다",
-      "실행 중인 process를 증명한다",
-      "비밀 key를 공개한다"
-    ],
-    "answer": "최종 산출물의 경로, row 수, hash와 검증 상태를 재확인한다",
-    "explanation": "manifest의 output_path, rows, sha256, status, validated_at은 예상 파일과 record 수, 정확한 byte content, 검증 시점을 확인하는 근거다. hash를 신뢰하려면 어떤 algorithm과 생성 version을 썼는지, manifest 자체의 무결성과 입력 provenance도 관리해야 한다.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "KG pack, clean text, lesson files, shard outputs를 묶을 때 final manifest가 필요하다."
-  },
-  {
-    "id": "PY46_L10_resume_safe_nodepass_001",
-    "level": 10,
-    "title": "resume-safe node_pass 읽기",
-    "concepts": [
-      "for",
-      "node_pass",
-      "resume_safe",
-      "shard_pipeline"
-    ],
-    "reading_goal": "KG node_pass 같은 실제 장시간 작업에 resume-safe 원칙을 적용한다.",
-    "code": "for shard in pending_shards:\n    run_node_pass(shard)\n    validate_jsonl(shard.output)\n    mark_done(shard)",
-    "question_type": "meaning_choice",
-    "question": "resume-safe node_pass에서 mark_done은 언제 해야 하나?",
-    "choices": [
-      "jsonl 출력 검증이 통과한 뒤",
-      "shard 실행 전에",
-      "출력 파일 이름만 만든 직후",
-      "GPU 사용률을 보기 전"
-    ],
-    "answer": "jsonl 출력 검증이 통과한 뒤",
-    "explanation": "run_node_pass가 output을 durable하게 저장하고 validate_jsonl이 schema·count·참조를 통과한 뒤 mark_done을 atomic하게 기록한다. validation 뒤 marker 전 crash가 나면 재실행될 수 있으므로 node pass와 저장은 idempotent해야 한다. 실패 목록과 input/model version도 shard 상태에 연결한다.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "노드 추출, 노드 승격, 엣지 승격 파이프라인을 안정화하는 핵심 습관이다."
-  }
+    {
+        "id":  "PY46_L06_resume_safe_pipeline_001",
+        "level":  6,
+        "title":  "완료된 shard에서는 `continue`로 실행 건너뛰기",
+        "concepts":  [
+                         "continue_statement",
+                         "for_statement",
+                         "if_statement",
+                         "call"
+                     ],
+        "reading_goal":  "continue statement가 전체 반복을 끝내지 않고 현재 회차의 남은 문장만 건너뛰는 효과를 읽는다.",
+        "code":  "shards = [\"shard_001\", \"shard_002\", \"shard_003\"]\ndone = {\"shard_001\", \"shard_002\"}\nran = []\n\ndef is_done(shard):\n    return shard in done\n\ndef run_shard(shard):\n    ran.append(shard)\n\nfor shard in shards:\n    if is_done(shard):\n        continue\n    run_shard(shard)\n\nprint(ran)",
+        "question_type":  "meaning_choice",
+        "question":  "`is_done(shard)`가 `True`인 회차에서 `continue`가 실행되면 무엇이 일어나는가?",
+        "choices":  [
+                        "현재 회차의 `run_shard(shard)`를 건너뛰고 다음 shard로 간다",
+                        "전체 for 반복을 즉시 끝낸다",
+                        "run_shard를 두 번 실행한다",
+                        "shards 리스트를 삭제한다"
+                    ],
+        "answer":  "현재 회차의 `run_shard(shard)`를 건너뛰고 다음 shard로 간다",
+        "explanation":  "현재 shard가 완료 상태이면 if가 True가 된다. continue가 실행되면 아래 `run_shard(shard)`는 이번 회차에서 실행되지 않는다. for는 다음 shard를 꺼내 계속 진행한다. continue의 정의가 현재 회차만 건너뛰는 것이기 때문입니다. 헷갈리기 쉬운 오답: 전체 for 반복을 즉시 끝낸다 전체 반복 종료는 break의 역할이고 continue는 다음 회차로 이동합니다. 오독 지점: continue와 break의 제어 흐름 차이를 구분합니다. `continue`는 현재 회차의 남은 코드를 건너뛰고 다음 반복으로 이동합니다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "중단 후 재시작할 때 이미 완료된 작업은 다시 실행하지 않고 남은 shard만 처리하는 pipeline 흐름이다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "continue_statement",
+        "reading_goal_internal":  "continue statement가 전체 반복을 끝내지 않고 현재 회차의 남은 문장만 건너뛰는 효과를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`continue`는 현재 반복 회차의 남은 코드를 건너뛰고 다음 회차로 이동하는 문장입니다.",
+                                    "how_to_read":  "continue 아래에 같은 들여쓰기 수준으로 남아 있는 문장이 무엇인지 보고 그 문장이 이번 회차에는 실행되지 않는다고 읽습니다.",
+                                    "key_point":  "continue는 break와 다릅니다. 반복 전체가 끝나는 것이 아니라 다음 항목으로 넘어갑니다.",
+                                    "common_mistake":  "완료 shard를 만나면 for 전체가 종료된다고 생각하기 쉽습니다. 그 동작은 break에 가깝고 continue는 다음 shard를 계속 봅니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "for n in [1, 2, 3]:\n    if n == 2:\n        continue\n    print(n)",
+                                 "walkthrough":  "n=2 회차의 print만 건너뛰므로 1과 3이 출력됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "현재 shard가 완료 상태이면 if가 True가 된다. continue가 실행되면 아래 `run_shard(shard)`는 이번 회차에서 실행되지 않는다. for는 다음 shard를 꺼내 계속 진행한다.",
+                                   "why_correct":  "continue의 정의가 현재 회차만 건너뛰는 것이기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "전체 for 반복을 즉시 끝낸다",
+                                                               "why_wrong":  "전체 반복 종료는 break의 역할이고 continue는 다음 회차로 이동합니다.",
+                                                               "misread_step":  "continue와 break의 제어 흐름 차이를 구분합니다."
+                                                           },
+                                   "takeaway":  "`continue`는 현재 회차의 남은 코드를 건너뛰고 다음 반복으로 이동합니다."
+                               },
+        "target_statement":  "continue",
+        "focus_span":  "continue",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "architecture_and_design",
+        "coverage_topics":  [
+                                "resume",
+                                "pipeline",
+                                "checkpoint",
+                                "continue"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY46_L06_checkpoint_file_001",
+        "level":  6,
+        "title":  "checkpoint dict에서 마지막 완료 지점 읽기",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "checkpoint에 마지막 완료 지점을 기록해 중단 후 재개하는 역할을 이해한다.",
+        "code":  "checkpoint = {\"last_done\": \"shard_0042\", \"updated_at\": \"2026-05-31\"}\nlast_done = checkpoint[\"last_done\"]\nprint(last_done)",
+        "question_type":  "meaning_choice",
+        "question":  "`checkpoint[\"last_done\"]`에 `shard_0042`를 저장해 두는 checkpoint file의 역할은 무엇인가?",
+        "choices":  [
+                        "작업이 어디까지 완료됐는지 기록해 중단 후 그 지점부터 이어갈 수 있게 한다",
+                        "모든 shard를 매번 처음부터 다시 실행하게 한다",
+                        "현재 날짜만 표시하기 위해",
+                        "완료한 shard 파일을 자동 삭제하기 위해"
+                    ],
+        "answer":  "작업이 어디까지 완료됐는지 기록해 중단 후 그 지점부터 이어갈 수 있게 한다",
+        "explanation":  "1) checkpoint의 last_done은 마지막 완료 shard를 기록한다. 2) 프로그램이 중단돼도 파일이 남는다. 3) 다음 실행에서 이 값을 읽어 이미 끝난 지점 이후부터 재개할 수 있다. 작업이 어디까지 완료됐는지 기록해 중단 후 그 지점부터 이어갈 수 있게 한다는 이 카드의 Python target을 legacy/domain 목적과 연결해 해석한 설명입니다. 헷갈리기 쉬운 오답: 모든 shard를 매번 처음부터 다시 실행하게 한다 이 선택지는 코드의 일부 문법이나 주변 상황만 보고 카드의 핵심 의미를 놓칩니다. 오독 지점: `shard_0042` 문자열만 맞히면 checkpoint를 왜 파일로 남기는지 놓칩니다. checkpoint는 **마지막 완료 지점 저장 → 재시작 시 읽기 → 이어서 실행**을 위한 상태 파일입니다.",
+        "side_card_ids":  [
+                              "PYV159_A1_LEARNING_UX_FLOW",
+                              "PYV159_A1_CHECKPOINT_RESUME_FLOW"
+                          ],
+        "project_context":  "중단된 batch 작업을 재개할 때 checkpoint에서 마지막 완료 지점을 읽는 맥락이다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "checkpoint에 마지막 완료 지점을 기록해 중단 후 재개하는 역할을 이해한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "dict key lookup은 특정 이름의 필드 값을 꺼내는 문법입니다.",
+                                    "how_to_read":  "대괄호 안 key를 checkpoint 정의에서 찾아 그 오른쪽 value를 읽습니다.",
+                                    "key_point":  "`last_done` value lookup보다 **이 값이 resume 기준점**이라는 의미가 핵심입니다.",
+                                    "common_mistake":  "`shard_0042` 문자열만 맞히면 checkpoint를 왜 파일로 남기는지 놓칩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "state = {\"last_page\": 7, \"saved_at\": \"10:30\"}\nprint(state[\"last_page\"])",
+                                 "walkthrough":  "last_page key의 value인 7이 출력됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) checkpoint의 last_done은 마지막 완료 shard를 기록한다. 2) 프로그램이 중단돼도 파일이 남는다. 3) 다음 실행에서 이 값을 읽어 이미 끝난 지점 이후부터 재개할 수 있다.",
+                                   "why_correct":  "작업이 어디까지 완료됐는지 기록해 중단 후 그 지점부터 이어갈 수 있게 한다는 이 카드의 Python target을 legacy/domain 목적과 연결해 해석한 설명입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "모든 shard를 매번 처음부터 다시 실행하게 한다",
+                                                               "why_wrong":  "이 선택지는 코드의 일부 문법이나 주변 상황만 보고 카드의 핵심 의미를 놓칩니다.",
+                                                               "misread_step":  "`shard_0042` 문자열만 맞히면 checkpoint를 왜 파일로 남기는지 놓칩니다."
+                                                           },
+                                   "takeaway":  "checkpoint는 **마지막 완료 지점 저장 → 재시작 시 읽기 → 이어서 실행**을 위한 상태 파일입니다."
+                               },
+        "target_statement":  "last_done = checkpoint[\"last_done\"]",
+        "focus_span":  "checkpoint[\"last_done\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "checkpoint",
+                                "resume",
+                                "last_done",
+                                "progress"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY46_L07_done_marker_001",
+        "level":  7,
+        "title":  "검증된 완료 정보를 dict literal 하나로 표현하기",
+        "concepts":  [
+                         "literal",
+                         "assignment",
+                         "subscription"
+                     ],
+        "reading_goal":  "중괄호 안 key-value 쌍을 읽어 marker가 validated 상태와 row count를 함께 보존하는 자료 구조임을 해석한다.",
+        "code":  "done_marker = {\"validated\": True, \"rows\": 200}\nprint(done_marker[\"validated\"])",
+        "question_type":  "output_prediction",
+        "question":  "이 done marker dict에서 `validated` key의 값은 무엇인가?",
+        "choices":  [
+                        "True",
+                        "200",
+                        "validated",
+                        "False"
+                    ],
+        "answer":  "True",
+        "explanation":  "1) dict literal에는 validated와 rows 두 key가 있다. 2) validated key와 연결된 value는 Boolean True다. 3) rows key와 연결된 value 200은 다른 항목이다. 4) done_marker[\u0027validated\u0027]가 True를 반환해 출력한다.",
+        "side_card_ids":  [
+                              "PYV102_A7_ASYNC_CONCURRENCY"
+                          ],
+        "project_context":  "실제 done marker에는 output hash·row count·version 같은 메타데이터도 함께 기록해 partial output과 정상 완료를 구분할 수 있다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "literal",
+        "reading_goal_internal":  "중괄호 안 key-value 쌍을 읽어 marker가 validated 상태와 row count를 함께 보존하는 자료 구조임을 해석한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "dict literal은 `{key: value, ...}` 형태로 key와 value 쌍을 코드에 직접 적어 dict 객체를 만듭니다.",
+                                    "how_to_read":  "중괄호 안을 쉼표 기준 쌍으로 나누고 각 key가 어떤 값을 가리키는지 읽습니다.",
+                                    "key_point":  "validated key는 True, rows key는 200을 가리킵니다.",
+                                    "common_mistake":  "dict literal의 key 순서를 완료 순서나 우선순위로 해석할 필요는 없습니다. 중요한 것은 각 key-value 의미입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "status = {\"ok\": True, \"count\": 3}\nprint(status[\"count\"])",
+                                 "walkthrough":  "dict literal이 두 key-value 쌍을 만들고 count key로 3을 조회합니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) dict literal에는 validated와 rows 두 key가 있다. 2) validated key와 연결된 value는 Boolean True다. 3) rows key와 연결된 value 200은 다른 항목이다. 4) done_marker[\u0027validated\u0027]가 True를 반환해 출력한다.",
+                                   "why_correct":  "dict literal에서 validated key가 직접 True와 연결돼 있습니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "200",
+                                                               "why_wrong":  "200은 rows key의 값이고 validated key의 값이 아닙니다.",
+                                                               "misread_step":  "각 key와 바로 오른쪽 value를 한 쌍으로 읽습니다."
+                                                           },
+                                   "takeaway":  "dict literal은 **key-value 쌍 구분 → 필요한 key 선택 → 연결된 value 해석**으로 읽습니다."
+                               },
+        "target_statement":  "{\"validated\": True, \"rows\": 200}",
+        "focus_span":  "{\"validated\": True, \"rows\": 200}",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "done_marker",
+                                "completion_flag",
+                                "validation",
+                                "metadata"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY46_L07_partial_output_001",
+        "level":  7,
+        "title":  "`written_rows \u003c expected_rows`로 partial output 여부 판정하기",
+        "concepts":  [
+                         "comparison",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "현재 작성 행 수와 기대 행 수를 비교해 실제 결과가 아직 덜 쓰였는지 Boolean으로 판단한다.",
+        "code":  "written_rows = 57\nexpected_rows = 200\nis_partial = written_rows \u003c expected_rows\nprint(is_partial)",
+        "question_type":  "output_prediction",
+        "question":  "57행만 쓰였고 200행을 기대한다면 `is_partial`은 무엇인가?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "57",
+                        "200"
+                    ],
+        "answer":  "True",
+        "explanation":  "1) written_rows의 현재 값은 57이다. 2) expected_rows의 현재 값은 200이다. 3) `57 \u003c 200`을 평가하면 True다. 4) 그 Boolean이 is_partial에 저장되어 출력된다.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "중간에 끊긴 JSONL shard나 대량 생성 결과가 파일만 남아 있을 때 count 기반 검증으로 partial 상태를 감지하는 흐름과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "현재 작성 행 수와 기대 행 수를 비교해 실제 결과가 아직 덜 쓰였는지 Boolean으로 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left \u003c right`는 왼쪽 값이 오른쪽 값보다 작은지 비교해 Boolean을 반환합니다.",
+                                    "how_to_read":  "두 수치를 실제 숫자로 놓고 부등호 방향을 그대로 적용합니다.",
+                                    "key_point":  "57은 200보다 작으므로 partial 판정은 True입니다.",
+                                    "common_mistake":  "파일이 존재한다는 사실만 보고 수량 비교를 생략하면 incomplete output을 놓칠 수 있습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "written = 9\nexpected = 10\nprint(written \u003c expected)",
+                                 "walkthrough":  "9가 10보다 작아 True가 출력됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) written_rows의 현재 값은 57이다. 2) expected_rows의 현재 값은 200이다. 3) `57 \u003c 200`을 평가하면 True다. 4) 그 Boolean이 is_partial에 저장되어 출력된다.",
+                                   "why_correct":  "실제 작성 행 수가 기대 행 수보다 작기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "57은 200보다 작으므로 less-than 조건이 성립합니다.",
+                                                               "misread_step":  "완료 여부라는 의미를 추측하기 전에 숫자 비교 자체를 먼저 계산합니다."
+                                                           },
+                                   "takeaway":  "less-than 비교는 **양쪽 값 확인 → `\u003c` 방향 적용 → Boolean 계산 → 상태 의미와 연결**로 읽습니다."
+                               },
+        "target_statement":  "written_rows \u003c expected_rows",
+        "focus_span":  "written_rows \u003c expected_rows",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "partial_output",
+                                "row_count",
+                                "incomplete_file",
+                                "validation"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY46_L07_output_exists_skip_risk_001",
+        "level":  7,
+        "title":  "파일 존재와 검증 통과를 `and`로 함께 요구해 안전한 skip 조건 만들기",
+        "concepts":  [
+                         "boolean_operation",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "왼쪽 output_exists가 True일 때 오른쪽 validation_passed까지 평가하고 둘 다 True여야 전체 조건이 True가 되는 흐름을 읽는다.",
+        "code":  "output_exists = True\nvalidation_passed = False\nskip_ready = output_exists and validation_passed\nprint(skip_ready)",
+        "question_type":  "output_prediction",
+        "question":  "파일은 존재하지만 validation이 실패했다면 `skip_ready`는 무엇인가?",
+        "choices":  [
+                        "False",
+                        "True",
+                        "output_exists",
+                        "None"
+                    ],
+        "answer":  "False",
+        "explanation":  "1) output_exists의 값은 True다. 2) 왼쪽이 truthy이므로 오른쪽 validation_passed도 평가한다. 3) validation_passed는 False다. 4) True and False의 결과는 False다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "resume-safe pipeline에서 output exists만 확인하지 않고 검증 결과나 done marker까지 확인한 뒤 skip하는 안전 원칙과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "boolean_operation",
+        "reading_goal_internal":  "왼쪽 output_exists가 True일 때 오른쪽 validation_passed까지 평가하고 둘 다 True여야 전체 조건이 True가 되는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`A and B`는 A가 falsy이면 그 자리에서 멈추고, A가 truthy이면 B까지 평가해 결과를 결정합니다.",
+                                    "how_to_read":  "왼쪽 조건부터 평가하고 True일 때만 오른쪽 조건을 확인합니다.",
+                                    "key_point":  "예제에서는 파일은 있지만 검증은 실패했으므로 True and False의 전체 결과는 False입니다.",
+                                    "common_mistake":  "output_exists가 True라는 이유만으로 전체 skip_ready도 True라고 판단하면 안 됩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "exists = True\nchecked = True\nprint(exists and checked)",
+                                 "walkthrough":  "왼쪽과 오른쪽이 모두 True라 전체 결과가 True입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) output_exists의 값은 True다. 2) 왼쪽이 truthy이므로 오른쪽 validation_passed도 평가한다. 3) validation_passed는 False다. 4) True and False의 결과는 False다.",
+                                   "why_correct":  "and는 두 조건이 모두 참일 때만 전체 조건을 참으로 만듭니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "True",
+                                                               "why_wrong":  "파일 존재만으로는 충분하지 않고 오른쪽 검증 조건도 통과해야 합니다.",
+                                                               "misread_step":  "복합 조건에서는 각 피연산자의 Boolean을 따로 확인합니다."
+                                                           },
+                                   "takeaway":  "and guard는 **왼쪽 평가 → 필요 시 오른쪽 평가 → 둘 다 참일 때만 통과**로 읽습니다."
+                               },
+        "target_statement":  "output_exists and validation_passed",
+        "focus_span":  "output_exists and validation_passed",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "output_exists",
+                                "validation",
+                                "skip_guard",
+                                "resume_safe"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY46_L08_validate_before_done_001",
+        "level":  8,
+        "title":  "검증 성공 뒤에만 done marker 쓰는 if gate 읽기",
+        "concepts":  [
+                         "if_statement",
+                         "call",
+                         "function_definition"
+                     ],
+        "reading_goal":  "함수 호출 반환값이 if 조건이 되어 완료 표시 호출의 실행 여부를 결정하는 순서를 읽는다.",
+        "code":  "events = []\n\ndef run_job():\n    events.append(\"run\")\n\ndef validate_output():\n    events.append(\"validate\")\n    return True\n\ndef write_done_marker():\n    events.append(\"done\")\n\nrun_job()\nif validate_output():\n    write_done_marker()",
+        "question_type":  "multiple_choice",
+        "question":  "`write_done_marker()`가 실행되는 조건은 무엇인가?",
+        "choices":  [
+                        "validate_output()가 truthy 값을 반환할 때",
+                        "run_job()이 호출되기만 하면",
+                        "항상",
+                        "events가 비어 있을 때"
+                    ],
+        "answer":  "validate_output()가 truthy 값을 반환할 때",
+        "explanation":  "`validate_output()`의 반환값이 if 조건입니다. 이 값이 truthy일 때만 본문으로 들어가 marker 함수를 호출합니다. if 문은 조건식의 truth value로 본문 실행 여부를 결정하기 때문입니다. 헷갈리기 쉬운 오답: run_job()이 호출되기만 하면 run_job 호출과 marker 호출 사이에는 별도 검증 조건이 있습니다. 오독 지점: 순차 호출만 보고 if gate를 무시한 경우입니다. 완료 표시는 **검증 호출 결과 → if 판단 → 성공 시 marker 호출** 순서로 읽습니다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "긴 배치 작업에서 출력 검증이 통과하기 전에 완료 marker를 남겨 잘못 재개되는 문제를 방지하는 흐름과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "함수 호출 반환값이 if 조건이 되어 완료 표시 호출의 실행 여부를 결정하는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if condition:`은 condition이 truthy일 때만 본문을 실행합니다.",
+                                    "how_to_read":  "조건이 함수 호출이라면 그 호출 결과를 먼저 얻고, 결과가 참인지 확인한 뒤 본문 실행 여부를 결정합니다.",
+                                    "key_point":  "done marker는 단순히 순서상 뒤에 있다는 것보다 **검증이 성공했을 때만 실행되는 분기 안에 있는지**가 중요합니다.",
+                                    "common_mistake":  "검증 함수가 호출되기만 하면 marker도 항상 기록된다고 생각하기 쉽습니다. 반환값이 False면 if 본문은 실행되지 않습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "events = []\n\ndef validate():\n    return False\n\ndef mark_done():\n    events.append(\"done\")\n\nif validate():\n    mark_done()",
+                                 "walkthrough":  "`validate()`가 False이므로 if 본문을 건너뛰고 `events`에는 done이 추가되지 않습니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`validate_output()`의 반환값이 if 조건입니다. 이 값이 truthy일 때만 본문으로 들어가 marker 함수를 호출합니다.",
+                                   "why_correct":  "if 문은 조건식의 truth value로 본문 실행 여부를 결정하기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "run_job()이 호출되기만 하면",
+                                                               "why_wrong":  "run_job 호출과 marker 호출 사이에는 별도 검증 조건이 있습니다.",
+                                                               "misread_step":  "순차 호출만 보고 if gate를 무시한 경우입니다."
+                                                           },
+                                   "takeaway":  "완료 표시는 **검증 호출 결과 → if 판단 → 성공 시 marker 호출** 순서로 읽습니다."
+                               },
+        "target_statement":  "if validate_output():",
+        "focus_span":  "if validate_output():",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "validation",
+                                "done marker",
+                                "job completion",
+                                "quality gate"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY46_L08_atomic_write_001",
+        "level":  8,
+        "title":  "tmp.replace(output)의 positional argument 읽기",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "attribute_access",
+                         "name_reference"
+                     ],
+        "reading_goal":  "메서드 호출 괄호 안 positional argument가 replace의 목적지 경로로 전달되는 구조를 읽는다.",
+        "code":  "from pathlib import Path\n\ntmp = Path(\"result.tmp\")\noutput = Path(\"result.json\")\ntmp.replace(output)",
+        "question_type":  "multiple_choice",
+        "question":  "`replace()`에 목적지로 전달되는 positional argument는 무엇인가?",
+        "choices":  [
+                        "output",
+                        "tmp",
+                        "Path",
+                        "result.tmp"
+                    ],
+        "answer":  "output",
+        "explanation":  "`tmp.replace(output)`에서 점 앞의 `tmp`는 메서드를 호출하는 객체이고, 괄호 안 `output`은 replace에 전달하는 입력값입니다. 괄호 안에 이름 없이 적힌 첫 표현식은 첫 positional argument로 전달되기 때문입니다. 헷갈리기 쉬운 오답: tmp `tmp`는 메서드 호출의 receiver이지 괄호 안 positional argument가 아닙니다. 오독 지점: 호출 객체와 호출 인자를 구분하지 않은 경우입니다. 메서드 호출은 **receiver.method(argument)** 구조를 나눠 읽습니다.",
+        "side_card_ids":  [
+                              "PYV102_A7_FILE_SAFE_WRITE"
+                          ],
+        "project_context":  "결과를 임시 파일에 먼저 완성한 뒤 최종 경로로 교체해 중간 실패 시 불완전 파일 노출을 줄이는 저장 패턴과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "메서드 호출 괄호 안 positional argument가 replace의 목적지 경로로 전달되는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "함수나 메서드 호출에서 이름 없이 위치로 전달하는 값은 positional argument입니다.",
+                                    "how_to_read":  "호출 대상과 괄호 안 표현식을 구분하고, 각 argument가 어떤 값인지 확인합니다.",
+                                    "key_point":  "`tmp.replace(output)`에서는 호출 대상이 `tmp`이고, `output`은 replace에 전달되는 목적지 argument입니다.",
+                                    "common_mistake":  "`output`이 replace 호출의 반환값이라고 생각하기 쉽습니다. 이 위치에서는 메서드에 입력으로 전달되는 argument입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "class FileRef:\n    def replace(self, destination):\n        return destination\n\ntmp = FileRef()\noutput = \"final.json\"\nresult = tmp.replace(output)",
+                                 "walkthrough":  "`output` 문자열이 첫 positional argument로 `destination` parameter에 전달됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`tmp.replace(output)`에서 점 앞의 `tmp`는 메서드를 호출하는 객체이고, 괄호 안 `output`은 replace에 전달하는 입력값입니다.",
+                                   "why_correct":  "괄호 안에 이름 없이 적힌 첫 표현식은 첫 positional argument로 전달되기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "tmp",
+                                                               "why_wrong":  "`tmp`는 메서드 호출의 receiver이지 괄호 안 positional argument가 아닙니다.",
+                                                               "misread_step":  "호출 객체와 호출 인자를 구분하지 않은 경우입니다."
+                                                           },
+                                   "takeaway":  "메서드 호출은 **receiver.method(argument)** 구조를 나눠 읽습니다."
+                               },
+        "target_statement":  "tmp.replace(output)",
+        "focus_span":  "output",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "atomic write",
+                                "temporary file",
+                                "replace",
+                                "output path"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY46_L08_idempotent_job_001",
+        "level":  8,
+        "title":  "같은 key 대입으로 재실행 가능한 upsert 상태 읽기",
+        "concepts":  [
+                         "assignment",
+                         "subscription",
+                         "literal"
+                     ],
+        "reading_goal":  "dict key 대입이 기존 key의 value를 교체하며 같은 값을 반복 대입하면 최종 상태가 달라지지 않는다는 점을 추적한다.",
+        "code":  "store = {}\n\ndef upsert(item):\n    store[item[\"id\"]] = item\n\nitem = {\"id\": \"A\", \"status\": \"done\"}\nupsert(item)\nupsert(item)",
+        "question_type":  "multiple_choice",
+        "question":  "같은 `item`으로 `upsert(item)`을 두 번 호출한 뒤 `store`의 key 수는 몇 개인가?",
+        "choices":  [
+                        "0개",
+                        "1개",
+                        "2개",
+                        "3개"
+                    ],
+        "answer":  "1개",
+        "explanation":  "두 호출 모두 `item[\u0027id\u0027]`가 `A`이므로 같은 dict key를 사용합니다. 둘째 대입은 새로운 key를 추가하지 않고 기존 A의 value를 다시 설정합니다. dict는 같은 key를 하나만 유지하며 기존 key에 대입하면 value를 갱신하기 때문입니다. 헷갈리기 쉬운 오답: 2개 두 번 실행됐다는 사실이 두 개의 서로 다른 key를 만든다는 뜻은 아닙니다. 오독 지점: 호출 횟수와 dict key 개수를 동일하게 본 경우입니다. idempotent한 저장을 읽을 때는 **재실행 후 key와 최종 value가 어떻게 변하는지** 추적합니다.",
+        "side_card_ids":  [
+                              "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
+                          ],
+        "project_context":  "실패 후 재시도되는 배치·수집 작업에서 같은 항목을 중복 생성하지 않고 동일 최종 상태로 수렴시키는 구조와 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "dict key 대입이 기존 key의 value를 교체하며 같은 값을 반복 대입하면 최종 상태가 달라지지 않는다는 점을 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping[key] = value`는 dict의 특정 key에 value를 저장하는 subscription assignment입니다.",
+                                    "how_to_read":  "먼저 key 표현식을 계산하고, 그 위치에 오른쪽 value를 저장합니다. 같은 key가 이미 있으면 기존 value를 교체합니다.",
+                                    "key_point":  "같은 id와 같은 item을 반복 저장하면 항목이 계속 추가되는 것이 아니라 같은 key의 상태가 유지됩니다.",
+                                    "common_mistake":  "함수를 두 번 호출했으니 dict 항목도 두 개 생긴다고 생각하기 쉽습니다. dict는 같은 key를 중복 보유하지 않습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "store = {}\nitem = {\"id\": \"X\", \"value\": 1}\nstore[item[\"id\"]] = item\nstore[item[\"id\"]] = item",
+                                 "walkthrough":  "두 번 모두 key `X`에 같은 dict를 저장하므로 최종 key 수는 하나입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "두 호출 모두 `item[\u0027id\u0027]`가 `A`이므로 같은 dict key를 사용합니다. 둘째 대입은 새로운 key를 추가하지 않고 기존 A의 value를 다시 설정합니다.",
+                                   "why_correct":  "dict는 같은 key를 하나만 유지하며 기존 key에 대입하면 value를 갱신하기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "2개",
+                                                               "why_wrong":  "두 번 실행됐다는 사실이 두 개의 서로 다른 key를 만든다는 뜻은 아닙니다.",
+                                                               "misread_step":  "호출 횟수와 dict key 개수를 동일하게 본 경우입니다."
+                                                           },
+                                   "takeaway":  "idempotent한 저장을 읽을 때는 **재실행 후 key와 최종 value가 어떻게 변하는지** 추적합니다."
+                               },
+        "target_statement":  "store[item[\"id\"]] = item",
+        "focus_span":  "store[item[\"id\"]] = item",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "architecture_and_design",
+        "coverage_topics":  [
+                                "idempotent job",
+                                "upsert",
+                                "retry safety",
+                                "state"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY46_L08_retry_queue_001",
+        "level":  8,
+        "title":  "append()로 실패 작업을 retry queue에 넣기",
+        "concepts":  [
+                         "call",
+                         "attribute_access",
+                         "name_reference"
+                     ],
+        "reading_goal":  "if 조건을 통과한 뒤 list.append 호출이 기존 queue의 끝에 새 id를 추가하는 상태 변화를 추적한다.",
+        "code":  "retry_queue = [\"job-1\"]\nitem = {\"id\": \"job-2\", \"failed\": True}\nitem_id = item[\"id\"]\nif item[\"failed\"]:\n    retry_queue.append(item_id)",
+        "question_type":  "multiple_choice",
+        "question":  "코드 실행 뒤 `retry_queue`의 값은 무엇인가?",
+        "choices":  [
+                        "[\"job-1\", \"job-2\"]",
+                        "[\"job-2\"]",
+                        "[\"job-1\"]",
+                        "[]"
+                    ],
+        "answer":  "[\"job-1\", \"job-2\"]",
+        "explanation":  "item의 failed 값이 True이므로 if 본문에 들어갑니다. `append(item_id)`가 기존 `job-1` 뒤에 `job-2`를 추가합니다. `append()`는 전달값 하나를 기존 리스트 끝에 추가하기 때문입니다. 헷갈리기 쉬운 오답: [\"job-2\"] append는 기존 리스트를 교체하지 않고 기존 항목 뒤에 새 항목을 추가합니다. 오독 지점: append를 새 리스트 대입처럼 읽은 경우입니다. retry queue는 **실패 조건 확인 → 실패 id append → 나중 재처리** 흐름으로 읽습니다.",
+        "side_card_ids":  [
+                              "PYV102_A7_ASYNC_CONCURRENCY"
+                          ],
+        "project_context":  "수집·변환·검증 배치에서 실패한 항목만 별도 재시도 대상으로 모으는 운영 흐름과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "if 조건을 통과한 뒤 list.append 호출이 기존 queue의 끝에 새 id를 추가하는 상태 변화를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`list.append(value)`는 리스트 끝에 value 한 항목을 추가하는 메서드 호출입니다.",
+                                    "how_to_read":  "호출 전 리스트 상태와 argument 값을 확인하고, 호출 뒤 한 항목이 끝에 추가된 상태를 반영합니다.",
+                                    "key_point":  "retry queue의 목적은 실패 항목을 나중에 다시 처리할 수 있게 별도 목록에 남기는 것입니다.",
+                                    "common_mistake":  "`append()`가 새 리스트를 반환한다고 생각하기 쉽습니다. 원본 리스트를 직접 변경합니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "queue = [\"task-1\"]\nfailed_id = \"task-3\"\nqueue.append(failed_id)",
+                                 "walkthrough":  "`task-3`이 기존 리스트 끝에 추가되어 queue는 두 항목이 됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "item의 failed 값이 True이므로 if 본문에 들어갑니다. `append(item_id)`가 기존 `job-1` 뒤에 `job-2`를 추가합니다.",
+                                   "why_correct":  "`append()`는 전달값 하나를 기존 리스트 끝에 추가하기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\"job-2\"]",
+                                                               "why_wrong":  "append는 기존 리스트를 교체하지 않고 기존 항목 뒤에 새 항목을 추가합니다.",
+                                                               "misread_step":  "append를 새 리스트 대입처럼 읽은 경우입니다."
+                                                           },
+                                   "takeaway":  "retry queue는 **실패 조건 확인 → 실패 id append → 나중 재처리** 흐름으로 읽습니다."
+                               },
+        "target_statement":  "retry_queue.append(item_id)",
+        "focus_span":  "retry_queue.append(item_id)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "retry queue",
+                                "failed job",
+                                "append",
+                                "recovery"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY46_L09_failed_only_rerun_001",
+        "level":  9,
+        "title":  "failed_ids만 순회해 선택적으로 재실행하기",
+        "concepts":  [
+                         "for_statement",
+                         "call",
+                         "function_definition"
+                     ],
+        "reading_goal":  "실패 목록만 iterable로 사용해 성공 항목을 제외하고 재실행하는 for loop 흐름을 읽는다.",
+        "code":  "def load_failed_ids(path):\n    return [\"item-03\", \"item-08\"]\n\nrerun_ids = []\ndef rerun(item_id):\n    rerun_ids.append(item_id)\n\nfailed_ids = load_failed_ids(\"audit.tsv\")\nfor item_id in failed_ids:\n    rerun(item_id)",
+        "question_type":  "multiple_choice",
+        "question":  "failed-only rerun의 장점으로 가장 가까운 것은?",
+        "choices":  [
+                        "성공한 작업을 반복하지 않아 시간과 비용을 줄인다",
+                        "실패 원인을 숨긴다",
+                        "검증 로그를 삭제한다",
+                        "항상 더 많은 중복을 만든다"
+                    ],
+        "answer":  "성공한 작업을 반복하지 않아 시간과 비용을 줄인다",
+        "explanation":  "load_failed_ids가 실패한 item-03과 item-08만 반환하고 for loop가 이 두 항목에 대해서만 rerun을 호출합니다. 반복 입력 자체가 실패 항목으로 제한돼 있기 때문입니다. 헷갈리기 쉬운 오답: 항상 더 많은 중복을 만든다 목적은 성공 항목의 중복 실행을 줄이는 것입니다. 오독 지점: 선택적 재실행과 전체 재실행을 반대로 해석한 경우입니다. selective retry는 **실패 목록 추출 → 실패 항목만 loop → 성공 항목 재사용**으로 읽습니다.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "장시간 GPU batch나 유료 LLM 호출에서 실패 shard/row만 다시 돌려 자원을 아끼는 운영 패턴과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "for_statement",
+        "reading_goal_internal":  "실패 목록만 iterable로 사용해 성공 항목을 제외하고 재실행하는 for loop 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`for item in iterable:`은 iterable의 값을 하나씩 item에 넣으며 본문을 반복하는 for statement입니다.",
+                                    "how_to_read":  "반복 대상 collection에 어떤 값만 들어 있는지 확인합니다.",
+                                    "key_point":  "failed-only rerun은 전체 batch를 다시 돌리지 않고 실패분만 처리해 시간·GPU/API 비용을 줄일 수 있습니다.",
+                                    "common_mistake":  "for 문이 원래 전체 작업 목록도 자동으로 순회한다고 생각하기 쉽습니다. 현재 iterable은 failed_ids뿐입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "failed = [\"b\", \"d\"]\nrerun = []\nfor item in failed:\n    rerun.append(item)",
+                                 "walkthrough":  "b와 d만 반복 대상이므로 rerun에도 두 값만 들어갑니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "load_failed_ids가 실패한 item-03과 item-08만 반환하고 for loop가 이 두 항목에 대해서만 rerun을 호출합니다.",
+                                   "why_correct":  "반복 입력 자체가 실패 항목으로 제한돼 있기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "항상 더 많은 중복을 만든다",
+                                                               "why_wrong":  "목적은 성공 항목의 중복 실행을 줄이는 것입니다.",
+                                                               "misread_step":  "선택적 재실행과 전체 재실행을 반대로 해석한 경우입니다."
+                                                           },
+                                   "takeaway":  "selective retry는 **실패 목록 추출 → 실패 항목만 loop → 성공 항목 재사용**으로 읽습니다."
+                               },
+        "target_statement":  "for item_id in failed_ids:",
+        "focus_span":  "for item_id in failed_ids:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "cli_and_automation",
+        "coverage_topics":  [
+                                "failed-only rerun",
+                                "selective retry",
+                                "batch",
+                                "cost saving"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY46_L09_shard_status_001",
+        "level":  9,
+        "title":  "RUNNING shard만 status 표에서 골라내기",
+        "concepts":  [
+                         "list_comprehension",
+                         "comparison",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "shard 상태 레코드에서 RUNNING 항목만 필터링해 현재 진행 중 조각을 찾는 흐름을 읽는다.",
+        "code":  "shards = [\n    {\"shard_id\": \"0031\", \"total\": 200, \"done\": 200, \"status\": \"DONE\"},\n    {\"shard_id\": \"0067\", \"total\": 200, \"done\": 154, \"status\": \"RUNNING\"},\n]\nrunning_ids = [row[\"shard_id\"] for row in shards if row[\"status\"] == \"RUNNING\"]",
+        "question_type":  "multiple_choice",
+        "question":  "`running_ids`의 값은 무엇인가?",
+        "choices":  [
+                        "[\"0067\"]",
+                        "[\"0031\"]",
+                        "[\"0031\", \"0067\"]",
+                        "[]"
+                    ],
+        "answer":  "[\"0067\"]",
+        "explanation":  "두 row 중 status가 RUNNING인 것은 0067 하나뿐이라 comprehension 결과는 `[\u00270067\u0027]`입니다. filter 조건 `row[\u0027status\u0027] == \u0027RUNNING\u0027`이 0067에서만 True이기 때문입니다. 헷갈리기 쉬운 오답: [\"0031\", \"0067\"] 0031은 status가 DONE이라 필터에서 제외됩니다. 오독 지점: comprehension의 if filter를 무시한 경우입니다. shard 모니터링은 **상태 레코드 → filter → 필요한 shard ID 추출**로 읽습니다.",
+        "side_card_ids":  [
+                              "CS_batch_shard_001"
+                          ],
+        "project_context":  "대량 GPU/LLM 작업을 shard로 쪼개 실행할 때 완료·진행·실패 조각을 빠르게 확인하는 운영 화면과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "list_comprehension",
+        "reading_goal_internal":  "shard 상태 레코드에서 RUNNING 항목만 필터링해 현재 진행 중 조각을 찾는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`[expression for item in items if condition]`은 조건을 만족하는 항목만 새 리스트에 담는 filtered list comprehension입니다.",
+                                    "how_to_read":  "반복 대상, 결과에 넣을 값, 마지막 filter 조건을 순서대로 확인합니다.",
+                                    "key_point":  "shard별 status를 구조화하면 완료/진행/실패 조각을 빠르게 식별할 수 있습니다.",
+                                    "common_mistake":  "모든 shard_id가 결과에 들어간다고 생각하기 쉽습니다. status가 RUNNING인 row만 남습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "jobs = [{\"id\": \"a\", \"status\": \"DONE\"}, {\"id\": \"b\", \"status\": \"RUNNING\"}]\nrunning = [job[\"id\"] for job in jobs if job[\"status\"] == \"RUNNING\"]",
+                                 "walkthrough":  "b만 RUNNING이므로 running은 [\u0027b\u0027]입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "두 row 중 status가 RUNNING인 것은 0067 하나뿐이라 comprehension 결과는 `[\u00270067\u0027]`입니다.",
+                                   "why_correct":  "filter 조건 `row[\u0027status\u0027] == \u0027RUNNING\u0027`이 0067에서만 True이기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\"0031\", \"0067\"]",
+                                                               "why_wrong":  "0031은 status가 DONE이라 필터에서 제외됩니다.",
+                                                               "misread_step":  "comprehension의 if filter를 무시한 경우입니다."
+                                                           },
+                                   "takeaway":  "shard 모니터링은 **상태 레코드 → filter → 필요한 shard ID 추출**로 읽습니다."
+                               },
+        "target_statement":  "running_ids = [row[\"shard_id\"] for row in shards if row[\"status\"] == \"RUNNING\"]",
+        "focus_span":  "[row[\"shard_id\"] for row in shards if row[\"status\"] == \"RUNNING\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "shard",
+                                "status",
+                                "batch job",
+                                "progress"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY46_L09_progress_log_001",
+        "level":  9,
+        "title":  "done/total과 shard id를 progress f-string으로 만들기",
+        "concepts":  [
+                         "f_string",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "여러 진행 상태 변수가 f-string에 삽입되어 사람이 읽기 쉬운 로그 한 줄이 되는 과정을 읽는다.",
+        "code":  "done = 154\ntotal = 200\nshard_id = \"0067\"\nmessage = f\"DONE {done}/{total} shard={shard_id}\"",
+        "question_type":  "multiple_choice",
+        "question":  "`message`의 값은 무엇인가?",
+        "choices":  [
+                        "DONE 154/200 shard=0067",
+                        "DONE {done}/{total} shard={shard_id}",
+                        "154",
+                        "0067"
+                    ],
+        "answer":  "DONE 154/200 shard=0067",
+        "explanation":  "세 변수 값이 f-string에 순서대로 삽입돼 `DONE 154/200 shard=0067`이 됩니다. f-string이 중괄호 expression을 현재 값으로 평가하기 때문입니다. 헷갈리기 쉬운 오답: DONE {done}/{total} shard={shard_id} 그 형태는 f-string 평가 전 template 모습입니다. 오독 지점: f-string 치환을 적용하지 않은 경우입니다. progress log는 **핵심 상태값 → f-string → 한눈에 읽는 운영 메시지**로 만듭니다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "node extraction·LoRA·대량 검증처럼 오래 걸리는 작업에서 진행률을 짧은 로그로 확인하는 운영과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "f_string",
+        "reading_goal_internal":  "여러 진행 상태 변수가 f-string에 삽입되어 사람이 읽기 쉬운 로그 한 줄이 되는 과정을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "f-string은 `{expression}` 위치에 현재 값을 넣어 문자열을 만드는 문법입니다.",
+                                    "how_to_read":  "각 중괄호 안 변수의 현재 값을 확인하고 고정 문자열과 결합합니다.",
+                                    "key_point":  "긴 작업에서는 done/total과 shard id를 같이 남겨 진행 중인지 멈췄는지 판단하기 쉽게 합니다.",
+                                    "common_mistake":  "`{done}` 같은 글자가 그대로 출력된다고 생각하기 쉽습니다. f-string에서는 변수 값으로 치환됩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "done = 3\ntotal = 5\nmsg = f\"DONE {done}/{total}\"",
+                                 "walkthrough":  "msg는 `DONE 3/5`가 됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "세 변수 값이 f-string에 순서대로 삽입돼 `DONE 154/200 shard=0067`이 됩니다.",
+                                   "why_correct":  "f-string이 중괄호 expression을 현재 값으로 평가하기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "DONE {done}/{total} shard={shard_id}",
+                                                               "why_wrong":  "그 형태는 f-string 평가 전 template 모습입니다.",
+                                                               "misread_step":  "f-string 치환을 적용하지 않은 경우입니다."
+                                                           },
+                                   "takeaway":  "progress log는 **핵심 상태값 → f-string → 한눈에 읽는 운영 메시지**로 만듭니다."
+                               },
+        "target_statement":  "message = f\"DONE {done}/{total} shard={shard_id}\"",
+        "focus_span":  "f\"DONE {done}/{total} shard={shard_id}\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "progress log",
+                                "observability",
+                                "long-running job",
+                                "shard"
+                            ],
+        "pedagogical_intent":  "predict_output"
+    },
+    {
+        "id":  "PY46_L09_heartbeat_001",
+        "level":  9,
+        "title":  "running 동안 heartbeat를 기록하는 while loop 읽기",
+        "concepts":  [
+                         "while_statement",
+                         "call",
+                         "assignment",
+                         "function_definition"
+                     ],
+        "reading_goal":  "liveness flag가 참인 동안 heartbeat를 기록하는 while loop의 조건 검사와 종료 흐름을 읽는다.",
+        "code":  "heartbeats = []\n\ndef write_heartbeat(timestamp):\n    heartbeats.append(timestamp)\n\nrunning = True\nwhile running:\n    write_heartbeat(\"10:04\")\n    running = False",
+        "question_type":  "multiple_choice",
+        "question":  "heartbeat가 주로 알려주는 것은 무엇인가?",
+        "choices":  [
+                        "작업 프로세스가 아직 살아 있는지",
+                        "정답이 항상 맞는지",
+                        "파일이 압축됐는지",
+                        "Git 원격 주소가 바뀌었는지"
+                    ],
+        "answer":  "작업 프로세스가 아직 살아 있는지",
+        "explanation":  "while loop가 실행 중일 때 heartbeat 기록 함수가 호출되어 프로세스가 주기적으로 실행 중임을 보여줍니다. heartbeat는 대표적인 liveness 신호이기 때문입니다. 헷갈리기 쉬운 오답: 정답이 항상 맞는지 프로세스가 살아 있다는 사실은 결과의 correctness를 보장하지 않습니다. 오독 지점: liveness와 품질 검증을 혼동한 경우입니다. 운영 상태는 **liveness 신호와 결과 검증을 분리**해서 읽습니다.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "서버에서 장시간 모델 추론이나 batch를 돌릴 때 프로세스 정지 여부를 감시하는 watchdog/heartbeat 운영과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "while_statement",
+        "reading_goal_internal":  "liveness flag가 참인 동안 heartbeat를 기록하는 while loop의 조건 검사와 종료 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`while condition:`은 condition이 truthy인 동안 본문을 반복하는 while statement입니다.",
+                                    "how_to_read":  "반복 전 조건값과 본문 안에서 그 조건이 어떻게 바뀌는지 추적합니다.",
+                                    "key_point":  "heartbeat는 결과 품질이 아니라 프로세스가 아직 살아 있고 주기적으로 신호를 남기는지 확인하는 데 쓰입니다.",
+                                    "common_mistake":  "heartbeat가 있으면 작업 결과도 항상 정상이라고 생각하기 쉽습니다. liveness와 correctness는 별도입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "running = True\nbeats = []\nwhile running:\n    beats.append(\"alive\")\n    running = False",
+                                 "walkthrough":  "한 번 alive를 기록한 뒤 running이 False가 되어 반복이 끝납니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "while loop가 실행 중일 때 heartbeat 기록 함수가 호출되어 프로세스가 주기적으로 실행 중임을 보여줍니다.",
+                                   "why_correct":  "heartbeat는 대표적인 liveness 신호이기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "정답이 항상 맞는지",
+                                                               "why_wrong":  "프로세스가 살아 있다는 사실은 결과의 correctness를 보장하지 않습니다.",
+                                                               "misread_step":  "liveness와 품질 검증을 혼동한 경우입니다."
+                                                           },
+                                   "takeaway":  "운영 상태는 **liveness 신호와 결과 검증을 분리**해서 읽습니다."
+                               },
+        "target_statement":  "while running:",
+        "focus_span":  "while running:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "heartbeat",
+                                "liveness",
+                                "watchdog",
+                                "long-running job"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY46_L10_crash_recovery_001",
+        "level":  10,
+        "title":  "crash recovery 완료 판정 변경이 pending과 downstream 산출물에 미치는 영향 찾기",
+        "concepts":  [
+                         "for_statement",
+                         "membership_test",
+                         "if_statement",
+                         "call",
+                         "literal"
+                     ],
+        "reading_goal":  "for 반복이 각 job을 검사해 `validated_done`에 없는 항목을 pending에 남기는 현재 동작을 읽고, 완료 기준을 단순 checkpoint 존재로 바꾸면 어떤 job이 잘못 제외되는지와 그 영향 범위를 판단한다.",
+        "code":  "jobs = [\"shard_01\", \"shard_02\", \"shard_03\"]\nvalidated_done = {\"shard_01\"}\ncheckpoint_done = {\"shard_01\", \"shard_02\"}\npending = []\n\nfor job in jobs:\n    if job not in validated_done:\n        pending.append(job)\n\nprint(pending)",
+        "question_type":  "risk_finding",
+        "question":  "현재 `validated_done` 기준을 `checkpoint_done` 기준으로 바꾸는 패치를 한다면 가장 중요한 영향 범위는 무엇인가?",
+        "choices":  [
+                        "shard_02가 아직 검증 완료가 아닌데도 pending에서 빠져 재실행되지 않고, 이를 소비하는 downstream 결과가 누락될 수 있다",
+                        "for 문이 자동으로 병렬 실행으로 바뀐다",
+                        "shard_01이 반드시 두 번 실행된다",
+                        "jobs 리스트의 순서가 자동으로 역순이 된다"
+                    ],
+        "answer":  "shard_02가 아직 검증 완료가 아닌데도 pending에서 빠져 재실행되지 않고, 이를 소비하는 downstream 결과가 누락될 수 있다",
+        "explanation":  "1) 현재 for는 shard_01, shard_02, shard_03을 차례로 검사한다. 2) validated_done에는 shard_01만 있으므로 현재 pending에는 shard_02와 shard_03이 남는다. 3) checkpoint_done에는 shard_02도 들어 있으므로 조건 authority를 바꾸면 shard_02가 pending에서 빠진다. 4) 하지만 shard_02는 validated_done에 없으므로 실제 완료가 검증되지 않았다. 5) 따라서 shard_02 재실행 누락뿐 아니라 그 output을 합치는 downstream 단계까지 영향 범위에 포함된다.",
+        "side_card_ids":  [
+                              "PYV159_A1_CHECKPOINT_RESUME_FLOW"
+                          ],
+        "project_context":  "APEX에서 코드 한 줄을 고친 뒤 주변 호출과 데이터 영향 범위를 충분히 설명하지 못한 약점을 보강한다. resume-safe pipeline, checkpoint, cache-validity 판정에도 같은 사고방식을 적용할 수 있다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "for_statement",
+        "reading_goal_internal":  "for 반복이 각 job을 검사해 `validated_done`에 없는 항목을 pending에 남기는 현재 동작을 읽고, 완료 기준을 단순 checkpoint 존재로 바꾸면 어떤 job이 잘못 제외되는지와 그 영향 범위를 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`for job in jobs:`는 jobs의 항목을 하나씩 검사합니다. 복구 로직에서는 반복문 자체뿐 아니라 본문이 참조하는 완료 authority가 무엇인지가 실제 재실행 범위를 결정합니다.",
+                                    "how_to_read":  "각 job마다 validated_done과 checkpoint_done의 차이를 확인하고, 조건 변경 시 pending에서 빠지는 job이 실제로 검증 완료된 것인지 확인합니다. 그 다음 빠진 job의 output을 사용하는 downstream 단계까지 봅니다.",
+                                    "key_point":  "shard_02는 checkpoint는 있지만 validated_done에는 없습니다. 따라서 현재 코드는 shard_02를 재실행 대상으로 남기지만 checkpoint만 믿는 패치는 shard_02를 잘못 건너뛸 수 있습니다.",
+                                    "common_mistake":  "checkpoint 파일이 있다는 사실을 완료 증거로 바로 승격하면 안 됩니다. 부분 출력, 실패 직전 marker, 손상된 산출물일 수 있으므로 실제 검증 완료 authority와 구분해야 합니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "jobs = [\"a\", \"b\"]\nvalidated_done = {\"a\"}\npending = []\nfor job in jobs:\n    if job not in validated_done:\n        pending.append(job)\nprint(pending)",
+                                 "walkthrough":  "a는 검증 완료라 제외되고 b는 검증 완료가 아니므로 pending에 남습니다. 파일 존재 여부가 아니라 어떤 완료 집합을 authority로 쓰는지가 핵심입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) 현재 for는 shard_01, shard_02, shard_03을 차례로 검사한다. 2) validated_done에는 shard_01만 있으므로 현재 pending에는 shard_02와 shard_03이 남는다. 3) checkpoint_done에는 shard_02도 들어 있으므로 조건 authority를 바꾸면 shard_02가 pending에서 빠진다. 4) 하지만 shard_02는 validated_done에 없으므로 실제 완료가 검증되지 않았다. 5) 따라서 shard_02 재실행 누락뿐 아니라 그 output을 합치는 downstream 단계까지 영향 범위에 포함된다.",
+                                   "why_correct":  "패치가 바꾸는 것은 단순 set 이름이 아니라 \u0027완료로 간주하는 authority\u0027입니다. 미검증 shard가 skip되면 해당 shard output과 이를 사용하는 집계/manifest까지 잘못될 수 있습니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "for 문이 자동으로 병렬 실행으로 바뀐다",
+                                                               "why_wrong":  "완료 집합을 바꾸는 것은 membership 판정만 바꿀 뿐 일반 for 문을 병렬 문법으로 바꾸지 않습니다.",
+                                                               "misread_step":  "수정 줄만 보지 말고 그 조건이 결정하는 실행/skip 대상과 그 대상의 downstream consumer를 함께 추적합니다."
+                                                           },
+                                   "takeaway":  "영향 범위는 **수정된 판정 기준 → 달라지는 실행 대상 → 생성/누락되는 output → downstream consumer**까지 추적합니다."
+                               },
+        "target_statement":  "for job in jobs:",
+        "focus_span":  "for job in jobs:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "crash_recovery",
+                                "checkpoint",
+                                "validated_done",
+                                "impact_scope",
+                                "downstream_output"
+                            ],
+        "pedagogical_intent":  "read_execution_order",
+        "subtype":  "basic_for",
+        "secondary_concepts":  [
+                                   "membership_test",
+                                   "if_statement",
+                                   "call",
+                                   "literal"
+                               ],
+        "prerequisites":  [
+                              "membership_test",
+                              "if_statement"
+                          ],
+        "semantic_operations":  [
+                                    "recovery_scan",
+                                    "completion_authority_check",
+                                    "impact_scope_trace"
+                                ],
+        "reading_steps":  [
+                              "현재 for는 shard_01, shard_02, shard_03을 차례로 검사한다.",
+                              "validated_done에는 shard_01만 있으므로 현재 pending에는 shard_02와 shard_03이 남는다.",
+                              "checkpoint_done에는 shard_02도 들어 있으므로 조건 authority를 바꾸면 shard_02가 pending에서 빠진다.",
+                              "하지만 shard_02는 validated_done에 없으므로 실제 완료가 검증되지 않았다.",
+                              "따라서 shard_02 재실행 누락뿐 아니라 그 output을 합치는 downstream 단계까지 영향 범위에 포함된다."
+                          ],
+        "same_syntax_example":  "jobs = [\"a\", \"b\"]\ndone = {\"a\"}\npending = []\nfor job in jobs:\n    if job not in done:\n        pending.append(job)\nprint(pending)"
+    },
+    {
+        "id":  "PY46_L10_final_manifest_001",
+        "level":  10,
+        "title":  "최종 산출물 정보를 dict literal로 묶기",
+        "concepts":  [
+                         "literal",
+                         "assignment",
+                         "subscription"
+                     ],
+        "reading_goal":  "중괄호 안 key-value 쌍 세 개가 하나의 manifest dict가 되는 구조를 읽는다.",
+        "code":  "manifest = {\"file\": \"nodes.jsonl\", \"rows\": 120, \"status\": \"PASS\"}\nprint(manifest[\"rows\"])",
+        "question_type":  "output_prediction",
+        "question":  "manifest[\u0027rows\u0027]의 값은 무엇인가?",
+        "choices":  [
+                        "120",
+                        "nodes.jsonl",
+                        "PASS",
+                        "3"
+                    ],
+        "answer":  "120",
+        "explanation":  "1) rows key를 찾는다. 2) 그 key와 연결된 값은 120이다. 3) 대괄호 조회가 120을 반환한다.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "KG pack·lesson batch·shard output을 최종 manifest로 봉인하는 audit 흐름에 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "literal",
+        "reading_goal_internal":  "중괄호 안 key-value 쌍 세 개가 하나의 manifest dict가 되는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "dict literal은 `{key: value}` 쌍들을 하나의 mapping으로 만듭니다.",
+                                    "how_to_read":  "각 콜론의 왼쪽 key와 오른쪽 value를 정확히 대응시킵니다.",
+                                    "key_point":  "manifest는 파일명·row count·검증 상태를 같은 record에 묶어 추적합니다.",
+                                    "common_mistake":  "내부 문자열 단어 수를 dict 항목 수로 세기 쉽습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "m={\"name\":\"a\",\"status\":\"PASS\"}\nprint(len(m))",
+                                 "walkthrough":  "key-value 쌍이 두 개라 길이는 2입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) rows key를 찾는다. 2) 그 key와 연결된 값은 120이다. 3) 대괄호 조회가 120을 반환한다.",
+                                   "why_correct":  "rows key의 value가 정수 120으로 저장되어 있습니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "3",
+                                                               "why_wrong":  "3은 manifest의 key 개수일 뿐 rows 값이 아닙니다.",
+                                                               "misread_step":  "내부 문자열 단어 수를 dict 항목 수로 세기 쉽습니다."
+                                                           },
+                                   "takeaway":  "dict literal은 key-value 대응을 먼저 읽습니다."
+                               },
+        "target_statement":  "manifest = {\"file\": \"nodes.jsonl\", \"rows\": 120, \"status\": \"PASS\"}",
+        "focus_span":  "{\"file\": \"nodes.jsonl\", \"rows\": 120, \"status\": \"PASS\"}",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "final_manifest",
+                                "audit",
+                                "hash",
+                                "row_count"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY46_L10_resume_safe_nodepass_001",
+        "level":  10,
+        "title":  "완료 shard에서 continue로 현재 반복을 건너뛰기",
+        "concepts":  [
+                         "continue_statement",
+                         "for_statement",
+                         "if_statement",
+                         "membership_test"
+                     ],
+        "reading_goal":  "`continue`가 현재 반복의 남은 본문을 건너뛰고 다음 항목으로 이동하는 흐름을 읽는다.",
+        "code":  "done={\"s1\",\"s3\"}\nran=[]\nfor shard in [\"s1\",\"s2\",\"s3\"]:\n    if shard in done:\n        continue\n    ran.append(shard)\nprint(ran)",
+        "question_type":  "output_prediction",
+        "question":  "ran에 남는 shard는 무엇인가?",
+        "choices":  [
+                        "[\u0027s2\u0027]",
+                        "[\u0027s1\u0027,\u0027s3\u0027]",
+                        "[\u0027s1\u0027,\u0027s2\u0027,\u0027s3\u0027]",
+                        "[]"
+                    ],
+        "answer":  "[\u0027s2\u0027]",
+        "explanation":  "1) s1은 done이라 continue한다. 2) s2는 done이 아니어서 append된다. 3) s3도 done이라 continue한다. 4) 따라서 s2만 실행 대상이다.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "node-pass 재실행에서 검증 완료 shard를 중복 처리하지 않는 resume-safe 패턴에 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "continue_statement",
+        "reading_goal_internal":  "`continue`가 현재 반복의 남은 본문을 건너뛰고 다음 항목으로 이동하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`continue`는 가장 가까운 반복문의 현재 회차를 중단하고 다음 회차로 이동합니다.",
+                                    "how_to_read":  "continue가 실행되는 조건과 그 아래 run_shard 호출이 같은 loop 본문인지 확인합니다.",
+                                    "key_point":  "완료 shard에서는 run_shard를 다시 호출하지 않습니다.",
+                                    "common_mistake":  "continue가 전체 for 문을 종료한다고 break와 혼동하기 쉽습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "ran=[]\nfor x in [1,2,3]:\n    if x==2:\n        continue\n    ran.append(x)\nprint(ran)",
+                                 "walkthrough":  "2 회차만 건너뛰어 [1, 3]이 됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) s1은 done이라 continue한다. 2) s2는 done이 아니어서 append된다. 3) s3도 done이라 continue한다. 4) 따라서 s2만 실행 대상이다.",
+                                   "why_correct":  "완료 항목은 continue로 건너뛰므로 s2만 남습니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\u0027s1\u0027,\u0027s3\u0027]",
+                                                               "why_wrong":  "그 둘은 오히려 건너뛰는 완료 shard입니다.",
+                                                               "misread_step":  "continue가 전체 for 문을 종료한다고 break와 혼동하기 쉽습니다."
+                                                           },
+                                   "takeaway":  "continue는 현재 회차의 아래 본문을 건너뛰고 다음 반복으로 이동합니다."
+                               },
+        "target_statement":  "continue",
+        "focus_span":  "continue",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "resume_safe",
+                                "node_pass",
+                                "checkpoint",
+                                "skip_done"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    }
 ]

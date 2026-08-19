@@ -2,412 +2,967 @@
   {
     "id": "PY48_L06_ci_basic_001",
     "level": 6,
-    "title": "CI 기본 개념 읽기",
+    "title": "push 뒤 검증 오류가 없어야 통과하는 CI assert gate 읽기",
     "concepts": [
-      "CI",
-      "automation",
-      "validation"
+      "assert_statement",
+      "boolean_operation",
+      "if_statement",
+      "assignment"
     ],
-    "reading_goal": "CI가 push 이후 자동으로 검증을 실행하는 구조임을 이해한다.",
-    "code": "git push\n  -> GitHub Actions\n  -> run validation\n  -> pass or fail",
+    "reading_goal": "assert가 자동 검증 결과를 CI의 통과/실패 gate로 만드는 의미를 읽는다.",
+    "code": "event = \"push\"\nvalidation_errors = []\nif event == \"push\":\n    assert not validation_errors, \"lesson validation failed\"\nprint(\"CI passed\")",
     "question_type": "meaning_choice",
-    "question": "CI의 핵심 역할은?",
+    "question": "push 뒤 `validation_errors`에 오류가 하나라도 들어 있다면 이 assert gate의 역할은?",
     "choices": [
-      "로컬 파일을 무조건 삭제한다",
-      "코드가 올라갈 때 자동 검증을 실행한다",
-      "브라우저 포트를 고정한다",
-      "커밋 메시지를 숨긴다"
+      "AssertionError로 자동 검증 실패를 드러내 다음 정상 단계 진행을 막는다",
+      "오류 목록을 자동 삭제해 항상 통과시킨다",
+      "Git 커밋 메시지를 숨긴다",
+      "브라우저 포트를 바꾼다"
     ],
-    "answer": "코드가 올라갈 때 자동 검증을 실행한다",
-    "explanation": "CI는 코드가 push되거나 PR이 열릴 때 자동으로 검증 명령을 실행하는 구조다. 사람이 매번 수동으로 검사하지 않아도 같은 품질 기준을 유지한다. CI가 반복 검증을 맡으면 코드 변경 때마다 누락 없이 테스트와 품질 검사를 실행할 수 있다.",
+    "answer": "AssertionError로 자동 검증 실패를 드러내 다음 정상 단계 진행을 막는다",
+    "explanation": "push 이벤트에서 오류 목록이 비어 있으면 assert가 통과한다. 오류가 생기면 not 조건이 False가 되어 AssertionError로 CI 실패를 드러낸다.",
     "side_card_ids": [],
-    "project_context": "lesson JSON 검증을 GitHub Actions로 자동화하면 깨진 카드가 원격에 남는 위험을 줄일 수 있다."
+    "project_context": "lesson JSON을 push할 때 GitHub Actions가 검증을 반복해 깨진 데이터를 원격에 남기지 않게 하는 흐름과 연결됩니다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "assert_statement",
+    "reading_goal_internal": "push 이벤트에서 자동 검증 결과를 assert로 gate하고 오류가 있으면 실패를 드러내는 CI 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`assert condition, message`는 condition이 거짓이면 AssertionError를 발생시켜 검증 실패를 명확히 드러냅니다.",
+      "how_to_read": "CI 맥락에서는 먼저 자동 검증 결과를 만들고, assert 조건이 그 결과를 통과시킬지 실패시킬지 연결합니다.",
+      "key_point": "CI의 핵심은 push나 PR마다 같은 검증을 자동으로 실행하고 실패를 숨기지 않는 것입니다.",
+      "common_mistake": "항상 참인 조건을 assert로 두거나, 검증 오류가 있어도 다음 단계가 계속 실행되면 품질 gate 역할을 하지 못합니다."
+    },
+    "teaching_example": {
+      "code": "errors = [\"missing id\"]\ntry:\n    assert not errors, \"validation failed\"\nexcept AssertionError:\n    print(\"blocked\")",
+      "walkthrough": "errors가 비어 있지 않아 not errors가 False가 되고 assert가 실행을 막습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) push 이벤트에서 검증 결과를 확인한다. 2) 오류가 있으면 리스트의 truth value는 True이고 `not validation_errors`는 False다. 3) assert False가 AssertionError를 발생시킨다. 4) 자동화 실행은 실패로 드러나 품질 문제를 통과시키지 않는다.",
+      "why_correct": "CI는 같은 검증을 자동 반복하고 실패 결과를 명시적으로 gate해야 하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "오류 목록을 자동 삭제해 항상 통과시킨다",
+        "why_wrong": "assert는 데이터를 고치는 기능이 아니라 조건이 거짓일 때 실패를 발생시키는 검증 문장입니다.",
+        "misread_step": "검증과 자동 수정의 역할을 구분합니다."
+      },
+      "takeaway": "CI gate는 **이벤트 → 자동 검증 → assert 조건 → PASS 또는 명시적 FAIL** 흐름으로 읽습니다."
+    },
+    "target_statement": "assert not validation_errors, \"lesson validation failed\"",
+    "focus_span": "assert not validation_errors, \"lesson validation failed\"",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "CI",
+      "push",
+      "automatic validation",
+      "quality gate",
+      "assert"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY48_L06_github_actions_workflow_001",
     "level": 6,
-    "title": "GitHub Actions workflow 읽기",
+    "title": "`workflow.parent`로 GitHub Actions의 `.github/workflows` 위치 확인하기",
     "concepts": [
-      "GitHub_Actions",
-      "workflow",
-      "YAML"
+      "attribute_access",
+      "assignment",
+      "call"
     ],
-    "reading_goal": "GitHub Actions가 .github/workflows/*.yml 파일로 동작한다는 점을 이해한다.",
-    "code": ".github/workflows/validate-lessons.yml",
-    "question_type": "meaning_choice",
-    "question": "GitHub Actions workflow 파일은 보통 어디에 두나?",
+    "reading_goal": "Path.parent로 workflow 파일이 `.github/workflows` 아래에 있는지 직접 읽는다.",
+    "code": "from pathlib import PurePosixPath\nworkflow = PurePosixPath(\".github/workflows/validate-lessons.yml\")\nprint(workflow.parent.as_posix())",
+    "question_type": "output_prediction",
+    "question": "`workflow.parent`가 가리키는 GitHub Actions workflow의 부모 경로는?",
     "choices": [
-      "data/lessons 폴더",
-      ".github/workflows 폴더",
-      "브라우저 캐시 폴더",
-      "Git 커밋 메시지 안"
+      ".github/workflows",
+      "workflows",
+      "data/lessons",
+      ".github"
     ],
-    "answer": ".github/workflows 폴더",
-    "explanation": "GitHub는 .github/workflows 아래의 YAML 파일을 읽어 자동화 작업을 실행한다. GitHub Actions workflow는 push나 pull request 같은 이벤트에 맞춰 검증 명령을 실행하는 설정이다. job, step, run의 구조를 읽어야 흐름이 보인다.",
+    "answer": ".github/workflows",
+    "explanation": "workflow의 마지막 요소는 YAML 파일명이고 parent는 `.github/workflows`를 반환한다. 이 위치가 GitHub Actions workflow의 일반 저장 위치다.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
-    "project_context": "이번 v48에서 validate-lessons.yml을 추가해 lesson 데이터 검증을 자동화한다."
+    "project_context": "lesson validation workflow 파일이 GitHub Actions에 실제로 인식될 위치인지 확인하는 데 연결됩니다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "attribute_access",
+    "reading_goal_internal": "workflow 파일 Path의 parent 속성이 `.github/workflows`라는 전체 부모 경로를 반환하고 그 경로의 GitHub Actions 의미를 연결한다.",
+    "concept_explanation": {
+      "what_it_is": "Path의 `.parent` 속성은 마지막 파일명이나 경로 요소를 제외한 부모 Path를 반환합니다.",
+      "how_to_read": "workflow 파일 전체 경로에서 마지막 YAML 파일명을 떼고 남는 부모 디렉터리를 확인합니다.",
+      "key_point": "GitHub Actions workflow YAML은 보통 저장소의 `.github/workflows` 아래에 있어야 자동화 설정으로 발견됩니다.",
+      "common_mistake": "마지막 폴더명 `workflows`만 맞으면 어느 위치의 workflows 폴더든 같은 역할을 한다고 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "from pathlib import PurePosixPath\np = PurePosixPath(\".github/workflows/test.yml\")\nprint(p.parent)",
+      "walkthrough": "parent는 파일명 test.yml을 제외한 `.github/workflows`를 반환합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) 전체 Path의 마지막 요소는 validate-lessons.yml이다. 2) `.parent`는 그 파일명만 제거한다. 3) 남는 경로는 `.github/workflows`다. 4) GitHub Actions는 이 디렉터리 아래 workflow YAML을 읽는다.",
+      "why_correct": "`.parent`가 반환하는 실제 부모 Path가 원래 workflow 표준 위치와 정확히 일치합니다.",
+      "common_wrong_choice": {
+        "choice": "workflows",
+        "why_wrong": "그 값은 마지막 폴더 이름만 나타내며 저장소 루트 아래 `.github/workflows`라는 전체 위치를 표현하지 못합니다.",
+        "misread_step": "`.name`과 `.parent`의 반환 범위를 구분합니다."
+      },
+      "takeaway": "workflow 위치는 **전체 파일 Path → parent 속성 → `.github/workflows` 확인**으로 읽습니다."
+    },
+    "target_statement": "workflow.parent",
+    "focus_span": "workflow.parent",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "GitHub Actions",
+      "workflow",
+      "YAML",
+      ".github/workflows",
+      "path"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY48_L07_yaml_indentation_001",
     "level": 7,
-    "title": "YAML 들여쓰기 읽기",
+    "title": "CI 계층을 중첩 dict literal의 key-value 구조로 읽기",
     "concepts": [
-      "YAML",
-      "indentation",
-      "configuration"
+      "literal",
+      "subscription",
+      "literal"
     ],
-    "reading_goal": "YAML 설정 파일에서 들여쓰기가 구조를 결정한다는 점을 이해한다.",
-    "code": "jobs:\n  validate:\n    runs-on: ubuntu-latest",
-    "question_type": "meaning_choice",
-    "question": "YAML에서 들여쓰기가 중요한 이유는?",
+    "reading_goal": "바깥 validate key의 value가 또 다른 dict이고 그 안 steps key가 list를 가리키는 중첩 literal 구조를 읽는다.",
+    "code": "jobs = {\"validate\": {\"runs_on\": \"ubuntu-latest\", \"steps\": [\"checkout\"]}}\nprint(jobs[\"validate\"][\"steps\"][0])",
+    "question_type": "output_prediction",
+    "question": "중첩 dict/list를 따라가면 마지막에 출력되는 값은 무엇인가?",
     "choices": [
-      "들여쓰기가 많을수록 실행이 빨라지기 때문",
-      "들여쓰기가 설정의 포함 관계를 나타내기 때문",
-      "들여쓰기를 하면 Git이 자동 push되기 때문",
-      "들여쓰기를 없애면 JSON이 되기 때문"
+      "checkout",
+      "validate",
+      "ubuntu-latest",
+      "steps"
     ],
-    "answer": "들여쓰기가 설정의 포함 관계를 나타내기 때문",
-    "explanation": "YAML은 괄호보다 들여쓰기로 계층을 표현하므로 공백이 틀리면 설정 의미가 바뀔 수 있다. YAML 들여쓰기는 GitHub Actions 설정에서 구조를 결정한다. 한 칸만 어긋나도 job, step, run 위치가 달라질 수 있어 오류 원인이 된다. 따라서 정답은 ‘들여쓰기가 설정의 포함 관계를 나타내기 때문’이다.",
+    "answer": "checkout",
+    "explanation": "1) 바깥 dict에서 validate key를 찾는다. 2) 그 value는 runs_on과 steps를 가진 안쪽 dict다. 3) 안쪽 dict의 steps key를 조회하면 ['checkout'] list가 나온다. 4) index 0을 읽으면 checkout이 출력된다.",
     "side_card_ids": [],
-    "project_context": "GitHub Actions workflow를 만들 때 jobs, steps, run의 들여쓰기를 맞춰야 한다."
+    "project_context": "GitHub Actions YAML의 들여쓰기 계층을 Python 데이터 구조로 옮겨 job과 step의 포함 관계를 이해하는 맥락이다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "literal",
+    "reading_goal_internal": "바깥 validate key의 value가 또 다른 dict이고 그 안 steps key가 list를 가리키는 중첩 literal 구조를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "dict literal은 `{key: value}` 쌍을 직접 적어 mapping을 만들며 value에는 또 다른 dict나 list도 들어갈 수 있습니다.",
+      "how_to_read": "가장 바깥 중괄호부터 시작해 key와 value를 한 단계씩 안쪽으로 따라갑니다.",
+      "key_point": "validate key의 value는 runs_on과 steps를 가진 dict이고, steps의 첫 항목은 checkout입니다.",
+      "common_mistake": "중첩 구조를 모두 같은 평면의 key로 읽거나 YAML 들여쓰기 자체를 Python 문법이라고 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "config = {\"job\": {\"steps\": [\"test\"]}}\nprint(config[\"job\"][\"steps\"][0])",
+      "walkthrough": "바깥 job을 조회한 뒤 그 안 steps list의 첫 항목 test까지 차례로 내려갑니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) 바깥 dict에서 validate key를 찾는다. 2) 그 value는 runs_on과 steps를 가진 안쪽 dict다. 3) 안쪽 dict의 steps key를 조회하면 ['checkout'] list가 나온다. 4) index 0을 읽으면 checkout이 출력된다.",
+      "why_correct": "중첩 mapping을 바깥에서 안쪽으로 따라가면 steps list의 첫 값이 checkout입니다.",
+      "common_wrong_choice": {
+        "choice": "validate",
+        "why_wrong": "validate는 바깥 dict의 key이며 최종 조회 결과는 더 안쪽 list의 값입니다.",
+        "misread_step": "중첩 컨테이너의 각 대괄호가 어느 값을 한 단계 더 좁히는지 순서대로 확인합니다."
+      },
+      "takeaway": "중첩 dict literal은 **바깥 key → 안쪽 value → 다음 key → 최종 값** 순서로 읽습니다."
+    },
+    "target_statement": "{\"validate\": {\"runs_on\": \"ubuntu-latest\", \"steps\": [\"checkout\"]}}",
+    "focus_span": "{\"validate\": {\"runs_on\": \"ubuntu-latest\", \"steps\": [\"checkout\"]}}",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "GitHub_Actions",
+      "YAML",
+      "hierarchy",
+      "CI_config"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY48_L07_checkout_action_001",
     "level": 7,
-    "title": "checkout action 읽기",
+    "title": "`runner['repository']`로 checkout 뒤 저장소 준비 상태 읽기",
     "concepts": [
-      "checkout",
-      "GitHub_Actions",
-      "repository"
+      "subscription",
+      "literal",
+      "assignment"
     ],
-    "reading_goal": "CI 서버에서 저장소 파일을 가져오는 checkout 단계를 이해한다.",
-    "code": "- uses: actions/checkout@v4",
-    "question_type": "meaning_choice",
-    "question": "actions/checkout의 역할은?",
+    "reading_goal": "대괄호 안 repository key를 평가해 runner dict에 연결된 checked out 상태 문자열을 반환받는 구조를 읽는다.",
+    "code": "runner = {\"repository\": \"checked out\", \"python\": \"not configured\"}\nstate = runner[\"repository\"]\nprint(state)",
+    "question_type": "output_prediction",
+    "question": "`runner['repository']`가 반환하는 값은 무엇인가?",
     "choices": [
-      "브라우저를 실행한다",
-      "CI 실행 환경에 저장소 파일을 내려받는다",
-      "API 키를 출력한다",
-      "lesson 파일을 삭제한다"
+      "checked out",
+      "repository",
+      "not configured",
+      "runner"
     ],
-    "answer": "CI 실행 환경에 저장소 파일을 내려받는다",
-    "explanation": "actions/checkout은 runner workspace에 event가 가리키는 repository revision을 받아 뒤 step이 file을 읽게 한다. 보안 요구가 높은 workflow에서는 movable major tag만 믿지 않고 검토한 full commit SHA로 pin하고 Dependabot 같은 절차로 갱신한다. credential persistence와 fetch-depth도 작업 필요에 맞게 제한한다.",
+    "answer": "checked out",
+    "explanation": "1) runner는 repository와 python 두 key를 가진 dict다. 2) 대괄호 key는 repository다. 3) repository와 연결된 value를 찾으면 checked out이다. 4) 그 값이 state에 저장되어 출력된다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
-    "project_context": "validate_lessons.py와 data/lessons 파일을 CI에서 읽으려면 checkout 단계가 필요하다."
+    "project_context": "GitHub Actions의 checkout 단계가 뒤 검증 step이 저장소 파일을 볼 수 있게 준비한다는 상태를 Python mapping으로 모델링했다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "subscription",
+    "reading_goal_internal": "대괄호 안 repository key를 평가해 runner dict에 연결된 checked out 상태 문자열을 반환받는 구조를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`mapping[key]`는 dict에서 key와 연결된 value 하나를 반환합니다.",
+      "how_to_read": "대상 dict의 key들을 확인한 뒤 대괄호 안 key와 정확히 같은 항목의 value를 찾습니다.",
+      "key_point": "repository key의 value가 checked out이므로 조회 결과도 checked out입니다.",
+      "common_mistake": "repository라는 key 이름 자체가 결과라고 생각하거나 이 Python 예제가 실제 checkout을 수행한다고 생각하면 안 됩니다."
+    },
+    "teaching_example": {
+      "code": "runner = {\"workspace\": \"ready\"}\nprint(runner[\"workspace\"])",
+      "walkthrough": "workspace key에 연결된 ready 문자열이 반환됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) runner는 repository와 python 두 key를 가진 dict다. 2) 대괄호 key는 repository다. 3) repository와 연결된 value를 찾으면 checked out이다. 4) 그 값이 state에 저장되어 출력된다.",
+      "why_correct": "dict의 repository key에 checked out 문자열이 연결되어 있기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "repository",
+        "why_wrong": "repository는 조회에 쓰는 key이고 대괄호 표현식의 결과는 그 key의 value입니다.",
+        "misread_step": "dict key와 그 key에 연결된 value를 구분합니다."
+      },
+      "takeaway": "dict lookup은 **대상 dict → key 평가 → 연결된 value 반환**으로 읽습니다."
+    },
+    "target_statement": "runner[\"repository\"]",
+    "focus_span": "runner[\"repository\"]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "checkout",
+      "GitHub_Actions",
+      "repository",
+      "runner"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY48_L07_setup_python_action_001",
     "level": 7,
-    "title": "setup-python action 읽기",
+    "title": "요청 Python 버전 `\"3.11\"`을 새 변수에 대입하기",
     "concepts": [
-      "setup_python",
-      "Python",
-      "CI"
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "CI 환경에서 Python 버전을 준비하는 단계를 이해한다.",
-    "code": "- uses: actions/setup-python@v5\n  with:\n    python-version: '3.11'",
-    "question_type": "meaning_choice",
-    "question": "setup-python 단계가 필요한 이유는?",
+    "reading_goal": "등호 오른쪽 버전 문자열을 먼저 평가한 뒤 새 이름 python_version에 저장되는 초기 대입 순서를 읽는다.",
+    "code": "python_version = \"3.11\"\nprint(python_version)",
+    "question_type": "output_prediction",
+    "question": "대입이 끝난 뒤 python_version의 값은 무엇인가?",
     "choices": [
-      "Git 저장소를 삭제하기 위해",
-      "검증 스크립트를 실행할 Python 환경을 준비하기 위해",
-      "CSS 파일을 압축하기 위해",
-      "브라우저 포트를 바꾸기 위해"
+      "3.11",
+      "Python",
+      "setup-python",
+      "None"
     ],
-    "answer": "검증 스크립트를 실행할 Python 환경을 준비하기 위해",
-    "explanation": "setup-python은 runner에 요청한 Python 3.11 계열을 준비하고 PATH에 둔다. 정확한 재현성이 필요하면 patch version과 dependency lock을 pin하고, ubuntu-latest image 변화도 고려한다. 표준 library만 쓴다는 사실은 repository script가 항상 같은 결과를 낸다는 보장은 아니다.",
+    "answer": "3.11",
+    "explanation": "1) 등호 오른쪽 문자열 3.11을 먼저 평가한다. 2) 왼쪽 python_version은 새 저장 대상이다. 3) 문자열 3.11이 python_version에 저장된다. 4) print가 현재 저장값 3.11을 출력한다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
-    "project_context": "tools/validate_lessons.py는 표준 Python만 사용하므로 setup-python 뒤 바로 실행할 수 있다."
+    "project_context": "GitHub Actions setup-python에서 사용할 runtime 버전 설정을 안전한 Python 값 저장 예제로 옮긴 것이다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "assignment",
+    "reading_goal_internal": "등호 오른쪽 버전 문자열을 먼저 평가한 뒤 새 이름 python_version에 저장되는 초기 대입 순서를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "초기 assignment는 오른쪽 표현식을 먼저 평가한 뒤 그 결과를 새 이름에 연결합니다.",
+      "how_to_read": "등호 오른쪽 값과 왼쪽 저장 대상을 분리해 오른쪽부터 실행 순서를 확인합니다.",
+      "key_point": "오른쪽은 문자열 3.11이고 대입 뒤 python_version이 그 문자열을 가리킵니다.",
+      "common_mistake": "3.11을 float 숫자로 읽거나 이 한 줄만으로 실제 Python runtime 설치가 끝난다고 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "runtime = \"3.12\"\nprint(runtime)",
+      "walkthrough": "문자열 3.12를 평가한 뒤 runtime이라는 새 이름에 저장합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) 등호 오른쪽 문자열 3.11을 먼저 평가한다. 2) 왼쪽 python_version은 새 저장 대상이다. 3) 문자열 3.11이 python_version에 저장된다. 4) print가 현재 저장값 3.11을 출력한다.",
+      "why_correct": "assignment는 오른쪽 문자열을 그대로 왼쪽 이름에 저장합니다.",
+      "common_wrong_choice": {
+        "choice": "setup-python",
+        "why_wrong": "setup-python은 coverage의 CI action 이름이고 현재 Python 대입문의 값은 3.11입니다.",
+        "misread_step": "도메인 맥락보다 실제 대입문의 오른쪽 값을 먼저 확인합니다."
+      },
+      "takeaway": "assignment는 **오른쪽 평가 → 값 확정 → 왼쪽 이름에 저장**으로 읽습니다."
+    },
+    "target_statement": "python_version = \"3.11\"",
+    "focus_span": "python_version = \"3.11\"",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "setup_python",
+      "Python_version",
+      "CI",
+      "runtime"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY48_L08_validate_lessons_py_001",
     "level": 8,
-    "title": "validate_lessons.py 고정화 읽기",
+    "title": "검증 함수를 호출해 오류 목록 받기",
     "concepts": [
-      "validation_script",
-      "tooling",
-      "repeatable_check"
+      "call",
+      "assignment",
+      "name_reference"
     ],
-    "reading_goal": "매번 붙여넣던 검증 코드를 파일로 고정하는 이유를 이해한다.",
-    "code": "python tools/validate_lessons.py",
-    "question_type": "meaning_choice",
-    "question": "검증 스크립트를 파일로 고정하는 장점은?",
+    "reading_goal": "고정된 validator 함수를 같은 입력 구조에 반복 호출하고 반환된 오류 목록을 읽는다.",
+    "code": "def validate_lessons(cards):\n    return [card[\"id\"] for card in cards if \"answer\" not in card]\n\ncards = [\n    {\"id\": \"c1\", \"answer\": \"A\"},\n    {\"id\": \"c2\"},\n]\nerrors = validate_lessons(cards)",
+    "question_type": "multiple_choice",
+    "question": "`errors`에 저장되는 리스트는 무엇인가?",
     "choices": [
-      "검증 기준을 매번 랜덤하게 바꿀 수 있다",
-      "매번 긴 코드를 붙여넣지 않고 같은 검증을 반복 실행할 수 있다",
-      "Git 커밋을 생략할 수 있다",
-      "JSON을 읽지 않아도 된다"
+      "[]",
+      "[\"c1\"]",
+      "[\"c2\"]",
+      "[\"c1\", \"c2\"]"
     ],
-    "answer": "매번 긴 코드를 붙여넣지 않고 같은 검증을 반복 실행할 수 있다",
-    "explanation": "validate_lessons.py는 lesson 파일 수, 카드 수, 필수 필드, 정답 일관성을 확인하는 검증 도구다. 반복 검증은 도구 파일로 고정해야 누락을 줄일 수 있다.",
+    "answer": "[\"c2\"]",
+    "explanation": "validator는 각 card를 검사해 `answer` key가 없는 경우 id를 결과에 넣습니다. c1은 통과하지 않고 c2만 들어가므로 반환값은 `[\"c2\"]`입니다. filtered list comprehension의 조건을 만족하는 c2만 함수 반환 리스트에 들어가기 때문입니다. 헷갈리기 쉬운 오답: [] c2에는 `answer` key가 없으므로 오류 항목이 하나 존재합니다. 오독 지점: 함수 내부 조건을 적용하지 않고 두 카드 모두 정상이라고 본 경우입니다. 검증 함수 호출은 **입력 검사 → 반환값 생성 → 왼쪽 변수 저장** 순서로 읽습니다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
-    "project_context": "v41~v47에서 반복한 full validation을 tools/validate_lessons.py로 분리한다."
+    "project_context": "lesson 파일 수·필수 필드·정답 일관성을 같은 validator로 반복 검증하는 품질 게이트와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "고정된 validator 함수를 같은 입력 구조에 반복 호출하고 반환된 오류 목록을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`function(arguments)`는 함수를 실행하고 반환값을 호출 위치의 값으로 사용하는 function call입니다.",
+      "how_to_read": "괄호 안 실제 argument를 먼저 확인한 뒤 함수가 어떤 값을 반환하는지 읽고, 그 결과가 왼쪽 변수에 저장된다고 추적합니다.",
+      "key_point": "반복 검증 도구라는 프로젝트 맥락과 별개로 이 카드의 Python 초점은 `validate_lessons(cards)`의 반환값입니다.",
+      "common_mistake": "함수를 호출하면 검증 결과가 자동으로 화면에만 출력된다고 생각하기 쉽습니다. 여기서는 반환값을 `errors`에 저장합니다."
+    },
+    "teaching_example": {
+      "code": "def validate_names(names):\n    return [name for name in names if not name]\n\nnames = [\"kim\", \"\"]\nerrors = validate_names(names)",
+      "walkthrough": "빈 문자열 하나가 조건에 걸려 함수가 `[\"\"]`를 반환하고 그 리스트가 `errors`에 저장됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "validator는 각 card를 검사해 `answer` key가 없는 경우 id를 결과에 넣습니다. c1은 통과하지 않고 c2만 들어가므로 반환값은 `[\"c2\"]`입니다.",
+      "why_correct": "filtered list comprehension의 조건을 만족하는 c2만 함수 반환 리스트에 들어가기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "[]",
+        "why_wrong": "c2에는 `answer` key가 없으므로 오류 항목이 하나 존재합니다.",
+        "misread_step": "함수 내부 조건을 적용하지 않고 두 카드 모두 정상이라고 본 경우입니다."
+      },
+      "takeaway": "검증 함수 호출은 **입력 검사 → 반환값 생성 → 왼쪽 변수 저장** 순서로 읽습니다."
+    },
+    "target_statement": "errors = validate_lessons(cards)",
+    "focus_span": "validate_lessons(cards)",
+    "focus_mode": "subexpression",
+    "coverage_domain": "testing_and_quality",
+    "coverage_topics": [
+      "validation script",
+      "repeatable check",
+      "lesson cards",
+      "quality gate"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY48_L08_cli_args_001",
     "level": 8,
-    "title": "CLI 인자 읽기",
+    "title": "argparse 호출의 type=int 키워드 인자 읽기",
     "concepts": [
-      "CLI_args",
-      "argparse",
-      "expected_count"
+      "argument_passing",
+      "call",
+      "attribute_access",
+      "name_reference"
     ],
-    "reading_goal": "검증 스크립트에 기대 버전이나 기대 카드 수를 인자로 넘기는 방식을 이해한다.",
-    "code": "python tools/validate_lessons.py --expected-lesson-cards 956",
-    "question_type": "meaning_choice",
-    "question": "CLI 인자를 쓰는 이유는?",
+    "reading_goal": "호출 괄호 안 `name=value`가 특정 parameter에 값을 전달하는 keyword argument라는 점을 CLI parser 맥락에서 읽는다.",
+    "code": "import argparse\n\nparser = argparse.ArgumentParser()\nparser.add_argument(\"--expected-lesson-cards\", type=int)",
+    "question_type": "multiple_choice",
+    "question": "`type` parameter로 전달되는 값은 무엇인가?",
     "choices": [
-      "항상 검증을 우회하기 위해",
-      "검증 조건을 실행 시점에 지정할 수 있기 때문",
-      "Python 파일을 숨기기 위해",
-      "Git 원격 주소를 바꾸기 위해"
+      "int 타입 객체",
+      "\"int\" 문자열",
+      "956",
+      "None"
     ],
-    "answer": "검증 조건을 실행 시점에 지정할 수 있기 때문",
-    "explanation": "CLI option은 같은 validator에 release별 expected count를 외부에서 전달한다. 값의 source가 실제 data에서 다시 계산되면 누락을 못 잡으므로 version 관리된 manifest나 독립 spec에서 가져와야 한다. argparse type과 범위 validation, help, 실패 message도 제공한다.",
+    "answer": "int 타입 객체",
+    "explanation": "`parser.add_argument()` 호출 안에서 `type=int`는 키워드 인자입니다. 여기서 `int`라는 타입 객체가 `type` parameter에 전달됩니다. keyword argument는 `parameter=value` 형식으로 오른쪽 표현식을 해당 parameter에 연결하기 때문입니다. 헷갈리기 쉬운 오답: \"int\" 문자열 코드의 `int`에는 따옴표가 없으므로 문자열이 아니라 내장 타입 이름입니다. 오독 지점: 이름 참조와 문자열 literal을 구분하지 않은 경우입니다. 호출 안 `name=value`는 **대입문이 아니라 keyword argument 전달**입니다.",
     "side_card_ids": [
       "SC_import_pm_reading"
     ],
-    "project_context": "v48 로컬 검증에서는 expected app version과 expected lesson cards를 함께 확인한다."
+    "project_context": "release별 expected card count를 validator 실행 시점에 CLI option으로 전달하는 구조와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "argument_passing",
+    "reading_goal_internal": "호출 괄호 안 `name=value`가 특정 parameter에 값을 전달하는 keyword argument라는 점을 CLI parser 맥락에서 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "호출 안의 `parameter=value`는 parameter 이름을 직접 지정해 값을 전달하는 keyword argument입니다.",
+      "how_to_read": "등호 왼쪽을 parameter 이름, 오른쪽을 전달할 Python 객체나 값으로 구분합니다.",
+      "key_point": "`type=int`에서 `int`는 문자열이 아니라 Python의 `int` 타입 객체입니다.",
+      "common_mistake": "호출 안의 `=`를 일반 변수 대입으로 읽기 쉽습니다. 함수 호출 괄호 안에서는 keyword argument입니다."
+    },
+    "teaching_example": {
+      "code": "import argparse\n\nparser = argparse.ArgumentParser()\nparser.add_argument(\"--retries\", type=int)",
+      "walkthrough": "`type=int`는 `add_argument`의 `type` parameter에 `int` 타입 객체를 전달합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`parser.add_argument()` 호출 안에서 `type=int`는 키워드 인자입니다. 여기서 `int`라는 타입 객체가 `type` parameter에 전달됩니다.",
+      "why_correct": "keyword argument는 `parameter=value` 형식으로 오른쪽 표현식을 해당 parameter에 연결하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "\"int\" 문자열",
+        "why_wrong": "코드의 `int`에는 따옴표가 없으므로 문자열이 아니라 내장 타입 이름입니다.",
+        "misread_step": "이름 참조와 문자열 literal을 구분하지 않은 경우입니다."
+      },
+      "takeaway": "호출 안 `name=value`는 **대입문이 아니라 keyword argument 전달**입니다."
+    },
+    "target_statement": "parser.add_argument(\"--expected-lesson-cards\", type=int)",
+    "focus_span": "type=int",
+    "focus_mode": "subexpression",
+    "coverage_domain": "cli_and_automation",
+    "coverage_topics": [
+      "argparse",
+      "CLI option",
+      "expected count",
+      "validator"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY48_L08_exit_code_001",
     "level": 8,
-    "title": "exit code 읽기",
+    "title": "raise SystemExit(1)로 실패 종료 흐름 읽기",
     "concepts": [
-      "if",
-      "exit_code",
-      "CI_fail",
-      "SystemExit"
+      "raise_statement",
+      "call",
+      "if_statement",
+      "literal"
     ],
-    "reading_goal": "검증 실패 시 0이 아닌 종료 코드가 CI 실패로 이어짐을 이해한다.",
-    "code": "if errors:\n    raise SystemExit(1)",
-    "question_type": "meaning_choice",
-    "question": "CI에서 exit code가 중요한 이유는?",
+    "reading_goal": "검증 오류가 있을 때 raise가 정상 실행 흐름을 중단하고 SystemExit 예외를 발생시키는 시점을 읽는다.",
+    "code": "errors = [\"missing answer\"]\nif errors:\n    raise SystemExit(1)\nstatus = \"passed\"",
+    "question_type": "multiple_choice",
+    "question": "`errors`에 한 항목이 있을 때 `status = \"passed\"`는 실행되는가?",
     "choices": [
-      "출력 글자 색을 바꾸기 때문",
-      "실패를 자동화 시스템이 감지하는 기준이기 때문",
-      "브라우저 주소를 바꾸기 때문",
-      "Git 커밋 해시를 짧게 만들기 때문"
+      "실행된다",
+      "실행되지 않는다",
+      "두 번 실행된다",
+      "errors가 문자열로 바뀐다"
     ],
-    "answer": "실패를 자동화 시스템이 감지하는 기준이기 때문",
-    "explanation": "exit code는 프로그램이 성공했는지 실패했는지 운영체제에 알려주는 숫자다. 0이 아니면 CI에서는 보통 실패로 처리한다. 자동화에서는 사람이 화면을 보지 않아도 exit code만으로 다음 단계를 진행할지 멈출지 결정한다. 따라서 정답은 ‘실패를 자동화 시스템이 감지하는 기준이기 때문’이다.",
+    "answer": "실행되지 않는다",
+    "explanation": "`errors`가 truthy이므로 if 본문에 들어갑니다. `raise SystemExit(1)`이 실행되면 현재 정상 흐름이 중단되어 다음 대입문에 도달하지 않습니다. raise는 예외를 발생시켜 현재 코드의 정상 순차 실행을 멈추기 때문입니다. 헷갈리기 쉬운 오답: 실행된다 raise 뒤로 정상 흐름이 계속된다고 잘못 가정한 답입니다. 오독 지점: raise의 제어 흐름 효과를 무시한 경우입니다. raise를 만나면 **그 지점 아래 정상 경로를 계속 읽지 않는다**고 판단합니다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
-    "project_context": "validate_lessons.py는 오류가 있으면 SystemExit로 중단해 CI 실패를 만들 수 있다."
+    "project_context": "validator 오류를 비정상 종료로 바꿔 GitHub Actions 같은 CI가 실패를 감지하게 하는 품질 게이트와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "raise_statement",
+    "reading_goal_internal": "검증 오류가 있을 때 raise가 정상 실행 흐름을 중단하고 SystemExit 예외를 발생시키는 시점을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`raise Error(...)`는 예외 객체를 발생시키고 현재 정상 실행 흐름을 즉시 중단하는 문장입니다.",
+      "how_to_read": "raise가 실행되는 조건을 먼저 확인한 뒤, 실행되면 그 아래 정상 경로로 계속 내려가지 않는다고 읽습니다.",
+      "key_point": "`SystemExit(1)`의 1은 CI 도메인에서 비정상 종료 코드로 쓰이며, Python 문법 초점은 raise에 의한 흐름 중단입니다.",
+      "common_mistake": "raise 다음 줄도 실행된다고 생각하기 쉽습니다. 예외가 처리되지 않는 한 정상 흐름은 그 지점에서 끝납니다."
+    },
+    "teaching_example": {
+      "code": "errors = [\"bad row\"]\nif errors:\n    raise SystemExit(2)\nstatus = \"ok\"",
+      "walkthrough": "errors가 비어 있지 않아 raise가 실행되므로 `status = \"ok\"`에는 도달하지 않습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`errors`가 truthy이므로 if 본문에 들어갑니다. `raise SystemExit(1)`이 실행되면 현재 정상 흐름이 중단되어 다음 대입문에 도달하지 않습니다.",
+      "why_correct": "raise는 예외를 발생시켜 현재 코드의 정상 순차 실행을 멈추기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "실행된다",
+        "why_wrong": "raise 뒤로 정상 흐름이 계속된다고 잘못 가정한 답입니다.",
+        "misread_step": "raise의 제어 흐름 효과를 무시한 경우입니다."
+      },
+      "takeaway": "raise를 만나면 **그 지점 아래 정상 경로를 계속 읽지 않는다**고 판단합니다."
+    },
+    "target_statement": "raise SystemExit(1)",
+    "focus_span": "raise SystemExit(1)",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "CI",
+      "exit code",
+      "SystemExit",
+      "validation failure"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY48_L08_on_push_001",
     "level": 8,
-    "title": "on push 트리거 읽기",
+    "title": "in으로 workflow의 push 이벤트 포함 여부 확인하기",
     "concepts": [
-      "on_push",
-      "trigger",
-      "CI"
+      "membership_test",
+      "assignment",
+      "subscription",
+      "literal"
     ],
-    "reading_goal": "push 이벤트가 workflow를 실행하는 조건이 될 수 있음을 이해한다.",
-    "code": "on:\n  push:\n    branches: [ main ]",
-    "question_type": "meaning_choice",
-    "question": "on: push의 의미는?",
+    "reading_goal": "GitHub Actions 트리거 맥락을 Python 설정 데이터로 옮겨 event 목록에 `push` 값이 실제로 있는지 membership test로 읽는다.",
+    "code": "workflow = {\n    \"events\": [\"push\", \"workflow_dispatch\"],\n    \"branches\": [\"main\"],\n}\nruns_on_push = \"push\" in workflow[\"events\"]",
+    "question_type": "multiple_choice",
+    "question": "`runs_on_push`에 저장되는 값은 무엇인가?",
     "choices": [
-      "로컬 서버를 항상 켠다",
-      "main 브랜치에 push될 때 workflow를 실행한다",
-      "파일을 자동 삭제한다",
-      "PowerShell 변수를 지운다"
+      "True",
+      "False",
+      "push",
+      "main"
     ],
-    "answer": "main 브랜치에 push될 때 workflow를 실행한다",
-    "explanation": "on push는 GitHub Actions가 push 이벤트가 발생했을 때 실행되도록 하는 트리거다. 자동화가 언제 시작될지를 정하는 조건이다. main에 push될 때마다 검증을 돌리면 원격 저장소 기준의 품질 게이트를 만들 수 있다.",
+    "answer": "True",
+    "explanation": "`workflow[\"events\"]`는 `[\"push\", \"workflow_dispatch\"]`입니다. 찾는 값 `push`가 실제 항목으로 있으므로 `in` 결과는 True입니다. membership test는 collection에 같은 값이 존재하면 True를 반환하기 때문입니다. 헷갈리기 쉬운 오답: False events 리스트의 첫 항목이 정확히 `push`입니다. 오독 지점: branches의 `main` 값만 보고 events 리스트를 확인하지 않은 경우입니다. 비-Python 설정은 Python으로 옮길 때 **도메인 의미와 Python 문법을 분리**해서 읽습니다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
-    "project_context": "lesson 파일을 push하면 원격에서 검증이 자동으로 돌게 할 수 있다."
+    "project_context": "lesson 변경을 main에 push했을 때 원격 validator workflow를 실행하는 CI 트리거 설정과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "membership_test",
+    "reading_goal_internal": "GitHub Actions 트리거 맥락을 Python 설정 데이터로 옮겨 event 목록에 `push` 값이 실제로 있는지 membership test로 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`value in collection`은 collection 안에 같은 값이 존재하는지 검사해 True 또는 False를 만듭니다.",
+      "how_to_read": "먼저 오른쪽 collection의 실제 항목을 확인하고, 왼쪽 값과 같은 항목이 있는지 찾습니다.",
+      "key_point": "원문의 YAML `on: push`는 Python 문법이 아니므로 여기서는 도메인 의미만 보존하고 Python의 `in` 검사를 학습합니다.",
+      "common_mistake": "`push`라는 단어가 다른 문자열의 일부이기만 해도 True라고 생각하기 쉽습니다. 리스트 membership은 같은 항목 값의 존재 여부를 봅니다."
+    },
+    "teaching_example": {
+      "code": "workflow = {\"events\": [\"pull_request\", \"schedule\"]}\nruns_on_push = \"push\" in workflow[\"events\"]",
+      "walkthrough": "events 리스트에 `push` 항목이 없으므로 결과는 False입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`workflow[\"events\"]`는 `[\"push\", \"workflow_dispatch\"]`입니다. 찾는 값 `push`가 실제 항목으로 있으므로 `in` 결과는 True입니다.",
+      "why_correct": "membership test는 collection에 같은 값이 존재하면 True를 반환하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "False",
+        "why_wrong": "events 리스트의 첫 항목이 정확히 `push`입니다.",
+        "misread_step": "branches의 `main` 값만 보고 events 리스트를 확인하지 않은 경우입니다."
+      },
+      "takeaway": "비-Python 설정은 Python으로 옮길 때 **도메인 의미와 Python 문법을 분리**해서 읽습니다."
+    },
+    "target_statement": "runs_on_push = \"push\" in workflow[\"events\"]",
+    "focus_span": "\"push\" in workflow[\"events\"]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "GitHub Actions",
+      "push trigger",
+      "main branch",
+      "workflow event"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY48_L09_pull_request_check_001",
     "level": 9,
-    "title": "pull request check 읽기",
+    "title": "pull_request와 main 조건을 and로 결합하기",
     "concepts": [
-      "pull_request",
-      "review",
-      "CI_check"
+      "boolean_operation",
+      "comparison",
+      "subscription",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "PR 단계에서 검증을 돌려 병합 전 오류를 잡는 방식을 이해한다.",
-    "code": "on:\n  pull_request:\n    branches: [ main ]",
-    "question_type": "meaning_choice",
-    "question": "pull_request check의 장점은?",
+    "reading_goal": "PR 이벤트와 base branch 조건이 모두 맞을 때 검증을 실행하는 boolean 조건을 읽는다.",
+    "code": "event = {\"name\": \"pull_request\", \"base\": \"main\"}\nshould_check = event[\"name\"] == \"pull_request\" and event[\"base\"] == \"main\"",
+    "question_type": "multiple_choice",
+    "question": "`should_check`가 True일 때 얻는 장점으로 가장 가까운 것은?",
     "choices": [
-      "검증 없이 병합하게 한다",
       "main에 합치기 전에 오류를 발견할 수 있다",
+      "검증 없이 병합하게 한다",
       "커밋 기록을 삭제한다",
       "브라우저를 강제로 닫는다"
     ],
     "answer": "main에 합치기 전에 오류를 발견할 수 있다",
-    "explanation": "pull request check는 main에 합치기 전에 변경 내용을 자동 검증하는 절차다. 안전한 변경만 main으로 들어오게 하는 품질 관문이다. PR 단계에서 실패를 잡으면 main 브랜치의 안정성을 유지하고 리뷰 부담도 줄일 수 있다.",
+    "explanation": "이 이벤트는 pull_request이고 base가 main이므로 두 조건이 모두 True입니다. 검증 trigger가 PR→main 경로에서 활성화되도록 표현됐기 때문입니다. 헷갈리기 쉬운 오답: 검증 없이 병합하게 한다 조건이 True면 오히려 merge 전에 check를 실행하는 흐름입니다. 오독 지점: CI check의 목적을 반대로 해석한 경우입니다. PR CI 조건은 **이벤트 종류와 대상 branch를 함께 확인**합니다.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW"
     ],
-    "project_context": "혼자 작업하더라도 나중에 브랜치 작업이 생기면 PR 검증이 유용하다."
+    "project_context": "혼자 작업하더라도 branch 기반 변경을 main에 넣기 전에 자동 검증을 거치는 CI 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "boolean_operation",
+    "reading_goal_internal": "PR 이벤트와 base branch 조건이 모두 맞을 때 검증을 실행하는 boolean 조건을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`left and right`는 두 조건이 모두 truthy일 때 전체가 True가 되는 boolean operation입니다.",
+      "how_to_read": "왼쪽과 오른쪽 비교를 각각 계산한 뒤 둘 다 참인지 확인합니다.",
+      "key_point": "PR이 main에 합쳐지기 전에 자동 검증을 걸면 merge 전에 오류를 발견할 기회를 만들 수 있습니다.",
+      "common_mistake": "두 조건 중 하나만 참이어도 True라고 생각하기 쉽습니다. 그 동작은 `or`에 가깝고 현재는 `and`입니다."
+    },
+    "teaching_example": {
+      "code": "event = {\"type\": \"review\", \"target\": \"main\"}\nrun = event[\"type\"] == \"review\" and event[\"target\"] == \"main\"",
+      "walkthrough": "두 비교가 모두 True라 run도 True입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "이 이벤트는 pull_request이고 base가 main이므로 두 조건이 모두 True입니다.",
+      "why_correct": "검증 trigger가 PR→main 경로에서 활성화되도록 표현됐기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "검증 없이 병합하게 한다",
+        "why_wrong": "조건이 True면 오히려 merge 전에 check를 실행하는 흐름입니다.",
+        "misread_step": "CI check의 목적을 반대로 해석한 경우입니다."
+      },
+      "takeaway": "PR CI 조건은 **이벤트 종류와 대상 branch를 함께 확인**합니다."
+    },
+    "target_statement": "should_check = event[\"name\"] == \"pull_request\" and event[\"base\"] == \"main\"",
+    "focus_span": "event[\"name\"] == \"pull_request\" and event[\"base\"] == \"main\"",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "pull request",
+      "CI check",
+      "main",
+      "workflow trigger"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY48_L09_path_filter_001",
     "level": 9,
-    "title": "path filter 읽기",
+    "title": "관련 changed path만 workflow trigger에 포함하기",
     "concepts": [
-      "path_filter",
-      "workflow_trigger",
-      "changed_files"
+      "boolean_operation",
+      "call",
+      "comparison",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "특정 경로가 바뀔 때만 CI를 실행하는 path filter를 이해한다.",
-    "code": "paths:\n  - 'data/lessons/**'\n  - 'src/pwa/app.js'",
-    "question_type": "meaning_choice",
-    "question": "path filter를 쓰는 이유는?",
+    "reading_goal": "lesson 경로 prefix 또는 app.js exact path 중 하나가 맞을 때 검증을 실행하는 조건을 읽는다.",
+    "code": "changed_path = \"data/lessons/python_core.json\"\nshould_run = changed_path.startswith(\"data/lessons/\") or changed_path == \"src/pwa/app.js\"",
+    "question_type": "multiple_choice",
+    "question": "`should_run`의 값과 이유로 맞는 것은?",
     "choices": [
-      "모든 파일 변경을 무시하기 위해",
-      "관련 파일이 바뀔 때만 검증을 실행하기 위해",
-      "검증 결과를 숨기기 위해",
-      "GitHub Actions를 삭제하기 위해"
+      "True, lesson 경로 prefix와 일치하기 때문에",
+      "False, app.js가 아니기 때문에",
+      "True, 모든 파일은 자동으로 검증되기 때문에",
+      "False, changed_path가 문자열이기 때문에"
     ],
-    "answer": "관련 파일이 바뀔 때만 검증을 실행하기 위해",
-    "explanation": "paths filter는 나열된 경로가 바뀐 event에서만 workflow를 실행해 비용을 줄인다. validator, workflow, dependency file, side card처럼 결과에 영향을 주는 모든 경로를 포함해야 하며 누락하면 필요한 검사가 skip된다. branch protection의 required check와 filter 조합에서 대기 상태가 생기는지도 확인한다.",
+    "answer": "True, lesson 경로 prefix와 일치하기 때문에",
+    "explanation": "`startswith('data/lessons/')`가 True이므로 두 번째 조건이 False여도 or 전체는 True입니다. 관련 경로 조건 중 하나를 만족하기 때문입니다. 헷갈리기 쉬운 오답: False, app.js가 아니기 때문에 두 조건은 `and`가 아니라 `or`로 연결돼 있습니다. 오독 지점: 두 조건을 모두 만족해야 한다고 잘못 읽은 경우입니다. path filter는 **관련 경로 조건 중 하나라도 맞는지** 읽습니다.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_SEARCH_FILTER_SORT"
     ],
-    "project_context": "lesson, side_cards, app.js, validator가 바뀔 때만 lesson 검증 workflow를 돌릴 수 있다."
+    "project_context": "lesson 데이터나 PWA 핵심 파일이 바뀔 때만 lesson validator workflow를 돌려 CI 비용과 노이즈를 줄이는 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "boolean_operation",
+    "reading_goal_internal": "lesson 경로 prefix 또는 app.js exact path 중 하나가 맞을 때 검증을 실행하는 조건을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`left or right`는 둘 중 하나라도 truthy이면 전체 결과가 truthy가 됩니다.",
+      "how_to_read": "각 경로 조건을 따로 계산한 뒤 하나라도 맞는지 확인합니다.",
+      "key_point": "관련 파일 변경에만 검증을 걸면 불필요한 workflow 실행을 줄일 수 있습니다.",
+      "common_mistake": "path filter가 다른 파일 변경 자체를 무시하거나 삭제한다고 생각하기 쉽습니다. 어떤 workflow를 실행할지 좁히는 조건입니다."
+    },
+    "teaching_example": {
+      "code": "path = \"docs/a.md\"\nrun = path.startswith(\"docs/\") or path == \"README.md\"",
+      "walkthrough": "첫 조건이 True라 run은 True입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`startswith('data/lessons/')`가 True이므로 두 번째 조건이 False여도 or 전체는 True입니다.",
+      "why_correct": "관련 경로 조건 중 하나를 만족하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "False, app.js가 아니기 때문에",
+        "why_wrong": "두 조건은 `and`가 아니라 `or`로 연결돼 있습니다.",
+        "misread_step": "두 조건을 모두 만족해야 한다고 잘못 읽은 경우입니다."
+      },
+      "takeaway": "path filter는 **관련 경로 조건 중 하나라도 맞는지** 읽습니다."
+    },
+    "target_statement": "should_run = changed_path.startswith(\"data/lessons/\") or changed_path == \"src/pwa/app.js\"",
+    "focus_span": "changed_path.startswith(\"data/lessons/\") or changed_path == \"src/pwa/app.js\"",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "path filter",
+      "changed files",
+      "workflow trigger",
+      "lesson validation"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY48_L09_local_vs_ci_001",
     "level": 9,
-    "title": "local check vs CI check 읽기",
+    "title": "로컬과 CI가 같은 validator를 쓰는지 비교하기",
     "concepts": [
-      "local_check",
-      "CI_check",
-      "defense_in_depth"
+      "comparison",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "로컬 검증과 원격 CI 검증을 둘 다 두는 이유를 이해한다.",
-    "code": "local: python tools/validate_lessons.py\nremote: GitHub Actions runs same script",
-    "question_type": "meaning_choice",
-    "question": "로컬 검증과 CI 검증을 둘 다 쓰는 이유는?",
+    "reading_goal": "로컬과 원격 CI의 validator 경로를 equality comparison으로 비교해 동일 기준 사용 여부를 읽는다.",
+    "code": "local_script = \"tools/validate_lessons.py\"\nci_script = \"tools/validate_lessons.py\"\nsame_check = local_script == ci_script",
+    "question_type": "multiple_choice",
+    "question": "`same_check`가 True일 때 얻는 장점으로 가장 가까운 것은?",
     "choices": [
-      "검증을 두 번 하면 항상 결과가 달라지기 때문에",
-      "내 컴퓨터와 원격 저장소 양쪽에서 같은 기준으로 확인하기 위해",
-      "로컬 검증을 믿지 않기 위해",
-      "CI 검증을 항상 실패시키기 위해"
+      "내 컴퓨터와 원격 저장소 양쪽에서 같은 기준으로 확인할 수 있다",
+      "항상 결과가 서로 다르게 나온다",
+      "로컬 검증을 자동 삭제한다",
+      "CI를 항상 실패시킨다"
     ],
-    "answer": "내 컴퓨터와 원격 저장소 양쪽에서 같은 기준으로 확인하기 위해",
-    "explanation": "같은 script를 local과 CI에서 실행하면 rule drift를 줄이고 feedback을 빨리 받는다. 하지만 OS, Python patch, locale, timezone, dependency와 environment variable이 다르면 결과가 달라질 수 있다. CI environment를 명시적으로 pin하고 local 재현 방법을 문서화한다.",
+    "answer": "내 컴퓨터와 원격 저장소 양쪽에서 같은 기준으로 확인할 수 있다",
+    "explanation": "local_script와 ci_script가 같은 문자열이므로 비교 결과는 True입니다. 양쪽이 같은 validator 경로를 사용한다고 표현됐기 때문입니다. 헷갈리기 쉬운 오답: 항상 결과가 서로 다르게 나온다 같은 검증 기준을 사용하려는 목적과 반대입니다. 오독 지점: 동일 스크립트 사용의 목적을 반대로 해석한 경우입니다. 검증 파이프라인은 **로컬과 CI의 기준 일치 여부**를 확인합니다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
-    "project_context": "v48 이후에는 로컬에서도 CI에서도 tools/validate_lessons.py를 같은 기준으로 실행한다."
+    "project_context": "로컬에서도 CI에서도 tools/validate_lessons.py를 같은 기준으로 실행해 검증 편차를 줄이는 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "comparison",
+    "reading_goal_internal": "로컬과 원격 CI의 validator 경로를 equality comparison으로 비교해 동일 기준 사용 여부를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`left == right`는 두 값이 같은지 비교해 True 또는 False를 만듭니다.",
+      "how_to_read": "왼쪽과 오른쪽의 실제 문자열 값을 확인한 뒤 완전히 같은지 비교합니다.",
+      "key_point": "로컬과 CI가 같은 validator를 실행하면 개발 PC와 원격 저장소 양쪽에서 같은 규칙을 적용하기 쉽습니다.",
+      "common_mistake": "로컬 검증이 통과하면 CI는 불필요하다고 생각하기 쉽습니다. 서로 다른 실행 환경에서도 같은 기준을 다시 확인하는 가치가 있습니다."
+    },
+    "teaching_example": {
+      "code": "local = \"check.py\"\nremote = \"check.py\"\nsame = local == remote",
+      "walkthrough": "두 문자열이 같으므로 same은 True입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "local_script와 ci_script가 같은 문자열이므로 비교 결과는 True입니다.",
+      "why_correct": "양쪽이 같은 validator 경로를 사용한다고 표현됐기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "항상 결과가 서로 다르게 나온다",
+        "why_wrong": "같은 검증 기준을 사용하려는 목적과 반대입니다.",
+        "misread_step": "동일 스크립트 사용의 목적을 반대로 해석한 경우입니다."
+      },
+      "takeaway": "검증 파이프라인은 **로컬과 CI의 기준 일치 여부**를 확인합니다."
+    },
+    "target_statement": "same_check = local_script == ci_script",
+    "focus_span": "local_script == ci_script",
+    "focus_mode": "subexpression",
+    "coverage_domain": "testing_and_quality",
+    "coverage_topics": [
+      "local validation",
+      "CI validation",
+      "same script",
+      "consistency"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY48_L10_failing_ci_001",
     "level": 10,
-    "title": "failing CI 읽기",
+    "title": "failed_checks가 비어 있지 않으면 CI 실패 분기로 들어가기",
     "concepts": [
-      "CI_fail",
-      "quality_gate",
-      "debugging"
+      "if_statement",
+      "name_reference",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "CI 실패가 나쁜 것이 아니라 깨진 변경을 알려주는 신호임을 이해한다.",
-    "code": "CI failed:\n  ANSWER NOT IN CHOICES: ['PYxx_bad']",
-    "question_type": "meaning_choice",
-    "question": "CI 실패가 의미하는 것은?",
+    "reading_goal": "if 헤더에서 리스트의 truthiness를 평가하고 항목이 있으면 실패 분기 본문이 실행되는 흐름을 읽는다.",
+    "code": "failed_checks = [\"ANSWER NOT IN CHOICES: PYxx_bad\"]\n\nif failed_checks:\n    ci_status = \"failed\"\nelse:\n    ci_status = \"passed\"\n\nprint(ci_status)",
+    "question_type": "output_prediction",
+    "question": "이 코드에서 마지막에 출력되는 `ci_status`는 무엇인가?",
     "choices": [
-      "저장소가 무조건 삭제됐다는 뜻",
-      "자동 검증이 문제를 발견했다는 뜻",
-      "모든 커밋이 사라졌다는 뜻",
-      "브라우저가 고장났다는 뜻"
+      "failed",
+      "passed",
+      "PYxx_bad",
+      "None"
     ],
-    "answer": "자동 검증이 문제를 발견했다는 뜻",
-    "explanation": "failing CI는 자동 검증 중 하나 이상이 실패했다는 신호다. 실패 로그를 읽으면 수정해야 할 파일이나 조건을 찾는 데 도움이 된다. CI가 실패하면 코드 자체 문제일 수도 있고 테스트 기대값이나 환경 설정 문제일 수도 있어 로그 확인이 먼저다. 따라서 정답은 ‘자동 검증이 문제를 발견했다는 뜻’이다.",
+    "answer": "failed",
+    "explanation": "1) failed_checks는 빈 리스트가 아니다. 2) 따라서 if 조건에서 truthy로 평가된다. 3) if 본문이 실행되어 ci_status에 failed가 저장된다. 4) else는 실행되지 않는다.",
     "side_card_ids": [],
-    "project_context": "answer not in choices, duplicate id, missing file 같은 문제를 CI가 알려줄 수 있다."
+    "project_context": "answer not in choices, duplicate id, missing file 같은 자동 검증 실패를 CI 상태로 변환하는 흐름에 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "if_statement",
+    "reading_goal_internal": "if 헤더에서 리스트의 truthiness를 평가하고 항목이 있으면 실패 분기 본문이 실행되는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`if condition:`은 condition을 평가해 truthy이면 들여쓴 본문을 실행합니다. 비어 있지 않은 리스트는 truthy입니다.",
+      "how_to_read": "failed_checks의 현재 내용을 먼저 보고 비어 있는지 확인한 뒤, 그 truthiness로 if 분기를 결정합니다.",
+      "key_point": "CI라는 맥락보다 Python에서는 **비어 있지 않은 리스트가 if 조건에서 True처럼 동작**한다는 점이 핵심입니다.",
+      "common_mistake": "리스트 안 문자열 자체가 True라는 뜻으로 오해하기 쉽습니다. 리스트에 항목이 하나 이상 있다는 사실 때문에 truthy입니다."
+    },
+    "teaching_example": {
+      "code": "issues = [\"duplicate id\"]\nif issues:\n    status = \"failed\"\nelse:\n    status = \"passed\"\nprint(status)",
+      "walkthrough": "issues에 항목이 있으므로 if 조건이 truthy이고 failed가 선택됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) failed_checks는 빈 리스트가 아니다. 2) 따라서 if 조건에서 truthy로 평가된다. 3) if 본문이 실행되어 ci_status에 failed가 저장된다. 4) else는 실행되지 않는다.",
+      "why_correct": "실패 항목이 하나 존재해 리스트가 truthy이므로 failed 분기가 선택됩니다.",
+      "common_wrong_choice": {
+        "choice": "passed",
+        "why_wrong": "passed는 failed_checks가 비어 있어 if 조건이 falsy일 때의 else 결과입니다.",
+        "misread_step": "리스트의 내용 자체보다 먼저 빈 리스트인지 아닌지를 확인해 truthiness를 판단합니다."
+      },
+      "takeaway": "if 조건은 **현재 값 평가 → truthy/falsy 판정 → 한 분기 선택** 순서로 읽습니다."
+    },
+    "target_statement": "if failed_checks:",
+    "focus_span": "if failed_checks:",
+    "focus_mode": "compound_header",
+    "coverage_domain": "testing_and_quality",
+    "coverage_topics": [
+      "failing_ci",
+      "quality_gate",
+      "failed_checks",
+      "validation"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY48_L10_no_hardcoded_ci_count_001",
     "level": 10,
-    "title": "CI에서 count 하드코딩 피하기",
+    "title": "release check일 때만 expected_count를 선택하는 조건 표현식 읽기",
     "concepts": [
-      "hardcoded_count",
-      "future_proof",
-      "validation_policy"
+      "conditional_expression",
+      "name_reference",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "CI에서는 버전마다 바뀌는 카드 수를 너무 강하게 고정하지 않는 이유를 이해한다.",
-    "code": "CI:\n  python tools/validate_lessons.py\n\nlocal release check:\n  python tools/validate_lessons.py --expected-lesson-cards 956",
-    "question_type": "meaning_choice",
-    "question": "CI에서 카드 수 하드코딩을 피하면 좋은 점은?",
+    "reading_goal": "`A if condition else B`에서 release_check의 현재 값을 먼저 확인해 expected_count 또는 None 중 실제 결과 하나를 선택한다.",
+    "code": "release_check = True\nexpected_count = 956\n\ncount_requirement = expected_count if release_check else None\nprint(count_requirement)",
+    "question_type": "output_prediction",
+    "question": "`release_check`가 True일 때 `count_requirement`의 값은 무엇인가?",
     "choices": [
-      "중복 ID 검사를 하지 않아도 된다",
-      "새 버전 추가 때마다 workflow 파일을 수정하지 않아도 된다",
-      "모든 검증을 생략할 수 있다",
-      "lesson 파일을 자동 삭제할 수 있다"
+      "956",
+      "None",
+      "True",
+      "release_check"
     ],
-    "answer": "새 버전 추가 때마다 workflow 파일을 수정하지 않아도 된다",
-    "explanation": "workflow YAML을 매번 수정하지 않는 장점은 있지만 CI에서 count expectation을 완전히 빼면 lesson 연결 누락을 놓칠 수 있다. 예상 파일과 count를 version 관리된 manifest 또는 validator가 읽는 독립 metadata로 두면 workflow 변경 없이도 회귀 검사를 유지할 수 있다.",
+    "answer": "956",
+    "explanation": "1) release_check는 True다. 2) `A if True else B`이므로 A 쪽을 선택한다. 3) A는 expected_count이고 현재 값은 956이다. 4) 따라서 count_requirement는 956이다.",
     "side_card_ids": [
       "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
     ],
-    "project_context": "v42/v44/v47처럼 기대 카드 수가 달라지는 문제를 줄이기 위한 설계다."
+    "project_context": "일반 CI workflow에는 버전마다 변하는 count를 직접 박아 넣지 않고, release 검증처럼 필요한 상황에서 독립 metadata의 기대값을 적용하는 정책을 모델링했다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "conditional_expression",
+    "reading_goal_internal": "`A if condition else B`에서 release_check의 현재 값을 먼저 확인해 expected_count 또는 None 중 실제 결과 하나를 선택한다.",
+    "concept_explanation": {
+      "what_it_is": "조건 표현식 `A if condition else B`는 condition이 True이면 A, False이면 B를 하나의 결과값으로 선택합니다.",
+      "how_to_read": "가운데 release_check를 먼저 평가하고 True이면 왼쪽 expected_count, False이면 오른쪽 None을 결과로 읽습니다.",
+      "key_point": "두 후보를 모두 저장하는 것이 아니라 **조건에 따라 값 하나만 표현식 결과가 됩니다.**",
+      "common_mistake": "expected_count와 None이 둘 다 validator에 전달된다고 생각하기 쉽습니다. 실제 결과는 하나입니다."
+    },
+    "teaching_example": {
+      "code": "strict = False\nexpected = 100\nlimit = expected if strict else None\nprint(limit)",
+      "walkthrough": "strict가 False이므로 else 쪽 None이 선택됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) release_check는 True다. 2) `A if True else B`이므로 A 쪽을 선택한다. 3) A는 expected_count이고 현재 값은 956이다. 4) 따라서 count_requirement는 956이다.",
+      "why_correct": "조건이 True이므로 expected_count의 현재 값 956이 표현식 결과가 됩니다.",
+      "common_wrong_choice": {
+        "choice": "None",
+        "why_wrong": "None은 release_check가 False일 때 선택되는 else 쪽 값입니다.",
+        "misread_step": "가운데 조건부터 확인한 뒤 if 앞/else 뒤 중 한쪽만 선택합니다."
+      },
+      "takeaway": "조건 표현식은 **조건 평가 → 한 후보 선택 → 그 값이 전체 결과**가 됩니다."
+    },
+    "target_statement": "expected_count if release_check else None",
+    "focus_span": "expected_count if release_check else None",
+    "focus_mode": "subexpression",
+    "coverage_domain": "testing_and_quality",
+    "coverage_topics": [
+      "ci_count",
+      "hardcoded_count",
+      "release_check",
+      "validation_policy"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY48_L10_reproducible_validation_001",
     "level": 10,
-    "title": "reproducible validation 읽기",
+    "title": "cards와 rules를 입력으로 받는 재현 가능한 validate 함수 정의 읽기",
     "concepts": [
-      "reproducible_validation",
-      "same_script",
-      "automation"
+      "function_definition",
+      "parameter_definition",
+      "return_statement",
+      "call"
     ],
-    "reading_goal": "같은 검증 스크립트를 로컬과 CI에서 반복 실행하는 재현 가능한 검증을 이해한다.",
-    "code": "same repo\nsame script\nsame rules\nsame pass/fail",
+    "reading_goal": "def 헤더에서 함수 이름과 두 매개변수를 구분하고, 함수 본문은 정의 시점이 아니라 호출될 때 실행된다는 점을 읽는다.",
+    "code": "def validate(cards, rules):\n    return all(rule(cards) for rule in rules)\n\ncards = [{\"id\": \"c1\"}]\nrules = [lambda rows: len(rows) == 1]\nresult = validate(cards, rules)\nprint(result)",
     "question_type": "meaning_choice",
-    "question": "reproducible validation의 핵심은?",
+    "question": "`def validate(cards, rules):`가 실행된 직후 가장 정확한 설명은 무엇인가?",
     "choices": [
-      "실행할 때마다 기준을 랜덤하게 바꾸는 것",
-      "어디서 실행해도 같은 규칙으로 검증하는 것",
-      "검증 결과를 기록하지 않는 것",
-      "파일을 읽지 않고 통과시키는 것"
+      "validate 함수가 정의되고 본문은 호출될 때 실행된다",
+      "rules가 즉시 모두 실행된다",
+      "cards가 자동으로 빈 리스트가 된다",
+      "True가 즉시 출력된다"
     ],
-    "answer": "어디서 실행해도 같은 규칙으로 검증하는 것",
-    "explanation": "재현 가능한 검증은 같은 input revision, validator, config, runtime과 dependency에서 같은 판정을 내는 것을 목표로 한다. same repo라는 표현만으로는 branch 시점, generated file, timezone, network 변화가 고정되지 않는다. tool version과 environment를 pin하고 외부 의존을 제거하거나 기록한다.",
+    "answer": "validate 함수가 정의되고 본문은 호출될 때 실행된다",
+    "explanation": "1) `def`는 함수 정의 문장이다. 2) validate라는 이름에 함수 객체가 연결된다. 3) cards와 rules는 호출 때 값을 받을 매개변수다. 4) 정의 직후에는 본문 검증을 아직 수행하지 않는다. 5) 뒤의 validate(cards, rules) 호출에서 본문이 실행된다.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
-    "project_context": "python-reading-trainer의 카드 품질 기준을 도구 파일로 고정하는 목적이다."
+    "project_context": "동일한 validator 함수와 rules를 로컬 및 CI에서 함께 사용해 검증 정책 차이를 줄이는 구조에 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "function_definition",
+    "reading_goal_internal": "def 헤더에서 함수 이름과 두 매개변수를 구분하고, 함수 본문은 정의 시점이 아니라 호출될 때 실행된다는 점을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`def validate(cards, rules):`는 validate라는 함수를 정의하고 호출 시 받을 두 매개변수 cards와 rules를 선언합니다.",
+      "how_to_read": "`def` 뒤 함수 이름을 먼저 확인하고 괄호 안 매개변수 목록을 왼쪽부터 읽은 뒤 콜론 아래를 함수 본문 범위로 봅니다.",
+      "key_point": "함수를 정의하는 순간 검증이 실행되는 것이 아니라 **함수 객체가 만들어지고 본문은 호출 시 실행**됩니다.",
+      "common_mistake": "def 줄을 만난 즉시 rules가 실행된다고 생각하기 쉽습니다. 실제 검증은 validate(...) 호출이 있어야 시작됩니다."
+    },
+    "teaching_example": {
+      "code": "def check(values, rules):\n    return all(rule(values) for rule in rules)\n\nprint(callable(check))",
+      "walkthrough": "def 문은 check 함수를 정의할 뿐이며 실제 rules 적용은 check를 호출할 때 일어납니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) `def`는 함수 정의 문장이다. 2) validate라는 이름에 함수 객체가 연결된다. 3) cards와 rules는 호출 때 값을 받을 매개변수다. 4) 정의 직후에는 본문 검증을 아직 수행하지 않는다. 5) 뒤의 validate(cards, rules) 호출에서 본문이 실행된다.",
+      "why_correct": "def 문은 함수를 정의하며 함수 본문은 해당 함수를 호출했을 때 실행됩니다.",
+      "common_wrong_choice": {
+        "choice": "rules가 즉시 모두 실행된다",
+        "why_wrong": "rules를 순회하는 generator와 all 호출은 validate 함수 본문 안에 있어 실제 호출 전에는 실행되지 않습니다.",
+        "misread_step": "함수 정의 시점과 함수 호출 시점을 분리해서 읽습니다."
+      },
+      "takeaway": "함수 정의는 **이름·매개변수·본문을 등록**하고 실제 본문 평가는 호출 시점에 일어납니다."
+    },
+    "target_statement": "def validate(cards, rules):",
+    "focus_span": "def validate(cards, rules):",
+    "focus_mode": "compound_header",
+    "coverage_domain": "testing_and_quality",
+    "coverage_topics": [
+      "reproducible_validation",
+      "validator",
+      "rules",
+      "same_script"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY48_L10_ci_as_quality_gate_001",
     "level": 10,
-    "title": "CI as quality gate 읽기",
+    "title": "required check와 validation 통과를 and로 결합해 gate 결정하기",
     "concepts": [
-      "CI",
-      "quality_gate",
-      "release_safety"
+      "boolean_operation",
+      "assignment",
+      "name_reference"
     ],
-    "reading_goal": "CI를 단순 실행기가 아니라 품질 게이트로 보는 관점을 이해한다.",
-    "code": "commit -> push -> CI validation -> trusted main",
-    "question_type": "meaning_choice",
-    "question": "CI를 quality gate로 둔다는 뜻은?",
+    "reading_goal": "`and` 왼쪽 조건을 먼저 평가하고 참일 때 오른쪽 조건까지 확인해 둘 다 참이어야 gate가 열리는 흐름을 읽는다.",
+    "code": "required_check = True\nvalidation_passed = True\n\ntrusted_change = required_check and validation_passed\nprint(trusted_change)",
+    "question_type": "output_prediction",
+    "question": "두 값이 모두 True일 때 `required_check and validation_passed`의 결과는 무엇인가?",
     "choices": [
-      "모든 변경을 검증 없이 통과시키는 것",
-      "자동 검증을 통과한 변경만 안전한 기준으로 삼는 것",
-      "로컬 서버 확인을 금지하는 것",
-      "Git log를 숨기는 것"
+      "True",
+      "False",
+      "required_check",
+      "validation_passed"
     ],
-    "answer": "자동 검증을 통과한 변경만 안전한 기준으로 삼는 것",
-    "explanation": "CI status를 branch protection의 required check로 설정해야 실패한 job이 merge를 실제로 막는 gate가 된다. workflow가 존재하거나 빨간 표시가 난다는 사실만으로 merge 차단이 자동 보장되지는 않는다. 관리자 bypass, skipped job, 권한과 protected branch 설정도 확인한다.",
+    "answer": "True",
+    "explanation": "1) 왼쪽 required_check는 True다. 2) 왼쪽이 참이므로 오른쪽 validation_passed도 확인한다. 3) 오른쪽도 True다. 4) 두 결과를 and로 결합하면 True다.",
     "side_card_ids": [
       "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
     ],
-    "project_context": "v48 이후 main에 올라간 lesson 데이터는 자동 검증 대상이 된다."
+    "project_context": "CI status를 branch protection의 required check로 두고 실제 validation이 성공해야 trusted main 기준으로 삼는 quality gate 구조에 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "boolean_operation",
+    "reading_goal_internal": "`and` 왼쪽 조건을 먼저 평가하고 참일 때 오른쪽 조건까지 확인해 둘 다 참이어야 gate가 열리는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`A and B`는 왼쪽부터 평가하며 두 피연산자가 모두 truthy일 때 전체 결과도 truthy가 되는 논리 연산입니다.",
+      "how_to_read": "먼저 required_check의 값을 확인하고 True이면 validation_passed도 확인한 뒤 두 결과를 결합합니다.",
+      "key_point": "quality gate를 통과하려면 **required check 설정과 실제 validation 성공이 둘 다 필요**하다는 구조를 Python `and`로 표현합니다.",
+      "common_mistake": "둘 중 하나만 True여도 gate가 통과한다고 생각하기 쉽습니다. 그 동작은 or에 가깝고 and는 둘 다 필요합니다."
+    },
+    "teaching_example": {
+      "code": "reviewed = True\ntests_passed = False\nmerge_ready = reviewed and tests_passed\nprint(merge_ready)",
+      "walkthrough": "왼쪽은 True지만 오른쪽이 False라 전체 and 결과는 False입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) 왼쪽 required_check는 True다. 2) 왼쪽이 참이므로 오른쪽 validation_passed도 확인한다. 3) 오른쪽도 True다. 4) 두 결과를 and로 결합하면 True다.",
+      "why_correct": "두 피연산자가 모두 True이므로 and 전체 결과도 True입니다.",
+      "common_wrong_choice": {
+        "choice": "False",
+        "why_wrong": "and가 False가 되려면 두 조건 중 적어도 하나가 falsy여야 하는데 현재는 둘 다 True입니다.",
+        "misread_step": "각 피연산자를 따로 Boolean으로 확정한 다음 마지막에 and로 결합합니다."
+      },
+      "takeaway": "`and`는 **왼쪽 평가 → 필요하면 오른쪽 평가 → 둘 다 참일 때 전체 참**으로 읽습니다."
+    },
+    "target_statement": "required_check and validation_passed",
+    "focus_span": "required_check and validation_passed",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "ci_quality_gate",
+      "required_check",
+      "branch_protection",
+      "release_safety"
+    ],
+    "pedagogical_intent": "read_execution_order"
   }
 ]

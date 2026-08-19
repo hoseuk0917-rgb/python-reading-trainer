@@ -7,38 +7,63 @@
     "review_step": 1,
     "review_total": 6,
     "review_focus": "전체 목적",
-    "title": "[오늘의 코드리뷰 1/6] AI API 호출 코드 전체 목적",
+    "title": "LLM 요청·응답 저장 workflow 함수 호출 읽기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "try_except",
-      "import",
-      "range",
-      "continue",
-      "api",
-      "llm",
-      "requests",
-      "review"
+      "call",
+      "assignment",
+      "argument_passing",
+      "function_definition"
     ],
-    "reading_goal": "긴 AI API 호출 코드를 전체 흐름으로 먼저 읽는다.",
-    "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
-    "question_type": "review_choice",
-    "question": "이 코드의 전체 목적에 가장 가까운 것은?",
+    "reading_goal": "AI API workflow를 하나의 함수 호출로 보고 입력 prompt와 run id가 반환 결과의 answer·save path로 이어지는 흐름을 읽는다.",
+    "code": "def run_request(prompt, run_id):\n    answer = f\"answer:{prompt}\"\n    saved_to = f\"outputs/{run_id}.json\"\n    return {\"prompt\": prompt, \"answer\": answer, \"saved_to\": saved_to}\n\nresult = run_request(\"RAG란?\", \"run-01\")",
+    "question_type": "multiple_choice",
+    "question": "이 호출 결과의 전체 목적에 가장 가까운 것은 무엇인가?",
     "choices": [
-      "로컬 파일을 압축한다",
-      "웹페이지 CSS를 수정한다",
-      "DB 테이블을 삭제한다",
-      "프롬프트를 LLM API에 보내고 응답을 파일로 저장한다"
+      "프롬프트를 처리해 답변과 저장 경로 정보를 만든다",
+      "GPU 메모리를 비운다",
+      "SQLite 테이블을 삭제한다",
+      "CSS를 렌더링한다"
     ],
-    "answer": "프롬프트를 LLM API에 보내고 응답을 파일로 저장한다",
-    "explanation": "call_llm은 환경변수의 토큰을 확인하고 build_payload로 요청 본문을 만든 뒤 requests.post를 호출한다. 성공 응답이 예상한 JSON 구조라면 답변을 outputs/{run_id}.json에 쓰고 text를 반환하므로 선택지 중 전체 목적은 ‘프롬프트를 LLM API에 보내고 응답을 파일로 저장한다’이다. 다만 누락된 키·요청 예외·응답 구조 오류에서는 저장되지 않으며, 모든 시도가 429이면 루프 뒤에 명시적 raise나 return이 없어 None으로 끝나는 결함이 있다.",
+    "answer": "프롬프트를 처리해 답변과 저장 경로 정보를 만든다",
+    "explanation": "함수는 prompt로 answer를 만들고 run_id로 저장 경로를 만든 뒤 둘을 포함한 dict를 반환합니다. 함수 본문이 입력 prompt 처리와 저장 위치 구성을 하나의 workflow 결과로 묶기 때문입니다. 헷갈리기 쉬운 오답: SQLite 테이블을 삭제한다 이 함수에는 DB 삭제 동작이나 SQL이 없습니다. 오독 지점: 함수 이름만 보고 실제 본문을 확인하지 않은 경우입니다. 긴 workflow는 **함수 입력 → 내부 핵심 단계 → 반환 결과**로 압축해서 읽을 수 있습니다.",
     "side_card_ids": [
       "AI_prompt_001"
     ],
-    "project_context": "API 호출형 LLM 코드의 큰 구조를 읽는 일일 리뷰다."
+    "project_context": "외부 LLM API를 호출하고 결과를 run별 산출물로 남기는 자동화 workflow를 Python 함수 단위로 읽는 맥락과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "AI API workflow를 하나의 함수 호출로 보고 입력 prompt와 run id가 반환 결과의 answer·save path로 이어지는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`function(arg1, arg2)`는 입력값을 함수에 전달하고 반환값을 받는 function call입니다.",
+      "how_to_read": "argument 값을 확인한 뒤 함수 본문이 어떤 결과를 구성해 반환하는지 추적합니다.",
+      "key_point": "원래 긴 API 코드의 핵심 workflow인 **prompt 전달 → answer 생성 → run id 기반 저장 결과 구성**을 한 함수로 압축했습니다.",
+      "common_mistake": "함수 이름에 request가 있으니 실제 인터넷 요청이 반드시 발생한다고 생각하기 쉽습니다. 이 학습 코드는 외부 상태 없이 같은 데이터 흐름만 재현합니다."
+    },
+    "teaching_example": {
+      "code": "def run_task(text, task_id):\n    return {\"input\": text, \"saved_to\": f\"{task_id}.json\"}\n\nresult = run_task(\"hello\", \"t01\")",
+      "walkthrough": "두 argument가 함수에 전달되고 결과 dict에 입력값과 저장 경로가 담깁니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "함수는 prompt로 answer를 만들고 run_id로 저장 경로를 만든 뒤 둘을 포함한 dict를 반환합니다.",
+      "why_correct": "함수 본문이 입력 prompt 처리와 저장 위치 구성을 하나의 workflow 결과로 묶기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "SQLite 테이블을 삭제한다",
+        "why_wrong": "이 함수에는 DB 삭제 동작이나 SQL이 없습니다.",
+        "misread_step": "함수 이름만 보고 실제 본문을 확인하지 않은 경우입니다."
+      },
+      "takeaway": "긴 workflow는 **함수 입력 → 내부 핵심 단계 → 반환 결과**로 압축해서 읽을 수 있습니다."
+    },
+    "target_statement": "result = run_request(\"RAG란?\", \"run-01\")",
+    "focus_span": "run_request(\"RAG란?\", \"run-01\")",
+    "focus_mode": "subexpression",
+    "coverage_domain": "ai_llm_rag",
+    "coverage_topics": [
+      "LLM API",
+      "prompt",
+      "response",
+      "save workflow"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY9_REVIEW_AI_API_002",
@@ -48,39 +73,64 @@
     "review_step": 2,
     "review_total": 6,
     "review_focus": "인증/키",
-    "title": "[오늘의 코드리뷰 2/6] API 키 위치 찾기",
+    "title": "env.get()으로 LLM API key 값 읽기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "try_except",
-      "import",
-      "range",
-      "continue",
-      "api",
-      "auth",
-      "env",
-      "security"
+      "call",
+      "assignment",
+      "attribute_access",
+      "literal"
     ],
-    "reading_goal": "API 키가 환경변수에서 읽히는 구조를 찾는다.",
-    "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
-    "question_type": "review_choice",
-    "question": "API 키를 읽는 부분은 어디인가?",
+    "reading_goal": "환경설정과 같은 mapping에서 get 메서드로 secret key 값을 읽고 변수에 저장하는 흐름을 읽는다.",
+    "code": "env = {\"LLM_API_KEY\": \"local-demo-key\"}\ntoken = env.get(\"LLM_API_KEY\")",
+    "question_type": "multiple_choice",
+    "question": "API key 값을 읽는 직접적인 표현식은 무엇인가?",
     "choices": [
-      "OUT_DIR.mkdir(exist_ok=True)",
-      "json.dumps(...)",
-      "temperature: 0.2",
-      "os.environ.get(\"LLM_API_KEY\")"
+      "env.get(\"LLM_API_KEY\")",
+      "token = None",
+      "\"LLM_API_KEY\"",
+      "env"
     ],
-    "answer": "os.environ.get(\"LLM_API_KEY\")",
-    "explanation": "os.environ.get('LLM_API_KEY')가 현재 프로세스 환경에서 값을 읽는다. 값이 없거나 빈 문자열이면 if not token이 참이어서 네트워크 요청 전에 RuntimeError를 던진다. 환경변수는 비밀값을 소스와 분리해 실수로 저장소에 커밋할 위험을 줄이지만, 로그·프로세스 설정·배포 권한까지 자동으로 보호하지는 않으므로 키 권한과 회전 정책도 필요하다.",
+    "answer": "env.get(\"LLM_API_KEY\")",
+    "explanation": "`env.get(\"LLM_API_KEY\")`가 env mapping에서 해당 key의 value를 조회하고 token에 반환합니다. API key 값을 읽는 실제 조회 동작은 get 메서드 호출에서 일어나기 때문입니다. 헷갈리기 쉬운 오답: \"LLM_API_KEY\" 그 문자열은 어떤 값을 읽을지 지정하는 key 이름일 뿐입니다. 오독 지점: 조회 key와 조회 동작 자체를 구분하지 않은 경우입니다. secret 조회는 **mapping → get 호출 → key → 반환 value**로 읽습니다.",
     "side_card_ids": [
       "WEB_auth_001",
       "DEV_security_001"
     ],
-    "project_context": "LLM/API 코드에서 키를 코드에 박지 않는 습관을 읽는다."
+    "project_context": "API secret을 코드 문자열로 직접 박아두기보다 실행 환경·설정에서 읽는 보안 구조와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "환경설정과 같은 mapping에서 get 메서드로 secret key 값을 읽고 변수에 저장하는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`mapping.get(key)`는 dict 같은 mapping에서 key에 연결된 value를 조회하는 method call입니다.",
+      "how_to_read": "receiver mapping, 메서드 이름 get, 괄호 안 조회 key를 차례로 확인합니다.",
+      "key_point": "실제 `os.environ.get(\"LLM_API_KEY\")`도 같은 형태로 환경변수 값을 읽지만, 이 카드는 고정 mapping을 써서 답을 안정화했습니다.",
+      "common_mistake": "`LLM_API_KEY` 문자열 자체가 token에 저장된다고 생각하기 쉽습니다. 그것은 조회 key이고 반환값은 그 key의 value입니다."
+    },
+    "teaching_example": {
+      "code": "env = {\"SERVICE_KEY\": \"demo-123\"}\nkey = env.get(\"SERVICE_KEY\")",
+      "walkthrough": "get 메서드가 SERVICE_KEY의 value `demo-123`을 반환합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`env.get(\"LLM_API_KEY\")`가 env mapping에서 해당 key의 value를 조회하고 token에 반환합니다.",
+      "why_correct": "API key 값을 읽는 실제 조회 동작은 get 메서드 호출에서 일어나기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "\"LLM_API_KEY\"",
+        "why_wrong": "그 문자열은 어떤 값을 읽을지 지정하는 key 이름일 뿐입니다.",
+        "misread_step": "조회 key와 조회 동작 자체를 구분하지 않은 경우입니다."
+      },
+      "takeaway": "secret 조회는 **mapping → get 호출 → key → 반환 value**로 읽습니다."
+    },
+    "target_statement": "token = env.get(\"LLM_API_KEY\")",
+    "focus_span": "env.get(\"LLM_API_KEY\")",
+    "focus_mode": "subexpression",
+    "coverage_domain": "security_and_auth",
+    "coverage_topics": [
+      "API key",
+      "environment variable",
+      "config",
+      "secret"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_AI_API_003",
@@ -90,39 +140,64 @@
     "review_step": 3,
     "review_total": 6,
     "review_focus": "호출 지점",
-    "title": "[오늘의 코드리뷰 3/6] 실제 API 호출 지점",
+    "title": "실제 API 요청 지점인 post() 메서드 호출 읽기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "try_except",
-      "import",
-      "range",
-      "continue",
-      "requests",
-      "post",
-      "timeout",
-      "api"
+      "call",
+      "argument_passing",
+      "assignment",
+      "class_definition"
     ],
-    "reading_goal": "긴 코드에서 실제 외부 호출이 일어나는 줄을 찾는다.",
-    "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
-    "question_type": "review_choice",
-    "question": "실제로 외부 API 요청을 보내는 코드는?",
+    "reading_goal": "API workflow에서 실제 요청에 해당하는 post 메서드 호출과 전달 인자를 식별한다.",
+    "code": "class Client:\n    def post(self, url, headers, json, timeout):\n        return {\"url\": url, \"headers\": headers, \"json\": json, \"timeout\": timeout}\n\nclient = Client()\nAPI_URL = \"https://api.example.test/v1/chat\"\nheaders = {\"Authorization\": \"Bearer demo\"}\npayload = {\"prompt\": \"hello\"}\nresponse = client.post(API_URL, headers=headers, json=payload, timeout=30)",
+    "question_type": "multiple_choice",
+    "question": "실제 POST 요청 동작에 해당하는 표현식은 무엇인가?",
     "choices": [
-      "build_payload(prompt)",
-      "OUT_DIR.mkdir(exist_ok=True)",
-      "out_path.write_text(...)",
-      "requests.post(API_URL, headers=headers, json=payload, timeout=30)"
+      "client.post(API_URL, headers=headers, json=payload, timeout=30)",
+      "API_URL = \"https://api.example.test/v1/chat\"",
+      "headers = {\"Authorization\": \"Bearer demo\"}",
+      "payload = {\"prompt\": \"hello\"}"
     ],
-    "answer": "requests.post(API_URL, headers=headers, json=payload, timeout=30)",
-    "explanation": "실제 POST 요청은 requests.post(...) 호출에서 시작된다. API_URL로 보내며 headers에는 Bearer 토큰과 Content-Type, json에는 직렬화할 payload가 들어간다. timeout=30은 무제한 대기를 피하기 위한 Requests의 연결·읽기 타임아웃 값이지만 전체 함수의 총 실행 시간이 정확히 30초라는 뜻은 아니다. 재시도와 sleep 때문에 전체 시간은 더 길어질 수 있다.",
+    "answer": "client.post(API_URL, headers=headers, json=payload, timeout=30)",
+    "explanation": "URL과 설정은 준비 데이터이고 실제 동작은 `client.post(...)` 호출입니다. POST 메서드가 직접 실행되는 표현식이기 때문입니다. 헷갈리기 쉬운 오답: API_URL = \"https://api.example.test/v1/chat\" URL 문자열을 저장할 뿐 요청을 보내지 않습니다. 오독 지점: 설정 준비와 요청 실행을 혼동했습니다. API 코드는 **설정 준비와 실제 요청 호출을 분리**해 읽습니다.",
     "side_card_ids": [
       "AI_latency_001",
       "WEB_api_001"
     ],
-    "project_context": "코드리뷰에서 네트워크 호출 지점을 빨리 찾는 훈련이다."
+    "project_context": "LLM API·REST API 코드에서 실제 외부 요청이 일어나는 줄을 찾는 독해와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "API workflow에서 실제 요청에 해당하는 post 메서드 호출과 전달 인자를 식별한다.",
+    "concept_explanation": {
+      "what_it_is": "`obj.method(...)`는 객체의 메서드를 호출합니다.",
+      "how_to_read": "receiver, 메서드 이름, argument를 순서대로 봅니다.",
+      "key_point": "URL을 정의하는 줄과 실제 post 호출 줄을 구분해야 합니다.",
+      "common_mistake": "API_URL 대입 자체가 요청이라고 착각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "class Client:\n    def post(self, url):\n        return url\n\nclient = Client()\nresult = client.post(\"https://example.test\")",
+      "walkthrough": "`client.post(...)` 호출이 실제 동작 지점입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "URL과 설정은 준비 데이터이고 실제 동작은 `client.post(...)` 호출입니다.",
+      "why_correct": "POST 메서드가 직접 실행되는 표현식이기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "API_URL = \"https://api.example.test/v1/chat\"",
+        "why_wrong": "URL 문자열을 저장할 뿐 요청을 보내지 않습니다.",
+        "misread_step": "설정 준비와 요청 실행을 혼동했습니다."
+      },
+      "takeaway": "API 코드는 **설정 준비와 실제 요청 호출을 분리**해 읽습니다."
+    },
+    "target_statement": "response = client.post(API_URL, headers=headers, json=payload, timeout=30)",
+    "focus_span": "client.post(API_URL, headers=headers, json=payload, timeout=30)",
+    "focus_mode": "subexpression",
+    "coverage_domain": "web_http_api",
+    "coverage_topics": [
+      "HTTP POST",
+      "API request",
+      "headers",
+      "JSON payload"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_AI_API_004",
@@ -132,39 +207,65 @@
     "review_step": 4,
     "review_total": 6,
     "review_focus": "재시도",
-    "title": "[오늘의 코드리뷰 4/6] 429 재시도 흐름",
+    "title": "429 응답에서 continue로 다음 retry로 넘어가기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "try_except",
-      "import",
-      "range",
-      "continue",
-      "retry",
-      "rate_limit",
-      "api",
-      "backoff"
+      "continue_statement",
+      "if_statement",
+      "for_statement",
+      "arithmetic",
+      "literal"
     ],
-    "reading_goal": "rate limit 상황에서 재시도하는 조건과 대기 시간을 읽는다.",
-    "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
-    "question_type": "review_choice",
-    "question": "응답 코드가 429이면 이 코드는 무엇을 하는가?",
+    "reading_goal": "429 조건에서 continue가 성공 처리 부분을 건너뛰는 흐름을 읽는다.",
+    "code": "status_codes = [429, 200]\nprocessed = []\nfor attempt, status_code in enumerate(status_codes):\n    if status_code == 429:\n        delay = 2 ** attempt\n        continue\n    processed.append(status_code)",
+    "question_type": "multiple_choice",
+    "question": "반복이 끝난 뒤 `processed`의 값은 무엇인가?",
     "choices": [
-      "즉시 성공 처리한다",
-      "출력 파일을 삭제한다",
-      "프롬프트를 비운다",
-      "2 ** attempt초 쉬고 다시 시도한다"
+      "[200]",
+      "[429, 200]",
+      "[429]",
+      "[]"
     ],
-    "answer": "2 ** attempt초 쉬고 다시 시도한다",
-    "explanation": "429를 받으면 attempt가 0, 1, 2일 때 각각 1, 2, 4초를 기다린 뒤 continue로 다음 반복을 시작한다. 이는 간단한 지수 backoff지만 서버의 Retry-After 헤더와 jitter를 사용하지 않는다. 더 중요한 경계는 마지막 시도도 429이면 루프가 그냥 끝나 call_llm이 None을 반환한다는 점이다. 운영 코드라면 재시도 소진 오류를 명시적으로 던지거나 실패 결과를 반환해야 한다.",
+    "answer": "[200]",
+    "explanation": "첫 반복은 continue로 건너뛰고 둘째 200만 추가됩니다. continue가 현재 반복의 남은 문장을 건너뛰기 때문입니다. 헷갈리기 쉬운 오답: [429, 200] 429 반복에서는 append에 도달하지 않습니다. 오독 지점: continue 이후 문장도 실행된다고 봤습니다. retry loop는 **조건 → backoff → continue → 다음 attempt**로 읽습니다.",
     "side_card_ids": [
       "AI_cost_001",
       "DEV_debugging_001"
     ],
-    "project_context": "LLM API 제한과 재시도 코드를 읽는 데 중요하다."
+    "project_context": "API rate limit 재시도 제어 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "continue_statement",
+    "reading_goal_internal": "429 조건에서 continue가 성공 처리 부분을 건너뛰는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`continue`는 현재 반복의 남은 문장을 건너뜁니다.",
+      "how_to_read": "continue에 도달하는 조건과 그 아래 생략되는 문장을 봅니다.",
+      "key_point": "429에서는 backoff 후 다음 attempt로 이동합니다.",
+      "common_mistake": "continue를 loop 종료인 break와 혼동하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "seen=[]\nfor n in [0,1]:\n    if n==0:\n        continue\n    seen.append(n)",
+      "walkthrough": "0에서는 append를 건너뛰고 1만 남습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "첫 반복은 continue로 건너뛰고 둘째 200만 추가됩니다.",
+      "why_correct": "continue가 현재 반복의 남은 문장을 건너뛰기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "[429, 200]",
+        "why_wrong": "429 반복에서는 append에 도달하지 않습니다.",
+        "misread_step": "continue 이후 문장도 실행된다고 봤습니다."
+      },
+      "takeaway": "retry loop는 **조건 → backoff → continue → 다음 attempt**로 읽습니다."
+    },
+    "target_statement": "continue",
+    "focus_span": "continue",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "web_http_api",
+    "coverage_topics": [
+      "429",
+      "retry",
+      "backoff",
+      "rate limit"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY9_REVIEW_AI_API_005",
@@ -174,39 +275,63 @@
     "review_step": 5,
     "review_total": 6,
     "review_focus": "응답 파싱",
-    "title": "[오늘의 코드리뷰 5/6] 응답 파싱과 저장",
+    "title": "중첩 JSON 응답에서 content field 읽기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "try_except",
-      "import",
-      "range",
-      "continue",
-      "json",
-      "response",
-      "file",
-      "save"
+      "subscription",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "API 응답 JSON에서 답변 텍스트를 꺼내고 저장하는 부분을 읽는다.",
-    "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
-    "question_type": "review_choice",
-    "question": "LLM 답변 텍스트를 꺼내는 코드는?",
+    "reading_goal": "nested dict/list 접근을 왼쪽부터 따라가 최종 content 값을 읽는다.",
+    "code": "data = {\n    \"choices\": [\n        {\"message\": {\"content\": \"RAG uses retrieved context.\"}}\n    ]\n}\ntext = data[\"choices\"][0][\"message\"][\"content\"]",
+    "question_type": "multiple_choice",
+    "question": "`text`에 저장되는 문자열은 무엇인가?",
     "choices": [
-      "response.raise_for_status()",
-      "build_payload(prompt)",
-      "headers = {...}",
-      "data[\"choices\"][0][\"message\"][\"content\"]"
+      "RAG uses retrieved context.",
+      "choices",
+      "message",
+      "content"
     ],
-    "answer": "data[\"choices\"][0][\"message\"][\"content\"]",
-    "explanation": "response.raise_for_status()를 통과한 뒤 response.json()의 결과가 예상 스키마라고 가정하고 첫 choices의 message.content를 text로 꺼낸다. choices가 비면 IndexError, key가 없으면 KeyError가 나며 이 예외들은 아래 requests.RequestException 처리 대상이 아니다. 성공한 경우에만 prompt와 answer를 JSON 파일로 쓰고 text를 반환한다. 실제 API 스키마와 run_id로 만든 파일 경로의 안전성도 검증해야 한다.",
+    "answer": "RAG uses retrieved context.",
+    "explanation": "choices → index 0 → message → content 순서로 이동하면 최종 문자열입니다. 중첩 subscription이 각 단계에서 지정된 값을 반환하기 때문입니다. 헷갈리기 쉬운 오답: content content는 key 이름이고 실제 value는 문장입니다. 오독 지점: key와 value를 혼동했습니다. 중첩 JSON은 **왼쪽부터 한 단계씩** 읽습니다.",
     "side_card_ids": [
       "CS_json_jsonl_001",
       "DATA_schema_001"
     ],
-    "project_context": "LLM API 응답 구조를 따라 읽는 훈련이다."
+    "project_context": "LLM API JSON 응답에서 assistant text field를 꺼내는 독해와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "subscription",
+    "reading_goal_internal": "nested dict/list 접근을 왼쪽부터 따라가 최종 content 값을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`mapping[key]`는 dict의 key에 연결된 값을 읽습니다.",
+      "how_to_read": "중첩 접근은 왼쪽부터 한 단계씩 현재 컨테이너를 확인합니다.",
+      "key_point": "마지막 `['content']`가 실제 답변 문자열을 꺼냅니다.",
+      "common_mistake": "key 이름 content 자체를 결과값으로 착각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "data={\"items\":[{\"value\":\"A\"}]}\nresult=data[\"items\"][0][\"value\"]",
+      "walkthrough": "첫 dict의 value key를 읽어 A를 얻습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "choices → index 0 → message → content 순서로 이동하면 최종 문자열입니다.",
+      "why_correct": "중첩 subscription이 각 단계에서 지정된 값을 반환하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "content",
+        "why_wrong": "content는 key 이름이고 실제 value는 문장입니다.",
+        "misread_step": "key와 value를 혼동했습니다."
+      },
+      "takeaway": "중첩 JSON은 **왼쪽부터 한 단계씩** 읽습니다."
+    },
+    "target_statement": "text = data[\"choices\"][0][\"message\"][\"content\"]",
+    "focus_span": "[\"content\"]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "JSON response",
+      "nested data",
+      "choices",
+      "content"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY9_REVIEW_AI_API_006",
@@ -216,26 +341,15 @@
     "review_step": 6,
     "review_total": 6,
     "review_focus": "개선점",
-    "title": "[오늘의 코드리뷰 6/6] 이 코드의 개선 우선순위",
+    "title": "LLM batch 운영을 위한 run observability record 만들기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "try_except",
-      "import",
-      "range",
-      "continue",
-      "logging",
-      "cost",
-      "security",
-      "review"
+      "literal",
+      "assignment"
     ],
-    "reading_goal": "긴 코드를 읽고 운영 관점의 개선 지점을 고른다.",
-    "code": "import os\nimport time\nimport json\nimport requests\nfrom pathlib import Path\n\nAPI_URL = \"https://api.example.com/v1/chat/completions\"\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef build_payload(prompt, model=\"small-chat-model\"):\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"system\", \"content\": \"Answer briefly and cite evidence when possible.\"},\n            {\"role\": \"user\", \"content\": prompt},\n        ],\n        \"temperature\": 0.2,\n        \"max_tokens\": 500,\n    }\n\ndef call_llm(prompt, run_id, max_retries=3):\n    token = os.environ.get(\"LLM_API_KEY\")\n    if not token:\n        raise RuntimeError(\"LLM_API_KEY is missing\")\n\n    headers = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\n    payload = build_payload(prompt)\n\n    for attempt in range(max_retries):\n        try:\n            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)\n            if response.status_code == 429:\n                time.sleep(2 ** attempt)\n                continue\n            response.raise_for_status()\n            data = response.json()\n            text = data[\"choices\"][0][\"message\"][\"content\"]\n            out_path = OUT_DIR / f\"{run_id}.json\"\n            out_path.write_text(json.dumps({\"prompt\": prompt, \"answer\": text}, ensure_ascii=False, indent=2), encoding=\"utf-8\")\n            return text\n        except requests.RequestException:\n            if attempt == max_retries - 1:\n                raise\n            time.sleep(2 ** attempt)",
-    "question_type": "review_choice",
-    "question": "제시된 선택지 중 운영 관측성과 검토에 가장 도움이 되는 개선은?",
+    "reading_goal": "LLM batch 실행 한 건을 사후 검토할 수 있게 run identity, 크기, 비용, 실패 정보를 한 record에 묶는다.",
+    "code": "run_id = \"run-42\"\nrequest_bytes = 1200\nresponse_bytes = 640\nestimated_cost = 0.003\nerror = None\nrun_log = {\"run_id\": run_id, \"request_bytes\": request_bytes, \"response_bytes\": response_bytes, \"estimated_cost\": estimated_cost, \"error\": error}",
+    "question_type": "multiple_choice",
+    "question": "운영 관측성과 사후 검토에 가장 도움이 되는 개선은 무엇인가?",
     "choices": [
       "temperature를 9로 올린다",
       "API 키를 코드에 직접 적는다",
@@ -243,12 +357,47 @@
       "run_id, 비용 추정, 요청/응답 크기, 실패 로그를 더 명확히 남긴다"
     ],
     "answer": "run_id, 비용 추정, 요청/응답 크기, 실패 로그를 더 명확히 남긴다",
-    "explanation": "네 선택지 중 run_id·비용 추정·요청/응답 크기·실패 로그를 구조화하는 안만 실행을 추적하고 이상 사용량을 검토하는 데 도움이 된다. 하지만 관측성만 추가하면 충분한 것은 아니다. 마지막 429 뒤 None이 되는 흐름을 명시적 실패로 바꾸고, Retry-After와 jitter, 응답 스키마, 안전한 출력 경로, 비밀키 권한도 함께 보완해야 운영 안정성이 생긴다.",
+    "explanation": "run_log는 실행 식별자, 요청/응답 크기, 비용 추정, error를 함께 기록합니다. 어떤 실행이 얼마나 사용했고 왜 실패했는지 사후 분석할 근거가 생기기 때문입니다. 헷갈리기 쉬운 오답: API 키를 코드에 직접 적는다 secret 노출 위험을 늘리는 보안 악화입니다. 오독 지점: 관측성 개선과 credential hardcoding을 혼동한 경우입니다. 운영 logging은 **식별 가능성 + 비용/규모 + 실패 원인 + secret 최소화**를 함께 봅니다.",
     "side_card_ids": [
       "AI_cost_001",
       "DEV_logging_001"
     ],
-    "project_context": "LLM batch 운영 사고와 직접 연결된다."
+    "project_context": "LLM batch 운영에서 비용·실패·payload 규모를 추적해 문제 run을 재검토하는 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "literal",
+    "reading_goal_internal": "LLM batch 실행 한 건을 사후 검토할 수 있게 run identity, 크기, 비용, 실패 정보를 한 record에 묶는다.",
+    "concept_explanation": {
+      "what_it_is": "dict literal은 관련 운영 metadata를 하나의 구조화 record로 묶습니다.",
+      "how_to_read": "각 key가 실행 식별, request/response 규모, 비용, failure 중 무엇을 설명하는지 구분합니다.",
+      "key_point": "긴 LLM batch에서는 단순 answer 저장만으로는 원인 분석이 어렵기 때문에 run identity와 비용·크기·failure 관측값이 유용합니다.",
+      "common_mistake": "운영 로그가 많을수록 무조건 좋다고 생각하기 쉽습니다. secret·민감 payload는 남기지 않고 필요한 metadata를 구조화해야 합니다."
+    },
+    "teaching_example": {
+      "code": "run_id=\"r1\"\nrecord={\"run_id\":run_id,\"duration_ms\":120,\"error\":None}\nstatus=record[\"error\"]",
+      "walkthrough": "실행 식별자와 관측값을 하나의 dict에 모읍니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "run_log는 실행 식별자, 요청/응답 크기, 비용 추정, error를 함께 기록합니다.",
+      "why_correct": "어떤 실행이 얼마나 사용했고 왜 실패했는지 사후 분석할 근거가 생기기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "API 키를 코드에 직접 적는다",
+        "why_wrong": "secret 노출 위험을 늘리는 보안 악화입니다.",
+        "misread_step": "관측성 개선과 credential hardcoding을 혼동한 경우입니다."
+      },
+      "takeaway": "운영 logging은 **식별 가능성 + 비용/규모 + 실패 원인 + secret 최소화**를 함께 봅니다."
+    },
+    "target_statement": "run_log = {\"run_id\": run_id, \"request_bytes\": request_bytes, \"response_bytes\": response_bytes, \"estimated_cost\": estimated_cost, \"error\": error}",
+    "focus_span": "{\"run_id\": run_id, \"request_bytes\": request_bytes, \"response_bytes\": response_bytes, \"estimated_cost\": estimated_cost, \"error\": error}",
+    "focus_mode": "subexpression",
+    "coverage_domain": "logging_monitoring_operations",
+    "coverage_topics": [
+      "LLM batch",
+      "observability",
+      "run log",
+      "cost",
+      "failure"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_RAG_001",
@@ -258,36 +407,64 @@
     "review_step": 1,
     "review_total": 6,
     "review_focus": "전체 흐름",
-    "title": "[오늘의 코드리뷰 1/6] RAG 코드 전체 흐름",
+    "title": "answer_with_rag() 호출로 RAG 전체 흐름 읽기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "import",
-      "rag",
-      "retrieval",
-      "llm",
-      "review"
+      "call",
+      "assignment",
+      "function_definition"
     ],
-    "reading_goal": "검색, 프롬프트 생성, LLM 호출, citation 저장의 전체 순서를 읽는다.",
-    "code": "from pathlib import Path\nimport json\n\nCHUNK_PATH = Path(\"chunks.jsonl\")\nOUT_PATH = Path(\"answers.jsonl\")\n\ndef load_chunks():\n    chunks = []\n    with CHUNK_PATH.open(\"r\", encoding=\"utf-8\") as f:\n        for line in f:\n            chunks.append(json.loads(line))\n    return chunks\n\ndef retrieve(query, chunks, top_k=3):\n    terms = query.lower().split()\n    scored = []\n    for chunk in chunks:\n        text = chunk[\"text\"].lower()\n        score = sum(1 for term in terms if term in text)\n        if score > 0:\n            scored.append((score, chunk))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [chunk for score, chunk in scored[:top_k]]\n\ndef build_prompt(query, hits):\n    context = \"\\n\\n\".join(f\"[{hit['doc_id']}:{hit['chunk_id']}] {hit['text']}\" for hit in hits)\n    return f\"Use only the context below.\\n\\n{context}\\n\\nQuestion: {query}\"\n\ndef answer_with_rag(query):\n    chunks = load_chunks()\n    hits = retrieve(query, chunks)\n    if not hits:\n        return {\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}\n    prompt = build_prompt(query, hits)\n    answer = call_llm(prompt)\n    citations = [{\"doc_id\": h[\"doc_id\"], \"chunk_id\": h[\"chunk_id\"]} for h in hits]\n    row = {\"query\": query, \"answer\": answer, \"citations\": citations}\n    with OUT_PATH.open(\"a\", encoding=\"utf-8\") as f:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")\n    return row",
-    "question_type": "review_choice",
-    "question": "이 코드의 전체 흐름으로 맞는 것은?",
+    "reading_goal": "RAG 내부 단계를 하나의 함수 호출의 입력과 반환값 관점에서 읽는다.",
+    "code": "def answer_with_rag(query):\n    chunks = [\n        {\"doc_id\": \"d1\", \"text\": \"파이썬은 프로그래밍 언어다.\"},\n        {\"doc_id\": \"d2\", \"text\": \"RAG는 검색 문맥을 사용한다.\"},\n    ]\n    hits = [chunk for chunk in chunks if query in chunk[\"text\"]]\n    prompt = f\"context={hits[0]['text']} | question={query}\"\n    answer = f\"answer:{prompt}\"\n    citations = [hit[\"doc_id\"] for hit in hits]\n    return {\"answer\": answer, \"citations\": citations}\n\nresult = answer_with_rag(\"파이썬\")",
+    "question_type": "multiple_choice",
+    "question": "이 함수 내부 흐름의 순서로 가장 가까운 것은 무엇인가?",
     "choices": [
-      "이미지 생성 → 압축 → 삭제 순서",
-      "Git commit → push → deploy 순서",
-      "CSV 다운로드만 수행하는 흐름",
-      "chunks 로드 → retrieve → prompt 생성 → LLM 호출 → citation 저장"
+      "chunks 준비 → retrieve → prompt 생성 → answer 생성 → citation 구성",
+      "citation 생성 → chunks 삭제 → prompt 없음",
+      "DB 삭제 → 모델 학습 → CSS 렌더링",
+      "prompt 생성 없이 citation만 반환"
     ],
-    "answer": "chunks 로드 → retrieve → prompt 생성 → LLM 호출 → citation 저장",
-    "explanation": "answer_with_rag는 chunks를 로드하고 retrieve로 후보를 고른다. hits가 있으면 prompt 생성→call_llm→모든 hit의 식별자 구성→answers.jsonl append→row 반환 순서로 진행한다. hits가 없으면 그 뒤 단계와 파일 저장을 건너뛰고 근거 부족 dict를 즉시 반환한다. 따라서 선택지는 성공 경로의 큰 흐름을 나타내지만 citation은 답변과 근거의 실제 일치 여부를 검증한 결과가 아니라 검색된 hit 목록이다.",
+    "answer": "chunks 준비 → retrieve → prompt 생성 → answer 생성 → citation 구성",
+    "explanation": "함수 body의 문장 순서가 chunks→hits→prompt→answer→citations를 보여줍니다. 실제 소스의 실행 순서와 일치하기 때문입니다. 헷갈리기 쉬운 오답: prompt 생성 없이 citation만 반환 코드에 prompt와 answer 생성이 명시돼 있습니다. 오독 지점: return 일부만 보고 앞 단계를 놓쳤습니다. RAG는 **retrieval·generation·citation 흐름을 함께** 읽습니다.",
     "side_card_ids": [
       "AI_rag_001",
       "AI_hallucination_001"
     ],
-    "project_context": "Evidence-first RAG 구조를 하루 리뷰로 읽는다."
+    "project_context": "문서 검색형 LLM에서 근거 chunk와 citation을 함께 만드는 RAG 파이프라인과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "RAG 내부 단계를 하나의 함수 호출의 입력과 반환값 관점에서 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "함수 호출은 입력을 전달하고 내부 절차의 최종 반환값을 받습니다.",
+      "how_to_read": "입력 query를 확인하고 함수 body의 주요 단계와 return을 연결합니다.",
+      "key_point": "load/준비 → retrieve → prompt → answer → citation 흐름을 구분합니다.",
+      "common_mistake": "RAG를 LLM 호출 하나로만 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "def answer(q):\n    docs=[\"python\"]\n    return {\"query\":q,\"hit\":docs[0]}\nresult=answer(\"python\")",
+      "walkthrough": "호출 안에서 자료를 선택하고 결과를 반환합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "함수 body의 문장 순서가 chunks→hits→prompt→answer→citations를 보여줍니다.",
+      "why_correct": "실제 소스의 실행 순서와 일치하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "prompt 생성 없이 citation만 반환",
+        "why_wrong": "코드에 prompt와 answer 생성이 명시돼 있습니다.",
+        "misread_step": "return 일부만 보고 앞 단계를 놓쳤습니다."
+      },
+      "takeaway": "RAG는 **retrieval·generation·citation 흐름을 함께** 읽습니다."
+    },
+    "target_statement": "result = answer_with_rag(\"파이썬\")",
+    "focus_span": "answer_with_rag(\"파이썬\")",
+    "focus_mode": "subexpression",
+    "coverage_domain": "ai_llm_rag",
+    "coverage_topics": [
+      "RAG",
+      "retrieval",
+      "prompt",
+      "citation",
+      "workflow"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY9_REVIEW_RAG_002",
@@ -297,34 +474,63 @@
     "review_step": 2,
     "review_total": 6,
     "review_focus": "입력 로딩",
-    "title": "[오늘의 코드리뷰 2/6] JSONL chunk 로딩",
+    "title": "JSONL 줄을 filtered list comprehension으로 chunk dict로 바꾸기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "import",
-      "jsonl",
-      "file",
-      "chunks"
+      "list_comprehension",
+      "call",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "JSONL 파일을 한 줄씩 읽어 chunk 목록으로 만드는 부분을 찾는다.",
-    "code": "from pathlib import Path\nimport json\n\nCHUNK_PATH = Path(\"chunks.jsonl\")\nOUT_PATH = Path(\"answers.jsonl\")\n\ndef load_chunks():\n    chunks = []\n    with CHUNK_PATH.open(\"r\", encoding=\"utf-8\") as f:\n        for line in f:\n            chunks.append(json.loads(line))\n    return chunks\n\ndef retrieve(query, chunks, top_k=3):\n    terms = query.lower().split()\n    scored = []\n    for chunk in chunks:\n        text = chunk[\"text\"].lower()\n        score = sum(1 for term in terms if term in text)\n        if score > 0:\n            scored.append((score, chunk))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [chunk for score, chunk in scored[:top_k]]\n\ndef build_prompt(query, hits):\n    context = \"\\n\\n\".join(f\"[{hit['doc_id']}:{hit['chunk_id']}] {hit['text']}\" for hit in hits)\n    return f\"Use only the context below.\\n\\n{context}\\n\\nQuestion: {query}\"\n\ndef answer_with_rag(query):\n    chunks = load_chunks()\n    hits = retrieve(query, chunks)\n    if not hits:\n        return {\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}\n    prompt = build_prompt(query, hits)\n    answer = call_llm(prompt)\n    citations = [{\"doc_id\": h[\"doc_id\"], \"chunk_id\": h[\"chunk_id\"]} for h in hits]\n    row = {\"query\": query, \"answer\": answer, \"citations\": citations}\n    with OUT_PATH.open(\"a\", encoding=\"utf-8\") as f:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")\n    return row",
-    "question_type": "review_choice",
-    "question": "chunk를 읽는 함수는?",
+    "reading_goal": "비어 있지 않은 JSONL 줄만 json.loads로 파싱해 chunk 리스트를 만드는 comprehension을 읽는다.",
+    "code": "import json\nlines = [\n    '{\"chunk_id\": \"c1\", \"text\": \"Python\"}',\n    '',\n    '{\"chunk_id\": \"c2\", \"text\": \"RAG\"}',\n]\nchunks = [json.loads(line) for line in lines if line.strip()]",
+    "question_type": "multiple_choice",
+    "question": "`chunks`의 항목 수는 몇 개인가?",
     "choices": [
-      "retrieve()",
-      "build_prompt()",
-      "answer_with_rag()",
-      "load_chunks()"
+      "1개",
+      "2개",
+      "3개",
+      "0개"
     ],
-    "answer": "load_chunks()",
-    "explanation": "load_chunks는 chunks.jsonl을 UTF-8 텍스트로 열고 각 줄에 json.loads를 적용해 결과를 순서대로 리스트에 추가한다. 이 구현은 빈 줄을 건너뛰거나 줄 번호와 함께 오류를 기록하지 않는다. 따라서 빈 줄·깨진 JSON 한 줄·파일 없음이 있으면 예외로 전체 로딩이 중단되며, 각 결과가 dict이고 text·doc_id·chunk_id를 갖는지도 여기서는 검증하지 않는다.",
+    "answer": "2개",
+    "explanation": "세 줄 중 빈 줄은 필터에서 빠지고 두 줄만 dict로 변환됩니다. 조건을 통과한 줄마다 결과 하나가 추가되기 때문입니다. 헷갈리기 쉬운 오답: 3개 빈 줄은 `line.strip()` 조건에서 제외됩니다. 오독 지점: filter 조건을 무시했습니다. JSONL 로딩은 **줄 반복 → 필터 → 줄별 파싱 → 리스트 수집**으로 읽습니다.",
     "side_card_ids": [
       "CS_json_jsonl_001"
     ],
-    "project_context": "수집/청킹 산출물 JSONL을 읽는 기본 패턴이다."
+    "project_context": "RAG 전처리의 chunks.jsonl 같은 줄 단위 산출물을 Python dict 리스트로 읽는 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "list_comprehension",
+    "reading_goal_internal": "비어 있지 않은 JSONL 줄만 json.loads로 파싱해 chunk 리스트를 만드는 comprehension을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "filtered list comprehension은 반복하며 조건을 통과한 항목만 결과에 넣습니다.",
+      "how_to_read": "for와 if를 확인한 뒤 앞쪽 변환 표현식을 적용합니다.",
+      "key_point": "JSONL은 줄마다 독립 JSON이므로 줄별 json.loads를 적용합니다.",
+      "common_mistake": "전체 lines를 한 번에 json.loads한다고 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "import json\nlines=['{\"id\":1}',\"\",'{\"id\":2}']\nrows=[json.loads(line) for line in lines if line.strip()]",
+      "walkthrough": "빈 줄은 제외되고 두 JSON 문자열만 dict로 바뀝니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "세 줄 중 빈 줄은 필터에서 빠지고 두 줄만 dict로 변환됩니다.",
+      "why_correct": "조건을 통과한 줄마다 결과 하나가 추가되기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "3개",
+        "why_wrong": "빈 줄은 `line.strip()` 조건에서 제외됩니다.",
+        "misread_step": "filter 조건을 무시했습니다."
+      },
+      "takeaway": "JSONL 로딩은 **줄 반복 → 필터 → 줄별 파싱 → 리스트 수집**으로 읽습니다."
+    },
+    "target_statement": "chunks = [json.loads(line) for line in lines if line.strip()]",
+    "focus_span": "[json.loads(line) for line in lines if line.strip()]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "JSONL",
+      "chunks",
+      "json.loads",
+      "loading"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY9_REVIEW_RAG_003",
@@ -334,34 +540,64 @@
     "review_step": 3,
     "review_total": 6,
     "review_focus": "검색",
-    "title": "[오늘의 코드리뷰 3/6] 검색 점수 계산",
+    "title": "generator expression으로 query term 일치 개수 세기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "import",
-      "retrieval",
-      "score",
-      "filter"
+      "generator_expression",
+      "membership_test",
+      "call",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "query term이 chunk text에 들어 있는지로 점수를 매기는 단순 검색을 읽는다.",
-    "code": "from pathlib import Path\nimport json\n\nCHUNK_PATH = Path(\"chunks.jsonl\")\nOUT_PATH = Path(\"answers.jsonl\")\n\ndef load_chunks():\n    chunks = []\n    with CHUNK_PATH.open(\"r\", encoding=\"utf-8\") as f:\n        for line in f:\n            chunks.append(json.loads(line))\n    return chunks\n\ndef retrieve(query, chunks, top_k=3):\n    terms = query.lower().split()\n    scored = []\n    for chunk in chunks:\n        text = chunk[\"text\"].lower()\n        score = sum(1 for term in terms if term in text)\n        if score > 0:\n            scored.append((score, chunk))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [chunk for score, chunk in scored[:top_k]]\n\ndef build_prompt(query, hits):\n    context = \"\\n\\n\".join(f\"[{hit['doc_id']}:{hit['chunk_id']}] {hit['text']}\" for hit in hits)\n    return f\"Use only the context below.\\n\\n{context}\\n\\nQuestion: {query}\"\n\ndef answer_with_rag(query):\n    chunks = load_chunks()\n    hits = retrieve(query, chunks)\n    if not hits:\n        return {\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}\n    prompt = build_prompt(query, hits)\n    answer = call_llm(prompt)\n    citations = [{\"doc_id\": h[\"doc_id\"], \"chunk_id\": h[\"chunk_id\"]} for h in hits]\n    row = {\"query\": query, \"answer\": answer, \"citations\": citations}\n    with OUT_PATH.open(\"a\", encoding=\"utf-8\") as f:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")\n    return row",
-    "question_type": "review_choice",
-    "question": "retrieve 함수에서 각 chunk의 score는 어떻게 계산되는가?",
+    "reading_goal": "각 query term이 text에 포함되는지 검사하고 포함된 term마다 1을 생성해 score로 합산하는 과정을 읽는다.",
+    "code": "terms = [\"python\", \"rag\", \"gpu\"]\ntext = \"python rag pipeline\"\nscore = sum(1 for term in terms if term in text)",
+    "question_type": "multiple_choice",
+    "question": "`score`의 값은 무엇인가?",
     "choices": [
-      "항상 1로 고정한다",
-      "파일 크기로 계산한다",
-      "LLM이 직접 정한다",
-      "text에 한 번이라도 포함된 query term 항목 수를 센다"
+      "1",
+      "2",
+      "3",
+      "0"
     ],
-    "answer": "text에 한 번이라도 포함된 query term 항목 수를 센다",
-    "explanation": "query.lower().split()으로 만든 terms의 각 항목에 대해, 소문자로 바꾼 chunk text의 부분문자열로 한 번이라도 나타나면 1을 더한다. 본문에서 같은 term이 여러 번 나온 횟수는 세지 않지만 query에 같은 term이 중복되면 그 항목은 중복 점수에 들어간다. 단어 경계를 보지 않아 짧은 term이 다른 단어 안에서 맞을 수 있고, 같은 점수에서는 원래 chunks 순서가 유지된다.",
+    "answer": "2",
+    "explanation": "세 term 중 python과 rag만 조건을 통과해 1 두 개가 생성되고 합이 2가 됩니다. generator expression이 조건을 만족하는 term마다 1을 만들기 때문입니다. 헷갈리기 쉬운 오답: 3 gpu는 text에 포함되지 않아 세 번째 1이 생성되지 않습니다. 오독 지점: 모든 query term이 자동으로 점수에 포함된다고 본 경우입니다. retrieval score는 **반복 term → membership 조건 → 생성값 → sum** 순서로 읽습니다.",
     "side_card_ids": [
       "AI_retrieval_001"
     ],
-    "project_context": "벡터검색 전에도 기본 검색 흐름을 이해하는 데 좋다."
+    "project_context": "간단한 lexical retrieval에서 query와 chunk의 겹치는 term 수로 후보 score를 만드는 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "generator_expression",
+    "reading_goal_internal": "각 query term이 text에 포함되는지 검사하고 포함된 term마다 1을 생성해 score로 합산하는 과정을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`(expr for item in items if condition)`은 조건을 통과한 항목마다 값을 생성하는 generator expression입니다.",
+      "how_to_read": "반복 대상 terms와 if 조건을 확인한 뒤, 조건이 참일 때 앞쪽 값 1이 생성된다고 읽습니다.",
+      "key_point": "여기서는 text에 포함된 query term 하나당 1이 생성되고 sum이 그 개수를 셉니다.",
+      "common_mistake": "term의 실제 출현 횟수를 모두 센다고 생각하기 쉽습니다. 이 코드는 각 query term이 한 번이라도 포함되는지만 검사합니다."
+    },
+    "teaching_example": {
+      "code": "terms=[\"a\",\"b\"]\ntext=\"a only\"\nscore=sum(1 for term in terms if term in text)",
+      "walkthrough": "a는 포함되고 b는 포함되지 않아 generator가 1 하나만 만들고 score는 1입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "세 term 중 python과 rag만 조건을 통과해 1 두 개가 생성되고 합이 2가 됩니다.",
+      "why_correct": "generator expression이 조건을 만족하는 term마다 1을 만들기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "3",
+        "why_wrong": "gpu는 text에 포함되지 않아 세 번째 1이 생성되지 않습니다.",
+        "misread_step": "모든 query term이 자동으로 점수에 포함된다고 본 경우입니다."
+      },
+      "takeaway": "retrieval score는 **반복 term → membership 조건 → 생성값 → sum** 순서로 읽습니다."
+    },
+    "target_statement": "score = sum(1 for term in terms if term in text)",
+    "focus_span": "(1 for term in terms if term in text)",
+    "focus_mode": "subexpression",
+    "coverage_domain": "ai_llm_rag",
+    "coverage_topics": [
+      "RAG",
+      "retrieval",
+      "score",
+      "generator expression"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY9_REVIEW_RAG_004",
@@ -371,35 +607,64 @@
     "review_step": 4,
     "review_total": 6,
     "review_focus": "프롬프트",
-    "title": "[오늘의 코드리뷰 4/6] 근거 제한 프롬프트",
+    "title": "f-string으로 doc_id와 chunk_id citation label 만들기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "import",
-      "prompt",
-      "evidence",
-      "citation"
+      "f_string",
+      "subscription",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "근거 chunk를 prompt context로 묶는 부분을 찾는다.",
-    "code": "from pathlib import Path\nimport json\n\nCHUNK_PATH = Path(\"chunks.jsonl\")\nOUT_PATH = Path(\"answers.jsonl\")\n\ndef load_chunks():\n    chunks = []\n    with CHUNK_PATH.open(\"r\", encoding=\"utf-8\") as f:\n        for line in f:\n            chunks.append(json.loads(line))\n    return chunks\n\ndef retrieve(query, chunks, top_k=3):\n    terms = query.lower().split()\n    scored = []\n    for chunk in chunks:\n        text = chunk[\"text\"].lower()\n        score = sum(1 for term in terms if term in text)\n        if score > 0:\n            scored.append((score, chunk))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [chunk for score, chunk in scored[:top_k]]\n\ndef build_prompt(query, hits):\n    context = \"\\n\\n\".join(f\"[{hit['doc_id']}:{hit['chunk_id']}] {hit['text']}\" for hit in hits)\n    return f\"Use only the context below.\\n\\n{context}\\n\\nQuestion: {query}\"\n\ndef answer_with_rag(query):\n    chunks = load_chunks()\n    hits = retrieve(query, chunks)\n    if not hits:\n        return {\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}\n    prompt = build_prompt(query, hits)\n    answer = call_llm(prompt)\n    citations = [{\"doc_id\": h[\"doc_id\"], \"chunk_id\": h[\"chunk_id\"]} for h in hits]\n    row = {\"query\": query, \"answer\": answer, \"citations\": citations}\n    with OUT_PATH.open(\"a\", encoding=\"utf-8\") as f:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")\n    return row",
-    "question_type": "review_choice",
-    "question": "프롬프트에서 근거를 구분하기 위해 붙이는 정보는?",
+    "reading_goal": "f-string 안 두 dict lookup 값을 실제 문자열로 치환해 citation label을 예측한다.",
+    "code": "hit = {\"doc_id\": \"doc7\", \"chunk_id\": \"chunk3\", \"text\": \"Python\"}\ncitation_label = f\"[{hit['doc_id']}:{hit['chunk_id']}]\"",
+    "question_type": "multiple_choice",
+    "question": "`citation_label`의 값은 무엇인가?",
     "choices": [
-      "CSS 클래스",
-      "Git branch",
-      "API token",
-      "doc_id와 chunk_id"
+      "[doc7:chunk3]",
+      "[doc_id:chunk_id]",
+      "doc7",
+      "chunk3"
     ],
-    "answer": "doc_id와 chunk_id",
-    "explanation": "각 hit의 text 앞에 [doc_id:chunk_id]를 붙여 서로 구분하고 두 줄 간격으로 context를 만든다. 이 식별자는 출처를 추적할 단서이며 질문의 정답은 doc_id와 chunk_id다. Use only the context는 모델에 주는 지시일 뿐 준수를 기술적으로 보장하지 않고, 프롬프트 자체도 각 답변 문장이 어느 식별자의 지지를 받는지 검증하지 않는다.",
+    "answer": "[doc7:chunk3]",
+    "explanation": "f-string의 첫 중괄호는 doc7, 둘째는 chunk3으로 치환되어 `[doc7:chunk3]`가 됩니다. f-string이 표현식 결과를 문자열에 삽입하기 때문입니다. 헷갈리기 쉬운 오답: [doc_id:chunk_id] 그 문자열은 key 이름을 그대로 둔 형태이고 실제 f-string 결과가 아닙니다. 오독 지점: 표현식 치환을 적용하지 않은 경우입니다. 근거 label은 **lookup 값 계산 → f-string 치환**으로 읽습니다.",
     "side_card_ids": [
       "AI_prompt_001",
       "AI_hallucination_001"
     ],
-    "project_context": "답변을 원문 근거와 연결하는 사고 훈련이다."
+    "project_context": "RAG prompt와 answer metadata에서 근거 위치를 문서·chunk 단위로 표시하는 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "f_string",
+    "reading_goal_internal": "f-string 안 두 dict lookup 값을 실제 문자열로 치환해 citation label을 예측한다.",
+    "concept_explanation": {
+      "what_it_is": "f-string은 문자열 안 `{expression}` 자리에 표현식 값을 삽입합니다.",
+      "how_to_read": "중괄호 안 dict lookup을 각각 계산한 뒤 문자열의 해당 위치에 넣습니다.",
+      "key_point": "doc_id와 chunk_id를 함께 넣으면 어떤 문서의 어떤 chunk인지 구분하는 label을 만들 수 있습니다.",
+      "common_mistake": "중괄호나 key 이름이 최종 문자열에 그대로 남는다고 생각하기 쉽습니다. f-string에서는 값으로 치환됩니다."
+    },
+    "teaching_example": {
+      "code": "hit={\"doc_id\":\"d2\",\"chunk_id\":\"c4\"}\nlabel=f\"[{hit['doc_id']}:{hit['chunk_id']}]\"",
+      "walkthrough": "두 lookup 값이 삽입되어 `[d2:c4]`가 됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "f-string의 첫 중괄호는 doc7, 둘째는 chunk3으로 치환되어 `[doc7:chunk3]`가 됩니다.",
+      "why_correct": "f-string이 표현식 결과를 문자열에 삽입하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "[doc_id:chunk_id]",
+        "why_wrong": "그 문자열은 key 이름을 그대로 둔 형태이고 실제 f-string 결과가 아닙니다.",
+        "misread_step": "표현식 치환을 적용하지 않은 경우입니다."
+      },
+      "takeaway": "근거 label은 **lookup 값 계산 → f-string 치환**으로 읽습니다."
+    },
+    "target_statement": "citation_label = f\"[{hit['doc_id']}:{hit['chunk_id']}]\"",
+    "focus_span": "f\"[{hit['doc_id']}:{hit['chunk_id']}]\"",
+    "focus_mode": "subexpression",
+    "coverage_domain": "ai_llm_rag",
+    "coverage_topics": [
+      "RAG",
+      "prompt",
+      "citation",
+      "evidence"
+    ],
+    "pedagogical_intent": "predict_output"
   },
   {
     "id": "PY9_REVIEW_RAG_005",
@@ -409,34 +674,63 @@
     "review_step": 5,
     "review_total": 6,
     "review_focus": "방어 코드",
-    "title": "[오늘의 코드리뷰 5/6] 근거 없을 때 방어",
+    "title": "빈 hits를 if not으로 막는 RAG guard clause 읽기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "import",
-      "evidence",
-      "guard_clause",
-      "rag"
+      "if_statement",
+      "boolean_operation",
+      "return_statement",
+      "literal"
     ],
-    "reading_goal": "검색 결과가 없을 때 LLM을 호출하지 않는 방어 흐름을 읽는다.",
-    "code": "from pathlib import Path\nimport json\n\nCHUNK_PATH = Path(\"chunks.jsonl\")\nOUT_PATH = Path(\"answers.jsonl\")\n\ndef load_chunks():\n    chunks = []\n    with CHUNK_PATH.open(\"r\", encoding=\"utf-8\") as f:\n        for line in f:\n            chunks.append(json.loads(line))\n    return chunks\n\ndef retrieve(query, chunks, top_k=3):\n    terms = query.lower().split()\n    scored = []\n    for chunk in chunks:\n        text = chunk[\"text\"].lower()\n        score = sum(1 for term in terms if term in text)\n        if score > 0:\n            scored.append((score, chunk))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [chunk for score, chunk in scored[:top_k]]\n\ndef build_prompt(query, hits):\n    context = \"\\n\\n\".join(f\"[{hit['doc_id']}:{hit['chunk_id']}] {hit['text']}\" for hit in hits)\n    return f\"Use only the context below.\\n\\n{context}\\n\\nQuestion: {query}\"\n\ndef answer_with_rag(query):\n    chunks = load_chunks()\n    hits = retrieve(query, chunks)\n    if not hits:\n        return {\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}\n    prompt = build_prompt(query, hits)\n    answer = call_llm(prompt)\n    citations = [{\"doc_id\": h[\"doc_id\"], \"chunk_id\": h[\"chunk_id\"]} for h in hits]\n    row = {\"query\": query, \"answer\": answer, \"citations\": citations}\n    with OUT_PATH.open(\"a\", encoding=\"utf-8\") as f:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")\n    return row",
-    "question_type": "review_choice",
-    "question": "hits가 비어 있으면 어떻게 되는가?",
+    "reading_goal": "빈 list가 falsy라 `not hits`가 True가 되고 즉시 근거 부족 dict를 반환하는 흐름을 읽는다.",
+    "code": "def answer_with_rag(hits):\n    if not hits:\n        return {\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}\n    return {\"answer\": \"ok\", \"citations\": [\"d1\"]}\n\nresult = answer_with_rag([])",
+    "question_type": "multiple_choice",
+    "question": "`result`의 값은 무엇인가?",
     "choices": [
-      "무조건 call_llm을 호출한다",
-      "chunks.jsonl을 삭제한다",
-      "top_k를 100으로 바꾼다",
-      "근거 문서가 부족하다는 답변과 빈 citations를 반환한다"
+      "{\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}",
+      "{\"answer\": \"ok\", \"citations\": [\"d1\"]}",
+      "None",
+      "[]"
     ],
-    "answer": "근거 문서가 부족하다는 답변과 빈 citations를 반환한다",
-    "explanation": "hits가 빈 리스트이면 if not hits가 참이어서 고정된 근거 부족 문구와 빈 citations를 즉시 반환한다. 이 경로에서는 call_llm도 호출하지 않고 answers.jsonl에도 쓰지 않는다. 다만 여기서 빈 hits는 ‘의미 있는 근거가 절대 없음’이 아니라 단순 부분문자열 점수가 0이라는 뜻이다. 반대로 hits가 있어도 답을 지지하는 충분한 근거라는 보장은 없으므로 검색 품질 검사가 별도로 필요하다.",
+    "answer": "{\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}",
+    "explanation": "빈 hits 때문에 guard clause가 실행되어 근거 부족 문자열과 빈 citations dict를 즉시 반환합니다. 빈 컨테이너의 falsy 값에 not을 적용하면 if 조건이 True가 되기 때문입니다. 헷갈리기 쉬운 오답: {\"answer\": \"ok\", \"citations\": [\"d1\"]} 그 return은 hits가 비어 있지 않을 때만 도달합니다. 오독 지점: guard clause 이후 코드도 실행된다고 본 경우입니다. RAG guard는 **검색 결과 truth value → not → 조기 return**으로 읽습니다.",
     "side_card_ids": [
       "AI_hallucination_001"
     ],
-    "project_context": "검증형 RAG에서 근거 부족 시 추측을 막는 핵심 패턴이다."
+    "project_context": "검색 근거가 없을 때 LLM이 임의 답변을 생성하지 않고 근거 부족으로 종료하는 RAG 방어 로직과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "if_statement",
+    "reading_goal_internal": "빈 list가 falsy라 `not hits`가 True가 되고 즉시 근거 부족 dict를 반환하는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`if condition:`은 조건이 truthy일 때 본문을 실행합니다.",
+      "how_to_read": "hits의 truth value를 구한 뒤 앞의 not을 적용해 최종 조건을 판단합니다.",
+      "key_point": "빈 hits는 falsy이므로 `not hits`가 True가 되어 guard return이 실행됩니다.",
+      "common_mistake": "hits가 빈 list라서 if도 False라고 바로 생각하기 쉽습니다. 앞에 not이 있어 결과가 뒤집힙니다."
+    },
+    "teaching_example": {
+      "code": "hits=[]\nif not hits:\n    result={\"status\":\"empty\"}\nelse:\n    result={\"status\":\"ok\"}",
+      "walkthrough": "빈 list는 falsy이고 not을 적용하면 True라 empty 분기로 갑니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "빈 hits 때문에 guard clause가 실행되어 근거 부족 문자열과 빈 citations dict를 즉시 반환합니다.",
+      "why_correct": "빈 컨테이너의 falsy 값에 not을 적용하면 if 조건이 True가 되기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "{\"answer\": \"ok\", \"citations\": [\"d1\"]}",
+        "why_wrong": "그 return은 hits가 비어 있지 않을 때만 도달합니다.",
+        "misread_step": "guard clause 이후 코드도 실행된다고 본 경우입니다."
+      },
+      "takeaway": "RAG guard는 **검색 결과 truth value → not → 조기 return**으로 읽습니다."
+    },
+    "target_statement": "if not hits:",
+    "focus_span": "if not hits:",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "ai_llm_rag",
+    "coverage_topics": [
+      "RAG",
+      "guard clause",
+      "empty hits",
+      "citation"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY9_REVIEW_RAG_006",
@@ -446,23 +740,16 @@
     "review_step": 6,
     "review_total": 6,
     "review_focus": "개선점",
-    "title": "[오늘의 코드리뷰 6/6] RAG 코드 개선점",
+    "title": "RAG 후보에 rerank와 citation validation 추가하기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "import",
-      "rag",
-      "rerank",
-      "embedding",
-      "quality"
+      "call",
+      "assignment",
+      "function_definition"
     ],
-    "reading_goal": "단순 검색 RAG 코드에서 품질 개선 지점을 고른다.",
-    "code": "from pathlib import Path\nimport json\n\nCHUNK_PATH = Path(\"chunks.jsonl\")\nOUT_PATH = Path(\"answers.jsonl\")\n\ndef load_chunks():\n    chunks = []\n    with CHUNK_PATH.open(\"r\", encoding=\"utf-8\") as f:\n        for line in f:\n            chunks.append(json.loads(line))\n    return chunks\n\ndef retrieve(query, chunks, top_k=3):\n    terms = query.lower().split()\n    scored = []\n    for chunk in chunks:\n        text = chunk[\"text\"].lower()\n        score = sum(1 for term in terms if term in text)\n        if score > 0:\n            scored.append((score, chunk))\n    scored.sort(key=lambda pair: pair[0], reverse=True)\n    return [chunk for score, chunk in scored[:top_k]]\n\ndef build_prompt(query, hits):\n    context = \"\\n\\n\".join(f\"[{hit['doc_id']}:{hit['chunk_id']}] {hit['text']}\" for hit in hits)\n    return f\"Use only the context below.\\n\\n{context}\\n\\nQuestion: {query}\"\n\ndef answer_with_rag(query):\n    chunks = load_chunks()\n    hits = retrieve(query, chunks)\n    if not hits:\n        return {\"answer\": \"근거 문서가 부족합니다.\", \"citations\": []}\n    prompt = build_prompt(query, hits)\n    answer = call_llm(prompt)\n    citations = [{\"doc_id\": h[\"doc_id\"], \"chunk_id\": h[\"chunk_id\"]} for h in hits]\n    row = {\"query\": query, \"answer\": answer, \"citations\": citations}\n    with OUT_PATH.open(\"a\", encoding=\"utf-8\") as f:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")\n    return row",
-    "question_type": "review_choice",
-    "question": "이 RAG 코드의 다음 개선으로 가장 자연스러운 것은?",
+    "reading_goal": "retrieval 결과가 그대로 answer로 가지 않고 rerank와 citation validation 단계를 더 거치는 품질 개선 흐름을 읽는다.",
+    "code": "def improve_retrieval(query, chunks):\n    hits = retrieve_with_embeddings(query, chunks)\n    verified_hits = validate_citations(rerank(hits))\n    return verified_hits",
+    "question_type": "multiple_choice",
+    "question": "이 RAG 코드의 다음 개선으로 가장 자연스러운 것은 무엇인가?",
     "choices": [
       "근거 없이 답하도록 바꾼다",
       "chunk_id를 제거한다",
@@ -470,12 +757,46 @@
       "embedding 검색이나 rerank를 추가하고 citation 검증을 강화한다"
     ],
     "answer": "embedding 검색이나 rerank를 추가하고 citation 검증을 강화한다",
-    "explanation": "네 선택지 중 embedding 검색이나 rerank와 citation 검증을 추가하는 안만 현재의 부분문자열 검색과 무검증 인용이라는 약점을 직접 겨냥한다. 다만 새 검색기를 넣는 것만으로 품질 향상이 보장되지는 않는다. 대표 질의의 정답·근거 데이터로 기존 방식과 recall, ranking, 인용 지지율을 비교하고, 빈 줄·스키마 오류·LLM 실패·동시 append 처리도 함께 보완해야 한다.",
+    "explanation": "후보 hits가 rerank를 거친 뒤 citation validator로 전달됩니다. 검색 후보 품질과 근거 연결 품질을 각각 개선하는 단계이기 때문입니다. 헷갈리기 쉬운 오답: 근거 없이 답하도록 바꾼다 RAG의 evidence-first 방향과 정반대입니다. 오독 지점: retrieval 품질 개선의 목적을 반대로 이해한 경우입니다. RAG 개선은 **retrieve → rerank → citation validation → answer**로 분리해서 봅니다.",
     "side_card_ids": [
       "AI_embedding_001",
       "AI_vector_db_001"
     ],
-    "project_context": "Cross-Verified RAG 방향과 직접 연결된다."
+    "project_context": "Cross-Verified RAG처럼 검색 relevance와 citation integrity를 분리해 강화하는 구조와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "retrieval 결과가 그대로 answer로 가지 않고 rerank와 citation validation 단계를 더 거치는 품질 개선 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`validate_citations(rerank(hits))`는 안쪽 rerank 결과를 바깥 citation validator에 전달하는 nested function call입니다.",
+      "how_to_read": "안쪽 호출부터 계산해 바깥 호출의 input이 무엇인지 따라갑니다.",
+      "key_point": "RAG 품질은 검색 후보의 relevance뿐 아니라 최종 citation이 실제 source와 맞는지도 검증할 필요가 있습니다.",
+      "common_mistake": "citation field가 존재하기만 하면 근거 정확성도 자동 보장된다고 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "def rerank(items): return list(reversed(items))\ndef validate(items): return [x for x in items if x[\"ok\"]]\nhits=[{\"id\":\"a\",\"ok\":True}]\nverified=validate(rerank(hits))",
+      "walkthrough": "먼저 후보 순서를 조정하고 그 결과에서 검증된 항목만 남깁니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "후보 hits가 rerank를 거친 뒤 citation validator로 전달됩니다.",
+      "why_correct": "검색 후보 품질과 근거 연결 품질을 각각 개선하는 단계이기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "근거 없이 답하도록 바꾼다",
+        "why_wrong": "RAG의 evidence-first 방향과 정반대입니다.",
+        "misread_step": "retrieval 품질 개선의 목적을 반대로 이해한 경우입니다."
+      },
+      "takeaway": "RAG 개선은 **retrieve → rerank → citation validation → answer**로 분리해서 봅니다."
+    },
+    "target_statement": "verified_hits = validate_citations(rerank(hits))",
+    "focus_span": "validate_citations(rerank(hits))",
+    "focus_mode": "subexpression",
+    "coverage_domain": "ai_llm_rag",
+    "coverage_topics": [
+      "RAG",
+      "rerank",
+      "citation validation",
+      "retrieval quality"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_KALMAN_001",
@@ -485,22 +806,17 @@
     "review_step": 1,
     "review_total": 6,
     "review_focus": "전체 목적",
-    "title": "[오늘의 코드리뷰 1/6] Kalman Filter 전체 목적",
+    "title": "OneDimKalman class의 전체 목적 읽기",
     "concepts": [
-      "def",
-      "function",
-      "return",
-      "class",
-      "import",
-      "kalman_filter",
-      "state",
-      "prediction",
-      "review"
+      "class_definition",
+      "function_definition",
+      "assignment",
+      "import_statement"
     ],
-    "reading_goal": "칼만필터 코드를 수학 암기보다 코드 흐름으로 읽는다.",
-    "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
-    "question_type": "review_choice",
-    "question": "이 코드의 전체 목적은?",
+    "reading_goal": "class 안의 constructor, predict, update method를 묶어 전체 상태추정 목적을 파악한다.",
+    "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2)\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        z = np.array([[measured_x]])\n        self.state[0, 0] = z[0, 0]\n        return self.state[0, 0]",
+    "question_type": "multiple_choice",
+    "question": "이 코드의 전체 목적에 가장 가까운 것은 무엇인가?",
     "choices": [
       "문자열을 JSON으로 바꾼다",
       "API를 호출한다",
@@ -508,11 +824,45 @@
       "측정값을 이용해 1차원 위치 상태를 예측/보정한다"
     ],
     "answer": "측정값을 이용해 1차원 위치 상태를 예측/보정한다",
-    "explanation": "이 클래스는 [위치 x, 속도 v] 상태와 그 오차 공분산 P를 유지한다. predict는 일정 속도 모델 F로 상태와 P를 앞으로 투영하고, update는 새 위치 측정값과 예측 위치의 차이를 이용해 상태를 보정한다. 따라서 선택지 중 목적은 1차원 위치·속도 상태의 예측과 측정 보정이다. 모델·Q·R이 실제 시스템과 맞아야 하며, 코드만으로 모든 잡음 측정이 더 정확해진다고 보장할 수는 없다.",
+    "explanation": "constructor가 state를 만들고 predict와 update가 그 state를 각각 예측·보정합니다. class 안 method 구성이 상태추정의 predict/update 구조를 직접 보여주기 때문입니다. 헷갈리기 쉬운 오답: API를 호출한다 HTTP client나 endpoint 호출이 없고 수치 state 연산만 있습니다. 오독 지점: 복잡한 코드라는 이유만으로 외부 서비스 코드로 오해한 경우입니다. 복잡한 수치 class는 **state 정의 → 주요 method 역할 → state 변화** 순서로 먼저 읽습니다.",
     "side_card_ids": [
       "AI_state_estimation_001"
     ],
-    "project_context": "자율주행/UAM/로봇 센서 추정 코드 독해에 연결된다."
+    "project_context": "자율주행/UAM/로봇 센서 추정 코드에서 class 전체 역할부터 파악하는 독해와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "class_definition",
+    "reading_goal_internal": "class 안의 constructor, predict, update method를 묶어 전체 상태추정 목적을 파악한다.",
+    "concept_explanation": {
+      "what_it_is": "`class OneDimKalman:`은 state와 predict/update 동작을 한 객체에 묶는 class definition입니다.",
+      "how_to_read": "class 이름만 보지 말고 어떤 state를 저장하고 어떤 method가 그 state를 바꾸는지 확인합니다.",
+      "key_point": "이 class는 위치와 속도를 포함한 state를 예측하고 측정값을 이용해 보정합니다.",
+      "common_mistake": "행렬식이 많다는 이유만으로 각 줄을 먼저 계산하려고 하기 쉽습니다. 먼저 state와 predict/update 역할을 나누는 편이 구조 파악에 좋습니다."
+    },
+    "teaching_example": {
+      "code": "class Tracker:\n    def __init__(self,x=0): self.x=x\n    def predict(self): self.x += 1\n    def update(self,m): self.x = m",
+      "walkthrough": "state x와 predict/update method를 함께 보면 객체의 전체 목적을 빠르게 파악할 수 있습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "constructor가 state를 만들고 predict와 update가 그 state를 각각 예측·보정합니다.",
+      "why_correct": "class 안 method 구성이 상태추정의 predict/update 구조를 직접 보여주기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "API를 호출한다",
+        "why_wrong": "HTTP client나 endpoint 호출이 없고 수치 state 연산만 있습니다.",
+        "misread_step": "복잡한 코드라는 이유만으로 외부 서비스 코드로 오해한 경우입니다."
+      },
+      "takeaway": "복잡한 수치 class는 **state 정의 → 주요 method 역할 → state 변화** 순서로 먼저 읽습니다."
+    },
+    "target_statement": "class OneDimKalman:",
+    "focus_span": "class OneDimKalman:",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "Kalman filter",
+      "state estimation",
+      "prediction",
+      "measurement update"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_KALMAN_002",
@@ -522,21 +872,17 @@
     "review_step": 2,
     "review_total": 6,
     "review_focus": "상태",
-    "title": "[오늘의 코드리뷰 2/6] state 의미 찾기",
+    "title": "Kalman state vector의 x와 v 위치 읽기",
     "concepts": [
-      "def",
-      "function",
-      "return",
-      "class",
-      "import",
-      "kalman_filter",
-      "state",
-      "numpy"
+      "call",
+      "assignment",
+      "literal",
+      "import_statement"
     ],
-    "reading_goal": "state 벡터가 무엇을 담고 있는지 코드에서 읽는다.",
-    "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
-    "question_type": "review_choice",
-    "question": "self.state = [[x], [v]]는 무엇을 담는가?",
+    "reading_goal": "NumPy array 생성 arguments에서 state vector의 각 원소가 무엇을 뜻하는지 읽는다.",
+    "code": "import numpy as np\n\nx = 10.0\nv = 2.0\nstate = np.array([[x], [v]])\nposition = state[0, 0]\nvelocity = state[1, 0]",
+    "question_type": "multiple_choice",
+    "question": "`state = [[x], [v]]`는 무엇을 담는가?",
     "choices": [
       "문서 id와 chunk id",
       "API URL과 token",
@@ -544,11 +890,45 @@
       "위치 x와 속도 v"
     ],
     "answer": "위치 x와 속도 v",
-    "explanation": "실제 코드는 np.array([[x], [v]])로 shape (2, 1)의 열벡터를 만든다. 첫 행은 위치 x, 둘째 행은 속도 v다. 이 둘은 공간이 2차원이라는 뜻이 아니라 1차원 운동을 두 상태 변수로 나타낸 것이다. 이후 F는 위치에 dt×속도를 더하고 속도는 그대로 두는 일정 속도 모델로 이 순서를 사용한다.",
+    "explanation": "nested array의 첫 row에 x, 둘째 row에 v를 넣고 state로 저장합니다. constructor parameter 이름과 배열 위치가 위치·속도 state 정의를 직접 보여주기 때문입니다. 헷갈리기 쉬운 오답: 문서 id와 chunk id 그런 문자열/field가 코드에 없고 numeric x,v만 있습니다. 오독 지점: 다른 프로젝트의 data model을 현재 수치 state에 잘못 적용한 경우입니다. state-estimation 코드는 **state vector 구성과 index 의미를 먼저 고정**합니다.",
     "side_card_ids": [
       "AI_state_estimation_001"
     ],
-    "project_context": "상태추정 코드를 읽을 때 state 정의를 먼저 찾는 훈련이다."
+    "project_context": "상태추정 코드를 읽을 때 행렬 계산 전에 state vector 정의부터 확인하는 습관과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "NumPy array 생성 arguments에서 state vector의 각 원소가 무엇을 뜻하는지 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`np.array([[x], [v]])`는 nested list를 NumPy array로 만드는 함수 호출입니다.",
+      "how_to_read": "배열의 위치와 변수 이름을 연결해 첫 항목과 둘째 항목의 의미를 봅니다.",
+      "key_point": "state-estimation 코드는 먼저 state vector에 어떤 물리량이 어떤 순서로 들어 있는지 확인해야 이후 행렬 연산을 해석하기 쉽습니다.",
+      "common_mistake": "x와 v를 doc id나 unrelated metadata처럼 이름만 보고 추측하기 쉽습니다. constructor parameter와 project context를 함께 봐야 합니다."
+    },
+    "teaching_example": {
+      "code": "import numpy as np\nposition=2.0\nvelocity=0.5\nstate=np.array([[position],[velocity]])",
+      "walkthrough": "첫 원소는 position, 둘째는 velocity입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "nested array의 첫 row에 x, 둘째 row에 v를 넣고 state로 저장합니다.",
+      "why_correct": "constructor parameter 이름과 배열 위치가 위치·속도 state 정의를 직접 보여주기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "문서 id와 chunk id",
+        "why_wrong": "그런 문자열/field가 코드에 없고 numeric x,v만 있습니다.",
+        "misread_step": "다른 프로젝트의 data model을 현재 수치 state에 잘못 적용한 경우입니다."
+      },
+      "takeaway": "state-estimation 코드는 **state vector 구성과 index 의미를 먼저 고정**합니다."
+    },
+    "target_statement": "state = np.array([[x], [v]])",
+    "focus_span": "np.array([[x], [v]])",
+    "focus_mode": "subexpression",
+    "coverage_domain": "data_processing_and_analysis",
+    "coverage_topics": [
+      "Kalman filter",
+      "state vector",
+      "NumPy",
+      "position velocity"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_KALMAN_003",
@@ -558,21 +938,16 @@
     "review_step": 3,
     "review_total": 6,
     "review_focus": "예측",
-    "title": "[오늘의 코드리뷰 3/6] predict step 찾기",
+    "title": "predict에서 transition matrix로 self.state 갱신하기",
     "concepts": [
-      "def",
-      "function",
-      "return",
-      "class",
-      "import",
-      "kalman_filter",
-      "predict",
-      "matrix"
+      "assignment",
+      "attribute_access",
+      "class_definition"
     ],
-    "reading_goal": "이전 상태를 dt만큼 앞으로 보내는 예측 단계를 찾는다.",
-    "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
-    "question_type": "review_choice",
-    "question": "predict에서 상태를 앞으로 예측하는 줄은?",
+    "reading_goal": "predict method 안에서 transition result가 instance state를 새 값으로 덮어쓰는 위치를 찾는다.",
+    "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self):\n        self.state = np.array([[1.0], [2.0]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        return self.state\n\nkf = OneDimKalman()\nresult = kf.predict(1.0)",
+    "question_type": "multiple_choice",
+    "question": "predict에서 상태를 앞으로 예측하는 줄은 무엇인가?",
     "choices": [
       "z = np.array([[measured_x]])",
       "K = ...",
@@ -580,11 +955,45 @@
       "self.state = F @ self.state"
     ],
     "answer": "self.state = F @ self.state",
-    "explanation": "F @ self.state는 [x + dt·v, v]ᵀ를 계산해 self.state를 예측 상태로 바꾼다. 바로 다음 줄은 같은 F와 과정 잡음 공분산 Q로 오차 공분산 P도 예측한다. 질문의 정답은 상태값을 전진시키는 첫 줄이지만 완전한 predict 단계에는 P 갱신도 포함된다. dt의 단위와 x·v 단위가 서로 맞아야 계산에 의미가 있다.",
+    "explanation": "predict method 안에서 실제 self.state를 새 계산값으로 대입하는 문장이 해당 줄입니다. transition matrix F가 현재 state에 적용된 결과가 instance state로 저장되기 때문입니다. 헷갈리기 쉬운 오답: z = np.array([[measured_x]]) 그 줄은 measurement를 배열로 만드는 update 단계입니다. 오독 지점: predict와 measurement-update 단계를 혼동한 경우입니다. predict step은 **transition model 준비 → state 계산 → state attribute 갱신**으로 읽습니다.",
     "side_card_ids": [
       "CS_matrix_001"
     ],
-    "project_context": "센서 융합 코드에서 predict/update 분리를 읽는 훈련이다."
+    "project_context": "센서 융합 코드에서 predict와 update가 각각 어디에서 state를 바꾸는지 찾는 독해와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "assignment",
+    "reading_goal_internal": "predict method 안에서 transition result가 instance state를 새 값으로 덮어쓰는 위치를 찾는다.",
+    "concept_explanation": {
+      "what_it_is": "`self.state = value`는 instance attribute에 새 값을 저장하는 attribute assignment입니다.",
+      "how_to_read": "오른쪽 계산이 무엇을 의미하고 그 결과가 어떤 state field를 바꾸는지 봅니다.",
+      "key_point": "predict step의 핵심은 현재 state에 motion/state-transition model을 적용해 다음 state estimate를 만드는 것입니다.",
+      "common_mistake": "F matrix 정의 줄만 보고 실제 state가 바뀌는 줄을 놓치기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "class Model:\n    def __init__(self): self.state=2\n    def predict(self,factor): self.state = factor * self.state\nm=Model(); m.predict(3)",
+      "walkthrough": "오른쪽 계산 결과가 self.state에 다시 저장돼 state가 바뀝니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "predict method 안에서 실제 self.state를 새 계산값으로 대입하는 문장이 해당 줄입니다.",
+      "why_correct": "transition matrix F가 현재 state에 적용된 결과가 instance state로 저장되기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "z = np.array([[measured_x]])",
+        "why_wrong": "그 줄은 measurement를 배열로 만드는 update 단계입니다.",
+        "misread_step": "predict와 measurement-update 단계를 혼동한 경우입니다."
+      },
+      "takeaway": "predict step은 **transition model 준비 → state 계산 → state attribute 갱신**으로 읽습니다."
+    },
+    "target_statement": "self.state = F @ self.state",
+    "focus_span": "self.state = F @ self.state",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "data_processing_and_analysis",
+    "coverage_topics": [
+      "Kalman filter",
+      "predict",
+      "state transition",
+      "matrix"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_KALMAN_004",
@@ -594,21 +1003,17 @@
     "review_step": 4,
     "review_total": 6,
     "review_focus": "측정 보정",
-    "title": "[오늘의 코드리뷰 4/6] measurement update 찾기",
+    "title": "measured_x를 measurement vector z로 만들기",
     "concepts": [
-      "def",
-      "function",
-      "return",
-      "class",
-      "import",
-      "kalman_filter",
-      "measurement",
-      "update"
+      "call",
+      "assignment",
+      "literal",
+      "import_statement"
     ],
-    "reading_goal": "측정값 measured_x가 어디서 보정에 들어가는지 읽는다.",
-    "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
-    "question_type": "review_choice",
-    "question": "측정값을 행렬로 바꾸는 줄은?",
+    "reading_goal": "외부 측정값이 Kalman update 계산에 들어갈 배열 z로 변환되는 위치를 찾는다.",
+    "code": "import numpy as np\n\ndef make_measurement(measured_x):\n    z = np.array([[measured_x]])\n    return z\n\nmeasurement = make_measurement(12.5)",
+    "question_type": "multiple_choice",
+    "question": "측정값을 행렬로 바꾸는 줄은 무엇인가?",
     "choices": [
       "self.Q = np.eye(2) * 0.01",
       "F = np.array(...)",
@@ -616,11 +1021,45 @@
       "z = np.array([[measured_x]])"
     ],
     "answer": "z = np.array([[measured_x]])",
-    "explanation": "z = np.array([[measured_x]])는 스칼라 위치 측정값을 shape (1, 1)의 측정 벡터로 만든다. H = [[1, 0]]은 상태에서 예측 위치만 꺼내는 측정 행렬이고, 다음 y = z - H @ state가 측정과 예측의 잔차를 계산한다. z가 센서 입력이라는 사실만으로 참값이라는 뜻은 아니며, 이후 R과 Kalman gain이 반영 비율에 영향을 준다.",
+    "explanation": "measured_x를 nested list에 넣고 np.array로 변환해 z에 저장합니다. 측정값 parameter가 직접 사용되는 배열 생성 문장이기 때문입니다. 헷갈리기 쉬운 오답: self.Q = np.eye(2) * 0.01 Q는 process-noise covariance 설정이며 current measurement를 담지 않습니다. 오독 지점: noise parameter와 sensor observation을 혼동한 경우입니다. update 코드는 **measurement input → z 구성 → residual/innovation 계산** 순서로 찾습니다.",
     "side_card_ids": [
       "AI_sensor_fusion_001"
     ],
-    "project_context": "센서 측정값이 필터에 들어가는 위치를 찾는 연습이다."
+    "project_context": "센서 측정값이 state estimator의 update 계산에 진입하는 지점을 찾는 독해와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "외부 측정값이 Kalman update 계산에 들어갈 배열 z로 변환되는 위치를 찾는다.",
+    "concept_explanation": {
+      "what_it_is": "`np.array([[measured_x]])`는 scalar measurement를 2D NumPy array 형태로 만드는 function call입니다.",
+      "how_to_read": "함수 argument에 어떤 measurement가 들어가는지 확인합니다.",
+      "key_point": "복잡한 update 수식을 모두 외우지 않아도 sensor measurement가 코드 어디에서 계산 흐름에 진입하는지 찾을 수 있습니다.",
+      "common_mistake": "Q나 P 같은 noise/covariance 초기화 줄을 measurement input으로 잘못 보기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "import numpy as np\nmeasured=3.5\nz=np.array([[measured]])",
+      "walkthrough": "scalar 3.5가 measurement vector [[3.5]]가 됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "measured_x를 nested list에 넣고 np.array로 변환해 z에 저장합니다.",
+      "why_correct": "측정값 parameter가 직접 사용되는 배열 생성 문장이기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "self.Q = np.eye(2) * 0.01",
+        "why_wrong": "Q는 process-noise covariance 설정이며 current measurement를 담지 않습니다.",
+        "misread_step": "noise parameter와 sensor observation을 혼동한 경우입니다."
+      },
+      "takeaway": "update 코드는 **measurement input → z 구성 → residual/innovation 계산** 순서로 찾습니다."
+    },
+    "target_statement": "z = np.array([[measured_x]])",
+    "focus_span": "np.array([[measured_x]])",
+    "focus_mode": "subexpression",
+    "coverage_domain": "data_processing_and_analysis",
+    "coverage_topics": [
+      "Kalman filter",
+      "measurement",
+      "update",
+      "NumPy"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_KALMAN_005",
@@ -630,21 +1069,16 @@
     "review_step": 5,
     "review_total": 6,
     "review_focus": "잡음",
-    "title": "[오늘의 코드리뷰 5/6] Q와 R의 코드상 역할",
+    "title": "Kalman update에서 R이 S 계산에 더해지는 위치 읽기",
     "concepts": [
-      "def",
-      "function",
-      "return",
-      "class",
-      "import",
-      "kalman_filter",
-      "noise",
-      "uncertainty"
+      "arithmetic",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "Q/R 같은 noise 변수가 어느 계산에 들어가는지 읽는다.",
-    "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
-    "question_type": "review_choice",
-    "question": "R은 어디에 사용되는가?",
+    "reading_goal": "measurement noise R이 update 단계의 uncertainty 계산 어디에 들어가는지 코드 위치로 파악한다.",
+    "code": "projected_uncertainty = 0.8\nR = 0.25\nS = projected_uncertainty + R",
+    "question_type": "multiple_choice",
+    "question": "원래 Kalman 코드에서 `R`은 어디에 사용되는가?",
     "choices": [
       "파일 저장",
       "API 헤더",
@@ -652,11 +1086,45 @@
       "S = H @ P @ H.T + R 계산"
     ],
     "answer": "S = H @ P @ H.T + R 계산",
-    "explanation": "R은 이 1차원 측정의 잡음 공분산으로 shape (1, 1)이며, HPHᵀ에 더해 innovation 공분산 S를 만든다. S는 다음 줄에서 Kalman gain K를 계산할 때 역행렬로 사용된다. 다른 값이 같다면 R을 크게 잡을수록 보통 K가 작아져 측정을 덜 반영한다. Q는 별도로 predict의 P 갱신에 더해지는 과정 잡음 공분산이므로 R과 역할을 바꾸어 읽으면 안 된다.",
+    "explanation": "원래 update 식에서 R은 `H @ P @ H.T` 결과에 addition으로 들어가 S를 만듭니다. R이 measurement noise covariance로 innovation covariance 계산에 포함되기 때문입니다. 헷갈리기 쉬운 오답: for 반복 횟수 R은 반복문 제어 변수가 아니라 수치 uncertainty term입니다. 오독 지점: 변수의 계산 위치를 확인하지 않은 경우입니다. 수치 코드는 **변수 정의보다 실제 사용 식을 찾아 역할을 확인**합니다.",
     "side_card_ids": [
       "AI_state_estimation_001"
     ],
-    "project_context": "수식을 다 외우지 않아도 noise가 코드 어디에 들어가는지 읽는 훈련이다."
+    "project_context": "수식을 다 외우지 않고 noise term이 실제 코드 계산 어디에 들어가는지 찾는 독해와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "arithmetic",
+    "reading_goal_internal": "measurement noise R이 update 단계의 uncertainty 계산 어디에 들어가는지 코드 위치로 파악한다.",
+    "concept_explanation": {
+      "what_it_is": "`left + R`은 앞에서 계산한 값에 R을 더하는 addition expression입니다.",
+      "how_to_read": "R이 어떤 변수 계산식 오른쪽에 들어가는지 찾고 그 결과 variable을 확인합니다.",
+      "key_point": "이 카드의 목표는 Kalman 수식을 암기하는 것이 아니라 R이 S 계산에 들어간다는 코드상 위치를 읽는 것입니다.",
+      "common_mistake": "R을 반복 횟수나 file resource 같은 전혀 다른 역할로 추측하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "projected=0.8\nmeasurement_noise=0.2\nS=projected + measurement_noise",
+      "walkthrough": "S는 projected uncertainty에 measurement noise를 더한 값입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "원래 update 식에서 R은 `H @ P @ H.T` 결과에 addition으로 들어가 S를 만듭니다.",
+      "why_correct": "R이 measurement noise covariance로 innovation covariance 계산에 포함되기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "for 반복 횟수",
+        "why_wrong": "R은 반복문 제어 변수가 아니라 수치 uncertainty term입니다.",
+        "misread_step": "변수의 계산 위치를 확인하지 않은 경우입니다."
+      },
+      "takeaway": "수치 코드는 **변수 정의보다 실제 사용 식을 찾아 역할을 확인**합니다."
+    },
+    "target_statement": "S = projected_uncertainty + R",
+    "focus_span": "projected_uncertainty + R",
+    "focus_mode": "subexpression",
+    "coverage_domain": "data_processing_and_analysis",
+    "coverage_topics": [
+      "Kalman filter",
+      "measurement noise",
+      "innovation covariance",
+      "uncertainty"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_KALMAN_006",
@@ -666,21 +1134,15 @@
     "review_step": 6,
     "review_total": 6,
     "review_focus": "읽는 순서",
-    "title": "[오늘의 코드리뷰 6/6] Kalman 코드 읽는 순서",
+    "title": "Kalman 코드를 읽는 순서를 list로 정리하기",
     "concepts": [
-      "def",
-      "function",
-      "return",
-      "class",
-      "import",
-      "kalman_filter",
-      "review",
-      "debugging"
+      "literal",
+      "assignment"
     ],
-    "reading_goal": "긴 수식 코드에서 어떤 순서로 읽으면 되는지 정리한다.",
-    "code": "import numpy as np\n\nclass OneDimKalman:\n    def __init__(self, x=0.0, v=0.0):\n        self.state = np.array([[x], [v]])\n        self.P = np.eye(2) * 1.0\n        self.Q = np.eye(2) * 0.01\n        self.R = np.array([[0.25]])\n\n    def predict(self, dt):\n        F = np.array([[1.0, dt], [0.0, 1.0]])\n        self.state = F @ self.state\n        self.P = F @ self.P @ F.T + self.Q\n        return self.state[0, 0]\n\n    def update(self, measured_x):\n        H = np.array([[1.0, 0.0]])\n        z = np.array([[measured_x]])\n        y = z - H @ self.state\n        S = H @ self.P @ H.T + self.R\n        K = self.P @ H.T @ np.linalg.inv(S)\n        self.state = self.state + K @ y\n        I = np.eye(2)\n        self.P = (I - K @ H) @ self.P\n        return self.state[0, 0]",
-    "question_type": "review_choice",
-    "question": "제시된 흐름 중 이 코드의 구조를 가장 직접적으로 따라가는 읽기 순서는?",
+    "reading_goal": "복잡한 Kalman 코드를 수식 암기보다 state와 단계 중심으로 읽는 순서를 구조화한다.",
+    "code": "reading_order = [\"state_definition\", \"predict\", \"update\", \"usage\"]\nfirst_step = reading_order[0]",
+    "question_type": "multiple_choice",
+    "question": "이 코드의 구조를 가장 직접적으로 따라가는 읽기 순서는 무엇인가?",
     "choices": [
       "print문만 먼저 보고 계산은 무시한다",
       "행렬 이름을 모두 외운 뒤 실행한다",
@@ -688,12 +1150,46 @@
       "state 정의 → predict → update → loop에서 사용 방식"
     ],
     "answer": "state 정의 → predict → update → loop에서 사용 방식",
-    "explanation": "먼저 state와 P·Q·R의 shape와 의미를 확인하고, predict에서 상태·공분산이 어떻게 이동하는지, update에서 z·잔차·gain이 어떻게 반영되는지 따라가면 데이터 흐름이 보인다. 마지막으로 이 조각 밖의 호출부에서 predict와 update의 순서·주기·dt·측정 단위를 확인한다. 선택지의 ‘loop에서 사용 방식’은 이 코드 안에 실제 loop가 있다는 뜻이 아니라 사용 위치를 추가로 찾으라는 단계다.",
+    "explanation": "reading_order list가 state_definition, predict, update, usage 순서를 명시합니다. 이 순서가 data/state 흐름을 따라가며 각 method 역할을 확인하게 해주기 때문입니다. 헷갈리기 쉬운 오답: 행렬 이름을 모두 외운 뒤 실행한다 코드 구조 파악은 수식 암기 없이도 state와 method 관계부터 시작할 수 있습니다. 오독 지점: 독해 전략을 암기 전략으로 바꾼 경우입니다. 복잡한 수치 코드는 **state → transition/predict → measurement/update → usage**로 읽습니다.",
     "side_card_ids": [
       "AI_state_estimation_001",
       "DEV_debugging_001"
     ],
-    "project_context": "자율시스템 코드 독해의 핵심 습관이다."
+    "project_context": "자율시스템 코드 독해에서 복잡한 수식보다 state와 단계 흐름부터 잡는 습관과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "literal",
+    "reading_goal_internal": "복잡한 Kalman 코드를 수식 암기보다 state와 단계 중심으로 읽는 순서를 구조화한다.",
+    "concept_explanation": {
+      "what_it_is": "list literal은 여러 값을 정해진 순서로 저장합니다.",
+      "how_to_read": "각 문자열을 코드 리뷰의 독해 단계로 보고 앞에서 뒤로 순서를 유지합니다.",
+      "key_point": "상태추정 코드는 state가 무엇인지 먼저 파악한 뒤 predict와 update가 어떻게 state를 바꾸는지 보는 편이 구조 이해에 유리합니다.",
+      "common_mistake": "행렬 기호를 모두 외운 뒤에야 코드를 읽을 수 있다고 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "reading_order=[\"input\",\"transform\",\"output\"]\nfirst=reading_order[0]",
+      "walkthrough": "pipeline 독해 순서를 list로 명시하면 어디부터 볼지 분명해집니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "reading_order list가 state_definition, predict, update, usage 순서를 명시합니다.",
+      "why_correct": "이 순서가 data/state 흐름을 따라가며 각 method 역할을 확인하게 해주기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "행렬 이름을 모두 외운 뒤 실행한다",
+        "why_wrong": "코드 구조 파악은 수식 암기 없이도 state와 method 관계부터 시작할 수 있습니다.",
+        "misread_step": "독해 전략을 암기 전략으로 바꾼 경우입니다."
+      },
+      "takeaway": "복잡한 수치 코드는 **state → transition/predict → measurement/update → usage**로 읽습니다."
+    },
+    "target_statement": "reading_order = [\"state_definition\", \"predict\", \"update\", \"usage\"]",
+    "focus_span": "[\"state_definition\", \"predict\", \"update\", \"usage\"]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "learning_product_context",
+    "coverage_topics": [
+      "Kalman filter",
+      "code review",
+      "reading order",
+      "debugging"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY9_REVIEW_SHARD_001",
@@ -703,37 +1199,63 @@
     "review_step": 1,
     "review_total": 5,
     "review_focus": "전체 목적",
-    "title": "[오늘의 코드리뷰 1/5] shard 실행 전체 목적",
+    "title": "run_shard() 호출로 batch shard 처리 목적 읽기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "try_except",
-      "import",
-      "continue",
-      "batch",
-      "shard",
-      "resume",
-      "review"
+      "call",
+      "argument_passing",
+      "assignment",
+      "function_definition"
     ],
-    "reading_goal": "긴 batch shard 코드를 전체적으로 읽는다.",
-    "code": "import json\nfrom pathlib import Path\n\nINPUT_PATH = Path(\"tasks.jsonl\")\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef shard_slice(tasks, shard_id, shard_size):\n    start = shard_id * shard_size\n    end = start + shard_size\n    return tasks[start:end]\n\ndef output_path(task):\n    return OUT_DIR / f\"{task['id']}.json\"\n\ndef run_shard(tasks, shard_id, shard_size=200):\n    selected = shard_slice(tasks, shard_id, shard_size)\n    done = 0\n    skipped = 0\n    failed = []\n    for task in selected:\n        if output_path(task).exists():\n            skipped += 1\n            continue\n        try:\n            answer = call_llm(task[\"prompt\"])\n            output_path(task).write_text(json.dumps({\"id\": task[\"id\"], \"answer\": answer}, ensure_ascii=False), encoding=\"utf-8\")\n            done += 1\n        except Exception as error:\n            failed.append({\"id\": task[\"id\"], \"error\": str(error)})\n    return {\"shard_id\": shard_id, \"done\": done, \"skipped\": skipped, \"failed\": failed}",
-    "question_type": "review_choice",
-    "question": "이 코드의 전체 목적은?",
+    "reading_goal": "shard id와 size를 함수에 전달해 해당 범위 task만 처리한 summary를 받는 workflow를 읽는다.",
+    "code": "def run_shard(tasks, shard_id, shard_size):\n    start = shard_id * shard_size\n    end = start + shard_size\n    selected = tasks[start:end]\n    done = [task.upper() for task in selected]\n    return {\"shard_id\": shard_id, \"done\": done}\n\ntasks = [\"t0\", \"t1\", \"t2\", \"t3\", \"t4\"]\nsummary = run_shard(tasks, shard_id=1, shard_size=2)",
+    "question_type": "multiple_choice",
+    "question": "`summary[\"done\"]`의 값은 무엇인가?",
     "choices": [
-      "CSS를 빌드한다",
-      "브라우저 캐시를 지운다",
-      "PDF를 이미지로 바꾼다",
-      "tasks를 shard 단위로 나누어 처리하고 결과를 저장한다"
+      "[\"T2\", \"T3\"]",
+      "[\"T0\", \"T1\"]",
+      "[\"T1\", \"T2\"]",
+      "[\"T4\"]"
     ],
-    "answer": "tasks를 shard 단위로 나누어 처리하고 결과를 저장한다",
-    "explanation": "run_shard는 전달받은 tasks에서 shard_slice로 한 구간을 고르고, 출력 경로가 없는 항목만 call_llm과 JSON 저장을 시도한 뒤 done·skipped·failed 요약을 반환한다. 따라서 선택지 중 전체 목적은 shard 단위 처리와 결과 저장이다. INPUT_PATH는 이 코드에서 사용되지 않으며, 파일 존재만으로 완료를 판단하고 task id를 파일명에 그대로 쓰므로 재개 무결성과 경로 안전성은 별도 보완이 필요하다.",
+    "answer": "[\"T2\", \"T3\"]",
+    "explanation": "shard_id 1과 size 2는 index 2 이상 4 미만을 선택하므로 t2와 t3만 처리됩니다. 함수 내부 slice가 계산된 shard 범위만 선택하기 때문입니다. 헷갈리기 쉬운 오답: [\"T0\", \"T1\"] 그 범위는 shard_id 0일 때 선택됩니다. 오독 지점: shard 시작 인덱스 계산을 생략한 경우입니다. shard workflow는 **id×size → slice 범위 → 선택 task 처리 → summary**로 읽습니다.",
     "side_card_ids": [
       "CS_batch_shard_001"
     ],
-    "project_context": "노드패스/LLM batch 작업을 읽는 데 직접 연결된다."
+    "project_context": "대량 수집·추출·LLM 작업을 shard로 나눠 독립 실행하고 재개하기 쉬운 자동화 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "shard id와 size를 함수에 전달해 해당 범위 task만 처리한 summary를 받는 workflow를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "함수 호출은 argument를 함수에 전달하고 내부 처리의 반환값을 받습니다.",
+      "how_to_read": "shard_id와 shard_size가 어떤 범위를 선택하게 하는지 함수 body와 함께 봅니다.",
+      "key_point": "전체 tasks가 아니라 계산된 shard 범위만 선택해 처리합니다.",
+      "common_mistake": "run_shard를 호출하면 항상 모든 task를 처리한다고 생각하기 쉽습니다. slice로 일부만 선택합니다."
+    },
+    "teaching_example": {
+      "code": "def run(items,start,size):\n    selected=items[start:start+size]\n    return len(selected)\nresult=run([1,2,3,4],1,2)",
+      "walkthrough": "index 1부터 두 항목만 선택해 결과는 2입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "shard_id 1과 size 2는 index 2 이상 4 미만을 선택하므로 t2와 t3만 처리됩니다.",
+      "why_correct": "함수 내부 slice가 계산된 shard 범위만 선택하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "[\"T0\", \"T1\"]",
+        "why_wrong": "그 범위는 shard_id 0일 때 선택됩니다.",
+        "misread_step": "shard 시작 인덱스 계산을 생략한 경우입니다."
+      },
+      "takeaway": "shard workflow는 **id×size → slice 범위 → 선택 task 처리 → summary**로 읽습니다."
+    },
+    "target_statement": "summary = run_shard(tasks, shard_id=1, shard_size=2)",
+    "focus_span": "run_shard(tasks, shard_id=1, shard_size=2)",
+    "focus_mode": "subexpression",
+    "coverage_domain": "cli_and_automation",
+    "coverage_topics": [
+      "shard",
+      "batch",
+      "resume",
+      "task processing"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY9_REVIEW_SHARD_002",
@@ -743,36 +1265,63 @@
     "review_step": 2,
     "review_total": 5,
     "review_focus": "범위",
-    "title": "[오늘의 코드리뷰 2/5] shard 범위 계산",
+    "title": "start:end slice로 shard 범위 선택하기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "try_except",
-      "import",
-      "continue",
-      "shard",
       "slice",
-      "range"
+      "arithmetic",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "shard_id와 shard_size로 처리 범위를 고르는 코드를 읽는다.",
-    "code": "import json\nfrom pathlib import Path\n\nINPUT_PATH = Path(\"tasks.jsonl\")\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef shard_slice(tasks, shard_id, shard_size):\n    start = shard_id * shard_size\n    end = start + shard_size\n    return tasks[start:end]\n\ndef output_path(task):\n    return OUT_DIR / f\"{task['id']}.json\"\n\ndef run_shard(tasks, shard_id, shard_size=200):\n    selected = shard_slice(tasks, shard_id, shard_size)\n    done = 0\n    skipped = 0\n    failed = []\n    for task in selected:\n        if output_path(task).exists():\n            skipped += 1\n            continue\n        try:\n            answer = call_llm(task[\"prompt\"])\n            output_path(task).write_text(json.dumps({\"id\": task[\"id\"], \"answer\": answer}, ensure_ascii=False), encoding=\"utf-8\")\n            done += 1\n        except Exception as error:\n            failed.append({\"id\": task[\"id\"], \"error\": str(error)})\n    return {\"shard_id\": shard_id, \"done\": done, \"skipped\": skipped, \"failed\": failed}",
-    "question_type": "review_choice",
-    "question": "shard_id=2, shard_size=200이면 선택하는 인덱스 범위는?",
+    "reading_goal": "shard id와 size로 start/end를 계산한 뒤 stop이 제외되는 slice 범위를 읽는다.",
+    "code": "tasks = list(range(1000))\nshard_id = 2\nshard_size = 200\nstart = shard_id * shard_size\nend = start + shard_size\nselected = tasks[start:end]",
+    "question_type": "multiple_choice",
+    "question": "`selected`가 나타내는 원래 index 범위는 무엇인가?",
     "choices": [
-      "0 이상 200 미만",
-      "2 이상 202 미만",
+      "400 이상 600 미만",
+      "400 이상 600 이하",
       "200 이상 400 미만",
-      "400 이상 600 미만"
+      "600 이상 800 미만"
     ],
     "answer": "400 이상 600 미만",
-    "explanation": "start는 2×200인 400, end는 600이며 tasks[400:600]은 인덱스 400 이상 600 미만을 선택한다. 이를 사람 기준 순서로 말하면 401번째부터 최대 600번째 항목이므로 ‘400번째 항목’과 ‘인덱스 400’을 섞으면 안 된다. tasks가 600개보다 짧으면 슬라이스는 존재하는 끝까지만 반환하고 오류를 내지 않는다.",
+    "explanation": "`tasks[400:600]`은 index 400부터 599까지 선택합니다. Python slice가 stop 위치를 제외하기 때문입니다. 헷갈리기 쉬운 오답: 400 이상 600 이하 index 600은 stop 위치라 선택되지 않습니다. 오독 지점: slice stop을 포함한다고 읽은 경우입니다. shard slice는 **start 계산 → end 계산 → stop 제외**를 적용합니다.",
     "side_card_ids": [
       "CS_batch_shard_001"
     ],
-    "project_context": "샤드 분할이 제대로 되는지 읽는 연습이다."
+    "project_context": "대량 task를 겹치지 않는 고정 크기 shard로 나눌 때 각 worker의 처리 범위를 계산하는 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "slice",
+    "reading_goal_internal": "shard id와 size로 start/end를 계산한 뒤 stop이 제외되는 slice 범위를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`sequence[start:stop]`은 start부터 stop 직전까지 항목을 선택합니다.",
+      "how_to_read": "먼저 start와 end 값을 계산하고 slice의 stop이 포함되지 않는다는 점을 적용합니다.",
+      "key_point": "shard_id 2와 size 200이면 start=400, end=600이므로 400 이상 600 미만입니다.",
+      "common_mistake": "end index 600까지 포함된다고 생각하기 쉽습니다. slice stop은 제외됩니다."
+    },
+    "teaching_example": {
+      "code": "tasks=list(range(20))\nstart=5\nend=8\nselected=tasks[start:end]",
+      "walkthrough": "선택되는 값은 5,6,7이고 8은 포함되지 않습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`tasks[400:600]`은 index 400부터 599까지 선택합니다.",
+      "why_correct": "Python slice가 stop 위치를 제외하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "400 이상 600 이하",
+        "why_wrong": "index 600은 stop 위치라 선택되지 않습니다.",
+        "misread_step": "slice stop을 포함한다고 읽은 경우입니다."
+      },
+      "takeaway": "shard slice는 **start 계산 → end 계산 → stop 제외**를 적용합니다."
+    },
+    "target_statement": "selected = tasks[start:end]",
+    "focus_span": "tasks[start:end]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "cli_and_automation",
+    "coverage_topics": [
+      "shard",
+      "slice",
+      "range",
+      "batch"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY9_REVIEW_SHARD_003",
@@ -782,34 +1331,63 @@
     "review_step": 3,
     "review_total": 5,
     "review_focus": "resume",
-    "title": "[오늘의 코드리뷰 3/5] 이미 처리한 task 건너뛰기",
+    "title": "기존 출력이 있는 task를 continue로 건너뛰기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "try_except",
-      "import",
-      "continue",
-      "resume",
-      "exists",
-      "skip"
+      "continue_statement",
+      "if_statement",
+      "augmented_assignment",
+      "for_statement",
+      "literal"
     ],
-    "reading_goal": "결과 파일이 있으면 중복 실행하지 않는 resume 패턴을 읽는다.",
-    "code": "import json\nfrom pathlib import Path\n\nINPUT_PATH = Path(\"tasks.jsonl\")\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef shard_slice(tasks, shard_id, shard_size):\n    start = shard_id * shard_size\n    end = start + shard_size\n    return tasks[start:end]\n\ndef output_path(task):\n    return OUT_DIR / f\"{task['id']}.json\"\n\ndef run_shard(tasks, shard_id, shard_size=200):\n    selected = shard_slice(tasks, shard_id, shard_size)\n    done = 0\n    skipped = 0\n    failed = []\n    for task in selected:\n        if output_path(task).exists():\n            skipped += 1\n            continue\n        try:\n            answer = call_llm(task[\"prompt\"])\n            output_path(task).write_text(json.dumps({\"id\": task[\"id\"], \"answer\": answer}, ensure_ascii=False), encoding=\"utf-8\")\n            done += 1\n        except Exception as error:\n            failed.append({\"id\": task[\"id\"], \"error\": str(error)})\n    return {\"shard_id\": shard_id, \"done\": done, \"skipped\": skipped, \"failed\": failed}",
-    "question_type": "review_choice",
-    "question": "output_path(task).exists()가 참이면 어떻게 되는가?",
+    "reading_goal": "기존 출력 확인 조건이 참일 때 skipped가 증가하고 continue가 현재 task의 처리 코드를 건너뛰는 순서를 읽는다.",
+    "code": "tasks = [{\"id\": \"a\"}, {\"id\": \"b\"}, {\"id\": \"c\"}]\nexisting_outputs = {\"a\", \"c\"}\nskipped = 0\nprocessed = []\nfor task in tasks:\n    if task[\"id\"] in existing_outputs:\n        skipped += 1\n        continue\n    processed.append(task[\"id\"])",
+    "question_type": "multiple_choice",
+    "question": "반복이 끝난 뒤 `skipped`와 `processed`의 값으로 맞는 것은?",
     "choices": [
-      "항상 다시 실행한다",
-      "task를 삭제한다",
-      "shard_size를 바꾼다",
-      "skipped를 1 늘리고 continue한다"
+      "skipped=2, processed=[\"b\"]",
+      "skipped=1, processed=[\"a\", \"c\"]",
+      "skipped=3, processed=[]",
+      "skipped=0, processed=[\"a\", \"b\", \"c\"]"
     ],
-    "answer": "skipped를 1 늘리고 continue한다",
-    "explanation": "exists()가 참이면 skipped를 1 늘리고 continue가 현재 task의 call_llm과 저장을 건너뛴다. 이는 중복 호출을 줄일 수 있지만 경로에 빈 파일·부분 파일·디렉터리가 있어도 완료로 취급한다. 기존 JSON의 id와 answer가 유효한지 확인하지도 않으므로, 안전한 resume에는 파일 타입·파싱·스키마·완료 표시 검증이 필요하다.",
+    "answer": "skipped=2, processed=[\"b\"]",
+    "explanation": "a와 c에서 membership 조건이 참이므로 각각 `skipped += 1` 뒤 `continue`가 실행됩니다. b만 processed에 추가됩니다. `continue`는 현재 반복의 나머지 문장만 건너뛰고 다음 task로 넘어가기 때문입니다. 헷갈리기 쉬운 오답: skipped=1, processed=[\"a\", \"c\"] a와 c는 오히려 기존 출력이 있어 skip되는 항목입니다. 오독 지점: membership 조건의 의미를 반대로 읽은 경우입니다. resume loop는 **기존 출력 확인 → skipped 증가 → continue → 다음 task** 순서로 읽습니다.",
     "side_card_ids": [],
-    "project_context": "비용이 드는 LLM batch에서 매우 중요한 구조다."
+    "project_context": "긴 shard 작업을 재실행할 때 이미 출력이 존재하는 task는 다시 처리하지 않는 resume 패턴과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "continue_statement",
+    "reading_goal_internal": "기존 출력 확인 조건이 참일 때 skipped가 증가하고 continue가 현재 task의 처리 코드를 건너뛰는 순서를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`continue`는 반복문의 현재 반복에서 남은 문장을 건너뛰고 다음 반복으로 이동하는 statement입니다.",
+      "how_to_read": "`continue`에 도달하기 전에 실행되는 문장과, `continue` 아래에서 건너뛰는 문장을 구분해 봅니다.",
+      "key_point": "이미 처리된 task에서는 skipped 수만 늘리고 실제 처리 코드는 실행하지 않습니다.",
+      "common_mistake": "`continue`가 for 문 전체를 종료한다고 생각하기 쉽습니다. 전체 종료는 `break`이고, continue는 다음 반복으로 이동합니다."
+    },
+    "teaching_example": {
+      "code": "done = {\"b\"}\nprocessed = []\nfor item in [\"a\", \"b\", \"c\"]:\n    if item in done:\n        continue\n    processed.append(item)",
+      "walkthrough": "b에서 continue가 실행되어 append를 건너뛰고 processed에는 a와 c만 남습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "a와 c에서 membership 조건이 참이므로 각각 `skipped += 1` 뒤 `continue`가 실행됩니다. b만 processed에 추가됩니다.",
+      "why_correct": "`continue`는 현재 반복의 나머지 문장만 건너뛰고 다음 task로 넘어가기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "skipped=1, processed=[\"a\", \"c\"]",
+        "why_wrong": "a와 c는 오히려 기존 출력이 있어 skip되는 항목입니다.",
+        "misread_step": "membership 조건의 의미를 반대로 읽은 경우입니다."
+      },
+      "takeaway": "resume loop는 **기존 출력 확인 → skipped 증가 → continue → 다음 task** 순서로 읽습니다."
+    },
+    "target_statement": "continue",
+    "focus_span": "continue",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "logging_monitoring_operations",
+    "coverage_topics": [
+      "shard",
+      "resume",
+      "skip",
+      "checkpoint",
+      "output existence"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY9_REVIEW_SHARD_004",
@@ -819,36 +1397,66 @@
     "review_step": 4,
     "review_total": 5,
     "review_focus": "실패 처리",
-    "title": "[오늘의 코드리뷰 4/5] 실패 목록 수집",
+    "title": "except as로 예외 객체를 이름에 바인딩해 기록하기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "import",
-      "continue",
-      "try_except",
-      "error",
-      "logging"
+      "except_clause",
+      "try_statement",
+      "call",
+      "for_statement",
+      "literal"
     ],
-    "reading_goal": "실패한 task를 중단하지 않고 failed 목록에 쌓는 흐름을 읽는다.",
-    "code": "import json\nfrom pathlib import Path\n\nINPUT_PATH = Path(\"tasks.jsonl\")\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef shard_slice(tasks, shard_id, shard_size):\n    start = shard_id * shard_size\n    end = start + shard_size\n    return tasks[start:end]\n\ndef output_path(task):\n    return OUT_DIR / f\"{task['id']}.json\"\n\ndef run_shard(tasks, shard_id, shard_size=200):\n    selected = shard_slice(tasks, shard_id, shard_size)\n    done = 0\n    skipped = 0\n    failed = []\n    for task in selected:\n        if output_path(task).exists():\n            skipped += 1\n            continue\n        try:\n            answer = call_llm(task[\"prompt\"])\n            output_path(task).write_text(json.dumps({\"id\": task[\"id\"], \"answer\": answer}, ensure_ascii=False), encoding=\"utf-8\")\n            done += 1\n        except Exception as error:\n            failed.append({\"id\": task[\"id\"], \"error\": str(error)})\n    return {\"shard_id\": shard_id, \"done\": done, \"skipped\": skipped, \"failed\": failed}",
-    "question_type": "review_choice",
-    "question": "try 블록에서 예외가 나면 failed에 무엇을 추가하는가?",
+    "reading_goal": "예외 발생 시 except-as가 예외 객체를 이름에 바인딩하고 그 문자열을 실패 로그에 넣는 흐름을 읽는다.",
+    "code": "tasks = [{\"id\": \"ok\"}, {\"id\": \"bad\"}]\nfailed = []\nfor task in tasks:\n    try:\n        if task[\"id\"] == \"bad\":\n            raise RuntimeError(\"model timeout\")\n    except Exception as error:\n        failed.append({\"id\": task[\"id\"], \"error\": str(error)})",
+    "question_type": "multiple_choice",
+    "question": "`failed[0]`의 값은 무엇인가?",
     "choices": [
-      "전체 tasks.jsonl",
-      "API 키",
-      "CSS 파일",
-      "task id와 error 문자열"
+      "{\"id\": \"bad\", \"error\": \"model timeout\"}",
+      "{\"id\": \"ok\", \"error\": \"model timeout\"}",
+      "{\"id\": \"bad\", \"error\": \"RuntimeError\"}",
+      "[]"
     ],
-    "answer": "task id와 error 문자열",
-    "explanation": "call_llm, task key 접근, JSON 직렬화, 파일 쓰기 등 try 안에서 Exception의 하위 예외가 나면 except가 task['id']와 str(error)를 dict로 만들어 failed에 추가하고 다음 항목으로 진행한다. 예외 타입·traceback은 저장하지 않아 진단 정보가 줄며, id key 자체가 없다면 except 안의 task['id']도 다시 KeyError를 내 전체 loop를 중단시킬 수 있다. BaseException 계열은 이 except가 잡지 않는다.",
+    "answer": "{\"id\": \"bad\", \"error\": \"model timeout\"}",
+    "explanation": "bad task에서만 예외가 발생하고 `error`는 RuntimeError 객체를 가리킵니다. `str(error)`가 `model timeout`을 만들어 id와 함께 dict로 append됩니다. `except ... as error`가 실제 예외 객체를 이름에 바인딩하기 때문입니다. 헷갈리기 쉬운 오답: {\"id\": \"bad\", \"error\": \"RuntimeError\"} `str(error)`는 예외 타입 이름이 아니라 이 예제의 예외 메시지 `model timeout`을 반환합니다. 오독 지점: 예외 타입과 예외 문자열 메시지를 혼동한 경우입니다. 실패 로그는 **예외 발생 → except-as 바인딩 → str(error) → task id와 함께 기록**으로 읽습니다.",
     "side_card_ids": [
       "DEV_debugging_001",
       "DEV_logging_001"
     ],
-    "project_context": "대량 실행에서 일부 실패를 추적하는 기본 운영 패턴이다."
+    "project_context": "대량 생성 작업에서 실패한 task의 id와 오류 메시지를 남겨 나중에 재시도·원인 분석하는 운영 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "except_clause",
+    "reading_goal_internal": "예외 발생 시 except-as가 예외 객체를 이름에 바인딩하고 그 문자열을 실패 로그에 넣는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`except Exception as error:`는 지정한 예외 계열을 잡고 발생한 예외 객체를 `error`라는 이름에 바인딩합니다.",
+      "how_to_read": "어떤 예외를 잡는지, `as` 뒤 이름이 무엇인지, 그 이름이 except 본문에서 어떻게 사용되는지 확인합니다.",
+      "key_point": "`str(error)`를 사용하면 예외 객체가 가진 메시지를 문자열로 기록할 수 있습니다.",
+      "common_mistake": "`error`가 항상 같은 고정 문자열이라고 생각하기 쉽습니다. 실제로는 발생한 예외 객체를 가리키는 이름입니다."
+    },
+    "teaching_example": {
+      "code": "messages = []\ntry:\n    raise ValueError(\"bad value\")\nexcept ValueError as exc:\n    messages.append(str(exc))",
+      "walkthrough": "발생한 ValueError 객체가 exc에 바인딩되고 `bad value` 문자열이 messages에 추가됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "bad task에서만 예외가 발생하고 `error`는 RuntimeError 객체를 가리킵니다. `str(error)`가 `model timeout`을 만들어 id와 함께 dict로 append됩니다.",
+      "why_correct": "`except ... as error`가 실제 예외 객체를 이름에 바인딩하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "{\"id\": \"bad\", \"error\": \"RuntimeError\"}",
+        "why_wrong": "`str(error)`는 예외 타입 이름이 아니라 이 예제의 예외 메시지 `model timeout`을 반환합니다.",
+        "misread_step": "예외 타입과 예외 문자열 메시지를 혼동한 경우입니다."
+      },
+      "takeaway": "실패 로그는 **예외 발생 → except-as 바인딩 → str(error) → task id와 함께 기록**으로 읽습니다."
+    },
+    "target_statement": "except Exception as error:",
+    "focus_span": "except Exception as error:",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "logging_monitoring_operations",
+    "coverage_topics": [
+      "shard",
+      "exception",
+      "failure log",
+      "retry",
+      "error string"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY9_REVIEW_SHARD_005",
@@ -858,24 +1466,16 @@
     "review_step": 5,
     "review_total": 5,
     "review_focus": "요약",
-    "title": "[오늘의 코드리뷰 5/5] shard 요약 반환",
+    "title": "shard 실행 결과를 summary dict로 반환하기",
     "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "try_except",
-      "import",
-      "continue",
-      "summary",
-      "json",
-      "monitoring"
+      "literal",
+      "return_statement",
+      "function_definition"
     ],
-    "reading_goal": "done/skipped/failed를 summary로 남기는 이유를 읽는다.",
-    "code": "import json\nfrom pathlib import Path\n\nINPUT_PATH = Path(\"tasks.jsonl\")\nOUT_DIR = Path(\"outputs\")\nOUT_DIR.mkdir(exist_ok=True)\n\ndef shard_slice(tasks, shard_id, shard_size):\n    start = shard_id * shard_size\n    end = start + shard_size\n    return tasks[start:end]\n\ndef output_path(task):\n    return OUT_DIR / f\"{task['id']}.json\"\n\ndef run_shard(tasks, shard_id, shard_size=200):\n    selected = shard_slice(tasks, shard_id, shard_size)\n    done = 0\n    skipped = 0\n    failed = []\n    for task in selected:\n        if output_path(task).exists():\n            skipped += 1\n            continue\n        try:\n            answer = call_llm(task[\"prompt\"])\n            output_path(task).write_text(json.dumps({\"id\": task[\"id\"], \"answer\": answer}, ensure_ascii=False), encoding=\"utf-8\")\n            done += 1\n        except Exception as error:\n            failed.append({\"id\": task[\"id\"], \"error\": str(error)})\n    return {\"shard_id\": shard_id, \"done\": done, \"skipped\": skipped, \"failed\": failed}",
-    "question_type": "review_choice",
-    "question": "summary를 반환하는 가장 큰 이유는?",
+    "reading_goal": "shard 처리 결과를 하나의 구조화 summary로 묶어 운영 상태를 확인하는 의미를 읽는다.",
+    "code": "def finish_shard(shard_id, done, skipped, failed):\n    return {\"shard_id\": shard_id, \"done\": done, \"skipped\": skipped, \"failed\": failed}\n\nsummary = finish_shard(3, 180, 15, [{\"id\": \"t7\", \"error\": \"timeout\"}])",
+    "question_type": "multiple_choice",
+    "question": "summary를 반환하는 가장 큰 이유는 무엇인가?",
     "choices": [
       "코드를 더 느리게 만들기 위해",
       "정답 choices를 지우기 위해",
@@ -883,9 +1483,43 @@
       "나중에 shard 진행상태와 실패를 확인하기 위해"
     ],
     "answer": "나중에 shard 진행상태와 실패를 확인하기 위해",
-    "explanation": "반환 dict에는 shard_id, 이번 실행에서 저장에 성공한 done 수, 파일 존재로 건너뛴 skipped 수, 실패 항목 dict 목록이 들어간다. 호출부는 이를 로그나 재시도 입력으로 사용할 수 있어 정답은 진행상태와 실패 확인이다. 다만 코드가 비용·전체 선택 수·시작과 끝 인덱스·실행 시간을 반환하는 것은 아니며, 반환값을 실제로 저장하지 않으면 프로세스 종료 뒤 기록도 남지 않는다.",
+    "explanation": "summary에는 shard identity와 done/skipped/failed가 함께 들어 있어 사후 상태 확인이 가능합니다. 운영자가 어떤 shard에서 무엇이 끝나고 실패했는지 구조적으로 추적할 수 있기 때문입니다. 헷갈리기 쉬운 오답: 코드를 더 느리게 만들기 위해 summary의 목적은 monitoring/traceability이지 의도적 성능 저하가 아닙니다. 오독 지점: 관측성 데이터를 overhead 자체로만 본 경우입니다. job summary는 **identity + counts + failure detail**로 구성하면 운영성이 높아집니다.",
     "side_card_ids": [],
-    "project_context": "LLM shard 운영 로그 읽기와 직접 연결된다."
+    "project_context": "LLM shard 작업의 완료량·skip·failure를 한눈에 확인하는 운영 로그와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "literal",
+    "reading_goal_internal": "shard 처리 결과를 하나의 구조화 summary로 묶어 운영 상태를 확인하는 의미를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "return 뒤 dict literal은 shard 실행 결과 여러 field를 하나의 값으로 묶어 반환합니다.",
+      "how_to_read": "각 key가 identity, success count, skip count, failure details 중 무엇을 나타내는지 구분합니다.",
+      "key_point": "긴 shard 작업은 결과 file만 보는 것보다 완료·skip·failure summary를 남기면 운영 상태를 빠르게 확인할 수 있습니다.",
+      "common_mistake": "summary를 반환하면 실패 작업도 자동으로 재시도된다고 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "def summary():\n    done=3; failed=[\"x\"]\n    return {\"done\":done,\"failed\":failed}\nresult=summary()",
+      "walkthrough": "실행 상태를 dict 하나로 돌려주므로 호출자가 나중에 확인할 수 있습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "summary에는 shard identity와 done/skipped/failed가 함께 들어 있어 사후 상태 확인이 가능합니다.",
+      "why_correct": "운영자가 어떤 shard에서 무엇이 끝나고 실패했는지 구조적으로 추적할 수 있기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "코드를 더 느리게 만들기 위해",
+        "why_wrong": "summary의 목적은 monitoring/traceability이지 의도적 성능 저하가 아닙니다.",
+        "misread_step": "관측성 데이터를 overhead 자체로만 본 경우입니다."
+      },
+      "takeaway": "job summary는 **identity + counts + failure detail**로 구성하면 운영성이 높아집니다."
+    },
+    "target_statement": "return {\"shard_id\": shard_id, \"done\": done, \"skipped\": skipped, \"failed\": failed}",
+    "focus_span": "{\"shard_id\": shard_id, \"done\": done, \"skipped\": skipped, \"failed\": failed}",
+    "focus_mode": "subexpression",
+    "coverage_domain": "logging_monitoring_operations",
+    "coverage_topics": [
+      "shard",
+      "summary",
+      "monitoring",
+      "failure"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_FASTAPI_001",
@@ -895,35 +1529,64 @@
     "review_step": 1,
     "review_total": 5,
     "review_focus": "전체 목적",
-    "title": "[오늘의 코드리뷰 1/5] FastAPI 검색 endpoint 전체 목적",
+    "title": "POST search endpoint 함수 decorator 읽기",
     "concepts": [
-      "if",
-      "def",
-      "function",
-      "return",
-      "class",
-      "import",
-      "fastapi",
-      "endpoint",
-      "api",
-      "review"
+      "decorator",
+      "call",
+      "function_definition",
+      "class_definition"
     ],
-    "reading_goal": "API 요청 모델, 검증, 검색, 응답 모델의 전체 흐름을 읽는다.",
-    "code": "from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass SearchRequest(BaseModel):\n    query: str\n    top_k: int = 5\n\nclass SearchHit(BaseModel):\n    doc_id: str\n    title: str\n    score: float\n\nclass SearchResponse(BaseModel):\n    query: str\n    hits: list[SearchHit]\n\n@app.post(\"/api/search\", response_model=SearchResponse)\ndef search(req: SearchRequest):\n    if not req.query.strip():\n        raise HTTPException(status_code=400, detail=\"query is empty\")\n    if req.top_k < 1 or req.top_k > 20:\n        raise HTTPException(status_code=400, detail=\"top_k out of range\")\n    rows = search_index(req.query, limit=req.top_k)\n    hits = [SearchHit(doc_id=row[\"doc_id\"], title=row[\"title\"], score=row[\"score\"]) for row in rows]\n    return SearchResponse(query=req.query, hits=hits)",
-    "question_type": "review_choice",
-    "question": "이 endpoint의 목적은?",
+    "reading_goal": "API route decorator가 바로 아래 search 함수에 적용되고 경로 정보를 등록하는 구조를 읽는다.",
+    "code": "class App:\n    def post(self, path, response_model):\n        def decorate(func):\n            func.route = (\"POST\", path, response_model)\n            return func\n        return decorate\n\napp = App()\n\n@app.post(\"/api/search\", response_model=\"SearchResponse\")\ndef search(request):\n    return {\"query\": request[\"query\"], \"hits\": []}",
+    "question_type": "multiple_choice",
+    "question": "`search.route`에 저장된 HTTP method와 path 조합은 무엇인가?",
     "choices": [
-      "PWA manifest를 만든다",
-      "이미지를 생성한다",
-      "Git push를 실행한다",
-      "검색 요청을 받아 search_index 결과를 응답한다"
+      "(\"POST\", \"/api/search\")",
+      "(\"GET\", \"/api/search\")",
+      "(\"POST\", \"/api/items\")",
+      "(\"SearchResponse\", \"/api/search\")"
     ],
-    "answer": "검색 요청을 받아 search_index 결과를 응답한다",
-    "explanation": "POST 본문을 SearchRequest로 파싱한 뒤 빈 query와 top_k 범위를 수동 검사하고, search_index 결과의 각 row를 SearchHit으로 변환해 SearchResponse를 반환한다. 따라서 선택지 중 목적은 검색 요청을 받아 결과를 응답하는 것이다. 이 조각에는 search_index의 정의와 예외 처리가 없으므로 실제 검색 방식·권한·실패 응답까지 보장하지 않으며, req는 URL query parameter가 아니라 요청 본문 모델이다.",
+    "answer": "(\"POST\", \"/api/search\")",
+    "explanation": "`@app.post('/api/search', ...)`가 만든 decorator는 method를 POST, path를 /api/search로 기록합니다. decorator 표현식의 실제 호출 인자가 route 정보로 사용되기 때문입니다. 헷갈리기 쉬운 오답: (\"GET\", \"/api/search\") 사용된 메서드 이름은 `post`입니다. 오독 지점: HTTP method를 decorator 이름과 연결하지 않은 경우입니다. endpoint는 **decorator 이름 → route argument → 바로 아래 함수** 순서로 읽습니다.",
     "side_card_ids": [
       "PL_endpoint_001"
     ],
-    "project_context": "검색 API/로컬 RAG API 구조와 연결된다."
+    "project_context": "검색 요청을 받아 search 결과를 응답하는 API endpoint를 Python decorator로 정의하는 구조와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "decorator",
+    "reading_goal_internal": "API route decorator가 바로 아래 search 함수에 적용되고 경로 정보를 등록하는 구조를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "함수 바로 위의 `@decorator(...)`는 decorator 호출 결과를 아래 함수에 적용하는 function decorator 문법입니다.",
+      "how_to_read": "decorator 표현식의 argument를 확인하고, 바로 다음 `def`가 적용 대상인지 봅니다.",
+      "key_point": "FastAPI의 `@app.post(...)`도 같은 Python decorator 문법으로 endpoint 함수를 등록합니다.",
+      "common_mistake": "decorator가 함수 본문 첫 줄만 감싼다고 생각하기 쉽습니다. 대상은 아래 함수 객체 전체입니다."
+    },
+    "teaching_example": {
+      "code": "class App:\n    def route(self, path):\n        def decorate(func):\n            func.path = path\n            return func\n        return decorate\n\napp = App()\n\n@app.route(\"/items\")\ndef items():\n    return []",
+      "walkthrough": "route 호출이 만든 decorator가 items 함수에 적용되어 path 정보를 붙입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`@app.post('/api/search', ...)`가 만든 decorator는 method를 POST, path를 /api/search로 기록합니다.",
+      "why_correct": "decorator 표현식의 실제 호출 인자가 route 정보로 사용되기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "(\"GET\", \"/api/search\")",
+        "why_wrong": "사용된 메서드 이름은 `post`입니다.",
+        "misread_step": "HTTP method를 decorator 이름과 연결하지 않은 경우입니다."
+      },
+      "takeaway": "endpoint는 **decorator 이름 → route argument → 바로 아래 함수** 순서로 읽습니다."
+    },
+    "target_statement": "@app.post(\"/api/search\", response_model=\"SearchResponse\")",
+    "focus_span": "@app.post(\"/api/search\", response_model=\"SearchResponse\")",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "web_http_api",
+    "coverage_topics": [
+      "API endpoint",
+      "POST",
+      "search",
+      "decorator",
+      "response model"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_FASTAPI_002",
@@ -933,34 +1596,63 @@
     "review_step": 2,
     "review_total": 5,
     "review_focus": "요청",
-    "title": "[오늘의 코드리뷰 2/5] 요청 스키마 읽기",
+    "title": "검색 요청의 필수 query와 기본 top_k 구분하기",
     "concepts": [
-      "if",
-      "def",
-      "function",
-      "return",
-      "class",
-      "import",
-      "pydantic",
-      "schema",
-      "request"
+      "parameter_definition",
+      "type_annotation",
+      "function_definition",
+      "literal"
     ],
-    "reading_goal": "클라이언트가 보내야 하는 입력 구조를 찾는다.",
-    "code": "from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass SearchRequest(BaseModel):\n    query: str\n    top_k: int = 5\n\nclass SearchHit(BaseModel):\n    doc_id: str\n    title: str\n    score: float\n\nclass SearchResponse(BaseModel):\n    query: str\n    hits: list[SearchHit]\n\n@app.post(\"/api/search\", response_model=SearchResponse)\ndef search(req: SearchRequest):\n    if not req.query.strip():\n        raise HTTPException(status_code=400, detail=\"query is empty\")\n    if req.top_k < 1 or req.top_k > 20:\n        raise HTTPException(status_code=400, detail=\"top_k out of range\")\n    rows = search_index(req.query, limit=req.top_k)\n    hits = [SearchHit(doc_id=row[\"doc_id\"], title=row[\"title\"], score=row[\"score\"]) for row in rows]\n    return SearchResponse(query=req.query, hits=hits)",
-    "question_type": "review_choice",
-    "question": "SearchRequest에서 필수 필드와 선택 필드의 관계는?",
+    "reading_goal": "기본값이 없는 query와 기본값 5가 있는 top_k를 함수 parameter 정의에서 구분한다.",
+    "code": "def make_search_request(query: str, top_k: int = 5):\n    return {\"query\": query, \"top_k\": top_k}\n\nrequest = make_search_request(\"vector search\")",
+    "question_type": "multiple_choice",
+    "question": "`request[\"top_k\"]`의 값은 무엇인가?",
     "choices": [
-      "doc_id와 title",
-      "score와 hits",
-      "CSS와 HTML",
-      "query는 필수이고 top_k는 생략 시 5"
+      "5",
+      "0",
+      "vector search",
+      "None"
     ],
-    "answer": "query는 필수이고 top_k는 생략 시 5",
-    "explanation": "SearchRequest에서 기본값이 없는 query는 필수 문자열이고 top_k는 선택 정수로 생략하면 5가 된다. req: SearchRequest는 이 POST endpoint에서 JSON 요청 본문으로 해석된다. 현재 모델 선언은 문자열 길이나 top_k 범위를 스키마에 넣지 않아 그 제약은 함수 안에서 따로 검사하며, 잘못된 타입은 endpoint 본문에 들어오기 전 요청 검증에서 거절될 수 있다.",
+    "answer": "5",
+    "explanation": "top_k argument를 전달하지 않았으므로 `top_k: int = 5`에 명시된 5가 사용됩니다. default parameter는 argument가 생략될 때 기본값을 적용하기 때문입니다. 헷갈리기 쉬운 오답: 0 코드에 기본값 0은 정의되어 있지 않습니다. 오독 지점: `= 5`를 놓친 경우입니다. 요청 schema를 읽을 때는 **기본값 존재 여부로 필수/선택 성격을 구분**할 수 있습니다.",
     "side_card_ids": [
       "DATA_schema_001"
     ],
-    "project_context": "API 코드를 볼 때 request model을 먼저 읽는 습관이다."
+    "project_context": "검색 API 요청에서 필수 검색어와 선택적인 결과 개수 제한을 구분하는 schema 맥락과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "parameter_definition",
+    "reading_goal_internal": "기본값이 없는 query와 기본값 5가 있는 top_k를 함수 parameter 정의에서 구분한다.",
+    "concept_explanation": {
+      "what_it_is": "parameter에 `= value`가 있으면 호출에서 그 argument가 생략될 때 사용할 기본값을 가집니다.",
+      "how_to_read": "각 parameter 뒤에 기본값이 있는지 확인합니다.",
+      "key_point": "query는 전달해야 하지만 top_k는 생략하면 5가 사용됩니다.",
+      "common_mistake": "type annotation이 있으면 자동 기본값도 생긴다고 생각하기 쉽습니다. 기본값은 `=` 뒤에 명시돼야 합니다."
+    },
+    "teaching_example": {
+      "code": "def make_request(term: str, page: int = 1):\n    return term, page\n\nresult = make_request(\"python\")",
+      "walkthrough": "term은 전달되고 page는 생략돼 기본값 1이 사용됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "top_k argument를 전달하지 않았으므로 `top_k: int = 5`에 명시된 5가 사용됩니다.",
+      "why_correct": "default parameter는 argument가 생략될 때 기본값을 적용하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "0",
+        "why_wrong": "코드에 기본값 0은 정의되어 있지 않습니다.",
+        "misread_step": "`= 5`를 놓친 경우입니다."
+      },
+      "takeaway": "요청 schema를 읽을 때는 **기본값 존재 여부로 필수/선택 성격을 구분**할 수 있습니다."
+    },
+    "target_statement": "def make_search_request(query: str, top_k: int = 5):",
+    "focus_span": "top_k: int = 5",
+    "focus_mode": "subexpression",
+    "coverage_domain": "web_http_api",
+    "coverage_topics": [
+      "request schema",
+      "query",
+      "top_k",
+      "default value"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_FASTAPI_003",
@@ -970,34 +1662,64 @@
     "review_step": 3,
     "review_total": 5,
     "review_focus": "검증",
-    "title": "[오늘의 코드리뷰 3/5] 입력 검증 읽기",
+    "title": "or 조건으로 top_k 허용 범위 밖 값 검증하기",
     "concepts": [
-      "if",
-      "def",
-      "function",
-      "return",
-      "class",
-      "import",
-      "validation",
-      "http",
-      "error"
+      "boolean_operation",
+      "comparison",
+      "if_statement",
+      "raise_statement",
+      "literal"
     ],
-    "reading_goal": "빈 query와 top_k 범위를 검증하는 방어 코드를 읽는다.",
-    "code": "from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass SearchRequest(BaseModel):\n    query: str\n    top_k: int = 5\n\nclass SearchHit(BaseModel):\n    doc_id: str\n    title: str\n    score: float\n\nclass SearchResponse(BaseModel):\n    query: str\n    hits: list[SearchHit]\n\n@app.post(\"/api/search\", response_model=SearchResponse)\ndef search(req: SearchRequest):\n    if not req.query.strip():\n        raise HTTPException(status_code=400, detail=\"query is empty\")\n    if req.top_k < 1 or req.top_k > 20:\n        raise HTTPException(status_code=400, detail=\"top_k out of range\")\n    rows = search_index(req.query, limit=req.top_k)\n    hits = [SearchHit(doc_id=row[\"doc_id\"], title=row[\"title\"], score=row[\"score\"]) for row in rows]\n    return SearchResponse(query=req.query, hits=hits)",
-    "question_type": "review_choice",
-    "question": "top_k가 30이면 어떻게 되는가?",
+    "reading_goal": "두 범위 비교를 or로 결합해 30이 허용 범위를 벗어났음을 판단하고 예외가 발생하는 흐름을 읽는다.",
+    "code": "top_k = 30\nif top_k < 1 or top_k > 20:\n    raise ValueError(\"top_k out of range\")",
+    "question_type": "multiple_choice",
+    "question": "이 코드의 실행 결과는 무엇인가?",
     "choices": [
-      "30개를 무조건 반환한다",
-      "query를 지운다",
-      "서버가 자동 종료된다",
-      "400 에러를 낸다"
+      "ValueError가 발생한다",
+      "아무 예외도 발생하지 않는다",
+      "top_k가 20으로 바뀐다",
+      "False가 출력된다"
     ],
-    "answer": "400 에러를 낸다",
-    "explanation": "정수 30은 SearchRequest 파싱을 통과하지만 req.top_k > 20이 참이어서 함수가 detail='top_k out of range'인 HTTPException(400)을 던진다. 이는 코드가 직접 정한 범위 오류다. 반면 정수로 검증할 수 없는 입력은 Pydantic/FastAPI 요청 검증 단계에서 endpoint 본문 전에 다른 검증 오류 응답이 될 수 있다. query는 strip으로 비어 있는지만 검사하고 원문 자체를 잘라 저장하지는 않는다.",
+    "answer": "ValueError가 발생한다",
+    "explanation": "top_k가 30이므로 두 번째 비교 `30 > 20`이 True입니다. `or` 전체가 True가 되어 raise 문이 실행됩니다. `or`는 두 조건 중 하나만 True여도 전체 조건을 True로 만들기 때문입니다. 헷갈리기 쉬운 오답: 아무 예외도 발생하지 않는다 30은 허용 상한 20보다 커서 두 번째 조건이 True입니다. 오독 지점: 첫 번째 비교가 False라는 이유만으로 전체 or도 False라고 판단한 경우입니다. 범위 밖 검증은 **하한 비교 → 상한 비교 → or 결합 → 분기** 순서로 읽습니다.",
     "side_card_ids": [
       "DEV_debugging_001"
     ],
-    "project_context": "API 안전성과 비용 제한에 연결되는 검증이다."
+    "project_context": "검색 API에서 지나치게 작거나 큰 top_k 요청을 validation gate로 거부하는 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "boolean_operation",
+    "reading_goal_internal": "두 범위 비교를 or로 결합해 30이 허용 범위를 벗어났음을 판단하고 예외가 발생하는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`left or right`는 둘 중 하나라도 truthy이면 truthy가 되는 boolean operation입니다.",
+      "how_to_read": "왼쪽과 오른쪽 비교를 각각 계산한 뒤 하나라도 True인지 확인합니다.",
+      "key_point": "허용 범위 1~20 밖인 값은 `작다 OR 크다` 두 조건 중 하나를 만족합니다.",
+      "common_mistake": "두 조건이 모두 True여야 if에 들어간다고 생각하기 쉽습니다. 현재 연산자는 `and`가 아니라 `or`입니다."
+    },
+    "teaching_example": {
+      "code": "value = 0\nif value < 1 or value > 10:\n    result = \"invalid\"\nelse:\n    result = \"valid\"",
+      "walkthrough": "0 < 1이 True라 전체 or 조건은 True이고 result는 invalid입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "top_k가 30이므로 두 번째 비교 `30 > 20`이 True입니다. `or` 전체가 True가 되어 raise 문이 실행됩니다.",
+      "why_correct": "`or`는 두 조건 중 하나만 True여도 전체 조건을 True로 만들기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "아무 예외도 발생하지 않는다",
+        "why_wrong": "30은 허용 상한 20보다 커서 두 번째 조건이 True입니다.",
+        "misread_step": "첫 번째 비교가 False라는 이유만으로 전체 or도 False라고 판단한 경우입니다."
+      },
+      "takeaway": "범위 밖 검증은 **하한 비교 → 상한 비교 → or 결합 → 분기** 순서로 읽습니다."
+    },
+    "target_statement": "if top_k < 1 or top_k > 20:",
+    "focus_span": "top_k < 1 or top_k > 20",
+    "focus_mode": "subexpression",
+    "coverage_domain": "web_http_api",
+    "coverage_topics": [
+      "validation",
+      "top_k",
+      "range",
+      "HTTP 400"
+    ],
+    "pedagogical_intent": "predict_exception"
   },
   {
     "id": "PY9_REVIEW_FASTAPI_004",
@@ -1007,34 +1729,65 @@
     "review_step": 4,
     "review_total": 5,
     "review_focus": "호출 지점",
-    "title": "[오늘의 코드리뷰 4/5] 실제 검색 호출 지점",
+    "title": "search_index 호출의 limit keyword argument 읽기",
     "concepts": [
-      "if",
-      "def",
-      "return",
-      "class",
-      "import",
-      "search",
-      "function",
-      "api"
+      "argument_passing",
+      "call",
+      "subscription",
+      "assignment",
+      "function_definition"
     ],
-    "reading_goal": "endpoint 내부에서 실제 검색 엔진을 호출하는 줄을 찾는다.",
-    "code": "from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass SearchRequest(BaseModel):\n    query: str\n    top_k: int = 5\n\nclass SearchHit(BaseModel):\n    doc_id: str\n    title: str\n    score: float\n\nclass SearchResponse(BaseModel):\n    query: str\n    hits: list[SearchHit]\n\n@app.post(\"/api/search\", response_model=SearchResponse)\ndef search(req: SearchRequest):\n    if not req.query.strip():\n        raise HTTPException(status_code=400, detail=\"query is empty\")\n    if req.top_k < 1 or req.top_k > 20:\n        raise HTTPException(status_code=400, detail=\"top_k out of range\")\n    rows = search_index(req.query, limit=req.top_k)\n    hits = [SearchHit(doc_id=row[\"doc_id\"], title=row[\"title\"], score=row[\"score\"]) for row in rows]\n    return SearchResponse(query=req.query, hits=hits)",
-    "question_type": "review_choice",
-    "question": "실제 검색을 수행하는 줄은?",
+    "reading_goal": "검색 함수 호출에서 요청의 top_k 값이 `limit` keyword argument로 전달되는 구조를 읽는다.",
+    "code": "def search_index(query, limit):\n    return [f\"{query}:{i}\" for i in range(limit)]\n\nrequest = {\"query\": \"rag\", \"top_k\": 3}\nrows = search_index(request[\"query\"], limit=request[\"top_k\"])",
+    "question_type": "multiple_choice",
+    "question": "`rows`의 항목 수는 몇 개인가?",
     "choices": [
-      "app = FastAPI()",
-      "class SearchHit(BaseModel)",
-      "return SearchResponse(...)",
-      "rows = search_index(req.query, limit=req.top_k)"
+      "1개",
+      "2개",
+      "3개",
+      "5개"
     ],
-    "answer": "rows = search_index(req.query, limit=req.top_k)",
-    "explanation": "rows = search_index(req.query, limit=req.top_k)가 이 endpoint와 외부 검색 구현의 경계다. 그 다음 list comprehension은 각 row에서 doc_id·title·score를 꺼내 SearchHit으로 검증·변환한다. search_index가 동기 함수라면 요청 처리 스레드에서 완료될 때까지 기다리며, 함수 미정의·검색 예외·누락 row key에는 이 조각의 별도 처리가 없어 서버 오류가 될 수 있다.",
+    "answer": "3개",
+    "explanation": "`request['top_k']`는 3이고 이 값이 `limit` keyword argument로 전달됩니다. 함수는 `range(3)`만큼 세 결과를 만듭니다. keyword argument의 값이 함수의 limit parameter를 결정하기 때문입니다. 헷갈리기 쉬운 오답: 5개 5는 이전 schema의 기본값일 수 있지만 현재 request에는 top_k=3이 명시되어 있습니다. 오독 지점: 현재 요청값보다 기본값을 우선해서 읽은 경우입니다. API 내부 호출은 **요청 값 조회 → parameter 이름으로 전달 → 함수 결과** 순서로 읽습니다.",
     "side_card_ids": [
       "AI_retrieval_001",
       "PL_endpoint_001"
     ],
-    "project_context": "API 껍데기와 실제 검색 함수의 경계를 읽는다."
+    "project_context": "검색 endpoint가 요청의 query와 top_k를 내부 검색 함수에 전달하는 데이터 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "argument_passing",
+    "reading_goal_internal": "검색 함수 호출에서 요청의 top_k 값이 `limit` keyword argument로 전달되는 구조를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`limit=value`는 함수 호출에서 parameter 이름을 명시해 값을 전달하는 keyword argument입니다.",
+      "how_to_read": "등호 오른쪽 표현식을 먼저 계산하고 그 값이 어떤 이름의 parameter에 전달되는지 봅니다.",
+      "key_point": "실제 검색 수를 제어하는 값은 `request['top_k']`에서 읽혀 `limit` parameter로 전달됩니다.",
+      "common_mistake": "`top_k`라는 이름이 그대로 search_index의 parameter 이름이라고 생각하기 쉽습니다. 호출에서는 `limit=`이라는 이름으로 전달합니다."
+    },
+    "teaching_example": {
+      "code": "def fetch(term, limit):\n    return [term] * limit\n\nresult = fetch(\"python\", limit=2)",
+      "walkthrough": "문자열 python은 positional argument, 2는 limit keyword argument로 전달됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`request['top_k']`는 3이고 이 값이 `limit` keyword argument로 전달됩니다. 함수는 `range(3)`만큼 세 결과를 만듭니다.",
+      "why_correct": "keyword argument의 값이 함수의 limit parameter를 결정하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "5개",
+        "why_wrong": "5는 이전 schema의 기본값일 수 있지만 현재 request에는 top_k=3이 명시되어 있습니다.",
+        "misread_step": "현재 요청값보다 기본값을 우선해서 읽은 경우입니다."
+      },
+      "takeaway": "API 내부 호출은 **요청 값 조회 → parameter 이름으로 전달 → 함수 결과** 순서로 읽습니다."
+    },
+    "target_statement": "rows = search_index(request[\"query\"], limit=request[\"top_k\"])",
+    "focus_span": "limit=request[\"top_k\"]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "web_http_api",
+    "coverage_topics": [
+      "search API",
+      "search_index",
+      "limit",
+      "query"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_FASTAPI_005",
@@ -1044,22 +1797,17 @@
     "review_step": 5,
     "review_total": 5,
     "review_focus": "응답",
-    "title": "[오늘의 코드리뷰 5/5] 응답 모델 장점",
+    "title": "FastAPI response_model로 응답 schema 명시하기",
     "concepts": [
-      "if",
-      "def",
-      "function",
-      "return",
-      "class",
-      "import",
-      "response_model",
-      "schema",
-      "api"
+      "argument_passing",
+      "decorator",
+      "class_definition",
+      "function_definition"
     ],
-    "reading_goal": "response_model을 쓰면 API 응답 구조가 명확해지는 이유를 읽는다.",
-    "code": "from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass SearchRequest(BaseModel):\n    query: str\n    top_k: int = 5\n\nclass SearchHit(BaseModel):\n    doc_id: str\n    title: str\n    score: float\n\nclass SearchResponse(BaseModel):\n    query: str\n    hits: list[SearchHit]\n\n@app.post(\"/api/search\", response_model=SearchResponse)\ndef search(req: SearchRequest):\n    if not req.query.strip():\n        raise HTTPException(status_code=400, detail=\"query is empty\")\n    if req.top_k < 1 or req.top_k > 20:\n        raise HTTPException(status_code=400, detail=\"top_k out of range\")\n    rows = search_index(req.query, limit=req.top_k)\n    hits = [SearchHit(doc_id=row[\"doc_id\"], title=row[\"title\"], score=row[\"score\"]) for row in rows]\n    return SearchResponse(query=req.query, hits=hits)",
-    "question_type": "review_choice",
-    "question": "response_model=SearchResponse의 장점은?",
+    "reading_goal": "route decorator의 response_model keyword가 endpoint 응답 구조 계약을 나타내는 framework 의미를 읽는다.",
+    "code": "from fastapi import FastAPI\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass SearchResponse(BaseModel):\n    query: str\n    hits: list[str]\n\n@app.post(\"/api/search\", response_model=SearchResponse)\ndef search():\n    return SearchResponse(query=\"python\", hits=[\"c1\"])",
+    "question_type": "multiple_choice",
+    "question": "`response_model=SearchResponse`의 장점은 무엇인가?",
     "choices": [
       "검색 속도를 항상 100배 올린다",
       "API 키를 자동 발급한다",
@@ -1067,12 +1815,46 @@
       "응답 구조를 명확히 하고 검증/문서화에 도움을 준다"
     ],
     "answer": "응답 구조를 명확히 하고 검증/문서화에 도움을 준다",
-    "explanation": "response_model=SearchResponse는 FastAPI가 응답을 해당 스키마로 문서화하고 직렬화·검증·필터링하는 기준으로 사용한다. 선언되지 않은 필드를 응답에서 제외하는 데 도움을 주고 클라이언트 계약을 명확히 한다. 그러나 검색 속도를 높이거나 API 키를 만들지는 않으며, 반환값이 모델과 맞지 않으면 서버 측 응답 검증 오류가 될 수 있다. 이 함수는 이미 SearchResponse를 직접 만들어 반환하므로 내부 row 전체를 노출하지 않는다.",
+    "explanation": "route decorator가 SearchResponse를 응답 model로 등록합니다. FastAPI가 response model을 응답 validation/filtering 및 OpenAPI schema 생성에 활용할 수 있기 때문입니다. 헷갈리기 쉬운 오답: 검색 속도를 항상 100배 올린다 schema metadata는 검색 algorithm 성능을 자동 가속하지 않습니다. 오독 지점: API contract 기능과 runtime search 성능을 혼동한 경우입니다. response_model은 **응답 contract를 코드에 명시**하는 도구로 읽습니다.",
     "side_card_ids": [
       "DATA_schema_001",
       "PL_endpoint_001"
     ],
-    "project_context": "로컬 검색 API를 안정적으로 설계하는 감각과 연결된다."
+    "project_context": "로컬 검색 API를 안정적인 schema contract로 제공하는 설계와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "argument_passing",
+    "reading_goal_internal": "route decorator의 response_model keyword가 endpoint 응답 구조 계약을 나타내는 framework 의미를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`response_model=SearchResponse`는 decorator call에 응답 model class를 이름 있는 argument로 전달합니다.",
+      "how_to_read": "route path와 response schema option을 서로 다른 역할로 구분합니다.",
+      "key_point": "response model을 명시하면 API 응답 구조를 분명히 하고 validation과 자동 문서화에 도움을 받을 수 있습니다.",
+      "common_mistake": "response_model을 설정하면 검색 algorithm 자체가 빨라진다고 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "def route(path, *, response_model):\n    return {\"path\":path,\"model\":response_model}\nmeta=route(\"/items\", response_model=\"ItemResponse\")",
+      "walkthrough": "response_model keyword가 route의 응답 schema metadata를 지정합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "route decorator가 SearchResponse를 응답 model로 등록합니다.",
+      "why_correct": "FastAPI가 response model을 응답 validation/filtering 및 OpenAPI schema 생성에 활용할 수 있기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "검색 속도를 항상 100배 올린다",
+        "why_wrong": "schema metadata는 검색 algorithm 성능을 자동 가속하지 않습니다.",
+        "misread_step": "API contract 기능과 runtime search 성능을 혼동한 경우입니다."
+      },
+      "takeaway": "response_model은 **응답 contract를 코드에 명시**하는 도구로 읽습니다."
+    },
+    "target_statement": "@app.post(\"/api/search\", response_model=SearchResponse)",
+    "focus_span": "response_model=SearchResponse",
+    "focus_mode": "subexpression",
+    "coverage_domain": "web_http_api",
+    "coverage_topics": [
+      "FastAPI",
+      "response_model",
+      "schema",
+      "API validation"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_PSPATCH_001",
@@ -1082,29 +1864,63 @@
     "review_step": 1,
     "review_total": 5,
     "review_focus": "전체 목적",
-    "title": "[오늘의 코드리뷰 1/5] PowerShell 패치 스크립트 전체 목적",
+    "title": "replace()로 기존 기능 블록 교체하기",
     "concepts": [
-      "powershell",
-      "patch",
-      "marker",
-      "review"
+      "call",
+      "assignment",
+      "argument_passing",
+      "name_reference"
     ],
-    "reading_goal": "마커 기반으로 app.js 기능 블록을 교체/추가하는 스크립트 흐름을 읽는다.",
-    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\n$ErrorActionPreference = \"Stop\"\n$appPath = \".\\src\\pwa\\app.js\"\n$app = Get-Content $appPath -Raw -Encoding UTF8\n$markerStart = \"// === FEATURE START ===\"\n$markerEnd = \"// === FEATURE END ===\"\n$featureBlock = \"// === FEATURE START ===\nfunction sayHello() {\n  console.log('hello');\n}\n// === FEATURE END ===\"\nif ($app.Contains($markerStart)) {\n  $pattern = [regex]::Escape($markerStart) + \"[\\s\\S]*?\" + [regex]::Escape($markerEnd)\n  $app = [regex]::Replace($app, $pattern, $featureBlock.Trim())\n} else {\n  $app = $app.TrimEnd() + \"`r`n\" + $featureBlock\n}\nSet-Content $appPath -Value $app -Encoding UTF8\nSelect-String -Path $appPath -Pattern \"FEATURE START|sayHello\" -Context 0,2",
-    "question_type": "review_choice",
-    "question": "이 스크립트의 전체 목적은?",
+    "reading_goal": "문자열 메서드 호출의 두 인자와 반환값이 패치 결과에 어떻게 연결되는지 읽는다.",
+    "code": "old_block = \"// FEATURE START\\nold\\n// FEATURE END\"\nfeature_block = \"// FEATURE START\\nnew\\n// FEATURE END\"\napp = \"header\\n\" + old_block + \"\\nfooter\"\napp = app.replace(old_block, feature_block)",
+    "question_type": "multiple_choice",
+    "question": "`app.replace(old_block, feature_block)`에서 기존 `old_block` 대신 들어갈 문자열은 무엇인가?",
     "choices": [
-      "JSONL 파일을 임베딩 벡터로 변환한다",
-      "웹서버를 배포 서버에 올린다",
-      "이미지를 새로 생성해 저장한다",
-      "app.js에 FEATURE 블록을 추가하거나 기존 블록을 교체한다"
+      "app",
+      "header",
+      "old_block",
+      "feature_block"
     ],
-    "answer": "app.js에 FEATURE 블록을 추가하거나 기존 블록을 교체한다",
-    "explanation": "스크립트는 app.js 전체를 문자열로 읽고, 시작 마커가 있으면 시작·끝 마커를 포함하는 비탐욕 정규식으로 featureBlock 교체를 시도하며, 없으면 파일 끝에 블록을 붙인다. 그 뒤 Set-Content로 파일을 다시 쓰고 Select-String 결과를 표시한다. 시작 마커만 있고 끝 마커가 없으면 정규식이 매칭되지 않아 교체 없이 원문을 다시 쓸 수 있으며, 여러 완전한 블록이 있으면 Regex.Replace가 모두 바꿀 수 있다.",
+    "answer": "feature_block",
+    "explanation": "`replace(old, new)`에서 첫 인자는 찾을 값, 두 번째 인자는 바꿔 넣을 값입니다. 따라서 `old_block`을 찾아 `feature_block`으로 교체합니다. `feature_block`이 `replace()`의 두 번째 인자로 전달되기 때문입니다. 헷갈리기 쉬운 오답: old_block `old_block`은 새로 넣는 값이 아니라 찾고 교체할 기존 문자열입니다. 오독 지점: `replace(old, new)`의 첫 번째와 두 번째 인자 역할을 반대로 읽은 경우입니다. `text.replace(old, new)`는 **old를 찾아 new로 바꾼 새 문자열**을 반환합니다.",
     "side_card_ids": [
       "LANG_powershell_001"
     ],
-    "project_context": "SWAP-IN/패치 스크립트 독해에 직접 연결된다."
+    "project_context": "SWAP-IN이나 소스 패치 작업에서 기존 기능 블록을 찾아 새 블록으로 교체하는 코드를 읽는 데 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "문자열 메서드 호출의 두 인자와 반환값이 패치 결과에 어떻게 연결되는지 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "문자열의 `.replace(old, new)` 메서드는 문자열 안의 `old`를 `new`로 바꾼 새 문자열을 반환합니다.",
+      "how_to_read": "`app.replace(old_block, feature_block)`은 `app`에서 기존 블록을 찾아 새 기능 블록으로 바꾼 결과를 만든다고 읽습니다.",
+      "key_point": "문자열은 직접 수정되지 않으므로 반환된 새 문자열을 다시 저장해야 변경 결과를 이어서 사용할 수 있습니다.",
+      "common_mistake": "`replace()`가 원래 `app` 문자열 자체를 제자리에서 바꾼다고 생각하기 쉽습니다. 실제로는 새 문자열을 반환합니다."
+    },
+    "teaching_example": {
+      "code": "text = \"mode=old\"\ntext = text.replace(\"old\", \"new\")",
+      "walkthrough": "`replace()`가 `mode=new`라는 새 문자열을 반환하고, 그 값을 다시 `text`에 저장합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`replace(old, new)`에서 첫 인자는 찾을 값, 두 번째 인자는 바꿔 넣을 값입니다. 따라서 `old_block`을 찾아 `feature_block`으로 교체합니다.",
+      "why_correct": "`feature_block`이 `replace()`의 두 번째 인자로 전달되기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "old_block",
+        "why_wrong": "`old_block`은 새로 넣는 값이 아니라 찾고 교체할 기존 문자열입니다.",
+        "misread_step": "`replace(old, new)`의 첫 번째와 두 번째 인자 역할을 반대로 읽은 경우입니다."
+      },
+      "takeaway": "`text.replace(old, new)`는 **old를 찾아 new로 바꾼 새 문자열**을 반환합니다."
+    },
+    "target_statement": "app = app.replace(old_block, feature_block)",
+    "focus_span": "app.replace(old_block, feature_block)",
+    "focus_mode": "subexpression",
+    "coverage_domain": "cli_and_automation",
+    "coverage_topics": [
+      "patch",
+      "marker",
+      "source rewrite",
+      "feature block"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY9_REVIEW_PSPATCH_002",
@@ -1114,28 +1930,62 @@
     "review_step": 2,
     "review_total": 5,
     "review_focus": "에러 처리",
-    "title": "[오늘의 코드리뷰 2/5] ErrorActionPreference 의미",
+    "title": "except 안의 bare raise로 오류 다시 발생시키기",
     "concepts": [
-      "powershell",
-      "error",
-      "script"
+      "raise_statement",
+      "except_clause",
+      "try_statement"
     ],
-    "reading_goal": "스크립트 중간 에러를 무시하지 않도록 하는 설정을 읽는다.",
-    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\n$ErrorActionPreference = \"Stop\"\n$appPath = \".\\src\\pwa\\app.js\"\n$app = Get-Content $appPath -Raw -Encoding UTF8\n$markerStart = \"// === FEATURE START ===\"\n$markerEnd = \"// === FEATURE END ===\"\n$featureBlock = \"// === FEATURE START ===\nfunction sayHello() {\n  console.log('hello');\n}\n// === FEATURE END ===\"\nif ($app.Contains($markerStart)) {\n  $pattern = [regex]::Escape($markerStart) + \"[\\s\\S]*?\" + [regex]::Escape($markerEnd)\n  $app = [regex]::Replace($app, $pattern, $featureBlock.Trim())\n} else {\n  $app = $app.TrimEnd() + \"`r`n\" + $featureBlock\n}\nSet-Content $appPath -Value $app -Encoding UTF8\nSelect-String -Path $appPath -Pattern \"FEATURE START|sayHello\" -Context 0,2",
-    "question_type": "review_choice",
-    "question": "ErrorActionPreference = Stop의 목적은?",
+    "reading_goal": "예외 처리 블록 안에서 인자 없는 `raise`가 현재 예외를 다시 던져 실행을 실패 경로로 돌려보내는 것을 읽는다.",
+    "code": "from pathlib import Path\n\npath = Path(\"app.js\")\ntry:\n    app = path.read_text(encoding=\"utf-8\")\nexcept OSError:\n    raise",
+    "question_type": "multiple_choice",
+    "question": "`path.read_text()`에서 `OSError`가 발생해 `except` 안의 `raise`가 실행되면 어떻게 되는가?",
     "choices": [
-      "항상 성공으로 표시한다",
-      "파일을 압축한다",
-      "브라우저를 연다",
-      "에러가 나면 스크립트를 멈추게 한다"
+      "오류를 무시하고 계속한다",
+      "빈 문자열을 반환한다",
+      "같은 OSError를 다시 발생시킨다",
+      "파일을 자동 복구한다"
     ],
-    "answer": "에러가 나면 스크립트를 멈추게 한다",
-    "explanation": "$ErrorActionPreference = 'Stop'은 PowerShell cmdlet의 비종료 오류를 종료 오류처럼 처리해 일반 흐름을 중단하게 한다. 이미 종료 오류인 예외에도 중단 흐름이 적용된다. 그러나 모든 외부 실행 파일의 비정상 종료 코드를 자동 예외로 바꾸거나 이전 파일 변경을 rollback하는 트랜잭션은 아니다. 따라서 오류 뒤 계속 실행될 위험은 줄이지만 별도 검증·백업·원자적 쓰기를 대신하지 않는다.",
+    "answer": "같은 OSError를 다시 발생시킨다",
+    "explanation": "`read_text()`의 `OSError`가 `except`에 잡힌 다음, 인자 없는 `raise`가 현재 예외를 그대로 다시 발생시킵니다. Python의 bare `raise`는 현재 처리 중인 예외를 재전파하기 때문입니다. 헷갈리기 쉬운 오답: 오류를 무시하고 계속한다 예외를 무시하려면 `raise` 없이 정상적으로 `except` 블록을 끝내야 합니다. 오독 지점: `except`가 예외를 잡았다는 사실만 보고, 그 안의 `raise`를 놓친 경우입니다. `except` 안의 `raise`는 **잡은 예외를 다시 발생**시킵니다.",
     "side_card_ids": [
       "LANG_powershell_001"
     ],
-    "project_context": "대량 패치에서 실패한 줄 이후가 계속 실행되는 위험을 줄인다."
+    "project_context": "대량 패치나 파일 수정 작업에서 읽기 실패를 숨기지 않고 즉시 실패로 전달하는 코드를 이해하는 데 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "raise_statement",
+    "reading_goal_internal": "예외 처리 블록 안에서 인자 없는 `raise`가 현재 예외를 다시 던져 실행을 실패 경로로 돌려보내는 것을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`except` 블록 안의 인자 없는 `raise`는 현재 처리 중인 예외를 그대로 다시 발생시키는 문장입니다.",
+      "how_to_read": "예외를 잡은 뒤 `raise`만 있으면, 오류를 없애고 계속하는 것이 아니라 같은 오류를 상위 흐름으로 다시 보낸다고 읽습니다.",
+      "key_point": "bare `raise`는 현재 처리 중인 예외가 있을 때 의미가 있으며, 실패를 숨기지 않습니다.",
+      "common_mistake": "`except`가 보이면 오류가 모두 처리되어 정상 진행한다고 생각하기 쉽습니다. 내부에 `raise`가 있으면 예외는 다시 발생합니다."
+    },
+    "teaching_example": {
+      "code": "try:\n    value = int(\"bad\")\nexcept ValueError:\n    print(\"invalid\")\n    raise",
+      "walkthrough": "`ValueError`를 잠시 잡아 메시지를 출력하지만, 이어지는 bare `raise`가 같은 `ValueError`를 다시 발생시킵니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`read_text()`의 `OSError`가 `except`에 잡힌 다음, 인자 없는 `raise`가 현재 예외를 그대로 다시 발생시킵니다.",
+      "why_correct": "Python의 bare `raise`는 현재 처리 중인 예외를 재전파하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "오류를 무시하고 계속한다",
+        "why_wrong": "예외를 무시하려면 `raise` 없이 정상적으로 `except` 블록을 끝내야 합니다.",
+        "misread_step": "`except`가 예외를 잡았다는 사실만 보고, 그 안의 `raise`를 놓친 경우입니다."
+      },
+      "takeaway": "`except` 안의 `raise`는 **잡은 예외를 다시 발생**시킵니다."
+    },
+    "target_statement": "raise",
+    "focus_span": "raise",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "exceptions_debugging",
+    "coverage_topics": [
+      "patch",
+      "fail fast",
+      "file error",
+      "re-raise"
+    ],
+    "pedagogical_intent": "predict_exception"
   },
   {
     "id": "PY9_REVIEW_PSPATCH_003",
@@ -1145,26 +1995,60 @@
     "review_step": 3,
     "review_total": 5,
     "review_focus": "분기",
-    "title": "[오늘의 코드리뷰 3/5] 마커 탐지 분기",
+    "title": "마커가 있으면 if 교체 경로 선택하기",
     "concepts": [
-      "powershell",
-      "if",
-      "marker"
+      "if_statement",
+      "membership_test",
+      "assignment"
     ],
-    "reading_goal": "기존 블록이면 교체를 시도하고 없으면 추가하는 조건문을 읽는다.",
-    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\n$ErrorActionPreference = \"Stop\"\n$appPath = \".\\src\\pwa\\app.js\"\n$app = Get-Content $appPath -Raw -Encoding UTF8\n$markerStart = \"// === FEATURE START ===\"\n$markerEnd = \"// === FEATURE END ===\"\n$featureBlock = \"// === FEATURE START ===\nfunction sayHello() {\n  console.log('hello');\n}\n// === FEATURE END ===\"\nif ($app.Contains($markerStart)) {\n  $pattern = [regex]::Escape($markerStart) + \"[\\s\\S]*?\" + [regex]::Escape($markerEnd)\n  $app = [regex]::Replace($app, $pattern, $featureBlock.Trim())\n} else {\n  $app = $app.TrimEnd() + \"`r`n\" + $featureBlock\n}\nSet-Content $appPath -Value $app -Encoding UTF8\nSelect-String -Path $appPath -Pattern \"FEATURE START|sayHello\" -Context 0,2",
-    "question_type": "review_choice",
-    "question": "이미 FEATURE START가 있으면 어떤 경로로 가는가?",
+    "reading_goal": "문자열 포함 검사의 결과가 if/else 중 어느 패치 경로를 선택하는지 순서대로 읽는다.",
+    "code": "app = \"// FEATURE START\\nold code\"\nmarker_start = \"// FEATURE START\"\nif marker_start in app:\n    mode = \"replace\"\nelse:\n    mode = \"append\"",
+    "question_type": "multiple_choice",
+    "question": "현재 `app`에 `marker_start`가 포함되어 있을 때 `mode`에 저장되는 값은 무엇인가?",
     "choices": [
-      "무조건 뒤에 또 붙인다",
-      "파일을 삭제한다",
-      "Git push한다",
-      "regex Replace 경로로 들어가 교체를 시도한다"
+      "replace",
+      "append",
+      "delete",
+      "None"
     ],
-    "answer": "regex Replace 경로로 들어가 교체를 시도한다",
-    "explanation": "app.Contains(markerStart)가 참이면 if 분기에서 pattern을 만들고 Regex.Replace를 호출한다. 그러나 Contains는 시작 마커 하나만 확인한다. 끝 마커가 없거나 순서가 잘못되어 pattern이 매칭되지 않으면 교체되지 않으며, 이 코드에는 매칭 수 확인이 없다. 따라서 같은 패치를 여러 번 실행해도 항상 정확히 한 블록만 남는다고 보장할 수 없다.",
+    "answer": "replace",
+    "explanation": "먼저 `marker_start in app`을 평가합니다. 문자열이 포함되어 있으므로 참이고, `if` 블록의 `mode = \"replace\"`가 실행됩니다. 조건이 참일 때 실행되는 블록에 `replace` 대입이 있기 때문입니다. 헷갈리기 쉬운 오답: append `append`는 `if` 조건이 거짓일 때의 `else` 경로입니다. 오독 지점: 조건 결과를 확인하지 않고 두 분기 중 아래쪽을 선택한 경우입니다. `if condition:`은 **condition이 참일 때만 해당 블록**을 실행합니다.",
     "side_card_ids": [],
-    "project_context": "같은 패치를 여러 번 실행해도 중복 블록이 안 쌓이게 하는 구조다."
+    "project_context": "이미 기능 마커가 있는 파일과 처음 패치하는 파일을 다른 경로로 처리하는 자동화 코드를 읽는 데 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "if_statement",
+    "reading_goal_internal": "문자열 포함 검사의 결과가 if/else 중 어느 패치 경로를 선택하는지 순서대로 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`if 조건:`은 조건이 참일 때 들여쓴 블록을 실행하는 Python 조건문입니다.",
+      "how_to_read": "`if marker_start in app:`은 먼저 마커가 `app` 문자열에 포함되어 있는지 검사하고, 참일 때 교체 경로로 들어간다고 읽습니다.",
+      "key_point": "`if` 블록이 실행되면 같은 구조의 `else` 블록은 실행되지 않습니다.",
+      "common_mistake": "조건식의 `in` 결과와 `if`의 역할을 한꺼번에 뭉개 읽기 쉽습니다. 먼저 포함 여부를 계산하고, 그 결과로 분기를 선택합니다."
+    },
+    "teaching_example": {
+      "code": "text = \"BEGIN data END\"\nmarker = \"BEGIN\"\nif marker in text:\n    action = \"update\"\nelse:\n    action = \"append\"",
+      "walkthrough": "`marker in text`가 참이므로 `if` 블록의 `action = \"update\"`가 실행되고 `else`는 건너뜁니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "먼저 `marker_start in app`을 평가합니다. 문자열이 포함되어 있으므로 참이고, `if` 블록의 `mode = \"replace\"`가 실행됩니다.",
+      "why_correct": "조건이 참일 때 실행되는 블록에 `replace` 대입이 있기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "append",
+        "why_wrong": "`append`는 `if` 조건이 거짓일 때의 `else` 경로입니다.",
+        "misread_step": "조건 결과를 확인하지 않고 두 분기 중 아래쪽을 선택한 경우입니다."
+      },
+      "takeaway": "`if condition:`은 **condition이 참일 때만 해당 블록**을 실행합니다."
+    },
+    "target_statement": "if marker_start in app:",
+    "focus_span": "if marker_start in app:",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "cli_and_automation",
+    "coverage_topics": [
+      "patch",
+      "marker",
+      "idempotent update",
+      "branching"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY9_REVIEW_PSPATCH_004",
@@ -1174,28 +2058,63 @@
     "review_step": 4,
     "review_total": 5,
     "review_focus": "추가",
-    "title": "[오늘의 코드리뷰 4/5] 없으면 append",
+    "title": "+=로 기존 문자열 뒤에 기능 블록 붙이기",
     "concepts": [
-      "powershell",
-      "append",
-      "string"
+      "augmented_assignment",
+      "arithmetic",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "기존 마커가 없을 때 파일 끝에 새 블록을 붙이는 코드를 읽는다.",
-    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\n$ErrorActionPreference = \"Stop\"\n$appPath = \".\\src\\pwa\\app.js\"\n$app = Get-Content $appPath -Raw -Encoding UTF8\n$markerStart = \"// === FEATURE START ===\"\n$markerEnd = \"// === FEATURE END ===\"\n$featureBlock = \"// === FEATURE START ===\nfunction sayHello() {\n  console.log('hello');\n}\n// === FEATURE END ===\"\nif ($app.Contains($markerStart)) {\n  $pattern = [regex]::Escape($markerStart) + \"[\\s\\S]*?\" + [regex]::Escape($markerEnd)\n  $app = [regex]::Replace($app, $pattern, $featureBlock.Trim())\n} else {\n  $app = $app.TrimEnd() + \"`r`n\" + $featureBlock\n}\nSet-Content $appPath -Value $app -Encoding UTF8\nSelect-String -Path $appPath -Pattern \"FEATURE START|sayHello\" -Context 0,2",
-    "question_type": "review_choice",
-    "question": "markerStart가 없으면 어떤 일이 일어나는가?",
+    "reading_goal": "문자열에 대한 `+=`가 기존 값과 오른쪽 값을 결합한 결과를 같은 이름에 다시 저장하는 흐름을 읽는다.",
+    "code": "app = \"header\"\nfeature_block = \"// FEATURE START\\nnew code\\n// FEATURE END\"\napp += \"\\n\" + feature_block",
+    "question_type": "multiple_choice",
+    "question": "마지막 줄 실행 후 `app` 문자열의 뒤쪽에는 무엇이 추가되는가?",
     "choices": [
-      "아무것도 하지 않는다",
-      "JSON을 파싱한다",
-      "브라우저 캐시를 지운다",
-      "파일 끝에 featureBlock을 붙인다"
+      "feature_block",
+      "header만 다시 한 번",
+      "빈 리스트",
+      "None"
     ],
-    "answer": "파일 끝에 featureBlock을 붙인다",
-    "explanation": "시작 마커가 없으면 TrimEnd()가 app 문자열 끝의 공백과 줄바꿈을 제거하고, CRLF 한 개와 featureBlock을 이어 붙인다. 이후 공통 Set-Content가 app.js 전체를 다시 쓴다. 이는 추가 경로의 문자열 결과를 설명할 뿐 JavaScript 문법이나 삽입 위치의 적절성을 검증하지 않는다. 또한 -Encoding UTF8의 BOM 동작은 Windows PowerShell과 최신 PowerShell에서 다를 수 있어 대상 실행 환경을 확인해야 한다.",
+    "answer": "feature_block",
+    "explanation": "오른쪽에서 `\"\\n\" + feature_block`을 만든 뒤, `+=`가 이 문자열을 기존 `app` 뒤에 이어 붙이고 결과를 다시 `app`에 저장합니다. 복합 대입 `+=`가 기존 문자열과 오른쪽 문자열을 결합하기 때문입니다. 헷갈리기 쉬운 오답: None 이 문장은 `app`의 값을 갱신하는 대입이지 `app`에 `None`을 넣는 코드가 아닙니다. 오독 지점: 메서드의 반환값과 복합 대입문의 상태 변경을 혼동한 경우입니다. 문자열의 `+=`는 **기존 문자열 뒤에 새 문자열을 붙여 같은 이름에 다시 저장**합니다.",
     "side_card_ids": [
       "LANG_powershell_001"
     ],
-    "project_context": "새 기능을 처음 추가할 때의 패치 흐름이다."
+    "project_context": "기존 마커가 없는 소스 파일에 새 기능 블록을 처음 추가하는 패치 경로를 읽는 데 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "augmented_assignment",
+    "reading_goal_internal": "문자열에 대한 `+=`가 기존 값과 오른쪽 값을 결합한 결과를 같은 이름에 다시 저장하는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`x += y`는 `x`의 현재 값에 `y`를 더한 결과를 다시 `x`에 저장하는 복합 대입입니다.",
+      "how_to_read": "문자열에서 `app += extra`는 기존 `app` 뒤에 `extra`를 이어 붙인 새 문자열을 다시 `app`에 저장한다고 읽습니다.",
+      "key_point": "문자열의 `+=`에서는 숫자 덧셈이 아니라 문자열 연결이 일어납니다.",
+      "common_mistake": "`+=`가 값만 계산하고 저장은 하지 않는다고 생각하기 쉽습니다. 이 연산은 계산과 재대입을 함께 수행합니다."
+    },
+    "teaching_example": {
+      "code": "message = \"start\"\nmessage += \" -> done\"",
+      "walkthrough": "기존 `message` 뒤에 ` -> done`을 붙이고 그 결과를 다시 `message`에 저장합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "오른쪽에서 `\"\\n\" + feature_block`을 만든 뒤, `+=`가 이 문자열을 기존 `app` 뒤에 이어 붙이고 결과를 다시 `app`에 저장합니다.",
+      "why_correct": "복합 대입 `+=`가 기존 문자열과 오른쪽 문자열을 결합하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "None",
+        "why_wrong": "이 문장은 `app`의 값을 갱신하는 대입이지 `app`에 `None`을 넣는 코드가 아닙니다.",
+        "misread_step": "메서드의 반환값과 복합 대입문의 상태 변경을 혼동한 경우입니다."
+      },
+      "takeaway": "문자열의 `+=`는 **기존 문자열 뒤에 새 문자열을 붙여 같은 이름에 다시 저장**합니다."
+    },
+    "target_statement": "app += \"\\n\" + feature_block",
+    "focus_span": "app += \"\\n\" + feature_block",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "cli_and_automation",
+    "coverage_topics": [
+      "patch",
+      "append",
+      "feature block",
+      "string update"
+    ],
+    "pedagogical_intent": "trace_state"
   },
   {
     "id": "PY9_REVIEW_PSPATCH_005",
@@ -1205,27 +2124,63 @@
     "review_step": 5,
     "review_total": 5,
     "review_focus": "검증",
-    "title": "[오늘의 코드리뷰 5/5] 패치 후 검증",
+    "title": "filtered comprehension으로 패치 확인 문자열 찾기",
     "concepts": [
-      "powershell",
-      "verification",
-      "select_string"
+      "list_comprehension",
+      "membership_test",
+      "boolean_operation",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "패치가 제대로 들어갔는지 Select-String으로 확인하는 줄을 읽는다.",
-    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\n$ErrorActionPreference = \"Stop\"\n$appPath = \".\\src\\pwa\\app.js\"\n$app = Get-Content $appPath -Raw -Encoding UTF8\n$markerStart = \"// === FEATURE START ===\"\n$markerEnd = \"// === FEATURE END ===\"\n$featureBlock = \"// === FEATURE START ===\nfunction sayHello() {\n  console.log('hello');\n}\n// === FEATURE END ===\"\nif ($app.Contains($markerStart)) {\n  $pattern = [regex]::Escape($markerStart) + \"[\\s\\S]*?\" + [regex]::Escape($markerEnd)\n  $app = [regex]::Replace($app, $pattern, $featureBlock.Trim())\n} else {\n  $app = $app.TrimEnd() + \"`r`n\" + $featureBlock\n}\nSet-Content $appPath -Value $app -Encoding UTF8\nSelect-String -Path $appPath -Pattern \"FEATURE START|sayHello\" -Context 0,2",
-    "question_type": "review_choice",
-    "question": "마지막 Select-String 줄이 직접 하는 일은?",
+    "reading_goal": "여러 소스 줄 중 두 검증 패턴 중 하나를 포함한 줄만 수집하는 filtered list comprehension을 읽는다.",
+    "code": "lines = [\n    \"// === FEATURE START ===\",\n    \"function sayHello() {\",\n    \"console.log('hello');\",\n    \"// === FEATURE END ===\",\n]\nmatches = [line for line in lines if \"FEATURE START\" in line or \"sayHello\" in line]",
+    "question_type": "multiple_choice",
+    "question": "`matches`의 항목 수는 몇 개인가?",
     "choices": [
-      "파일을 서버에 업로드한다",
-      "JSON을 압축한다",
-      "정답을 자동 생성한다",
-      "두 패턴의 매칭 줄과 뒤 문맥을 검색해 보여 준다"
+      "1개",
+      "2개",
+      "3개",
+      "4개"
     ],
-    "answer": "두 패턴의 매칭 줄과 뒤 문맥을 검색해 보여 준다",
-    "explanation": "Select-String은 FEATURE START 또는 sayHello에 매칭되는 줄과 각 매칭 뒤 최대 2줄을 출력한다. 이는 사람이 빠르게 존재 여부와 주변 문맥을 볼 단서지만, 매칭이 없어도 이 줄 자체가 명시적으로 throw하지 않고 정확히 한 블록·끝 마커·JavaScript 문법을 검증하지도 않는다. 신뢰할 수 있는 패치 확인에는 매칭 수 assertion, marker 쌍 검사, 구문 검사와 git diff가 추가로 필요하다.",
+    "answer": "2개",
+    "explanation": "FEATURE START가 있는 첫 줄과 sayHello가 있는 둘째 줄만 조건을 통과합니다. filtered list comprehension의 `or` 조건 중 하나라도 True면 해당 줄이 결과에 포함되기 때문입니다. 헷갈리기 쉬운 오답: 1개 서로 다른 두 줄이 각각 다른 패턴 하나씩을 만족합니다. 오독 지점: 두 조건을 `and`처럼 읽은 경우입니다. 검증 검색은 **각 줄 → 패턴 포함 여부 → 조건 통과 줄 수집**으로 읽습니다.",
     "side_card_ids": [
       "LANG_powershell_001"
     ],
-    "project_context": "SWAP-IN 원칙의 적용 후 확인 단계와 연결된다."
+    "project_context": "소스 패치 후 marker와 함수 이름이 실제 파일에 들어갔는지 검색해 확인하는 verification 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "list_comprehension",
+    "reading_goal_internal": "여러 소스 줄 중 두 검증 패턴 중 하나를 포함한 줄만 수집하는 filtered list comprehension을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`[item for item in items if condition]`은 조건이 참인 항목만 새 리스트에 넣는 filtered list comprehension입니다.",
+      "how_to_read": "반복 대상과 조건을 확인한 뒤 각 항목에서 조건이 True인지 계산합니다.",
+      "key_point": "원래 Select-String 검증 목적을 Python에서는 문자열 membership test와 `or` 조건으로 표현할 수 있습니다.",
+      "common_mistake": "두 문자열을 모두 포함해야 남는다고 생각하기 쉽습니다. 현재 조건은 `or`이므로 둘 중 하나만 포함해도 됩니다."
+    },
+    "teaching_example": {
+      "code": "lines = [\"START\", \"work()\", \"END\"]\nfound = [line for line in lines if \"START\" in line or \"work\" in line]",
+      "walkthrough": "START 줄과 work() 줄 두 개가 found에 남습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "FEATURE START가 있는 첫 줄과 sayHello가 있는 둘째 줄만 조건을 통과합니다.",
+      "why_correct": "filtered list comprehension의 `or` 조건 중 하나라도 True면 해당 줄이 결과에 포함되기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "1개",
+        "why_wrong": "서로 다른 두 줄이 각각 다른 패턴 하나씩을 만족합니다.",
+        "misread_step": "두 조건을 `and`처럼 읽은 경우입니다."
+      },
+      "takeaway": "검증 검색은 **각 줄 → 패턴 포함 여부 → 조건 통과 줄 수집**으로 읽습니다."
+    },
+    "target_statement": "matches = [line for line in lines if \"FEATURE START\" in line or \"sayHello\" in line]",
+    "focus_span": "[line for line in lines if \"FEATURE START\" in line or \"sayHello\" in line]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "testing_and_quality",
+    "coverage_topics": [
+      "patch verification",
+      "pattern search",
+      "feature marker",
+      "source inspection"
+    ],
+    "pedagogical_intent": "interpret_result"
   }
 ]

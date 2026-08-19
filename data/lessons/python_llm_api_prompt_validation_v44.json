@@ -1,452 +1,1061 @@
 [
-  {
-    "id": "PY44_L06_llm_api_request_001",
-    "level": 6,
-    "title": "LLM API request 읽기",
-    "concepts": [
-      "LLM_API",
-      "request",
-      "payload"
-    ],
-    "reading_goal": "LLM API에 질문과 설정을 요청 payload로 보내는 흐름을 이해한다.",
-    "code": "payload = {\n    'model': 'configured-model-id',\n    'messages': messages,\n    'temperature': 0.2\n}\nresponse = client.chat(**payload)",
-    "question_type": "meaning_choice",
-    "question": "payload의 역할은?",
-    "choices": [
-      "모델에 보낼 입력과 설정을 담는다",
-      "Git 커밋을 삭제한다",
-      "브라우저 캐시를 비운다",
-      "CSV 파일만 읽는다"
-    ],
-    "answer": "모델에 보낼 입력과 설정을 담는다",
-    "explanation": "payload는 이 예시 SDK 호출에 전달할 model ID, message 목록, 생성 option을 묶는다. 실제 field 이름과 호출 형식은 provider SDK 계약을 따라야 하며 model 별칭을 임의로 넣어도 동작하지 않는다. API key는 보통 payload가 아니라 SDK 설정이나 Authorization header로 안전하게 전달하고 로그에 남기지 않는다.",
-    "side_card_ids": [
-      "WEB_api_001"
-    ],
-    "project_context": "Qwen이나 GPT를 교육앱에 붙일 때 질문, 학년, 정책, 근거 context를 payload로 보낸다."
-  },
-  {
-    "id": "PY44_L06_llm_api_response_001",
-    "level": 6,
-    "title": "LLM API response 읽기",
-    "concepts": [
-      "if",
-      "LLM_API",
-      "response",
-      "message_content"
-    ],
-    "reading_goal": "LLM API 응답에서 실제 답변 텍스트를 꺼내는 위치를 이해한다.",
-    "code": "response = client.chat(**payload)\nif not response.get('choices'):\n    raise ValueError('missing choices')\ntext = response['choices'][0]['message']['content']",
-    "question_type": "meaning_choice",
-    "question": "위 코드에서 text에 들어가는 것은?",
-    "choices": [
-      "모델이 생성한 답변 내용",
-      "전체 Git 로그",
-      "서버 포트 번호",
-      "CSV의 첫 번째 컬럼명"
-    ],
-    "answer": "모델이 생성한 답변 내용",
-    "explanation": "성공 응답의 choices가 존재한다는 schema에서 첫 choice의 message.content를 text로 읽는다. 실제 API는 객체 속성이나 다른 schema를 쓸 수 있고 거절·tool call·빈 choices·오류 응답도 있으므로 provider 계약과 finish reason을 확인한 뒤 접근해야 한다.",
-    "side_card_ids": [
-      "WEB_api_001"
-    ],
-    "project_context": "응답 구조를 잘못 읽으면 모델이 답했는데도 앱에는 빈 답변처럼 보일 수 있다."
-  },
-  {
-    "id": "PY44_L07_system_prompt_001",
-    "level": 7,
-    "title": "system prompt 읽기",
-    "concepts": [
-      "system_prompt",
-      "instruction",
-      "policy"
-    ],
-    "reading_goal": "system prompt가 모델의 기본 역할과 규칙을 정한다는 점을 이해한다.",
-    "code": "messages = [\n    {'role': 'system', 'content': '초3 수준으로 설명하라'},\n    {'role': 'user', 'content': question}\n]",
-    "question_type": "meaning_choice",
-    "question": "system prompt의 역할에 가장 가까운 것은?",
-    "choices": [
-      "모델이 따라야 할 기본 역할과 규칙을 정한다",
-      "사용자 질문을 삭제한다",
-      "파일을 자동 압축한다",
-      "DB 테이블을 만든다"
-    ],
-    "answer": "모델이 따라야 할 기본 역할과 규칙을 정한다",
-    "explanation": "system 역할의 메시지는 사용자 질문보다 앞에서 모델의 기본 역할과 답변 규칙을 정한다. 예제에서는 ‘초3 수준’이라는 설명 난이도를 먼저 지정하고, 그다음 user 메시지의 실제 질문을 처리한다. 따라서 정답은 ‘모델이 따라야 할 기본 역할과 규칙을 정한다’이다. 다만 프롬프트만으로 규칙 준수가 보장되는 것은 아니므로 중요한 형식이나 안전 조건은 출력 검증도 함께 둬야 한다.",
-    "side_card_ids": [],
-    "project_context": "교육용 답변의 대상 수준, 설명 방식, 근거 사용 규칙과 금지 표현을 공통 지침으로 두는 위치다."
-  },
-  {
-    "id": "PY44_L07_user_prompt_001",
-    "level": 7,
-    "title": "user prompt 읽기",
-    "concepts": [
-      "user_prompt",
-      "question",
-      "task_input"
-    ],
-    "reading_goal": "user prompt가 실제 사용자 질문이나 작업 요청을 담는다는 점을 이해한다.",
-    "code": "messages = [\n    {'role': 'system', 'content': policy},\n    {'role': 'user', 'content': '비행기는 왜 날아?'}\n]",
-    "question_type": "meaning_choice",
-    "question": "user prompt에 들어가는 내용은?",
-    "choices": [
-      "사용자의 실제 질문이나 요청",
-      "항상 API 키 원문",
-      "GitHub 비밀번호",
-      "브라우저 아이콘"
-    ],
-    "answer": "사용자의 실제 질문이나 요청",
-    "explanation": "user message에는 처리할 실제 질문이나 요청을 넣는다. 일반적으로 system instruction보다 낮은 우선순위지만 model이 항상 우선순위를 완벽히 지킨다는 보안 보장은 없다. 외부 문서나 사용자 입력은 untrusted data로 취급하고 권한 검사, tool allowlist, 출력 검증을 model 밖에서 시행한다.",
-    "side_card_ids": [],
-    "project_context": "학생 질문, 학년, 과목, 문제 텍스트를 user 입력으로 묶어 보낼 수 있다."
-  },
-  {
-    "id": "PY44_L07_prompt_template_001",
-    "level": 7,
-    "title": "prompt template 읽기",
-    "concepts": [
-      "prompt_template",
-      "variable_slot",
-      "formatting"
-    ],
-    "reading_goal": "반복되는 프롬프트 구조에 변수만 채워 넣는 방식을 이해한다.",
-    "code": "template = '학년: {grade}\\n질문: {question}\\n근거: {context}'\nprompt = template.format(grade=grade, question=q, context=ctx)",
-    "question_type": "meaning_choice",
-    "question": "prompt template을 쓰는 이유는?",
-    "choices": [
-      "반복되는 프롬프트 구조를 안정적으로 재사용하기 위해",
-      "질문을 무조건 랜덤하게 만들기 위해",
-      "파일을 실행하지 않기 위해",
-      "API 응답을 삭제하기 위해"
-    ],
-    "answer": "반복되는 프롬프트 구조를 안정적으로 재사용하기 위해",
-    "explanation": "template은 grade, question, context를 같은 label과 순서로 조립해 누락을 줄인다. 구조의 일관성은 높이지만 입력 내용이 instruction처럼 해석되는 prompt injection을 막지는 않는다. untrusted context에는 명확한 delimiter를 쓰고 길이·형식 검증과 model 밖의 정책 집행을 함께 둔다.",
-    "side_card_ids": [
-      "PYV102_A7_AI_ML_TOOLCHAIN"
-    ],
-    "project_context": "학년, 질문, 근거, 금지어, 출력 형식을 항상 같은 구조로 넣는 데 유용하다."
-  },
-  {
-    "id": "PY44_L08_response_schema_001",
-    "level": 8,
-    "title": "response schema 읽기",
-    "concepts": [
-      "class",
-      "response_schema",
-      "structured_output",
-      "required_fields"
-    ],
-    "reading_goal": "모델 답변이 가져야 할 필드 구조를 미리 정하는 response schema를 이해한다.",
-    "code": "class ModelOutput(BaseModel):\n    answer: str\n    used_concepts: list[str]\n    student_check: str\n\nparsed = ModelOutput.model_validate_json(model_text)",
-    "question_type": "meaning_choice",
-    "question": "response schema의 목적은?",
-    "choices": [
-      "모델 출력에 필요한 필드가 있는지 확인하기 위해",
-      "모델이 아무 형식으로나 답하게 하기 위해",
-      "검색을 생략하기 위해",
-      "JSON 파일을 무조건 삭제하기 위해"
-    ],
-    "answer": "모델 출력에 필요한 필드가 있는지 확인하기 위해",
-    "explanation": "response schema는 필요한 field와 type을 선언하고 model_text가 그 구조를 만족하는지 검증한다. Python dict에 type 객체를 적는 것만으로 검증되지는 않으므로 이 예시는 Pydantic model_validate_json을 실제로 호출한다. 길이, 허용값, 추가 field, 업무 의미는 필요에 따라 더 검증한다.",
-    "side_card_ids": [],
-    "project_context": "Learning Coach Prompt Contract의 answer, used_concepts, blocked_terms 같은 필드 검증과 연결된다."
-  },
-  {
-    "id": "PY44_L08_json_mode_001",
-    "level": 8,
-    "title": "JSON 형식 응답 읽기",
-    "concepts": [
-      "JSON_output",
-      "structured_response",
-      "parser"
-    ],
-    "reading_goal": "LLM 응답을 JSON으로 받아 파싱하는 단계와, 필요한 필드를 별도로 검증하는 단계를 구분한다.",
-    "code": "prompt = '반드시 JSON으로 답하라: {\"answer\": ..., \"reason\": ...}'\nparsed = json.loads(model_text)",
-    "question_type": "meaning_choice",
-    "question": "JSON 형식의 응답을 요구하는 주된 이유는?",
-    "choices": [
-      "앱이 모델 출력을 안정적으로 파싱하기 위해",
-      "답변을 사람이 절대 못 읽게 하기 위해",
-      "항상 더 긴 답변을 만들기 위해",
-      "서버 비용을 0으로 만들기 위해"
-    ],
-    "answer": "앱이 모델 출력을 안정적으로 파싱하기 위해",
-    "explanation": "JSON 형식으로 받으면 앱이 model_text를 dict 같은 구조로 바꿔 answer와 reason을 각각 사용할 수 있다. 따라서 주된 이유는 ‘앱이 모델 출력을 안정적으로 파싱하기 위해’이다. 하지만 프롬프트에 JSON을 요구했다고 해서 항상 올바른 JSON이 오는 것은 아니며, json.loads()가 성공해도 필수 필드가 있다는 뜻은 아니다. 파싱 오류 처리와 answer·reason 필드 검증을 따로 둬야 한다.",
-    "side_card_ids": [
-      "PYV102_A7_AI_ML_TOOLCHAIN"
-    ],
-    "project_context": "교육앱에서 answer, hint, followup_question을 분리해 화면에 넣을 때 중요하다."
-  },
-  {
-    "id": "PY44_L08_output_parser_001",
-    "level": 8,
-    "title": "output parser 읽기",
-    "concepts": [
-      "try_except",
-      "output_parser",
-      "json_loads",
-      "parse_error"
-    ],
-    "reading_goal": "모델 출력 문자열을 앱이 쓰는 데이터 구조로 바꾸는 parser를 이해한다.",
-    "code": "try:\n    data = json.loads(model_text)\nexcept json.JSONDecodeError:\n    data = fallback_parse(model_text)",
-    "question_type": "meaning_choice",
-    "question": "output parser가 필요한 이유는?",
-    "choices": [
-      "모델 출력 문자열을 코드가 쓸 수 있는 구조로 바꾸기 위해",
-      "질문을 무조건 삭제하기 위해",
-      "모델 호출을 막기 위해",
-      "CSV 구분자를 바꾸기 위해"
-    ],
-    "answer": "모델 출력 문자열을 코드가 쓸 수 있는 구조로 바꾸기 위해",
-    "explanation": "json.loads는 JSON text를 Python 구조로 바꾸고 JSONDecodeError를 구분한다. fallback_parse가 잘못된 출력을 억지로 해석하면 의미가 바뀔 수 있으므로 허용 범위를 좁히고 결과에 동일한 schema validation을 적용해야 한다. 복구할 수 없으면 명확히 실패하거나 model에 형식 수정을 요청한다.",
-    "side_card_ids": [
-      "PYV161_A1_ENV_MAIN_CHECKLIST_FLOW"
-    ],
-    "project_context": "Qwen 응답을 교육앱 카드, 힌트, 추천 필드로 나누어 넣는 단계다."
-  },
-  {
-    "id": "PY44_L08_output_validation_001",
-    "level": 8,
-    "title": "output validation 읽기",
-    "concepts": [
-      "if",
-      "output_validation",
-      "schema_check",
-      "guardrail"
-    ],
-    "reading_goal": "모델 응답을 그대로 쓰기 전에 검증하는 이유를 이해한다.",
-    "code": "if 'answer' not in data:\n    raise ValueError('missing answer')\nif forbidden_term in data['answer']:\n    reject(data)",
-    "question_type": "meaning_choice",
-    "question": "output validation의 역할은?",
-    "choices": [
-      "필수 필드 누락이나 정책 위반을 잡는다",
-      "모델 답변을 무조건 통과시킨다",
-      "사용자 질문을 숨긴다",
-      "DB를 자동 백업한다"
-    ],
-    "answer": "필수 필드 누락이나 정책 위반을 잡는다",
-    "explanation": "첫 조건은 answer field 누락을 실패시키고, 둘째는 정의된 forbidden_term의 단순 포함 여부를 검사한다. 이런 문자열 검사는 철자 변형·우회·문맥을 놓칠 수 있어 완전한 정책 집행 장치가 아니다. schema, type·길이, allowlist, 근거 검사와 위험도에 맞는 독립 검토를 조합한다.",
-    "side_card_ids": [
-      "AI_guardrail_001"
-    ],
-    "project_context": "초3 답변에 금지 개념이 섞이거나 JSON 필드가 빠지는 문제를 막는 단계다."
-  },
-  {
-    "id": "PY44_L09_retry_policy_001",
-    "level": 9,
-    "title": "retry policy 읽기",
-    "concepts": [
-      "if",
-      "for",
-      "return",
-      "try_except",
-      "range",
-      "retry",
-      "transient_error",
-      "backoff"
-    ],
-    "reading_goal": "일시적 API 실패에 대해 재시도하는 정책을 이해한다.",
-    "code": "for attempt in range(3):\n    try:\n        return call_llm(payload)\n    except TransientProviderError:\n        if attempt == 2:\n            raise\n        sleep(2 ** attempt)",
-    "question_type": "meaning_choice",
-    "question": "retry policy가 필요한 경우는?",
-    "choices": [
-      "일시적인 timeout이나 네트워크 오류가 날 때",
-      "정답이 마음에 안 들 때 무조건 반복할 때",
-      "파일을 지우고 싶을 때",
-      "Git 브랜치를 바꿀 때"
-    ],
-    "answer": "일시적인 timeout이나 네트워크 오류가 날 때",
-    "explanation": "일시적인 timeout, 연결 실패, 재시도 가능한 5xx에는 제한된 retry와 backoff가 도움이 된다. 마지막 실패는 숨기지 않고 전달하며, 인증 오류·잘못된 input·정책 거절은 그대로 반복하지 않는다. 요청이 과금되거나 일부 처리됐을 수 있으므로 provider의 idempotency 지원도 확인한다.",
-    "side_card_ids": [
-      "AI_cost_001"
-    ],
-    "project_context": "LLM API, 임베딩 API, 검색 API 호출에서 timeout과 rate limit을 다룰 때 필요하다."
-  },
-  {
-    "id": "PY44_L09_fallback_model_001",
-    "level": 9,
-    "title": "fallback model 읽기",
-    "concepts": [
-      "try_except",
-      "fallback",
-      "model_adapter",
-      "provider_switch"
-    ],
-    "reading_goal": "주 모델 실패 시 대체 모델이나 대체 경로로 전환하는 방식을 이해한다.",
-    "code": "try:\n    answer = qwen.generate(prompt)\nexcept TransientProviderError:\n    answer = gpt.generate(prompt)\nvalidate_output(answer)",
-    "question_type": "meaning_choice",
-    "question": "fallback model의 목적은?",
-    "choices": [
-      "주 모델이 실패할 때 서비스를 완전히 멈추지 않게 하기 위해",
-      "항상 두 모델 답을 섞기 위해",
-      "API 키를 화면에 보여주기 위해",
-      "검색 결과를 삭제하기 위해"
-    ],
-    "answer": "주 모델이 실패할 때 서비스를 완전히 멈추지 않게 하기 위해",
-    "explanation": "주 provider의 일시 장애에 fallback을 사용하면 가용성을 높일 수 있다. 인증 오류나 잘못된 prompt까지 다른 model에 보내면 비용만 늘 수 있으므로 전환 조건을 좁힌다. data residency, 가격, latency, safety·schema·quality 차이를 확인하고 fallback 결과도 같은 contract로 검증한다.",
-    "side_card_ids": [
-      "PYV102_A7_AI_ML_TOOLCHAIN"
-    ],
-    "project_context": "Qwen, GPT, 로컬 Llama를 adapter로 감싸두면 provider switch가 쉬워진다."
-  },
-  {
-    "id": "PY44_L09_timeout_rate_limit_001",
-    "level": 9,
-    "title": "timeout / rate limit 읽기",
-    "concepts": [
-      "try_except",
-      "timeout",
-      "rate_limit",
-      "API_error"
-    ],
-    "reading_goal": "LLM API에서 timeout과 rate limit이 무엇인지 구분한다.",
-    "code": "try:\n    response = client.chat(**payload, timeout=30)\nexcept RateLimitError as error:\n    retry_after = error.retry_after\n    wait_with_limit(retry_after)",
-    "question_type": "meaning_choice",
-    "question": "429 rate limit에 가까운 의미는?",
-    "choices": [
-      "요청을 너무 많이 보내 제한에 걸렸다",
-      "JSON 문법이 항상 맞다",
-      "파일이 너무 작다",
-      "브라우저가 CSS를 못 읽는다"
-    ],
-    "answer": "요청을 너무 많이 보내 제한에 걸렸다",
-    "explanation": "timeout은 정해진 시간 안에 호출이 끝나지 않은 경우이고 429 rate limit은 적용된 요청량 한도를 넘은 경우다. 429에서는 provider의 Retry-After와 quota 정책을 따르고 동시성·요청 빈도를 낮춘다. 둘 다 무조건 재시도하지 말고 최대 시도와 전체 시간 budget을 둔다.",
-    "side_card_ids": [
-      "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
-    ],
-    "project_context": "교육 MVP에서 동시 사용자나 반복 질문이 늘면 비용과 rate limit을 함께 관리해야 한다."
-  },
-  {
-    "id": "PY44_L09_cost_logging_001",
-    "level": 9,
-    "title": "cost logging 읽기",
-    "concepts": [
-      "cost_logging",
-      "token_usage",
-      "observability"
-    ],
-    "reading_goal": "LLM 호출 비용과 토큰 사용량을 로그로 남기는 이유를 이해한다.",
-    "code": "log = {\n    'model': model,\n    'input_tokens': usage.input_tokens,\n    'output_tokens': usage.output_tokens,\n    'cost_usd': cost\n}",
-    "question_type": "meaning_choice",
-    "question": "cost logging이 중요한 이유는?",
-    "choices": [
-      "어떤 기능이 비용을 많이 쓰는지 추적하기 위해",
-      "답변을 무조건 길게 만들기 위해",
-      "API 키를 공개하기 위해",
-      "검증을 생략하기 위해"
-    ],
-    "answer": "어떤 기능이 비용을 많이 쓰는지 추적하기 위해",
-    "explanation": "model과 실제 provider usage token을 기록하면 feature별 사용량과 비용 추정치를 집계할 수 있다. 가격표와 cache·batch 할인은 바뀔 수 있으므로 cost_usd 계산에 pricing version과 통화를 남기고 청구 내역과 대조한다. prompt·response 원문 대신 필요한 metadata만 기록해 개인정보와 비밀 노출을 줄인다.",
-    "side_card_ids": [
-      "PYV102_A7_AI_ML_TOOLCHAIN"
-    ],
-    "project_context": "AWS/GPU/LLM 크레딧을 관리하듯 서비스 API 비용도 feature별로 봐야 한다."
-  },
-  {
-    "id": "PY44_L10_tool_calling_001",
-    "level": 10,
-    "title": "tool calling 읽기",
-    "concepts": [
-      "tool_calling",
-      "function_call",
-      "external_tool"
-    ],
-    "reading_goal": "LLM이 도구 이름과 입력값을 구조화해 요청하고, 애플리케이션이 검증·실행한 결과를 다시 전달하는 흐름을 이해한다.",
-    "code": "tools = [search_docs, solve_math, get_profile]\n\nmodel requests:\n  tool_name = \"search_docs\"\n  arguments = {\"query\": question}\n\napp validates and runs the tool",
-    "question_type": "meaning_choice",
-    "question": "tool calling의 핵심은?",
-    "choices": [
-      "모델이 필요한 외부 기능 호출을 구조화해서 요청하는 것",
-      "모든 도구를 항상 동시에 실행하는 것",
-      "검색 없이 답변만 길게 쓰는 것",
-      "파일 확장자를 숨기는 것"
-    ],
-    "answer": "모델이 필요한 외부 기능 호출을 구조화해서 요청하는 것",
-    "explanation": "model은 tool_name과 arguments를 제안하고 application이 실제 실행 여부를 결정한다. 앱은 server-side allowlist, argument schema, 현재 사용자의 권한, resource 범위와 rate limit을 확인해야 한다. 쓰기·결제 같은 side effect에는 확인과 idempotency를 두고, tool 결과도 untrusted input으로 취급해 prompt injection과 민감정보 노출을 막는다.",
-    "side_card_ids": [
-      "AI_tool_calling_001"
-    ],
-    "project_context": "자연어 문제를 수식 변환 후 계산 도구에 넘기거나, RAG 검색 도구를 호출하는 구조와 연결된다."
-  },
-  {
-    "id": "PY44_L10_hallucination_guard_001",
-    "level": 10,
-    "title": "hallucination guard 읽기",
-    "concepts": [
-      "if",
-      "return",
-      "hallucination_guard",
-      "evidence",
-      "safety_check"
-    ],
-    "reading_goal": "근거 없는 답변을 줄이기 위한 검증 장치를 이해한다.",
-    "code": "if answer_claims_not_supported(answer, evidence):\n    return revise_or_refuse(answer)",
-    "question_type": "meaning_choice",
-    "question": "hallucination guard의 역할은?",
-    "choices": [
-      "근거로 확인되지 않는 주장을 줄인다",
-      "모델 답변을 항상 그대로 통과시킨다",
-      "검색 근거를 삭제한다",
-      "토큰 수를 무조건 늘린다"
-    ],
-    "answer": "근거로 확인되지 않는 주장을 줄인다",
-    "explanation": "answer_claims_not_supported가 신뢰할 수 있게 각 claim과 evidence를 비교한다면 unsupported 답을 revise하거나 refuse할 수 있다. 하지만 자동 checker도 오류가 있고 한 함수가 hallucination을 완전히 막지는 못한다. claim별 citation, source 대조, calibrated threshold, 평가 dataset과 고위험 영역의 사람 검토를 함께 쓴다.",
-    "side_card_ids": [
-      "AI_hallucination_001"
-    ],
-    "project_context": "Cross-Verified RAG에서 evidence-first 검증과 soft penalty 로직으로 이어진다."
-  },
-  {
-    "id": "PY44_L10_model_adapter_001",
-    "level": 10,
-    "title": "model adapter 읽기",
-    "concepts": [
-      "def",
-      "function",
-      "class",
-      "model_adapter",
-      "provider_switch",
-      "interface"
-    ],
-    "reading_goal": "모델 제공자별 API 차이를 adapter로 감싸는 이유를 이해한다.",
-    "code": "class LLMAdapter:\n    def generate(self, messages):\n        raise NotImplementedError\n\nclass QwenAdapter(LLMAdapter): ...\nclass GPTAdapter(LLMAdapter): ...",
-    "question_type": "meaning_choice",
-    "question": "model adapter를 두는 장점은?",
-    "choices": [
-      "모델 제공자가 바뀌어도 호출하는 쪽 수정 범위를 줄인다",
-      "모든 모델 출력이 자동으로 정답이 된다",
-      "API 키가 필요 없어진다",
-      "검색 인덱스를 삭제한다"
-    ],
-    "answer": "모델 제공자가 바뀌어도 호출하는 쪽 수정 범위를 줄인다",
-    "explanation": "adapter는 provider마다 다른 요청, 응답, 오류를 generate(messages)라는 내부 contract로 맞춘다. 공통 timeout과 관측 로직을 둘 수 있지만 retry를 adapter 안팎에서 중복하지 않도록 책임을 정한다. tool calling, context 한도, streaming 같은 capability 차이는 최저 공통분모로 숨기지 말고 명시적으로 노출하거나 거절한다.",
-    "side_card_ids": [],
-    "project_context": "로컬 Llama, Qwen, GPT를 MVP 상황에 맞게 바꿔 끼우려면 adapter가 필요하다."
-  },
-  {
-    "id": "PY44_L10_evidence_grounded_generation_001",
-    "level": 10,
-    "title": "evidence-grounded generation 읽기",
-    "concepts": [
-      "evidence_grounded_generation",
-      "RAG",
-      "citation"
-    ],
-    "reading_goal": "검색 근거를 답변 생성에 강하게 묶는 구조를 이해한다.",
-    "code": "prompt = f'''\nQuestion: {question}\nEvidence:\n{context}\nRule: answer only from evidence\n'''",
-    "question_type": "meaning_choice",
-    "question": "evidence-grounded generation의 핵심 규칙은?",
-    "choices": [
-      "주어진 근거 안에서만 답변하게 하는 것",
-      "근거를 보지 않고 기억으로만 답하는 것",
-      "질문을 자동으로 삭제하는 것",
-      "항상 긴 소설처럼 답하는 것"
-    ],
-    "answer": "주어진 근거 안에서만 답변하게 하는 것",
-    "explanation": "prompt는 model에게 context 안의 evidence만 사용하라고 지시한다. 이는 원하는 동작을 유도할 뿐 보장하지 않으므로, 근거가 없을 때 거절 규칙, claim별 citation, answer-evidence 검증이 필요하다. context 자체가 신뢰할 수 있는 출처인지와 그 안의 명령형 text가 prompt injection이 아닌지도 확인한다.",
-    "side_card_ids": [
-      "PYV102_A7_AI_ML_TOOLCHAIN"
-    ],
-    "project_context": "교육 답변, KG 질의응답, 검증형 AI Proxy 모두 근거-우선 생성이 핵심이다."
-  }
+    {
+        "id":  "PY44_L06_llm_api_request_001",
+        "level":  6,
+        "title":  "`**payload`로 설정 dict를 키워드 인자로 펼치기",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "`**payload`가 LLM 요청의 모델·메시지·생성 설정을 keyword argument로 묶어 전달하는 의미를 읽는다.",
+        "code":  "class DemoClient:\n    def chat(self, model, messages, temperature):\n        return {\"model\": model, \"message_count\": len(messages), \"temperature\": temperature}\n\nmessages = [{\"role\": \"user\", \"content\": \"상태를 요약해 줘\"}]\npayload = {\n    \"model\": \"configured-model-id\",\n    \"messages\": messages,\n    \"temperature\": 0.2,\n}\nclient = DemoClient()\nresponse = client.chat(**payload)\nprint(response[\"message_count\"])",
+        "question_type":  "meaning_choice",
+        "question":  "`client.chat(**payload)`에서 `payload`의 항목들을 펼쳐 전달하는 전체 목적은 무엇인가?",
+        "choices":  [
+                        "LLM에 보낼 모델, 대화 메시지, 생성 설정을 이름 있는 인자로 함께 전달한다",
+                        "payload dict를 문자열 하나로 바꿔 전송한다",
+                        "응답의 choices에서 답변 텍스트를 꺼낸다",
+                        "temperature 값만 따로 전송한다"
+                    ],
+        "answer":  "LLM에 보낼 모델, 대화 메시지, 생성 설정을 이름 있는 인자로 함께 전달한다",
+        "explanation":  "1) payload에는 model, messages, temperature가 들어 있다. 2) `**payload`가 각 key-value를 keyword argument로 펼친다. 3) `client.chat(...)`은 그 값들을 하나의 LLM 요청 설정으로 받는다. LLM에 보낼 모델, 대화 메시지, 생성 설정을 이름 있는 인자로 함께 전달한다는 이 카드의 Python target을 legacy/domain 목적과 연결해 해석한 설명입니다. 헷갈리기 쉬운 오답: payload dict를 문자열 하나로 바꿔 전송한다 이 선택지는 코드의 일부 문법이나 주변 상황만 보고 카드의 핵심 의미를 놓칩니다. 오독 지점: `**`를 단순 dict 펼치기로만 보고 payload가 모델 입력과 생성 설정을 묶는 요청 단위라는 의미를 놓치기 쉽습니다. LLM 요청 코드는 **요청 payload 구성 → `**`로 keyword 전달 → 응답 수신** 흐름으로 읽습니다.",
+        "side_card_ids":  [
+                              "WEB_api_001"
+                          ],
+        "project_context":  "LLM SDK에 모델명·메시지·생성 옵션을 전달할 때 설정 dict를 호출 인자로 펼치는 코드를 읽는 맥락이다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "`**payload`가 LLM 요청의 모델·메시지·생성 설정을 keyword argument로 묶어 전달하는 의미를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "함수 호출에서 `**`를 dict 앞에 붙이면 dict의 key를 인자 이름으로, value를 그 인자의 값으로 펼쳐 전달합니다.",
+                                    "how_to_read":  "`func(**settings)`를 보면 먼저 `settings`가 어떤 key-value를 갖는지 확인합니다. 그다음 각 항목이 `func(key=value, ...)` 형태로 전달된다고 읽습니다.",
+                                    "key_point":  "`**payload`의 Python 문법 의미와 LLM 요청 payload의 도메인 역할을 함께 읽어야 합니다.",
+                                    "common_mistake":  "`**`를 단순 dict 펼치기로만 보고 payload가 모델 입력과 생성 설정을 묶는 요청 단위라는 의미를 놓치기 쉽습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "settings = {\"host\": \"localhost\", \"port\": 8000}\nconnect(**settings)",
+                                 "walkthrough":  "`settings`의 `host`와 `port`가 각각 이름 있는 인자로 펼쳐져 `connect(host=\"localhost\", port=8000)`처럼 전달됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) payload에는 model, messages, temperature가 들어 있다. 2) `**payload`가 각 key-value를 keyword argument로 펼친다. 3) `client.chat(...)`은 그 값들을 하나의 LLM 요청 설정으로 받는다.",
+                                   "why_correct":  "LLM에 보낼 모델, 대화 메시지, 생성 설정을 이름 있는 인자로 함께 전달한다는 이 카드의 Python target을 legacy/domain 목적과 연결해 해석한 설명입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "payload dict를 문자열 하나로 바꿔 전송한다",
+                                                               "why_wrong":  "이 선택지는 코드의 일부 문법이나 주변 상황만 보고 카드의 핵심 의미를 놓칩니다.",
+                                                               "misread_step":  "`**`를 단순 dict 펼치기로만 보고 payload가 모델 입력과 생성 설정을 묶는 요청 단위라는 의미를 놓치기 쉽습니다."
+                                                           },
+                                   "takeaway":  "LLM 요청 코드는 **요청 payload 구성 → `**`로 keyword 전달 → 응답 수신** 흐름으로 읽습니다."
+                               },
+        "target_statement":  "response = client.chat(**payload)",
+        "focus_span":  "**payload",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "llm_api",
+                                "request_payload",
+                                "keyword_arguments"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY44_L06_llm_api_response_001",
+        "level":  6,
+        "title":  "중첩된 응답 구조를 바깥에서 안쪽으로 따라가기",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "dict key lookup과 list index가 이어진 subscription chain을 한 단계씩 따라가 최종 값을 찾는다.",
+        "code":  "response = {\n    \"choices\": [\n        {\"message\": {\"content\": \"센서 상태를 확인하세요.\"}}\n    ]\n}\ntext = response[\"choices\"][0][\"message\"][\"content\"]\nprint(text)",
+        "question_type":  "output_prediction",
+        "question":  "마지막 `print(text)`가 출력하는 문자열은 무엇인가?",
+        "choices":  [
+                        "choices",
+                        "message",
+                        "content",
+                        "센서 상태를 확인하세요."
+                    ],
+        "answer":  "센서 상태를 확인하세요.",
+        "explanation":  "`response[\"choices\"]`는 choice 하나가 들어 있는 리스트다. `[0]`은 그 첫 dict를 꺼낸다. 그 dict의 `message` 값은 또 다른 dict이고, 마지막 `content` key의 값이 `센서 상태를 확인하세요.`다. 이 문자열이 text에 저장되어 출력된다. 대괄호 접근을 왼쪽부터 한 단계씩 적용하면 최종 값이 정확히 `센서 상태를 확인하세요.`가 됩니다. 헷갈리기 쉬운 오답: content `content`는 key 이름이고, 대괄호 조회의 결과는 그 key에 연결된 값입니다. 오독 지점: 마지막 `[\"content\"]`에서 key 이름 자체를 답으로 보지 말고, 그 key가 가리키는 실제 문자열을 확인해야 합니다. 중첩 subscription은 왼쪽부터 한 단계씩 자료형과 값을 확인하며 따라갑니다.",
+        "side_card_ids":  [
+                              "WEB_api_001"
+                          ],
+        "project_context":  "LLM이나 API 응답의 중첩 구조에서 실제 답변 필드를 꺼내는 코드를 읽는 맥락이다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "dict key lookup과 list index가 이어진 subscription chain을 한 단계씩 따라가 최종 값을 찾는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "대괄호 접근은 리스트에서는 위치 번호로, dict에서는 key로 값을 꺼냅니다. 중첩 데이터에서는 이 접근이 여러 번 이어질 수 있습니다.",
+                                    "how_to_read":  "긴 대괄호 체인을 한 번에 읽지 말고 왼쪽부터 결과 자료형을 확인합니다. `response[\"choices\"]`의 결과가 리스트라면 다음 `[0]`은 그 리스트의 첫 항목을 고르는 식입니다.",
+                                    "key_point":  "각 대괄호는 바로 앞 표현식의 결과에 적용됩니다. 그래서 앞 단계가 어떤 자료형을 반환하는지 알아야 다음 대괄호의 의미를 정확히 읽을 수 있습니다.",
+                                    "common_mistake":  "`[\"choices\"][0][\"message\"][\"content\"]`를 하나의 긴 key처럼 보기 쉽습니다. 실제로는 dict 조회 → list 인덱스 → dict 조회 → dict 조회의 네 단계입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "data = {\"rows\": [{\"meta\": {\"score\": 92}}]}\nscore = data[\"rows\"][0][\"meta\"][\"score\"]\nprint(score)",
+                                 "walkthrough":  "먼저 `rows` 리스트를 꺼내고, `[0]`으로 첫 row를 고른 뒤, `meta`, `score` key를 차례로 따라가 92를 얻습니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`response[\"choices\"]`는 choice 하나가 들어 있는 리스트다. `[0]`은 그 첫 dict를 꺼낸다. 그 dict의 `message` 값은 또 다른 dict이고, 마지막 `content` key의 값이 `센서 상태를 확인하세요.`다. 이 문자열이 text에 저장되어 출력된다.",
+                                   "why_correct":  "대괄호 접근을 왼쪽부터 한 단계씩 적용하면 최종 값이 정확히 `센서 상태를 확인하세요.`가 됩니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "content",
+                                                               "why_wrong":  "`content`는 key 이름이고, 대괄호 조회의 결과는 그 key에 연결된 값입니다.",
+                                                               "misread_step":  "마지막 `[\"content\"]`에서 key 이름 자체를 답으로 보지 말고, 그 key가 가리키는 실제 문자열을 확인해야 합니다."
+                                                           },
+                                   "takeaway":  "중첩 subscription은 왼쪽부터 한 단계씩 자료형과 값을 확인하며 따라갑니다."
+                               },
+        "target_statement":  "text = response[\"choices\"][0][\"message\"][\"content\"]",
+        "focus_span":  "response[\"choices\"][0][\"message\"][\"content\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "llm_api",
+                                "response_schema",
+                                "nested_data"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY44_L07_system_prompt_001",
+        "level":  7,
+        "title":  "system role인지 문자열 비교로 판정하기",
+        "concepts":  [
+                         "comparison",
+                         "subscription",
+                         "assignment"
+                     ],
+        "reading_goal":  "중첩 subscription으로 읽어 온 role 문자열을 `==`로 비교해 system 메시지 여부를 Boolean으로 판정하는 표현식을 읽는다.",
+        "code":  "messages = [\n    {\"role\": \"system\", \"content\": \"초3 수준으로 설명하라\"},\n    {\"role\": \"user\", \"content\": \"비행기는 왜 날아?\"},\n]\nis_system = messages[0][\"role\"] == \"system\"\nprint(is_system)",
+        "question_type":  "multiple_choice",
+        "question":  "비교식 실행 뒤 `is_system`에 저장되는 값은 무엇인가?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "\"system\"",
+                        "0"
+                    ],
+        "answer":  "True",
+        "explanation":  "`messages[0]`은 첫 dict이고 그 dict의 `role` 값은 `system`입니다. 따라서 비교는 `\"system\" == \"system\"`이 되고 결과는 True입니다. 양쪽 문자열 값이 정확히 같기 때문입니다. 헷갈리기 쉬운 오답: \"system\" `messages[0][\"role\"]`의 중간 값은 `system`이지만 `==` 비교의 최종 결과는 Boolean입니다. 오독 지점: subscription 결과에서 멈추지 말고 바깥 비교 연산까지 끝까지 읽어야 합니다. 비교식은 입력 문자열 자체가 아니라 True/False를 결과로 만듭니다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "교육용 LLM 요청에서 첫 메시지가 system 역할인지 확인하는 흐름을 단순화한 코드다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "중첩 subscription으로 읽어 온 role 문자열을 `==`로 비교해 system 메시지 여부를 Boolean으로 판정하는 표현식을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`==` 비교는 왼쪽 값과 오른쪽 값이 같은지 확인하고 결과를 True 또는 False로 만듭니다.",
+                                    "how_to_read":  "먼저 왼쪽 표현식이 실제로 어떤 값을 만드는지 계산한 뒤, 그 값과 오른쪽 값을 비교합니다.",
+                                    "key_point":  "system prompt라는 LLM 개념보다 Python에서 결정적인 부분은 `messages[0][\"role\"]`이 만든 문자열과 `\"system\"`의 동등 비교입니다.",
+                                    "common_mistake":  "첫 메시지라서 무조건 system이라고 판단하면 안 됩니다. 실제 코드에서는 role 문자열을 읽고 `==` 비교 결과로 판정합니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "events = [{\"type\": \"notice\"}, {\"type\": \"error\"}]\nis_notice = events[0][\"type\"] == \"notice\"\nprint(is_notice)",
+                                 "walkthrough":  "첫 dict의 type 값은 `notice`이고 오른쪽도 `notice`이므로 비교 결과는 True입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`messages[0]`은 첫 dict이고 그 dict의 `role` 값은 `system`입니다. 따라서 비교는 `\"system\" == \"system\"`이 되고 결과는 True입니다.",
+                                   "why_correct":  "양쪽 문자열 값이 정확히 같기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "\"system\"",
+                                                               "why_wrong":  "`messages[0][\"role\"]`의 중간 값은 `system`이지만 `==` 비교의 최종 결과는 Boolean입니다.",
+                                                               "misread_step":  "subscription 결과에서 멈추지 말고 바깥 비교 연산까지 끝까지 읽어야 합니다."
+                                                           },
+                                   "takeaway":  "비교식은 입력 문자열 자체가 아니라 True/False를 결과로 만듭니다."
+                               },
+        "target_statement":  "is_system = messages[0][\"role\"] == \"system\"",
+        "focus_span":  "messages[0][\"role\"] == \"system\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "system message",
+                                "role",
+                                "instruction",
+                                "message list"
+                            ],
+        "pedagogical_intent":  "predict_output"
+    },
+    {
+        "id":  "PY44_L07_user_prompt_001",
+        "level":  7,
+        "title":  "중첩 subscription으로 user 질문 꺼내기",
+        "concepts":  [
+                         "subscription",
+                         "assignment"
+                     ],
+        "reading_goal":  "리스트 인덱스 접근 뒤 dict key 접근이 연속된 `messages[1][\"content\"]` 표현식을 왼쪽부터 읽어 실제 사용자 질문 문자열을 찾는다.",
+        "code":  "messages = [\n    {\"role\": \"system\", \"content\": \"간단히 설명하라\"},\n    {\"role\": \"user\", \"content\": \"비행기는 왜 날아?\"},\n]\nquestion = messages[1][\"content\"]\nprint(question)",
+        "question_type":  "multiple_choice",
+        "question":  "`messages[1][\"content\"]`가 꺼내 `question`에 저장하는 값은 무엇인가?",
+        "choices":  [
+                        "\"비행기는 왜 날아?\"",
+                        "\"간단히 설명하라\"",
+                        "\"user\"",
+                        "\"system\""
+                    ],
+        "answer":  "\"비행기는 왜 날아?\"",
+        "explanation":  "인덱스 1은 두 번째 dict인 user 메시지를 선택합니다. 그 dict의 `content` key 값은 `비행기는 왜 날아?`이므로 그 문자열이 question에 대입됩니다. 리스트 인덱스 접근과 dict key 접근을 왼쪽부터 차례로 적용한 결과입니다. 헷갈리기 쉬운 오답: \"간단히 설명하라\" 그 값은 인덱스 0의 system 메시지 content입니다. 오독 지점: 인덱스 1이 두 번째 원소라는 점을 먼저 확인해야 합니다. 연속된 subscription은 한 단계씩 왼쪽부터 계산하면 안전하게 읽을 수 있습니다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "system 지침과 user 질문을 같은 messages 리스트에 넣은 뒤 실제 질문 문자열만 꺼내는 흐름이다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "리스트 인덱스 접근 뒤 dict key 접근이 연속된 `messages[1][\"content\"]` 표현식을 왼쪽부터 읽어 실제 사용자 질문 문자열을 찾는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "subscription은 대괄호로 sequence의 인덱스나 dict의 key를 지정해 내부 값을 꺼내는 표현식입니다.",
+                                    "how_to_read":  "대괄호가 연속되면 왼쪽부터 단계적으로 읽습니다. 먼저 `messages[1]`을 계산하고 그 결과에 다시 `[\"content\"]`를 적용합니다.",
+                                    "key_point":  "첫 번째 `[1]`은 메시지 하나를 고르고 두 번째 `[\"content\"]`는 그 메시지 안의 내용 값을 고릅니다.",
+                                    "common_mistake":  "`[1]`을 첫 번째 항목으로 착각하기 쉽습니다. Python 인덱스는 0부터 시작하므로 1은 두 번째 메시지입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "records = [\n    {\"kind\": \"system\", \"text\": \"규칙\"},\n    {\"kind\": \"user\", \"text\": \"도와줘\"},\n]\ntext = records[1][\"text\"]\nprint(text)",
+                                 "walkthrough":  "`records[1]`은 두 번째 dict이고 그 dict의 `text` 값은 `도와줘`이므로 `text`에 그 문자열이 저장됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "인덱스 1은 두 번째 dict인 user 메시지를 선택합니다. 그 dict의 `content` key 값은 `비행기는 왜 날아?`이므로 그 문자열이 question에 대입됩니다.",
+                                   "why_correct":  "리스트 인덱스 접근과 dict key 접근을 왼쪽부터 차례로 적용한 결과입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "\"간단히 설명하라\"",
+                                                               "why_wrong":  "그 값은 인덱스 0의 system 메시지 content입니다.",
+                                                               "misread_step":  "인덱스 1이 두 번째 원소라는 점을 먼저 확인해야 합니다."
+                                                           },
+                                   "takeaway":  "연속된 subscription은 한 단계씩 왼쪽부터 계산하면 안전하게 읽을 수 있습니다."
+                               },
+        "target_statement":  "question = messages[1][\"content\"]",
+        "focus_span":  "messages[1][\"content\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "user message",
+                                "question",
+                                "task input",
+                                "message list"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY44_L07_prompt_template_001",
+        "level":  7,
+        "title":  "format 메서드로 prompt template 채우기",
+        "concepts":  [
+                         "call",
+                         "argument_passing",
+                         "assignment"
+                     ],
+        "reading_goal":  "문자열 `.format(...)` method call이 이름 있는 placeholder와 keyword argument를 대응시켜 최종 문자열을 만드는 흐름을 읽는다.",
+        "code":  "template = \"학년={grade} | 질문={question}\"\nprompt = template.format(grade=3, question=\"왜 비가 와?\")\nprint(prompt)",
+        "question_type":  "multiple_choice",
+        "question":  "`.format(...)` 호출 뒤 `prompt`에 저장되는 문자열은 무엇인가?",
+        "choices":  [
+                        "\"학년=3 | 질문=왜 비가 와?\"",
+                        "\"학년={grade} | 질문={question}\"",
+                        "\"grade=3 | question=왜 비가 와?\"",
+                        "\"학년=왜 비가 와? | 질문=3\""
+                    ],
+        "answer":  "\"학년=3 | 질문=왜 비가 와?\"",
+        "explanation":  "template에는 `{grade}`와 `{question}` 두 자리가 있습니다. format 호출의 `grade=3`이 첫 자리를, `question=\"왜 비가 와?\"`가 둘째 자리를 채웁니다. 그래서 최종 문자열은 `학년=3 | 질문=왜 비가 와?`입니다. format의 keyword argument 이름이 같은 이름의 placeholder와 대응하기 때문입니다. 헷갈리기 쉬운 오답: \"학년={grade} | 질문={question}\" 이 문자열은 format 호출 전의 template 원본입니다. 오독 지점: 대입문 오른쪽의 `.format(...)` 호출 결과까지 계산해야 합니다. `.format(name=value)`는 문자열의 같은 이름 placeholder를 해당 값으로 치환한 새 문자열을 반환합니다.",
+        "side_card_ids":  [
+                              "PYV102_A7_AI_ML_TOOLCHAIN"
+                          ],
+        "project_context":  "학년과 실제 질문처럼 매 요청마다 달라지는 값을 같은 프롬프트 구조에 넣는 상황을 단순화한 코드다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "문자열 `.format(...)` method call이 이름 있는 placeholder와 keyword argument를 대응시켜 최종 문자열을 만드는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "method call은 객체 뒤에 `.메서드이름(...)`을 붙여 그 객체에 관련된 기능을 실행하는 호출입니다.",
+                                    "how_to_read":  "먼저 호출 대상인 문자열과 placeholder 이름을 확인하고 괄호 안 keyword argument의 이름이 어느 placeholder와 대응하는지 찾습니다.",
+                                    "key_point":  "`grade=3`은 `{grade}`에, `question=\"왜 비가 와?\"`는 `{question}`에 들어갑니다. 인자 순서보다 이름 대응이 중요합니다.",
+                                    "common_mistake":  "placeholder 중괄호가 결과 문자열에도 그대로 남는다고 생각하기 쉽습니다. `.format(...)` 호출이 성공하면 해당 자리가 전달된 값으로 치환됩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "template = \"이름={name} | 점수={score}\"\ntext = template.format(name=\"민수\", score=90)\nprint(text)",
+                                 "walkthrough":  "`{name}`에는 `민수`, `{score}`에는 90이 들어가므로 결과는 `이름=민수 | 점수=90`입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "template에는 `{grade}`와 `{question}` 두 자리가 있습니다. format 호출의 `grade=3`이 첫 자리를, `question=\"왜 비가 와?\"`가 둘째 자리를 채웁니다. 그래서 최종 문자열은 `학년=3 | 질문=왜 비가 와?`입니다.",
+                                   "why_correct":  "format의 keyword argument 이름이 같은 이름의 placeholder와 대응하기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "\"학년={grade} | 질문={question}\"",
+                                                               "why_wrong":  "이 문자열은 format 호출 전의 template 원본입니다.",
+                                                               "misread_step":  "대입문 오른쪽의 `.format(...)` 호출 결과까지 계산해야 합니다."
+                                                           },
+                                   "takeaway":  "`.format(name=value)`는 문자열의 같은 이름 placeholder를 해당 값으로 치환한 새 문자열을 반환합니다."
+                               },
+        "target_statement":  "prompt = template.format(grade=3, question=\"왜 비가 와?\")",
+        "focus_span":  "template.format(grade=3, question=\"왜 비가 와?\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "prompt template",
+                                "placeholder",
+                                "formatting",
+                                "reusable prompt"
+                            ],
+        "pedagogical_intent":  "predict_output"
+    },
+    {
+        "id":  "PY44_L08_response_schema_001",
+        "level":  8,
+        "title":  "all()로 모델 응답의 필수 필드 검증하기",
+        "concepts":  [
+                         "call",
+                         "membership_test",
+                         "generator_expression",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "generator가 만든 여러 membership 결과를 all()이 하나의 boolean으로 합치는 순서를 읽는다.",
+        "code":  "required_fields = [\"answer\", \"used_concepts\", \"student_check\"]\ndata = {\"answer\": \"ok\", \"used_concepts\": [\"call\"], \"student_check\": \"passed\"}\nvalid = all(field in data for field in required_fields)",
+        "question_type":  "multiple_choice",
+        "question":  "valid에 저장되는 값은 무엇인가?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "answer",
+                        "None"
+                    ],
+        "answer":  "True",
+        "explanation":  "generator가 세 필드 각각에 대해 data key 포함 여부를 검사합니다. 세 결과가 모두 True이므로 all()이 True를 반환하고 valid에 저장됩니다. all()은 전달된 모든 truth value가 참일 때만 True를 반환하기 때문입니다. 헷갈리기 쉬운 오답: False 세 필수 필드가 모두 data에 존재하므로 거짓인 membership 결과가 없습니다. 오독 지점: 필드 하나라도 빠졌다고 잘못 읽거나 all()의 조건을 반대로 이해한 경우입니다. all()은 여러 검증 조건이 **전부 통과했는지** 하나의 boolean으로 합칠 때 사용합니다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "LLM이 반환한 구조화 응답을 앱이 사용하기 전에 필수 필드가 모두 있는지 확인하는 검증 코드와 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "generator가 만든 여러 membership 결과를 all()이 하나의 boolean으로 합치는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "all(iterable)은 iterable의 모든 항목이 truthy일 때 True를 반환하는 함수 호출입니다.",
+                                    "how_to_read":  "괄호 안에서 각 필드의 포함 여부가 먼저 만들어지고, 그 결과들을 all()이 모두 참인지 확인한다고 읽습니다.",
+                                    "key_point":  "response schema는 도메인 맥락이고, Python 초점은 여러 검증 결과를 all() 호출 하나로 합치는 것입니다.",
+                                    "common_mistake":  "필수 필드 중 하나만 있으면 True라고 생각하기 쉽습니다. all()은 모든 항목이 참이어야 True입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "required = [\"id\", \"title\"]\ndata = {\"id\": 1, \"title\": \"card\"}\nvalid = all(name in data for name in required)",
+                                 "walkthrough":  "id와 title이 모두 data의 key이므로 두 membership 결과가 모두 True이고 all()도 True를 반환합니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "generator가 세 필드 각각에 대해 data key 포함 여부를 검사합니다. 세 결과가 모두 True이므로 all()이 True를 반환하고 valid에 저장됩니다.",
+                                   "why_correct":  "all()은 전달된 모든 truth value가 참일 때만 True를 반환하기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "세 필수 필드가 모두 data에 존재하므로 거짓인 membership 결과가 없습니다.",
+                                                               "misread_step":  "필드 하나라도 빠졌다고 잘못 읽거나 all()의 조건을 반대로 이해한 경우입니다."
+                                                           },
+                                   "takeaway":  "all()은 여러 검증 조건이 **전부 통과했는지** 하나의 boolean으로 합칠 때 사용합니다."
+                               },
+        "target_statement":  "valid = all(field in data for field in required_fields)",
+        "focus_span":  "all(field in data for field in required_fields)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "response schema",
+                                "LLM output",
+                                "required fields",
+                                "structured output"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY44_L08_json_mode_001",
+        "level":  8,
+        "title":  "json.loads()로 구조화 모델 응답 파싱하기",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "attribute_access",
+                         "import_statement"
+                     ],
+        "reading_goal":  "함수 호출 인자로 전달된 JSON 문자열이 어떤 Python 값으로 변환되는지 읽는다.",
+        "code":  "import json\n\nmodel_text = \u0027{\"answer\": \"A\", \"reason\": \"clear\"}\u0027\nparsed = json.loads(model_text)",
+        "question_type":  "multiple_choice",
+        "question":  "parsed의 자료형은 무엇인가?",
+        "choices":  [
+                        "dict",
+                        "str",
+                        "list",
+                        "NoneType"
+                    ],
+        "answer":  "dict",
+        "explanation":  "model_text는 중괄호로 된 JSON object 문자열입니다. json.loads()가 이를 파싱하면 Python의 dict 객체가 반환되고 parsed에 저장됩니다. JSON object는 json.loads()에서 Python dict로 매핑되기 때문입니다. 헷갈리기 쉬운 오답: str str은 호출 전 model_text의 자료형이고, loads() 호출 후 반환값은 dict입니다. 오독 지점: 함수 호출 전 입력 타입과 호출 후 결과 타입을 구분하지 않은 경우입니다. json.loads()는 **JSON 문자열을 Python 구조로 파싱**합니다.",
+        "side_card_ids":  [
+                              "PYV102_A7_AI_ML_TOOLCHAIN"
+                          ],
+        "project_context":  "LLM이 정해진 JSON 형식으로 답하도록 한 뒤 앱 코드가 결과를 구조화 데이터로 다루는 파싱 단계와 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "함수 호출 인자로 전달된 JSON 문자열이 어떤 Python 값으로 변환되는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "json.loads(text)는 JSON 형식 문자열을 Python 값으로 변환하는 함수 호출입니다.",
+                                    "how_to_read":  "먼저 문자열의 JSON 구조를 보고, loads 호출 결과가 object이면 dict가 된다고 읽습니다.",
+                                    "key_point":  "JSON mode의 목적은 도메인 맥락이고, Python 문법 초점은 json.loads() 호출의 입력과 반환값입니다.",
+                                    "common_mistake":  "loads가 문자열을 그대로 반환한다고 생각하기 쉽습니다. JSON object 문자열은 Python dict로 변환됩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\n\ntext = \u0027{\"score\": 3}\u0027\nparsed = json.loads(text)",
+                                 "walkthrough":  "JSON object 문자열을 loads()가 파싱해 {\"score\": 3} dict를 반환합니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "model_text는 중괄호로 된 JSON object 문자열입니다. json.loads()가 이를 파싱하면 Python의 dict 객체가 반환되고 parsed에 저장됩니다.",
+                                   "why_correct":  "JSON object는 json.loads()에서 Python dict로 매핑되기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "str",
+                                                               "why_wrong":  "str은 호출 전 model_text의 자료형이고, loads() 호출 후 반환값은 dict입니다.",
+                                                               "misread_step":  "함수 호출 전 입력 타입과 호출 후 결과 타입을 구분하지 않은 경우입니다."
+                                                           },
+                                   "takeaway":  "json.loads()는 **JSON 문자열을 Python 구조로 파싱**합니다."
+                               },
+        "target_statement":  "parsed = json.loads(model_text)",
+        "focus_span":  "json.loads(model_text)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "JSON mode",
+                                "structured output",
+                                "json.loads",
+                                "LLM response"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY44_L08_output_parser_001",
+        "level":  8,
+        "title":  "JSONDecodeError 뒤 fallback parser로 이동하기",
+        "concepts":  [
+                         "except_clause",
+                         "try_statement",
+                         "assignment",
+                         "call",
+                         "import_statement"
+                     ],
+        "reading_goal":  "try에서 발생한 특정 예외가 같은 타입의 except 절을 선택하고 fallback 호출로 이어지는 순서를 읽는다.",
+        "code":  "import json\n\ndef fallback_parse(text):\n    return {\"answer\": text.split(\"=\", 1)[-1]}\n\nmodel_text = \"answer=ok\"\ntry:\n    data = json.loads(model_text)\nexcept json.JSONDecodeError:\n    data = fallback_parse(model_text)",
+        "question_type":  "multiple_choice",
+        "question":  "이 코드 실행 뒤 data[\"answer\"] 값은 무엇인가?",
+        "choices":  [
+                        "ok",
+                        "answer=ok",
+                        "None",
+                        "JSONDecodeError"
+                    ],
+        "answer":  "ok",
+        "explanation":  "model_text는 올바른 JSON이 아니므로 loads()가 JSONDecodeError를 냅니다. except 블록으로 이동해 fallback_parse()가 `=` 뒤의 `ok`를 추출하고 data의 answer에 넣습니다. typed except가 실제 발생한 JSONDecodeError와 일치해 fallback 코드가 실행되기 때문입니다. 헷갈리기 쉬운 오답: JSONDecodeError 예외 타입은 제어 흐름을 선택하는 원인이며, 최종 data[\"answer\"]에는 fallback 결과가 저장됩니다. 오독 지점: 발생한 예외와 except 이후 최종 데이터 값을 혼동한 경우입니다. typed except는 **파싱 실패를 특정 복구 경로로 연결**할 수 있습니다.",
+        "side_card_ids":  [
+                              "PYV161_A1_ENV_MAIN_CHECKLIST_FLOW"
+                          ],
+        "project_context":  "LLM 출력이 예상 JSON 형식을 벗어나도 앱이 즉시 중단되지 않고 대체 파싱 경로로 복구하는 코드와 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "except_clause",
+        "reading_goal_internal":  "try에서 발생한 특정 예외가 같은 타입의 except 절을 선택하고 fallback 호출로 이어지는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "except ErrorType: 절은 try 영역에서 그 타입의 예외가 발생했을 때 실행되는 분기입니다.",
+                                    "how_to_read":  "try에서 실제로 난 예외 타입을 확인하고, 일치하는 except가 있으면 그 블록으로 이동한다고 읽습니다.",
+                                    "key_point":  "output parser라는 전체 역할과 별개로 Python 초점은 JSONDecodeError와 typed except의 타입 일치입니다.",
+                                    "common_mistake":  "json.loads() 다음 줄도 계속 실행된다고 생각하기 쉽습니다. 예외가 발생하면 try의 남은 부분을 건너뛰고 except로 이동합니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\n\ndef fallback(text):\n    return {\"raw\": text}\n\ntext = \"not-json\"\ntry:\n    data = json.loads(text)\nexcept json.JSONDecodeError:\n    data = fallback(text)",
+                                 "walkthrough":  "loads()가 JSONDecodeError를 발생시키므로 typed except가 실행되고 fallback 결과가 data에 저장됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "model_text는 올바른 JSON이 아니므로 loads()가 JSONDecodeError를 냅니다. except 블록으로 이동해 fallback_parse()가 `=` 뒤의 `ok`를 추출하고 data의 answer에 넣습니다.",
+                                   "why_correct":  "typed except가 실제 발생한 JSONDecodeError와 일치해 fallback 코드가 실행되기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "JSONDecodeError",
+                                                               "why_wrong":  "예외 타입은 제어 흐름을 선택하는 원인이며, 최종 data[\"answer\"]에는 fallback 결과가 저장됩니다.",
+                                                               "misread_step":  "발생한 예외와 except 이후 최종 데이터 값을 혼동한 경우입니다."
+                                                           },
+                                   "takeaway":  "typed except는 **파싱 실패를 특정 복구 경로로 연결**할 수 있습니다."
+                               },
+        "target_statement":  "except json.JSONDecodeError:",
+        "focus_span":  "except json.JSONDecodeError:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "output parser",
+                                "JSONDecodeError",
+                                "fallback parser",
+                                "LLM response"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY44_L08_output_validation_001",
+        "level":  8,
+        "title":  "필수 answer 필드가 없으면 if로 거부하기",
+        "concepts":  [
+                         "if_statement",
+                         "membership_test",
+                         "raise_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "if 헤더의 not in 조건을 실제 dict key 상태에 적용해 raise가 실행되는지 판단한다.",
+        "code":  "data = {\"reason\": \"clear\"}\nif \"answer\" not in data:\n    raise ValueError(\"missing answer\")",
+        "question_type":  "multiple_choice",
+        "question":  "이 코드에서 if 조건의 값은 무엇인가?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "answer",
+                        "None"
+                    ],
+        "answer":  "True",
+        "explanation":  "data에는 reason key만 있습니다. 따라서 `answer not in data`는 True이고 if 블록으로 들어갑니다. not in은 찾는 key가 collection에 없을 때 True를 반환하고, if는 True일 때 본문을 실행하기 때문입니다. 헷갈리기 쉬운 오답: False answer key가 실제로 data에 없으므로 not in 검사는 참입니다. 오독 지점: 다른 key가 있다는 사실을 answer key 존재로 잘못 일반화한 경우입니다. 필수 필드 검증은 **정확한 key 존재 여부 → boolean → 분기** 순서로 읽습니다.",
+        "side_card_ids":  [
+                              "AI_guardrail_001"
+                          ],
+        "project_context":  "LLM 응답을 화면이나 후속 파이프라인에 넘기기 전에 필수 필드 누락을 차단하는 검증 코드와 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "if 헤더의 not in 조건을 실제 dict key 상태에 적용해 raise가 실행되는지 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "if condition:은 condition이 True일 때 바로 아래 블록을 실행합니다.",
+                                    "how_to_read":  "먼저 data의 key를 확인하고 `answer not in data`를 평가한 뒤 True면 raise가 있는 블록으로 들어갑니다.",
+                                    "key_point":  "output validation의 도메인 역할과 별개로 Python 초점은 membership 결과가 if 분기를 결정한다는 점입니다.",
+                                    "common_mistake":  "data에 reason 같은 다른 필드가 있으니 validation을 통과한다고 생각하기 쉽습니다. 조건은 정확히 answer key의 존재 여부만 봅니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "data = {\"id\": 1}\nif \"title\" not in data:\n    state = \"missing\"\nelse:\n    state = \"ok\"",
+                                 "walkthrough":  "title key가 없으므로 조건이 True이고 state는 missing이 됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "data에는 reason key만 있습니다. 따라서 `answer not in data`는 True이고 if 블록으로 들어갑니다.",
+                                   "why_correct":  "not in은 찾는 key가 collection에 없을 때 True를 반환하고, if는 True일 때 본문을 실행하기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "answer key가 실제로 data에 없으므로 not in 검사는 참입니다.",
+                                                               "misread_step":  "다른 key가 있다는 사실을 answer key 존재로 잘못 일반화한 경우입니다."
+                                                           },
+                                   "takeaway":  "필수 필드 검증은 **정확한 key 존재 여부 → boolean → 분기** 순서로 읽습니다."
+                               },
+        "target_statement":  "if \"answer\" not in data:",
+        "focus_span":  "if \"answer\" not in data:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "output validation",
+                                "required field",
+                                "policy validation",
+                                "structured output"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY44_L09_retry_policy_001",
+        "level":  9,
+        "title":  "마지막 retry에서 bare raise로 예외 다시 던지기",
+        "concepts":  [
+                         "raise_statement",
+                         "if_statement",
+                         "except_clause",
+                         "for_statement",
+                         "function_definition"
+                     ],
+        "reading_goal":  "except 안의 bare raise가 마지막 retry 실패에서 현재 예외를 호출자에게 다시 전달하는 흐름을 읽는다.",
+        "code":  "def call_llm(payload):\n    raise TransientProviderError(\"temporary\")\n\nclass TransientProviderError(Exception):\n    pass\n\n\ndef call_with_retry(payload):\n    for attempt in range(3):\n        try:\n            return call_llm(payload)\n        except TransientProviderError:\n            if attempt == 2:\n                raise\n            wait = 2 ** attempt",
+        "question_type":  "multiple_choice",
+        "question":  "세 번째 attempt에서도 같은 오류가 나면 무엇이 일어나는가?",
+        "choices":  [
+                        "현재 TransientProviderError가 다시 전파된다",
+                        "성공값 None을 반환한다",
+                        "무한히 재시도한다",
+                        "오류를 자동으로 문자열로 바꾼다"
+                    ],
+        "answer":  "현재 TransientProviderError가 다시 전파된다",
+        "explanation":  "attempt 0과 1에서는 retry를 계속하지만 attempt 2에서 조건이 True가 됩니다. bare raise가 현재 TransientProviderError를 다시 발생시킵니다. 마지막 시도에서 예외를 삼키지 않도록 reraise하도록 작성됐기 때문입니다. 헷갈리기 쉬운 오답: 무한히 재시도한다 range(3)은 세 번만 반복하고 마지막 실패에서 raise합니다. 오독 지점: for 반복 횟수와 최종 raise 조건을 확인하지 않은 경우입니다. retry 정책은 **재시도 가능한 오류 → 제한 횟수 → 마지막 실패 reraise**로 읽습니다.",
+        "side_card_ids":  [
+                              "AI_cost_001"
+                          ],
+        "project_context":  "LLM·embedding·검색 API에서 timeout이나 일시 provider 오류를 제한적으로 재시도하고 최종 실패는 표면화하는 resilience 흐름과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "raise_statement",
+        "reading_goal_internal":  "except 안의 bare raise가 마지막 retry 실패에서 현재 예외를 호출자에게 다시 전달하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "except 블록 안의 bare `raise`는 현재 처리 중인 예외를 그대로 다시 발생시키는 reraise입니다.",
+                                    "how_to_read":  "raise에 도달하는 조건을 먼저 확인하고 새 예외를 만드는지 기존 예외를 다시 던지는지 구분합니다.",
+                                    "key_point":  "일시 오류는 몇 번 재시도할 수 있지만 최대 시도 횟수를 다 쓴 뒤에도 실패하면 오류를 숨기지 않고 호출자에게 전달합니다.",
+                                    "common_mistake":  "bare raise가 새로운 RuntimeError를 자동으로 만든다고 생각하기 쉽습니다. 현재 except가 처리 중인 예외를 다시 던집니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "def run():\n    try:\n        raise TimeoutError(\"slow\")\n    except TimeoutError:\n        raise",
+                                 "walkthrough":  "except에서 bare raise를 실행해 원래 TimeoutError가 다시 전파됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "attempt 0과 1에서는 retry를 계속하지만 attempt 2에서 조건이 True가 됩니다. bare raise가 현재 TransientProviderError를 다시 발생시킵니다.",
+                                   "why_correct":  "마지막 시도에서 예외를 삼키지 않도록 reraise하도록 작성됐기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "무한히 재시도한다",
+                                                               "why_wrong":  "range(3)은 세 번만 반복하고 마지막 실패에서 raise합니다.",
+                                                               "misread_step":  "for 반복 횟수와 최종 raise 조건을 확인하지 않은 경우입니다."
+                                                           },
+                                   "takeaway":  "retry 정책은 **재시도 가능한 오류 → 제한 횟수 → 마지막 실패 reraise**로 읽습니다."
+                               },
+        "target_statement":  "raise",
+        "focus_span":  "raise",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "retry",
+                                "transient error",
+                                "backoff",
+                                "provider"
+                            ],
+        "pedagogical_intent":  "predict_exception"
+    },
+    {
+        "id":  "PY44_L09_fallback_model_001",
+        "level":  9,
+        "title":  "주 모델 실패 뒤 fallback model method 호출하기",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "except_clause",
+                         "class_definition"
+                     ],
+        "reading_goal":  "주 모델 예외가 발생한 뒤 except에서 대체 모델의 generate method를 호출하는 실행 순서를 읽는다.",
+        "code":  "class TransientProviderError(Exception):\n    pass\n\nclass Model:\n    def __init__(self, name, fail=False):\n        self.name = name\n        self.fail = fail\n    def generate(self, prompt):\n        if self.fail:\n            raise TransientProviderError(\"temporary\")\n        return f\"{self.name}:{prompt}\"\n\nqwen = Model(\"qwen\", fail=True)\ngpt = Model(\"gpt\")\nprompt = \"hello\"\ntry:\n    answer = qwen.generate(prompt)\nexcept TransientProviderError:\n    answer = gpt.generate(prompt)\nvalidated = answer.startswith(\"gpt:\")",
+        "question_type":  "multiple_choice",
+        "question":  "`answer`의 값은 무엇인가?",
+        "choices":  [
+                        "gpt:hello",
+                        "qwen:hello",
+                        "None",
+                        "temporary"
+                    ],
+        "answer":  "gpt:hello",
+        "explanation":  "qwen은 fail=True라 예외를 발생시키고, except에서 gpt.generate(\u0027hello\u0027)가 호출돼 `gpt:hello`가 answer에 저장됩니다. fallback method call이 주 모델 실패 branch에 있기 때문입니다. 헷갈리기 쉬운 오답: qwen:hello qwen.generate는 정상 문자열을 반환하기 전에 예외를 발생시킵니다. 오독 지점: try 호출의 실패를 반영하지 않은 경우입니다. fallback은 **primary 시도 → 특정 예외 → backup 호출 → 동일 후속 검증**으로 읽습니다.",
+        "side_card_ids":  [
+                              "PYV102_A7_AI_ML_TOOLCHAIN"
+                          ],
+        "project_context":  "Qwen·GPT·로컬 Llama 등을 adapter 뒤에 두고 특정 provider가 일시 실패할 때 대체 모델로 전환하는 서비스 구조와 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "주 모델 예외가 발생한 뒤 except에서 대체 모델의 generate method를 호출하는 실행 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`gpt.generate(prompt)`는 gpt 객체의 generate method를 prompt argument와 함께 호출합니다.",
+                                    "how_to_read":  "이 호출에 도달하는 except 조건과 반환값이 저장되는 변수를 함께 봅니다.",
+                                    "key_point":  "fallback은 주 provider 실패 시 서비스 전체가 즉시 중단되지 않도록 대체 경로를 제공하는 패턴입니다.",
+                                    "common_mistake":  "두 모델이 항상 동시에 호출된다고 생각하기 쉽습니다. 이 구조에서는 qwen이 실패했을 때만 gpt가 호출됩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "events = []\nclass Primary:\n    def run(self): raise TimeoutError()\nclass Backup:\n    def run(self): events.append(\"backup\"); return \"ok\"\ntry:\n    value = Primary().run()\nexcept TimeoutError:\n    value = Backup().run()",
+                                 "walkthrough":  "Primary가 실패해 except로 이동하고 Backup.run()이 호출됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "qwen은 fail=True라 예외를 발생시키고, except에서 gpt.generate(\u0027hello\u0027)가 호출돼 `gpt:hello`가 answer에 저장됩니다.",
+                                   "why_correct":  "fallback method call이 주 모델 실패 branch에 있기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "qwen:hello",
+                                                               "why_wrong":  "qwen.generate는 정상 문자열을 반환하기 전에 예외를 발생시킵니다.",
+                                                               "misread_step":  "try 호출의 실패를 반영하지 않은 경우입니다."
+                                                           },
+                                   "takeaway":  "fallback은 **primary 시도 → 특정 예외 → backup 호출 → 동일 후속 검증**으로 읽습니다."
+                               },
+        "target_statement":  "answer = gpt.generate(prompt)",
+        "focus_span":  "gpt.generate(prompt)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "fallback model",
+                                "provider switch",
+                                "model adapter",
+                                "validation"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY44_L09_timeout_rate_limit_001",
+        "level":  9,
+        "title":  "RateLimitError를 error 이름으로 받아 retry_after 읽기",
+        "concepts":  [
+                         "except_clause",
+                         "try_statement",
+                         "attribute_access",
+                         "assignment",
+                         "class_definition"
+                     ],
+        "reading_goal":  "except-as가 발생한 예외 객체를 이름에 바인딩해 retry_after 같은 attribute를 읽게 하는 구조를 해석한다.",
+        "code":  "class RateLimitError(Exception):\n    def __init__(self, retry_after):\n        self.retry_after = retry_after\n\nclass Client:\n    def chat(self, **kwargs):\n        raise RateLimitError(4)\n\nclient = Client()\npayload = {\"message\": \"hello\"}\ntry:\n    response = client.chat(**payload, timeout=30)\nexcept RateLimitError as error:\n    retry_after = error.retry_after",
+        "question_type":  "multiple_choice",
+        "question":  "`retry_after`의 값은 무엇인가?",
+        "choices":  [
+                        "4",
+                        "30",
+                        "429",
+                        "None"
+                    ],
+        "answer":  "4",
+        "explanation":  "chat 호출이 retry_after=4인 RateLimitError를 던지고 except-as가 그 객체를 error에 저장합니다. attribute 조회 결과는 4입니다. `as error`로 잡힌 실제 예외 객체의 retry_after attribute를 읽기 때문입니다. 헷갈리기 쉬운 오답: 30 30은 chat 호출의 timeout argument이고 rate limit 대기 정보가 아닙니다. 오독 지점: timeout 값과 exception attribute를 혼동한 경우입니다. API exception 처리는 **예외 타입 → as 바인딩 → 세부 attribute 조회**로 읽습니다.",
+        "side_card_ids":  [
+                              "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
+                          ],
+        "project_context":  "LLM·검색 API에서 요청량 제한에 걸렸을 때 예외의 retry-after 정보를 이용해 안전하게 재시도하는 흐름과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "except_clause",
+        "reading_goal_internal":  "except-as가 발생한 예외 객체를 이름에 바인딩해 retry_after 같은 attribute를 읽게 하는 구조를 해석한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`except ErrorType as error:`는 잡힌 예외 객체를 `error`라는 이름으로 사용할 수 있게 합니다.",
+                                    "how_to_read":  "잡는 예외 타입과 `as` 뒤 이름을 구분하고 except 본문에서 그 객체의 attribute가 어떻게 쓰이는지 봅니다.",
+                                    "key_point":  "rate limit 오류에는 일정 시간 뒤 재시도하라는 정보가 포함될 수 있어 exception 객체를 읽는 것이 유용합니다.",
+                                    "common_mistake":  "`as error`가 예외를 문자열로만 바꾼다고 생각하기 쉽습니다. 실제 예외 객체 자체를 이름에 바인딩합니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "class BusyError(Exception):\n    def __init__(self, delay): self.delay = delay\ntry:\n    raise BusyError(3)\nexcept BusyError as err:\n    wait = err.delay",
+                                 "walkthrough":  "BusyError 객체가 err에 바인딩돼 delay 3을 읽을 수 있습니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "chat 호출이 retry_after=4인 RateLimitError를 던지고 except-as가 그 객체를 error에 저장합니다. attribute 조회 결과는 4입니다.",
+                                   "why_correct":  "`as error`로 잡힌 실제 예외 객체의 retry_after attribute를 읽기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "30",
+                                                               "why_wrong":  "30은 chat 호출의 timeout argument이고 rate limit 대기 정보가 아닙니다.",
+                                                               "misread_step":  "timeout 값과 exception attribute를 혼동한 경우입니다."
+                                                           },
+                                   "takeaway":  "API exception 처리는 **예외 타입 → as 바인딩 → 세부 attribute 조회**로 읽습니다."
+                               },
+        "target_statement":  "except RateLimitError as error:",
+        "focus_span":  "except RateLimitError as error:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "rate limit",
+                                "429",
+                                "timeout",
+                                "retry-after",
+                                "API error"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY44_L09_cost_logging_001",
+        "level":  9,
+        "title":  "모델 사용량과 비용을 하나의 log dict로 묶기",
+        "concepts":  [
+                         "literal",
+                         "attribute_access",
+                         "assignment",
+                         "class_definition"
+                     ],
+        "reading_goal":  "모델 이름·입출력 token 수·비용 값을 key/value 형태로 하나의 dict literal에 모으는 구조를 읽는다.",
+        "code":  "class Usage:\n    def __init__(self, input_tokens, output_tokens):\n        self.input_tokens = input_tokens\n        self.output_tokens = output_tokens\n\nmodel = \"local-model\"\nusage = Usage(120, 30)\ncost = 0.015\nlog = {\"model\": model, \"input_tokens\": usage.input_tokens, \"output_tokens\": usage.output_tokens, \"cost_usd\": cost}",
+        "question_type":  "multiple_choice",
+        "question":  "`log[\"output_tokens\"]`의 값은 무엇인가?",
+        "choices":  [
+                        "30",
+                        "120",
+                        "0.015",
+                        "local-model"
+                    ],
+        "answer":  "30",
+        "explanation":  "Usage 객체를 만들 때 output_tokens에 30이 저장되고 dict literal이 그 attribute를 output_tokens key의 value로 사용합니다. 해당 key가 `usage.output_tokens`와 직접 연결돼 있기 때문입니다. 헷갈리기 쉬운 오답: 120 120은 input_tokens attribute의 값입니다. 오독 지점: 입력 token과 출력 token key를 서로 바꿔 읽은 경우입니다. observability record는 **지표 key와 실제 source value를 정확히 대응**해 읽습니다.",
+        "side_card_ids":  [
+                              "PYV102_A7_AI_ML_TOOLCHAIN"
+                          ],
+        "project_context":  "LLM API·GPU·클라우드 비용을 기능별로 추적해 과도한 token 사용과 비용 증가를 관찰하는 운영과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "literal",
+        "reading_goal_internal":  "모델 이름·입출력 token 수·비용 값을 key/value 형태로 하나의 dict literal에 모으는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`{key: value, ...}`는 여러 key/value 쌍을 하나의 dict로 만드는 dict literal입니다.",
+                                    "how_to_read":  "각 key가 어떤 실제 값 또는 attribute와 연결되는지 하나씩 대응합니다.",
+                                    "key_point":  "비용 로그를 남기면 어떤 모델이나 기능이 token과 비용을 많이 쓰는지 비교할 수 있습니다.",
+                                    "common_mistake":  "input_tokens와 output_tokens가 같은 값이라고 생각하기 쉽습니다. 서로 다른 사용량 지표입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "record = {\"feature\": \"search\", \"requests\": 3, \"cost\": 0.2}\nvalue = record[\"requests\"]",
+                                 "walkthrough":  "dict literal이 세 지표를 하나의 record에 묶고 requests key는 3과 연결됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Usage 객체를 만들 때 output_tokens에 30이 저장되고 dict literal이 그 attribute를 output_tokens key의 value로 사용합니다.",
+                                   "why_correct":  "해당 key가 `usage.output_tokens`와 직접 연결돼 있기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "120",
+                                                               "why_wrong":  "120은 input_tokens attribute의 값입니다.",
+                                                               "misread_step":  "입력 token과 출력 token key를 서로 바꿔 읽은 경우입니다."
+                                                           },
+                                   "takeaway":  "observability record는 **지표 key와 실제 source value를 정확히 대응**해 읽습니다."
+                               },
+        "target_statement":  "log = {\"model\": model, \"input_tokens\": usage.input_tokens, \"output_tokens\": usage.output_tokens, \"cost_usd\": cost}",
+        "focus_span":  "{\"model\": model, \"input_tokens\": usage.input_tokens, \"output_tokens\": usage.output_tokens, \"cost_usd\": cost}",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "cost logging",
+                                "token usage",
+                                "model",
+                                "observability"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY44_L10_tool_calling_001",
+        "level":  10,
+        "title":  "로컬 tool 호출 성공과 downstream 전달·성능 성공 주장을 분리하기",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "literal",
+                         "assignment",
+                         "comparison"
+                     ],
+        "reading_goal":  "`**arguments`가 query를 keyword argument로 펼쳐 search_docs를 실제 호출하는 것은 확인하되, downstream_received=False와 성능 측정 부재 때문에 end-to-end/performance 주장은 아직 성립하지 않음을 판단한다.",
+        "code":  "def search_docs(query):\n    return {\"query\": query, \"hits\": 2}\n\narguments = {\"query\": \"cosine similarity\"}\nvalidated = set(arguments) == {\"query\"}\nresult = search_docs(**arguments)\ndownstream_received = False\nprint(validated, result[\"hits\"], downstream_received)",
+        "question_type":  "meaning_choice",
+        "question":  "이 실행 결과가 `True 2 False`일 때 가장 정확한 리뷰 결론은?",
+        "choices":  [
+                        "arguments schema와 로컬 search_docs 호출·반환은 확인됐지만 downstream 전달은 실패 상태이고 성능 benchmark도 없어 end-to-end 성공이나 성능 개선은 아직 증명되지 않았다",
+                        "hits가 2이므로 downstream 전달과 최종 사용자 응답도 반드시 성공했다",
+                        "`**arguments`가 사용됐으므로 외부 네트워크 성공과 latency 개선이 자동으로 보장된다",
+                        "validated가 True이면 search_docs는 실제로 호출되지 않아도 end-to-end 성공으로 본다"
+                    ],
+        "answer":  "arguments schema와 로컬 search_docs 호출·반환은 확인됐지만 downstream 전달은 실패 상태이고 성능 benchmark도 없어 end-to-end 성공이나 성능 개선은 아직 증명되지 않았다",
+        "explanation":  "1) arguments key set은 {\u0027query\u0027}라 validated는 True다. 2) target `search_docs(**arguments)`에서 query=\u0027cosine similarity\u0027로 펼쳐져 실제 함수가 호출된다. 3) result의 hits는 2라 로컬 반환값도 확인된다. 4) 하지만 downstream_received는 False다. 5) 또한 latency/throughput Before/After 수치가 없으므로 end-to-end 및 performance 주장은 별도 evidence가 필요하다.",
+        "side_card_ids":  [
+                              "AI_tool_calling_001"
+                          ],
+        "project_context":  "APEX의 call-path·영향범위·주장↔증거를 AI tool-calling 맥락에서 한 번에 종합한다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "`**arguments`가 query를 keyword argument로 펼쳐 search_docs를 실제 호출하는 것은 확인하되, downstream_received=False와 성능 측정 부재 때문에 end-to-end/performance 주장은 아직 성립하지 않음을 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`**mapping`은 dict의 key-value를 keyword arguments로 펼쳐 실제 함수 호출에 전달합니다. 로컬 함수 호출 성공은 그 함수 경계까지의 evidence이지 이후 전달·외부 처리·성능까지 자동으로 증명하지 않습니다.",
+                                    "how_to_read":  "arguments 내용을 확인하고 target call이 반환한 result를 봅니다. 그 다음 downstream 전달 상태와 성능 metric이 실제로 존재하는지 별도로 확인합니다.",
+                                    "key_point":  "search_docs는 query를 받아 hits=2 결과를 반환하므로 로컬 tool 실행은 확인됩니다. 하지만 downstream_received=False이고 benchmark가 없으므로 end-to-end 성공과 성능 개선은 미증명입니다.",
+                                    "common_mistake":  "tool 함수가 호출됐다는 사실만으로 네트워크 전달, 모델 재수신, 사용자 응답 반영, 성능 개선까지 모두 성공했다고 말하면 안 됩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "def tool(query):\n    return {\"query\":query}\nargs={\"query\":\"python\"}\nresult=tool(**args)\nprint(result)",
+                                 "walkthrough":  "`**args`가 query keyword를 전달해 로컬 tool 결과를 만드는 것까지는 직접 확인할 수 있습니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) arguments key set은 {\u0027query\u0027}라 validated는 True다. 2) target `search_docs(**arguments)`에서 query=\u0027cosine similarity\u0027로 펼쳐져 실제 함수가 호출된다. 3) result의 hits는 2라 로컬 반환값도 확인된다. 4) 하지만 downstream_received는 False다. 5) 또한 latency/throughput Before/After 수치가 없으므로 end-to-end 및 performance 주장은 별도 evidence가 필요하다.",
+                                   "why_correct":  "각 시스템 경계마다 관측된 evidence를 구분하고 미관측 경계를 성공으로 추정하지 않기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "hits가 2이므로 downstream 전달과 최종 사용자 응답도 반드시 성공했다",
+                                                               "why_wrong":  "hits는 search_docs의 로컬 반환값이며 현재 downstream_received는 명시적으로 False입니다.",
+                                                               "misread_step":  "tool pipeline을 validation → local call → return → downstream delivery → user-visible result → performance로 나눕니다."
+                                                           },
+                                   "takeaway":  "tool-calling 증거는 **인자 검증 → 실제 호출 → 반환값 → downstream 전달 → 최종 결과 → 성능 측정**의 경계를 각각 확인합니다."
+                               },
+        "target_statement":  "search_docs(**arguments)",
+        "focus_span":  "**arguments",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "tool_calling",
+                                "double_star_arguments",
+                                "local_execution",
+                                "downstream_delivery",
+                                "performance_evidence"
+                            ],
+        "pedagogical_intent":  "identify_meaning",
+        "subtype":  "double_star_argument",
+        "secondary_concepts":  [
+                                   "call",
+                                   "literal",
+                                   "assignment",
+                                   "comparison"
+                               ],
+        "prerequisites":  [
+                              "call",
+                              "dict_literal"
+                          ],
+        "semantic_operations":  [
+                                    "tool_argument_expansion",
+                                    "local_tool_execution",
+                                    "end_to_end_claim_boundary"
+                                ],
+        "reading_steps":  [
+                              "arguments key set은 {\u0027query\u0027}라 validated는 True다.",
+                              "target `search_docs(**arguments)`에서 query=\u0027cosine similarity\u0027로 펼쳐져 실제 함수가 호출된다.",
+                              "result의 hits는 2라 로컬 반환값도 확인된다.",
+                              "하지만 downstream_received는 False다.",
+                              "또한 latency/throughput Before/After 수치가 없으므로 end-to-end 및 performance 주장은 별도 evidence가 필요하다."
+                          ],
+        "same_syntax_example":  "def f(x):\n    return x\nargs={\"x\":3}\nprint(f(**args))"
+    },
+    {
+        "id":  "PY44_L10_hallucination_guard_001",
+        "level":  10,
+        "title":  "근거 부족 시 revise/refuse 결과를 return하고 함수 끝내기",
+        "concepts":  [
+                         "return_statement",
+                         "call",
+                         "if_statement"
+                     ],
+        "reading_goal":  "return 뒤 함수 호출을 먼저 평가하고 그 결과를 호출자에게 돌려준 뒤 현재 함수의 남은 정상 코드를 실행하지 않는 흐름을 읽는다.",
+        "code":  "def revise_or_refuse(answer):\n    return \"refuse: insufficient evidence\"\n\ndef grounded_answer(answer, unsupported):\n    if unsupported:\n        return revise_or_refuse(answer)\n    return answer\n\nprint(grounded_answer(\"draft answer\", True))",
+        "question_type":  "output_prediction",
+        "question":  "unsupported가 True일 때 `grounded_answer(...)`의 반환값은 무엇인가?",
+        "choices":  [
+                        "refuse: insufficient evidence",
+                        "draft answer",
+                        "True",
+                        "None"
+                    ],
+        "answer":  "refuse: insufficient evidence",
+        "explanation":  "1) if 조건은 True다. 2) revise_or_refuse가 refuse 문자열을 반환한다. 3) 바깥 return이 그 값을 grounded_answer의 결과로 돌려준다. 4) 함수가 종료되어 일반 answer 반환 줄은 실행하지 않는다.",
+        "side_card_ids":  [
+                              "AI_hallucination_001"
+                          ],
+        "project_context":  "evidence로 확인되지 않는 claim을 그대로 통과시키지 않고 수정 또는 거절하는 RAG hallucination guard에 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "return_statement",
+        "reading_goal_internal":  "return 뒤 함수 호출을 먼저 평가하고 그 결과를 호출자에게 돌려준 뒤 현재 함수의 남은 정상 코드를 실행하지 않는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`return expression`은 expression의 값을 계산한 뒤 그 값을 호출한 곳으로 돌려주고 현재 함수 실행을 끝냅니다.",
+                                    "how_to_read":  "return 뒤 revise_or_refuse(answer)를 먼저 호출해 반환값을 얻고, 바깥 return이 그 값을 최종 결과로 보냅니다.",
+                                    "key_point":  "guard 분기에서 return이 실행되면 같은 함수 아래쪽의 일반 answer 반환 경로로 다시 내려가지 않습니다.",
+                                    "common_mistake":  "revise_or_refuse를 호출한 뒤에도 현재 함수의 아래 줄이 계속 실행된다고 생각하기 쉽습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "def revise(text):\n    return \"fixed\"\ndef guard(bad):\n    if bad:\n        return revise(\"draft\")\n    return \"original\"\nprint(guard(True))",
+                                 "walkthrough":  "bad가 True라 revise 결과 fixed를 return하고 함수가 즉시 끝납니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) if 조건은 True다. 2) revise_or_refuse가 refuse 문자열을 반환한다. 3) 바깥 return이 그 값을 grounded_answer의 결과로 돌려준다. 4) 함수가 종료되어 일반 answer 반환 줄은 실행하지 않는다.",
+                                   "why_correct":  "guard 분기에서 return이 실행되므로 revise_or_refuse의 반환 문자열이 최종 함수 결과가 됩니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "draft answer",
+                                                               "why_wrong":  "draft answer를 반환하는 아래 줄은 unsupported가 False여서 guard return을 지나지 않았을 때만 도달합니다.",
+                                                               "misread_step":  "return이 실행된 지점에서 현재 함수의 제어 흐름이 끝난다는 점을 반영합니다."
+                                                           },
+                                   "takeaway":  "return은 **표현식 평가 → 값 반환 → 현재 함수 즉시 종료**로 읽습니다."
+                               },
+        "target_statement":  "return revise_or_refuse(answer)",
+        "focus_span":  "return revise_or_refuse(answer)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "hallucination_guard",
+                                "evidence",
+                                "return",
+                                "safety_check"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY44_L10_model_adapter_001",
+        "level":  10,
+        "title":  "QwenAdapter가 LLMAdapter를 base class로 두는 클래스 헤더 읽기",
+        "concepts":  [
+                         "class_definition",
+                         "function_definition",
+                         "raise_statement"
+                     ],
+        "reading_goal":  "class 이름 뒤 괄호 안의 LLMAdapter가 새 클래스가 상속받는 base class라는 구조를 읽는다.",
+        "code":  "class LLMAdapter:\n    def generate(self, messages):\n        raise NotImplementedError\n\nclass QwenAdapter(LLMAdapter):\n    def generate(self, messages):\n        return \"qwen result\"\n\nprint(issubclass(QwenAdapter, LLMAdapter))",
+        "question_type":  "meaning_choice",
+        "question":  "`class QwenAdapter(LLMAdapter):`에서 `LLMAdapter`의 역할은 무엇인가?",
+        "choices":  [
+                        "QwenAdapter의 base class",
+                        "generate의 반환값",
+                        "문자열 인자",
+                        "인스턴스 속성"
+                    ],
+        "answer":  "QwenAdapter의 base class",
+        "explanation":  "1) 새로 정의되는 클래스는 QwenAdapter다. 2) 괄호 안에는 LLMAdapter가 있다. 3) class header의 이 괄호는 base class 목록이다. 4) 따라서 QwenAdapter는 LLMAdapter를 상속한다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "Qwen·GPT·로컬 LLM처럼 provider가 달라도 공통 generate contract로 교체 가능하게 만드는 adapter architecture에 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "class_definition",
+        "reading_goal_internal":  "class 이름 뒤 괄호 안의 LLMAdapter가 새 클래스가 상속받는 base class라는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`class Child(Base):`는 Child라는 새 클래스를 정의하면서 Base를 base class로 지정하는 헤더입니다.",
+                                    "how_to_read":  "class 뒤 새 이름과 괄호 안 base 이름을 구분하고 콜론 아래가 새 클래스 본문이라는 점을 봅니다.",
+                                    "key_point":  "이 구조로 provider adapter가 공통 interface와 동작을 상속하거나 재정의할 수 있습니다.",
+                                    "common_mistake":  "괄호 안 LLMAdapter를 QwenAdapter 생성 시 전달하는 일반 함수 인자라고 생각하기 쉽습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Animal:\n    pass\n\nclass Dog(Animal):\n    pass\n\nprint(issubclass(Dog, Animal))",
+                                 "walkthrough":  "Dog 클래스 헤더의 괄호 안 Animal이 base class라 issubclass 결과가 True입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) 새로 정의되는 클래스는 QwenAdapter다. 2) 괄호 안에는 LLMAdapter가 있다. 3) class header의 이 괄호는 base class 목록이다. 4) 따라서 QwenAdapter는 LLMAdapter를 상속한다.",
+                                   "why_correct":  "클래스 정의 헤더의 괄호 안 이름은 상속할 base class이므로 LLMAdapter가 정답입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "문자열 인자",
+                                                               "why_wrong":  "함수 호출 괄호와 달리 class 정의 헤더의 괄호는 base class를 나열하는 위치입니다.",
+                                                               "misread_step":  "현재 문맥이 call인지 class definition인지 먼저 확인한 뒤 괄호의 의미를 해석합니다."
+                                                           },
+                                   "takeaway":  "상속 클래스 헤더는 **새 클래스 이름 → base class 목록 → 클래스 본문**으로 읽습니다."
+                               },
+        "target_statement":  "class QwenAdapter(LLMAdapter):",
+        "focus_span":  "class QwenAdapter(LLMAdapter):",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "architecture_and_design",
+        "coverage_topics":  [
+                                "model_adapter",
+                                "provider_switch",
+                                "inheritance",
+                                "interface"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY44_L10_evidence_grounded_generation_001",
+        "level":  10,
+        "title":  "question과 evidence를 f-string prompt에 삽입하기",
+        "concepts":  [
+                         "f_string",
+                         "name_reference",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "f-string 안 중괄호 표현식의 현재 값을 평가하고 해당 위치에 문자열 형태로 삽입해 전체 prompt를 만드는 흐름을 읽는다.",
+        "code":  "question = \"What is RAG?\"\ncontext = \"RAG retrieves evidence before generation.\"\n\nprompt = f\"Question: {question}\\nEvidence: {context}\\nRule: answer only from evidence\"\nprint(prompt.splitlines()[0])",
+        "question_type":  "output_prediction",
+        "question":  "생성된 `prompt`의 첫 줄은 무엇인가?",
+        "choices":  [
+                        "Question: What is RAG?",
+                        "Question: {question}",
+                        "Evidence: What is RAG?",
+                        "Rule: answer only from evidence"
+                    ],
+        "answer":  "Question: What is RAG?",
+        "explanation":  "1) question 변수는 What is RAG?를 가리킨다. 2) f-string의 `{question}`이 그 값을 읽는다. 3) 고정 문자열 Question: 뒤에 값을 삽입한다. 4) 첫 줄 결과는 Question: What is RAG?다.",
+        "side_card_ids":  [
+                              "PYV102_A7_AI_ML_TOOLCHAIN"
+                          ],
+        "project_context":  "교육 답변과 검증형 RAG에서 question과 검색 evidence를 명확한 prompt 구역으로 묶는 evidence-grounded generation에 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "f_string",
+        "reading_goal_internal":  "f-string 안 중괄호 표현식의 현재 값을 평가하고 해당 위치에 문자열 형태로 삽입해 전체 prompt를 만드는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "f-string은 접두사 `f`가 붙은 문자열에서 `{expression}`을 평가해 그 결과를 문자열 안에 삽입합니다.",
+                                    "how_to_read":  "문자열의 고정 부분과 `{question}`, `{context}` 두 표현식을 분리하고 각 현재 값을 해당 위치에 넣습니다.",
+                                    "key_point":  "중괄호 이름 자체가 출력되는 것이 아니라 **그 이름이 현재 가리키는 값**이 들어갑니다.",
+                                    "common_mistake":  "일반 문자열처럼 `{question}` 글자가 그대로 남는다고 생각하기 쉽습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "name = \"Mina\"\ntext = f\"Hello {name}\"\nprint(text)",
+                                 "walkthrough":  "중괄호의 name을 평가해 Mina를 삽입하므로 Hello Mina가 만들어집니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) question 변수는 What is RAG?를 가리킨다. 2) f-string의 `{question}`이 그 값을 읽는다. 3) 고정 문자열 Question: 뒤에 값을 삽입한다. 4) 첫 줄 결과는 Question: What is RAG?다.",
+                                   "why_correct":  "f-string이 question의 현재 값을 중괄호 위치에 삽입하므로 해당 첫 줄이 만들어집니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Question: {question}",
+                                                               "why_wrong":  "f-string에서는 중괄호 표현식이 평가되므로 이름 글자 자체가 그대로 남지 않습니다.",
+                                                               "misread_step":  "문자열 앞의 f 접두사와 중괄호 표현식을 함께 확인합니다."
+                                                           },
+                                   "takeaway":  "f-string은 **고정 문자열 읽기 → 중괄호 표현식 평가 → 결과 삽입 → 하나의 문자열 생성**으로 읽습니다."
+                               },
+        "target_statement":  "f\"Question: {question}\\nEvidence: {context}\\nRule: answer only from evidence\"",
+        "focus_span":  "f\"Question: {question}\\nEvidence: {context}\\nRule: answer only from evidence\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "evidence_grounded_generation",
+                                "rag",
+                                "citation",
+                                "prompt"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    }
 ]

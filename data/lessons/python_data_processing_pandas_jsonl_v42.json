@@ -1,429 +1,1001 @@
 [
-  {
-    "id": "PY42_L06_csv_tsv_001",
-    "level": 6,
-    "title": "CSV vs TSV 읽기",
-    "concepts": [
-      "CSV",
-      "TSV",
-      "delimiter"
-    ],
-    "reading_goal": "CSV와 TSV가 구분자만 다른 표 형식 파일이라는 점을 이해한다.",
-    "code": "CSV: name,score\nTSV: name\\tscore",
-    "question_type": "meaning_choice",
-    "question": "TSV에서 보통 열을 나누는 문자는?",
-    "choices": [
-      "쉼표",
-      "중괄호",
-      "슬래시",
-      "탭 문자"
-    ],
-    "answer": "탭 문자",
-    "explanation": "CSV와 TSV는 표 데이터를 text record로 저장하며 기본 delimiter가 각각 comma와 tab이다. 실제 필드에 delimiter, 따옴표, 줄바꿈이 있으면 quoting·escaping 규칙으로 표현하므로 단순 split(',')이나 split('\\t')로 안전하게 읽을 수 없다. csv 같은 parser와 파일의 dialect·encoding을 사용해야 한다.",
-    "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
-    ],
-    "project_context": "curriculum graph, audit.tsv, manifest.tsv 같은 파일을 읽을 때 자주 나온다."
-  },
-  {
-    "id": "PY42_L06_json_vs_jsonl_001",
-    "level": 6,
-    "title": "JSON vs JSONL 읽기",
-    "concepts": [
-      "JSON",
-      "JSONL",
-      "line_delimited_json"
-    ],
-    "reading_goal": "JSON과 JSONL의 저장 방식 차이를 구분한다.",
-    "code": "JSON:\n[\n  {\"id\": 1},\n  {\"id\": 2}\n]\n\nJSONL:\n{\"id\": 1}\n{\"id\": 2}",
-    "question_type": "meaning_choice",
-    "question": "JSONL의 특징은?",
-    "choices": [
-      "각 줄에 독립적으로 파싱할 수 있는 JSON 값 하나를 둔다",
-      "파일 전체가 반드시 하나의 JSON 배열이다",
-      "줄마다 Python 코드가 들어간다",
-      "마지막 줄만 유효한 JSON이다"
-    ],
-    "answer": "각 줄에 독립적으로 파싱할 수 있는 JSON 값 하나를 둔다",
-    "explanation": "JSON 문서는 배열이나 객체를 포함한 하나의 JSON 값이고, JSONL은 빈 줄 없이 각 줄을 독립적인 JSON 값으로 파싱할 수 있게 저장한다. 레코드는 보통 객체지만 문자열·숫자 같은 다른 JSON 값도 문법상 가능하다. 줄 단위 streaming과 append에는 편하지만 전체 파일 자체는 하나의 일반 JSON 값이 아니다.",
-    "side_card_ids": [
-      "PYV158_A1_JSON_FLOW"
-    ],
-    "project_context": "node_pass output, LoRA dataset, validation result가 JSONL인 경우가 많다."
-  },
-  {
-    "id": "PY42_L07_dictreader_001",
-    "level": 7,
-    "title": "csv.DictReader 읽기",
-    "concepts": [
-      "for",
-      "import",
-      "print",
-      "csv.DictReader",
-      "header",
-      "row_dict"
-    ],
-    "reading_goal": "CSV/TSV 행을 dict로 읽는 방식을 이해한다.",
-    "code": "import csv\n\nwith open('audit.tsv', encoding='utf-8') as f:\n    rows = csv.DictReader(f, delimiter='\\t')\n    for row in rows:\n        print(row['status'])",
-    "question_type": "meaning_choice",
-    "question": "DictReader가 row를 dict로 만들어줄 때 key는 보통 어디서 오나?",
-    "choices": [
-      "파일 확장자",
-      "폴더 이름",
-      "Git 커밋 메시지",
-      "첫 줄의 header"
-    ],
-    "answer": "첫 줄의 header",
-    "explanation": "fieldnames 인자를 생략한 csv.DictReader는 첫 row를 header로 읽어 key로 사용하고 그 header row는 data로 반환하지 않는다. fieldnames를 직접 주면 첫 row도 일반 data가 되므로 동작이 달라진다. 중복·빈 header와 예상 밖 column도 검증해야 한다.",
-    "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
-    ],
-    "project_context": "audit.tsv에서 status, reason, id 같은 컬럼을 이름으로 꺼낼 때 유용하다."
-  },
-  {
-    "id": "PY42_L07_pandas_dataframe_001",
-    "level": 7,
-    "title": "pandas DataFrame 읽기",
-    "concepts": [
-      "import",
-      "print",
-      "pandas",
-      "DataFrame",
-      "table"
-    ],
-    "reading_goal": "DataFrame을 행과 열이 있는 표 데이터 구조로 이해한다.",
-    "code": "import pandas as pd\n\ndf = pd.read_csv('nodes.tsv', sep='\\t')\nprint(df.shape)\nprint(df.columns)",
-    "question_type": "meaning_choice",
-    "question": "df.shape가 알려주는 것은?",
-    "choices": [
-      "Git 브랜치 수",
-      "파일 인코딩 종류",
-      "서버 포트 번호",
-      "행 수와 열 수"
-    ],
-    "answer": "행 수와 열 수",
-    "explanation": "pd.DataFrame(rows)는 rows에 들어 있는 record들을 표 형태의 DataFrame으로 만든다. 각 dict의 key가 열 이름으로, 각 dict가 한 행으로 대응된다. 그래서 이후 df[\"score\"]처럼 열 단위 계산이나 필터를 적용할 수 있다.",
-    "side_card_ids": [
-      "DATA_rdb_001"
-    ],
-    "project_context": "노드 후보, 엣지 후보, 제출 CSV, 평가 결과를 점검할 때 기본 확인값이다."
-  },
-  {
-    "id": "PY42_L07_read_csv_sep_001",
-    "level": 7,
-    "title": "read_csv sep 읽기",
-    "concepts": [
-      "read_csv",
-      "sep",
-      "TSV"
-    ],
-    "reading_goal": "pandas에서 CSV와 TSV를 읽을 때 sep 인자를 이해한다.",
-    "code": "df_csv = pd.read_csv('items.csv')\ndf_tsv = pd.read_csv('audit.tsv', sep='\\t')",
-    "question_type": "meaning_choice",
-    "question": "TSV를 pandas로 읽을 때 sep='\\t'를 주는 이유는?",
-    "choices": [
-      "파일을 삭제하기 위해서다",
-      "JSON으로 변환하기 위해서만 필요하다",
-      "항상 GPU를 쓰기 위해서다",
-      "열 구분자가 탭이기 때문이다"
-    ],
-    "answer": "열 구분자가 탭이기 때문이다",
-    "explanation": "read_csv의 sep 인자는 컬럼을 어떤 문자 기준으로 나눌지 알려준다. TSV는 탭 문자를 기준으로 나누므로 sep='\\t'를 사용한다. 구분자를 잘못 지정하면 한 줄 전체가 하나의 컬럼으로 들어가거나 컬럼 수가 깨질 수 있다. 따라서 정답은 ‘열 구분자가 탭이기 때문이다’이다.",
-    "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
-    ],
-    "project_context": "KG 작업의 manifest.tsv, audit.tsv, mapping.tsv 파일을 읽을 때 자주 쓴다."
-  },
-  {
-    "id": "PY42_L08_chunksize_001",
-    "level": 8,
-    "title": "chunksize 읽기",
-    "concepts": [
-      "for",
-      "chunksize",
-      "large_file",
-      "memory"
-    ],
-    "reading_goal": "큰 파일을 한 번에 다 읽지 않고 조각 단위로 처리하는 방식을 이해한다.",
-    "code": "for chunk in pd.read_csv('large.csv', chunksize=10000):\n    process(chunk)",
-    "question_type": "meaning_choice",
-    "question": "chunksize를 쓰는 주된 이유는?",
-    "choices": [
-      "파일명을 자동으로 바꾸기 위해",
-      "정답을 숨기기 위해",
-      "브라우저 캐시를 지우기 위해",
-      "큰 파일을 메모리에 한 번에 올리지 않기 위해"
-    ],
-    "answer": "큰 파일을 메모리에 한 번에 올리지 않기 위해",
-    "explanation": "pd.read_csv(..., chunksize=10000)은 TextFileReader를 돌려주고 반복할 때 최대 약 10,000행씩 DataFrame을 읽으므로 전체 파일을 동시에 메모리에 둘 필요가 없다. 다만 global sort, dedup, groupby처럼 chunk 경계를 넘는 연산은 중간 집계나 외부 저장을 별도로 설계해야 한다.",
-    "side_card_ids": [
-      "PYV161_A1_BATCH_MEMORY_FLOW"
-    ],
-    "project_context": "수십만 줄 JSONL/CSV 결과를 검증할 때 메모리 폭발을 줄이는 방식이다."
-  },
-  {
-    "id": "PY42_L08_streaming_jsonl_001",
-    "level": 8,
-    "title": "streaming JSONL 읽기",
-    "concepts": [
-      "for",
-      "import",
-      "streaming",
-      "JSONL",
-      "memory_safe"
-    ],
-    "reading_goal": "JSONL을 한 줄씩 읽는 memory-safe 패턴을 이해한다.",
-    "code": "import json\n\nwith open('output.jsonl', encoding='utf-8') as f:\n    for line in f:\n        row = json.loads(line)\n        process(row)",
-    "question_type": "meaning_choice",
-    "question": "이 코드가 대용량 JSONL에 적합한 이유는?",
-    "choices": [
-      "모든 줄을 자동으로 삭제하기 때문이다",
-      "JSON 문법을 무시하기 때문이다",
-      "반드시 pandas가 필요하기 때문이다",
-      "파일 전체를 한 번에 메모리에 올리지 않기 때문이다"
-    ],
-    "answer": "파일 전체를 한 번에 메모리에 올리지 않기 때문이다",
-    "explanation": "파일 반복은 한 줄씩 읽으므로 전체 JSONL을 메모리에 올리지 않는다. 각 non-empty line이 유효한 JSON인지 줄 번호와 함께 오류를 처리해야 하며, process 결과를 저장한 뒤 checkpoint를 원자적으로 갱신해야 안전하게 resume할 수 있다. 줄 단위라는 사실만으로 중단 재개가 자동 제공되지는 않는다.",
-    "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
-    ],
-    "project_context": "node_pass shard 결과와 LLM 응답 로그를 검증할 때 매우 중요하다."
-  },
-  {
-    "id": "PY42_L08_schema_check_001",
-    "level": 8,
-    "title": "schema check 읽기",
-    "concepts": [
-      "if",
-      "schema",
-      "required_fields",
-      "validation"
-    ],
-    "reading_goal": "데이터에 필요한 필드가 모두 있는지 검사하는 schema check를 이해한다.",
-    "code": "required = {'id', 'title', 'answer'}\nmissing = required - row.keys()\nif missing:\n    raise ValueError(f\"missing fields: {sorted(missing)}\")\nif not isinstance(row['id'], str):\n    raise TypeError(\"id must be a string\")",
-    "question_type": "meaning_choice",
-    "question": "schema check의 목적은?",
-    "choices": [
-      "데이터를 무조건 섞는 것",
-      "파일 크기를 0으로 만드는 것",
-      "정답 선택지를 삭제하는 것",
-      "필수 컬럼이나 필드 누락을 빨리 찾는 것"
-    ],
-    "answer": "필수 컬럼이나 필드 누락을 빨리 찾는 것",
-    "explanation": "첫 검사는 필수 key 누락을 찾고, 두 번째 검사는 id type을 확인한다. key 존재만 확인하면 null, 빈 문자열, 잘못된 type까지 잡지는 못한다. 실제 schema validation은 각 field의 type, 허용값, 중첩 구조와 추가 field 정책을 함께 정의해야 한다.",
-    "side_card_ids": [
-      "PYV158_A1_VALIDATION_FLOW",
-      "PYV158_A1_SCHEMA_FLOW"
-    ],
-    "project_context": "lesson JSON의 id, choices, answer, concepts 검증과 같은 원리다."
-  },
-  {
-    "id": "PY42_L08_missing_value_001",
-    "level": 8,
-    "title": "missing value 읽기",
-    "concepts": [
-      "print",
-      "missing_value",
-      "NaN",
-      "isna"
-    ],
-    "reading_goal": "빈 값과 NaN을 확인하는 기본 방식을 이해한다.",
-    "code": "missing_count = df['label'].isna().sum()\nprint(missing_count)",
-    "question_type": "meaning_choice",
-    "question": "df['label'].isna().sum()은 무엇을 세는가?",
-    "choices": [
-      "label column의 NaN·None 같은 결측값 개수",
-      "빈 문자열만의 개수",
-      "모든 행의 개수",
-      "중복 id 개수"
-    ],
-    "answer": "label column의 NaN·None 같은 결측값 개수",
-    "explanation": "isna()는 각 값이 pandas에서 missing으로 인식되는 NaN, None, NaT 등인지 Boolean으로 만들고 sum()은 True 개수를 센다. 일반적인 빈 문자열 ''은 기본적으로 이 계산에서 missing이 아닐 수 있으므로 공백 제거와 빈 문자열 규칙은 별도로 정해야 한다.",
-    "side_card_ids": [
-      "PYV160_A1_FLOAT_NUMERIC_NAN_FLOW"
-    ],
-    "project_context": "라벨링 결과에서 label, reason, decision 누락을 찾을 때 쓴다."
-  },
-  {
-    "id": "PY42_L09_dedup_001",
-    "level": 9,
-    "title": "dedup 읽기",
-    "concepts": [
-      "dedup",
-      "drop_duplicates",
-      "unique_key"
-    ],
-    "reading_goal": "중복 행을 기준 컬럼으로 제거하는 방식을 이해한다.",
-    "code": "df = df.drop_duplicates(subset=['id'])",
-    "question_type": "meaning_choice",
-    "question": "subset=['id']의 의미는?",
-    "choices": [
-      "id 컬럼을 무조건 삭제한다",
-      "id를 랜덤하게 바꾼다",
-      "파일 전체를 정렬하지 못하게 한다",
-      "id 컬럼이 같은 행을 중복으로 본다"
-    ],
-    "answer": "id 컬럼이 같은 행을 중복으로 본다",
-    "explanation": "drop_duplicates(subset=['id'])는 id가 같은 행을 한 중복 그룹으로 보고 기본적으로 첫 행을 남긴다. 다른 column 값이 충돌해도 조용히 하나가 제거될 수 있고 missing id들도 중복 취급될 수 있으므로, 삭제 전 중복 그룹을 조사하고 고유 ID 누락을 먼저 검증해야 한다.",
-    "side_card_ids": [
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "노드 후보, 문서 후보, 카드 ID 중복 제거에서 핵심 패턴이다."
-  },
-  {
-    "id": "PY42_L09_groupby_001",
-    "level": 9,
-    "title": "groupby 읽기",
-    "concepts": [
-      "groupby",
-      "aggregation",
-      "count"
-    ],
-    "reading_goal": "특정 컬럼별로 묶어서 개수를 세는 패턴을 이해한다.",
-    "code": "summary = df.groupby('status').size().reset_index(name='count')",
-    "question_type": "meaning_choice",
-    "question": "groupby('status').size()는 무엇에 가까운가?",
-    "choices": [
-      "status 컬럼을 삭제한다",
-      "모든 값을 JSON으로 압축한다",
-      "파일명을 status로 바꾼다",
-      "status 값별 행 개수를 센다"
-    ],
-    "answer": "status 값별 행 개수를 센다",
-    "explanation": "groupby('status').size()는 같은 non-missing status 값의 row를 묶어 각 그룹 크기를 센다. pandas는 기본적으로 NaN status 그룹을 제외하므로 누락도 보고 싶으면 dropna=False를 사용하거나 별도 집계한다. reset_index(name='count')는 결과를 status와 count column의 DataFrame으로 만든다.",
-    "side_card_ids": [
-      "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
-    ],
-    "project_context": "PASS/FAIL, accept/reject, error type 분포를 볼 때 바로 쓰인다."
-  },
-  {
-    "id": "PY42_L09_merge_join_001",
-    "level": 9,
-    "title": "merge / join 읽기",
-    "concepts": [
-      "merge",
-      "join",
-      "key"
-    ],
-    "reading_goal": "두 표를 공통 key 기준으로 합치는 merge를 이해한다.",
-    "code": "merged = nodes.merge(edges, left_on='node_id', right_on='to_node_id', how='left')",
-    "question_type": "meaning_choice",
-    "question": "merge에서 key가 중요한 이유는?",
-    "choices": [
-      "파일을 암호화하기 때문이다",
-      "행 순서를 무조건 랜덤으로 만들기 때문이다",
-      "Python 버전을 고정하기 때문이다",
-      "어떤 행끼리 연결할지 정하기 때문이다"
-    ],
-    "answer": "어떤 행끼리 연결할지 정하기 때문이다",
-    "explanation": "left_on과 right_on은 어떤 key 값끼리 행을 연결할지 정한다. left join은 모든 nodes 행을 보존하지만 edges 쪽에 같은 key가 여러 개면 결과 row 수가 늘고, match가 없으면 오른쪽 값이 missing이 된다. validate 옵션, key uniqueness, 행 수와 unmatched 비율을 함께 점검해야 잘못된 many-to-many 결합을 잡을 수 있다.",
-    "side_card_ids": [
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "node_id, doc_id, chunk_id, card_id 기준으로 파일을 연결할 때 중요하다."
-  },
-  {
-    "id": "PY42_L09_sort_filter_001",
-    "level": 9,
-    "title": "sort / filter 읽기",
-    "concepts": [
-      "sort_values",
-      "filter",
-      "boolean_mask"
-    ],
-    "reading_goal": "조건으로 행을 걸러내고 정렬하는 기본 분석 패턴을 읽는다.",
-    "code": "failed = df[df['status'] == 'FAIL']\nfailed = failed.sort_values('score')",
-    "question_type": "meaning_choice",
-    "question": "df[df['status'] == 'FAIL']의 의미는?",
-    "choices": [
-      "status 컬럼을 FAIL로 모두 바꾼다",
-      "score 컬럼을 삭제한다",
-      "status가 FAIL인 행만 고른다",
-      "파일 전체를 JSONL로 바꾼다"
-    ],
-    "answer": "status가 FAIL인 행만 고른다",
-    "explanation": "sort/filter는 데이터를 정렬하고 조건에 맞는 행만 남기는 기본 처리다. boolean mask는 pandas에서 조건 필터를 만들 때 자주 쓰는 패턴이다. 따라서 정답은 ‘status가 FAIL인 행만 고른다’이다.",
-    "side_card_ids": [
-      "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
-    ],
-    "project_context": "검증 실패 카드, 실패 shard, 낮은 점수 후보를 빠르게 찾는 데 쓴다."
-  },
-  {
-    "id": "PY42_L10_manifest_001",
-    "level": 10,
-    "title": "manifest 파일 읽기",
-    "concepts": [
-      "manifest",
-      "file_inventory",
-      "metadata"
-    ],
-    "reading_goal": "manifest가 파일 목록과 메타정보를 기록하는 관리표라는 점을 이해한다.",
-    "code": "manifest.tsv\nfile_path\\trows\\tsha256\\tcreated_at\\tstatus",
-    "question_type": "meaning_choice",
-    "question": "manifest 파일의 주된 목적은?",
-    "choices": [
-      "모든 데이터를 화면에 렌더링한다",
-      "Python 패키지를 설치한다",
-      "어떤 파일이 있고 상태가 어떤지 추적한다",
-      "브라우저 탭을 닫는다"
-    ],
-    "answer": "어떤 파일이 있고 상태가 어떤지 추적한다",
-    "explanation": "manifest는 데이터 파이프라인에서 입력/출력 파일의 존재와 상태를 관리하는 표다. manifest 파일은 데이터 파일들의 목록과 설명을 담는 안내서 역할을 한다. 어떤 파일을 읽어야 하는지, 경로와 버전이 맞는지 확인하는 기준으로 쓰인다. 따라서 정답은 ‘어떤 파일이 있고 상태가 어떤지 추적한다’이다.",
-    "side_card_ids": [
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "KG 수집팩, curriculum graph, clean text, shard output 관리에 매우 중요하다."
-  },
-  {
-    "id": "PY42_L10_audit_tsv_001",
-    "level": 10,
-    "title": "audit TSV 읽기",
-    "concepts": [
-      "audit",
-      "TSV",
-      "validation_report"
-    ],
-    "reading_goal": "검증 결과를 audit TSV로 남기는 이유를 이해한다.",
-    "code": "audit.tsv\nid\\tstatus\\treason\\tchecked_at\nPY41...\\tOK\\tanswer in choices\\t2026-05-30",
-    "question_type": "meaning_choice",
-    "question": "audit TSV가 있으면 좋은 점은?",
-    "choices": [
-      "검증 없이 항상 성공 처리할 수 있다",
-      "원본 데이터를 자동으로 삭제한다",
-      "무엇이 통과했고 무엇이 실패했는지 나중에 다시 추적할 수 있다",
-      "카드 수를 무조건 줄인다"
-    ],
-    "answer": "무엇이 통과했고 무엇이 실패했는지 나중에 다시 추적할 수 있다",
-    "explanation": "이 audit.tsv는 각 id의 status, reason, checked_at을 구조화해 통과·실패와 판정 이유를 나중에 filter하고 집계하게 한다. 표시된 column에 없는 길이·원본 파일까지 추적하려면 해당 column이나 별도 provenance가 실제로 추가되어야 한다. 생성 도구 version과 입력 hash도 있으면 재현성이 높아진다.",
-    "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
-    ],
-    "project_context": "노드 승격, 엣지 검증, lesson 카드 검증, 제출 파일 검증에 모두 연결된다."
-  },
-  {
-    "id": "PY42_L10_pipeline_data_quality_001",
-    "level": 10,
-    "title": "pipeline data quality 읽기",
-    "concepts": [
-      "data_quality",
-      "pipeline",
-      "validation"
-    ],
-    "reading_goal": "데이터 파이프라인에서 품질 검증 지점을 두는 이유를 이해한다.",
-    "code": "raw files\n  -> parse\n  -> schema check\n  -> dedup\n  -> merge\n  -> audit\n  -> final dataset",
-    "question_type": "meaning_choice",
-    "question": "schema check와 dedup을 중간에 넣는 이유는?",
-    "choices": [
-      "항상 데이터를 더 많이 복제하기 위해",
-      "검증 로그를 없애기 위해",
-      "깨진 데이터가 뒤 단계로 퍼지기 전에 잡기 위해",
-      "파일 확장자를 숨기기 위해"
-    ],
-    "answer": "깨진 데이터가 뒤 단계로 퍼지기 전에 잡기 위해",
-    "explanation": "schema check는 필요한 field와 type을 조기에 검사하고 dedup은 명시한 identity 규칙의 중복을 처리해 잘못된 데이터가 merge 이후 증폭되는 것을 줄인다. pipeline 단계마다 row 수가 유지될 필요는 없으므로 예상 증감, key uniqueness, rejected row와 provenance를 따로 기록해야 한다.",
-    "side_card_ids": [
-      "PYV158_A1_PIPELINE_FLOW"
-    ],
-    "project_context": "KG/LoRA/교육앱 모두 extract -> validate -> merge -> audit 흐름이 필요하다."
-  }
+    {
+        "id":  "PY42_L06_csv_tsv_001",
+        "level":  6,
+        "title":  "csv.reader의 delimiter 인자로 TSV 열 경계 읽기",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "literal"
+                     ],
+        "reading_goal":  "keyword argument `delimiter=\u0027\\t\u0027`가 TSV 열 구분자를 탭으로 설정하는 의미를 읽는다.",
+        "code":  "import csv\nfrom io import StringIO\nstream = StringIO(\"name\\tscore\\nMina\\t90\\n\")\nreader = csv.reader(stream, delimiter=\"\\t\")\nrows = list(reader)\nprint(rows[1])",
+        "question_type":  "concept_reading",
+        "question":  "`delimiter=\"\\t\"`가 TSV를 읽을 때 하는 역할은?",
+        "choices":  [
+                        "탭 문자를 열 구분자로 사용하라고 reader에 지정한다",
+                        "각 행 끝에 탭을 자동 추가한다",
+                        "숫자 90을 int로 변환한다",
+                        "첫 열 이름을 delimiter로 바꾼다"
+                    ],
+        "answer":  "탭 문자를 열 구분자로 사용하라고 reader에 지정한다",
+        "explanation":  "1) stream 텍스트가 탭으로 열을 나눈 TSV임을 확인한다. 2) csv.reader 호출에서 delimiter keyword를 찾는다. 3) \\t가 탭 문자임을 해석한다. 4) reader가 탭 위치마다 열을 나눠 rows를 만든다.",
+        "side_card_ids":  [
+                              "PYV102_A7_DATAFRAME_CSV_CLEANING"
+                          ],
+        "project_context":  "쉼표·탭·파이프 등 다양한 구분자를 가진 데이터 파일을 동일한 csv 모듈로 처리할 때 중요합니다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "keyword argument `delimiter=\u0027\\t\u0027`가 TSV 열 구분자를 탭으로 설정하는 의미를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "keyword argument는 호출 시 특정 매개변수의 값을 이름으로 명시합니다.",
+                                    "how_to_read":  "delimiter라는 이름과 `\\t` 값의 의미를 함께 읽고 reader가 어떤 문자에서 열을 나눌지 결정하는 설정으로 해석합니다.",
+                                    "key_point":  "CSV와 TSV는 delimiter가 다르므로 parser 호출의 delimiter 값을 확인해야 열 분리가 정확합니다.",
+                                    "common_mistake":  "파일 확장자가 .tsv면 Python이 자동으로 탭 구분자를 추론한다고 생각하면 안 됩니다. parser 설정을 확인해야 합니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "import csv\nfrom io import StringIO\nstream = StringIO(\"a|b\\n1|2\\n\")\nreader = csv.reader(stream, delimiter=\"|\")\nprint(next(reader))",
+                                 "walkthrough":  "delimiter=\u0027|\u0027가 파이프 문자를 열 구분자로 지정해 첫 줄을 [\u0027a\u0027, \u0027b\u0027]로 나눕니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) stream 텍스트가 탭으로 열을 나눈 TSV임을 확인한다. 2) csv.reader 호출에서 delimiter keyword를 찾는다. 3) \\t가 탭 문자임을 해석한다. 4) reader가 탭 위치마다 열을 나눠 rows를 만든다.",
+                                   "why_correct":  "CSV와 TSV는 delimiter가 다르므로 parser 호출의 delimiter 값을 확인해야 열 분리가 정확합니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "파일 확장자가 .tsv면 Python이 자동으로 탭을 추론한다",
+                                                               "why_wrong":  "이 예제는 메모리 stream이고 구분 규칙은 delimiter 인자에서 명시적으로 정합니다.",
+                                                               "misread_step":  "파일 이름이 아니라 parser 설정을 읽는다."
+                                                           },
+                                   "takeaway":  "CSV/TSV 파싱은 **입력 텍스트 + delimiter 인자**를 함께 봐야 열 경계를 정확히 알 수 있다."
+                               },
+        "target_statement":  "delimiter=\"\\t\"",
+        "focus_span":  "delimiter=\"\\t\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "CSV",
+                                "TSV",
+                                "delimiter",
+                                "csv.reader"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY42_L06_json_vs_jsonl_001",
+        "level":  6,
+        "title":  "JSONL을 splitlines() 뒤 한 줄씩 파싱하는 list comprehension 읽기",
+        "concepts":  [
+                         "list_comprehension",
+                         "call",
+                         "for_statement"
+                     ],
+        "reading_goal":  "list comprehension이 JSONL의 각 줄을 독립적으로 json.loads하는 처리 구조를 읽는다.",
+        "code":  "import json\njsonl_text = \u0027{\"id\": 1}\\n{\"id\": 2}\u0027\nrows = [json.loads(line) for line in jsonl_text.splitlines()]\nprint(rows)",
+        "question_type":  "meaning_choice",
+        "question":  "이 list comprehension이 JSONL의 특징을 반영하는 지점은?",
+        "choices":  [
+                        "splitlines로 나눈 각 줄을 json.loads로 각각 파싱한다",
+                        "전체 텍스트를 하나의 JSON 배열로 가정한다",
+                        "줄바꿈을 모두 삭제한 뒤 한 번만 파싱한다",
+                        "각 줄을 Python 코드로 exec한다"
+                    ],
+        "answer":  "splitlines로 나눈 각 줄을 json.loads로 각각 파싱한다",
+        "explanation":  "1) jsonl_text에 두 JSON 객체가 줄바꿈으로 구분돼 있다. 2) splitlines가 두 줄 문자열을 만든다. 3) comprehension이 각 line에 json.loads를 적용한다. 4) 두 dict가 rows list에 순서대로 들어간다.",
+        "side_card_ids":  [
+                              "PYV158_A1_JSON_FLOW"
+                          ],
+        "project_context":  "대용량 로그·노드·카드 데이터를 줄 단위로 처리하거나 부분 실패를 격리하는 파이프라인에서 JSONL이 자주 사용됩니다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "list_comprehension",
+        "reading_goal_internal":  "list comprehension이 JSONL의 각 줄을 독립적으로 json.loads하는 처리 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "list comprehension은 iterable의 각 항목에 표현식을 적용해 새 list를 만듭니다.",
+                                    "how_to_read":  "오른쪽 iterable이 `jsonl_text.splitlines()`라는 점을 보고 각 line마다 `json.loads(line)`이 한 번씩 실행된다고 읽습니다.",
+                                    "key_point":  "JSONL의 장점은 각 줄이 독립 JSON 값이어서 줄 단위 파싱·스트리밍이 가능하다는 데 있습니다.",
+                                    "common_mistake":  "JSONL 전체가 `[ ... ]`로 감싸진 JSON 배열이어야 한다고 생각하면 안 됩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\ntext = \u0027{\"v\": 10}\\n{\"v\": 20}\u0027\nvalues = [json.loads(line) for line in text.splitlines()]\nprint(values[1][\"v\"])",
+                                 "walkthrough":  "splitlines가 두 JSON 문자열로 나누고 comprehension이 각 문자열을 독립적으로 loads해 dict 두 개의 list를 만듭니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) jsonl_text에 두 JSON 객체가 줄바꿈으로 구분돼 있다. 2) splitlines가 두 줄 문자열을 만든다. 3) comprehension이 각 line에 json.loads를 적용한다. 4) 두 dict가 rows list에 순서대로 들어간다.",
+                                   "why_correct":  "JSONL의 장점은 각 줄이 독립 JSON 값이어서 줄 단위 파싱·스트리밍이 가능하다는 데 있습니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "전체 텍스트를 하나의 JSON 배열로 가정한다",
+                                                               "why_wrong":  "텍스트에는 대괄호 배열 구조가 없고 코드도 줄을 나눠 개별 loads합니다.",
+                                                               "misread_step":  "전체 JSON 구조와 line-delimited 구조를 처리 코드에서 구분한다."
+                                                           },
+                                   "takeaway":  "JSONL 처리는 **줄 분리/순회 → 각 줄 독립 파싱**, 일반 JSON 배열은 **전체 구조 파싱**으로 구분한다."
+                               },
+        "target_statement":  "[json.loads(line) for line in jsonl_text.splitlines()]",
+        "focus_span":  "[json.loads(line) for line in jsonl_text.splitlines()]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "JSON",
+                                "JSONL",
+                                "splitlines",
+                                "line-delimited JSON"
+                            ],
+        "pedagogical_intent":  "compare_behavior"
+    },
+    {
+        "id":  "PY42_L07_dictreader_001",
+        "level":  7,
+        "title":  "DictReader가 header로 row dict 만들기",
+        "concepts":  [
+                         "call",
+                         "attribute_access",
+                         "argument_passing"
+                     ],
+        "reading_goal":  "DictReader constructor call이 첫 줄 header를 기준으로 이후 행을 dict로 만드는 흐름을 읽는다.",
+        "code":  "import csv\nfrom io import StringIO\n\nf = StringIO(\"status\\treason\\nPASS\\tok\\n\")\nrows = csv.DictReader(f, delimiter=\"\\t\")\nrow = next(rows)\nprint(row[\"status\"])",
+        "question_type":  "output_prediction",
+        "question":  "마지막 줄이 출력하는 값은 무엇인가?",
+        "choices":  [
+                        "PASS",
+                        "status",
+                        "reason",
+                        "ok"
+                    ],
+        "answer":  "PASS",
+        "explanation":  "StringIO의 첫 줄은 status와 reason이다. DictReader가 이 둘을 header key로 사용한다. 다음 줄 PASS와 ok가 각각 status와 reason value가 된다. `row[\"status\"]`는 PASS를 읽는다. DictReader가 첫 줄 header와 다음 data row의 값을 같은 위치끼리 연결해 dict를 만들기 때문입니다. 헷갈리기 쉬운 오답: status status는 dict의 key이고 대괄호 조회 결과는 그 key에 연결된 value입니다. 오독 지점: header 이름과 data row의 실제 값을 구분해야 합니다. fieldnames를 따로 주지 않은 DictReader는 첫 줄을 header로 사용해 이후 각 행을 dict 형태로 읽습니다.",
+        "side_card_ids":  [
+                              "PYV102_A7_DATAFRAME_CSV_CLEANING"
+                          ],
+        "project_context":  "audit TSV나 평가 결과 파일의 컬럼명을 key로 사용해 행 데이터를 읽는 맥락이다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "DictReader constructor call이 첫 줄 header를 기준으로 이후 행을 dict로 만드는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "constructor call은 클래스를 호출해 새 객체를 만드는 호출입니다. `csv.DictReader(...)`는 CSV 형식의 행을 dict로 읽는 reader 객체를 만듭니다.",
+                                    "how_to_read":  "괄호 안에 어떤 파일 객체와 delimiter가 전달되는지 확인한 뒤, 생성된 reader가 이후 반복에서 어떤 형태의 값을 내는지 봅니다.",
+                                    "key_point":  "첫 줄을 header로 사용하는 것은 DictReader의 라이브러리 동작이고 Python 문법 초점은 객체를 만드는 constructor call입니다.",
+                                    "common_mistake":  "DictReader 호출 자체가 모든 행을 즉시 list로 만든다고 생각하기 쉽습니다. 이 코드는 reader 객체를 만들고 다음 줄의 `next(rows)`에서 첫 data row를 꺼냅니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "import csv\nfrom io import StringIO\n\nf = StringIO(\"name,score\\nMina,90\\n\")\nreader = csv.DictReader(f)\nitem = next(reader)\nprint(item[\"name\"])",
+                                 "walkthrough":  "첫 줄 name,score가 key가 되고 다음 줄 Mina,90이 dict가 되어 name key로 Mina를 읽습니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "StringIO의 첫 줄은 status와 reason이다. DictReader가 이 둘을 header key로 사용한다. 다음 줄 PASS와 ok가 각각 status와 reason value가 된다. `row[\"status\"]`는 PASS를 읽는다.",
+                                   "why_correct":  "DictReader가 첫 줄 header와 다음 data row의 값을 같은 위치끼리 연결해 dict를 만들기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "status",
+                                                               "why_wrong":  "status는 dict의 key이고 대괄호 조회 결과는 그 key에 연결된 value입니다.",
+                                                               "misread_step":  "header 이름과 data row의 실제 값을 구분해야 합니다."
+                                                           },
+                                   "takeaway":  "fieldnames를 따로 주지 않은 DictReader는 첫 줄을 header로 사용해 이후 각 행을 dict 형태로 읽습니다."
+                               },
+        "target_statement":  "rows = csv.DictReader(f, delimiter=\"\\t\")",
+        "focus_span":  "csv.DictReader(f, delimiter=\"\\t\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "csv",
+                                "DictReader",
+                                "header",
+                                "TSV"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY42_L07_pandas_dataframe_001",
+        "level":  7,
+        "title":  "DataFrame의 shape 속성 읽기",
+        "concepts":  [
+                         "attribute_access",
+                         "assignment",
+                         "call"
+                     ],
+        "reading_goal":  "DataFrame 객체의 `shape` 속성을 읽어 행 수와 열 수를 해석한다.",
+        "code":  "import pandas as pd\n\ndf = pd.DataFrame([\n    {\"id\": \"n1\", \"score\": 0.9},\n    {\"id\": \"n2\", \"score\": 0.8},\n])\nshape = df.shape\nprint(shape)",
+        "question_type":  "output_prediction",
+        "question":  "마지막 줄이 출력하는 값은 무엇인가?",
+        "choices":  [
+                        "(2, 2)",
+                        "(1, 2)",
+                        "[\u0027id\u0027, \u0027score\u0027]",
+                        "2"
+                    ],
+        "answer":  "(2, 2)",
+        "explanation":  "DataFrame에는 n1과 n2 두 행이 있다. 각 행에는 id와 score 두 key가 있으므로 열도 두 개다. `df.shape`는 행 수와 열 수를 이 순서로 묶어 `(2, 2)`를 반환한다. DataFrame의 shape 속성은 `(rows, columns)` 구조이기 때문에 행 2개, 열 2개인 이 표의 결과가 `(2, 2)`입니다. 헷갈리기 쉬운 오답: [\u0027id\u0027, \u0027score\u0027] 이 값은 열 이름을 나타내는 형태이지 shape의 반환 형식이 아닙니다. 오독 지점: `shape`와 `columns` 속성의 역할을 구분해야 합니다. DataFrame에서 `shape`는 `(행 수, 열 수)`를 읽는 속성입니다.",
+        "side_card_ids":  [
+                              "DATA_rdb_001"
+                          ],
+        "project_context":  "노드 후보나 평가 결과를 DataFrame으로 읽은 뒤 데이터 크기를 빠르게 점검하는 맥락이다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "attribute_access",
+        "reading_goal_internal":  "DataFrame 객체의 `shape` 속성을 읽어 행 수와 열 수를 해석한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "attribute access는 `object.name`처럼 객체가 가진 속성을 읽는 문법입니다. pandas DataFrame의 `shape` 속성은 표의 크기를 `(행 수, 열 수)` tuple로 제공합니다.",
+                                    "how_to_read":  "먼저 `df`가 어떤 DataFrame인지 확인한 뒤 점 뒤의 `shape`가 그 객체에서 읽는 속성임을 봅니다. 반환된 두 숫자는 앞에서부터 행 수, 열 수입니다.",
+                                    "key_point":  "`df.shape`의 두 숫자는 데이터 값이 아니라 DataFrame의 구조 크기입니다.",
+                                    "common_mistake":  "`shape`를 열 이름 목록이라고 생각하기 쉽습니다. 열 이름은 `df.columns`이고, `shape`는 행 수와 열 수 두 숫자입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "import pandas as pd\n\nframe = pd.DataFrame([{\"name\": \"A\", \"score\": 90}, {\"name\": \"B\", \"score\": 80}, {\"name\": \"C\", \"score\": 70}])\nsize = frame.shape\nprint(size)",
+                                 "walkthrough":  "row dict가 3개이고 column은 name, score 두 개이므로 `frame.shape`는 `(3, 2)`입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "DataFrame에는 n1과 n2 두 행이 있다. 각 행에는 id와 score 두 key가 있으므로 열도 두 개다. `df.shape`는 행 수와 열 수를 이 순서로 묶어 `(2, 2)`를 반환한다.",
+                                   "why_correct":  "DataFrame의 shape 속성은 `(rows, columns)` 구조이기 때문에 행 2개, 열 2개인 이 표의 결과가 `(2, 2)`입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\u0027id\u0027, \u0027score\u0027]",
+                                                               "why_wrong":  "이 값은 열 이름을 나타내는 형태이지 shape의 반환 형식이 아닙니다.",
+                                                               "misread_step":  "`shape`와 `columns` 속성의 역할을 구분해야 합니다."
+                                                           },
+                                   "takeaway":  "DataFrame에서 `shape`는 `(행 수, 열 수)`를 읽는 속성입니다."
+                               },
+        "target_statement":  "shape = df.shape",
+        "focus_span":  "df.shape",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "pandas",
+                                "DataFrame",
+                                "shape",
+                                "table"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY42_L07_read_csv_sep_001",
+        "level":  7,
+        "title":  "`sep=` 키워드 인자로 TSV 구분자 전달하기",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "assignment"
+                     ],
+        "reading_goal":  "함수 호출에서 `sep=\"\\t\"`가 어떤 매개변수에 어떤 값을 전달하는지 읽는다.",
+        "code":  "from io import StringIO\nimport pandas as pd\n\nsource = StringIO(\"id\\tscore\\nn1\\t90\\n\")\ndf = pd.read_csv(source, sep=\"\\t\")\nprint(list(df.columns))",
+        "question_type":  "multiple_choice",
+        "question":  "`sep=\"\\t\"`를 Python 호출 문법 관점에서 가장 정확히 읽은 것은?",
+        "choices":  [
+                        "`sep` 매개변수에 탭 문자를 키워드 인자로 전달한다.",
+                        "`sep`라는 전역 변수를 새로 만든다.",
+                        "DataFrame의 `sep` 속성을 읽는다.",
+                        "탭 문자를 리스트 인덱스로 사용한다."
+                    ],
+        "answer":  "`sep` 매개변수에 탭 문자를 키워드 인자로 전달한다.",
+        "explanation":  "`pd.read_csv(`로 함수 호출이 시작된다. 첫 positional argument는 `source`다. 이어지는 `sep=\"\\t\"`는 이름이 붙은 인자로, `sep` 매개변수에 탭 문자를 전달한다. 함수 호출 괄호 안의 `name=value` 형태는 keyword argument이기 때문입니다. 헷갈리기 쉬운 오답: `sep`라는 전역 변수를 새로 만든다. 호출 괄호 안의 `sep=`는 변수 대입문이 아니라 함수 매개변수 이름을 지정하는 문법입니다. 오독 지점: 대입문과 호출 안의 keyword argument를 구분해야 합니다. 함수 호출 안의 `이름=값`은 해당 매개변수에 값을 전달하는 keyword argument입니다.",
+        "side_card_ids":  [
+                              "PYV102_A7_DATAFRAME_CSV_CLEANING"
+                          ],
+        "project_context":  "manifest.tsv나 audit.tsv를 pandas로 읽을 때 구분자를 명시하는 맥락이다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "함수 호출에서 `sep=\"\\t\"`가 어떤 매개변수에 어떤 값을 전달하는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "keyword argument는 함수 호출에서 `이름=값` 형태로 특정 매개변수에 값을 전달하는 문법입니다.",
+                                    "how_to_read":  "`sep=\"\\t\"`를 보면 먼저 매개변수 이름이 `sep`인지 확인하고, 오른쪽 값 `\"\\t\"`가 탭 문자라는 점을 읽습니다.",
+                                    "key_point":  "TSV를 탭 기준으로 나누는 기능은 pandas의 동작이고, Python 문법 초점은 `sep`라는 이름으로 값을 전달하는 keyword argument입니다.",
+                                    "common_mistake":  "`sep`가 새 변수를 만드는 대입이라고 보기 쉽습니다. 함수 호출 괄호 안의 `sep=\"\\t\"`는 지역 변수 대입이 아니라 호출 인자 전달입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "from io import StringIO\nimport pandas as pd\n\nsource = StringIO(\"name|score\\nMina|90\\n\")\nframe = pd.read_csv(source, sep=\"|\")\nprint(list(frame.columns))",
+                                 "walkthrough":  "`sep=\"|\"`가 `sep` 매개변수에 세로줄을 전달하므로 name과 score가 서로 다른 열이 됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`pd.read_csv(`로 함수 호출이 시작된다. 첫 positional argument는 `source`다. 이어지는 `sep=\"\\t\"`는 이름이 붙은 인자로, `sep` 매개변수에 탭 문자를 전달한다.",
+                                   "why_correct":  "함수 호출 괄호 안의 `name=value` 형태는 keyword argument이기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "`sep`라는 전역 변수를 새로 만든다.",
+                                                               "why_wrong":  "호출 괄호 안의 `sep=`는 변수 대입문이 아니라 함수 매개변수 이름을 지정하는 문법입니다.",
+                                                               "misread_step":  "대입문과 호출 안의 keyword argument를 구분해야 합니다."
+                                                           },
+                                   "takeaway":  "함수 호출 안의 `이름=값`은 해당 매개변수에 값을 전달하는 keyword argument입니다."
+                               },
+        "target_statement":  "df = pd.read_csv(source, sep=\"\\t\")",
+        "focus_span":  "sep=\"\\t\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "pandas",
+                                "read_csv",
+                                "TSV",
+                                "separator"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY42_L08_chunksize_001",
+        "level":  8,
+        "title":  "chunksize=10000 키워드 인자 읽기",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "pandas 함수 호출에서 `chunksize=...`가 이름을 지정해 설정값을 전달하는 키워드 인자임을 읽는다.",
+        "code":  "import pandas as pd\n\nreader = pd.read_csv(\"large.csv\", chunksize=10000)",
+        "question_type":  "multiple_choice",
+        "question":  "`chunksize=10000`은 어떤 이름의 매개변수에 `10000`을 전달하는가?",
+        "choices":  [
+                        "reader",
+                        "chunksize",
+                        "large",
+                        "csv"
+                    ],
+        "answer":  "chunksize",
+        "explanation":  "`pd.read_csv()` 호출 내부의 `chunksize=10000`을 보면 등호 왼쪽이 매개변수 이름이고 오른쪽이 전달값입니다. 키워드 인자 문법에서 `name=value`의 `name`이 대상 매개변수이기 때문입니다. 헷갈리기 쉬운 오답: reader `reader`는 함수 반환값을 저장하는 대입 대상입니다. 오독 지점: 호출 바깥의 대입 이름과 호출 안의 키워드 인자 이름을 섞어 읽은 경우입니다. 호출 안의 `chunksize=10000`은 **chunksize 매개변수에 10000을 전달**합니다.",
+        "side_card_ids":  [
+                              "PYV161_A1_BATCH_MEMORY_FLOW"
+                          ],
+        "project_context":  "수십만 줄 CSV를 한꺼번에 메모리에 올리지 않고 일정 행 단위로 처리하도록 읽기 크기를 설정하는 코드에 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "pandas 함수 호출에서 `chunksize=...`가 이름을 지정해 설정값을 전달하는 키워드 인자임을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "호출 괄호 안의 `name=value`는 특정 매개변수 이름을 지정해 값을 전달하는 키워드 인자입니다.",
+                                    "how_to_read":  "`chunksize=10000`은 `read_csv()`의 `chunksize` 매개변수에 정수 `10000`을 전달한다고 읽습니다.",
+                                    "key_point":  "`10000`은 파일명과 같은 위치 인자가 아니라 이름이 붙은 설정값입니다.",
+                                    "common_mistake":  "`chunksize=10000`을 별도 변수 대입으로 보기 쉽습니다. 함수 호출 괄호 안이므로 키워드 인자 전달입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "items = sorted([3, 1, 2], reverse=True)",
+                                 "walkthrough":  "`reverse=True`는 `sorted()` 호출에서 `reverse` 매개변수에 `True`를 전달하는 같은 키워드 인자 구조입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`pd.read_csv()` 호출 내부의 `chunksize=10000`을 보면 등호 왼쪽이 매개변수 이름이고 오른쪽이 전달값입니다.",
+                                   "why_correct":  "키워드 인자 문법에서 `name=value`의 `name`이 대상 매개변수이기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "reader",
+                                                               "why_wrong":  "`reader`는 함수 반환값을 저장하는 대입 대상입니다.",
+                                                               "misread_step":  "호출 바깥의 대입 이름과 호출 안의 키워드 인자 이름을 섞어 읽은 경우입니다."
+                                                           },
+                                   "takeaway":  "호출 안의 `chunksize=10000`은 **chunksize 매개변수에 10000을 전달**합니다."
+                               },
+        "target_statement":  "reader = pd.read_csv(\"large.csv\", chunksize=10000)",
+        "focus_span":  "chunksize=10000",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "pandas",
+                                "large CSV",
+                                "chunksize",
+                                "memory"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY42_L08_streaming_jsonl_001",
+        "level":  8,
+        "title":  "for line in f로 파일을 한 줄씩 순회하기",
+        "concepts":  [
+                         "for_statement",
+                         "call",
+                         "assignment",
+                         "name_reference"
+                     ],
+        "reading_goal":  "파일 객체를 반복 대상으로 둔 for문이 한 번에 한 줄씩 line 이름에 넣어 본문을 실행하는 흐름을 읽는다.",
+        "code":  "import json\n\nwith open(\"output.jsonl\", encoding=\"utf-8\") as f:\n    for line in f:\n        row = json.loads(line)\n        process(row)",
+        "question_type":  "multiple_choice",
+        "question":  "`for line in f:`의 각 반복 회차에서 `line`에 들어오는 것은 무엇인가?",
+        "choices":  [
+                        "파일 경로 문자열",
+                        "파일의 다음 한 줄",
+                        "모든 JSON 객체의 리스트",
+                        "항상 None"
+                    ],
+        "answer":  "파일의 다음 한 줄",
+        "explanation":  "`for line in f:`에서 반복 대상은 파일 객체입니다. 파일 객체의 반복은 다음 줄을 하나씩 반환하므로 각 회차마다 현재 한 줄이 `line`에 들어옵니다. Python 파일 객체는 줄 단위 iterator처럼 동작하기 때문입니다. 헷갈리기 쉬운 오답: 모든 JSON 객체의 리스트 이 코드는 파일 전체를 먼저 리스트로 변환하지 않습니다. 오독 지점: 반복문이 값을 하나씩 가져오는 실행 방식을 놓친 경우입니다. `for line in file:`은 **파일을 한 줄씩 순회**합니다.",
+        "side_card_ids":  [
+                              "PYV102_A7_DATAFRAME_CSV_CLEANING"
+                          ],
+        "project_context":  "대규모 JSONL 로그나 shard 결과를 전체 로드하지 않고 한 줄씩 검증·처리하는 코드를 읽는 데 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "for_statement",
+        "reading_goal_internal":  "파일 객체를 반복 대상으로 둔 for문이 한 번에 한 줄씩 line 이름에 넣어 본문을 실행하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`for item in iterable:`은 반복 가능한 대상에서 값을 하나씩 꺼내 `item`에 넣고 본문을 반복하는 문법입니다.",
+                                    "how_to_read":  "`for line in f:`는 파일 객체 `f`에서 한 줄씩 꺼내 `line`에 넣는다고 읽습니다.",
+                                    "key_point":  "반복문의 각 회차에는 현재 한 줄이 `line`에 들어옵니다. 전체 파일 문자열이 한 번에 `line`에 들어가는 것이 아닙니다.",
+                                    "common_mistake":  "`f`가 파일 전체를 뜻하므로 `line`도 파일 전체라고 생각하기 쉽습니다. 파일 객체 반복은 줄 단위로 진행됩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "from io import StringIO\n\nf = StringIO(\"alpha\\nbeta\\n\")\nfor line in f:\n    word = line.strip()",
+                                 "walkthrough":  "첫 회차에는 `alpha\\n`, 다음 회차에는 `beta\\n`가 `line`에 들어옵니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`for line in f:`에서 반복 대상은 파일 객체입니다. 파일 객체의 반복은 다음 줄을 하나씩 반환하므로 각 회차마다 현재 한 줄이 `line`에 들어옵니다.",
+                                   "why_correct":  "Python 파일 객체는 줄 단위 iterator처럼 동작하기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "모든 JSON 객체의 리스트",
+                                                               "why_wrong":  "이 코드는 파일 전체를 먼저 리스트로 변환하지 않습니다.",
+                                                               "misread_step":  "반복문이 값을 하나씩 가져오는 실행 방식을 놓친 경우입니다."
+                                                           },
+                                   "takeaway":  "`for line in file:`은 **파일을 한 줄씩 순회**합니다."
+                               },
+        "target_statement":  "for line in f:",
+        "focus_span":  "for line in f:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "JSONL",
+                                "streaming",
+                                "large file",
+                                "memory safe"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY42_L08_schema_check_001",
+        "level":  8,
+        "title":  "누락 필드가 있으면 if 검증 분기로 들어가기",
+        "concepts":  [
+                         "if_statement",
+                         "name_reference",
+                         "raise_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "비어 있지 않은 set의 truthiness가 if 분기 실행 여부를 결정하는 흐름을 읽는다.",
+        "code":  "required = {\"id\", \"title\", \"answer\"}\nrow = {\"id\": \"c1\", \"title\": \"len 읽기\"}\nmissing = required - row.keys()\nif missing:\n    raise ValueError(f\"missing fields: {sorted(missing)}\")",
+        "question_type":  "multiple_choice",
+        "question":  "현재 `missing`에 `answer`가 들어 있다면 `if missing:` 조건은 어떻게 평가되는가?",
+        "choices":  [
+                        "참",
+                        "거짓",
+                        "항상 None",
+                        "문법 오류"
+                    ],
+        "answer":  "참",
+        "explanation":  "필수 key 중 `answer`가 없어서 `missing` set에 요소가 생깁니다. 비어 있지 않은 set은 truthy이므로 `if missing:`은 참입니다. Python에서 비어 있지 않은 컬렉션은 조건식에서 참으로 평가되기 때문입니다. 헷갈리기 쉬운 오답: 거짓 거짓이 되려면 `missing`이 빈 set이어야 합니다. 오독 지점: set의 요소 존재 여부를 확인하지 않은 경우입니다. `if collection:`은 **컬렉션이 비어 있지 않으면 참**으로 읽을 수 있습니다.",
+        "side_card_ids":  [
+                              "PYV158_A1_VALIDATION_FLOW",
+                              "PYV158_A1_SCHEMA_FLOW"
+                          ],
+        "project_context":  "lesson JSON이나 카드 메타데이터에서 필수 field가 빠졌을 때 조기에 실패시키는 검증 코드에 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "비어 있지 않은 set의 truthiness가 if 분기 실행 여부를 결정하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if value:`는 `value`의 참/거짓 평가 결과가 참일 때 블록을 실행합니다.",
+                                    "how_to_read":  "`if missing:`은 `missing` 집합이 비어 있지 않은지 확인하고, 요소가 있으면 누락 필드 처리 블록으로 들어간다고 읽습니다.",
+                                    "key_point":  "조건에 비교 연산자가 없어도 컬렉션 자체의 truthiness를 조건으로 사용할 수 있습니다.",
+                                    "common_mistake":  "`if missing:`을 `missing == True`와 같은 값 비교로만 생각하기 쉽습니다. 비어 있지 않은 set 자체가 참으로 평가됩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "errors = {\"email\"}\nif errors:\n    status = \"invalid\"",
+                                 "walkthrough":  "`errors` set에 요소가 하나 있으므로 조건이 참이고 `status`에 `invalid`가 저장됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "필수 key 중 `answer`가 없어서 `missing` set에 요소가 생깁니다. 비어 있지 않은 set은 truthy이므로 `if missing:`은 참입니다.",
+                                   "why_correct":  "Python에서 비어 있지 않은 컬렉션은 조건식에서 참으로 평가되기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "거짓",
+                                                               "why_wrong":  "거짓이 되려면 `missing`이 빈 set이어야 합니다.",
+                                                               "misread_step":  "set의 요소 존재 여부를 확인하지 않은 경우입니다."
+                                                           },
+                                   "takeaway":  "`if collection:`은 **컬렉션이 비어 있지 않으면 참**으로 읽을 수 있습니다."
+                               },
+        "target_statement":  "if missing:",
+        "focus_span":  "if missing:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "schema validation",
+                                "required fields",
+                                "missing keys",
+                                "lesson JSON"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY42_L08_missing_value_001",
+        "level":  8,
+        "title":  "isna().sum() 호출 체인으로 결측값 개수 세기",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "subscription",
+                         "name_reference"
+                     ],
+        "reading_goal":  "연속된 메서드 호출에서 앞 호출의 반환값이 다음 호출의 대상이 되는 순서를 읽는다.",
+        "code":  "import pandas as pd\n\ndf = pd.DataFrame({\"label\": [\"A\", None, \"B\", None]})\nmissing_count = df[\"label\"].isna().sum()",
+        "question_type":  "multiple_choice",
+        "question":  "이 코드에서 `missing_count`에 저장되는 값은 무엇인가?",
+        "choices":  [
+                        "0",
+                        "1",
+                        "2",
+                        "4"
+                    ],
+        "answer":  "2",
+        "explanation":  "Series의 네 값 중 `None`이 두 개입니다. `isna()`가 두 값을 결측으로 표시하고, 이어지는 `sum()`이 True 개수 2를 계산합니다. boolean 값에서 True는 합산 시 1처럼 계산되어 두 개의 True가 2가 되기 때문입니다. 헷갈리기 쉬운 오답: 4 `sum()`은 전체 행 수가 아니라 `isna()`가 만든 True 값만 셉니다. 오독 지점: 마지막 메서드가 어떤 객체에 호출되는지 놓친 경우입니다. 메서드 체인은 **앞 호출의 반환값 → 다음 호출** 순서로 읽습니다.",
+        "side_card_ids":  [
+                              "PYV160_A1_FLOAT_NUMERIC_NAN_FLOW"
+                          ],
+        "project_context":  "라벨링 결과에서 label·reason·decision 같은 필드의 결측 건수를 빠르게 점검하는 코드에 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "연속된 메서드 호출에서 앞 호출의 반환값이 다음 호출의 대상이 되는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`obj.method1().method2()`는 첫 메서드의 반환값에 이어서 두 번째 메서드를 호출하는 체인입니다.",
+                                    "how_to_read":  "`isna()`가 먼저 결측 여부 Series를 만들고, 그 반환값에 `sum()`을 호출해 참 값의 개수를 계산한다고 읽습니다.",
+                                    "key_point":  "왼쪽에서 보이는 메서드 이름을 한꺼번에 읽지 말고 반환값이 다음 호출로 이어지는 순서를 추적합니다.",
+                                    "common_mistake":  "`sum()`이 원본 문자열이나 DataFrame 전체를 더한다고 생각하기 쉽습니다. 실제로는 바로 앞 `isna()`의 boolean 결과에 호출됩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "import pandas as pd\n\ns = pd.Series([1, None, None])\ncount = s.isna().sum()",
+                                 "walkthrough":  "`isna()`가 `[False, True, True]` 성격의 결과를 만들고, 이어 `sum()`이 True 두 개를 세어 `2`를 반환합니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Series의 네 값 중 `None`이 두 개입니다. `isna()`가 두 값을 결측으로 표시하고, 이어지는 `sum()`이 True 개수 2를 계산합니다.",
+                                   "why_correct":  "boolean 값에서 True는 합산 시 1처럼 계산되어 두 개의 True가 2가 되기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "4",
+                                                               "why_wrong":  "`sum()`은 전체 행 수가 아니라 `isna()`가 만든 True 값만 셉니다.",
+                                                               "misread_step":  "마지막 메서드가 어떤 객체에 호출되는지 놓친 경우입니다."
+                                                           },
+                                   "takeaway":  "메서드 체인은 **앞 호출의 반환값 → 다음 호출** 순서로 읽습니다."
+                               },
+        "target_statement":  "missing_count = df[\"label\"].isna().sum()",
+        "focus_span":  "df[\"label\"].isna().sum()",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "pandas",
+                                "missing value",
+                                "NaN",
+                                "isna"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY42_L09_dedup_001",
+        "level":  9,
+        "title":  "drop_duplicates의 subset 기준 column 읽기",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "assignment",
+                         "class_definition"
+                     ],
+        "reading_goal":  "`subset=[\"id\"]`가 중복 판정에 사용할 field 목록을 메서드에 전달한다는 의미를 읽는다.",
+        "code":  "class Frame:\n    def __init__(self, rows):\n        self.rows = rows\n    def drop_duplicates(self, subset):\n        key = subset[0]\n        seen = set()\n        result = []\n        for row in self.rows:\n            if row[key] in seen:\n                continue\n            seen.add(row[key])\n            result.append(row)\n        return result\n\nframe = Frame([{\"id\": 1, \"name\": \"A\"}, {\"id\": 1, \"name\": \"B\"}, {\"id\": 2, \"name\": \"C\"}])\ndeduped = frame.drop_duplicates(subset=[\"id\"])",
+        "question_type":  "multiple_choice",
+        "question":  "`deduped`의 항목 수는 몇 개인가?",
+        "choices":  [
+                        "1개",
+                        "2개",
+                        "3개",
+                        "0개"
+                    ],
+        "answer":  "2개",
+        "explanation":  "subset은 id를 기준으로 지정합니다. 첫 id=1은 남고 두 번째 id=1은 빠지며 id=2는 남습니다. 중복 판정 key가 id 하나이기 때문입니다. 헷갈리기 쉬운 오답: 3개 id=1이 두 번 나타나므로 하나는 제거됩니다. 오독 지점: subset 기준의 중복 제거를 반영하지 않은 경우입니다. dedup 코드는 **어떤 field를 key로 쓰는지**부터 읽습니다.",
+        "side_card_ids":  [
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "수집·KG·카드 데이터에서 id 같은 고유 key를 기준으로 중복 row를 제거하는 정제 흐름과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "`subset=[\"id\"]`가 중복 판정에 사용할 field 목록을 메서드에 전달한다는 의미를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`subset=[\"id\"]`은 이름이 있는 keyword argument로 리스트 값을 전달합니다.",
+                                    "how_to_read":  "keyword 이름과 오른쪽 값을 분리해 어떤 옵션을 어떤 값으로 설정하는지 봅니다.",
+                                    "key_point":  "여기서는 전체 row가 완전히 같은지를 보는 것이 아니라 id field를 중복 기준으로 사용합니다.",
+                                    "common_mistake":  "subset이 결과에 남길 column 목록이라고 생각하기 쉽습니다. 이 맥락에서는 중복을 판정할 기준 column 목록입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Table:\n    def dedup(self, subset):\n        return subset\n\ntable = Table()\nkeys = table.dedup(subset=[\"email\"])",
+                                 "walkthrough":  "email이 중복 판정 기준 목록으로 전달됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "subset은 id를 기준으로 지정합니다. 첫 id=1은 남고 두 번째 id=1은 빠지며 id=2는 남습니다.",
+                                   "why_correct":  "중복 판정 key가 id 하나이기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "3개",
+                                                               "why_wrong":  "id=1이 두 번 나타나므로 하나는 제거됩니다.",
+                                                               "misread_step":  "subset 기준의 중복 제거를 반영하지 않은 경우입니다."
+                                                           },
+                                   "takeaway":  "dedup 코드는 **어떤 field를 key로 쓰는지**부터 읽습니다."
+                               },
+        "target_statement":  "deduped = frame.drop_duplicates(subset=[\"id\"])",
+        "focus_span":  "subset=[\"id\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "deduplication",
+                                "unique key",
+                                "subset",
+                                "id"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY42_L09_groupby_001",
+        "level":  9,
+        "title":  "groupby() 호출로 status별 row 묶기",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "argument_passing",
+                         "class_definition"
+                     ],
+        "reading_goal":  "status field 이름을 메서드에 전달해 같은 값을 가진 row들이 어떤 그룹으로 묶이는지 읽는다.",
+        "code":  "class Table:\n    def __init__(self, rows):\n        self.rows = rows\n    def groupby(self, field):\n        result = {}\n        for row in self.rows:\n            result.setdefault(row[field], []).append(row)\n        return result\n\ntable = Table([{\"status\": \"PASS\"}, {\"status\": \"FAIL\"}, {\"status\": \"PASS\"}])\ngroups = table.groupby(\"status\")",
+        "question_type":  "multiple_choice",
+        "question":  "`groups[\"PASS\"]`의 항목 수는 몇 개인가?",
+        "choices":  [
+                        "1개",
+                        "2개",
+                        "3개",
+                        "0개"
+                    ],
+        "answer":  "2개",
+        "explanation":  "세 row 중 status가 PASS인 것은 첫 번째와 세 번째입니다. groupby가 두 row를 PASS key에 모읍니다. grouping field로 status가 전달됐기 때문입니다. 헷갈리기 쉬운 오답: 1개 PASS가 첫 row뿐 아니라 셋째 row에도 있습니다. 오독 지점: 모든 row의 grouping key를 확인하지 않은 경우입니다. groupby는 **기준 field → 각 row의 값 → 같은 값끼리 묶기**로 읽습니다.",
+        "side_card_ids":  [
+                              "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
+                          ],
+        "project_context":  "수집·검증 결과를 PASS/FAIL 같은 status별로 묶어 개수와 비율을 계산하는 분석 흐름과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "status field 이름을 메서드에 전달해 같은 값을 가진 row들이 어떤 그룹으로 묶이는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`obj.groupby(field)` 형태는 객체의 groupby 메서드에 grouping 기준 field를 전달하는 method call입니다.",
+                                    "how_to_read":  "argument 문자열이 어떤 field를 가리키는지 확인하고 각 row의 해당 값을 기준으로 묶인다고 봅니다.",
+                                    "key_point":  "원래 pandas 코드에서 이어지는 `.size()`는 이렇게 만들어진 각 status 그룹의 행 수를 세는 단계입니다.",
+                                    "common_mistake":  "status 값을 정렬만 하는 호출이라고 생각하기 쉽습니다. 핵심은 같은 status끼리 그룹을 만드는 것입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Table:\n    def __init__(self, rows): self.rows = rows\n    def groupby(self, field):\n        result = {}\n        for row in self.rows:\n            result.setdefault(row[field], []).append(row)\n        return result\n\ntable = Table([{\"kind\": \"A\"}, {\"kind\": \"B\"}, {\"kind\": \"A\"}])\ngroups = table.groupby(\"kind\")",
+                                 "walkthrough":  "kind A 두 row와 B 한 row가 각각 같은 key 아래 묶입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "세 row 중 status가 PASS인 것은 첫 번째와 세 번째입니다. groupby가 두 row를 PASS key에 모읍니다.",
+                                   "why_correct":  "grouping field로 status가 전달됐기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "1개",
+                                                               "why_wrong":  "PASS가 첫 row뿐 아니라 셋째 row에도 있습니다.",
+                                                               "misread_step":  "모든 row의 grouping key를 확인하지 않은 경우입니다."
+                                                           },
+                                   "takeaway":  "groupby는 **기준 field → 각 row의 값 → 같은 값끼리 묶기**로 읽습니다."
+                               },
+        "target_statement":  "groups = table.groupby(\"status\")",
+        "focus_span":  "table.groupby(\"status\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "groupby",
+                                "status",
+                                "aggregation",
+                                "count"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY42_L09_merge_join_001",
+        "level":  9,
+        "title":  "merge 호출의 left_on key 읽기",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "assignment",
+                         "function_definition"
+                     ],
+        "reading_goal":  "merge 호출에서 왼쪽과 오른쪽 데이터의 서로 다른 field 이름이 join key로 지정되는 구조를 읽는다.",
+        "code":  "def merge_rows(left, right, left_on, right_on, how):\n    result = []\n    for left_row in left:\n        matches = [right_row for right_row in right if left_row[left_on] == right_row[right_on]]\n        result.append((left_row, matches))\n    return result\n\nnodes = [{\"node_id\": \"n1\"}, {\"node_id\": \"n2\"}]\nedges = [{\"to_node_id\": \"n2\", \"edge\": \"e1\"}]\nmerged = merge_rows(nodes, edges, left_on=\"node_id\", right_on=\"to_node_id\", how=\"left\")",
+        "question_type":  "multiple_choice",
+        "question":  "왼쪽 `nodes`에서 join 비교에 사용하는 field는 무엇인가?",
+        "choices":  [
+                        "node_id",
+                        "to_node_id",
+                        "edge",
+                        "how"
+                    ],
+        "answer":  "node_id",
+        "explanation":  "`left_on=\"node_id\"`이 명시돼 있으므로 왼쪽 데이터에서 node_id field를 비교에 사용합니다. keyword 이름 left_on이 왼쪽 join key의 field 이름을 지정하기 때문입니다. 헷갈리기 쉬운 오답: to_node_id to_node_id는 `right_on`에 지정된 오른쪽 데이터 field입니다. 오독 지점: left_on과 right_on을 서로 바꿔 읽은 경우입니다. merge는 **왼쪽 key 이름과 오른쪽 key 이름을 따로 확인**합니다.",
+        "side_card_ids":  [
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "KG node와 edge처럼 서로 다른 schema의 데이터를 key 기준으로 연결하는 분석·정제 흐름과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "merge 호출에서 왼쪽과 오른쪽 데이터의 서로 다른 field 이름이 join key로 지정되는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left_on=\"node_id\"`은 merge 함수의 왼쪽 데이터 key 이름을 지정하는 keyword argument입니다.",
+                                    "how_to_read":  "keyword 이름이 옵션의 역할이고 오른쪽 문자열이 실제 field 이름이라고 구분합니다.",
+                                    "key_point":  "왼쪽 nodes의 node_id와 오른쪽 edges의 to_node_id 값이 같은 row끼리 연결됩니다.",
+                                    "common_mistake":  "left_on과 right_on의 문자열이 같아야 join된다고 생각하기 쉽습니다. field 이름은 달라도 그 field 안의 실제 값이 같으면 연결할 수 있습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "def join(left_on, right_on):\n    return left_on, right_on\n\nkeys = join(left_on=\"user_id\", right_on=\"owner_id\")",
+                                 "walkthrough":  "왼쪽은 user_id, 오른쪽은 owner_id라는 서로 다른 field 이름을 기준으로 지정합니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`left_on=\"node_id\"`이 명시돼 있으므로 왼쪽 데이터에서 node_id field를 비교에 사용합니다.",
+                                   "why_correct":  "keyword 이름 left_on이 왼쪽 join key의 field 이름을 지정하기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "to_node_id",
+                                                               "why_wrong":  "to_node_id는 `right_on`에 지정된 오른쪽 데이터 field입니다.",
+                                                               "misread_step":  "left_on과 right_on을 서로 바꿔 읽은 경우입니다."
+                                                           },
+                                   "takeaway":  "merge는 **왼쪽 key 이름과 오른쪽 key 이름을 따로 확인**합니다."
+                               },
+        "target_statement":  "merged = merge_rows(nodes, edges, left_on=\"node_id\", right_on=\"to_node_id\", how=\"left\")",
+        "focus_span":  "left_on=\"node_id\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "merge",
+                                "join",
+                                "left key",
+                                "right key"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY42_L09_sort_filter_001",
+        "level":  9,
+        "title":  "FAIL status row만 filtered comprehension으로 고르기",
+        "concepts":  [
+                         "list_comprehension",
+                         "comparison",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "각 row의 status를 비교해 FAIL인 항목만 별도 리스트에 수집하는 filtering 흐름을 읽는다.",
+        "code":  "rows = [\n    {\"id\": \"a\", \"status\": \"PASS\", \"score\": 0.9},\n    {\"id\": \"b\", \"status\": \"FAIL\", \"score\": 0.4},\n    {\"id\": \"c\", \"status\": \"FAIL\", \"score\": 0.2},\n]\nfailed = [row for row in rows if row[\"status\"] == \"FAIL\"]",
+        "question_type":  "multiple_choice",
+        "question":  "`failed`에 남는 id 조합은 무엇인가?",
+        "choices":  [
+                        "b와 c",
+                        "a만",
+                        "a와 b",
+                        "a, b, c 모두"
+                    ],
+        "answer":  "b와 c",
+        "explanation":  "조건은 `row[\u0027status\u0027] == \u0027FAIL\u0027`입니다. b와 c만 이 조건을 만족합니다. filtered list comprehension은 equality 조건이 True인 row만 결과에 수집하기 때문입니다. 헷갈리기 쉬운 오답: a만 a의 status는 PASS라 조건이 False입니다. 오독 지점: 비교 대상 문자열을 반대로 읽은 경우입니다. 필터링은 **field 조회 → 비교 → True인 row 수집**으로 읽습니다.",
+        "side_card_ids":  [
+                              "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
+                          ],
+        "project_context":  "검증 결과에서 FAIL 항목만 뽑아 score가 낮은 순으로 후속 점검하는 데이터 분석 흐름의 첫 단계와 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "list_comprehension",
+        "reading_goal_internal":  "각 row의 status를 비교해 FAIL인 항목만 별도 리스트에 수집하는 filtering 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "filtered list comprehension은 반복 항목 중 `if` 조건이 참인 값만 새 리스트에 넣습니다.",
+                                    "how_to_read":  "각 row에서 비교에 쓰이는 field와 비교값을 확인합니다.",
+                                    "key_point":  "원래 pandas boolean mask와 같은 목적을 Python list 데이터에서는 comprehension으로 표현할 수 있습니다.",
+                                    "common_mistake":  "FAIL이 아닌 row를 남긴다고 생각하기 쉽습니다. 비교 연산자는 `==`입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "rows = [{\"state\": \"OK\"}, {\"state\": \"ERROR\"}]\nerrors = [row for row in rows if row[\"state\"] == \"ERROR\"]",
+                                 "walkthrough":  "state가 ERROR인 두 번째 row만 errors에 남습니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "조건은 `row[\u0027status\u0027] == \u0027FAIL\u0027`입니다. b와 c만 이 조건을 만족합니다.",
+                                   "why_correct":  "filtered list comprehension은 equality 조건이 True인 row만 결과에 수집하기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "a만",
+                                                               "why_wrong":  "a의 status는 PASS라 조건이 False입니다.",
+                                                               "misread_step":  "비교 대상 문자열을 반대로 읽은 경우입니다."
+                                                           },
+                                   "takeaway":  "필터링은 **field 조회 → 비교 → True인 row 수집**으로 읽습니다."
+                               },
+        "target_statement":  "failed = [row for row in rows if row[\"status\"] == \"FAIL\"]",
+        "focus_span":  "[row for row in rows if row[\"status\"] == \"FAIL\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "filter",
+                                "FAIL status",
+                                "boolean mask",
+                                "rows"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY42_L10_manifest_001",
+        "level":  10,
+        "title":  "파일 메타데이터 목록을 manifest 딕셔너리로 바꾸는 컴프리헨션 읽기",
+        "concepts":  [
+                         "dict_comprehension",
+                         "subscription",
+                         "assignment"
+                     ],
+        "reading_goal":  "딕셔너리 컴프리헨션에서 반복 항목으로부터 key와 value가 각각 어떻게 만들어지는지 추적한다.",
+        "code":  "files = [\n    {\"name\": \"raw.jsonl\", \"rows\": 120},\n    {\"name\": \"clean.jsonl\", \"rows\": 95},\n]\nmanifest = {item[\"name\"]: item[\"rows\"] for item in files}\nprint(manifest[\"clean.jsonl\"])",
+        "question_type":  "output_prediction",
+        "question":  "마지막 줄에서 출력되는 값은 무엇인가?",
+        "choices":  [
+                        "120",
+                        "95",
+                        "clean.jsonl",
+                        "2"
+                    ],
+        "answer":  "95",
+        "explanation":  "1) 첫 item은 `raw.jsonl: 120`을 만든다. 2) 둘째 item은 `clean.jsonl: 95`를 만든다. 3) manifest는 두 key-value 쌍을 가진 딕셔너리가 된다. 4) 마지막 줄은 `clean.jsonl` key의 value 95를 출력한다. 딕셔너리 컴프리헨션이 만든 key-value 쌍을 따라가면 `manifest[\u0027clean.jsonl\u0027]`의 값은 95입니다. 헷갈리기 쉬운 오답: 120 120은 `raw.jsonl` key의 값이고, 문제에서는 `clean.jsonl` key를 조회합니다. 오독 지점: 각 반복에서 어떤 값이 key가 되고 어떤 값이 value가 되는지 한 쌍씩 다시 대응시킵니다. 딕셔너리 컴프리헨션은 각 반복에서 **key 하나와 value 하나를 한 쌍으로 생성**합니다.",
+        "side_card_ids":  [
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "데이터 파이프라인의 manifest를 파일명 기준 인덱스로 만들면 파일별 행 수나 상태를 빠르게 조회할 수 있다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "dict_comprehension",
+        "reading_goal_internal":  "딕셔너리 컴프리헨션에서 반복 항목으로부터 key와 value가 각각 어떻게 만들어지는지 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "딕셔너리 컴프리헨션은 반복하면서 각 항목에서 `key: value` 한 쌍을 만들어 새 딕셔너리에 넣는 문법입니다.",
+                                    "how_to_read":  "`{key_expr: value_expr for item in items}`를 보면 먼저 item을 하나 꺼내고, 그 item으로 key 표현식과 value 표현식을 계산해 한 쌍을 만든다고 읽습니다.",
+                                    "key_point":  "리스트 컴프리헨션과 달리 딕셔너리 컴프리헨션의 앞부분에는 **key와 value 두 표현식**이 있습니다.",
+                                    "common_mistake":  "`item[\u0027name\u0027]`과 `item[\u0027rows\u0027]`가 두 개의 독립 리스트를 만든다고 생각하기 쉽습니다. 실제로는 둘이 한 쌍이 되어 하나의 딕셔너리 항목을 만듭니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "rows = [{\"id\": \"A\", \"count\": 3}, {\"id\": \"B\", \"count\": 5}]\ncounts = {row[\"id\"]: row[\"count\"] for row in rows}\nprint(counts[\"B\"])",
+                                 "walkthrough":  "A에서 `A: 3`, B에서 `B: 5`가 만들어집니다. 따라서 `counts[\u0027B\u0027]`는 5입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) 첫 item은 `raw.jsonl: 120`을 만든다. 2) 둘째 item은 `clean.jsonl: 95`를 만든다. 3) manifest는 두 key-value 쌍을 가진 딕셔너리가 된다. 4) 마지막 줄은 `clean.jsonl` key의 value 95를 출력한다.",
+                                   "why_correct":  "딕셔너리 컴프리헨션이 만든 key-value 쌍을 따라가면 `manifest[\u0027clean.jsonl\u0027]`의 값은 95입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "120",
+                                                               "why_wrong":  "120은 `raw.jsonl` key의 값이고, 문제에서는 `clean.jsonl` key를 조회합니다.",
+                                                               "misread_step":  "각 반복에서 어떤 값이 key가 되고 어떤 값이 value가 되는지 한 쌍씩 다시 대응시킵니다."
+                                                           },
+                                   "takeaway":  "딕셔너리 컴프리헨션은 각 반복에서 **key 하나와 value 하나를 한 쌍으로 생성**합니다."
+                               },
+        "target_statement":  "manifest = {item[\"name\"]: item[\"rows\"] for item in files}",
+        "focus_span":  "{item[\"name\"]: item[\"rows\"] for item in files}",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "manifest",
+                                "file_inventory",
+                                "metadata",
+                                "dict_comprehension"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY42_L10_audit_tsv_001",
+        "level":  10,
+        "title":  "with 문으로 audit TSV 파일을 열고 블록 끝에서 정리하기",
+        "concepts":  [
+                         "with_statement",
+                         "call",
+                         "attribute_access"
+                     ],
+        "reading_goal":  "with 문이 자원을 열어 블록 안에서 사용하게 하고 블록을 벗어날 때 정리하는 실행 순서를 읽는다.",
+        "code":  "from pathlib import Path\n\naudit_path = Path(\"audit.tsv\")\nwith audit_path.open(\"w\", encoding=\"utf-8\") as audit:\n    audit.write(\"id\\tstatus\\n\")\n    audit.write(\"PY42\\tOK\\n\")\n\nprint(audit.closed)",
+        "question_type":  "output_prediction",
+        "question":  "마지막 `print(audit.closed)`가 출력하는 값은 무엇인가?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "audit.tsv",
+                        "OK"
+                    ],
+        "answer":  "True",
+        "explanation":  "1) Path 객체가 audit.tsv 경로를 가리킨다. 2) with 헤더에서 파일을 열고 audit 이름으로 사용한다. 3) 두 write 호출이 블록 안에서 실행된다. 4) 블록이 끝나면서 파일 객체의 종료 처리가 수행된다. 5) 따라서 블록 밖에서 audit.closed를 읽으면 True다. `with` 블록의 종료 시점까지 실행 순서를 따라가면 파일은 이미 닫혀 있으므로 정답은 `True`입니다. 헷갈리기 쉬운 오답: False with 블록을 벗어난 뒤에는 문맥 관리자가 열린 파일을 정리하므로 계속 열린 상태가 아닙니다. 오독 지점: 파일을 여는 시점만 보지 말고 with 블록을 빠져나갈 때 수행되는 종료 동작까지 읽어야 합니다. `with` 문은 **자원 열기 → 블록에서 사용 → 블록 종료 시 정리** 흐름으로 읽습니다.",
+        "side_card_ids":  [
+                              "PYV102_A7_DATAFRAME_CSV_CLEANING"
+                          ],
+        "project_context":  "검증 결과를 audit TSV로 기록할 때 파일 자원을 안전하게 열고 닫는 코드 흐름에 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "with_statement",
+        "reading_goal_internal":  "with 문이 자원을 열어 블록 안에서 사용하게 하고 블록을 벗어날 때 정리하는 실행 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`with` 문은 파일처럼 사용 후 정리가 필요한 자원을 문맥 관리자에게 맡겨, 블록 안에서 사용하고 블록을 벗어날 때 정리하도록 하는 문법입니다.",
+                                    "how_to_read":  "`with open(...) as f:`라면 먼저 자원을 열고 `f`라는 이름으로 사용합니다. 들여쓴 본문이 끝난 뒤에는 문맥 관리자의 종료 동작이 실행된다고 읽습니다.",
+                                    "key_point":  "`with`의 핵심은 단순히 파일을 여는 호출이 아니라 **자원의 시작과 정리 범위를 블록으로 묶는 것**입니다.",
+                                    "common_mistake":  "들여쓴 마지막 `write()`가 끝나면 파일 객체가 바로 사라진다고 생각하기 쉽습니다. 실제로는 with 블록을 빠져나가는 시점에 종료 처리가 수행됩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "from pathlib import Path\npath = Path(\"result.txt\")\nwith path.open(\"w\", encoding=\"utf-8\") as out:\n    out.write(\"PASS\\n\")\nprint(out.closed)",
+                                 "walkthrough":  "파일을 열어 블록 안에서 한 줄을 쓴 뒤 블록을 벗어납니다. 문맥 관리자가 파일을 닫았으므로 `out.closed`는 True입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Path 객체가 audit.tsv 경로를 가리킨다. 2) with 헤더에서 파일을 열고 audit 이름으로 사용한다. 3) 두 write 호출이 블록 안에서 실행된다. 4) 블록이 끝나면서 파일 객체의 종료 처리가 수행된다. 5) 따라서 블록 밖에서 audit.closed를 읽으면 True다.",
+                                   "why_correct":  "`with` 블록의 종료 시점까지 실행 순서를 따라가면 파일은 이미 닫혀 있으므로 정답은 `True`입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "with 블록을 벗어난 뒤에는 문맥 관리자가 열린 파일을 정리하므로 계속 열린 상태가 아닙니다.",
+                                                               "misread_step":  "파일을 여는 시점만 보지 말고 with 블록을 빠져나갈 때 수행되는 종료 동작까지 읽어야 합니다."
+                                                           },
+                                   "takeaway":  "`with` 문은 **자원 열기 → 블록에서 사용 → 블록 종료 시 정리** 흐름으로 읽습니다."
+                               },
+        "target_statement":  "with audit_path.open(\"w\", encoding=\"utf-8\") as audit:",
+        "focus_span":  "with audit_path.open(\"w\", encoding=\"utf-8\") as audit:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "audit_tsv",
+                                "file_write",
+                                "context_manager",
+                                "validation_report"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY42_L10_pipeline_data_quality_001",
+        "level":  10,
+        "title":  "validator 패치 영향 범위를 caller·공유 상태·audit·test까지 impact map으로 추적하기",
+        "concepts":  [
+                         "for_statement",
+                         "call",
+                         "name_reference",
+                         "literal",
+                         "assignment"
+                     ],
+        "reading_goal":  "for 문이 schema와 duplicate validator를 순서대로 호출하고 같은 issues 상태를 갱신한 뒤, 그 상태가 audit와 accepted test에 소비되는 전체 영향 지도를 읽는다.",
+        "code":  "issues = []\n\ndef check_schema(dataset):\n    if any(\"id\" not in row for row in dataset):\n        issues.append(\"schema\")\n\ndef check_duplicates(dataset):\n    ids = [row[\"id\"] for row in dataset]\n    if len(ids) != len(set(ids)):\n        issues.append(\"duplicate\")\n\ndataset = [{\"id\": \"d1\"}, {\"id\": \"d2\"}, {\"id\": \"d2\"}]\nvalidators = [check_schema, check_duplicates]\nfor validate in validators:\n    validate(dataset)\naudit = list(issues)\naccepted = not issues\nprint(issues, audit, accepted)",
+        "question_type":  "flow",
+        "question":  "duplicate validator의 판정 로직을 수정할 때 가장 완전한 impact map은?",
+        "choices":  [
+                        "validator 호출 → shared `issues` 변경 → `audit` 내용 변경 → `accepted` test 결과 변경까지 확인한다",
+                        "check_duplicates 함수 본문만 보고 다른 코드는 영향이 없다고 본다",
+                        "validators 리스트에 함수 이름이 있으므로 실제 호출 여부는 확인하지 않는다",
+                        "audit이 list이므로 accepted Boolean과는 무관하다고 본다"
+                    ],
+        "answer":  "validator 호출 → shared `issues` 변경 → `audit` 내용 변경 → `accepted` test 결과 변경까지 확인한다",
+        "explanation":  "1) validators 첫 항목 check_schema가 호출되고 현재 dataset에는 id 누락이 없어 issues를 바꾸지 않는다. 2) 둘째 check_duplicates가 호출되고 d2 중복을 찾아 issues에 duplicate를 추가한다. 3) for 종료 뒤 audit이 현재 issues를 복사해 [\u0027duplicate\u0027]가 된다. 4) `accepted = not issues`는 비어 있지 않은 issues 때문에 False다. 5) 따라서 duplicate 판정 수정은 shared state, audit output, acceptance test까지 영향 범위에 포함된다.",
+        "side_card_ids":  [
+                              "PYV158_A1_PIPELINE_FLOW"
+                          ],
+        "project_context":  "APEX에서 영향 범위를 수정 함수 근처에만 한정했던 약점을 caller·state·output·test 전체로 확장한다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "for_statement",
+        "reading_goal_internal":  "for 문이 schema와 duplicate validator를 순서대로 호출하고 같은 issues 상태를 갱신한 뒤, 그 상태가 audit와 accepted test에 소비되는 전체 영향 지도를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`for validate in validators:`는 리스트의 함수 객체를 하나씩 validate에 바인딩해 같은 dataset을 전달합니다. validator가 공유 상태를 갱신하면 이후 report와 test도 그 변경의 영향을 받을 수 있습니다.",
+                                    "how_to_read":  "반복 순서와 각 호출의 side effect를 확인하고, 갱신된 상태를 읽는 downstream consumer를 찾습니다. 영향 지도를 caller → shared state → output → test 순서로 정리합니다.",
+                                    "key_point":  "duplicate validator가 d2를 issues에 추가하면 audit도 `[\u0027d2\u0027]`가 되고 accepted는 False가 됩니다. 따라서 해당 validator 패치는 validator 함수 하나에만 국한되지 않습니다.",
+                                    "common_mistake":  "수정 함수의 return/side effect만 보고 끝내면 report, persisted audit, acceptance gate 같은 downstream 영향이 빠집니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "issues=[]\ndef check_a(data):\n    issues.append(\"a\")\nvalidators=[check_a]\nfor validate in validators:\n    validate({})\nprint(issues)",
+                                 "walkthrough":  "for가 validator를 호출하고 validator가 공유 issues를 수정하므로 반복문 이후 consumer도 그 상태를 봅니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) validators 첫 항목 check_schema가 호출되고 현재 dataset에는 id 누락이 없어 issues를 바꾸지 않는다. 2) 둘째 check_duplicates가 호출되고 d2 중복을 찾아 issues에 duplicate를 추가한다. 3) for 종료 뒤 audit이 현재 issues를 복사해 [\u0027duplicate\u0027]가 된다. 4) `accepted = not issues`는 비어 있지 않은 issues 때문에 False다. 5) 따라서 duplicate 판정 수정은 shared state, audit output, acceptance test까지 영향 범위에 포함된다.",
+                                   "why_correct":  "validator가 공유 issues를 side effect로 수정하고 두 downstream consumer가 그 상태를 직접 읽기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "check_duplicates 함수 본문만 보고 다른 코드는 영향이 없다고 본다",
+                                                               "why_wrong":  "issues를 변경하면 audit과 accepted가 같은 상태를 읽으므로 downstream 결과가 직접 달라질 수 있습니다.",
+                                                               "misread_step":  "수정 지점에서 시작해 쓰는 상태와 그 상태를 읽는 모든 consumer를 화살표로 연결합니다."
+                                                           },
+                                   "takeaway":  "impact map은 **modified function → caller/reachability → shared state/return → I/O·report → tests/approval**까지 작성합니다."
+                               },
+        "target_statement":  "for validate in validators:",
+        "focus_span":  "for validate in validators:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "data_quality",
+                                "validation_pipeline",
+                                "impact_map",
+                                "shared_state",
+                                "audit",
+                                "tests"
+                            ],
+        "pedagogical_intent":  "read_execution_order",
+        "subtype":  "basic_for",
+        "secondary_concepts":  [
+                                   "call",
+                                   "name_reference",
+                                   "literal",
+                                   "assignment"
+                               ],
+        "prerequisites":  [
+                              "name_reference",
+                              "call"
+                          ],
+        "semantic_operations":  [
+                                    "validation_pipeline",
+                                    "shared_state_update",
+                                    "audit_output",
+                                    "impact_map_synthesis"
+                                ],
+        "reading_steps":  [
+                              "validators 첫 항목 check_schema가 호출되고 현재 dataset에는 id 누락이 없어 issues를 바꾸지 않는다.",
+                              "둘째 check_duplicates가 호출되고 d2 중복을 찾아 issues에 duplicate를 추가한다.",
+                              "for 종료 뒤 audit이 현재 issues를 복사해 [\u0027duplicate\u0027]가 된다.",
+                              "`accepted = not issues`는 비어 있지 않은 issues 때문에 False다.",
+                              "따라서 duplicate 판정 수정은 shared state, audit output, acceptance test까지 영향 범위에 포함된다."
+                          ],
+        "same_syntax_example":  "events=[]\ndef check(data):\n    events.append(\"checked\")\nvalidators=[check]\nfor validate in validators:\n    validate({})\nprint(events)"
+    }
 ]

@@ -1,422 +1,990 @@
 [
-  {
-    "id": "PY24_L07_pytest_assert_001",
-    "level": 7,
-    "title": "pytest assert 기본 읽기",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "pytest",
-      "assert",
-      "test"
-    ],
-    "reading_goal": "함수 결과가 기대값과 같은지 검사하는 기본 테스트를 읽는다.",
-    "code": "def normalize(text):\n    return text.strip().lower()\n\ndef test_normalize():\n    assert normalize(\" LiDAR \") == \"lidar\"",
-    "question_type": "meaning_choice",
-    "question": "assert 조건이 False이면 무슨 일이 일어나는가?",
-    "choices": [
-      "테스트가 실패한다",
-      "항상 통과한다",
-      "파일이 삭제된다",
-      "서버가 배포된다"
-    ],
-    "answer": "테스트가 실패한다",
-    "explanation": "pytest는 test_로 시작하는 함수를 테스트로 실행한다. 여기서는 load_all_cards()로 카드 목록을 얻고 assert len(cards) > 0이 카드 수가 0보다 큰지 검사한다. 목록이 비어 있으면 조건이 False가 되어 테스트가 실패하므로, 최소한 카드가 하나 이상 로드되는지 확인하는 smoke 수준의 검증이다.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "정규화, ID 생성, side card 매칭 같은 작은 함수부터 검증할 수 있다."
-  },
-  {
-    "id": "PY24_L07_duplicate_id_check_001",
-    "level": 7,
-    "title": "중복 ID 검사 코드 읽기",
-    "concepts": [
-      "if",
-      "for",
-      "validation",
-      "duplicate_id",
-      "set",
-      "quality"
-    ],
-    "reading_goal": "이미 본 id를 set에 넣고 중복을 찾는 검증 코드를 읽는다.",
-    "code": "seen = set()\nduplicates = []\nfor card in cards:\n    if card[\"id\"] in seen:\n        duplicates.append(card[\"id\"])\n    seen.add(card[\"id\"])",
-    "question_type": "meaning_choice",
-    "question": "duplicates list에는 무엇이 기록되는가?",
-    "choices": [
-      "첫 등장 뒤 다시 나온 각 card id",
-      "중복을 제거한 모든 card id",
-      "answer text",
-      "file path"
-    ],
-    "answer": "첫 등장 뒤 다시 나온 각 card id",
-    "explanation": "seen에 이미 든 id가 다시 나오면 duplicates에 append한 뒤 seen에는 그대로 id를 넣는다. 같은 id가 세 번 나오면 두 번째와 세 번째 등장 때 각각 append되어 duplicates에도 두 번 들어간다. 중복된 고유 id 목록만 필요하면 duplicates도 set으로 만들 수 있다.",
-    "side_card_ids": [],
-    "project_context": "매번 보강 후 DUPLICATE IDS: OK를 확인하는 검증과 연결된다."
-  },
-  {
-    "id": "PY24_L08_answer_in_choices_001",
-    "level": 8,
-    "title": "정답이 choices 안에 있는지 검사",
-    "concepts": [
-      "if",
-      "for",
-      "validation",
-      "answer",
-      "choices",
-      "quality"
-    ],
-    "reading_goal": "객관식 카드의 answer가 choices 안에 실제로 있는지 확인하는 코드를 읽는다.",
-    "code": "bad = []\nfor card in cards:\n    if card[\"answer\"] not in card[\"choices\"]:\n        bad.append(card[\"id\"])",
-    "question_type": "meaning_choice",
-    "question": "bad에 들어간 카드의 문제는?",
-    "choices": [
-      "정답이 선택지 안에 없다",
-      "concepts가 너무 많다",
-      "레벨이 낮다",
-      "파일이 너무 크다"
-    ],
-    "answer": "정답이 선택지 안에 없다",
-    "explanation": "앱에서 정답 버튼을 고르게 하려면 answer 값이 choices 안에 있어야 한다. 정답이 choices 안에 있는지 검사하는 코드는 객관식 카드의 기본 무결성을 확인한다. 정답 문자열과 선택지 문자열이 정확히 같은지 비교해야 한다.",
-    "side_card_ids": [],
-    "project_context": "ANSWER NOT IN CHOICES: OK 검증 항목과 직접 연결된다."
-  },
-  {
-    "id": "PY24_L08_missing_side_card_check_001",
-    "level": 8,
-    "title": "누락 side_card 참조 검사",
-    "concepts": [
-      "if",
-      "for",
-      "validation",
-      "side_card",
-      "reference",
-      "integrity"
-    ],
-    "reading_goal": "카드가 참조하는 side_card_id가 실제 side card 목록에 있는지 확인한다.",
-    "code": "side_ids = {side[\"id\"] for side in side_cards}\nmissing = []\nfor card in cards:\n    for sid in card.get(\"side_card_ids\", []):\n        if sid not in side_ids:\n            missing.append((card[\"id\"], sid))",
-    "question_type": "meaning_choice",
-    "question": "missing에 들어가는 것은?",
-    "choices": [
-      "존재하지 않는 side_card_id 참조",
-      "정상 side card 전체",
-      "빈 concepts",
-      "HTTP 304 로그"
-    ],
-    "answer": "존재하지 않는 side_card_id 참조",
-    "explanation": "카드가 없는 side card를 가리키면 오른쪽 보조 설명 렌더링에서 문제가 생길 수 있다. 누락 side_card 참조 검사는 lesson이 연결한 side card가 실제 데이터에 있는지 확인한다. 없는 id가 있으면 관련 읽을거리 표시가 깨질 수 있다. 따라서 정답은 ‘존재하지 않는 side_card_id 참조’이다.",
-    "side_card_ids": [],
-    "project_context": "MISSING SIDE CARD REFERENCES: OK 검증 항목과 연결된다."
-  },
-  {
-    "id": "PY24_L08_schema_required_fields_001",
-    "level": 8,
-    "title": "필수 필드 schema 검사 읽기",
-    "concepts": [
-      "if",
-      "for",
-      "print",
-      "schema",
-      "required_fields",
-      "validation"
-    ],
-    "reading_goal": "카드 JSON에 필수 필드가 모두 있는지 확인하는 코드를 읽는다.",
-    "code": "required = {\"id\", \"level\", \"title\", \"question\", \"choices\", \"answer\"}\nfor card in cards:\n    missing = required - set(card.keys())\n    if missing:\n        print(card.get(\"id\"), missing)",
-    "question_type": "meaning_choice",
-    "question": "required - set(card.keys())는 무엇을 찾는가?",
-    "choices": [
-      "카드에 없는 필수 필드",
-      "카드의 모든 값",
-      "정답 후보",
-      "중복 파일"
-    ],
-    "answer": "카드에 없는 필수 필드",
-    "explanation": "required와 card.keys()의 set difference는 필수 이름 중 dictionary key로 존재하지 않는 항목을 찾는다. missing이 있으면 id와 missing set을 출력한다. 이 검사는 key 존재만 확인하므로 value가 None이나 빈 문자열인지, level과 choices type이 맞는지, 추가 field가 허용되는지는 별도 schema validation이 필요하다.",
-    "side_card_ids": [
-      "PYV158_A1_VALIDATION_FLOW",
-      "PYV158_A1_SCHEMA_FLOW"
-    ],
-    "project_context": "카드가 많아질수록 schema 검증을 자동화해야 한다."
-  },
-  {
-    "id": "PY24_L09_json_parse_all_001",
-    "level": 9,
-    "title": "전체 JSON parse smoke test 읽기",
-    "concepts": [
-      "for",
-      "import",
-      "print",
-      "json",
-      "parse",
-      "smoke_test",
-      "validation"
-    ],
-    "reading_goal": "모든 lesson JSON이 파싱 가능한지 빠르게 확인하는 smoke test를 읽는다.",
-    "code": "import json\nfrom pathlib import Path\n\nfor path in Path(\"data/lessons\").glob(\"*.json\"):\n    json.loads(path.read_text(encoding=\"utf-8\"))\n    print(\"OK\", path.name)",
-    "question_type": "meaning_choice",
-    "question": "이 테스트가 잡아낼 수 있는 문제는?",
-    "choices": [
-      "JSON 문법 깨짐",
-      "CSS 색상 오류",
-      "GitHub 비밀번호 오류",
-      "모니터 해상도 오류"
-    ],
-    "answer": "JSON 문법 깨짐",
-    "explanation": "각 .json file의 전체 text를 읽고 json.loads가 syntax상 valid JSON인지 확인한다. 한 file이 invalid하면 exception에서 loop가 중단되어 그 뒤 file은 검사하지 않으며, glob은 하위 directory를 재귀적으로 찾지 않는다. parse 성공은 card schema나 id·answer 관계가 올바르다는 뜻도 아니므로 smoke test 뒤 semantic validation이 필요하다.",
-    "side_card_ids": [
-      "PYV158_A1_JSON_FLOW"
-    ],
-    "project_context": "새 lesson 파일을 추가할 때 가장 먼저 돌릴 수 있는 기본 검증이다."
-  },
-  {
-    "id": "PY24_L09_regression_total_cards_001",
-    "level": 9,
-    "title": "총 카드 수 회귀검사 읽기",
-    "concepts": [
-      "if",
-      "regression_test",
-      "total_count",
-      "validation"
-    ],
-    "reading_goal": "새 보강 후 카드 수가 줄어들지 않았는지 확인하는 회귀검사를 이해한다.",
-    "code": "previous_total = 552\ncurrent_total = len(cards)\nif current_total < previous_total:\n    raise AssertionError(\"card count decreased\")",
-    "question_type": "meaning_choice",
-    "question": "current_total이 previous_total보다 작으면?",
-    "choices": [
-      "회귀로 보고 실패시킨다",
-      "정상으로 본다",
-      "자동으로 카드를 생성한다",
-      "GitHub Pages를 삭제한다"
-    ],
-    "answer": "회귀로 보고 실패시킨다",
-    "explanation": "current_total이 552보다 작으면 AssertionError가 난다. 이 검사는 예상치 않은 감소 신호를 잡지만 증가, 같은 수의 잘못된 교체, 특정 file 누락을 찾지는 못한다. hard-coded 이전 수보다 manifest별 기대 수와 ID snapshot 또는 명시적인 승인 baseline을 함께 검증해야 회귀 원인을 정확히 알 수 있다.",
-    "side_card_ids": [],
-    "project_context": "lesson loading 누락으로 total count가 감소하는 회귀를 보조적으로 감지하는 검사다."
-  },
-  {
-    "id": "PY24_L09_snapshot_hash_001",
-    "level": 9,
-    "title": "snapshot hash 비교 읽기",
-    "concepts": [
-      "comment",
-      "def",
-      "function",
-      "return",
-      "import",
-      "print",
-      "snapshot",
-      "hash",
-      "regression",
-      "integrity"
-    ],
-    "reading_goal": "중요 파일의 해시를 비교해 의도치 않은 변경을 감지하는 구조를 읽는다.",
-    "code": "import hashlib\nfrom pathlib import Path\n\ndef sha256(path):\n    return hashlib.sha256(Path(path).read_bytes()).hexdigest()\n\nbefore = sha256(\"src/pwa/app.js\")\n# patch here\nafter = sha256(\"src/pwa/app.js\")\nprint(before == after)",
-    "question_type": "meaning_choice",
-    "question": "before == after가 False면 무엇을 의미하는가?",
-    "choices": [
-      "파일 내용이 바뀌었다",
-      "파일이 반드시 정상이다",
-      "서버가 꺼졌다",
-      "JSON이 파싱됐다"
-    ],
-    "answer": "파일 내용이 바뀌었다",
-    "explanation": "두 read 사이에 bytes가 달라지면 SHA-256 digest도 사실상 확실히 달라져 False가 된다. 반대로 같은 digest는 accidental change가 없다는 강한 evidence지만 어떤 줄이 바뀌었는지 설명하지 못하고, 신뢰되지 않은 hash는 source authenticity도 보장하지 않는다. 실제 review에는 git diff와 예상 변경 범위를 함께 쓴다.",
-    "side_card_ids": [
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "패치 전후 변경 파일을 감시하거나 산출물 무결성을 확인하는 데 쓸 수 있다."
-  },
-  {
-    "id": "PY24_L10_server_200_smoke_001",
-    "level": 10,
-    "title": "로컬 서버 200 smoke test 읽기",
-    "concepts": [
-      "for",
-      "import",
-      "smoke_test",
-      "http_status",
-      "local_server",
-      "requests"
-    ],
-    "reading_goal": "앱 핵심 파일과 새 JSON이 200으로 응답하는지 확인하는 테스트를 읽는다.",
-    "code": "import requests\n\nurls = [\n    \"http://127.0.0.1:8790/src/pwa/index.html\",\n    \"http://127.0.0.1:8790/data/lessons/python_tests_validation_regression_v24.json\",\n]\nfor url in urls:\n    r = requests.get(url, timeout=5)\n    assert r.status_code == 200, (url, r.status_code)",
-    "question_type": "meaning_choice",
-    "question": "status_code가 404이면 assert는 어떻게 되는가?",
-    "choices": [
-      "실패한다",
-      "항상 통과한다",
-      "자동으로 파일을 만든다",
-      "서버를 배포한다"
-    ],
-    "answer": "실패한다",
-    "explanation": "404이면 status_code == 200이 false라 assert가 AssertionError를 낸다. timeout이나 connection error는 requests.get에서 별도 exception이 난다. requests는 redirect를 기본적으로 따라가므로 최종 200이 원래 URL의 기대 file임을 보장하지 않고, body의 JSON·HTML 내용과 version도 확인하지 않는다. 이 검사는 availability의 한 조각이다.",
-    "side_card_ids": [],
-    "project_context": "로컬 서버 로그에서 v1~v23 JSON이 200인지 확인하던 과정을 자동화한 형태다."
-  },
-  {
-    "id": "PY24_L10_ci_github_actions_001",
-    "level": 10,
-    "title": "GitHub Actions CI YAML 읽기",
-    "concepts": [
-      "github_actions",
-      "ci",
-      "yaml",
-      "test"
-    ],
-    "reading_goal": "push할 때 자동으로 검증 명령을 실행하는 CI 설정을 읽는다.",
-    "code": "name: validate\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n      - run: python scripts/validate_lessons.py",
-    "question_type": "meaning_choice",
-    "question": "CI workflow에서 on: [push]의 의미는?",
-    "choices": [
-      "push 이벤트 때 workflow를 실행한다",
-      "push를 금지한다",
-      "항상 로컬에서만 실행한다",
-      "브라우저 캐시를 비운다"
-    ],
-    "answer": "push 이벤트 때 workflow를 실행한다",
-    "explanation": "on: [push]는 repository에 push event가 생길 때 workflow를 시작한다. checkout 뒤 setup-python으로 Python을 준비하고 validation script를 실행한다. 재현성을 위해 Python version을 명시하고 action reference 정책을 정하며, script가 실패할 때 nonzero exit code를 반환하는지 확인해야 한다. CI 통과는 이 한 command가 검사한 범위만 보장한다.",
-    "side_card_ids": [
-      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
-    ],
-    "project_context": "카드 수가 많아진 뒤에는 GitHub Actions로 기본 검증을 자동화할 수 있다."
-  },
-  {
-    "id": "PY24_L10_test_report_summary_001",
-    "level": 10,
-    "title": "실패 로그 요약 코드 읽기",
-    "concepts": [
-      "if",
-      "print",
-      "test_report",
-      "failure_summary",
-      "debugging"
-    ],
-    "reading_goal": "검증 실패를 사람이 읽기 좋은 요약으로 모으는 구조를 이해한다.",
-    "code": "failures = []\nif duplicates:\n    failures.append(f\"duplicate ids: {len(duplicates)}\")\nif bad_answers:\n    failures.append(f\"bad answers: {len(bad_answers)}\")\nif missing_side:\n    failures.append(f\"missing side cards: {len(missing_side)}\")\n\nif failures:\n    print(\"FAIL: \" + \", \".join(failures))\n    raise SystemExit(1)\nprint(\"OK\")",
-    "question_type": "meaning_choice",
-    "question": "failures가 비어 있으면 출력은?",
-    "choices": [
-      "OK",
-      "FAIL",
-      "None",
-      "duplicates"
-    ],
-    "answer": "OK",
-    "explanation": "failures가 비어 있으면 if를 건너뛰고 OK를 출력한다. 하나라도 있으면 요약을 출력하고 exit code 1로 종료한다. 원래처럼 FAIL text만 출력하고 정상 종료하면 CI가 성공으로 오해할 수 있으므로 machine-readable 실패 신호가 필요하다.",
-    "side_card_ids": [],
-    "project_context": "현재 PowerShell 검증 로그를 더 자동화된 리포트로 만들 때 쓰기 좋다."
-  },
-  {
-    "id": "PY24_L10_commit_after_tests_001",
-    "level": 10,
-    "title": "테스트 후 커밋 루틴 읽기",
-    "concepts": [
-      "comment",
-      "workflow",
-      "test",
-      "commit",
-      "git"
-    ],
-    "reading_goal": "검증 통과 후에만 커밋하는 안전한 작업 순서를 이해한다.",
-    "code": "# 1. run expand script\n# 2. validate JSON/card integrity\n# 3. run local server smoke test\n# 4. git status\n# 5. git add / commit / push",
-    "question_type": "order_choice",
-    "question": "가장 안전한 순서에 가까운 것은?",
-    "choices": [
-      "검증 → 로컬 확인 → git add/commit/push",
-      "commit → 검증 생략 → push",
-      "push → 파일 생성",
-      "서버 종료 → JSON 삭제"
-    ],
-    "answer": "검증 → 로컬 확인 → git add/commit/push",
-    "explanation": "먼저 검증하고 로컬에서 200 로딩을 확인한 뒤 안정 상태를 커밋하는 것이 안전하다. 테스트 후 커밋 루틴은 검증을 통과한 상태만 저장소에 남기기 위한 습관이다. 실패한 테스트가 있으면 먼저 원인을 고치고 다시 검증한 뒤 커밋해야 한다.",
-    "side_card_ids": [
-      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
-    ],
-    "project_context": "v16~v23에서 반복한 안정 루틴을 카드화한 것이다."
-  },
-  {
-    "id": "PY24_L10_lessonfiles_tail_check_001",
-    "level": 10,
-    "title": "lessonFiles tail 검사 읽기",
-    "concepts": [
-      "lessonFiles",
-      "tail_check",
-      "regression",
-      "app_js"
-    ],
-    "reading_goal": "app.js의 lessonFiles 마지막 항목이 최신 파일인지 확인하는 코드를 읽는다.",
-    "code": "const expected = \"python_tests_validation_regression_v24.json\";\nconst connected = lessonFiles.some((path) => path.endsWith(\"/\" + expected));\nif (!connected) {\n  throw new Error(\"lesson not connected: \" + expected);\n}",
-    "question_type": "meaning_choice",
-    "question": "이 검사가 잡으려는 문제는?",
-    "choices": [
-      "기대 lesson file이 app.js loading list에 없는 문제",
-      "CSS color 설정 문제",
-      "password 입력 문제",
-      "mouse 위치 문제"
-    ],
-    "answer": "기대 lesson file이 app.js loading list에 없는 문제",
-    "explanation": "some은 lessonFiles 전체에서 expected filename으로 끝나는 path가 하나라도 있는지 검사한다. 마지막 원소만 검사하면 list 정렬 방식에 불필요하게 의존하고 includes는 비슷한 긴 filename도 통과시킬 수 있다. 더 강한 검사는 실제 file manifest와 loading list의 exact path set을 양방향 비교한다.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "Select-String으로 APP_DATA_VERSION과 최신 파일명을 확인하던 습관과 연결된다."
-  },
-  {
-    "id": "PY24_L10_schema_level_range_001",
-    "level": 10,
-    "title": "level 범위 검사 읽기",
-    "concepts": [
-      "if",
-      "for",
-      "schema",
-      "level",
-      "range_check",
-      "validation"
-    ],
-    "reading_goal": "카드 난이도 level이 허용 범위 안에 있는지 검사하는 코드를 읽는다.",
-    "code": "for card in cards:\n    level = card[\"level\"]\n    if type(level) is not int or not (1 <= level <= 10):\n        raise ValueError(f\"bad level: {card['id']}={level!r}\")",
-    "question_type": "meaning_choice",
-    "question": "level이 11이면 어떻게 되는가?",
-    "choices": [
-      "ValueError가 발생한다",
-      "정상 통과한다",
-      "level이 자동으로 10이 된다",
-      "카드가 숨겨진다"
-    ],
-    "answer": "ValueError가 발생한다",
-    "explanation": "level이 Python int가 아니거나 1~10 밖이면 ValueError가 난다. 먼저 int(...)로 강제 변환하면 \"3\" 같은 잘못된 schema type이 조용히 통과하고 bool도 int의 subclass라 단순 isinstance로 통과할 수 있다. type(level) is int를 확인하면 JSON number로 의도한 정수와 범위를 함께 검증할 수 있다.",
-    "side_card_ids": [
-      "PYV158_A1_VALIDATION_FLOW",
-      "PYV158_A1_SCHEMA_FLOW"
-    ],
-    "project_context": "난이도 필터와 목차 통계가 깨지지 않게 하는 검증이다."
-  },
-  {
-    "id": "PY24_L10_ci_fail_fast_001",
-    "level": 10,
-    "title": "CI fail-fast 사고방식 읽기",
-    "concepts": [
-      "ci",
-      "fail_fast",
-      "quality_gate",
-      "automation"
-    ],
-    "reading_goal": "검증 실패 시 배포나 다음 단계로 넘어가지 않게 막는 품질 게이트를 이해한다.",
-    "code": "python scripts/validate_lessons.py\nif ($LASTEXITCODE -ne 0) {\n  throw \"validation failed; stop deploy\"\n}",
-    "question_type": "meaning_choice",
-    "question": " 0이 아니면 무엇을 의미하는가?",
-    "choices": [
-      "직전 명령이 실패했다",
-      "직전 명령이 완벽히 성공했다",
-      "Git 상태가 clean이다",
-      "서버가 200을 반환했다"
-    ],
-    "answer": "직전 명령이 실패했다",
-    "explanation": "CI fail fast는 검증 명령이 실패하면 뒤 단계를 멈추는 방식이다. 종료 코드가 0이 아니면 배포나 커밋 후속 작업을 막아 실수를 줄인다. 자동화에서는 실패한 상태로 계속 진행하면 잘못된 결과가 배포될 수 있어 즉시 중단이 중요하다. 따라서 정답은 ‘직전 명령이 실패했다’이다.",
-    "side_card_ids": [
-      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
-    ],
-    "project_context": "나중에 자동 검증 스크립트를 만들 때 품질 게이트로 쓸 수 있다."
-  }
+    {
+        "id":  "PY24_L07_pytest_assert_001",
+        "level":  7,
+        "title":  "`assert`가 함수 결과 비교를 검사하고 참이면 다음 줄로 진행하는 흐름 읽기",
+        "concepts":  [
+                         "assert_statement",
+                         "call",
+                         "comparison",
+                         "function_definition"
+                     ],
+        "reading_goal":  "assert 뒤 조건 표현식을 먼저 평가하고 True이면 아무 예외 없이 다음 문장으로 진행하는 실행 순서를 읽는다.",
+        "code":  "def normalize(text):\n    return text.strip().lower()\n\nassert normalize(\" LiDAR \") == \"lidar\"\nprint(\"PASS\")",
+        "question_type":  "output_prediction",
+        "question":  "assert 조건이 참인 현재 코드의 출력은 무엇인가?",
+        "choices":  [
+                        "PASS",
+                        "AssertionError",
+                        "lidar",
+                        "True"
+                    ],
+        "answer":  "PASS",
+        "explanation":  "1) normalize 호출이 공백을 제거하고 소문자로 바꿔 lidar를 반환한다. 2) 반환 문자열 lidar와 오른쪽 lidar를 비교하면 True다. 3) assert가 True 조건을 확인해 예외를 발생시키지 않는다. 4) 다음 print에 도달해 PASS를 출력한다.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "pytest 스타일 테스트에서 작은 정규화 함수의 기대 동작을 명시적으로 고정하는 기본 품질 검증과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assert_statement",
+        "reading_goal_internal":  "assert 뒤 조건 표현식을 먼저 평가하고 True이면 아무 예외 없이 다음 문장으로 진행하는 실행 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`assert condition`은 condition이 truthy인지 검사하고 falsy이면 AssertionError를 발생시킵니다.",
+                                    "how_to_read":  "assert 뒤 전체 조건을 먼저 계산하고 그 Boolean에 따라 정상 진행 또는 AssertionError 발생을 판단합니다.",
+                                    "key_point":  "normalize 결과가 lidar라 비교식이 True이고 assert는 통과합니다.",
+                                    "common_mistake":  "assert가 비교 결과 True를 변수에 저장하거나 화면에 자동 출력한다고 생각하지 않습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "value = 3\nassert value == 3\nprint(\"pass\")",
+                                 "walkthrough":  "조건이 True라 AssertionError가 나지 않고 다음 print가 실행됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) normalize 호출이 공백을 제거하고 소문자로 바꿔 lidar를 반환한다. 2) 반환 문자열 lidar와 오른쪽 lidar를 비교하면 True다. 3) assert가 True 조건을 확인해 예외를 발생시키지 않는다. 4) 다음 print에 도달해 PASS를 출력한다.",
+                                   "why_correct":  "assert 조건이 True라 정상 실행이 이어집니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "AssertionError",
+                                                               "why_wrong":  "AssertionError는 assert 조건이 falsy일 때만 발생합니다.",
+                                                               "misread_step":  "assert 뒤 조건의 실제 Boolean을 먼저 계산합니다."
+                                                           },
+                                   "takeaway":  "assert는 **조건 평가 → truthy면 통과 / falsy면 AssertionError → 이후 흐름 결정**으로 읽습니다."
+                               },
+        "target_statement":  "assert normalize(\" LiDAR \") == \"lidar\"",
+        "focus_span":  "assert normalize(\" LiDAR \") == \"lidar\"",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "pytest",
+                                "assert",
+                                "normalization",
+                                "test"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY24_L07_duplicate_id_check_001",
+        "level":  7,
+        "title":  "`card_id in seen`으로 현재 ID가 이미 등장했는지 검사하기",
+        "concepts":  [
+                         "membership_test",
+                         "for_statement",
+                         "call",
+                         "if_statement"
+                     ],
+        "reading_goal":  "현재 card_id를 seen set의 기존 항목과 비교해 두 번째 등장부터 True가 되는 membership 결과를 반복 상태와 함께 읽는다.",
+        "code":  "ids = [\"A\", \"B\", \"A\"]\nseen = set()\nduplicates = []\nfor card_id in ids:\n    if card_id in seen:\n        duplicates.append(card_id)\n    seen.add(card_id)\nprint(duplicates)",
+        "question_type":  "output_prediction",
+        "question":  "반복이 끝난 뒤 duplicates에는 무엇이 들어 있는가?",
+        "choices":  [
+                        "[\u0027A\u0027]",
+                        "[\u0027A\u0027, \u0027B\u0027]",
+                        "[]",
+                        "[\u0027B\u0027]"
+                    ],
+        "answer":  "[\u0027A\u0027]",
+        "explanation":  "1) 첫 A 검사 시 seen은 비어 있어 False이고 이후 A를 seen에 넣는다. 2) B도 처음이라 False이고 이후 B를 seen에 넣는다. 3) 마지막 A 검사 시 seen에는 A가 이미 있어 `card_id in seen`이 True다. 4) 그 회차만 duplicates에 A를 추가한다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "1,785개 카드 같은 대규모 데이터에서 ID 충돌을 탐지하는 QA 루프의 핵심 조건과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "현재 card_id를 seen set의 기존 항목과 비교해 두 번째 등장부터 True가 되는 membership 결과를 반복 상태와 함께 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`value in set`은 set에 같은 값이 이미 들어 있는지 검사해 Boolean을 반환합니다.",
+                                    "how_to_read":  "현재 반복 회차의 card_id를 확인하고 검사 직전 seen의 내용과 비교합니다.",
+                                    "key_point":  "두 번째 A를 검사할 때 seen에는 첫 번째 A가 이미 있어 membership 결과가 True입니다.",
+                                    "common_mistake":  "현재 ID를 seen에 먼저 넣은 뒤 검사한다고 순서를 뒤집으면 첫 등장도 중복으로 오판하게 됩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "seen = {\"A\"}\nprint(\"A\" in seen)",
+                                 "walkthrough":  "set에 A가 이미 존재하므로 True입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) 첫 A 검사 시 seen은 비어 있어 False이고 이후 A를 seen에 넣는다. 2) B도 처음이라 False이고 이후 B를 seen에 넣는다. 3) 마지막 A 검사 시 seen에는 A가 이미 있어 `card_id in seen`이 True다. 4) 그 회차만 duplicates에 A를 추가한다.",
+                                   "why_correct":  "A가 두 번째 등장한 회차에서만 membership 조건이 True가 됩니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\u0027A\u0027, \u0027B\u0027]",
+                                                               "why_wrong":  "B는 한 번만 등장하므로 검사 시점에 seen에 없었습니다.",
+                                                               "misread_step":  "각 회차에서 membership 검사와 seen.add의 실행 순서를 지킵니다."
+                                                           },
+                                   "takeaway":  "중복 검사 membership은 **현재 값 확인 → 기존 seen 검사 → 필요 시 기록 → seen에 추가** 순서로 읽습니다."
+                               },
+        "target_statement":  "card_id in seen",
+        "focus_span":  "card_id in seen",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "duplicate_id",
+                                "set",
+                                "validation",
+                                "membership"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY24_L08_answer_in_choices_001",
+        "level":  8,
+        "title":  "not in으로 정답이 선택지에 없는 카드 찾기",
+        "concepts":  [
+                         "membership_test",
+                         "if_statement",
+                         "subscription",
+                         "literal"
+                     ],
+        "reading_goal":  "각 card의 answer와 choices를 비교해 `not in`이 참인 경우에만 bad 목록에 들어가는 실행 흐름을 읽는다.",
+        "code":  "cards = [\n    {\"id\": \"c1\", \"answer\": \"A\", \"choices\": [\"A\", \"B\"]},\n    {\"id\": \"c2\", \"answer\": \"C\", \"choices\": [\"A\", \"B\"]},\n]\nbad = []\nfor card in cards:\n    if card[\"answer\"] not in card[\"choices\"]:\n        bad.append(card[\"id\"])",
+        "question_type":  "multiple_choice",
+        "question":  "코드 실행 뒤 `bad`에 들어가는 id는 무엇인가?",
+        "choices":  [
+                        "c1",
+                        "c2",
+                        "c1과 c2",
+                        "아무것도 없음"
+                    ],
+        "answer":  "c2",
+        "explanation":  "c1은 A가 선택지 안에 있어 조건이 거짓입니다. c2는 C가 A,B 목록에 없으므로 조건이 참이고 id c2가 bad에 추가됩니다. `not in`은 answer가 choices에 존재하지 않을 때만 True가 되기 때문입니다. 헷갈리기 쉬운 오답: c1 c1의 정답 A는 choices의 첫 항목으로 존재합니다. 오독 지점: `not in`의 참 조건을 반대로 읽은 경우입니다. 정답 무결성 검사는 **answer 값 확인 → choices membership 검사 → 누락 카드만 수집**합니다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "객관식 카드에서 정답 버튼 자체가 존재하지 않는 데이터 오류를 배포 전에 잡는 품질 검사와 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "각 card의 answer와 choices를 비교해 `not in`이 참인 경우에만 bad 목록에 들어가는 실행 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`value not in collection`은 collection 안에 value가 없을 때 True가 되는 membership test입니다.",
+                                    "how_to_read":  "왼쪽 answer의 실제 문자열과 오른쪽 choices의 모든 항목을 비교합니다.",
+                                    "key_point":  "if의 본문은 `not in` 결과가 True인 카드, 즉 정답을 선택할 수 없는 카드에만 실행됩니다.",
+                                    "common_mistake":  "answer가 choices에 있으면 True라고 반대로 읽기 쉽습니다. `not in`은 없을 때 True입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "card = {\"answer\": \"B\", \"choices\": [\"A\", \"B\"]}\ninvalid = card[\"answer\"] not in card[\"choices\"]",
+                                 "walkthrough":  "B가 choices에 있으므로 `not in` 결과는 False입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "c1은 A가 선택지 안에 있어 조건이 거짓입니다. c2는 C가 A,B 목록에 없으므로 조건이 참이고 id c2가 bad에 추가됩니다.",
+                                   "why_correct":  "`not in`은 answer가 choices에 존재하지 않을 때만 True가 되기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "c1",
+                                                               "why_wrong":  "c1의 정답 A는 choices의 첫 항목으로 존재합니다.",
+                                                               "misread_step":  "`not in`의 참 조건을 반대로 읽은 경우입니다."
+                                                           },
+                                   "takeaway":  "정답 무결성 검사는 **answer 값 확인 → choices membership 검사 → 누락 카드만 수집**합니다."
+                               },
+        "target_statement":  "if card[\"answer\"] not in card[\"choices\"]:",
+        "focus_span":  "card[\"answer\"] not in card[\"choices\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "answer",
+                                "choices",
+                                "validation",
+                                "integrity"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY24_L08_missing_side_card_check_001",
+        "level":  8,
+        "title":  "set comprehension으로 실제 side_card id 집합 만들기",
+        "concepts":  [
+                         "set_comprehension",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "반복되는 side dict에서 id value만 추출해 set으로 수집하는 comprehension을 읽는다.",
+        "code":  "side_cards = [{\"id\": \"s1\"}, {\"id\": \"s2\"}, {\"id\": \"s1\"}]\nside_ids = {side[\"id\"] for side in side_cards}",
+        "question_type":  "multiple_choice",
+        "question":  "`side_ids`의 원소 수는 몇 개인가?",
+        "choices":  [
+                        "1개",
+                        "2개",
+                        "3개",
+                        "4개"
+                    ],
+        "answer":  "2개",
+        "explanation":  "세 row에서 id를 차례로 추출하면 s1, s2, s1입니다. set은 같은 값을 중복 보관하지 않으므로 최종 원소는 s1과 s2 두 개입니다. set comprehension의 결과는 중복 없는 set이기 때문입니다. 헷갈리기 쉬운 오답: 3개 입력 row는 세 개지만 s1이 중복되어 set에는 한 번만 남습니다. 오독 지점: 입력 항목 수와 set의 고유 원소 수를 동일하게 센 경우입니다. set comprehension은 **반복 결과를 모으면서 중복 값은 하나로 유지**합니다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "lesson 카드의 side_card_ids가 실제 side-card 데이터에 존재하는지 검사하기 위한 기준 id 집합 생성과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "set_comprehension",
+        "reading_goal_internal":  "반복되는 side dict에서 id value만 추출해 set으로 수집하는 comprehension을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`{expression for item in items}`는 각 반복 항목에 expression을 적용한 결과를 set으로 모으는 set comprehension입니다.",
+                                    "how_to_read":  "뒤의 for가 제공하는 side 하나마다 앞의 `side[\u0027id\u0027]`가 어떤 값을 만드는지 확인합니다.",
+                                    "key_point":  "이 집합은 이후 참조 id 존재 여부를 빠르게 검사하는 기준 데이터가 됩니다.",
+                                    "common_mistake":  "중괄호가 있으니 dict comprehension이라고 생각하기 쉽습니다. 콜론이 없는 단일 expression이므로 set comprehension입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "rows = [{\"id\": \"x\"}, {\"id\": \"y\"}]\nids = {row[\"id\"] for row in rows}",
+                                 "walkthrough":  "각 row의 id를 모아 `{\u0027x\u0027,\u0027y\u0027}` set을 만듭니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "세 row에서 id를 차례로 추출하면 s1, s2, s1입니다. set은 같은 값을 중복 보관하지 않으므로 최종 원소는 s1과 s2 두 개입니다.",
+                                   "why_correct":  "set comprehension의 결과는 중복 없는 set이기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "3개",
+                                                               "why_wrong":  "입력 row는 세 개지만 s1이 중복되어 set에는 한 번만 남습니다.",
+                                                               "misread_step":  "입력 항목 수와 set의 고유 원소 수를 동일하게 센 경우입니다."
+                                                           },
+                                   "takeaway":  "set comprehension은 **반복 결과를 모으면서 중복 값은 하나로 유지**합니다."
+                               },
+        "target_statement":  "side_ids = {side[\"id\"] for side in side_cards}",
+        "focus_span":  "{side[\"id\"] for side in side_cards}",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "side card",
+                                "reference integrity",
+                                "set comprehension",
+                                "validation"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY24_L08_schema_required_fields_001",
+        "level":  8,
+        "title":  "필수 key 차집합 결과를 missing에 저장하기",
+        "concepts":  [
+                         "assignment",
+                         "call",
+                         "literal"
+                     ],
+        "reading_goal":  "대입문 오른쪽에서 필수 key와 실제 key의 차이를 계산한 결과가 왼쪽 변수에 저장되는 흐름을 읽는다.",
+        "code":  "required = {\"id\", \"level\", \"title\", \"question\", \"choices\", \"answer\"}\ncard = {\"id\": \"c1\", \"level\": 8, \"title\": \"T\", \"question\": \"Q\", \"choices\": [\"A\"]}\nmissing = required - set(card.keys())",
+        "question_type":  "multiple_choice",
+        "question":  "이 코드에서 `missing`에 남는 필수 field는 무엇인가?",
+        "choices":  [
+                        "answer",
+                        "choices",
+                        "level",
+                        "id"
+                    ],
+        "answer":  "answer",
+        "explanation":  "required의 여섯 key 중 card가 이미 가진 다섯 key를 제외하면 `answer`만 남습니다. 오른쪽 계산 결과가 missing에 저장됩니다. set difference는 왼쪽 집합에만 있고 오른쪽 집합에는 없는 원소를 남기기 때문입니다. 헷갈리기 쉬운 오답: choices card dict에 choices key가 이미 존재하므로 missing에 남지 않습니다. 오독 지점: 실제 card.keys() 목록을 확인하지 않은 경우입니다. 필수 field 검사는 **required 기준과 실제 key를 비교해 빠진 이름만 결과로 남긴다**고 읽습니다.",
+        "side_card_ids":  [
+                              "PYV158_A1_VALIDATION_FLOW",
+                              "PYV158_A1_SCHEMA_FLOW"
+                          ],
+        "project_context":  "lesson/card JSON이 앱 렌더링에 필요한 필수 field를 빠뜨리지 않았는지 검사하는 schema QA와 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "대입문 오른쪽에서 필수 key와 실제 key의 차이를 계산한 결과가 왼쪽 변수에 저장되는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`name = expression`은 오른쪽 expression의 결과를 새 이름에 저장하는 대입입니다.",
+                                    "how_to_read":  "오른쪽 계산을 먼저 끝내고 그 최종 값을 왼쪽 변수에 저장한다고 읽습니다.",
+                                    "key_point":  "이 카드에서 `missing`은 필수 field 전체가 아니라 실제 card에 없는 필수 field만 담습니다.",
+                                    "common_mistake":  "`required` 전체가 그대로 missing에 저장된다고 생각하기 쉽습니다. 오른쪽에서 실제 key를 제외하는 계산이 먼저 수행됩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "required = {\"id\", \"name\"}\nrow = {\"id\": 1}\nmissing = required - set(row.keys())",
+                                 "walkthrough":  "row에 id는 있지만 name은 없으므로 오른쪽 계산 결과 `{\u0027name\u0027}`이 missing에 저장됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "required의 여섯 key 중 card가 이미 가진 다섯 key를 제외하면 `answer`만 남습니다. 오른쪽 계산 결과가 missing에 저장됩니다.",
+                                   "why_correct":  "set difference는 왼쪽 집합에만 있고 오른쪽 집합에는 없는 원소를 남기기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "choices",
+                                                               "why_wrong":  "card dict에 choices key가 이미 존재하므로 missing에 남지 않습니다.",
+                                                               "misread_step":  "실제 card.keys() 목록을 확인하지 않은 경우입니다."
+                                                           },
+                                   "takeaway":  "필수 field 검사는 **required 기준과 실제 key를 비교해 빠진 이름만 결과로 남긴다**고 읽습니다."
+                               },
+        "target_statement":  "missing = required - set(card.keys())",
+        "focus_span":  "missing = required - set(card.keys())",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "schema",
+                                "required fields",
+                                "validation",
+                                "missing keys"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY24_L09_json_parse_all_001",
+        "level":  9,
+        "title":  "모든 lesson JSON을 json.loads()로 smoke test하기",
+        "concepts":  [
+                         "call",
+                         "for_statement",
+                         "assignment",
+                         "import_statement"
+                     ],
+        "reading_goal":  "각 JSON 파일 text가 json.loads 호출을 통과해야 smoke test가 성공하는 흐름을 읽는다.",
+        "code":  "import json\nfrom pathlib import Path\n\nparsed_files = []\nfor path in Path(\"data/lessons\").glob(\"*.json\"):\n    data = json.loads(path.read_text(encoding=\"utf-8\"))\n    parsed_files.append(path.name)",
+        "question_type":  "multiple_choice",
+        "question":  "이 smoke test가 직접 잡아낼 수 있는 문제는 무엇인가?",
+        "choices":  [
+                        "JSON 문법 깨짐",
+                        "CSS 색상 오류",
+                        "GitHub 비밀번호 오류",
+                        "모니터 해상도 오류"
+                    ],
+        "answer":  "JSON 문법 깨짐",
+        "explanation":  "각 파일 내용을 `json.loads`에 넣기 때문에 잘못된 JSON 문법은 parse 시점에 예외로 드러납니다. json.loads가 JSON parser이기 때문입니다. 헷갈리기 쉬운 오답: CSS 색상 오류 이 코드는 JSON text만 읽고 CSS는 전혀 분석하지 않습니다. 오독 지점: 검사 대상 파일 형식과 parser 역할을 혼동한 경우입니다. smoke parse는 **파일 읽기 → parser 통과 여부 → 문법 오류 조기 탐지**로 읽습니다.",
+        "side_card_ids":  [
+                              "PYV158_A1_JSON_FLOW"
+                          ],
+        "project_context":  "새 lesson 파일을 추가한 직후 가장 먼저 돌릴 수 있는 기본 파일 무결성 검사와 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "각 JSON 파일 text가 json.loads 호출을 통과해야 smoke test가 성공하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`json.loads(text)`는 JSON 문자열을 Python 값으로 parse하는 함수 호출입니다.",
+                                    "how_to_read":  "입력 문자열이 유효한 JSON 문법인지와 parse 실패 시 어떤 예외가 생기는지 봅니다.",
+                                    "key_point":  "모든 lesson 파일을 한 번씩 parse하면 잘못된 쉼표·따옴표·괄호 같은 JSON 문법 오류를 빠르게 잡을 수 있습니다.",
+                                    "common_mistake":  "parse 성공이 카드 schema까지 모두 정상이라는 뜻이라고 생각하기 쉽습니다. JSON 문법 검증과 schema 검증은 별도입니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\ntexts = [\u0027{\"id\": 1}\u0027, \u0027{\"id\": 2}\u0027]\nparsed = [json.loads(text) for text in texts]",
+                                 "walkthrough":  "두 문자열이 모두 유효한 JSON이라 dict 두 개로 parse됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "각 파일 내용을 `json.loads`에 넣기 때문에 잘못된 JSON 문법은 parse 시점에 예외로 드러납니다.",
+                                   "why_correct":  "json.loads가 JSON parser이기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "CSS 색상 오류",
+                                                               "why_wrong":  "이 코드는 JSON text만 읽고 CSS는 전혀 분석하지 않습니다.",
+                                                               "misread_step":  "검사 대상 파일 형식과 parser 역할을 혼동한 경우입니다."
+                                                           },
+                                   "takeaway":  "smoke parse는 **파일 읽기 → parser 통과 여부 → 문법 오류 조기 탐지**로 읽습니다."
+                               },
+        "target_statement":  "data = json.loads(path.read_text(encoding=\"utf-8\"))",
+        "focus_span":  "json.loads(path.read_text(encoding=\"utf-8\"))",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "JSON parse",
+                                "smoke test",
+                                "lesson files",
+                                "validation"
+                            ],
+        "pedagogical_intent":  "predict_exception"
+    },
+    {
+        "id":  "PY24_L09_regression_total_cards_001",
+        "level":  9,
+        "title":  "총 카드 수 감소를 regression으로 차단하기",
+        "concepts":  [
+                         "if_statement",
+                         "comparison",
+                         "raise_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "현재 총수가 baseline보다 작을 때 if guard가 회귀 실패를 발생시키는 흐름을 읽는다.",
+        "code":  "previous_total = 552\ncards = list(range(540))\ncurrent_total = len(cards)\nif current_total \u003c previous_total:\n    raise AssertionError(\"card count decreased\")",
+        "question_type":  "multiple_choice",
+        "question":  "current_total이 previous_total보다 작으면 어떻게 처리하는가?",
+        "choices":  [
+                        "회귀로 보고 실패시킨다",
+                        "정상으로 본다",
+                        "자동으로 카드를 생성한다",
+                        "GitHub Pages를 삭제한다"
+                    ],
+        "answer":  "회귀로 보고 실패시킨다",
+        "explanation":  "현재 총수 540이 이전 기준 552보다 작으므로 if 본문에 들어가 AssertionError를 발생시킵니다. 카드 수 감소를 명시적인 regression condition으로 정의했기 때문입니다. 헷갈리기 쉬운 오답: 정상으로 본다 조건문이 감소 상황에서 실패하도록 작성돼 있습니다. 오독 지점: less-than 비교 방향을 반대로 읽은 경우입니다. 회귀 guard는 **baseline → current metric → 감소 여부 → fail**로 읽습니다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "lesson loading 누락으로 전체 카드 수가 줄어드는 회귀를 빠르게 감지하는 보조 QA와 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "현재 총수가 baseline보다 작을 때 if guard가 회귀 실패를 발생시키는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if current_total \u003c previous_total:`은 두 숫자를 비교해 현재 값이 더 작을 때 본문을 실행합니다.",
+                                    "how_to_read":  "왼쪽과 오른쪽 실제 숫자를 넣어 less-than 결과를 계산합니다.",
+                                    "key_point":  "카드 총수가 예상치 않게 줄면 일부 lesson 파일이 로드되지 않았거나 생성 단계에서 누락됐을 가능성을 보조적으로 감지할 수 있습니다.",
+                                    "common_mistake":  "총수가 같거나 늘기만 하면 모든 내용 품질도 정상이라고 생각하기 쉽습니다. 이 검사는 수량 회귀만 확인합니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "before = 10\nnow = 8\nif now \u003c before:\n    status = \"regression\"",
+                                 "walkthrough":  "8 \u003c 10이 True라 regression 상태가 됩니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "현재 총수 540이 이전 기준 552보다 작으므로 if 본문에 들어가 AssertionError를 발생시킵니다.",
+                                   "why_correct":  "카드 수 감소를 명시적인 regression condition으로 정의했기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "정상으로 본다",
+                                                               "why_wrong":  "조건문이 감소 상황에서 실패하도록 작성돼 있습니다.",
+                                                               "misread_step":  "less-than 비교 방향을 반대로 읽은 경우입니다."
+                                                           },
+                                   "takeaway":  "회귀 guard는 **baseline → current metric → 감소 여부 → fail**로 읽습니다."
+                               },
+        "target_statement":  "if current_total \u003c previous_total:",
+        "focus_span":  "if current_total \u003c previous_total:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "regression test",
+                                "card count",
+                                "validation",
+                                "baseline"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY24_L09_snapshot_hash_001",
+        "level":  9,
+        "title":  "패치 전후 SHA-256 hash equality 비교하기",
+        "concepts":  [
+                         "comparison",
+                         "assignment",
+                         "call",
+                         "function_definition"
+                     ],
+        "reading_goal":  "두 snapshot hash의 equality 결과로 파일 내용 동일 여부를 판단하는 흐름을 읽는다.",
+        "code":  "before = \"7a1f\"\nafter = \"91bc\"\nunchanged = before == after",
+        "question_type":  "multiple_choice",
+        "question":  "`unchanged`가 False라는 것은 무엇을 의미하는가?",
+        "choices":  [
+                        "파일 내용이 바뀌었다",
+                        "파일이 반드시 정상이다",
+                        "서버가 꺼졌다",
+                        "JSON이 파싱됐다"
+                    ],
+        "answer":  "파일 내용이 바뀌었다",
+        "explanation":  "`7a1f == 91bc`는 False입니다. 파일 내용에서 얻은 snapshot hash가 달라졌으므로 내용 변화가 있었다고 해석합니다. 비교 대상이 파일 content hash이기 때문입니다. 헷갈리기 쉬운 오답: 파일이 반드시 정상이다 hash 차이는 변경 여부만 알려주며 정상성 자체를 보장하지 않습니다. 오독 지점: change detection과 quality validation을 같은 것으로 본 경우입니다. snapshot hash는 **before hash → after hash → equality → 내용 변화 여부**로 읽습니다.",
+        "side_card_ids":  [
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "패치 전후 변경 파일 감시와 checkpoint 산출물 무결성 확인에 hash를 사용하는 흐름과 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "두 snapshot hash의 equality 결과로 파일 내용 동일 여부를 판단하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left == right`는 두 값이 같은지 비교해 boolean을 반환합니다.",
+                                    "how_to_read":  "before와 after에 실제 어떤 hash 값이 들어 있는지 보고 문자열이 정확히 같은지 확인합니다.",
+                                    "key_point":  "같은 hash가 나오면 같은 내용일 가능성을 확인하는 무결성 기준으로 사용할 수 있고, hash가 다르면 내용이 바뀐 것으로 볼 수 있습니다.",
+                                    "common_mistake":  "hash가 다르면 파일명만 바뀐 것이라고 생각하기 쉽습니다. 여기서는 파일 contents에서 계산한 hash를 비교합니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "before = \"abc\"\nafter = \"xyz\"\nsame = before == after",
+                                 "walkthrough":  "두 문자열이 달라 same은 False입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`7a1f == 91bc`는 False입니다. 파일 내용에서 얻은 snapshot hash가 달라졌으므로 내용 변화가 있었다고 해석합니다.",
+                                   "why_correct":  "비교 대상이 파일 content hash이기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "파일이 반드시 정상이다",
+                                                               "why_wrong":  "hash 차이는 변경 여부만 알려주며 정상성 자체를 보장하지 않습니다.",
+                                                               "misread_step":  "change detection과 quality validation을 같은 것으로 본 경우입니다."
+                                                           },
+                                   "takeaway":  "snapshot hash는 **before hash → after hash → equality → 내용 변화 여부**로 읽습니다."
+                               },
+        "target_statement":  "unchanged = before == after",
+        "focus_span":  "before == after",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "snapshot",
+                                "SHA-256",
+                                "hash",
+                                "integrity"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY24_L10_server_200_smoke_001",
+        "level":  10,
+        "title":  "HTTP status가 200인지 메시지와 함께 assert하기",
+        "concepts":  [
+                         "assert_statement",
+                         "comparison",
+                         "f_string"
+                     ],
+        "reading_goal":  "status 비교가 False이면 f-string 메시지를 가진 AssertionError가 발생하는 흐름을 읽는다.",
+        "code":  "status_code = 404\nassert status_code == 200, f\"bad status: {status_code}\"",
+        "question_type":  "meaning_choice",
+        "question":  "현재 target assert 실행 결과는?",
+        "choices":  [
+                        "AssertionError가 발생한다",
+                        "예외 없이 통과한다",
+                        "status_code가 200으로 바뀐다",
+                        "None을 반환한다"
+                    ],
+        "answer":  "AssertionError가 발생한다",
+        "explanation":  "1) status_code는 404다. 2) 404 == 200 비교는 False다. 3) assert 조건이 falsy다. 4) bad status: 404 메시지와 함께 AssertionError가 발생한다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "로컬 앱 핵심 파일과 새 lesson JSON이 실제로 제공되는지 빠르게 확인하는 HTTP smoke test에 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assert_statement",
+        "reading_goal_internal":  "status 비교가 False이면 f-string 메시지를 가진 AssertionError가 발생하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`assert condition, message`는 condition이 falsy일 때 message를 담은 AssertionError를 발생시킵니다.",
+                                    "how_to_read":  "먼저 `status_code == 200`을 계산하고 False일 때만 메시지 표현식을 사용합니다.",
+                                    "key_point":  "404 응답은 요청 자체가 Python 예외 없이 끝났더라도 이 품질 게이트에서는 실패입니다.",
+                                    "common_mistake":  "status_code가 숫자로 존재하기만 하면 assert가 통과한다고 생각하기 쉽습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "status=500\nassert status==200, f\"status={status}\"",
+                                 "walkthrough":  "500==200이 False라 AssertionError가 발생합니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) status_code는 404다. 2) 404 == 200 비교는 False다. 3) assert 조건이 falsy다. 4) bad status: 404 메시지와 함께 AssertionError가 발생한다.",
+                                   "why_correct":  "기대 HTTP status 200과 실제 404가 다르므로 assert가 실패합니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "예외 없이 통과한다",
+                                                               "why_wrong":  "조건식이 False라 assert를 통과할 수 없습니다.",
+                                                               "misread_step":  "status_code가 숫자로 존재하기만 하면 assert가 통과한다고 생각하기 쉽습니다."
+                                                           },
+                                   "takeaway":  "assert-with-message는 조건 계산 → 실패 시 메시지 계산 → AssertionError 순서로 읽습니다."
+                               },
+        "target_statement":  "assert status_code == 200, f\"bad status: {status_code}\"",
+        "focus_span":  "assert status_code == 200, f\"bad status: {status_code}\"",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "smoke_test",
+                                "http_status",
+                                "local_server",
+                                "availability"
+                            ],
+        "pedagogical_intent":  "predict_exception"
+    },
+    {
+        "id":  "PY24_L10_ci_github_actions_001",
+        "level":  10,
+        "title":  "CI runner가 validation 모듈에서 validate_lessons를 import하기",
+        "concepts":  [
+                         "from_import_statement",
+                         "call",
+                         "name_reference"
+                     ],
+        "reading_goal":  "from 뒤 모듈 위치와 import 뒤 가져올 함수 이름을 구분해 현재 namespace에 validation callable을 연결한다.",
+        "code":  "from validation import validate_lessons\n\nresult = validate_lessons()\nprint(result)",
+        "question_type":  "meaning_choice",
+        "question":  "target from-import 문에서 가져오는 특정 이름은 무엇인가?",
+        "choices":  [
+                        "validate_lessons",
+                        "validation",
+                        "result",
+                        "print"
+                    ],
+        "answer":  "validate_lessons",
+        "explanation":  "1) from 뒤 validation은 모듈 위치다. 2) import 뒤 validate_lessons가 가져올 이름이다. 3) 가져온 이름을 현재 코드에서 직접 호출할 수 있다.",
+        "side_card_ids":  [
+                              "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
+                          ],
+        "project_context":  "push 이벤트에서 같은 Python validation logic을 자동 실행하는 GitHub Actions CI 구조에 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "from_import_statement",
+        "reading_goal_internal":  "from 뒤 모듈 위치와 import 뒤 가져올 함수 이름을 구분해 현재 namespace에 validation callable을 연결한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`from module import name`은 module에서 특정 name을 현재 namespace로 가져옵니다.",
+                                    "how_to_read":  "from 뒤는 가져올 위치, import 뒤는 사용할 이름으로 읽습니다.",
+                                    "key_point":  "실제 GitHub Actions YAML은 Python 외부 설정이므로 카드의 Python 목표는 CI가 실행할 validator 코드의 import 구조입니다.",
+                                    "common_mistake":  "validation 모듈 전체가 validate_lessons라는 이름으로 바뀐다고 생각하기 쉽습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "from math import sqrt\nprint(sqrt(9))",
+                                 "walkthrough":  "math 모듈에서 sqrt 이름을 가져와 직접 호출합니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) from 뒤 validation은 모듈 위치다. 2) import 뒤 validate_lessons가 가져올 이름이다. 3) 가져온 이름을 현재 코드에서 직접 호출할 수 있다.",
+                                   "why_correct":  "from-import에서 import 뒤에 위치한 이름이 실제로 가져오는 대상입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "validation",
+                                                               "why_wrong":  "validation은 이름을 가져오는 원본 모듈입니다.",
+                                                               "misread_step":  "validation 모듈 전체가 validate_lessons라는 이름으로 바뀐다고 생각하기 쉽습니다."
+                                                           },
+                                   "takeaway":  "from-import는 원본 모듈과 가져올 이름을 분리해 읽습니다."
+                               },
+        "target_statement":  "from validation import validate_lessons",
+        "focus_span":  "from validation import validate_lessons",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "github_actions",
+                                "ci",
+                                "validation",
+                                "python_runner"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY24_L10_test_report_summary_001",
+        "level":  10,
+        "title":  "failures 리스트가 비어 있지 않을 때 실패 분기로 들어가기",
+        "concepts":  [
+                         "if_statement",
+                         "literal",
+                         "call",
+                         "raise_statement"
+                     ],
+        "reading_goal":  "리스트 truthiness를 평가해 비어 있으면 if 본문을 건너뛰고 OK 경로로 진행하는 흐름을 읽는다.",
+        "code":  "failures=[]\nif failures:\n    result=\"FAIL\"\nelse:\n    result=\"OK\"\nprint(result)",
+        "question_type":  "output_prediction",
+        "question":  "현재 result는 무엇인가?",
+        "choices":  [
+                        "OK",
+                        "FAIL",
+                        "[]",
+                        "None"
+                    ],
+        "answer":  "OK",
+        "explanation":  "1) failures는 빈 리스트다. 2) 빈 리스트는 falsy다. 3) if 본문을 건너뛰고 else를 실행한다. 4) result에 OK가 저장된다.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "여러 validation 실패를 한 번에 요약하되 실패가 없으면 명확히 OK를 출력하는 test-report 흐름에 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "리스트 truthiness를 평가해 비어 있으면 if 본문을 건너뛰고 OK 경로로 진행하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "if 문은 조건 표현식이 truthy일 때만 들여쓴 본문을 실행합니다.",
+                                    "how_to_read":  "failures의 현재 길이와 truthiness를 먼저 확인합니다.",
+                                    "key_point":  "빈 리스트는 falsy이므로 실패 분기로 들어가지 않습니다.",
+                                    "common_mistake":  "리스트라는 객체가 존재하니 비어 있어도 truthy라고 생각하기 쉽습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "errors=[]\nif errors:\n    print(\"FAIL\")\nprint(\"OK\")",
+                                 "walkthrough":  "빈 리스트는 falsy라 FAIL을 건너뛰고 OK만 출력합니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) failures는 빈 리스트다. 2) 빈 리스트는 falsy다. 3) if 본문을 건너뛰고 else를 실행한다. 4) result에 OK가 저장된다.",
+                                   "why_correct":  "빈 리스트가 False처럼 평가되어 OK 경로가 선택됩니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "FAIL",
+                                                               "why_wrong":  "FAIL은 failures에 하나 이상 항목이 있을 때 선택됩니다.",
+                                                               "misread_step":  "리스트라는 객체가 존재하니 비어 있어도 truthy라고 생각하기 쉽습니다."
+                                                           },
+                                   "takeaway":  "if 조건이 컬렉션이면 비어 있는지에 따라 truthiness가 달라질 수 있습니다."
+                               },
+        "target_statement":  "if failures:",
+        "focus_span":  "if failures:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "test_report",
+                                "failure_summary",
+                                "debugging",
+                                "exit_status"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY24_L10_commit_after_tests_001",
+        "level":  10,
+        "title":  "안전한 commit 순서와 아직 부족한 regression evidence를 함께 판단하기",
+        "concepts":  [
+                         "literal",
+                         "assignment",
+                         "subscription",
+                         "boolean_operation"
+                     ],
+        "reading_goal":  "target list가 validate→smoke→status→commit→push의 안전한 순서를 표현한다는 것을 읽고, 현재 evidence에서 regression 검증이 빠져 있으면 commit/push로 진행하기 전에 추가 검증이 필요함을 판단한다.",
+        "code":  "steps = [\"validate\", \"local smoke\", \"git status\", \"commit\", \"push\"]\nchecks = {\n    \"validate\": True,\n    \"local smoke\": True,\n    \"regression\": False,\n}\nready_for_commit = (\n    checks[\"validate\"]\n    and checks[\"local smoke\"]\n    and checks[\"regression\"]\n)\nprint(steps.index(\"commit\"), ready_for_commit)",
+        "question_type":  "safety",
+        "question":  "현재 patch review에서 가장 적절한 다음 행동은?",
+        "choices":  [
+                        "commit/push 전에 regression 검증을 추가로 수행한다 — target list의 안전 순서를 유지하되 현재 evidence가 아직 불충분하다",
+                        "validate와 local smoke가 PASS했으므로 regression 결과와 상관없이 바로 push한다",
+                        "commit이 리스트 index 3에 있으므로 자동으로 승인된 상태다",
+                        "git status 단계가 있으면 모든 functional regression도 이미 검증된 것으로 본다"
+                    ],
+        "answer":  "commit/push 전에 regression 검증을 추가로 수행한다 — target list의 안전 순서를 유지하되 현재 evidence가 아직 불충분하다",
+        "explanation":  "1) target list는 validate, local smoke, git status가 commit보다 앞에 있는 안전 순서를 표현한다. 2) 현재 checks에서 validate와 local smoke는 True다. 3) 하지만 regression은 False라 세 조건의 and 결과인 ready_for_commit은 False다. 4) 따라서 절차에 commit 단계가 있더라도 현재 evidence 상태에서는 그 단계로 진행하면 안 된다. 5) regression 검증을 보완한 뒤 다시 승인 여부를 판단해야 한다.",
+        "side_card_ids":  [
+                              "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
+                          ],
+        "project_context":  "APEX에서 수정 후 어떤 검증이 더 필요한지 스스로 판단하고, 테스트 몇 개 통과만으로 성급히 승인하지 않는 능력을 강화한다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "literal",
+        "reading_goal_internal":  "target list가 validate→smoke→status→commit→push의 안전한 순서를 표현한다는 것을 읽고, 현재 evidence에서 regression 검증이 빠져 있으면 commit/push로 진행하기 전에 추가 검증이 필요함을 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "list literal은 값을 작성 순서대로 저장합니다. 작업 절차 list는 순서를 표현할 수 있지만, 각 단계가 실제로 충분한 evidence를 확보했는지는 별도로 판단해야 합니다.",
+                                    "how_to_read":  "먼저 target list의 순서를 읽고 commit보다 어떤 검증 단계가 앞서는지 확인합니다. 그 다음 현재 evidence map에서 승인에 필요한 검증이 모두 있는지 비교합니다.",
+                                    "key_point":  "현재 validate와 local smoke는 True지만 regression_ok는 False입니다. 따라서 target 순서에서 commit 단계로 넘어가기 전에 regression 검증을 보완하는 것이 맞습니다.",
+                                    "common_mistake":  "검증 두 개가 PASS했다는 이유로 \u0027충분히 테스트했다\u0027고 결론 내리거나, 절차 list에 commit이 있다는 이유만으로 지금 당장 commit해야 한다고 읽으면 안 됩니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "steps = [\"test\", \"review\", \"commit\"]\nchecks = {\"test\": True, \"review\": False}\nready = checks[\"test\"] and checks[\"review\"]\nprint(steps[2], ready)",
+                                 "walkthrough":  "commit이 절차에 존재해도 review가 False라 현재 승인 준비 상태는 False입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) target list는 validate, local smoke, git status가 commit보다 앞에 있는 안전 순서를 표현한다. 2) 현재 checks에서 validate와 local smoke는 True다. 3) 하지만 regression은 False라 세 조건의 and 결과인 ready_for_commit은 False다. 4) 따라서 절차에 commit 단계가 있더라도 현재 evidence 상태에서는 그 단계로 진행하면 안 된다. 5) regression 검증을 보완한 뒤 다시 승인 여부를 판단해야 한다.",
+                                   "why_correct":  "작업 순서와 현재 승인 readiness는 다른 정보이며, regression evidence가 아직 충족되지 않았기 때문입니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "validate와 local smoke가 PASS했으므로 regression 결과와 상관없이 바로 push한다",
+                                                               "why_wrong":  "두 PASS는 regression이 없다는 사실을 증명하지 않으며 ready_for_commit 계산에도 regression이 필수 조건으로 들어 있습니다.",
+                                                               "misread_step":  "절차상 다음 단계와 현재 증거상 진행 가능한 단계를 구분해 읽습니다."
+                                                           },
+                                   "takeaway":  "patch-review 승인은 **안전 순서 확인 → 필수 evidence checklist → 누락 gate 확인 → 추가검증 또는 승인**으로 판단합니다."
+                               },
+        "target_statement":  "steps = [\"validate\", \"local smoke\", \"git status\", \"commit\", \"push\"]",
+        "focus_span":  "[\"validate\", \"local smoke\", \"git status\", \"commit\", \"push\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "workflow",
+                                "test",
+                                "commit",
+                                "approval_decision",
+                                "insufficient_evidence"
+                            ],
+        "pedagogical_intent":  "interpret_result",
+        "subtype":  "list_literal",
+        "secondary_concepts":  [
+                                   "assignment",
+                                   "subscription",
+                                   "boolean_operation"
+                               ],
+        "prerequisites":  [
+                              "literal",
+                              "assignment"
+                          ],
+        "semantic_operations":  [
+                                    "safe_commit_sequence",
+                                    "approval_readiness_check",
+                                    "insufficient_test_diagnosis"
+                                ],
+        "reading_steps":  [
+                              "target list는 validate, local smoke, git status가 commit보다 앞에 있는 안전 순서를 표현한다.",
+                              "현재 checks에서 validate와 local smoke는 True다.",
+                              "하지만 regression은 False라 세 조건의 and 결과인 ready_for_commit은 False다.",
+                              "따라서 절차에 commit 단계가 있더라도 현재 evidence 상태에서는 그 단계로 진행하면 안 된다.",
+                              "regression 검증을 보완한 뒤 다시 승인 여부를 판단해야 한다."
+                          ],
+        "same_syntax_example":  "steps = [\"test\", \"commit\", \"push\"]\nprint(steps.index(\"commit\"))"
+    },
+    {
+        "id":  "PY24_L10_lessonfiles_tail_check_001",
+        "level":  10,
+        "title":  "lesson 연결 확인 하나와 배포 전 충분한 검증 계획을 구분하기",
+        "concepts":  [
+                         "call",
+                         "generator_expression",
+                         "call",
+                         "assignment",
+                         "boolean_operation"
+                     ],
+        "reading_goal":  "`any(...)`가 expected lesson 경로의 연결 여부만 확인한다는 범위를 읽고, 새 카드 변경을 안전하게 배포하기 위해 추가로 필요한 schema·AST·runtime·regression 검증 묶음을 판단한다.",
+        "code":  "lesson_files = [\"data/a.json\", \"data/python_new_lesson.json\"]\nexpected = \"python_new_lesson.json\"\nconnected = any(path.endswith(expected) for path in lesson_files)\nschema_and_ids_ok = True\nast_ok = True\nruntime_semantics_ok = True\nexisting_regression_ok = True\nprint(connected)",
+        "question_type":  "safety",
+        "question":  "`connected`가 True인 상태에서 새 lesson 변경을 배포하기 전 가장 충분한 검증 계획은?",
+        "choices":  [
+                        "연결 확인과 함께 schema/ID 검증, Python AST, 결정론적 runtime semantic check, 기존 regression check를 모두 확인한다",
+                        "`connected`만 True이면 다른 검증 없이 바로 배포한다",
+                        "파일 이름에 lesson이라는 단어가 있으면 schema와 실행 결과도 자동으로 맞다고 본다",
+                        "AST만 통과하면 기존 카드 ID 중복과 정답 오류도 모두 없다고 본다"
+                    ],
+        "answer":  "연결 확인과 함께 schema/ID 검증, Python AST, 결정론적 runtime semantic check, 기존 regression check를 모두 확인한다",
+        "explanation":  "1) target any 호출은 lesson_files 중 expected로 끝나는 경로가 하나라도 있는지만 검사한다. 2) 현재 둘째 경로가 expected로 끝나므로 connected는 True다. 3) 하지만 target에는 JSON 필드, ID 중복, Python syntax, 정답 실행값, 기존 카드 비교가 들어 있지 않다. 4) 따라서 각 위험에 맞는 schema/ID, AST, runtime semantic, regression gate를 추가해야 한다.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "APEX에서 수정한 뒤 무엇을 테스트해야 충분한지 설명하는 능력을 강화한다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "`any(...)`가 expected lesson 경로의 연결 여부만 확인한다는 범위를 읽고, 새 카드 변경을 안전하게 배포하기 위해 추가로 필요한 schema·AST·runtime·regression 검증 묶음을 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`any(iterable)`은 항목 중 하나라도 truthy인지 확인합니다. 따라서 이 target은 경로 연결 존재 여부에는 적합하지만 카드 내용 전체의 정확성까지 검사하지는 않습니다.",
+                                    "how_to_read":  "generator가 어떤 Boolean만 만들고 있는지 먼저 확인합니다. 그 검사에서 관측하지 않은 schema, syntax, execution, 기존 카드 회귀는 별도 gate가 필요하다고 구분합니다.",
+                                    "key_point":  "현재 target이 True라 expected 파일이 lesson_files에 연결된 것은 확인됩니다. 하지만 JSON schema, Python AST, 정답 semantic, 기존 카드 회귀는 이 표현식이 전혀 관찰하지 않습니다.",
+                                    "common_mistake":  "한 가지 validation이 PASS하면 변경 전체가 안전하다고 생각하기 쉽습니다. 검증 계획은 주장별로 맞는 evidence를 조합해야 합니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "paths = [\"data/a.json\", \"data/new.json\"]\nexpected = \"new.json\"\nprint(any(path.endswith(expected) for path in paths))",
+                                 "walkthrough":  "True는 new.json 경로 하나가 연결됐다는 사실만 알려 줍니다. 파일 내용의 schema나 실행 결과는 검사하지 않습니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) target any 호출은 lesson_files 중 expected로 끝나는 경로가 하나라도 있는지만 검사한다. 2) 현재 둘째 경로가 expected로 끝나므로 connected는 True다. 3) 하지만 target에는 JSON 필드, ID 중복, Python syntax, 정답 실행값, 기존 카드 비교가 들어 있지 않다. 4) 따라서 각 위험에 맞는 schema/ID, AST, runtime semantic, regression gate를 추가해야 한다.",
+                                   "why_correct":  "검증 계획은 각 gate가 실제로 관측하는 위험을 합쳐야 충분해집니다. 경로 연결 확인만으로는 내용·문법·실행·회귀를 증명할 수 없습니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "`connected`만 True이면 다른 검증 없이 바로 배포한다",
+                                                               "why_wrong":  "connected=True는 loading list 연결만 증명하며 malformed schema나 실행 오류, 기존 회귀는 그대로 남을 수 있습니다.",
+                                                               "misread_step":  "PASS/FAIL 이름만 보지 말고 각 검증 표현식의 실제 피연산자와 관측 범위를 적어 봅니다."
+                                                           },
+                                   "takeaway":  "검증 계획은 **변경이 만든 위험 목록 → 각 위험을 직접 관측하는 gate → 모든 필수 gate 결과 → 배포 판정**으로 설계합니다."
+                               },
+        "target_statement":  "any(path.endswith(expected) for path in lesson_files)",
+        "focus_span":  "any(path.endswith(expected) for path in lesson_files)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "lesson_files",
+                                "connection_check",
+                                "regression",
+                                "validation_plan",
+                                "evidence_scope"
+                            ],
+        "pedagogical_intent":  "interpret_result",
+        "subtype":  "function_call",
+        "secondary_concepts":  [
+                                   "generator_expression",
+                                   "call",
+                                   "assignment",
+                                   "boolean_operation"
+                               ],
+        "prerequisites":  [
+                              "call",
+                              "generator_expression"
+                          ],
+        "semantic_operations":  [
+                                    "lesson_connection_check",
+                                    "validation_plan_selection",
+                                    "evidence_scope_judgment"
+                                ],
+        "reading_steps":  [
+                              "target any 호출은 lesson_files 중 expected로 끝나는 경로가 하나라도 있는지만 검사한다.",
+                              "현재 둘째 경로가 expected로 끝나므로 connected는 True다.",
+                              "하지만 target에는 JSON 필드, ID 중복, Python syntax, 정답 실행값, 기존 카드 비교가 들어 있지 않다.",
+                              "따라서 각 위험에 맞는 schema/ID, AST, runtime semantic, regression gate를 추가해야 한다."
+                          ],
+        "same_syntax_example":  "files = [\"a.json\", \"b.json\"]\nexpected = \"b.json\"\nprint(any(path.endswith(expected) for path in files))"
+    },
+    {
+        "id":  "PY24_L10_schema_level_range_001",
+        "level":  10,
+        "title":  "level이 1 이상 10 이하인지 chained comparison으로 검사하기",
+        "concepts":  [
+                         "comparison",
+                         "name_reference",
+                         "if_statement"
+                     ],
+        "reading_goal":  "`1 \u003c= level \u003c= 10`을 lower bound와 upper bound를 모두 만족해야 True인 범위 비교로 읽는다.",
+        "code":  "level = 11\nin_range = 1 \u003c= level \u003c= 10\nprint(in_range)",
+        "question_type":  "output_prediction",
+        "question":  "level이 11일 때 in_range 값은?",
+        "choices":  [
+                        "False",
+                        "True",
+                        "11",
+                        "10"
+                    ],
+        "answer":  "False",
+        "explanation":  "1) 왼쪽 1 \u003c= 11은 True다. 2) 오른쪽 11 \u003c= 10은 False다. 3) 범위 비교는 두 관계를 모두 만족해야 한다. 4) 따라서 전체 결과는 False다.",
+        "side_card_ids":  [
+                              "PYV158_A1_VALIDATION_FLOW",
+                              "PYV158_A1_SCHEMA_FLOW"
+                          ],
+        "project_context":  "난이도 필터·통계가 깨지지 않도록 card level을 허용 범위에 제한하는 schema validation에 연결된다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "`1 \u003c= level \u003c= 10`을 lower bound와 upper bound를 모두 만족해야 True인 범위 비교로 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "Python chained comparison은 `1 \u003c= level and level \u003c= 10`과 같은 의미의 범위 검사를 간결하게 표현할 수 있습니다.",
+                                    "how_to_read":  "level의 현재 값을 가운데에 두고 왼쪽 하한과 오른쪽 상한을 각각 확인합니다.",
+                                    "key_point":  "두 비교가 모두 참이어야 전체 결과가 True입니다.",
+                                    "common_mistake":  "한쪽 경계만 맞으면 전체가 True라고 생각하기 쉽습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "level=5\nprint(1 \u003c= level \u003c= 10)",
+                                 "walkthrough":  "1\u003c=5와 5\u003c=10이 모두 True라 전체도 True입니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) 왼쪽 1 \u003c= 11은 True다. 2) 오른쪽 11 \u003c= 10은 False다. 3) 범위 비교는 두 관계를 모두 만족해야 한다. 4) 따라서 전체 결과는 False다.",
+                                   "why_correct":  "상한 10을 초과하므로 range validation이 실패합니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "True",
+                                                               "why_wrong":  "하한만 만족하고 상한 비교가 False입니다.",
+                                                               "misread_step":  "한쪽 경계만 맞으면 전체가 True라고 생각하기 쉽습니다."
+                                                           },
+                                   "takeaway":  "chained comparison은 가운데 값을 기준으로 양쪽 경계를 모두 확인합니다."
+                               },
+        "target_statement":  "1 \u003c= level \u003c= 10",
+        "focus_span":  "1 \u003c= level \u003c= 10",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "schema",
+                                "level_range",
+                                "validation",
+                                "card"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY24_L10_ci_fail_fast_001",
+        "level":  10,
+        "title":  "fail-fast gate가 보장하는 것과 추가 증거가 필요한 주장을 구분하기",
+        "concepts":  [
+                         "raise_statement",
+                         "call",
+                         "if_statement",
+                         "literal",
+                         "return_statement"
+                     ],
+        "reading_goal":  "validation 실패 시 raise가 deploy 정상 흐름을 중단한다는 동작을 읽고, validation 통과/실패 사실이 어떤 주장까지 직접 증명하는지 판단한다.",
+        "code":  "validation_ok = False\nstatus = \"not deployed\"\n\ntry:\n    if not validation_ok:\n        raise RuntimeError(\"validation failed; stop deploy\")\n    status = \"deployed\"\nexcept RuntimeError:\n    status = \"blocked\"\n\nprint(status)",
+        "question_type":  "safety",
+        "question":  "이 테스트에서 실패 시 deploy가 막히는 것은 확인됐다. \u0027이번 수정으로 성능도 향상됐고 모든 영향 범위가 안전하다\u0027고 주장하려면 무엇이 맞는가?",
+        "choices":  [
+                        "이 fail-fast 결과만으로는 부족하며, 성능은 동일 workload의 Before→After benchmark가 필요하고 영향범위는 관련 caller/consumer regression 검증이 추가로 필요하다",
+                        "RuntimeError가 한 번 발생했으므로 성능 향상과 모든 regression 부재도 자동으로 증명된다",
+                        "예외 메시지에 deploy라는 단어가 있으므로 전체 시스템 안전성이 증명된다",
+                        "validation_ok 변수가 Boolean이므로 추가 검증은 필요 없다"
+                    ],
+        "answer":  "이 fail-fast 결과만으로는 부족하며, 성능은 동일 workload의 Before→After benchmark가 필요하고 영향범위는 관련 caller/consumer regression 검증이 추가로 필요하다",
+        "explanation":  "1) validation_ok는 False라 if 본문에 들어간다. 2) target raise가 RuntimeError를 발생시켜 정상 deploy 대입을 건너뛴다. 3) except가 예외를 받아 status를 blocked로 바꾸므로 fail-fast 동작은 확인된다. 4) 하지만 이 실행은 latency, throughput, memory를 측정하지 않았고 다른 caller/consumer의 회귀도 검사하지 않았다. 5) 따라서 더 강한 성능·전체 안전 주장에는 각각 맞는 추가 증거가 필요하다.",
+        "side_card_ids":  [
+                              "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
+                          ],
+        "project_context":  "APEX에서 테스트 통과를 근거로 과도한 성능/안전 주장을 하지 않고, 변경 전후 측정과 caller/consumer regression을 요구하는 습관을 만든다.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "raise_statement",
+        "reading_goal_internal":  "validation 실패 시 raise가 deploy 정상 흐름을 중단한다는 동작을 읽고, validation 통과/실패 사실이 어떤 주장까지 직접 증명하는지 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`raise RuntimeError(...)`는 현재 정상 흐름을 중단해 상위 처리기로 예외를 전달합니다. 이로써 실패한 validation 뒤 deploy를 막을 수 있지만, validation의 범위를 넘어선 다른 주장은 자동으로 증명되지 않습니다.",
+                                    "how_to_read":  "먼저 실패 입력에서 raise가 실제로 실행되는지 확인합니다. 그 다음 \u0027이 gate가 무엇을 검사했는가\u0027와 \u0027성능, 메모리, 모든 caller 영향까지 증명했는가\u0027를 분리합니다.",
+                                    "key_point":  "현재 validation_ok=False에서는 RuntimeError가 발생하고 deploy 상태에 도달하지 않습니다. 이것은 fail-fast 동작의 증거이지 성능 향상이나 모든 regression 부재의 증거는 아닙니다.",
+                                    "common_mistake":  "테스트 하나가 PASS하거나 실패를 잘 막았다는 사실을 \u0027변경이 모든 면에서 안전하다\u0027는 증거로 확대하기 쉽습니다."
+                                },
+        "teaching_example":  {
+                                 "code":  "def gate(ok):\n    if not ok:\n        raise RuntimeError(\"blocked\")\n    return \"allowed\"\ntry:\n    gate(False)\nexcept RuntimeError:\n    print(\"blocked\")",
+                                 "walkthrough":  "False 입력에서 raise가 실행되어 allowed 반환에는 도달하지 않습니다. 이 테스트는 차단 동작만 직접 확인합니다."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) validation_ok는 False라 if 본문에 들어간다. 2) target raise가 RuntimeError를 발생시켜 정상 deploy 대입을 건너뛴다. 3) except가 예외를 받아 status를 blocked로 바꾸므로 fail-fast 동작은 확인된다. 4) 하지만 이 실행은 latency, throughput, memory를 측정하지 않았고 다른 caller/consumer의 회귀도 검사하지 않았다. 5) 따라서 더 강한 성능·전체 안전 주장에는 각각 맞는 추가 증거가 필요하다.",
+                                   "why_correct":  "증거의 범위는 실제로 수행한 검사 범위를 넘지 않습니다. fail-fast는 실패 시 중단을 증명하고, 성능과 영향범위는 별도의 측정·회귀검증이 필요합니다.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "RuntimeError가 한 번 발생했으므로 성능 향상과 모든 regression 부재도 자동으로 증명된다",
+                                                               "why_wrong":  "예외 발생은 제어 흐름 차단만 보여 줄 뿐 성능 metric이나 다른 경로의 회귀 여부를 측정하지 않습니다.",
+                                                               "misread_step":  "테스트가 실제로 관측한 사실과, 보고서에서 주장하려는 더 강한 결론을 따로 적어 비교합니다."
+                                                           },
+                                   "takeaway":  "주장↔증거 판단은 **검사가 관측한 것 → 직접 증명 가능한 주장 → 아직 측정하지 않은 주장 → 필요한 추가 검증**으로 구분합니다."
+                               },
+        "target_statement":  "raise RuntimeError(\"validation failed; stop deploy\")",
+        "focus_span":  "raise RuntimeError(\"validation failed; stop deploy\")",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "ci",
+                                "fail_fast",
+                                "quality_gate",
+                                "validation_evidence",
+                                "claim_boundary"
+                            ],
+        "pedagogical_intent":  "predict_exception",
+        "subtype":  "raise_exception",
+        "secondary_concepts":  [
+                                   "call",
+                                   "if_statement",
+                                   "literal",
+                                   "return_statement"
+                               ],
+        "prerequisites":  [
+                              "call",
+                              "if_statement"
+                          ],
+        "semantic_operations":  [
+                                    "ci_failure_raise",
+                                    "deploy_block",
+                                    "validation_claim_boundary"
+                                ],
+        "reading_steps":  [
+                              "validation_ok는 False라 if 본문에 들어간다.",
+                              "target raise가 RuntimeError를 발생시켜 정상 deploy 대입을 건너뛴다.",
+                              "except가 예외를 받아 status를 blocked로 바꾸므로 fail-fast 동작은 확인된다.",
+                              "하지만 이 실행은 latency, throughput, memory를 측정하지 않았고 다른 caller/consumer의 회귀도 검사하지 않았다.",
+                              "따라서 더 강한 성능·전체 안전 주장에는 각각 맞는 추가 증거가 필요하다."
+                          ],
+        "same_syntax_example":  "try:\n    raise RuntimeError(\"stop\")\nexcept RuntimeError:\n    print(\"blocked\")"
+    }
 ]

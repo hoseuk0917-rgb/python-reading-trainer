@@ -2,392 +2,909 @@
   {
     "id": "PY33_L06_git_status_001",
     "level": 6,
-    "title": "git status 읽기",
+    "title": "두 Git 상태 조건을 `and`로 묶어 working tree clean 판정하기",
     "concepts": [
-      "git",
-      "status",
-      "working_tree"
+      "boolean_operation",
+      "comparison",
+      "subscription",
+      "assignment"
     ],
-    "reading_goal": "현재 Git 작업 상태를 확인하는 git status 출력의 의미를 읽는다.",
-    "code": "git status\n\nOn branch main\nYour branch is up to date with origin/main.\n\nnothing to commit, working tree clean",
+    "reading_goal": "`and`로 두 변경 없음 조건을 함께 확인해 working tree clean의 실제 의미를 읽는다.",
+    "code": "git_state = {\"tracked_changes\": 0, \"untracked_files\": 0, \"ignored_files\": 2}\nworking_tree_clean = git_state[\"tracked_changes\"] == 0 and git_state[\"untracked_files\"] == 0\nprint(working_tree_clean)",
     "question_type": "meaning_choice",
-    "question": "working tree clean의 의미는?",
+    "question": "이 판정식이 True일 때 Git의 `working tree clean` 의미로 가장 알맞은 것은?",
     "choices": [
-      "파일이 모두 삭제됐다",
-      "커밋할 변경사항이 없다",
-      "원격 저장소가 없다",
-      "브라우저 캐시가 비었다"
+      "현재 판정 범위에서 커밋할 추적 변경과 일반 untracked 파일이 없다",
+      "ignored 파일까지 디스크에서 모두 삭제됐다",
+      "원격 GitHub 서버가 실시간으로 완전히 동일함이 보장된다",
+      "현재 브랜치에 커밋이 한 번도 없다"
     ],
-    "answer": "커밋할 변경사항이 없다",
-    "explanation": "working tree clean은 Git이 보여 주는 추적 파일과 일반 untracked 파일 중 커밋할 변경이 없다는 뜻이다. ignored 파일은 남아 있을 수 있고, origin/main과 같다는 문구도 마지막 fetch로 갱신된 로컬 원격 추적 정보와의 비교이므로 원격 서버의 실시간 상태를 보장하지 않는다.",
+    "answer": "현재 판정 범위에서 커밋할 추적 변경과 일반 untracked 파일이 없다",
+    "explanation": "tracked와 untracked 변경이 모두 0이라 두 비교가 True이고 and 결과도 True다. ignored 파일과 원격 실시간 상태는 별도 문제다.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
-    "project_context": "각 확장 작업 마지막에 git status clean을 확인하는 이유다."
+    "project_context": "변경 작업을 마친 뒤 커밋 전 `git status`에서 남은 변경이 없는지 확인하는 흐름과 연결됩니다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "boolean_operation",
+    "reading_goal_internal": "추적 변경과 untracked 파일이 모두 0이라는 두 조건이 동시에 참일 때 working tree clean으로 판정하는 논리 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`and`는 왼쪽과 오른쪽 조건이 모두 참일 때만 True가 되는 논리 연산입니다.",
+      "how_to_read": "Git 상태에서 커밋할 변경에 해당하는 각 범주를 따로 비교한 뒤 두 Boolean을 결합합니다.",
+      "key_point": "working tree clean은 커밋할 추적 변경과 일반 untracked 항목이 없다는 뜻이지 ignored 파일까지 반드시 없거나 원격 서버 상태가 실시간으로 동일하다는 뜻은 아닙니다.",
+      "common_mistake": "변경 수 하나만 0이면 clean이라고 보거나 ignored 파일 수까지 clean 판정에 포함한다고 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "status = {\"tracked\": 0, \"untracked\": 2}\nclean = status[\"tracked\"] == 0 and status[\"untracked\"] == 0\nprint(clean)",
+      "walkthrough": "tracked 조건은 True지만 untracked 조건이 False이므로 and 결과는 False입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) tracked_changes == 0은 True다. 2) untracked_files == 0도 True다. 3) True and True는 True다. 4) 따라서 커밋할 변경이 없는 clean 상태로 판정한다.",
+      "why_correct": "두 커밋 대상 범주의 조건이 동시에 만족되기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "원격 GitHub 서버가 실시간으로 완전히 동일함이 보장된다",
+        "why_wrong": "working tree 상태는 로컬 작업트리 판정이며 원격 서버의 최신 상태까지 증명하지 않습니다.",
+        "misread_step": "로컬 작업트리 상태와 원격 동기화 상태를 분리합니다."
+      },
+      "takeaway": "Git clean 판정은 **각 변경 범주 확인 → Boolean 조건 계산 → and로 모두 만족하는지 확인**으로 읽습니다."
+    },
+    "target_statement": "git_state[\"tracked_changes\"] == 0 and git_state[\"untracked_files\"] == 0",
+    "focus_span": "git_state[\"tracked_changes\"] == 0 and git_state[\"untracked_files\"] == 0",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "git status",
+      "working tree clean",
+      "tracked changes",
+      "untracked files",
+      "ignored files"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY33_L07_untracked_unstaged_001",
     "level": 7,
-    "title": "untracked와 unstaged 읽기",
+    "title": "Git 변경 상태 두 종류를 list literal로 순서 있게 모델링하기",
     "concepts": [
+      "literal",
+      "assignment",
+      "subscription"
+    ],
+    "reading_goal": "대괄호 안 두 문자열이 각각 독립된 list 항목이며 untracked가 두 번째 항목이라는 구조를 읽는다.",
+    "code": "statuses = [\"unstaged\", \"untracked\"]\nprint(statuses[1])",
+    "question_type": "output_prediction",
+    "question": "`statuses[1]`의 결과는 무엇인가?",
+    "choices": [
       "untracked",
       "unstaged",
-      "git_status"
+      "1",
+      "statuses"
     ],
-    "reading_goal": "Git이 아직 추적하지 않는 파일과 수정됐지만 add 안 된 파일을 구분한다.",
-    "code": "Changes not staged for commit:\n  modified: src/pwa/app.js\n\nUntracked files:\n  data/lessons/new_lesson.json",
-    "question_type": "meaning_choice",
-    "question": "Untracked files에 있는 파일은 어떤 상태인가?",
-    "choices": [
-      "이미 커밋된 파일",
-      "Git이 아직 추적하지 않는 새 파일",
-      "삭제된 원격 브랜치",
-      "브라우저 캐시 파일"
-    ],
-    "answer": "Git이 아직 추적하지 않는 새 파일",
-    "explanation": "새로 만든 lesson JSON은 git add 전까지 untracked로 보일 수 있다. untracked는 Git이 아직 추적하지 않는 새 파일이고, unstaged는 수정됐지만 커밋 후보에 올리지 않은 변경이다. git status에서 둘을 구분해야 한다.",
+    "answer": "untracked",
+    "explanation": "1) 대괄호 안 첫 문자열은 unstaged다. 2) 두 번째 문자열은 untracked다. 3) Python list index는 0부터 시작한다. 4) 따라서 index 1은 untracked를 반환한다.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
     ],
-    "project_context": "새 v33 lesson 파일은 처음에는 untracked로 나타나는 것이 정상이다."
+    "project_context": "Git의 새 파일(untracked)과 수정됐지만 아직 staging하지 않은 변경(unstaged)을 서로 다른 상태로 구분하는 개념 모델과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "literal",
+    "reading_goal_internal": "대괄호 안 두 문자열이 각각 독립된 list 항목이며 untracked가 두 번째 항목이라는 구조를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "list literal은 `[value1, value2, ...]` 형태로 여러 값을 작성한 순서대로 하나의 list 객체에 담습니다.",
+      "how_to_read": "대괄호 경계를 찾고 쉼표로 나눈 실제 값들을 왼쪽부터 index 0, 1 순서로 대응합니다.",
+      "key_point": "statuses의 index 0은 unstaged이고 index 1은 untracked입니다.",
+      "common_mistake": "두 용어가 같은 상태의 별칭이라고 보거나 쉼표를 하나의 문자열 내부 문자로 읽기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "states = [\"modified\", \"new\"]\nprint(states[1])",
+      "walkthrough": "두 번째 항목은 new이므로 index 1 조회 결과가 new입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) 대괄호 안 첫 문자열은 unstaged다. 2) 두 번째 문자열은 untracked다. 3) Python list index는 0부터 시작한다. 4) 따라서 index 1은 untracked를 반환한다.",
+      "why_correct": "작성 순서상 untracked가 두 번째 항목이고 그 index가 1입니다.",
+      "common_wrong_choice": {
+        "choice": "unstaged",
+        "why_wrong": "unstaged는 index 0의 첫 번째 항목입니다.",
+        "misread_step": "실제 값 순서에 0부터 index를 붙입니다."
+      },
+      "takeaway": "list literal은 **항목 분리 → 작성 순서 유지 → 0-based index 대응**으로 읽습니다."
+    },
+    "target_statement": "[\"unstaged\", \"untracked\"]",
+    "focus_span": "[\"unstaged\", \"untracked\"]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "git_status",
+      "untracked",
+      "unstaged",
+      "working_tree"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY33_L07_git_add_001",
     "level": 7,
-    "title": "git add 읽기",
+    "title": "`append()` 호출로 staging 대상 목록에 파일 하나 추가하기",
     "concepts": [
-      "git_add",
-      "staging_area",
-      "commit"
+      "call",
+      "attribute_access",
+      "literal",
+      "assignment"
     ],
-    "reading_goal": "커밋에 포함할 파일을 staging area에 올리는 명령을 이해한다.",
-    "code": "git add data/lessons/python_git_github_workflow_v33.json src/pwa/app.js",
-    "question_type": "meaning_choice",
-    "question": "Git 기본 workflow에서 git add의 역할은?",
+    "reading_goal": "점 왼쪽 staged list를 대상 객체로, append를 메서드 이름으로, 문자열을 추가할 인자로 구분해 상태가 바뀌는 순서를 읽는다.",
+    "code": "staged = []\nstaged.append(\"new_lesson.json\")\nprint(len(staged))",
+    "question_type": "output_prediction",
+    "question": "append 호출 뒤 staged의 항목 수는 몇 개인가?",
     "choices": [
-      "GitHub Pages를 즉시 연다",
-      "다음 커밋에 포함할 변경사항을 준비한다",
-      "파일을 자동 삭제한다",
-      "서버를 실행한다"
+      "1",
+      "0",
+      "2",
+      "None"
     ],
-    "answer": "다음 커밋에 포함할 변경사항을 준비한다",
-    "explanation": "git add는 수정한 파일을 다음 커밋에 포함할 준비 영역으로 올리는 명령이다. 원격 저장소에 올리는 단계가 아니라 커밋 준비 단계다. 수정한 모든 파일이 자동으로 커밋되는 것이 아니므로 git status와 함께 staged 상태를 확인해야 한다.",
+    "answer": "1",
+    "explanation": "1) staged는 빈 list로 시작한다. 2) staged 객체에서 append 메서드를 찾는다. 3) 문자열 new_lesson.json을 인자로 전달해 호출한다. 4) list 끝에 한 항목이 추가되어 len(staged)는 1이 된다.",
     "side_card_ids": [
       "DEV_git_001"
     ],
-    "project_context": "lesson JSON과 app.js를 함께 커밋하려면 둘 다 add해야 한다."
+    "project_context": "실제 Git에서는 add가 변경을 staging area에 준비한다는 의미를 가지며, 여기서는 그 상태 전환만 안전한 Python list로 모델링했다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "점 왼쪽 staged list를 대상 객체로, append를 메서드 이름으로, 문자열을 추가할 인자로 구분해 상태가 바뀌는 순서를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`list.append(value)`는 대상 list 끝에 value 하나를 추가하고 list 자체를 변경하는 메서드 호출입니다.",
+      "how_to_read": "대상 객체 → 메서드 이름 → 인자 → 호출 뒤 객체 상태 순서로 확인합니다.",
+      "key_point": "빈 staged list에 new_lesson.json 한 항목이 추가되어 길이가 1이 됩니다.",
+      "common_mistake": "append의 반환값이 새 list라고 생각하거나 이 예제가 실제 Git index를 수정한다고 생각하면 안 됩니다."
+    },
+    "teaching_example": {
+      "code": "queue = []\nqueue.append(\"card.json\")\nprint(len(queue))",
+      "walkthrough": "append가 queue 자체에 한 항목을 추가해 길이가 1이 됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) staged는 빈 list로 시작한다. 2) staged 객체에서 append 메서드를 찾는다. 3) 문자열 new_lesson.json을 인자로 전달해 호출한다. 4) list 끝에 한 항목이 추가되어 len(staged)는 1이 된다.",
+      "why_correct": "빈 list에 append가 값 하나를 추가했으므로 항목 수가 0에서 1로 증가합니다.",
+      "common_wrong_choice": {
+        "choice": "0",
+        "why_wrong": "append는 대상 list를 직접 변경하므로 빈 상태로 남지 않습니다.",
+        "misread_step": "메서드의 반환값이 아니라 호출 뒤 대상 객체의 상태를 확인합니다."
+      },
+      "takeaway": "메서드 호출은 **대상 객체 → 메서드 → 인자 → 호출 뒤 상태/반환값**으로 읽습니다."
+    },
+    "target_statement": "staged.append(\"new_lesson.json\")",
+    "focus_span": "staged.append(\"new_lesson.json\")",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "git_add",
+      "staging_area",
+      "commit_preparation",
+      "list_mutation"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY33_L07_git_commit_001",
     "level": 7,
-    "title": "git commit 읽기",
+    "title": "commit 설명 문자열을 `message=` keyword argument로 전달하기",
     "concepts": [
-      "git_commit",
-      "snapshot",
-      "message"
+      "argument_passing",
+      "call",
+      "literal",
+      "return_statement"
     ],
-    "reading_goal": "staged 변경사항을 하나의 기록으로 남기는 commit을 이해한다.",
-    "code": "git commit -m \"Add Git workflow reading cards\"",
-    "question_type": "meaning_choice",
-    "question": "commit message의 역할은?",
+    "reading_goal": "함수 호출 괄호 안에서 message가 받을 매개변수 이름이고 오른쪽 문자열이 실제 전달값이라는 역할 차이를 읽는다.",
+    "code": "def make_commit(message):\n    return {\"message\": message}\n\ncommit = make_commit(message=\"Add Git workflow reading cards\")\nprint(commit[\"message\"])",
+    "question_type": "output_prediction",
+    "question": "make_commit 호출 뒤 commit['message']의 값은 무엇인가?",
     "choices": [
-      "서버 포트를 지정한다",
-      "이번 변경의 목적을 짧게 기록한다",
-      "JSON을 검증한다",
-      "파일 인코딩을 바꾼다"
+      "Add Git workflow reading cards",
+      "message",
+      "make_commit",
+      "None"
     ],
-    "answer": "이번 변경의 목적을 짧게 기록한다",
-    "explanation": "git commit은 준비된 변경을 하나의 기록으로 저장하는 명령이다. 커밋 메시지는 나중에 변경 이력을 읽을 때 무엇을 했는지 알려준다. 좋은 커밋 메시지는 변경 이유와 범위를 짧게 남겨 나중에 로그만 봐도 흐름을 복원하게 해 준다. 따라서 정답은 ‘이번 변경의 목적을 짧게 기록한다’이다.",
+    "answer": "Add Git workflow reading cards",
+    "explanation": "1) 호출의 `message=`가 값을 받을 매개변수 이름을 지정한다. 2) 오른쪽 문자열 Add Git workflow reading cards를 평가한다. 3) 그 문자열이 make_commit의 message 매개변수에 전달된다. 4) 함수가 같은 문자열을 dict에 담아 반환하므로 조회 결과도 그 메시지다.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
     ],
-    "project_context": "v28~v32처럼 주제별 확장을 커밋 메시지로 남겨두면 추적이 쉽다."
+    "project_context": "실제 Git commit에서는 변경 목적을 기록하는 메시지가 필요하며, 여기서는 그 메시지 전달 구조만 Python 함수 호출로 안전하게 모델링했다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "argument_passing",
+    "reading_goal_internal": "함수 호출 괄호 안에서 message가 받을 매개변수 이름이고 오른쪽 문자열이 실제 전달값이라는 역할 차이를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "keyword argument는 함수 호출에서 `parameter=value` 형태로 받을 매개변수 이름을 명시해 값을 전달합니다.",
+      "how_to_read": "등호 왼쪽 이름과 오른쪽 표현식을 나누고, 오른쪽 값을 평가한 뒤 해당 이름의 매개변수로 전달한다고 읽습니다.",
+      "key_point": "message 매개변수에는 Add Git workflow reading cards 문자열이 전달됩니다.",
+      "common_mistake": "message가 새 전역 변수 대입이거나 실제 `git commit`이 실행된다고 생각하면 안 됩니다."
+    },
+    "teaching_example": {
+      "code": "def make_record(message):\n    return message\nprint(make_record(message=\"update docs\"))",
+      "walkthrough": "호출의 message=가 오른쪽 문자열을 같은 이름의 매개변수에 전달합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) 호출의 `message=`가 값을 받을 매개변수 이름을 지정한다. 2) 오른쪽 문자열 Add Git workflow reading cards를 평가한다. 3) 그 문자열이 make_commit의 message 매개변수에 전달된다. 4) 함수가 같은 문자열을 dict에 담아 반환하므로 조회 결과도 그 메시지다.",
+      "why_correct": "keyword argument 오른쪽 문자열이 message 매개변수에 그대로 전달되기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "message",
+        "why_wrong": "message는 매개변수 이름이고 실제 runtime value는 오른쪽의 긴 문자열입니다.",
+        "misread_step": "keyword 이름과 전달값을 등호 기준으로 분리합니다."
+      },
+      "takeaway": "keyword argument는 **매개변수 이름 확인 → 오른쪽 값 평가 → 이름으로 전달**로 읽습니다."
+    },
+    "target_statement": "message=\"Add Git workflow reading cards\"",
+    "focus_span": "message=\"Add Git workflow reading cards\"",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "git_commit",
+      "commit_message",
+      "snapshot",
+      "keyword_argument"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY33_L08_git_push_001",
     "level": 8,
-    "title": "git push 읽기",
+    "title": "로컬·원격 branch SHA가 같은지 비교하기",
     "concepts": [
-      "git_push",
-      "remote",
-      "GitHub"
+      "comparison",
+      "subscription",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "로컬 커밋을 GitHub 원격 저장소로 올리는 명령을 이해한다.",
-    "code": "git push\n\nTo https://github.com/user/repo.git\n   abc1234..def5678  main -> main",
-    "question_type": "meaning_choice",
-    "question": "main -> main은 무엇을 뜻하는가?",
+    "reading_goal": "구조화된 branch 상태에서 local과 remote SHA를 각각 조회하고 equality로 동기화 여부를 판정한다.",
+    "code": "branches = {\"local_main\": \"def5678\", \"remote_main\": \"def5678\"}\nsynced = branches[\"local_main\"] == branches[\"remote_main\"]",
+    "question_type": "multiple_choice",
+    "question": "`synced`에 저장되는 값은 무엇인가?",
     "choices": [
-      "main 파일이 삭제됐다",
-      "로컬 main의 커밋이 원격 main에 반영됐다",
-      "브라우저 main 탭이 열렸다",
-      "Python main.py가 실행됐다"
+      "True",
+      "False",
+      "def5678",
+      "main"
     ],
-    "answer": "로컬 main의 커밋이 원격 main에 반영됐다",
-    "explanation": "이 출력은 로컬 main의 abc1234 이후 커밋이 해당 원격의 main 참조를 def5678로 갱신했다는 뜻이다. push 성공은 저장소 업데이트를 뜻할 뿐, GitHub Pages 배포 성공까지 보장하지 않는다. Pages는 별도의 설정된 빌드·배포가 끝났는지 확인해야 한다.",
+    "answer": "True",
+    "explanation": "두 dict 조회가 모두 `def5678`을 반환합니다. 같은 문자열끼리 비교하므로 결과는 True입니다. 동일한 SHA 문자열을 `==`로 비교하기 때문입니다. 헷갈리기 쉬운 오답: def5678 그 값은 비교의 피연산자이고 target 전체의 결과는 boolean입니다. 오독 지점: 비교 전 값과 비교 결과를 구분하지 않은 경우입니다. 동기화 여부는 **양쪽 상태값 조회 → equality 비교 → boolean 결과** 순서로 읽습니다.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
     ],
-    "project_context": "정적 사이트가 main을 배포 원본으로 사용하도록 설정된 경우 push 뒤 별도 배포가 시작될 수 있다."
+    "project_context": "push 뒤 원격 branch가 의도한 commit을 가리키는지 상태값으로 확인하는 CI/CD 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "comparison",
+    "reading_goal_internal": "구조화된 branch 상태에서 local과 remote SHA를 각각 조회하고 equality로 동기화 여부를 판정한다.",
+    "concept_explanation": {
+      "what_it_is": "`a == b`는 두 값이 같은지 비교합니다. dict subscription과 함께 쓰이면 각 key의 value를 먼저 읽고 그 결과를 비교합니다.",
+      "how_to_read": "왼쪽 local SHA를 얻고 오른쪽 remote SHA를 얻은 뒤 문자열 전체가 같은지 확인합니다.",
+      "key_point": "Git push는 coverage 맥락이고, Python 문법 초점은 두 branch state value의 equality 비교입니다.",
+      "common_mistake": "`main -> main` 같은 Git 출력 자체를 Python 문법처럼 읽기 쉽습니다. 여기서는 그 의미를 구조화한 값의 비교만 다룹니다."
+    },
+    "teaching_example": {
+      "code": "branches = {\"local\": \"abc1234\", \"remote\": \"abc1234\"}\nsynced = branches[\"local\"] == branches[\"remote\"]",
+      "walkthrough": "두 SHA 문자열이 같으므로 `synced`는 True입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "두 dict 조회가 모두 `def5678`을 반환합니다. 같은 문자열끼리 비교하므로 결과는 True입니다.",
+      "why_correct": "동일한 SHA 문자열을 `==`로 비교하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "def5678",
+        "why_wrong": "그 값은 비교의 피연산자이고 target 전체의 결과는 boolean입니다.",
+        "misread_step": "비교 전 값과 비교 결과를 구분하지 않은 경우입니다."
+      },
+      "takeaway": "동기화 여부는 **양쪽 상태값 조회 → equality 비교 → boolean 결과** 순서로 읽습니다."
+    },
+    "target_statement": "synced = branches[\"local_main\"] == branches[\"remote_main\"]",
+    "focus_span": "branches[\"local_main\"] == branches[\"remote_main\"]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "git push",
+      "local main",
+      "remote main",
+      "commit sha"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY33_L08_git_log_001",
     "level": 8,
-    "title": "git log 읽기",
+    "title": "[:7] slice로 짧은 commit hash 만들기",
     "concepts": [
-      "git_log",
-      "history",
-      "commit_hash"
+      "slice",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "커밋 이력을 확인하고 최신 커밋 해시를 읽는다.",
-    "code": "git log --oneline -5\n\n0998190 Add files paths and project structure reading cards\n4d2080b Fix v31 dict object card answer",
-    "question_type": "meaning_choice",
-    "question": "0998190은 무엇인가?",
+    "reading_goal": "문자열 slice의 stop 제외 규칙으로 전체 commit SHA의 앞 7글자를 추출한다.",
+    "code": "commit_sha = \"0998190abcdef123456789\"\nshort_hash = commit_sha[:7]",
+    "question_type": "multiple_choice",
+    "question": "`short_hash`에 저장되는 문자열은 무엇인가?",
     "choices": [
-      "포트 번호",
-      "커밋을 가리키는 짧은 해시",
-      "카드 수",
-      "JSON 파일명"
+      "0998190",
+      "0998190a",
+      "abcdef1",
+      "7"
     ],
-    "answer": "커밋을 가리키는 짧은 해시",
-    "explanation": "git log --oneline은 각 커밋을 축약 해시와 제목으로 보여 준다. 0998190은 전체 객체 ID의 앞부분이며 저장소 안에서 충분히 고유할 때 특정 커밋을 가리킨다. 충돌 가능성이 있으면 Git이 요구하는 더 긴 해시나 전체 해시를 사용한다.",
+    "answer": "0998190",
+    "explanation": "slice는 시작부터 stop 7 직전까지의 문자를 가져옵니다. 따라서 처음 일곱 글자 `0998190`이 결과입니다. Python slice의 stop 경계는 결과에 포함되지 않기 때문입니다. 헷갈리기 쉬운 오답: 0998190a 그 값은 여덟 글자이며 `[:7]`은 일곱 글자만 가져옵니다. 오독 지점: stop을 포함한다고 읽은 경우입니다. `text[:n]`은 **처음 n개 문자**를 가져옵니다.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE"
     ],
-    "project_context": "문제가 생겼을 때 어느 커밋부터 깨졌는지 추적할 수 있다."
+    "project_context": "긴 commit SHA를 로그·체크포인트에서 짧게 표시하는 표현과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "slice",
+    "reading_goal_internal": "문자열 slice의 stop 제외 규칙으로 전체 commit SHA의 앞 7글자를 추출한다.",
+    "concept_explanation": {
+      "what_it_is": "`text[:7]`은 문자열 시작부터 인덱스 7 직전까지를 가져오는 slice입니다.",
+      "how_to_read": "start가 없으므로 0에서 시작하고 stop 7은 포함하지 않는다고 읽습니다.",
+      "key_point": "Git short hash는 coverage 맥락이고, Python 문법 초점은 문자열 앞부분을 자르는 slice입니다.",
+      "common_mistake": "stop 7 위치까지 포함해 8글자가 나온다고 생각하기 쉽습니다. slice의 stop은 제외됩니다."
+    },
+    "teaching_example": {
+      "code": "sha = \"abcdef123456\"\nshort_hash = sha[:6]",
+      "walkthrough": "인덱스 0부터 5까지 여섯 글자 `abcdef`가 선택됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "slice는 시작부터 stop 7 직전까지의 문자를 가져옵니다. 따라서 처음 일곱 글자 `0998190`이 결과입니다.",
+      "why_correct": "Python slice의 stop 경계는 결과에 포함되지 않기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "0998190a",
+        "why_wrong": "그 값은 여덟 글자이며 `[:7]`은 일곱 글자만 가져옵니다.",
+        "misread_step": "stop을 포함한다고 읽은 경우입니다."
+      },
+      "takeaway": "`text[:n]`은 **처음 n개 문자**를 가져옵니다."
+    },
+    "target_statement": "short_hash = commit_sha[:7]",
+    "focus_span": "commit_sha[:7]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "git log",
+      "short hash",
+      "commit sha",
+      "oneline"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY33_L08_git_diff_001",
     "level": 8,
-    "title": "git diff 읽기",
+    "title": "in으로 diff 요약의 예상치 못한 변경 찾기",
     "concepts": [
-      "git_diff",
-      "changes",
-      "review"
+      "membership_test",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "커밋 전 어떤 줄이 바뀌었는지 확인하는 diff를 이해한다.",
-    "code": "git diff src/pwa/app.js",
-    "question_type": "meaning_choice",
-    "question": "git diff를 커밋 전에 보는 이유는?",
+    "reading_goal": "변경 목록 안에 특정 문자열이 실제로 포함되어 있는지 membership test로 판정한다.",
+    "code": "changed_lines = [\"APP_DATA_VERSION='v40'\", \"debug=True\", \"timeout=10\"]\nhas_debug_change = \"debug=True\" in changed_lines",
+    "question_type": "multiple_choice",
+    "question": "`has_debug_change`에 저장되는 값은 무엇인가?",
     "choices": [
-      "GitHub에 자동 배포하기 위해",
-      "의도하지 않은 변경이 섞였는지 확인하기 위해",
-      "서버 포트를 닫기 위해",
-      "JSON 파일을 다운로드하기 위해"
+      "True",
+      "False",
+      "debug=True",
+      "None"
     ],
-    "answer": "의도하지 않은 변경이 섞였는지 확인하기 위해",
-    "explanation": "인자 없이 이 형태의 git diff는 app.js의 작업 트리와 index 사이, 즉 주로 아직 stage하지 않은 변경을 보여 준다. git add로 stage한 변경은 git diff --cached로 따로 확인해야 하므로 커밋 전에는 두 diff를 모두 검토하는 것이 안전하다.",
+    "answer": "True",
+    "explanation": "찾는 문자열 `debug=True`가 리스트에 정확히 한 항목으로 존재합니다. 따라서 membership test는 True입니다. `in`은 collection 안에 같은 값이 존재하면 True를 반환하기 때문입니다. 헷갈리기 쉬운 오답: False 리스트 둘째 항목이 찾는 문자열과 정확히 같습니다. 오독 지점: 리스트의 실제 항목을 끝까지 확인하지 않은 경우입니다. diff 점검도 구조화하면 **찾을 값 → 목록 검색 → boolean 결과** 순서로 읽을 수 있습니다.",
     "side_card_ids": [
       "PYV96_A1_MIXED_REVIEW"
     ],
-    "project_context": "app.js lessonFiles가 유지됐는지 확인할 때 유용하다."
+    "project_context": "커밋 직전 변경 목록을 검토해 디버그 설정이나 불필요한 수정이 섞였는지 점검하는 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "membership_test",
+    "reading_goal_internal": "변경 목록 안에 특정 문자열이 실제로 포함되어 있는지 membership test로 판정한다.",
+    "concept_explanation": {
+      "what_it_is": "`value in collection`은 collection 안에 같은 값이 존재하는지 검사해 boolean 결과를 만듭니다.",
+      "how_to_read": "찾는 문자열과 리스트 항목을 정확히 비교해 같은 값이 있으면 True라고 읽습니다.",
+      "key_point": "git diff는 coverage 맥락이고, Python 문법 초점은 변경 목록의 특정 항목 포함 여부를 검사하는 `in`입니다.",
+      "common_mistake": "문자열 일부가 비슷하면 True라고 생각하기 쉽습니다. 리스트 membership은 항목 전체 값과 같은 요소가 있는지 검사합니다."
+    },
+    "teaching_example": {
+      "code": "changed = [\"timeout=5\", \"retries=3\"]\nhas_debug = \"debug=True\" in changed",
+      "walkthrough": "리스트에 같은 항목이 없으므로 결과는 False입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "찾는 문자열 `debug=True`가 리스트에 정확히 한 항목으로 존재합니다. 따라서 membership test는 True입니다.",
+      "why_correct": "`in`은 collection 안에 같은 값이 존재하면 True를 반환하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "False",
+        "why_wrong": "리스트 둘째 항목이 찾는 문자열과 정확히 같습니다.",
+        "misread_step": "리스트의 실제 항목을 끝까지 확인하지 않은 경우입니다."
+      },
+      "takeaway": "diff 점검도 구조화하면 **찾을 값 → 목록 검색 → boolean 결과** 순서로 읽을 수 있습니다."
+    },
+    "target_statement": "has_debug_change = \"debug=True\" in changed_lines",
+    "focus_span": "\"debug=True\" in changed_lines",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "git diff",
+      "pre-commit review",
+      "unexpected change",
+      "debug code"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY33_L09_git_restore_001",
     "level": 9,
-    "title": "git restore 주의해서 읽기",
+    "title": "restore 대상에 커밋되지 않은 수정이 있는지 확인하기",
     "concepts": [
-      "git_restore",
-      "rollback",
-      "danger"
+      "membership_test",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "커밋하지 않은 변경을 되돌리는 restore의 위험을 이해한다.",
-    "code": "git restore src/pwa/app.js",
-    "question_type": "meaning_choice",
-    "question": "이 명령의 위험은?",
+    "reading_goal": "restore 대상 경로가 modified 목록에 존재하는지 확인해 작업 손실 위험을 해석한다.",
+    "code": "modified_files = [\"src/pwa/app.js\", \"README.md\"]\ntarget = \"src/pwa/app.js\"\nwould_discard_changes = target in modified_files",
+    "question_type": "multiple_choice",
+    "question": "`would_discard_changes`가 True일 때 restore 전에 가장 주의할 점은 무엇인가?",
     "choices": [
-      "원격 저장소가 자동 삭제된다",
       "app.js의 커밋되지 않은 수정이 사라질 수 있다",
+      "원격 저장소가 자동 삭제된다",
       "GitHub 계정이 바뀐다",
-      "모든 브라우저 캐시가 삭제된다"
+      "브라우저 캐시가 모두 삭제된다"
     ],
     "answer": "app.js의 커밋되지 않은 수정이 사라질 수 있다",
-    "explanation": "기본 git restore <파일>은 작업 트리의 해당 파일을 index에 있는 내용으로 되돌려 stage하지 않은 수정을 버릴 수 있다. stage된 변경은 기본적으로 그대로 남는다. 실행 전 status와 두 종류의 diff를 확인하고, HEAD 복원이나 stage 해제는 --source 또는 --staged 옵션의 의미를 구분해야 한다.",
+    "explanation": "target 경로가 modified_files 안에 있으므로 아직 수정 상태인 파일로 표현됩니다. restore가 이런 변경을 되돌릴 수 있으므로 필요한 수정이 사라질 위험을 먼저 확인해야 하기 때문입니다. 헷갈리기 쉬운 오답: 원격 저장소가 자동 삭제된다 restore의 주된 위험은 현재 작업 트리 변경 손실이지 원격 저장소 삭제가 아닙니다. 오독 지점: 로컬 working-tree 변경과 원격 저장소 동작을 혼동한 경우입니다. restore 계열 작업 전에는 **대상 파일의 현재 수정 상태**를 먼저 확인합니다.",
     "side_card_ids": [
       "PYV102_A7_FILE_SAFE_WRITE"
     ],
-    "project_context": "패치가 잘못됐을 때 쓰지만, 필요한 변경까지 날리지 않게 조심해야 한다."
+    "project_context": "패치가 잘못됐을 때 restore를 쓰더라도 필요한 로컬 수정까지 잃지 않도록 working-tree 상태를 먼저 확인하는 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "membership_test",
+    "reading_goal_internal": "restore 대상 경로가 modified 목록에 존재하는지 확인해 작업 손실 위험을 해석한다.",
+    "concept_explanation": {
+      "what_it_is": "`value in container`는 특정 값이 컨테이너 안에 있는지 검사하는 membership test입니다.",
+      "how_to_read": "왼쪽 파일 경로와 오른쪽 modified 목록을 비교합니다.",
+      "key_point": "restore 전에 대상 파일이 modified 상태라면 아직 저장소에 기록되지 않은 수정이 사라질 수 있는지 주의해야 합니다.",
+      "common_mistake": "restore를 단순히 원격에서 최신 파일을 가져오는 명령이라고 생각하기 쉽습니다. 여기서는 작업 트리 변경을 되돌리는 위험을 읽는 것이 핵심입니다."
+    },
+    "teaching_example": {
+      "code": "modified = [\"app.py\", \"README.md\"]\ntarget = \"app.py\"\nrisky = target in modified",
+      "walkthrough": "app.py가 modified 목록에 있으므로 risky는 True입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "target 경로가 modified_files 안에 있으므로 아직 수정 상태인 파일로 표현됩니다.",
+      "why_correct": "restore가 이런 변경을 되돌릴 수 있으므로 필요한 수정이 사라질 위험을 먼저 확인해야 하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "원격 저장소가 자동 삭제된다",
+        "why_wrong": "restore의 주된 위험은 현재 작업 트리 변경 손실이지 원격 저장소 삭제가 아닙니다.",
+        "misread_step": "로컬 working-tree 변경과 원격 저장소 동작을 혼동한 경우입니다."
+      },
+      "takeaway": "restore 계열 작업 전에는 **대상 파일의 현재 수정 상태**를 먼저 확인합니다."
+    },
+    "target_statement": "would_discard_changes = target in modified_files",
+    "focus_span": "target in modified_files",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "git restore",
+      "uncommitted changes",
+      "rollback",
+      "working tree"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY33_L09_branch_basic_001",
     "level": 9,
-    "title": "branch 기초 읽기",
+    "title": "새 feature branch를 만들고 current branch로 전환하기",
     "concepts": [
-      "branch",
-      "main",
-      "feature"
+      "call",
+      "argument_passing",
+      "class_definition"
     ],
-    "reading_goal": "main과 작업용 branch의 차이를 이해한다.",
-    "code": "git switch -c feature/v33-git-cards",
-    "question_type": "meaning_choice",
-    "question": "이 명령의 의미는?",
+    "reading_goal": "branch 생성과 current branch 변경을 함께 수행하는 method call의 상태 변화를 읽는다.",
+    "code": "class Repository:\n    def __init__(self):\n        self.branches = [\"main\"]\n        self.current_branch = \"main\"\n    def switch_create(self, name):\n        self.branches.append(name)\n        self.current_branch = name\n\nrepo = Repository()\nrepo.switch_create(\"feature/v33-git-cards\")",
+    "question_type": "multiple_choice",
+    "question": "호출 뒤 `repo.current_branch`의 값은 무엇인가?",
     "choices": [
-      "main을 삭제한다",
-      "새 작업 브랜치를 만들고 이동한다",
-      "원격 저장소를 닫는다",
-      "카드를 검증한다"
+      "main",
+      "feature/v33-git-cards",
+      "origin/main",
+      "None"
     ],
-    "answer": "새 작업 브랜치를 만들고 이동한다",
-    "explanation": "branch는 main과 분리된 작업 흐름을 만드는 Git 기능이다. 실험 작업이나 큰 변경을 안전하게 진행한 뒤 나중에 합칠 수 있다. main을 바로 바꾸기 부담스러운 수정은 새 branch에서 검증한 뒤 merge하는 식으로 관리한다. 따라서 정답은 ‘새 작업 브랜치를 만들고 이동한다’이다.",
+    "answer": "feature/v33-git-cards",
+    "explanation": "switch_create에 전달된 branch 이름이 메서드 내부에서 current_branch에 저장됩니다. 메서드 정의가 `self.current_branch = name`을 실행하기 때문입니다. 헷갈리기 쉬운 오답: main main은 호출 전 current branch이고 호출 뒤 새 branch로 바뀝니다. 오독 지점: method call 이후 상태 변경을 반영하지 않은 경우입니다. branch 전환 코드는 **새 이름 전달 → branch 생성 → current branch 변경**으로 읽습니다.",
     "side_card_ids": [
       "PYV161_A1_ENV_MAIN_CHECKLIST_FLOW"
     ],
-    "project_context": "큰 변경은 작업 브랜치에서 검증한 뒤 main에 병합하면 main의 안정성을 지키기 쉽다."
+    "project_context": "큰 변경을 별도 feature branch에서 검증한 뒤 main에 병합해 main의 안정성을 지키는 작업 방식과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "branch 생성과 current branch 변경을 함께 수행하는 method call의 상태 변화를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`obj.method(arg)`는 객체의 method를 호출하면서 argument 값을 전달합니다.",
+      "how_to_read": "호출 대상 객체, method 이름, 전달되는 branch 이름을 순서대로 확인합니다.",
+      "key_point": "이 예제에서 switch_create는 새 branch를 만들고 바로 그 branch를 current_branch로 설정합니다.",
+      "common_mistake": "새 branch를 만들면 main이 삭제된다고 생각하기 쉽습니다. main은 branch 목록에 그대로 남습니다."
+    },
+    "teaching_example": {
+      "code": "class Repo:\n    def __init__(self):\n        self.current = \"main\"\n        self.branches = [\"main\"]\n    def create_and_switch(self, name):\n        self.branches.append(name)\n        self.current = name\n\nrepo = Repo()\nrepo.create_and_switch(\"feature/a\")",
+      "walkthrough": "feature/a가 branch 목록에 추가되고 current는 feature/a가 됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "switch_create에 전달된 branch 이름이 메서드 내부에서 current_branch에 저장됩니다.",
+      "why_correct": "메서드 정의가 `self.current_branch = name`을 실행하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "main",
+        "why_wrong": "main은 호출 전 current branch이고 호출 뒤 새 branch로 바뀝니다.",
+        "misread_step": "method call 이후 상태 변경을 반영하지 않은 경우입니다."
+      },
+      "takeaway": "branch 전환 코드는 **새 이름 전달 → branch 생성 → current branch 변경**으로 읽습니다."
+    },
+    "target_statement": "repo.switch_create(\"feature/v33-git-cards\")",
+    "focus_span": "repo.switch_create(\"feature/v33-git-cards\")",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "branch",
+      "switch",
+      "feature branch",
+      "git"
+    ],
+    "pedagogical_intent": "trace_state"
   },
   {
     "id": "PY33_L09_merge_conflict_001",
     "level": 9,
-    "title": "merge conflict 기초 읽기",
+    "title": "conflict marker로 unresolved merge 상태 확인하기",
     "concepts": [
-      "merge_conflict",
-      "git",
-      "conflict_marker"
+      "membership_test",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "같은 줄을 서로 다르게 고쳤을 때 생기는 충돌 표시를 이해한다.",
-    "code": "<<<<<<< HEAD\nAPP_DATA_VERSION = \"v32\"\n=======\nAPP_DATA_VERSION = \"v33\"\n>>>>>>> feature",
-    "question_type": "meaning_choice",
-    "question": "이 표시는 무엇을 의미하는가?",
+    "reading_goal": "특정 conflict marker 문자열의 존재 여부를 검사해 자동 병합 실패 상태를 해석한다.",
+    "code": "text = '<<<<<<< HEAD\\nAPP_DATA_VERSION = \"v32\"\\n=======\\nAPP_DATA_VERSION = \"v33\"\\n>>>>>>> feature'\nhas_conflict = \"<<<<<<< HEAD\" in text",
+    "question_type": "multiple_choice",
+    "question": "`has_conflict`가 True라는 뜻으로 맞는 것은?",
     "choices": [
-      "JSON 검증이 성공했다",
       "Git이 어느 변경을 선택할지 자동 결정하지 못했다",
+      "JSON 검증이 성공했다",
       "서버가 200을 반환했다",
       "파일이 UTF-8이다"
     ],
     "answer": "Git이 어느 변경을 선택할지 자동 결정하지 못했다",
-    "explanation": "<<<<<<<, =======, >>>>>>>는 두 버전이 충돌한 구간을 표시한다. Git이 어느 내용을 남길지 결정하지 못했으므로 사람이 올바른 최종 값을 만들고 모든 marker를 제거한 뒤 테스트하고 add·commit해야 한다. 표시 자체는 유효한 Python 코드가 아니다.",
+    "explanation": "conflict marker가 source text에 그대로 존재하므로 unresolved conflict가 남아 있다고 판단합니다. Git이 자동 선택하지 못한 서로 다른 두 변경 영역을 marker로 표시하기 때문입니다. 헷갈리기 쉬운 오답: JSON 검증이 성공했다 conflict marker는 JSON validation 결과와 무관합니다. 오독 지점: Git merge 상태와 데이터 검증 상태를 혼동한 경우입니다. merge conflict는 **marker 탐지 → 수동 선택 → marker 제거 → 재검증**으로 읽습니다.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
-    "project_context": "여러 패치가 app.js 같은 같은 줄을 건드릴 때 생길 수 있다."
+    "project_context": "여러 패치가 app.js 같은 같은 줄을 수정할 때 생긴 충돌을 marker로 식별하는 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "membership_test",
+    "reading_goal_internal": "특정 conflict marker 문자열의 존재 여부를 검사해 자동 병합 실패 상태를 해석한다.",
+    "concept_explanation": {
+      "what_it_is": "`substring in text`는 문자열 안에 특정 substring이 포함돼 있는지 검사합니다.",
+      "how_to_read": "왼쪽 marker와 오른쪽 전체 text를 비교합니다.",
+      "key_point": "`<<<<<<< HEAD` 같은 marker가 남아 있으면 Git이 어느 변경을 선택할지 자동으로 결정하지 못한 충돌 상태입니다.",
+      "common_mistake": "marker가 있으면 merge가 성공했다는 뜻으로 생각하기 쉽습니다. 반대로 수동 해결이 필요한 신호입니다."
+    },
+    "teaching_example": {
+      "code": "text = \"<<<<<<< HEAD\\na\\n=======\\nb\\n>>>>>>> branch\"\nfound = \"<<<<<<< HEAD\" in text",
+      "walkthrough": "marker가 존재하므로 found는 True입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "conflict marker가 source text에 그대로 존재하므로 unresolved conflict가 남아 있다고 판단합니다.",
+      "why_correct": "Git이 자동 선택하지 못한 서로 다른 두 변경 영역을 marker로 표시하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "JSON 검증이 성공했다",
+        "why_wrong": "conflict marker는 JSON validation 결과와 무관합니다.",
+        "misread_step": "Git merge 상태와 데이터 검증 상태를 혼동한 경우입니다."
+      },
+      "takeaway": "merge conflict는 **marker 탐지 → 수동 선택 → marker 제거 → 재검증**으로 읽습니다."
+    },
+    "target_statement": "has_conflict = \"<<<<<<< HEAD\" in text",
+    "focus_span": "\"<<<<<<< HEAD\" in text",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "merge conflict",
+      "conflict marker",
+      "HEAD",
+      "git"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY33_L10_github_pages_001",
     "level": 10,
-    "title": "GitHub Pages 배포 흐름 읽기",
+    "title": "Pages 배포 단계를 for 문으로 순서대로 읽기",
     "concepts": [
-      "GitHub_Pages",
-      "deploy",
-      "static_site"
+      "for_statement",
+      "literal",
+      "call",
+      "name_reference"
     ],
-    "reading_goal": "정적 앱이 GitHub Pages로 배포되는 기본 흐름을 이해한다.",
-    "code": "local change\ngit add\ngit commit\ngit push\nconfigured Pages build/deploy\npublic URL updated",
-    "question_type": "order_choice",
-    "question": "GitHub Pages URL에 반영되려면 보통 어떤 단계가 먼저 필요한가?",
+    "reading_goal": "for 문이 deploy_steps 리스트의 첫 항목부터 하나씩 step에 바인딩해 같은 본문을 순서대로 실행하는 흐름을 읽는다.",
+    "code": "deploy_steps = [\n    \"commit\",\n    \"git push\",\n    \"pages build/deploy\",\n    \"public URL updated\",\n]\n\nexecuted = []\nfor step in deploy_steps:\n    executed.append(step)\n\nprint(executed[1])",
+    "question_type": "meaning_choice",
+    "question": "두 번째 반복에서 `step`에 들어가는 값은 무엇인가?",
     "choices": [
-      "브라우저 확대",
+      "commit",
       "git push",
-      "로컬 서버 종료",
-      "파일명 숨기기"
+      "pages build/deploy",
+      "public URL updated"
     ],
     "answer": "git push",
-    "explanation": "로컬 변경은 먼저 commit과 push로 원격 저장소에 도달해야 한다. 그 다음 Pages가 해당 브랜치·폴더 또는 Actions workflow를 배포 원본으로 사용하도록 설정되어 있어야 빌드와 배포가 시작된다. push만 성공해도 공개 URL 갱신은 실패하거나 시작되지 않을 수 있으므로 배포 상태와 실제 revision을 확인한다.",
+    "explanation": "1) 리스트 첫 항목은 commit이다. 2) for 첫 회차에서 step은 commit이다. 3) 다음 회차로 이동하면 리스트 두 번째 항목 git push를 꺼낸다. 4) 따라서 두 번째 반복의 step은 git push다.",
     "side_card_ids": [
       "WEB_github_pages_001"
     ],
-    "project_context": "로컬에서만 보이는 변경은 push 전에는 Pages에 반영되지 않는다."
+    "project_context": "로컬 변경이 원격에 push된 뒤 configured Pages build/deploy를 거쳐 공개 URL에 반영되는 순서를 Python 데이터로 표현한 맥락이다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "for_statement",
+    "reading_goal_internal": "for 문이 deploy_steps 리스트의 첫 항목부터 하나씩 step에 바인딩해 같은 본문을 순서대로 실행하는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`for step in deploy_steps:`는 반복 대상에서 항목을 하나씩 꺼내 step에 넣고 본문을 반복합니다.",
+      "how_to_read": "리스트의 실제 항목 순서를 확인한 뒤 첫 항목부터 현재 step 값과 본문 실행을 차례로 추적합니다.",
+      "key_point": "배포 단계라는 도메인 의미와 별개로 Python에서는 **리스트 순서가 반복 순서**가 됩니다.",
+      "common_mistake": "for 문이 단계들을 임의 순서로 실행한다고 생각하기 쉽습니다. 리스트 반복은 앞에서부터 진행됩니다."
+    },
+    "teaching_example": {
+      "code": "steps = [\"build\", \"test\", \"publish\"]\nseen = []\nfor step in steps:\n    seen.append(step)\nprint(seen[0])",
+      "walkthrough": "첫 반복의 step은 리스트 첫 항목 build입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) 리스트 첫 항목은 commit이다. 2) for 첫 회차에서 step은 commit이다. 3) 다음 회차로 이동하면 리스트 두 번째 항목 git push를 꺼낸다. 4) 따라서 두 번째 반복의 step은 git push다.",
+      "why_correct": "리스트의 두 번째 항목이 git push이고 for는 앞에서부터 순서대로 반복합니다.",
+      "common_wrong_choice": {
+        "choice": "pages build/deploy",
+        "why_wrong": "Pages build/deploy는 세 번째 항목이라 세 번째 반복에서 step에 들어갑니다.",
+        "misread_step": "리스트 인덱스 순서와 반복 회차를 1:1로 맞춰 봅니다."
+      },
+      "takeaway": "for 문은 **첫 항목 바인딩 → 본문 실행 → 다음 항목으로 이동**을 반복합니다."
+    },
+    "target_statement": "for step in deploy_steps:",
+    "focus_span": "for step in deploy_steps:",
+    "focus_mode": "compound_header",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "github_pages",
+      "deploy",
+      "push",
+      "deployment_flow"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY33_L10_crlf_warning_001",
     "level": 10,
-    "title": "CRLF warning 읽기",
+    "title": "replace()로 CRLF를 LF 문자열로 바꾸는 호출 읽기",
     "concepts": [
-      "CRLF",
-      "line_ending",
-      "Git_warning",
-      "Windows"
+      "call",
+      "attribute_access",
+      "argument_passing",
+      "assignment"
     ],
-    "reading_goal": "Windows에서 자주 보이는 LF/CRLF 경고의 의미를 이해한다.",
-    "code": "warning: in the working copy of src/pwa/app.js,\nLF will be replaced by CRLF the next time Git touches it",
-    "question_type": "meaning_choice",
-    "question": "이 경고의 핵심 의미는?",
+    "reading_goal": "문자열 객체 text의 replace 메서드에 기존 CRLF와 새 LF 문자열을 인자로 전달하고 반환되는 새 문자열을 읽는다.",
+    "code": "text = \"first\\r\\nsecond\\r\\n\"\nnormalized = text.replace(\"\\r\\n\", \"\\n\")\nprint(normalized == \"first\\nsecond\\n\")",
+    "question_type": "output_prediction",
+    "question": "`text.replace(\"\\r\\n\", \"\\n\")` 호출 뒤 마지막 비교가 출력하는 값은 무엇인가?",
     "choices": [
-      "파일 내용이 반드시 깨졌다",
-      "줄바꿈 형식이 Git 처리 과정에서 바뀔 수 있다",
-      "커밋이 실패했다",
-      "원격 저장소가 삭제됐다"
+      "True",
+      "False",
+      "CRLF",
+      "None"
     ],
-    "answer": "줄바꿈 형식이 Git 처리 과정에서 바뀔 수 있다",
-    "explanation": "이 경고는 Git의 줄바꿈 변환 설정 때문에 작업 트리의 LF가 나중에 CRLF로 바뀔 수 있다는 뜻이다. 보통 즉시 실패를 뜻하지는 않지만 파일 전체가 바뀐 것처럼 보이는 diff나 도구 간 불일치를 만들 수 있다. 팀에서는 .gitattributes와 core.autocrlf 정책을 맞추고 실제 diff를 확인한다.",
+    "answer": "True",
+    "explanation": "1) text에는 `\\r\\n`이 두 번 있다. 2) replace가 각 `\\r\\n`을 `\\n`으로 바꾼 새 문자열을 반환한다. 3) normalized에 그 새 문자열이 저장된다. 4) 기대 문자열과 같으므로 비교 결과는 True다.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
     ],
-    "project_context": "매번 git add 때 보이는 LF to CRLF 경고를 이해하기 위한 카드다."
+    "project_context": "Windows 작업트리와 Git 정책 사이에서 줄바꿈 차이가 생길 수 있는 상황을 Python 문자열 정규화로 모델링한 카드다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "문자열 객체 text의 replace 메서드에 기존 CRLF와 새 LF 문자열을 인자로 전달하고 반환되는 새 문자열을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`text.replace(old, new)`는 문자열 text에서 old와 일치하는 부분을 new로 바꾼 새 문자열을 반환하는 메서드 호출입니다.",
+      "how_to_read": "점 왼쪽 text가 호출 대상이고 replace가 메서드이며, 첫 인자는 찾을 문자열, 둘째는 바꿀 문자열입니다.",
+      "key_point": "문자열은 이 호출로 제자리 수정되는 것이 아니라 **변환된 새 문자열이 반환**됩니다.",
+      "common_mistake": "replace 호출 뒤 원래 text 변수도 자동으로 바뀐다고 생각하기 쉽습니다. 반환값을 새 이름에 저장해야 합니다."
+    },
+    "teaching_example": {
+      "code": "raw = \"a\\r\\nb\\r\\n\"\nnormalized = raw.replace(\"\\r\\n\", \"\\n\")\nprint(normalized == \"a\\nb\\n\")",
+      "walkthrough": "CRLF 두 곳이 LF로 바뀐 새 문자열이 normalized에 저장됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) text에는 `\\r\\n`이 두 번 있다. 2) replace가 각 `\\r\\n`을 `\\n`으로 바꾼 새 문자열을 반환한다. 3) normalized에 그 새 문자열이 저장된다. 4) 기대 문자열과 같으므로 비교 결과는 True다.",
+      "why_correct": "replace 반환값이 정확히 LF만 사용하는 기대 문자열과 같기 때문에 True입니다.",
+      "common_wrong_choice": {
+        "choice": "False",
+        "why_wrong": "replace가 두 CRLF를 모두 LF로 치환하므로 기대 문자열과 일치합니다.",
+        "misread_step": "원본 text와 replace가 반환한 normalized를 구분합니다."
+      },
+      "takeaway": "메서드 호출은 **receiver 확인 → 인자 전달 → 반환값 계산 → 저장 위치 확인** 순서로 읽습니다."
+    },
+    "target_statement": "text.replace(\"\\r\\n\", \"\\n\")",
+    "focus_span": "text.replace(\"\\r\\n\", \"\\n\")",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "crlf",
+      "lf",
+      "line_ending",
+      "normalization"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY33_L10_commit_scope_001",
     "level": 10,
-    "title": "커밋 범위 정하기",
+    "title": "같은 커밋에 넣을 두 파일 경로를 list literal로 읽기",
     "concepts": [
-      "commit_scope",
-      "atomic_commit",
-      "review"
+      "literal",
+      "assignment",
+      "call"
     ],
-    "reading_goal": "하나의 커밋에 관련 변경만 묶는 이유를 이해한다.",
-    "code": "git add data/lessons/python_git_github_workflow_v33.json src/pwa/app.js\ngit commit -m \"Add Git workflow reading cards\"",
+    "reading_goal": "대괄호 안 두 문자열이 순서를 가진 하나의 list 값이 되고 그 리스트가 commit_files에 저장되는 구조를 읽는다.",
+    "code": "commit_files = [\n    \"data/lessons/python_git_github_workflow_v33.json\",\n    \"src/pwa/app.js\",\n]\n\nprint(len(commit_files))",
     "question_type": "meaning_choice",
-    "question": "이 커밋 범위가 자연스러운 이유는?",
+    "question": "target list literal이 만드는 `commit_files`의 항목 수는 몇 개인가?",
     "choices": [
-      "모든 프로젝트 파일을 넣었기 때문",
-      "새 lesson 파일과 그 파일을 연결한 app.js가 같은 목적이기 때문",
-      "임시 ps1도 반드시 포함했기 때문",
-      "브라우저 캐시를 저장했기 때문"
+      "1",
+      "2",
+      "3",
+      "0"
     ],
-    "answer": "새 lesson 파일과 그 파일을 연결한 app.js가 같은 목적이기 때문",
-    "explanation": "commit scope는 한 커밋에 어떤 범위의 변경을 묶을지 정하는 기준이다. 관련 있는 변경끼리 묶으면 리뷰와 되돌리기가 쉬워진다. 서로 다른 기능 수정과 문서 정리를 한 커밋에 섞으면 나중에 원인 추적이 어려워질 수 있다. 따라서 정답은 ‘새 lesson 파일과 그 파일을 연결한 app.js가 같은 목적이기 때문’이다.",
+    "answer": "2",
+    "explanation": "1) 첫 경로 문자열 하나를 센다. 2) 둘째 경로 문자열 하나를 센다. 3) 마지막 쉼표는 별도 값을 만들지 않는다. 4) 그래서 리스트 길이는 2다.",
     "side_card_ids": [
       "PYV159_A1_LEARNING_UX_FLOW"
     ],
-    "project_context": "확장 카드 추가 커밋은 lesson JSON과 app.js 연결만 포함하는 것이 깔끔하다."
+    "project_context": "한 기능 추가에 직접 관련된 lesson JSON과 app 연결 변경만 같은 커밋 범위로 묶는 설계 맥락에 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "literal",
+    "reading_goal_internal": "대괄호 안 두 문자열이 순서를 가진 하나의 list 값이 되고 그 리스트가 commit_files에 저장되는 구조를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "리스트 리터럴은 `[value1, value2]`처럼 코드에 값을 직접 나열해 하나의 list 객체를 만듭니다.",
+      "how_to_read": "대괄호 경계를 먼저 찾고 내부에서 쉼표로 구분된 실제 값 표현식을 왼쪽부터 셉니다.",
+      "key_point": "두 파일 경로는 **하나의 commit_files 리스트 안에 들어 있는 두 항목**입니다.",
+      "common_mistake": "마지막 trailing comma 때문에 세 항목이라고 세기 쉽습니다. trailing comma는 새 항목을 만들지 않습니다."
+    },
+    "teaching_example": {
+      "code": "files = [\n    \"data/cards.json\",\n    \"src/app.py\",\n]\nprint(len(files))",
+      "walkthrough": "실제 값 표현식은 두 개이므로 리스트 길이는 2입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) 첫 경로 문자열 하나를 센다. 2) 둘째 경로 문자열 하나를 센다. 3) 마지막 쉼표는 별도 값을 만들지 않는다. 4) 그래서 리스트 길이는 2다.",
+      "why_correct": "리스트 리터럴 안의 실제 경로 값이 두 개이므로 정답은 2입니다.",
+      "common_wrong_choice": {
+        "choice": "3",
+        "why_wrong": "마지막 trailing comma는 세 번째 항목을 의미하지 않습니다.",
+        "misread_step": "쉼표 개수 대신 실제 값 표현식 개수를 셉니다."
+      },
+      "takeaway": "list literal은 **대괄호 안 실제 값들을 순서대로 담아 하나의 리스트를 생성**합니다."
+    },
+    "target_statement": "commit_files = [\n    \"data/lessons/python_git_github_workflow_v33.json\",\n    \"src/pwa/app.js\",\n]",
+    "focus_span": "[\n    \"data/lessons/python_git_github_workflow_v33.json\",\n    \"src/pwa/app.js\",\n]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "commit_scope",
+      "atomic_commit",
+      "changed_files",
+      "review"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY33_L10_commit_script_cleanup_001",
     "level": 10,
-    "title": "패치 스크립트 정리 읽기",
+    "title": "임시 스크립트가 untracked 목록에 남았는지 in으로 검사하기",
     "concepts": [
-      "cleanup",
-      "untracked",
-      "script_file"
+      "membership_test",
+      "if_statement",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "실행 후 남은 패치 ps1을 Git에 넣지 않고 정리하는 이유를 이해한다.",
-    "code": "Remove-Item .\\python_reading_trainer_expand_v33_git_github_workflow.ps1 -ErrorAction SilentlyContinue\ngit status",
-    "question_type": "meaning_choice",
-    "question": "패치 스크립트를 지운 뒤 git status를 보는 이유는?",
+    "reading_goal": "왼쪽 임시 파일 이름이 오른쪽 untracked 리스트의 항목 중 하나와 같은지 확인해 Boolean 결과를 읽는다.",
+    "code": "temp_script = \"python_reading_trainer_expand_v33_git_github_workflow.ps1\"\nuntracked = [\"notes.txt\", \"debug.log\"]\n\nstill_present = temp_script in untracked\nprint(still_present)",
+    "question_type": "output_prediction",
+    "question": "`temp_script in untracked`의 결과는 무엇인가?",
     "choices": [
-      "카드 정답을 자동 생성하기 위해",
-      "untracked 파일이 남았는지 확인하기 위해",
-      "서버 포트를 바꾸기 위해",
-      "GitHub Pages를 삭제하기 위해"
+      "True",
+      "False",
+      "notes.txt",
+      "None"
     ],
-    "answer": "untracked 파일이 남았는지 확인하기 위해",
-    "explanation": "정확히 확인한 임시 스크립트만 삭제한 뒤 git status로 남은 untracked 파일과 예상 밖 변경을 확인한다. -ErrorAction SilentlyContinue는 삭제 실패 메시지를 숨길 수 있으므로 status 확인을 생략하면 안 된다. 보존할 가치가 있는 자동화 도구라면 임시 파일로 취급하지 말고 검토해 정식 위치에 둔다.",
+    "answer": "False",
+    "explanation": "1) 찾는 값은 긴 ps1 파일명이다. 2) untracked의 첫 항목 notes.txt와 다르다. 3) 둘째 debug.log와도 다르다. 4) 같은 항목을 찾지 못했으므로 `in` 결과는 False다.",
     "side_card_ids": [
       "PYV102_A9_RUNTIME_UI_FLOW_FEEDBACK"
     ],
-    "project_context": "지금까지 v27~v32 작업 후 매번 정리하던 루틴이다."
+    "project_context": "임시 patch 파일을 정리한 뒤 예상하지 않은 untracked 파일이 남았는지 확인하는 Git 작업 루틴에 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "membership_test",
+    "reading_goal_internal": "왼쪽 임시 파일 이름이 오른쪽 untracked 리스트의 항목 중 하나와 같은지 확인해 Boolean 결과를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`value in collection`은 왼쪽 값이 오른쪽 컬렉션 안에 포함되어 있으면 True, 없으면 False를 만듭니다.",
+      "how_to_read": "먼저 temp_script의 실제 문자열과 untracked 리스트의 모든 항목을 확인한 뒤 같은 값이 있는지 찾습니다.",
+      "key_point": "삭제 작업 자체보다 Python 독해에서는 **현재 목록 안에 값이 남아 있는지 membership 결과**가 핵심입니다.",
+      "common_mistake": "`in`이 부분 문자열처럼 파일명의 일부만 맞아도 True라고 생각하기 쉽습니다. 리스트에서는 같은 항목을 찾습니다."
+    },
+    "teaching_example": {
+      "code": "temp = \"patch.ps1\"\nuntracked = [\"notes.txt\", \"patch.ps1\"]\nprint(temp in untracked)",
+      "walkthrough": "patch.ps1과 같은 리스트 항목이 있으므로 결과는 True입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) 찾는 값은 긴 ps1 파일명이다. 2) untracked의 첫 항목 notes.txt와 다르다. 3) 둘째 debug.log와도 다르다. 4) 같은 항목을 찾지 못했으므로 `in` 결과는 False다.",
+      "why_correct": "untracked 리스트에 temp_script와 동일한 항목이 없으므로 membership 결과는 False입니다.",
+      "common_wrong_choice": {
+        "choice": "True",
+        "why_wrong": "리스트에 ps1 파일명과 동일한 값이 하나도 없습니다.",
+        "misread_step": "부분 문자열이 아니라 리스트의 각 전체 항목과 찾는 값을 비교합니다."
+      },
+      "takeaway": "`in`은 **찾을 값 확인 → 컬렉션 항목 대조 → 있으면 True, 없으면 False**로 읽습니다."
+    },
+    "target_statement": "temp_script in untracked",
+    "focus_span": "temp_script in untracked",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "cleanup",
+      "untracked",
+      "temporary_script",
+      "git_status"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY33_L10_remote_tracking_001",
     "level": 10,
-    "title": "origin/main 추적 상태 읽기",
+    "title": "local main과 origin/main의 기록 SHA가 같은지 ==로 비교하기",
     "concepts": [
-      "origin",
-      "remote_tracking",
-      "main"
+      "comparison",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "로컬 브랜치와 원격 브랜치의 관계를 나타내는 문장을 이해한다.",
-    "code": "On branch main\nYour branch is up to date with origin/main.",
-    "question_type": "meaning_choice",
-    "question": "up to date with origin/main의 의미는?",
+    "reading_goal": "두 이름이 가리키는 SHA 문자열을 확인하고 `==`가 동일한 문자열이면 True를 만드는지 읽는다.",
+    "code": "local_main = \"a1b2c3d\"\norigin_main = \"a1b2c3d\"\n\nsame_recorded_commit = local_main == origin_main\nprint(same_recorded_commit)",
+    "question_type": "output_prediction",
+    "question": "`local_main == origin_main`의 결과는 무엇인가?",
     "choices": [
-      "로컬 main과 로컬에 기록된 origin/main이 같은 커밋을 가리킨다",
-      "GitHub 서버를 방금 실시간으로 조회했다",
-      "모든 배포가 성공했다",
-      "ignored 파일도 하나도 없다"
+      "True",
+      "False",
+      "a1b2c3d 두 번",
+      "None"
     ],
-    "answer": "로컬 main과 로컬에 기록된 origin/main이 같은 커밋을 가리킨다",
-    "explanation": "origin/main은 마지막 fetch나 pull 때 갱신된 로컬 원격 추적 참조다. 이 문구는 로컬 main이 그 저장된 참조와 앞서거나 뒤처지지 않았다는 뜻이지, 원격 서버를 방금 조회했다는 뜻은 아니다. 최신 원격 상태와 비교하려면 먼저 git fetch가 성공해야 한다.",
+    "answer": "True",
+    "explanation": "1) local_main은 a1b2c3d다. 2) origin_main도 a1b2c3d다. 3) 두 문자열 내용이 동일하다. 4) 따라서 `==` 결과는 True다.",
     "side_card_ids": [
       "PYV161_A1_ENV_MAIN_CHECKLIST_FLOW"
     ],
-    "project_context": "커밋과 push가 끝난 뒤 정상 종료 여부를 확인하는 핵심 문장이다."
+    "project_context": "git status의 'up to date with origin/main'을 로컬 main과 로컬에 기록된 remote-tracking ref의 commit 일치로 해석하는 맥락에 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "comparison",
+    "reading_goal_internal": "두 이름이 가리키는 SHA 문자열을 확인하고 `==`가 동일한 문자열이면 True를 만드는지 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`a == b`는 두 값이 같은지 비교해 True 또는 False를 만드는 비교 표현식입니다.",
+      "how_to_read": "먼저 local_main과 origin_main의 현재 문자열 값을 각각 확인한 뒤 문자 내용이 같은지 비교합니다.",
+      "key_point": "이 비교가 True라는 사실은 **현재 코드에 저장된 두 값이 같다**는 뜻이지 원격 서버를 지금 실시간 조회했다는 뜻은 아닙니다.",
+      "common_mistake": "두 SHA가 같으면 GitHub 서버의 최신 상태까지 방금 확인됐다고 확대 해석하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "head = \"abc123\"\ntracking = \"abc123\"\nprint(head == tracking)",
+      "walkthrough": "두 문자열 내용이 동일하므로 == 비교는 True입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) local_main은 a1b2c3d다. 2) origin_main도 a1b2c3d다. 3) 두 문자열 내용이 동일하다. 4) 따라서 `==` 결과는 True다.",
+      "why_correct": "양쪽 SHA 문자열이 정확히 같기 때문에 equality 비교 결과는 True입니다.",
+      "common_wrong_choice": {
+        "choice": "False",
+        "why_wrong": "두 문자열 사이에 다른 문자가 없으므로 같지 않다는 판정은 나오지 않습니다.",
+        "misread_step": "변수 이름이 다르다는 사실과 변수에 저장된 실제 값이 같은지를 구분합니다."
+      },
+      "takeaway": "`==`는 **양쪽 현재 값 확인 → 값의 동등성 비교 → Boolean 결과 생성** 순서로 읽습니다."
+    },
+    "target_statement": "local_main == origin_main",
+    "focus_span": "local_main == origin_main",
+    "focus_mode": "subexpression",
+    "coverage_domain": "git_github_cicd",
+    "coverage_topics": [
+      "origin_main",
+      "remote_tracking",
+      "commit_sha",
+      "git_status"
+    ],
+    "pedagogical_intent": "interpret_result"
   }
 ]

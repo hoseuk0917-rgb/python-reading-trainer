@@ -2,257 +2,559 @@
   {
     "id": "PY36_L06_sync_vs_async_001",
     "level": 6,
-    "title": "동기와 비동기 흐름 읽기",
+    "title": "await asyncio.gather()로 두 작업을 함께 기다리는 흐름 읽기",
     "concepts": [
-      "sync",
-      "async",
-      "waiting",
-      "workflow"
+      "await_expression",
+      "async_function_definition",
+      "call",
+      "assignment"
     ],
-    "reading_goal": "순서대로 기다리는 동기 처리와 기다리는 동안 다른 일을 할 수 있는 비동기 처리의 차이를 이해한다.",
-    "code": "sync:\n  download A\n  wait\n  download B\n  wait\n\nasync:\n  start download A\n  start download B\n  wait for both",
-    "question_type": "meaning_choice",
-    "question": "async 흐름의 장점으로 가장 가까운 것은?",
+    "reading_goal": "`await asyncio.gather(...)`가 여러 비동기 작업의 완료를 함께 기다리고 결과를 받는 흐름을 읽는다.",
+    "code": "import asyncio\nasync def fetch(name):\n    await asyncio.sleep(0)\n    return name\nasync def main():\n    results = await asyncio.gather(fetch(\"A\"), fetch(\"B\"))\n    print(results)\nasyncio.run(main())",
+    "question_type": "flow",
+    "question": "target 표현식을 가장 정확히 읽은 것은?",
     "choices": [
-      "CPU 계산이 항상 100배 빨라진다",
-      "파일이 자동으로 커밋된다",
-      "오류가 절대 발생하지 않는다",
-      "기다리는 시간이 많은 작업을 겹쳐 처리할 수 있다"
+      "A와 B 작업을 함께 진행시키고 둘 다 완료될 때까지 비동기로 기다린다",
+      "A가 끝난 뒤에만 B 작업을 만든다",
+      "두 작업을 실행하지 않고 이름만 출력한다",
+      "현재 스레드를 무조건 1초 멈춘다"
     ],
-    "answer": "기다리는 시간이 많은 작업을 겹쳐 처리할 수 있다",
-    "explanation": "동기와 비동기의 차이는 대기 중 제어권을 다루는 방식에 있다. 비동기 I/O는 한 요청이 네트워크를 기다리는 동안 다른 준비된 작업을 진행해 대기 시간을 겹칠 수 있다. CPU 계산 자체가 자동으로 빨라지거나 여러 코어에서 병렬 실행된다는 뜻은 아니다.",
+    "answer": "A와 B 작업을 함께 진행시키고 둘 다 완료될 때까지 비동기로 기다린다",
+    "explanation": "1) asyncio.run이 main을 실행한다. 2) fetch A와 B coroutine이 gather에 전달된다. 3) await가 gather 완료를 기다린다. 4) 두 반환값이 results에 들어간 뒤 print가 실행된다.",
     "side_card_ids": [
       "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
     ],
-    "project_context": "API 호출, 파일 다운로드, 검색 요청을 여러 개 처리할 때 중요한 개념이다."
+    "project_context": "여러 API·파일·네트워크 요청을 병렬적으로 기다리는 비동기 수집 파이프라인에서 같은 구조를 사용합니다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "await_expression",
+    "reading_goal_internal": "`await asyncio.gather(...)`가 여러 비동기 작업의 완료를 함께 기다리고 결과를 받는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "await 표현식은 awaitable의 완료를 비동기 함수 안에서 기다리고, 완료 결과를 표현식 값으로 돌려줍니다.",
+      "how_to_read": "gather에 어떤 awaitable들이 전달되는지 먼저 보고, await가 그 묶음의 완료 결과를 받을 때까지 main의 다음 줄을 보류한다고 읽습니다.",
+      "key_point": "`asyncio.gather(...)`는 여러 coroutine을 함께 진행시킬 수 있어 기다림이 많은 작업의 대기 시간을 겹칠 수 있습니다.",
+      "common_mistake": "async가 모든 계산을 자동으로 더 빠르게 만든다고 생각하면 안 됩니다. 핵심 이점은 특히 I/O 대기를 겹칠 수 있다는 점입니다."
+    },
+    "teaching_example": {
+      "code": "import asyncio\nasync def one():\n    await asyncio.sleep(0)\n    return 1\nasync def main():\n    values = await asyncio.gather(one(), one())\n    print(values)\nasyncio.run(main())",
+      "walkthrough": "gather가 두 coroutine을 함께 진행시키고 await가 두 결과가 모두 준비될 때까지 기다려 리스트를 돌려줍니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) asyncio.run이 main을 실행한다. 2) fetch A와 B coroutine이 gather에 전달된다. 3) await가 gather 완료를 기다린다. 4) 두 반환값이 results에 들어간 뒤 print가 실행된다.",
+      "why_correct": "`asyncio.gather(...)`는 여러 coroutine을 함께 진행시킬 수 있어 기다림이 많은 작업의 대기 시간을 겹칠 수 있습니다.",
+      "common_wrong_choice": {
+        "choice": "A가 끝난 뒤에만 B 작업을 만든다",
+        "why_wrong": "gather에는 fetch('A')와 fetch('B')가 함께 전달되어 두 작업을 같이 진행할 수 있습니다.",
+        "misread_step": "순차 await 두 번과 gather 한 번을 구분한다."
+      },
+      "takeaway": "비동기 코드는 **await 대상이 하나인지, 여러 작업을 묶은 gather인지**를 확인하면 대기 겹침 여부를 읽을 수 있다."
+    },
+    "target_statement": "await asyncio.gather(fetch(\"A\"), fetch(\"B\"))",
+    "focus_span": "await asyncio.gather(fetch(\"A\"), fetch(\"B\"))",
+    "focus_mode": "subexpression",
+    "coverage_domain": "async_and_concurrency",
+    "coverage_topics": [
+      "async",
+      "await",
+      "gather",
+      "concurrent waiting"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY36_L07_async_await_001",
     "level": 7,
-    "title": "async / await 읽기",
+    "title": "async def로 비동기 함수 정의하기",
     "concepts": [
-      "return",
-      "async",
-      "await",
-      "coroutine"
+      "async_function_definition",
+      "await_expression",
+      "return_statement"
     ],
-    "reading_goal": "async 함수와 await가 비동기 작업을 표현하는 방식을 이해한다.",
+    "reading_goal": "`async def` 헤더가 일반 def와 구별되는 비동기 함수 정의임을 읽는다.",
     "code": "async def fetch_card(url):\n    response = await http_get(url)\n    return response.json()",
-    "question_type": "meaning_choice",
-    "question": "await http_get(url)의 의미는?",
+    "question_type": "concept_reading",
+    "question": "첫 줄이 정의하는 함수의 종류는 무엇인가?",
     "choices": [
-      "함수를 삭제한다",
-      "Git에 커밋한다",
-      "JSON을 압축한다",
-      "비동기 요청이 끝날 때까지 기다린다"
+      "일반 동기 함수",
+      "비동기 함수",
+      "클래스",
+      "제너레이터 표현식"
     ],
-    "answer": "비동기 요청이 끝날 때까지 기다린다",
-    "explanation": "async def는 coroutine을 정의하고, await는 기다리는 동안 현재 coroutine을 일시 중단해 event loop가 다른 준비된 작업을 실행할 수 있게 한다. 결과가 오면 해당 지점부터 이어진다. await를 썼다고 모든 호출이 자동 동시 실행되는 것은 아니며 여러 작업을 겹치려면 task 생성 같은 구조가 필요하다.",
+    "answer": "비동기 함수",
+    "explanation": "첫 줄은 `async def`로 시작한다. 따라서 fetch_card는 일반 def가 아니라 비동기 함수로 정의된다. 본문의 await도 이 비동기 함수 안에서 사용된다. Python에서 `async def`가 async function definition 문법이기 때문입니다. 헷갈리기 쉬운 오답: 일반 동기 함수 일반 함수는 `def`로 시작하지만 이 코드는 앞에 `async`가 붙어 있습니다. 오독 지점: 함수 이름보다 정의 헤더의 `async def`를 먼저 확인해야 합니다. `async def`를 보면 먼저 비동기 함수 정의로 분류하고, 그 안의 await 흐름을 이어서 읽습니다.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY"
     ],
-    "project_context": "여러 API 요청을 다루는 Python 백엔드나 JS fetch 흐름과 연결된다."
+    "project_context": "여러 HTTP 요청을 비동기로 처리하는 백엔드 코드에서 async 함수 정의를 알아보는 맥락이다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "async_function_definition",
+    "reading_goal_internal": "`async def` 헤더가 일반 def와 구별되는 비동기 함수 정의임을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`async def`는 비동기 함수, 즉 coroutine function을 정의하는 문법입니다.",
+      "how_to_read": "일반 `def`처럼 함수 이름과 매개변수를 읽되, 앞의 `async` 때문에 본문에서 `await` 같은 비동기 문법을 사용할 수 있다고 연결합니다.",
+      "key_point": "이 카드의 초점은 await 결과가 아니라 함수 정의 헤더 자체입니다. `async def`와 일반 `def`를 구분합니다.",
+      "common_mistake": "본문에 await가 보인다는 이유로 모든 초점을 await에만 두기 쉽습니다. 먼저 함수가 `async def`로 정의되었는지 확인해야 합니다."
+    },
+    "teaching_example": {
+      "code": "async def load_profile(user_id):\n    profile = await fetch_profile(user_id)\n    return profile",
+      "walkthrough": "`async def`가 비동기 함수 정의를 만들고, 그 본문에서 await를 사용합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "첫 줄은 `async def`로 시작한다. 따라서 fetch_card는 일반 def가 아니라 비동기 함수로 정의된다. 본문의 await도 이 비동기 함수 안에서 사용된다.",
+      "why_correct": "Python에서 `async def`가 async function definition 문법이기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "일반 동기 함수",
+        "why_wrong": "일반 함수는 `def`로 시작하지만 이 코드는 앞에 `async`가 붙어 있습니다.",
+        "misread_step": "함수 이름보다 정의 헤더의 `async def`를 먼저 확인해야 합니다."
+      },
+      "takeaway": "`async def`를 보면 먼저 비동기 함수 정의로 분류하고, 그 안의 await 흐름을 이어서 읽습니다."
+    },
+    "target_statement": "async def fetch_card(url):",
+    "focus_span": "async def fetch_card(url):",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "async_and_concurrency",
+    "coverage_topics": [
+      "async",
+      "async_def",
+      "coroutine",
+      "http"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY36_L07_task_001",
     "level": 7,
-    "title": "task 읽기",
+    "title": "create_task로 비동기 작업 등록하기",
     "concepts": [
-      "task",
-      "asyncio",
-      "scheduled_work"
+      "call",
+      "assignment",
+      "attribute_access"
     ],
-    "reading_goal": "비동기 작업 단위인 task의 의미를 이해한다.",
-    "code": "task1 = asyncio.create_task(fetch(\"lesson_v35.json\"))\ntask2 = asyncio.create_task(fetch(\"lesson_v36.json\"))\n\nresults = await asyncio.gather(task1, task2)",
+    "reading_goal": "asyncio.create_task 호출이 awaitable을 Task로 등록하고 그 반환값을 변수에 저장하는 흐름을 읽는다.",
+    "code": "async def main():\n    task1 = asyncio.create_task(fetch(\"lesson_v35.json\"))\n    task2 = asyncio.create_task(fetch(\"lesson_v36.json\"))\n    results = await asyncio.gather(task1, task2)\n    return results",
     "question_type": "meaning_choice",
-    "question": "task1과 task2는 무엇을 나타내는가?",
+    "question": "첫 번째 `asyncio.create_task(...)` 호출의 결과로 task1에 저장되는 것은 무엇인가?",
     "choices": [
-      "Git 브랜치",
-      "CSS 파일",
-      "정답 선택지",
-      "동시에 진행할 수 있는 비동기 작업"
+      "lesson 파일의 최종 문자열",
+      "스케줄된 비동기 Task 객체",
+      "두 Task의 결과 리스트",
+      "파일 경로 문자열 자체"
     ],
-    "answer": "동시에 진행할 수 있는 비동기 작업",
-    "explanation": "create_task는 coroutine을 event loop에 실행하도록 예약하고 Task 객체를 돌려준다. 두 fetch가 독립적이면 I/O 대기 시간을 겹칠 수 있고 gather가 두 결과를 순서대로 모은다. 예외 처리 정책을 정하지 않으면 한 작업의 실패가 gather 호출을 실패시킬 수 있으므로 취소·부분 결과 정책도 설계해야 한다.",
+    "answer": "스케줄된 비동기 Task 객체",
+    "explanation": "안쪽 fetch 호출이 비동기 작업을 만든다. create_task가 그 작업을 Task로 스케줄링한다. 반환된 Task가 task1에 저장된다. create_task의 반환값은 스케줄된 asyncio Task이기 때문입니다. 헷갈리기 쉬운 오답: lesson 파일의 최종 문자열 파일 결과는 Task가 완료된 뒤 await나 gather를 통해 얻는다. create_task 직후 task1에는 Task 자체가 있습니다. 오독 지점: 작업 객체와 작업 완료 결과를 구분해야 합니다. `asyncio.create_task(coro())`는 coroutine의 최종 값이 아니라 스케줄된 Task 객체를 반환합니다.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY"
     ],
-    "project_context": "여러 lesson이나 API 요청을 병렬처럼 가져오는 구조를 이해하는 데 필요하다."
+    "project_context": "여러 lesson이나 API 요청을 동시에 진행 가능한 작업 단위로 등록하는 async 처리 맥락이다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "asyncio.create_task 호출이 awaitable을 Task로 등록하고 그 반환값을 변수에 저장하는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "함수 호출은 괄호 안의 값을 인자로 전달하고 호출 결과를 돌려받습니다. `asyncio.create_task(...)`는 awaitable을 실행 가능한 Task로 스케줄링하는 함수 호출입니다.",
+      "how_to_read": "먼저 안쪽 `fetch(...)`가 만들 작업을 보고, 그 결과를 바깥 `create_task(...)`에 넘긴다고 읽습니다.",
+      "key_point": "task라는 비동기 개념과 Python 문법을 분리하면, 문법 초점은 중첩 함수 호출의 결과가 task1에 저장된다는 점입니다.",
+      "common_mistake": "task1에 파일 내용이 바로 들어간다고 생각하기 쉽습니다. 여기서는 fetch의 최종 결과가 아니라 스케줄된 Task 객체가 저장됩니다."
+    },
+    "teaching_example": {
+      "code": "async def main():\n    job = asyncio.create_task(load(\"a.json\"))\n    result = await job\n    return result",
+      "walkthrough": "load(...)가 만든 awaitable을 create_task에 넘겨 Task를 만들고, 나중에 await job으로 그 결과를 받습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "안쪽 fetch 호출이 비동기 작업을 만든다. create_task가 그 작업을 Task로 스케줄링한다. 반환된 Task가 task1에 저장된다.",
+      "why_correct": "create_task의 반환값은 스케줄된 asyncio Task이기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "lesson 파일의 최종 문자열",
+        "why_wrong": "파일 결과는 Task가 완료된 뒤 await나 gather를 통해 얻는다. create_task 직후 task1에는 Task 자체가 있습니다.",
+        "misread_step": "작업 객체와 작업 완료 결과를 구분해야 합니다."
+      },
+      "takeaway": "`asyncio.create_task(coro())`는 coroutine의 최종 값이 아니라 스케줄된 Task 객체를 반환합니다."
+    },
+    "target_statement": "task1 = asyncio.create_task(fetch(\"lesson_v35.json\"))",
+    "focus_span": "asyncio.create_task(fetch(\"lesson_v35.json\"))",
+    "focus_mode": "subexpression",
+    "coverage_domain": "async_and_concurrency",
+    "coverage_topics": [
+      "asyncio",
+      "task",
+      "create_task",
+      "concurrency"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY36_L08_queue_basic_001",
     "level": 8,
-    "title": "queue 기초 읽기",
+    "title": "deque.popleft()로 가장 먼저 들어온 작업 꺼내기",
     "concepts": [
-      "queue",
-      "job",
-      "FIFO"
+      "call",
+      "assignment",
+      "from_import_statement"
     ],
-    "reading_goal": "처리할 일을 줄 세워 worker가 하나씩 가져가는 queue 구조를 이해한다.",
-    "code": "queue:\n  shard_001\n  shard_002\n  shard_003\n\nworker takes shard_001",
-    "question_type": "meaning_choice",
-    "question": "queue의 역할로 가장 가까운 것은?",
+    "reading_goal": "queue의 FIFO 맥락을 실제 `deque.popleft()` 메서드 호출의 반환값과 상태 변화로 읽는다.",
+    "code": "from collections import deque\n\njobs = deque([\"shard_001\", \"shard_002\", \"shard_003\"])\njob = jobs.popleft()",
+    "question_type": "output_prediction",
+    "question": "이 코드에서 `job`에 저장되는 값은 무엇인가?",
     "choices": [
-      "파일을 무조건 삭제한다",
-      "브라우저 색상을 바꾼다",
-      "GitHub 계정을 만든다",
-      "처리할 작업을 순서대로 보관한다"
+      "shard_001",
+      "shard_002",
+      "shard_003",
+      "None"
     ],
-    "answer": "처리할 작업을 순서대로 보관한다",
-    "explanation": "queue는 생산자가 넣은 미처리 작업을 worker가 꺼낼 때까지 보관한다. 이 그림은 먼저 들어온 shard를 먼저 꺼내는 FIFO 큐를 나타낸다. 모든 큐가 반드시 FIFO인 것은 아니며 priority queue처럼 선택 규칙이 다른 구현도 있다.",
+    "answer": "shard_001",
+    "explanation": "`jobs`의 가장 왼쪽 항목은 `\"shard_001\"`입니다. `popleft()`는 그 항목을 deque에서 제거하면서 같은 값을 반환하고, 대입문이 그 값을 `job`에 저장합니다. `popleft()`는 이름 그대로 deque의 왼쪽 끝 값을 꺼내 반환하므로 첫 항목이 `job`이 됩니다. 헷갈리기 쉬운 오답: shard_003 `popleft()`는 오른쪽 끝이 아니라 왼쪽 끝에서 항목을 꺼냅니다. 오독 지점: 메서드 이름의 `left`가 어느 끝을 가리키는지 놓친 경우입니다. `obj.method()`를 읽을 때는 **반환값뿐 아니라 객체 상태를 함께 바꾸는 메서드인지** 확인합니다.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY"
     ],
-    "project_context": "KG/LoRA shard 처리, 카드 생성 batch, API 호출 대기열에 모두 적용된다."
+    "project_context": "worker가 대기열에서 다음 shard나 batch를 가져가는 FIFO 흐름을 실제 Python 컬렉션 코드로 읽는 데 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "queue의 FIFO 맥락을 실제 `deque.popleft()` 메서드 호출의 반환값과 상태 변화로 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`객체.메서드()` 형태는 그 객체가 제공하는 메서드를 호출하는 표현식입니다. `deque.popleft()`는 왼쪽 끝 항목을 꺼내 반환합니다.",
+      "how_to_read": "`jobs.popleft()`를 먼저 호출해 맨 앞 작업을 얻고, 그 반환값을 `job`에 저장한다고 읽습니다.",
+      "key_point": "메서드는 값을 **반환하는 동시에 deque에서 그 항목을 제거**합니다. 따라서 반환값과 컬렉션 상태 변화가 함께 있습니다.",
+      "common_mistake": "맨 앞 값을 읽기만 하고 deque는 그대로라고 생각하기 쉽습니다. `popleft()`는 단순 조회가 아니라 꺼내기(pop) 연산입니다."
+    },
+    "teaching_example": {
+      "code": "from collections import deque\n\nwaiting = deque([\"task_a\", \"task_b\"])\ncurrent = waiting.popleft()",
+      "walkthrough": "`popleft()`가 왼쪽의 `\"task_a\"`를 제거해 반환하고, 그 값이 `current`에 저장됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`jobs`의 가장 왼쪽 항목은 `\"shard_001\"`입니다. `popleft()`는 그 항목을 deque에서 제거하면서 같은 값을 반환하고, 대입문이 그 값을 `job`에 저장합니다.",
+      "why_correct": "`popleft()`는 이름 그대로 deque의 왼쪽 끝 값을 꺼내 반환하므로 첫 항목이 `job`이 됩니다.",
+      "common_wrong_choice": {
+        "choice": "shard_003",
+        "why_wrong": "`popleft()`는 오른쪽 끝이 아니라 왼쪽 끝에서 항목을 꺼냅니다.",
+        "misread_step": "메서드 이름의 `left`가 어느 끝을 가리키는지 놓친 경우입니다."
+      },
+      "takeaway": "`obj.method()`를 읽을 때는 **반환값뿐 아니라 객체 상태를 함께 바꾸는 메서드인지** 확인합니다."
+    },
+    "target_statement": "job = jobs.popleft()",
+    "focus_span": "jobs.popleft()",
+    "focus_mode": "subexpression",
+    "coverage_domain": "async_and_concurrency",
+    "coverage_topics": [
+      "queue",
+      "FIFO",
+      "job queue",
+      "deque"
+    ],
+    "pedagogical_intent": "trace_state"
   },
   {
     "id": "PY36_L08_worker_001",
     "level": 8,
-    "title": "worker 읽기",
+    "title": "try가 성공했을 때만 else에서 작업 완료 표시하기",
     "concepts": [
-      "else",
-      "while",
-      "try_except",
-      "worker",
-      "queue",
-      "job_processing"
+      "try_else_clause",
+      "try_statement",
+      "except_clause",
+      "call"
     ],
-    "reading_goal": "queue에서 작업을 꺼내 실제 처리하는 worker의 역할을 이해한다.",
-    "code": "while queue_has_items():\n    job = queue.get()\n    try:\n        process(job)\n    except Exception as error:\n        mark_failed(job, error)\n    else:\n        mark_done(job)",
-    "question_type": "meaning_choice",
-    "question": "worker가 하는 일은?",
+    "reading_goal": "worker 처리 코드에서 try-else의 성공 경로가 언제 선택되는지 읽는다.",
+    "code": "def process(job):\n    if job == \"bad\":\n        raise ValueError(\"invalid job\")\n    return job.upper()\n\ndef run_worker(job):\n    try:\n        process(job)\n    except ValueError:\n        state = \"failed\"\n    else:\n        state = \"done\"\n    return state\n\nresult = run_worker(\"shard_001\")",
+    "question_type": "output_prediction",
+    "question": "`run_worker(\"shard_001\")`의 결과는 무엇인가?",
     "choices": [
-      "항상 UI만 그린다",
-      "Git 원격을 삭제한다",
-      "CSS만 압축한다",
-      "queue에서 job을 꺼내 처리하고 완료 표시한다"
+      "done",
+      "failed",
+      "None",
+      "ValueError가 그대로 발생한다"
     ],
-    "answer": "queue에서 job을 꺼내 처리하고 완료 표시한다",
-    "explanation": "worker는 큐에서 작업을 가져와 실제 처리를 수행하는 실행 주체다. 성공한 작업만 done으로 표시하고 실패는 별도 상태와 재시도 정책으로 넘겨야 한다. 여러 worker가 같은 작업을 가져가지 않도록 queue의 claim·acknowledgement 방식도 필요하다.",
+    "answer": "done",
+    "explanation": "`\"shard_001\"`은 `\"bad\"`가 아니므로 `process()`는 `ValueError`를 내지 않습니다. 따라서 `except`는 실행되지 않고 `else`에서 `state`가 `\"done\"`이 됩니다. 마지막 `return state`가 그 값을 반환합니다. try-else에서 `else`는 `try`가 예외 없이 끝났을 때 실행되므로 정상 job은 성공 상태로 이동합니다. 헷갈리기 쉬운 오답: failed `failed`는 `ValueError`가 발생해 `except` 블록이 실행될 때만 저장됩니다. 이번 입력에서는 예외가 발생하지 않습니다. 오독 지점: `try` 내부에서 실제 예외가 발생하는지 확인하지 않고 `except` 또는 `else`를 임의로 고른 경우입니다. `try ... except ... else`는 **예외 발생 → except, 예외 없음 → else** 순서로 읽습니다.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY"
     ],
-    "project_context": "샤드 여러 개를 서버에서 돌릴 때 worker 개념으로 이해하면 쉽다."
+    "project_context": "worker가 실제 처리를 성공했을 때만 done 상태를 기록하고, 실패 시 별도 경로를 타는 코드를 읽는 데 직접 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "try_else_clause",
+    "reading_goal_internal": "worker 처리 코드에서 try-else의 성공 경로가 언제 선택되는지 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`try ... except ... else`에서 `else` 절은 `try` 블록이 **처리 대상 예외 없이 정상 종료되었을 때** 실행됩니다.",
+      "how_to_read": "먼저 `try`를 실행하고, 예외가 발생하면 맞는 `except`로 이동합니다. 예외 없이 끝났을 때만 `else`로 내려간다고 읽습니다.",
+      "key_point": "`else`는 '예외가 났을 때의 대안'이 아니라 **예외가 없었던 성공 경로**입니다.",
+      "common_mistake": "일반 `if/else`처럼 `except`의 반대 조건을 검사하는 별도 조건문이라고 생각하기 쉽습니다. 실제로는 `try`가 예외 없이 끝났는지가 실행 조건입니다."
+    },
+    "teaching_example": {
+      "code": "def parse(text):\n    try:\n        value = int(text)\n    except ValueError:\n        result = \"failed\"\n    else:\n        result = \"done\"\n    return result",
+      "walkthrough": "`int(text)`가 예외 없이 끝나면 `except`를 건너뛰고 `else`에서 `\"done\"`을 저장합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`\"shard_001\"`은 `\"bad\"`가 아니므로 `process()`는 `ValueError`를 내지 않습니다. 따라서 `except`는 실행되지 않고 `else`에서 `state`가 `\"done\"`이 됩니다. 마지막 `return state`가 그 값을 반환합니다.",
+      "why_correct": "try-else에서 `else`는 `try`가 예외 없이 끝났을 때 실행되므로 정상 job은 성공 상태로 이동합니다.",
+      "common_wrong_choice": {
+        "choice": "failed",
+        "why_wrong": "`failed`는 `ValueError`가 발생해 `except` 블록이 실행될 때만 저장됩니다. 이번 입력에서는 예외가 발생하지 않습니다.",
+        "misread_step": "`try` 내부에서 실제 예외가 발생하는지 확인하지 않고 `except` 또는 `else`를 임의로 고른 경우입니다."
+      },
+      "takeaway": "`try ... except ... else`는 **예외 발생 → except, 예외 없음 → else** 순서로 읽습니다."
+    },
+    "target_statement": "else:",
+    "focus_span": "else:",
+    "focus_mode": "clause_header",
+    "coverage_domain": "async_and_concurrency",
+    "coverage_topics": [
+      "worker",
+      "queue",
+      "job processing",
+      "success state",
+      "try else"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY36_L08_batch_001",
     "level": 8,
-    "title": "batch 처리 읽기",
+    "title": "cards[0:100]으로 앞쪽 배치 잘라내기",
     "concepts": [
-      "for",
-      "batch",
-      "bulk_processing",
-      "shard"
+      "slice",
+      "assignment"
     ],
-    "reading_goal": "많은 작업을 묶어서 처리하는 batch 개념을 이해한다.",
-    "code": "batch = cards[0:100]\n\nfor card in batch:\n    validate(card)",
+    "reading_goal": "slice의 start와 stop 경계를 읽고 실제로 몇 개의 항목이 선택되는지 해석한다.",
+    "code": "cards = list(range(250))\nbatch = cards[0:100]",
     "question_type": "meaning_choice",
-    "question": "batch = cards[0:100]의 의미는?",
+    "question": "`cards[0:100]`이 선택하는 범위로 맞는 것은?",
     "choices": [
-      "카드 전체를 삭제한다",
-      "100번 커밋한다",
-      "서버 포트를 100으로 바꾼다",
-      "카드 중 앞의 100개를 한 묶음으로 잡는다"
+      "인덱스 0부터 99까지",
+      "인덱스 0부터 100까지",
+      "인덱스 100부터 끝까지",
+      "항상 카드 전체"
     ],
-    "answer": "카드 중 앞의 100개를 한 묶음으로 잡는다",
-    "explanation": "cards[0:100]은 전체 cards 중 인덱스 0부터 99까지, 최대 첫 100개만 새 리스트로 선택한다. 이 한 조각을 batch로 처리하는 예시이며 전체 데이터를 모두 batch로 순회하려면 시작 인덱스를 100씩 늘리는 바깥 반복이 추가로 필요하다.",
+    "answer": "인덱스 0부터 99까지",
+    "explanation": "slice는 시작 위치는 포함하고 stop 위치는 포함하지 않습니다. 따라서 `0:100`은 0부터 99까지의 항목을 선택합니다. Python slice의 기본 규칙이 `[start, stop)` 범위이기 때문입니다. 헷갈리기 쉬운 오답: 인덱스 0부터 100까지 stop인 100은 slice 결과에 포함되지 않습니다. 오독 지점: slice의 오른쪽 경계가 제외된다는 점을 놓친 경우입니다. `seq[a:b]`는 **a는 포함하고 b는 제외**한다고 읽습니다.",
     "side_card_ids": [
       "PYV161_A1_BATCH_MEMORY_FLOW"
     ],
-    "project_context": "노드패스 shard, 카드 검증, 대량 API 호출에서 자주 쓰는 사고방식이다."
+    "project_context": "대량 카드·노드·샤드를 한 번에 처리하지 않고 앞쪽 일부를 배치로 자를 때 같은 slice를 사용한다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "slice",
+    "reading_goal_internal": "slice의 start와 stop 경계를 읽고 실제로 몇 개의 항목이 선택되는지 해석한다.",
+    "concept_explanation": {
+      "what_it_is": "`sequence[start:stop]`은 시퀀스에서 start부터 stop 바로 전까지를 잘라 새 범위를 만드는 slice 표현식입니다.",
+      "how_to_read": "`cards[0:100]`은 인덱스 0에서 시작해 100 직전인 99까지 선택한다고 읽습니다.",
+      "key_point": "stop 인덱스는 포함되지 않습니다. 항목이 100개 이상 있다면 최대 100개가 선택됩니다.",
+      "common_mistake": "0부터 100까지이니 101개라고 생각하기 쉽습니다. Python slice의 stop은 제외됩니다."
+    },
+    "teaching_example": {
+      "code": "rows = list(range(20))\nchunk = rows[0:5]",
+      "walkthrough": "`rows[0:5]`는 인덱스 0, 1, 2, 3, 4의 다섯 항목을 선택합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "slice는 시작 위치는 포함하고 stop 위치는 포함하지 않습니다. 따라서 `0:100`은 0부터 99까지의 항목을 선택합니다.",
+      "why_correct": "Python slice의 기본 규칙이 `[start, stop)` 범위이기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "인덱스 0부터 100까지",
+        "why_wrong": "stop인 100은 slice 결과에 포함되지 않습니다.",
+        "misread_step": "slice의 오른쪽 경계가 제외된다는 점을 놓친 경우입니다."
+      },
+      "takeaway": "`seq[a:b]`는 **a는 포함하고 b는 제외**한다고 읽습니다."
+    },
+    "target_statement": "batch = cards[0:100]",
+    "focus_span": "cards[0:100]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "data_processing_and_analysis",
+    "coverage_topics": [
+      "batch",
+      "slice",
+      "bulk processing",
+      "shard"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY36_L09_concurrency_parallelism_001",
     "level": 9,
-    "title": "concurrency와 parallelism 구분",
+    "title": "concurrency/parallelism 역할 dict에서 의미 읽기",
     "concepts": [
+      "subscription",
+      "assignment",
+      "literal"
+    ],
+    "reading_goal": "두 개념을 key/value로 표현한 dict에서 parallelism의 정의를 정확히 조회한다.",
+    "code": "models = {\n    \"concurrency\": \"one worker switches between tasks\",\n    \"parallelism\": \"multiple workers run at the same time\",\n}\nparallelism = models[\"parallelism\"]",
+    "question_type": "multiple_choice",
+    "question": "`parallelism`에 저장되는 설명은 무엇인가?",
+    "choices": [
+      "multiple workers run at the same time",
+      "one worker switches between tasks",
+      "all tasks are deleted",
+      "only one task exists"
+    ],
+    "answer": "multiple workers run at the same time",
+    "explanation": "`models['parallelism']`은 parallelism key의 value를 그대로 반환합니다. dict key lookup은 정확히 지정된 key의 value를 가져오기 때문입니다. 헷갈리기 쉬운 오답: one worker switches between tasks 그 설명은 concurrency key의 value입니다. 오독 지점: 두 개념의 key/value를 뒤바꾼 경우입니다. 개념 비교 카드도 **실제 Python 데이터 구조에서 key와 value를 정확히 연결**해 읽습니다.",
+    "side_card_ids": [],
+    "project_context": "GPU 여러 대, 프로세스 여러 개, API 요청 여러 개를 설계할 때 동시성과 병렬성을 구분하는 맥락과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "subscription",
+    "reading_goal_internal": "두 개념을 key/value로 표현한 dict에서 parallelism의 정의를 정확히 조회한다.",
+    "concept_explanation": {
+      "what_it_is": "`mapping[key]`는 dict의 특정 key에 연결된 value를 읽는 subscription입니다.",
+      "how_to_read": "조회 key를 먼저 확인하고 그 key와 짝인 value를 찾습니다.",
+      "key_point": "여기서는 parallelism을 여러 worker가 실제로 같은 시간대에 작업하는 모델로 표현합니다.",
+      "common_mistake": "concurrency와 parallelism의 value를 서로 바꿔 읽기 쉽습니다. 대괄호 안 key가 무엇인지 먼저 봐야 합니다."
+    },
+    "teaching_example": {
+      "code": "modes = {\"serial\": \"one at a time\", \"parallel\": \"many at once\"}\nmode = modes[\"parallel\"]",
+      "walkthrough": "`parallel` key의 value `many at once`가 mode에 저장됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`models['parallelism']`은 parallelism key의 value를 그대로 반환합니다.",
+      "why_correct": "dict key lookup은 정확히 지정된 key의 value를 가져오기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "one worker switches between tasks",
+        "why_wrong": "그 설명은 concurrency key의 value입니다.",
+        "misread_step": "두 개념의 key/value를 뒤바꾼 경우입니다."
+      },
+      "takeaway": "개념 비교 카드도 **실제 Python 데이터 구조에서 key와 value를 정확히 연결**해 읽습니다."
+    },
+    "target_statement": "parallelism = models[\"parallelism\"]",
+    "focus_span": "models[\"parallelism\"]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "async_and_concurrency",
+    "coverage_topics": [
       "concurrency",
       "parallelism",
+      "worker",
       "performance"
     ],
-    "reading_goal": "동시에 진행되는 것처럼 다루는 concurrency와 실제 여러 계산을 동시에 하는 parallelism을 구분한다.",
-    "code": "concurrency:\n  one worker switches between tasks\n\nparallelism:\n  multiple workers run tasks at the same time",
-    "question_type": "meaning_choice",
-    "question": "parallelism에 가까운 설명은?",
-    "choices": [
-      "한 worker가 대기 중 작업을 번갈아 본다",
-      "모든 작업을 수동으로 한다",
-      "Git 로그만 확인한다",
-      "여러 worker가 실제로 동시에 작업한다"
-    ],
-    "answer": "여러 worker가 실제로 동시에 작업한다",
-    "explanation": "concurrency는 여러 작업의 진행 구간이 겹치도록 관리하는 개념이고 parallelism은 같은 순간에 실제 실행되는 작업이 둘 이상인 상태다. 그림은 각각 한 event-loop worker의 전환과 여러 worker의 동시 실행을 단순화한 예다. concurrency도 여러 스레드를 쓸 수 있으므로 worker 수만으로 두 개념을 정의하지는 않는다.",
-    "side_card_ids": [],
-    "project_context": "GPU 여러 대, 프로세스 여러 개, API 요청 여러 개의 차이를 이해할 때 필요하다."
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY36_L09_semaphore_001",
     "level": 9,
-    "title": "semaphore 읽기",
+    "title": "async with Semaphore로 동시 API 호출 제한하기",
     "concepts": [
-      "semaphore",
-      "concurrency_limit",
-      "rate_limit"
+      "async_with_statement",
+      "await_expression",
+      "call",
+      "async_function_definition"
     ],
-    "reading_goal": "동시에 실행되는 작업 수를 제한하는 semaphore 개념을 이해한다.",
-    "code": "sem = Semaphore(3)\n\nasync with sem:\n    await call_api(job)",
-    "question_type": "meaning_choice",
-    "question": "Semaphore(3)의 의미로 가장 가까운 것은?",
+    "reading_goal": "Semaphore async context에 진입한 뒤 await 작업을 수행하는 실행 순서와 동시 허용 수 의미를 읽는다.",
+    "code": "import asyncio\n\nsem = asyncio.Semaphore(3)\n\nasync def call_api(job):\n    await asyncio.sleep(0)\n    return job\n\nasync def guarded_call(job):\n    async with sem:\n        return await call_api(job)",
+    "question_type": "multiple_choice",
+    "question": "`Semaphore(3)`의 역할에 가장 가까운 것은 무엇인가?",
     "choices": [
+      "동시에 최대 3개 작업이 context에 들어가게 제한한다",
+      "항상 3초 기다린다",
       "작업을 3번 삭제한다",
-      "항상 3초만 실행한다",
-      "정답을 3개 만든다",
-      "동시에 최대 3개까지만 실행하게 제한한다"
+      "정답을 3개 만든다"
     ],
-    "answer": "동시에 최대 3개까지만 실행하게 제한한다",
-    "explanation": "Semaphore(3)을 공유하는 task들이 async with sem 구간에 들어갈 수 있는 허가를 최대 3개까지 갖게 한다. 따라서 이 semaphore를 실제로 함께 사용하는 호출만 동시에 최대 3개로 제한된다. 다른 프로세스나 semaphore를 거치지 않는 호출까지 전역으로 제한하는 것은 아니다.",
+    "answer": "동시에 최대 3개 작업이 context에 들어가게 제한한다",
+    "explanation": "Semaphore는 3개의 동시 진입 slot을 관리하고 각 작업은 `async with sem` 안에 들어가야 API 호출을 수행합니다. Semaphore 카운터가 context에 동시에 진입할 수 있는 작업 수를 제한하기 때문입니다. 헷갈리기 쉬운 오답: 항상 3초 기다린다 생성자 숫자 3은 시간 단위가 아닙니다. 오독 지점: 동시 허용 수를 시간 값으로 해석한 경우입니다. Semaphore는 **동시 허용 수 → context 진입 → 내부 await 실행**으로 읽습니다.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY"
     ],
-    "project_context": "샤드 병렬 처리나 외부 API 호출 수를 조절할 때 중요하다."
+    "project_context": "샤드 병렬 처리나 외부 API 호출을 과도하게 동시에 실행하지 않도록 동시성을 제한하는 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "async_with_statement",
+    "reading_goal_internal": "Semaphore async context에 진입한 뒤 await 작업을 수행하는 실행 순서와 동시 허용 수 의미를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`async with manager:`는 비동기 context manager에 진입해 들여쓴 블록을 실행합니다.",
+      "how_to_read": "manager가 관리하는 자원이 무엇인지 보고, context 안에서 어떤 await 작업이 실행되는지 확인합니다.",
+      "key_point": "`Semaphore(3)`의 3은 동시에 해당 context 안에 들어갈 수 있는 최대 작업 수를 의미합니다.",
+      "common_mistake": "3이 대기 시간 3초라고 생각하기 쉽습니다. semaphore 생성자의 숫자는 동시 허용 slot 수입니다."
+    },
+    "teaching_example": {
+      "code": "import asyncio\n\nsem = asyncio.Semaphore(2)\n\nasync def work():\n    async with sem:\n        await asyncio.sleep(0)",
+      "walkthrough": "동시에 최대 두 작업이 semaphore context 안에서 실행될 수 있습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "Semaphore는 3개의 동시 진입 slot을 관리하고 각 작업은 `async with sem` 안에 들어가야 API 호출을 수행합니다.",
+      "why_correct": "Semaphore 카운터가 context에 동시에 진입할 수 있는 작업 수를 제한하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "항상 3초 기다린다",
+        "why_wrong": "생성자 숫자 3은 시간 단위가 아닙니다.",
+        "misread_step": "동시 허용 수를 시간 값으로 해석한 경우입니다."
+      },
+      "takeaway": "Semaphore는 **동시 허용 수 → context 진입 → 내부 await 실행**으로 읽습니다."
+    },
+    "target_statement": "async with sem:",
+    "focus_span": "async with sem:",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "async_and_concurrency",
+    "coverage_topics": [
+      "semaphore",
+      "concurrency limit",
+      "rate limit",
+      "async with"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY36_L09_checkpoint_001",
     "level": 9,
-    "title": "checkpoint 읽기",
+    "title": "checkpoint 호출의 last_done keyword argument 읽기",
     "concepts": [
-      "checkpoint",
-      "resume",
-      "long_running_job"
+      "argument_passing",
+      "call",
+      "function_definition"
     ],
-    "reading_goal": "긴 작업 중간 결과를 저장해 재시작 가능한 구조를 이해한다.",
-    "code": "after each shard:\n    save_result(shard_id)\n    write_checkpoint(last_done=shard_id)",
-    "question_type": "meaning_choice",
-    "question": "checkpoint를 저장하는 이유는?",
+    "reading_goal": "완료된 shard id가 이름 있는 keyword argument로 checkpoint 함수에 전달되는 구조를 읽는다.",
+    "code": "def write_checkpoint(last_done):\n    return {\"last_done\": last_done}\n\nshard_id = \"shard-07\"\ncheckpoint = write_checkpoint(last_done=shard_id)",
+    "question_type": "multiple_choice",
+    "question": "`checkpoint[\"last_done\"]`의 값은 무엇인가?",
     "choices": [
-      "결과를 일부러 잃기 위해",
-      "항상 처음부터 다시 하기 위해",
-      "브라우저 캐시를 지우기 위해",
-      "중간에 멈춰도 완료 지점부터 이어가기 위해"
+      "shard-07",
+      "last_done",
+      "checkpoint",
+      "None"
     ],
-    "answer": "중간에 멈춰도 완료 지점부터 이어가기 위해",
-    "explanation": "checkpoint는 긴 작업에서 완료 사실을 내구성 있게 기록해 재시작 위치를 정한다. 결과 저장과 checkpoint 갱신 사이에 중단될 수 있으므로 둘을 transaction으로 묶거나, 다시 처리해도 같은 결과가 되는 idempotent 저장을 사용해야 한다. 단순히 last_done 하나만 쓰면 작업 순서가 바뀌거나 병렬 완료될 때 누락될 수도 있다.",
+    "answer": "shard-07",
+    "explanation": "`shard_id` 값 `shard-07`이 `last_done` parameter에 전달되고 함수가 그 값을 dict에 넣어 반환합니다. keyword argument는 이름이 같은 parameter에 오른쪽 값을 전달하기 때문입니다. 헷갈리기 쉬운 오답: last_done `last_done`은 argument 이름이지 전달되는 문자열 값이 아닙니다. 오독 지점: keyword 이름과 실제 argument 값을 혼동한 경우입니다. checkpoint 호출은 **어떤 필드 이름으로 어떤 완료 값을 전달하는지** 읽습니다.",
     "side_card_ids": [
       "PYV159_A1_CHECKPOINT_RESUME_FLOW"
     ],
-    "project_context": "EC2나 ICT 서버에서 긴 노드패스/샤드 작업을 돌릴 때 핵심이다."
+    "project_context": "EC2·GPU 서버 등에서 긴 shard 작업이 중단돼도 마지막 완료 지점부터 이어가기 위한 checkpoint 기록 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "argument_passing",
+    "reading_goal_internal": "완료된 shard id가 이름 있는 keyword argument로 checkpoint 함수에 전달되는 구조를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`name=value` 형태로 호출에 전달하는 값은 keyword argument입니다.",
+      "how_to_read": "등호 왼쪽 argument 이름과 오른쪽 실제 값을 확인해 함수의 같은 이름 parameter에 대응시킵니다.",
+      "key_point": "`last_done=shard_id`는 재개 시점으로 사용할 완료 지점을 명시적으로 전달합니다.",
+      "common_mistake": "`last_done`이 새 변수에 대입된다고 생각하기 쉽습니다. 호출 괄호 안에서는 keyword argument 이름입니다."
+    },
+    "teaching_example": {
+      "code": "def save_state(last_page):\n    return last_page\n\npage = 8\nsaved = save_state(last_page=page)",
+      "walkthrough": "`last_page=page`가 keyword argument이고 현재 page 값 8이 parameter에 전달됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`shard_id` 값 `shard-07`이 `last_done` parameter에 전달되고 함수가 그 값을 dict에 넣어 반환합니다.",
+      "why_correct": "keyword argument는 이름이 같은 parameter에 오른쪽 값을 전달하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "last_done",
+        "why_wrong": "`last_done`은 argument 이름이지 전달되는 문자열 값이 아닙니다.",
+        "misread_step": "keyword 이름과 실제 argument 값을 혼동한 경우입니다."
+      },
+      "takeaway": "checkpoint 호출은 **어떤 필드 이름으로 어떤 완료 값을 전달하는지** 읽습니다."
+    },
+    "target_statement": "write_checkpoint(last_done=shard_id)",
+    "focus_span": "last_done=shard_id",
+    "focus_mode": "subexpression",
+    "coverage_domain": "logging_monitoring_operations",
+    "coverage_topics": [
+      "checkpoint",
+      "resume",
+      "shard",
+      "long running job"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY36_L10_resume_001",
     "level": 10,
-    "title": "resume 처리 읽기",
+    "title": "완료 job을 continue로 건너뛰며 resume하기",
     "concepts": [
-      "if",
-      "for",
-      "continue",
-      "resume",
-      "checkpoint",
-      "skip_done"
+      "continue_statement",
+      "if_statement",
+      "membership_test",
+      "for_statement",
+      "literal"
     ],
-    "reading_goal": "이미 끝난 작업을 건너뛰고 남은 작업만 이어서 처리하는 resume 로직을 이해한다.",
-    "code": "done = load_done_ids()\n\nfor job in all_jobs:\n    if job.id in done:\n        continue\n    process(job)",
-    "question_type": "meaning_choice",
-    "question": "if job.id in done: continue의 의미는?",
+    "reading_goal": "완료 ID membership이 True일 때 current iteration을 건너뛰고 미완료 작업만 처리하는 resume 구조를 읽는다.",
+    "code": "done = {\"job1\"}\nall_jobs = [{\"id\": \"job1\"}, {\"id\": \"job2\"}]\nprocessed = []\nfor job in all_jobs:\n    if job[\"id\"] in done:\n        continue\n    processed.append(job[\"id\"])",
+    "question_type": "multiple_choice",
+    "question": "`if job id in done: continue`의 의미는 무엇인가?",
     "choices": [
       "완료된 job만 다시 처리한다",
       "모든 job을 삭제한다",
@@ -260,28 +562,61 @@
       "이미 완료된 job은 건너뛴다"
     ],
     "answer": "이미 완료된 job은 건너뛴다",
-    "explanation": "done에 있는 ID는 continue로 건너뛰고 나머지만 처리한다. 안전한 resume이 되려면 done 목록이 성공한 결과와 함께 내구성 있고 원자적으로 기록되어야 하며, 손상되거나 너무 일찍 표시되지 않아야 한다. process 자체도 재실행에 견디도록 설계하면 중단 경계의 중복 처리 위험을 줄일 수 있다.",
+    "explanation": "done membership이 True인 job은 continue로 process 단계에 도달하지 않습니다. continue가 current iteration의 나머지 코드를 건너뛰기 때문입니다. 헷갈리기 쉬운 오답: 완료된 job만 다시 처리한다 정반대로 완료 job을 skip합니다. 오독 지점: continue의 효과를 반대로 이해한 경우입니다. resume는 **done set 확인 → continue skip → unfinished only**로 읽습니다.",
     "side_card_ids": [
       "PYV159_A1_CHECKPOINT_RESUME_FLOW"
     ],
-    "project_context": "샤드가 일부 완료된 상태에서 재실행할 때 반드시 필요한 패턴이다."
+    "project_context": "shard가 일부 완료된 상태에서 재실행할 때 완료 항목을 skip하는 필수 resume 패턴과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "continue_statement",
+    "reading_goal_internal": "완료 ID membership이 True일 때 current iteration을 건너뛰고 미완료 작업만 처리하는 resume 구조를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`continue`는 현재 반복의 남은 문장을 건너뛰고 다음 iteration으로 이동합니다.",
+      "how_to_read": "continue 아래 어떤 작업이 skip되는지 확인합니다.",
+      "key_point": "resume에서는 이미 완료한 job을 다시 처리하지 않아 시간·비용·중복 산출물을 줄일 수 있습니다.",
+      "common_mistake": "continue가 for loop 전체를 끝낸다고 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "done={1}\nprocessed=[]\nfor job in [1,2]:\n    if job in done:\n        continue\n    processed.append(job)",
+      "walkthrough": "1은 건너뛰고 2만 processed에 들어갑니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "done membership이 True인 job은 continue로 process 단계에 도달하지 않습니다.",
+      "why_correct": "continue가 current iteration의 나머지 코드를 건너뛰기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "완료된 job만 다시 처리한다",
+        "why_wrong": "정반대로 완료 job을 skip합니다.",
+        "misread_step": "continue의 효과를 반대로 이해한 경우입니다."
+      },
+      "takeaway": "resume는 **done set 확인 → continue skip → unfinished only**로 읽습니다."
+    },
+    "target_statement": "continue",
+    "focus_span": "continue",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "logging_monitoring_operations",
+    "coverage_topics": [
+      "resume",
+      "checkpoint",
+      "skip done",
+      "continue"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY36_L10_retry_queue_001",
     "level": 10,
-    "title": "retry queue 읽기",
+    "title": "일시 실패 job을 retry queue에 다시 넣기",
     "concepts": [
-      "if",
-      "else",
-      "try_except",
-      "retry_queue",
-      "failed_jobs",
-      "resilience"
+      "call",
+      "except_clause",
+      "if_statement",
+      "comparison",
+      "literal"
     ],
-    "reading_goal": "실패한 작업만 따로 모아 다시 시도하는 retry queue 구조를 이해한다.",
-    "code": "try:\n    process(job)\nexcept TransientError:\n    if job.attempts < MAX_ATTEMPTS:\n        retry_queue.push(job)\n    else:\n        dead_letter_queue.push(job)",
-    "question_type": "meaning_choice",
-    "question": "retry_queue.push(job)의 의미는?",
+    "reading_goal": "일시 실패와 retry limit 조건이 재시도 queue 등록으로 이어지는 흐름을 읽는다.",
+    "code": "class TransientError(Exception):\n    pass\n\njob = {\"id\": \"j1\", \"attempts\": 1}\nMAX_ATTEMPTS = 3\nretry_queue = []\ndead_letter_queue = []\ntry:\n    raise TransientError()\nexcept TransientError:\n    if job[\"attempts\"] < MAX_ATTEMPTS:\n        retry_queue.append(job)\n    else:\n        dead_letter_queue.append(job)",
+    "question_type": "multiple_choice",
+    "question": "`retry_queue.append(job)`의 의미는 무엇인가?",
     "choices": [
       "작업을 성공 처리한다",
       "작업을 화면에 출력만 한다",
@@ -289,23 +624,56 @@
       "실패한 작업을 재시도 대기열에 넣는다"
     ],
     "answer": "실패한 작업을 재시도 대기열에 넣는다",
-    "explanation": "retry queue에는 네트워크 일시 장애처럼 재시도로 회복될 가능성이 있는 실패만 넣는다. 모든 Exception을 무제한 다시 넣으면 코드 버그나 영구 실패가 끝없이 반복될 수 있다. 시도 횟수, backoff, 중복 실행 안전성, 최종 실패를 보관할 dead-letter 정책이 필요하다.",
+    "explanation": "현재 attempts가 limit보다 작아 retry branch가 실행되고 append로 job이 queue에 들어갑니다. retry_queue는 실패 작업을 나중에 다시 처리하기 위한 대기열 역할을 하기 때문입니다. 헷갈리기 쉬운 오답: 작업을 성공 처리한다 재시도 대상 등록은 성공 완료와 다릅니다. 오독 지점: retry scheduling과 success state를 혼동한 경우입니다. retry logic은 **transient failure → attempts check → retry/dead-letter 분기**로 읽습니다.",
     "side_card_ids": [],
-    "project_context": "API 호출 실패, 모델 응답 실패, 파일 처리 실패를 관리하는 데 유용하다."
+    "project_context": "API·모델·파일 처리의 일시 실패를 재시도 가능 실패와 최종 실패로 나누는 운영 구조와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "일시 실패와 retry limit 조건이 재시도 queue 등록으로 이어지는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`retry_queue.append(job)`은 list 객체의 append method를 호출해 job을 queue 끝에 추가합니다.",
+      "how_to_read": "이 호출에 도달하려면 어떤 exception과 attempt 조건을 통과해야 하는지 봅니다.",
+      "key_point": "일시 오류는 retry queue로, 한도를 넘긴 실패는 dead-letter queue로 분리하면 운영이 쉬워집니다.",
+      "common_mistake": "retry queue에 넣는 순간 작업이 성공 처리됐다고 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "retry=[]\njob={\"id\":\"a\"}\nretry.append(job)",
+      "walkthrough": "job이 성공한 것이 아니라 재시도 대상 list에 추가됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "현재 attempts가 limit보다 작아 retry branch가 실행되고 append로 job이 queue에 들어갑니다.",
+      "why_correct": "retry_queue는 실패 작업을 나중에 다시 처리하기 위한 대기열 역할을 하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "작업을 성공 처리한다",
+        "why_wrong": "재시도 대상 등록은 성공 완료와 다릅니다.",
+        "misread_step": "retry scheduling과 success state를 혼동한 경우입니다."
+      },
+      "takeaway": "retry logic은 **transient failure → attempts check → retry/dead-letter 분기**로 읽습니다."
+    },
+    "target_statement": "retry_queue.append(job)",
+    "focus_span": "retry_queue.append(job)",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "logging_monitoring_operations",
+    "coverage_topics": [
+      "retry queue",
+      "dead letter",
+      "transient error",
+      "resilience"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY36_L10_job_status_001",
     "level": 10,
-    "title": "job status 읽기",
+    "title": "job dict에서 현재 status 읽기",
     "concepts": [
-      "job_status",
-      "running",
-      "done",
-      "failed"
+      "subscription",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "긴 작업의 상태를 running/done/failed 같은 값으로 관리하는 이유를 이해한다.",
-    "code": "job = {\n  \"id\": \"shard_001\",\n  \"status\": \"running\",\n  \"done\": 120,\n  \"total\": 200\n}",
-    "question_type": "meaning_choice",
+    "reading_goal": "job progress record의 여러 숫자와 status 문자열을 구분해 현재 상태를 읽는다.",
+    "code": "job = {\n    \"id\": \"shard_001\",\n    \"status\": \"running\",\n    \"done\": 120,\n    \"total\": 200,\n}\ncurrent_status = job[\"status\"]",
+    "question_type": "multiple_choice",
     "question": "이 job은 현재 어떤 상태인가?",
     "choices": [
       "done",
@@ -314,25 +682,59 @@
       "running"
     ],
     "answer": "running",
-    "explanation": "status는 작업이 대기 중인지, 실행 중인지, 완료됐는지, 실패했는지 알려준다. job status는 작업이 대기 중인지, 실행 중인지, 성공했는지, 실패했는지를 나타내는 상태값이다. 상태 전이가 어떤 조건에서 바뀌는지 보면 운영 흐름을 이해하기 쉽다. 따라서 정답은 ‘running’이다.",
+    "explanation": "job['status']가 직접 `running` 문자열을 반환합니다. 현재 상태는 progress 숫자가 아니라 status field가 명시합니다. 헷갈리기 쉬운 오답: done done은 progress count key 이름이며 status value는 running입니다. 오독 지점: field name과 field value를 혼동한 경우입니다. status record는 **status field와 progress counters를 별도로** 읽습니다.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY"
     ],
-    "project_context": "서버에서 샤드 진행률을 확인하는 상태 로그와 연결된다."
+    "project_context": "서버에서 shard 진행률과 현재 상태를 함께 확인하는 상태 record와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "subscription",
+    "reading_goal_internal": "job progress record의 여러 숫자와 status 문자열을 구분해 현재 상태를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`job['status']`는 dict의 status key에 저장된 value를 읽습니다.",
+      "how_to_read": "done/total 숫자와 status 문자열의 역할을 구분합니다.",
+      "key_point": "done=120/total=200이라 아직 완료 전이며 status도 running으로 명시돼 있습니다.",
+      "common_mistake": "done이라는 key가 있다는 이유만으로 job status가 done이라고 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "job={\"status\":\"queued\",\"done\":0,\"total\":10}\nstatus=job[\"status\"]",
+      "walkthrough": "status key의 value는 queued입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "job['status']가 직접 `running` 문자열을 반환합니다.",
+      "why_correct": "현재 상태는 progress 숫자가 아니라 status field가 명시합니다.",
+      "common_wrong_choice": {
+        "choice": "done",
+        "why_wrong": "done은 progress count key 이름이며 status value는 running입니다.",
+        "misread_step": "field name과 field value를 혼동한 경우입니다."
+      },
+      "takeaway": "status record는 **status field와 progress counters를 별도로** 읽습니다."
+    },
+    "target_statement": "current_status = job[\"status\"]",
+    "focus_span": "job[\"status\"]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "logging_monitoring_operations",
+    "coverage_topics": [
+      "job status",
+      "running",
+      "progress",
+      "shard"
+    ],
+    "pedagogical_intent": "predict_output"
   },
   {
     "id": "PY36_L10_progress_log_001",
     "level": 10,
-    "title": "progress log 읽기",
+    "title": "progress log에서 done/total 상태 읽기",
     "concepts": [
-      "progress_log",
-      "monitoring",
-      "long_running_job"
+      "subscription",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "긴 작업의 진행률 로그에서 현재 처리량과 남은 작업을 읽는다.",
-    "code": "[KG node_pass status]\nrange: 31~100\ndone: 33/70\nGPU util=23%",
-    "question_type": "meaning_choice",
-    "question": "done: 33/70의 의미는?",
+    "reading_goal": "긴 job의 상태 record에서 완료 수와 전체 수를 분리해 읽는다.",
+    "code": "progress = {\"range\": \"31~100\", \"done\": 33, \"total\": 70, \"gpu_util_percent\": 23}\ncompleted = progress[\"done\"]\ntotal = progress[\"total\"]",
+    "question_type": "multiple_choice",
+    "question": "`done: 33/70`의 의미로 맞는 것은?",
     "choices": [
       "33개가 실패했다",
       "70초 남았다",
@@ -340,25 +742,59 @@
       "70개 중 33개가 끝났다"
     ],
     "answer": "70개 중 33개가 끝났다",
-    "explanation": "done: 33/70은 이 로그가 정의한 전체 70개 중 33개를 완료로 기록했다는 뜻이다. range 31~100을 양끝 포함으로 세면 70개다. GPU util=23%는 순간 자원 사용률일 뿐 완료율이 아니며, 로그가 최신이고 done 판정이 정확한지도 확인해야 한다.",
+    "explanation": "progress의 done key는 33, total key는 70입니다. 두 값을 함께 읽으면 완료 작업 수/전체 작업 수가 되기 때문입니다. 헷갈리기 쉬운 오답: 33개가 실패했다 failure field가 아니라 done field입니다. 오독 지점: field 이름의 의미를 반대로 해석한 경우입니다. progress log는 **done과 total을 짝으로** 읽습니다.",
     "side_card_ids": [
       "PYV102_A7_ASYNC_CONCURRENCY"
     ],
-    "project_context": "EC2/GPU 서버에서 긴 job을 돌릴 때 상태 판단에 쓰는 로그 형태다."
+    "project_context": "EC2/GPU 서버에서 긴 shard 작업을 돌릴 때 실제 진행률을 판단하는 상태 로그와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "subscription",
+    "reading_goal_internal": "긴 job의 상태 record에서 완료 수와 전체 수를 분리해 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`progress['done']`은 progress dict에서 완료 개수를 직접 읽는 key lookup입니다.",
+      "how_to_read": "done 값 하나만 보지 말고 total 값과 함께 읽어 현재 진행량을 해석합니다.",
+      "key_point": "`done=33`, `total=70`은 70개 작업 중 33개가 완료됐다는 뜻입니다.",
+      "common_mistake": "33을 실패 개수나 남은 시간으로 오해하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "progress={\"done\":4,\"total\":10}\nfinished=progress[\"done\"]",
+      "walkthrough": "done은 4이고 total은 10이므로 10개 중 4개 완료 상태입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "progress의 done key는 33, total key는 70입니다.",
+      "why_correct": "두 값을 함께 읽으면 완료 작업 수/전체 작업 수가 되기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "33개가 실패했다",
+        "why_wrong": "failure field가 아니라 done field입니다.",
+        "misread_step": "field 이름의 의미를 반대로 해석한 경우입니다."
+      },
+      "takeaway": "progress log는 **done과 total을 짝으로** 읽습니다."
+    },
+    "target_statement": "completed = progress[\"done\"]",
+    "focus_span": "progress[\"done\"]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "logging_monitoring_operations",
+    "coverage_topics": [
+      "progress log",
+      "monitoring",
+      "long running job",
+      "completion count"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY36_L10_background_task_001",
     "level": 10,
-    "title": "background task 읽기",
+    "title": "202 response에서 background job_id 읽기",
     "concepts": [
-      "background_task",
-      "long_running_job",
-      "server"
+      "subscription",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "요청 응답과 별개로 오래 걸리는 작업을 뒤에서 실행하는 background task 개념을 이해한다.",
-    "code": "POST /api/start-job\n\n202 Accepted\n{\"job_id\": \"job_123\", \"status\": \"queued\"}\n\ndurable worker:\n  process job_123",
-    "question_type": "meaning_choice",
-    "question": "API가 바로 job_id를 돌려주는 이유는?",
+    "reading_goal": "긴 작업 요청이 즉시 완료 결과 대신 추적용 job id를 반환하는 구조를 읽는다.",
+    "code": "response = {\"status_code\": 202, \"job_id\": \"job_123\", \"status\": \"queued\"}\njob_id = response[\"job_id\"]",
+    "question_type": "multiple_choice",
+    "question": "API가 바로 job_id를 돌려주는 이유는 무엇인가?",
     "choices": [
       "작업을 취소하려고",
       "JSON을 숨기려고",
@@ -366,8 +802,42 @@
       "긴 작업을 기다리지 않고 진행 상태를 나중에 확인하게 하려고"
     ],
     "answer": "긴 작업을 기다리지 않고 진행 상태를 나중에 확인하게 하려고",
-    "explanation": "서버는 긴 작업을 내구성 있는 큐에 넣고 202 Accepted와 job_id를 돌려줘 클라이언트가 나중에 상태를 조회하게 할 수 있다. 이 응답은 완료가 아니라 접수됐다는 뜻이다. 프로세스 재시작에도 살아남는 큐, 중복 방지, 실패 기록, 상태 조회와 완료 알림을 함께 설계해야 한다.",
+    "explanation": "응답은 queued 상태와 job_123 식별자를 즉시 제공합니다. client가 긴 처리 완료를 기다리지 않고 job id로 나중 상태를 추적할 수 있기 때문입니다. 헷갈리기 쉬운 오답: 작업을 취소하려고 job id는 취소에도 쓸 수 있지만 여기 핵심은 비동기 상태 추적입니다. 오독 지점: 식별자의 부가 용도와 기본 목적을 혼동한 경우입니다. background API는 **accept → job id 반환 → worker 처리 → status 조회**로 읽습니다.",
     "side_card_ids": [],
-    "project_context": "노드 추출, 임베딩 생성, 대량 검증 같은 긴 작업을 웹 UI에 붙일 때 필요한 방식이다."
+    "project_context": "노드 추출·embedding 생성·대량 검증처럼 긴 작업을 웹 UI에 붙이는 서버 구조와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "subscription",
+    "reading_goal_internal": "긴 작업 요청이 즉시 완료 결과 대신 추적용 job id를 반환하는 구조를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`response['job_id']`는 응답 dict에서 background 작업 식별자를 읽습니다.",
+      "how_to_read": "HTTP status와 response body를 함께 보고 즉시 결과인지 queued job인지 판단합니다.",
+      "key_point": "긴 작업은 요청 연결을 오래 붙잡기보다 job id를 먼저 돌려주고 나중에 상태를 조회하게 설계할 수 있습니다.",
+      "common_mistake": "202 응답을 작업이 이미 모두 끝났다는 뜻으로 읽기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "response={\"status_code\":202,\"job_id\":\"j7\",\"status\":\"queued\"}\njob_id=response[\"job_id\"]",
+      "walkthrough": "완료 결과 대신 추적용 j7을 받습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "응답은 queued 상태와 job_123 식별자를 즉시 제공합니다.",
+      "why_correct": "client가 긴 처리 완료를 기다리지 않고 job id로 나중 상태를 추적할 수 있기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "작업을 취소하려고",
+        "why_wrong": "job id는 취소에도 쓸 수 있지만 여기 핵심은 비동기 상태 추적입니다.",
+        "misread_step": "식별자의 부가 용도와 기본 목적을 혼동한 경우입니다."
+      },
+      "takeaway": "background API는 **accept → job id 반환 → worker 처리 → status 조회**로 읽습니다."
+    },
+    "target_statement": "job_id = response[\"job_id\"]",
+    "focus_span": "response[\"job_id\"]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "web_http_api",
+    "coverage_topics": [
+      "background task",
+      "202 Accepted",
+      "job id",
+      "long running job"
+    ],
+    "pedagogical_intent": "identify_meaning"
   }
 ]

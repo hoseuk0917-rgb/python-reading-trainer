@@ -2,336 +2,735 @@
   {
     "id": "PY41_L06_layer_architecture_001",
     "level": 6,
-    "title": "layer architecture 읽기",
+    "title": "레이어가 아래 계층의 반환값을 넘기는 return 흐름 읽기",
     "concepts": [
-      "layer_architecture",
-      "frontend",
-      "backend",
-      "database"
+      "return_statement",
+      "function_definition",
+      "call"
     ],
-    "reading_goal": "앱을 화면, 서버, 저장소 같은 층으로 나누어 읽는 감각을 익힌다.",
-    "code": "Frontend/PWA\n  -> API Route\n  -> Service\n  -> Repository\n  -> Database",
-    "question_type": "meaning_choice",
-    "question": "layer architecture의 핵심 의미는?",
+    "reading_goal": "`return service_load()`에서 하위 레이어 호출이 먼저 평가되고 결과가 상위 레이어로 전달되는 순서를 읽는다.",
+    "code": "def repository_load():\n    return [\"c101\", \"c102\"]\ndef service_load():\n    return repository_load()\ndef api_route():\n    return service_load()\nprint(api_route())",
+    "question_type": "order_choice",
+    "question": "`api_route()`가 호출된 뒤 데이터가 반환되기까지 가장 알맞은 순서는?",
     "choices": [
-      "모든 코드를 한 파일에 몰아넣는다",
-      "DB를 항상 삭제한다",
-      "Git 커밋을 자동으로 없앤다",
-      "역할이 다른 코드를 층으로 나누어 흐름을 읽기 쉽게 만든다"
+      "api_route → service_load → repository_load → 다시 위로 반환",
+      "repository_load → api_route → service_load → 종료",
+      "api_route → print → repository_load → service_load",
+      "service_load → repository_load → api_route를 건너뜀"
     ],
-    "answer": "역할이 다른 코드를 층으로 나누어 흐름을 읽기 쉽게 만든다",
-    "explanation": "layer architecture는 UI, HTTP 처리, 업무 규칙, 저장소 접근처럼 서로 다른 책임을 구분한다. 각 층의 공개 interface와 의존 방향을 정하고, 위층이 아래층의 세부 구현을 건너뛰어 직접 만지지 않게 해야 효과가 있다. 층을 많이 만드는 것 자체가 이해도나 품질을 자동으로 높이지는 않는다.",
+    "answer": "api_route → service_load → repository_load → 다시 위로 반환",
+    "explanation": "1) print가 api_route를 호출한다. 2) api_route의 return 표현식이 service_load를 호출한다. 3) service_load가 repository_load를 호출한다. 4) repository의 리스트가 service와 api_route를 거쳐 print로 돌아온다.",
     "side_card_ids": [],
-    "project_context": "학습앱은 PWA 화면에서 API나 JSON 데이터로 이어지는 흐름으로 읽을 수 있다."
+    "project_context": "API Route → Service → Repository처럼 역할을 분리한 백엔드 코드를 읽을 때 호출과 반환 방향을 추적하는 데 쓰입니다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "return_statement",
+    "reading_goal_internal": "`return service_load()`에서 하위 레이어 호출이 먼저 평가되고 결과가 상위 레이어로 전달되는 순서를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "return 문은 뒤 표현식을 먼저 평가한 뒤 그 결과를 현재 함수의 호출자에게 돌려줍니다.",
+      "how_to_read": "`return service_load()`를 보면 service_load 호출이 끝나야 api_route가 그 반환값을 다시 돌려줄 수 있다고 읽습니다.",
+      "key_point": "레이어 아키텍처에서는 상위 레이어가 하위 레이어 기능을 호출하고 결과를 다시 상위로 전달하는 흐름이 자주 나타납니다.",
+      "common_mistake": "return을 만나는 즉시 service_load를 호출하지 않고 종료한다고 생각하면 안 됩니다. return 뒤 표현식이 먼저 평가됩니다."
+    },
+    "teaching_example": {
+      "code": "def storage():\n    return {\"ok\": True}\ndef service():\n    return storage()\nprint(service())",
+      "walkthrough": "service의 return 표현식이 storage를 호출하고, storage가 만든 dict를 service가 호출자에게 그대로 반환합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) print가 api_route를 호출한다. 2) api_route의 return 표현식이 service_load를 호출한다. 3) service_load가 repository_load를 호출한다. 4) repository의 리스트가 service와 api_route를 거쳐 print로 돌아온다.",
+      "why_correct": "레이어 아키텍처에서는 상위 레이어가 하위 레이어 기능을 호출하고 결과를 다시 상위로 전달하는 흐름이 자주 나타납니다.",
+      "common_wrong_choice": {
+        "choice": "api_route → print → repository_load → service_load",
+        "why_wrong": "print는 api_route의 반환값이 준비된 다음에야 출력할 수 있습니다.",
+        "misread_step": "return 표현식 내부 호출의 완료가 먼저라는 점을 추적한다."
+      },
+      "takeaway": "레이어 호출은 **상위에서 하위로 호출**, 반환값은 **하위에서 상위로 전달**된다고 읽는다."
+    },
+    "target_statement": "return service_load()",
+    "focus_span": "return service_load()",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "layer architecture",
+      "API route",
+      "service",
+      "repository",
+      "data access"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY41_L06_request_flow_001",
     "level": 6,
-    "title": "request flow 읽기",
+    "title": "요청 처리 함수의 반환값을 response에 저장하는 대입 읽기",
     "concepts": [
-      "request_flow",
-      "api_route",
-      "service"
+      "assignment",
+      "call",
+      "subscription"
     ],
-    "reading_goal": "사용자 행동이 어떤 코드 흐름을 따라 처리되는지 읽는다.",
-    "code": "click button\n  -> fetch('/api/cards')\n  -> route handler\n  -> service.loadCards()\n  -> return JSON",
-    "question_type": "meaning_choice",
-    "question": "request flow를 읽는다는 것은 무엇에 가까운가?",
+    "reading_goal": "대입문 오른쪽의 route 호출이 service 호출을 거쳐 응답 dict를 만든 뒤 response에 저장되는 request flow를 읽는다.",
+    "code": "def service_load_cards():\n    return [\"c101\", \"c102\"]\n\ndef route_handler(path):\n    cards = service_load_cards()\n    return {\"path\": path, \"cards\": len(cards)}\n\nrequest_path = \"/api/cards\"\nresponse = route_handler(request_path)\nprint(response[\"cards\"])",
+    "question_type": "flow",
+    "question": "`response = route_handler(request_path)`를 읽을 때 가장 먼저 확인해야 할 것은?",
     "choices": [
-      "화면 색상만 고르는 것",
-      "파일명을 무작위로 바꾸는 것",
-      "브라우저 캐시를 항상 지우는 것",
-      "사용자 요청이 어떤 함수와 데이터를 거쳐 응답되는지 따라가는 것"
+      "오른쪽 route_handler 호출이 어떤 값을 반환하는지",
+      "response라는 이름의 글자 수",
+      "print가 먼저 무엇을 출력하는지",
+      "request_path가 자동으로 JSON인지"
     ],
-    "answer": "사용자 요청이 어떤 함수와 데이터를 거쳐 응답되는지 따라가는 것",
-    "explanation": "요청 흐름을 알면 버그가 화면 문제인지, API 문제인지, 저장소 문제인지 좁혀갈 수 있다. request flow는 사용자의 요청이 화면, API, 서비스, 저장소를 거쳐 응답으로 돌아오는 흐름이다. 각 단계에서 입력과 출력이 어떻게 바뀌는지 확인해야 한다.",
+    "answer": "오른쪽 route_handler 호출이 어떤 값을 반환하는지",
+    "explanation": "1) request_path에 /api/cards가 저장된다. 2) 오른쪽 route_handler(request_path)가 호출된다. 3) route_handler 안에서 service_load_cards가 먼저 실행돼 카드 목록을 반환한다. 4) route가 응답 dict를 반환하고 그 dict가 response에 저장된 뒤 cards 값 2가 출력된다.",
     "side_card_ids": [
       "AI_architecture_001"
     ],
-    "project_context": "카드가 안 뜰 때 index.html, app.js, lesson JSON, 서버 로그를 순서대로 확인하는 방식과 연결된다."
+    "project_context": "route handler 결과를 response 변수에 받아 후속 직렬화·상태코드 처리로 넘기는 API 코드와 연결됩니다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "assignment",
+    "reading_goal_internal": "대입문 오른쪽의 route 호출이 service 호출을 거쳐 응답 dict를 만든 뒤 response에 저장되는 request flow를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "대입문은 오른쪽 표현식을 먼저 평가한 뒤 그 결과를 왼쪽 이름에 연결합니다.",
+      "how_to_read": "request_path의 현재 값을 확인하고 route_handler 호출 결과를 구한 다음, 그 반환값이 response라는 이름에 저장된다고 읽습니다.",
+      "key_point": "request flow에서는 **route가 service를 호출하고**, 최종 반환값이 response 변수로 이어지는 연결을 단계별로 추적해야 합니다.",
+      "common_mistake": "대입문을 왼쪽부터 실행한다고 생각하면 안 됩니다. 저장할 값은 오른쪽에서 먼저 계산됩니다."
+    },
+    "teaching_example": {
+      "code": "def service_status():\n    return {\"ok\": True}\n\ndef route_handler(path):\n    result = service_status()\n    return {\"path\": path, **result}\n\nresponse = route_handler(\"/health\")\nprint(response[\"ok\"])",
+      "walkthrough": "route_handler 안에서 service_status가 먼저 결과를 만들고, route가 path와 서비스 결과를 합쳐 반환한 뒤 그 반환값이 response에 저장됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) request_path에 /api/cards가 저장된다. 2) 오른쪽 route_handler(request_path)가 호출된다. 3) route_handler 안에서 service_load_cards가 먼저 실행돼 카드 목록을 반환한다. 4) route가 응답 dict를 반환하고 그 dict가 response에 저장된 뒤 cards 값 2가 출력된다.",
+      "why_correct": "request flow에서는 **route가 service를 호출하고**, 최종 반환값이 response 변수로 이어지는 연결을 단계별로 추적해야 합니다.",
+      "common_wrong_choice": {
+        "choice": "print가 먼저 무엇을 출력하는지",
+        "why_wrong": "print는 response 대입이 완료된 다음 줄에 실행됩니다.",
+        "misread_step": "대입문에서는 RHS 평가가 LHS 저장보다 먼저라는 순서를 지킨다."
+      },
+      "takeaway": "요청 흐름의 대입은 **요청 값 → route 호출 → service 호출 → route 반환 → response 저장** 순서로 추적한다."
+    },
+    "target_statement": "response = route_handler(request_path)",
+    "focus_span": "response = route_handler(request_path)",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "request flow",
+      "route handler",
+      "service",
+      "response"
+    ],
+    "pedagogical_intent": "trace_state"
   },
   {
     "id": "PY41_L07_controller_service_repository_001",
     "level": 7,
-    "title": "controller service repository 읽기",
+    "title": "계층별 역할 표에서 repository 역할 읽기",
     "concepts": [
-      "controller",
-      "service",
+      "subscription",
+      "assignment"
+    ],
+    "reading_goal": "계층 역할을 담은 dict에서 repository key의 값을 조회하는 문법을 읽는다.",
+    "code": "layers = {\n    \"controller\": \"HTTP 요청과 응답 처리\",\n    \"service\": \"기능 규칙과 흐름 조립\",\n    \"repository\": \"DB나 파일 저장소 접근\",\n}\nrole = layers[\"repository\"]\nprint(role)",
+    "question_type": "meaning_choice",
+    "question": "`layers[\"repository\"]`가 꺼내는 값은 무엇인가?",
+    "choices": [
+      "HTTP 요청과 응답 처리",
+      "기능 규칙과 흐름 조립",
+      "DB나 파일 저장소 접근",
       "repository"
     ],
-    "reading_goal": "controller, service, repository의 역할 차이를 구분한다.",
-    "code": "controller: HTTP 요청/응답 처리\nservice: 실제 규칙과 흐름 처리\nrepository: DB/파일 저장소 접근",
-    "question_type": "meaning_choice",
-    "question": "repository의 역할에 가장 가까운 것은?",
-    "choices": [
-      "버튼 색상을 정한다",
-      "사용자에게 팝업만 띄운다",
-      "GitHub 계정을 만든다",
-      "DB나 파일 같은 저장소와 직접 대화한다"
-    ],
-    "answer": "DB나 파일 같은 저장소와 직접 대화한다",
-    "explanation": "controller는 HTTP 입력을 해석하고 응답으로 변환하며, service는 업무 흐름을 조립하고, repository는 DB나 파일 접근을 추상화한다. repository 구현은 저장소와 직접 대화하지만 service는 그 interface에 의존해 구체적인 SQL·파일 형식을 몰라도 되게 할 수 있다. 경계와 오류 변환 규칙을 일관되게 지켜야 한다.",
+    "answer": "DB나 파일 저장소 접근",
+    "explanation": "layers에는 세 key가 있다. `repository` key의 값은 `DB나 파일 저장소 접근`이다. 대괄호 조회 결과가 role에 저장된다. 딕셔너리에서 repository key에 연결된 값이 그 설명 문자열이기 때문입니다. 헷갈리기 쉬운 오답: repository repository는 조회에 사용한 key 이름이고, 반환되는 것은 key에 연결된 value입니다. 오독 지점: dict key와 value를 구분해야 합니다. 역할표를 dict로 표현한 코드에서는 key를 보고 어떤 역할 설명이 연결되어 있는지 조회합니다.",
     "side_card_ids": [
       "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
     ],
-    "project_context": "KG/LoRA 파이프라인에서도 chunk 파일 읽기, 결과 저장, 상태 조회를 repository처럼 분리할 수 있다."
+    "project_context": "학습앱이나 KG 파이프라인에서 저장소 접근 책임을 repository 계층으로 분리하는 설계 맥락이다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "subscription",
+    "reading_goal_internal": "계층 역할을 담은 dict에서 repository key의 값을 조회하는 문법을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "딕셔너리의 `obj[key]`는 key에 연결된 값을 꺼냅니다.",
+      "how_to_read": "먼저 layers가 어떤 key를 가진 표인지 보고, `repository` key에 저장된 설명을 찾습니다.",
+      "key_point": "controller/service/repository는 설계 개념이고, Python 초점은 그 역할표를 dict key로 조회하는 문법입니다.",
+      "common_mistake": "repository라는 key 이름 자체가 출력된다고 생각하기 쉽습니다. 실제 결과는 그 key에 연결된 설명 문자열입니다."
+    },
+    "teaching_example": {
+      "code": "roles = {\"reader\": \"파일 읽기\", \"writer\": \"파일 저장\"}\nrole = roles[\"writer\"]\nprint(role)",
+      "walkthrough": "writer key에 연결된 `파일 저장` 문자열을 꺼내 출력합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "layers에는 세 key가 있다. `repository` key의 값은 `DB나 파일 저장소 접근`이다. 대괄호 조회 결과가 role에 저장된다.",
+      "why_correct": "딕셔너리에서 repository key에 연결된 값이 그 설명 문자열이기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "repository",
+        "why_wrong": "repository는 조회에 사용한 key 이름이고, 반환되는 것은 key에 연결된 value입니다.",
+        "misread_step": "dict key와 value를 구분해야 합니다."
+      },
+      "takeaway": "역할표를 dict로 표현한 코드에서는 key를 보고 어떤 역할 설명이 연결되어 있는지 조회합니다."
+    },
+    "target_statement": "role = layers[\"repository\"]",
+    "focus_span": "layers[\"repository\"]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "controller",
+      "service",
+      "repository",
+      "layered_architecture"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY41_L07_service_layer_001",
     "level": 7,
-    "title": "service layer 읽기",
+    "title": "service 함수가 조립한 결과를 return하기",
     "concepts": [
-      "def",
-      "function",
-      "return",
-      "service_layer",
-      "business_logic",
-      "orchestration"
+      "return_statement",
+      "call",
+      "assignment"
     ],
-    "reading_goal": "service layer가 여러 작업을 묶어 실제 기능 흐름을 만든다는 점을 이해한다.",
+    "reading_goal": "여러 호출로 준비한 값을 마지막 함수 호출에 넘기고 그 결과를 return하는 순서를 읽는다.",
     "code": "def recommend_today_cards(user_id, repo):\n    progress = repo.load_progress(user_id)\n    cards = repo.load_cards()\n    return select_cards(cards, progress)",
-    "question_type": "meaning_choice",
-    "question": "위 코드에서 service layer가 맡는 역할은?",
+    "question_type": "flow",
+    "question": "마지막 줄에서 호출한 곳으로 돌아가는 값은 무엇인가?",
     "choices": [
-      "HTML 태그만 만든다",
-      "DB 파일을 직접 삭제한다",
-      "Python 설치 경로를 바꾼다",
-      "progress와 cards를 가져와 추천 흐름을 조립한다"
+      "repo 객체 자체",
+      "cards 변수만",
+      "progress 변수만",
+      "select_cards(cards, progress)의 결과"
     ],
-    "answer": "progress와 cards를 가져와 추천 흐름을 조립한다",
-    "explanation": "service 함수는 주입받은 repo에서 progress와 cards를 읽고 select_cards라는 추천 규칙에 전달한다. HTTP 응답이나 구체적인 SQL을 직접 처리하지 않아 호출 계층과 저장 구현에서 분리된다. 권한 검사와 transaction 경계를 어느 층에서 맡을지도 명시해야 한다.",
+    "answer": "select_cards(cards, progress)의 결과",
+    "explanation": "progress를 읽고 cards를 읽는다. 그 두 값으로 `select_cards(cards, progress)`를 호출한다. return은 그 호출 결과를 함수 밖으로 돌려준다. return 오른쪽 전체 표현식이 먼저 평가되고 그 결과가 반환되기 때문입니다. 헷갈리기 쉬운 오답: cards 변수만 cards는 select_cards에 전달되는 인자 중 하나일 뿐, return 대상은 전체 호출 결과입니다. 오독 지점: return 오른쪽 표현식 전체를 한 단위로 읽어야 합니다. `return 함수호출(...)`은 함수 호출 결과를 돌려주는 문장입니다.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN"
     ],
-    "project_context": "학습카드 추천, 복습 카드 선택, 진도 저장 같은 기능은 service layer로 묶기 좋다."
+    "project_context": "학습카드 추천처럼 여러 저장소 결과를 모아 하나의 기능 흐름으로 조립하는 service layer 맥락이다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "return_statement",
+    "reading_goal_internal": "여러 호출로 준비한 값을 마지막 함수 호출에 넘기고 그 결과를 return하는 순서를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`return 값`은 함수 실행을 끝내면서 그 값을 호출한 곳으로 돌려줍니다.",
+      "how_to_read": "return 오른쪽이 함수 호출이라면, 먼저 그 호출을 평가해 결과를 만든 뒤 그 결과를 밖으로 돌려준다고 읽습니다.",
+      "key_point": "service layer라는 설계 맥락과 Python 문법을 분리하면, 핵심은 앞에서 준비한 값들이 마지막 호출의 인자가 되고 그 결과가 return된다는 것입니다.",
+      "common_mistake": "`return select_cards(...)`가 함수 이름 자체를 돌려준다고 읽기 쉽습니다. 괄호가 있으므로 select_cards를 호출한 결과를 돌려줍니다."
+    },
+    "teaching_example": {
+      "code": "def build_report(repo):\n    rows = repo.load_rows()\n    options = repo.load_options()\n    return make_report(rows, options)",
+      "walkthrough": "두 값을 먼저 불러온 뒤 make_report를 호출하고, 그 호출 결과를 return합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "progress를 읽고 cards를 읽는다. 그 두 값으로 `select_cards(cards, progress)`를 호출한다. return은 그 호출 결과를 함수 밖으로 돌려준다.",
+      "why_correct": "return 오른쪽 전체 표현식이 먼저 평가되고 그 결과가 반환되기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "cards 변수만",
+        "why_wrong": "cards는 select_cards에 전달되는 인자 중 하나일 뿐, return 대상은 전체 호출 결과입니다.",
+        "misread_step": "return 오른쪽 표현식 전체를 한 단위로 읽어야 합니다."
+      },
+      "takeaway": "`return 함수호출(...)`은 함수 호출 결과를 돌려주는 문장입니다."
+    },
+    "target_statement": "return select_cards(cards, progress)",
+    "focus_span": "return select_cards(cards, progress)",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "service_layer",
+      "repository",
+      "orchestration",
+      "business_logic"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY41_L07_domain_model_001",
     "level": 7,
-    "title": "domain model 읽기",
+    "title": "핵심 Card 데이터를 dict 하나로 묶기",
     "concepts": [
+      "literal",
+      "assignment"
+    ],
+    "reading_goal": "관련된 여러 필드를 dict literal 하나로 묶어 하나의 도메인 데이터를 표현하는 구조를 읽는다.",
+    "code": "card = {\"id\": \"c1\", \"title\": \"반복문\", \"answer\": \"3\"}\nprint(card[\"title\"])",
+    "question_type": "meaning_choice",
+    "question": "첫 줄의 dict가 한 객체로 묶어 표현하는 것은 무엇인가?",
+    "choices": [
+      "카드의 id·title·answer 정보",
+      "세 개의 독립된 함수",
+      "파일 경로 목록",
+      "예외 처리 순서"
+    ],
+    "answer": "카드의 id·title·answer 정보",
+    "explanation": "dict 안에는 `id`, `title`, `answer` key가 있다. 각각 카드 식별자, 제목, 정답 값을 가진다. 전체 dict가 card 변수 하나에 저장된다. 관련된 카드 필드가 하나의 dict 값으로 묶여 있기 때문입니다. 헷갈리기 쉬운 오답: 세 개의 독립된 함수 코드에는 함수 정의가 없고 세 항목은 모두 dict의 key-value 쌍입니다. 오독 지점: 중괄호가 dict literal인지 먼저 확인해야 합니다. 관련 필드를 하나의 dict로 묶으면 하나의 도메인 대상을 데이터 구조로 표현할 수 있습니다.",
+    "side_card_ids": [
+      "PYV102_A7_ARCHITECTURE_DESIGN"
+    ],
+    "project_context": "학습앱의 핵심 개념인 Card를 여러 관련 필드가 묶인 데이터 구조로 표현하는 domain model 맥락이다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "literal",
+    "reading_goal_internal": "관련된 여러 필드를 dict literal 하나로 묶어 하나의 도메인 데이터를 표현하는 구조를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "딕셔너리 리터럴은 여러 key-value 쌍을 한 값으로 묶습니다.",
+      "how_to_read": "중괄호 안의 각 key와 value를 하나씩 짝지어 보고, 전체 묶음이 어떤 대상을 표현하는지 확인합니다.",
+      "key_point": "domain model은 설계 개념이고, Python에서는 dict나 class 같은 구조로 표현할 수 있습니다. 이 카드의 문법 초점은 dict literal입니다.",
+      "common_mistake": "필드 이름을 서로 독립된 변수로 읽기 쉽습니다. 여기서는 모두 같은 card 딕셔너리에 들어 있습니다."
+    },
+    "teaching_example": {
+      "code": "user = {\"id\": \"u1\", \"name\": \"Mina\", \"active\": True}\nprint(user[\"name\"])",
+      "walkthrough": "id, name, active가 하나의 user dict에 묶여 있고 name 값 `Mina`가 출력됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "dict 안에는 `id`, `title`, `answer` key가 있다. 각각 카드 식별자, 제목, 정답 값을 가진다. 전체 dict가 card 변수 하나에 저장된다.",
+      "why_correct": "관련된 카드 필드가 하나의 dict 값으로 묶여 있기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "세 개의 독립된 함수",
+        "why_wrong": "코드에는 함수 정의가 없고 세 항목은 모두 dict의 key-value 쌍입니다.",
+        "misread_step": "중괄호가 dict literal인지 먼저 확인해야 합니다."
+      },
+      "takeaway": "관련 필드를 하나의 dict로 묶으면 하나의 도메인 대상을 데이터 구조로 표현할 수 있습니다."
+    },
+    "target_statement": "card = {\"id\": \"c1\", \"title\": \"반복문\", \"answer\": \"3\"}",
+    "focus_span": "{\"id\": \"c1\", \"title\": \"반복문\", \"answer\": \"3\"}",
+    "focus_mode": "subexpression",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
       "domain_model",
       "card",
       "business_object"
     ],
-    "reading_goal": "프로젝트에서 중요한 개념을 코드 객체로 표현하는 domain model을 이해한다.",
-    "code": "Card\n  id\n  title\n  question\n  choices\n  answer\n  concepts",
-    "question_type": "meaning_choice",
-    "question": "이 프로젝트에서 Card가 domain model에 가까운 이유는?",
-    "choices": [
-      "단순히 CSS 색상 이름이기 때문이다",
-      "Git 브랜치 이름이기 때문이다",
-      "서버 포트 번호이기 때문이다",
-      "학습앱의 핵심 개념을 데이터 구조로 표현하기 때문이다"
-    ],
-    "answer": "학습앱의 핵심 개념을 데이터 구조로 표현하기 때문이다",
-    "explanation": "domain model은 앱이 해결하는 문제 영역의 개념, 관계, 규칙을 코드로 표현한다. Card의 id, question, choices, answer는 학습 앱의 핵심 개념을 나타내므로 이 구조는 domain model의 일부로 볼 수 있다. 단순 필드 목록만으로 모든 불변조건이 보장되지는 않으므로 정답 포함 같은 규칙도 모델이나 검증 계층에 명시한다.",
-    "side_card_ids": [
-      "PYV102_A7_ARCHITECTURE_DESIGN"
-    ],
-    "project_context": "KG 쪽에서는 Node, Edge, Evidence, Chunk 같은 것이 domain model에 가깝다."
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY41_L08_dto_001",
     "level": 8,
-    "title": "DTO 읽기",
+    "title": "dict comprehension으로 외부 응답 필드만 고르기",
     "concepts": [
-      "DTO",
-      "data_transfer_object",
-      "api_response"
+      "dict_comprehension",
+      "subscription",
+      "assignment"
     ],
-    "reading_goal": "DTO가 내부 객체와 외부 응답 사이의 전달용 구조라는 점을 이해한다.",
-    "code": "internal Card object\n  -> CardResponseDTO\n  -> JSON response",
+    "reading_goal": "dict comprehension이 반복할 key 목록을 따라 새 key-value dict를 만드는 과정을 DTO 필드 선택 맥락에서 읽는다.",
+    "code": "card = {\"id\": \"PY1\", \"title\": \"Loops\", \"internal_score\": 0.9}\nresponse = {key: card[key] for key in (\"id\", \"title\")}",
     "question_type": "meaning_choice",
-    "question": "DTO를 쓰는 이유에 가장 가까운 것은?",
+    "question": "comprehension이 만든 `response`에 포함되는 key는?",
     "choices": [
-      "모든 내부 필드를 무조건 노출하기 위해",
-      "함수를 실행하지 않기 위해",
-      "파일 확장자를 숨기기 위해",
-      "외부로 보내는 데이터 모양을 안정적으로 정하기 위해"
+      "id와 title",
+      "id와 internal_score",
+      "세 key 모두",
+      "internal_score 하나만"
     ],
-    "answer": "외부로 보내는 데이터 모양을 안정적으로 정하기 위해",
-    "explanation": "DTO는 계층이나 프로세스 경계를 넘어 전달할 데이터 모양을 명시한다. CardResponseDTO가 필요한 필드만 선택하고 validation·serialization 규칙을 가지면 내부 Card 변경이 곧바로 API 노출 변경이 되는 것을 줄일 수 있다. 외부 형식의 안정성은 DTO 이름만이 아니라 versioning과 호환성 정책으로 유지한다.",
+    "answer": "id와 title",
+    "explanation": "`for key in (\"id\", \"title\")`가 두 key만 순회합니다. 첫 반복은 `\"id\": card[\"id\"]`, 둘째 반복은 `\"title\": card[\"title\"]`을 만듭니다. `internal_score`는 반복 목록에 없어서 결과에 들어가지 않습니다. dict comprehension의 출력 항목은 iterable에서 실제 순회한 값마다 하나씩 만들어지기 때문입니다. 헷갈리기 쉬운 오답: 세 key 모두 원본 card에 세 key가 있다는 사실만으로 전부 복사되지 않습니다. 반복 대상 tuple에는 두 key만 있습니다. 오독 지점: 원본 컨테이너의 전체 내용과 comprehension의 실제 반복 범위를 구분하지 않은 경우입니다. comprehension은 **for가 실제로 순회하는 범위만** 새 자료구조에 반영합니다.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN"
     ],
-    "project_context": "학습앱 API가 나중에 생기면 Card 내부 데이터와 화면 응답 DTO를 분리하는 것이 안전하다."
+    "project_context": "내부 객체의 모든 필드를 그대로 노출하지 않고 API 응답 DTO에 필요한 항목만 선택하는 변환 코드와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "dict_comprehension",
+    "reading_goal_internal": "dict comprehension이 반복할 key 목록을 따라 새 key-value dict를 만드는 과정을 DTO 필드 선택 맥락에서 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`{key_expr: value_expr for item in iterable}`은 반복하면서 key-value 쌍을 만들어 새 dict를 구성하는 dict comprehension입니다.",
+      "how_to_read": "먼저 `for key in ...`에서 반복할 key들을 확인하고, 각 반복에서 왼쪽 `key: card[key]`가 어떤 한 쌍을 만드는지 봅니다.",
+      "key_point": "원본 `card` dict를 그대로 복사하는 것이 아니라 반복 목록에 적힌 key만 새 dict에 들어갑니다.",
+      "common_mistake": "원본의 모든 key가 자동으로 유지된다고 생각하기 쉽습니다. comprehension은 `for`가 순회하는 key만 결과에 만듭니다."
+    },
+    "teaching_example": {
+      "code": "user = {\"id\": 7, \"name\": \"Kim\", \"secret\": \"x\"}\npublic = {key: user[key] for key in (\"id\", \"name\")}",
+      "walkthrough": "반복 목록이 `id`, `name`뿐이므로 새 dict에는 두 key만 들어가고 `secret`은 포함되지 않습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`for key in (\"id\", \"title\")`가 두 key만 순회합니다. 첫 반복은 `\"id\": card[\"id\"]`, 둘째 반복은 `\"title\": card[\"title\"]`을 만듭니다. `internal_score`는 반복 목록에 없어서 결과에 들어가지 않습니다.",
+      "why_correct": "dict comprehension의 출력 항목은 iterable에서 실제 순회한 값마다 하나씩 만들어지기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "세 key 모두",
+        "why_wrong": "원본 card에 세 key가 있다는 사실만으로 전부 복사되지 않습니다. 반복 대상 tuple에는 두 key만 있습니다.",
+        "misread_step": "원본 컨테이너의 전체 내용과 comprehension의 실제 반복 범위를 구분하지 않은 경우입니다."
+      },
+      "takeaway": "comprehension은 **for가 실제로 순회하는 범위만** 새 자료구조에 반영합니다."
+    },
+    "target_statement": "response = {key: card[key] for key in (\"id\", \"title\")}",
+    "focus_span": "{key: card[key] for key in (\"id\", \"title\")}",
+    "focus_mode": "subexpression",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "DTO",
+      "API response",
+      "field projection",
+      "dict comprehension"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY41_L08_adapter_001",
     "level": 8,
-    "title": "adapter 읽기",
+    "title": "adapter 메서드에서 외부 호출 결과를 return하기",
     "concepts": [
-      "def",
-      "function",
-      "return",
-      "class",
-      "adapter",
-      "wrapper",
-      "external_service"
+      "return_statement",
+      "call",
+      "function_definition",
+      "class_definition"
     ],
-    "reading_goal": "외부 도구나 API를 내부 코드에 맞게 감싸는 adapter 개념을 읽는다.",
+    "reading_goal": "return 문의 오른쪽 호출을 먼저 평가하고 그 결과가 메서드의 호출자에게 전달되는 순서를 adapter 맥락에서 읽는다.",
     "code": "class QwenAdapter:\n    def generate(self, prompt):\n        return call_qwen_api(prompt)",
     "question_type": "meaning_choice",
-    "question": "adapter의 역할은?",
+    "question": "이 return 문이 호출자에게 돌려주는 값은 무엇인가?",
     "choices": [
-      "모든 테스트를 삭제한다",
-      "화면을 강제로 새로고침한다",
-      "JSON을 이미지로 바꾼다",
-      "외부 API나 도구의 복잡한 사용법을 내부에서 쓰기 좋은 모양으로 감싼다"
+      "call_qwen_api(prompt)의 반환값",
+      "문자열 prompt 자체",
+      "QwenAdapter 클래스 객체",
+      "항상 None"
     ],
-    "answer": "외부 API나 도구의 복잡한 사용법을 내부에서 쓰기 좋은 모양으로 감싼다",
-    "explanation": "adapter는 외부 Qwen 호출 방식을 앱이 기대하는 generate(prompt) interface로 변환한다. 효과적인 adapter라면 입력·출력 형식뿐 아니라 timeout, 외부 예외, rate limit 같은 공급자 차이도 내부의 일관된 결과나 오류로 바꾼다. 외부 서비스 교체가 쉬워지는 정도는 호출이 이 경계를 실제로 지키는지에 달려 있다.",
+    "answer": "call_qwen_api(prompt)의 반환값",
+    "explanation": "먼저 `call_qwen_api(prompt)`가 실행되어 어떤 결과를 반환합니다. 바깥의 `return`은 바로 그 결과를 `generate(...)`를 부른 코드로 돌려주고 현재 메서드를 종료합니다. `return`의 반환값은 오른쪽 표현식을 실제로 평가한 결과이기 때문입니다. 헷갈리기 쉬운 오답: 문자열 prompt 자체 `prompt`는 외부 함수 호출의 입력 인자입니다. return에 직접 적힌 표현식은 `prompt`가 아니라 `call_qwen_api(prompt)` 전체입니다. 오독 지점: 함수 호출의 입력값과 그 호출이 반환하는 결과값을 같은 것으로 본 경우입니다. return 오른쪽에 호출이 있으면 **호출 결과를 먼저 구한 뒤 그 결과를 반환**합니다.",
     "side_card_ids": [
       "AI_lora_001"
     ],
-    "project_context": "Qwen, GPT, 검색 라우터, 임베딩 모델을 붙일 때 adapter 계층이 있으면 교체가 쉽다."
+    "project_context": "LLM·검색·임베딩 공급자를 adapter 뒤에 감쌀 때 메서드가 외부 호출 결과를 어떻게 반환하는지 추적하는 데 중요하다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "return_statement",
+    "reading_goal_internal": "return 문의 오른쪽 호출을 먼저 평가하고 그 결과가 메서드의 호출자에게 전달되는 순서를 adapter 맥락에서 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`return expression`은 오른쪽 표현식을 평가한 결과를 함수나 메서드를 호출한 곳으로 돌려주고 현재 호출을 끝내는 문장입니다.",
+      "how_to_read": "`return` 오른쪽에 함수 호출이 있으면 그 호출 결과를 먼저 얻은 뒤, 그 값을 바깥 호출자에게 반환한다고 읽습니다.",
+      "key_point": "`return call_qwen_api(prompt)`는 함수 이름을 반환하는 것이 아니라 **실제 호출 결과**를 반환합니다.",
+      "common_mistake": "`return` 뒤의 호출을 건너뛰고 `prompt`가 바로 반환된다고 생각하기 쉽습니다. 반환되는 것은 `call_qwen_api(prompt)`가 만든 결과입니다."
+    },
+    "teaching_example": {
+      "code": "class SearchAdapter:\n    def search(self, query):\n        return call_search_api(query)",
+      "walkthrough": "`call_search_api(query)`를 먼저 호출해 결과를 얻고, `return`이 그 결과를 `search(...)` 호출자에게 돌려줍니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "먼저 `call_qwen_api(prompt)`가 실행되어 어떤 결과를 반환합니다. 바깥의 `return`은 바로 그 결과를 `generate(...)`를 부른 코드로 돌려주고 현재 메서드를 종료합니다.",
+      "why_correct": "`return`의 반환값은 오른쪽 표현식을 실제로 평가한 결과이기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "문자열 prompt 자체",
+        "why_wrong": "`prompt`는 외부 함수 호출의 입력 인자입니다. return에 직접 적힌 표현식은 `prompt`가 아니라 `call_qwen_api(prompt)` 전체입니다.",
+        "misread_step": "함수 호출의 입력값과 그 호출이 반환하는 결과값을 같은 것으로 본 경우입니다."
+      },
+      "takeaway": "return 오른쪽에 호출이 있으면 **호출 결과를 먼저 구한 뒤 그 결과를 반환**합니다."
+    },
+    "target_statement": "return call_qwen_api(prompt)",
+    "focus_span": "return call_qwen_api(prompt)",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "adapter",
+      "external API",
+      "return value",
+      "provider abstraction"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY41_L08_interface_001",
     "level": 8,
-    "title": "interface 읽기",
+    "title": "class SearchEngine(Protocol)에서 base class 읽기",
     "concepts": [
-      "interface",
-      "contract",
-      "implementation"
+      "class_definition",
+      "function_definition",
+      "type_annotation"
     ],
-    "reading_goal": "interface가 실제 구현보다 먼저 정하는 약속이라는 점을 이해한다.",
-    "code": "SearchEngine interface:\n  search(query) -> results\n\nVectorSearch implements SearchEngine\nKeywordSearch implements SearchEngine",
+    "reading_goal": "`class Name(Base):` 헤더에서 새 클래스 이름과 괄호 안 base를 구분해 읽고 interface 계약 맥락과 연결한다.",
+    "code": "from typing import Protocol\n\nclass SearchEngine(Protocol):\n    def search(self, query: str) -> list[str]:\n        ...",
     "question_type": "meaning_choice",
-    "question": "interface의 핵심은?",
+    "question": "이 class 헤더에서 괄호 안 `Protocol`의 문법적 위치는?",
     "choices": [
-      "코드를 반드시 느리게 만든다",
-      "DB를 사용하지 못하게 한다",
-      "파일명을 한글로만 바꾼다",
-      "구현체가 달라도 같은 방식으로 호출할 수 있는 약속을 만든다"
+      "SearchEngine의 base class 위치",
+      "search 메서드의 반환값",
+      "query의 기본값",
+      "import 별칭"
     ],
-    "answer": "구현체가 달라도 같은 방식으로 호출할 수 있는 약속을 만든다",
-    "explanation": "interface는 search(query)가 받는 입력, 돌려주는 결과, 오류와 의미를 구현체들이 지켜야 한다는 계약이다. 같은 메서드 이름만 갖는 것으로 충분하지 않고 KeywordSearch와 VectorSearch가 호출자가 기대하는 결과 구조와 동작을 만족해야 교체할 수 있다.",
+    "answer": "SearchEngine의 base class 위치",
+    "explanation": "헤더는 `class SearchEngine(Protocol):`입니다. `class` 뒤 `SearchEngine`이 새로 정의하는 클래스 이름이고, 괄호 안 `Protocol`은 그 정의의 base 위치에 있습니다. Python의 `class Name(Base):` 문법에서 괄호 안 이름들은 새 클래스의 base class로 해석되기 때문입니다. 헷갈리기 쉬운 오답: search 메서드의 반환값 `search` 메서드의 반환 타입은 아래 `-> list[str]`에 적혀 있습니다. `Protocol`은 class 헤더의 괄호 안에 있습니다. 오독 지점: class 헤더와 그 아래 메서드 정의의 문법 위치를 섞어 읽은 경우입니다. class 헤더는 **새 클래스 이름 → 괄호 안 base → 콜론 아래 본문** 순서로 읽습니다.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN"
     ],
-    "project_context": "키워드 검색, 벡터 검색, GraphRAG 검색을 같은 search(query) 형태로 묶을 수 있다."
+    "project_context": "키워드 검색·벡터 검색·GraphRAG 검색이 같은 호출 계약을 따르게 설계할 때 Protocol 기반 interface 코드를 읽는 데 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "class_definition",
+    "reading_goal_internal": "`class Name(Base):` 헤더에서 새 클래스 이름과 괄호 안 base를 구분해 읽고 interface 계약 맥락과 연결한다.",
+    "concept_explanation": {
+      "what_it_is": "`class Child(Base):`는 `Child`라는 클래스를 정의하면서 괄호 안의 `Base`를 기반으로 삼는 class definition 문법입니다.",
+      "how_to_read": "`class` 다음 새 이름을 먼저 확인하고, 괄호 안 이름은 이 클래스가 기반으로 삼는 base로 읽은 뒤 콜론 아래 본문 범위를 봅니다.",
+      "key_point": "여기서 `Protocol`은 `SearchEngine`의 새 이름이 아니라 **괄호 안 base 위치**에 있습니다.",
+      "common_mistake": "`SearchEngine`과 `Protocol`을 두 개의 독립 클래스를 동시에 정의하는 것으로 읽기 쉽습니다. 새로 정의되는 이름은 `SearchEngine` 하나입니다."
+    },
+    "teaching_example": {
+      "code": "from typing import Protocol\n\nclass Storage(Protocol):\n    def save(self, item: str) -> None:\n        ...",
+      "walkthrough": "`Storage`를 새로 정의하고 괄호 안 `Protocol`을 base로 둡니다. 들여쓴 `save`가 본문에 포함됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "헤더는 `class SearchEngine(Protocol):`입니다. `class` 뒤 `SearchEngine`이 새로 정의하는 클래스 이름이고, 괄호 안 `Protocol`은 그 정의의 base 위치에 있습니다.",
+      "why_correct": "Python의 `class Name(Base):` 문법에서 괄호 안 이름들은 새 클래스의 base class로 해석되기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "search 메서드의 반환값",
+        "why_wrong": "`search` 메서드의 반환 타입은 아래 `-> list[str]`에 적혀 있습니다. `Protocol`은 class 헤더의 괄호 안에 있습니다.",
+        "misread_step": "class 헤더와 그 아래 메서드 정의의 문법 위치를 섞어 읽은 경우입니다."
+      },
+      "takeaway": "class 헤더는 **새 클래스 이름 → 괄호 안 base → 콜론 아래 본문** 순서로 읽습니다."
+    },
+    "target_statement": "class SearchEngine(Protocol):",
+    "focus_span": "class SearchEngine(Protocol):",
+    "focus_mode": "compound_header",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "interface",
+      "Protocol",
+      "search abstraction",
+      "polymorphism"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY41_L09_dependency_injection_001",
     "level": 9,
-    "title": "dependency injection 읽기",
+    "title": "테스트용 repo 객체를 함수에 주입해 recommender 만들기",
     "concepts": [
-      "def",
-      "function",
-      "return",
-      "dependency_injection",
-      "dependency",
-      "testability"
+      "call",
+      "assignment",
+      "class_definition",
+      "function_definition"
     ],
-    "reading_goal": "필요한 의존성을 함수나 객체 바깥에서 넣어주는 방식을 이해한다.",
-    "code": "def build_recommender(card_repo):\n    return Recommender(card_repo)\n\nrecommender = build_recommender(JsonCardRepo())",
-    "question_type": "meaning_choice",
-    "question": "dependency injection의 장점은?",
+    "reading_goal": "외부에서 만든 dependency 객체가 함수 argument로 전달되어 최종 객체 내부에 저장되는 흐름을 읽는다.",
+    "code": "class InMemoryRepo:\n    def __init__(self, cards):\n        self.cards = cards\n\nclass Recommender:\n    def __init__(self, card_repo):\n        self.card_repo = card_repo\n\ndef build_recommender(card_repo):\n    return Recommender(card_repo)\n\nrecommender = build_recommender(InMemoryRepo([\"c1\", \"c2\"]))",
+    "question_type": "multiple_choice",
+    "question": "`recommender.card_repo.cards`의 값은 무엇인가?",
     "choices": [
-      "함수가 항상 전역 변수만 쓰게 된다",
-      "JSON 검증을 불가능하게 만든다",
-      "Git push를 자동 취소한다",
-      "실제 저장소 대신 테스트용 저장소를 넣기 쉬워진다"
+      "[\"c1\", \"c2\"]",
+      "[]",
+      "InMemoryRepo",
+      "Recommender"
     ],
-    "answer": "실제 저장소 대신 테스트용 저장소를 넣기 쉬워진다",
-    "explanation": "dependency injection은 필요한 의존성을 함수나 객체 안에서 직접 만들지 않고 바깥에서 넣어 주는 방식이다. 교체와 테스트가 쉬워진다. 예를 들어 실제 DB 대신 fake repository를 넣으면 외부 환경 없이도 테스트할 수 있다.",
+    "answer": "[\"c1\", \"c2\"]",
+    "explanation": "먼저 `InMemoryRepo([\"c1\", \"c2\"])`가 만들어지고 그 객체가 build_recommender에 전달됩니다. Recommender는 같은 객체를 card_repo에 저장합니다. 함수 호출 시 전달한 dependency 객체가 그대로 생성자의 입력으로 이어지기 때문입니다. 헷갈리기 쉬운 오답: [] InMemoryRepo 생성 시 이미 c1, c2 두 항목을 전달했습니다. 오독 지점: 주입된 객체의 초기 상태를 확인하지 않은 경우입니다. DI 코드는 **dependency 생성 → 함수/생성자 전달 → 내부 보관** 흐름으로 읽습니다.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN"
     ],
-    "project_context": "실제 lesson JSON 대신 작은 샘플 repo를 넣어 추천 로직만 테스트할 수 있다."
+    "project_context": "실제 lesson JSON 저장소 대신 작은 메모리 repo를 넣어 추천 로직만 독립적으로 테스트하는 구조와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "외부에서 만든 dependency 객체가 함수 argument로 전달되어 최종 객체 내부에 저장되는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "함수 호출은 외부에서 만든 값을 argument로 전달해 함수 내부 로직에 사용할 수 있게 합니다.",
+      "how_to_read": "안쪽 객체 생성 결과를 먼저 계산하고, 그 객체가 바깥 함수의 어떤 parameter로 전달되는지 추적합니다.",
+      "key_point": "dependency injection의 설계 의미는 의존 객체를 함수 내부에서 고정 생성하지 않고 외부에서 전달한다는 데 있습니다.",
+      "common_mistake": "함수 이름만 보고 내부에서 JsonCardRepo가 자동 생성된다고 생각하기 쉽습니다. 실제 전달값은 괄호 안 InMemoryRepo 객체입니다."
+    },
+    "teaching_example": {
+      "code": "class Repo:\n    def __init__(self, items): self.items = items\n\nclass Service:\n    def __init__(self, repo): self.repo = repo\n\ndef build_service(repo):\n    return Service(repo)\n\nservice = build_service(Repo([1]))",
+      "walkthrough": "외부에서 만든 Repo 객체가 build_service에 전달되고 Service 내부 repo로 저장됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "먼저 `InMemoryRepo([\"c1\", \"c2\"])`가 만들어지고 그 객체가 build_recommender에 전달됩니다. Recommender는 같은 객체를 card_repo에 저장합니다.",
+      "why_correct": "함수 호출 시 전달한 dependency 객체가 그대로 생성자의 입력으로 이어지기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "[]",
+        "why_wrong": "InMemoryRepo 생성 시 이미 c1, c2 두 항목을 전달했습니다.",
+        "misread_step": "주입된 객체의 초기 상태를 확인하지 않은 경우입니다."
+      },
+      "takeaway": "DI 코드는 **dependency 생성 → 함수/생성자 전달 → 내부 보관** 흐름으로 읽습니다."
+    },
+    "target_statement": "recommender = build_recommender(InMemoryRepo([\"c1\", \"c2\"]))",
+    "focus_span": "build_recommender(InMemoryRepo([\"c1\", \"c2\"]))",
+    "focus_mode": "subexpression",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "dependency injection",
+      "repository",
+      "testability",
+      "constructor"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY41_L09_boundary_001",
     "level": 9,
-    "title": "boundary 읽기",
+    "title": "시스템 boundary를 dict literal로 구분해 읽기",
     "concepts": [
-      "boundary",
-      "module_boundary",
-      "api_boundary"
+      "literal",
+      "assignment"
     ],
-    "reading_goal": "코드와 코드 사이의 경계를 명확히 두는 이유를 이해한다.",
-    "code": "UI boundary: click, render\nAPI boundary: request, response\nStorage boundary: read, write",
-    "question_type": "meaning_choice",
-    "question": "boundary가 명확하면 좋은 점은?",
+    "reading_goal": "서로 다른 시스템 경계와 책임을 key/value 구조로 표현한 dict를 읽는다.",
+    "code": "boundaries = {\"ui\": [\"click\", \"render\"], \"api\": [\"request\", \"response\"], \"storage\": [\"read\", \"write\"]}",
+    "question_type": "multiple_choice",
+    "question": "`boundaries[\"api\"]`의 값은 무엇인가?",
     "choices": [
-      "모든 코드를 한 번에 고쳐야 한다",
-      "테스트 위치를 찾기 어려워진다",
-      "데이터 흐름이 사라진다",
-      "문제가 어느 경계 안쪽에서 생겼는지 좁히기 쉽다"
+      "[\"request\", \"response\"]",
+      "[\"click\", \"render\"]",
+      "[\"read\", \"write\"]",
+      "api"
     ],
-    "answer": "문제가 어느 경계 안쪽에서 생겼는지 좁히기 쉽다",
-    "explanation": "경계가 명확하면 UI 문제, API 문제, 저장소 문제를 분리해서 추적할 수 있다. Boundary는 책임이 나뉘는 경계다. 화면, 서버, DB, 외부 API 중 어디까지가 한 모듈의 책임인지 확인하면 수정 범위와 오류 위치를 좁히기 쉽다.",
+    "answer": "[\"request\", \"response\"]",
+    "explanation": "dict에서 `api` key를 찾으면 value가 `[\"request\", \"response\"]`입니다. dict literal에서 api key에 해당 list가 직접 연결되어 있기 때문입니다. 헷갈리기 쉬운 오답: [\"click\", \"render\"] 그 list는 ui key의 value입니다. 오독 지점: boundary key와 책임 list를 잘못 짝지은 경우입니다. boundary 표현은 **영역 key와 그 영역의 책임 value를 함께** 읽습니다.",
     "side_card_ids": [],
-    "project_context": "Qwen 응답 문제도 UI, API, 모델 호출, 프롬프트 경계를 나누어 봐야 원인을 찾기 쉽다."
+    "project_context": "UI, API, 모델 호출, 저장소처럼 문제를 경계별로 나눠 원인을 좁히는 디버깅 방식과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "literal",
+    "reading_goal_internal": "서로 다른 시스템 경계와 책임을 key/value 구조로 표현한 dict를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "dict literal은 이름이 있는 여러 범주를 key로 두고 각 범주의 데이터를 value로 연결할 수 있습니다.",
+      "how_to_read": "각 key가 어떤 boundary를 뜻하는지 확인하고 연결된 list를 함께 읽습니다.",
+      "key_point": "boundary를 나누면 문제 발생 위치를 UI, API, Storage 같은 영역으로 좁혀 생각하기 쉬워집니다.",
+      "common_mistake": "모든 list가 하나의 boundary에 속한다고 생각하기 쉽습니다. 각 list는 자신의 key와 짝을 이룹니다."
+    },
+    "teaching_example": {
+      "code": "layers = {\"input\": [\"parse\"], \"output\": [\"format\"]}",
+      "walkthrough": "input과 output이 각각 독립된 key이고 각 책임 list가 별도로 연결됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "dict에서 `api` key를 찾으면 value가 `[\"request\", \"response\"]`입니다.",
+      "why_correct": "dict literal에서 api key에 해당 list가 직접 연결되어 있기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "[\"click\", \"render\"]",
+        "why_wrong": "그 list는 ui key의 value입니다.",
+        "misread_step": "boundary key와 책임 list를 잘못 짝지은 경우입니다."
+      },
+      "takeaway": "boundary 표현은 **영역 key와 그 영역의 책임 value를 함께** 읽습니다."
+    },
+    "target_statement": "boundaries = {\"ui\": [\"click\", \"render\"], \"api\": [\"request\", \"response\"], \"storage\": [\"read\", \"write\"]}",
+    "focus_span": "{\"ui\": [\"click\", \"render\"], \"api\": [\"request\", \"response\"], \"storage\": [\"read\", \"write\"]}",
+    "focus_mode": "subexpression",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "boundary",
+      "UI",
+      "API",
+      "storage",
+      "debugging"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY41_L09_pure_function_side_effect_001",
     "level": 9,
-    "title": "pure function vs side effect 읽기",
+    "title": "채점 결과를 저장 상태에 쓰는 side effect 읽기",
     "concepts": [
-      "pure_function",
-      "side_effect",
-      "state"
+      "assignment",
+      "subscription",
+      "function_definition",
+      "literal"
     ],
-    "reading_goal": "계산만 하는 함수와 외부 상태를 바꾸는 함수를 구분한다.",
-    "code": "pure:\n  score = grade(answer, correct)\n\nside effect:\n  localStorage.setItem('progress', score)",
-    "question_type": "meaning_choice",
-    "question": "side effect에 가까운 것은?",
+    "reading_goal": "순수 계산 결과가 외부 storage dict에 대입되면서 상태 변화가 생기는 지점을 추적한다.",
+    "code": "def grade(answer, correct):\n    return 1 if answer == correct else 0\n\nstorage = {}\nscore = grade(\"B\", \"B\")\nstorage[\"progress\"] = score",
+    "question_type": "multiple_choice",
+    "question": "마지막 줄 실행 뒤 `storage`의 값은 무엇인가?",
     "choices": [
-      "두 숫자를 더한 결과를 반환한다",
-      "문자열 길이를 계산한다",
-      "리스트를 정렬한 새 결과만 반환한다",
-      "localStorage에 값을 저장한다"
+      "{\"progress\": 1}",
+      "{}",
+      "{\"progress\": 0}",
+      "1"
     ],
-    "answer": "localStorage에 값을 저장한다",
-    "explanation": "side effect는 파일, DB, 화면, 네트워크, localStorage처럼 함수 밖의 상태를 바꾸는 동작이다. pure function은 같은 입력에 항상 같은 출력을 내고 외부 상태를 바꾸지 않는다. side effect는 파일 저장, 로그, 네트워크 요청처럼 바깥에 영향을 남긴다. 따라서 정답은 ‘localStorage에 값을 저장한다’이다.",
+    "answer": "{\"progress\": 1}",
+    "explanation": "B와 B가 같아 grade는 1을 반환합니다. 이후 storage의 progress key에 1을 대입해 외부 상태를 변경합니다. subscription assignment가 dict에 실제 key/value를 기록하기 때문입니다. 헷갈리기 쉬운 오답: {} 마지막 대입문이 실행된 뒤 상태 변화를 반영하지 않은 값입니다. 오독 지점: pure 계산과 side effect 저장을 구분했지만 저장 자체를 누락한 경우입니다. side effect는 **외부 상태를 실제로 바꾸는 문장**을 찾아 읽습니다.",
     "side_card_ids": [
       "PYV160_A1_OBJECT_METHOD_CLASS_FLOW",
       "PYV160_A1_PWA_STATE_STORAGE_FLOW"
     ],
-    "project_context": "채점 계산은 pure function으로 두고, 진도 저장은 side effect로 분리하면 테스트가 쉬워진다."
+    "project_context": "채점 계산과 진도 저장을 분리해 테스트하기 쉬운 구조로 만드는 학습앱 설계와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "assignment",
+    "reading_goal_internal": "순수 계산 결과가 외부 storage dict에 대입되면서 상태 변화가 생기는 지점을 추적한다.",
+    "concept_explanation": {
+      "what_it_is": "`mapping[key] = value`는 외부 mapping 상태를 바꾸는 subscription assignment입니다.",
+      "how_to_read": "오른쪽 값을 먼저 계산한 뒤 왼쪽 mapping의 특정 key가 새 값으로 생성 또는 갱신된다고 읽습니다.",
+      "key_point": "pure function은 계산만 반환할 수 있고, 그 결과를 storage에 기록하는 대입은 별도의 상태 변경입니다.",
+      "common_mistake": "`grade()`를 호출한 순간 storage도 자동 변경된다고 생각하기 쉽습니다. 실제 side effect는 대입문에서 발생합니다."
+    },
+    "teaching_example": {
+      "code": "def add(a, b):\n    return a + b\n\ncache = {}\nvalue = add(2, 3)\ncache[\"sum\"] = value",
+      "walkthrough": "add는 5를 계산해 반환하고, cache 상태 변경은 마지막 대입에서 일어납니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "B와 B가 같아 grade는 1을 반환합니다. 이후 storage의 progress key에 1을 대입해 외부 상태를 변경합니다.",
+      "why_correct": "subscription assignment가 dict에 실제 key/value를 기록하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "{}",
+        "why_wrong": "마지막 대입문이 실행된 뒤 상태 변화를 반영하지 않은 값입니다.",
+        "misread_step": "pure 계산과 side effect 저장을 구분했지만 저장 자체를 누락한 경우입니다."
+      },
+      "takeaway": "side effect는 **외부 상태를 실제로 바꾸는 문장**을 찾아 읽습니다."
+    },
+    "target_statement": "storage[\"progress\"] = score",
+    "focus_span": "storage[\"progress\"] = score",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "pure function",
+      "side effect",
+      "state",
+      "progress"
+    ],
+    "pedagogical_intent": "trace_state"
   },
   {
     "id": "PY41_L09_separation_of_concerns_001",
     "level": 9,
-    "title": "separation of concerns 읽기",
+    "title": "분리된 관심사를 함수 참조 list로 읽기",
     "concepts": [
-      "separation_of_concerns",
-      "responsibility",
-      "architecture"
+      "literal",
+      "assignment",
+      "name_reference",
+      "function_definition"
     ],
-    "reading_goal": "서로 다른 관심사를 분리해 코드를 읽기 쉽게 만드는 원칙을 이해한다.",
-    "code": "bad:\n  fetch + select + render + save in one function\n\nbetter:\n  fetchCards()\n  selectCards()\n  renderCards()\n  saveProgress()",
-    "question_type": "meaning_choice",
-    "question": "separation of concerns의 의미는?",
+    "reading_goal": "서로 다른 책임을 가진 함수들이 독립 이름으로 존재하고 list에 참조로 묶이는 구조를 읽는다.",
+    "code": "def fetch_cards(): pass\ndef select_cards(): pass\ndef render_cards(): pass\ndef save_progress(): pass\n\nsteps = [fetch_cards, select_cards, render_cards, save_progress]",
+    "question_type": "multiple_choice",
+    "question": "`steps`에 저장되는 항목 수는 몇 개인가?",
     "choices": [
-      "함수 이름을 모두 x로 바꾼다",
-      "검증 코드를 없앤다",
-      "모든 기능을 CSS에 넣는다",
-      "데이터 가져오기, 선택, 화면 표시, 저장 같은 관심사를 나눈다"
+      "1개",
+      "2개",
+      "4개",
+      "0개"
     ],
-    "answer": "데이터 가져오기, 선택, 화면 표시, 저장 같은 관심사를 나눈다",
-    "explanation": "데이터 가져오기, 선택 규칙, 화면 렌더링, 진행 저장은 서로 다른 변경 이유를 가지므로 분리할 수 있다. 함수 이름을 네 개로 나눈 것만으로 경계가 생기는 것은 아니다. 입력·출력을 명시하고 숨은 공유 상태와 순환 의존을 줄여야 각 부분을 독립적으로 테스트하고 교체할 수 있다.",
+    "answer": "4개",
+    "explanation": "list 안에는 fetch_cards, select_cards, render_cards, save_progress 네 함수 참조가 있습니다. 각 함수 이름 하나가 list의 한 항목으로 저장되기 때문입니다. 헷갈리기 쉬운 오답: 1개 steps라는 변수 하나와 list 내부 항목 수를 혼동한 값입니다. 오독 지점: 컨테이너 변수와 컨테이너 안 요소 개수를 구분하지 않은 경우입니다. 관심사 분리는 **서로 다른 책임을 가진 함수가 독립적으로 존재하는지** 코드에서 확인합니다.",
     "side_card_ids": [
       "AI_architecture_001"
     ],
-    "project_context": "카드 로딩, 복습 선택, 화면 렌더링, progress 저장을 분리하는 방향과 연결된다."
+    "project_context": "카드 로딩, 복습 선택, 화면 렌더링, progress 저장을 서로 분리해 유지보수성을 높이는 구조와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "literal",
+    "reading_goal_internal": "서로 다른 책임을 가진 함수들이 독립 이름으로 존재하고 list에 참조로 묶이는 구조를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "list literal은 여러 값을 순서대로 한 컨테이너에 담습니다.",
+      "how_to_read": "각 항목이 함수 호출인지 함수 참조인지 구분하고, 함수 이름이 어떤 책임을 드러내는지 봅니다.",
+      "key_point": "fetch, select, render, save가 별도 함수로 나뉘어 있으면 각 관심사를 독립적으로 테스트하거나 수정하기 쉬워집니다.",
+      "common_mistake": "괄호가 없는데도 list를 만들 때 네 함수가 즉시 실행된다고 생각하기 쉽습니다. 여기서는 함수 객체 자체를 담습니다."
+    },
+    "teaching_example": {
+      "code": "def load(): pass\ndef transform(): pass\ndef save(): pass\nsteps = [load, transform, save]",
+      "walkthrough": "세 함수 이름에 괄호가 없으므로 함수 객체 세 개가 list에 저장됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "list 안에는 fetch_cards, select_cards, render_cards, save_progress 네 함수 참조가 있습니다.",
+      "why_correct": "각 함수 이름 하나가 list의 한 항목으로 저장되기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "1개",
+        "why_wrong": "steps라는 변수 하나와 list 내부 항목 수를 혼동한 값입니다.",
+        "misread_step": "컨테이너 변수와 컨테이너 안 요소 개수를 구분하지 않은 경우입니다."
+      },
+      "takeaway": "관심사 분리는 **서로 다른 책임을 가진 함수가 독립적으로 존재하는지** 코드에서 확인합니다."
+    },
+    "target_statement": "steps = [fetch_cards, select_cards, render_cards, save_progress]",
+    "focus_span": "[fetch_cards, select_cards, render_cards, save_progress]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "separation of concerns",
+      "responsibility",
+      "pipeline",
+      "functions"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY41_L10_monolith_modular_001",
     "level": 10,
-    "title": "monolith vs modular structure 읽기",
+    "title": "역할별 module 분리 구조 읽기",
     "concepts": [
-      "monolith",
-      "modular_structure",
-      "module"
+      "call",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "한 덩어리 구조와 모듈형 구조의 차이를 읽는다.",
-    "code": "monolith:\n  app.js does almost everything\n\nmodular:\n  cardLoader.js\n  progressStore.js\n  reviewEngine.js\n  uiRenderer.js",
-    "question_type": "meaning_choice",
-    "question": "modular structure의 장점은?",
+    "reading_goal": "역할별 module mapping에서 책임이 분리된 구조를 확인한다.",
+    "code": "modular_modules = {\n    \"cardLoader\": \"load cards\",\n    \"progressStore\": \"save progress\",\n    \"reviewEngine\": \"choose review cards\",\n    \"uiRenderer\": \"render UI\",\n}\nmodule_count = len(modular_modules)",
+    "question_type": "multiple_choice",
+    "question": "modular structure의 장점은 무엇인가?",
     "choices": [
       "모든 코드가 무조건 한 줄이 된다",
       "버그가 절대 생기지 않는다",
@@ -339,26 +738,60 @@
       "역할별 파일로 나뉘어 수정과 테스트 범위를 줄일 수 있다"
     ],
     "answer": "역할별 파일로 나뉘어 수정과 테스트 범위를 줄일 수 있다",
-    "explanation": "기능을 역할별 module로 나누면 공개 API를 통해 필요한 부분만 의존하게 만들 수 있다. 파일을 여러 개로 쪼개는 것만으로 modular해지지는 않으며, 전역 상태와 순환 import가 그대로면 영향 범위도 줄지 않는다. 응집도 높은 책임과 명확한 의존 방향이 핵심이다.",
+    "explanation": "dict에는 네 개의 분리된 responsibility가 있습니다. 한 module의 수정이 다른 책임과 덜 얽히게 설계할 수 있습니다. modularity의 핵심이 responsibility separation이기 때문입니다. 헷갈리기 쉬운 오답: 버그가 절대 생기지 않는다 구조 분리는 관리성을 높일 뿐 bug zero를 보장하지 않습니다. 오독 지점: maintainability 향상을 절대적 correctness 보장으로 과장한 경우입니다. modular architecture는 **responsibility separation → smaller change scope → easier testing**으로 읽습니다.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN"
     ],
-    "project_context": "현재 app.js가 커질수록 card loader, state, UI, 검증 로직을 나누는 방향을 생각할 수 있다."
+    "project_context": "커지는 app.js를 card loader, state, review, renderer 등으로 나눌지 판단하는 구조 설계와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "역할별 module mapping에서 책임이 분리된 구조를 확인한다.",
+    "concept_explanation": {
+      "what_it_is": "`len(mapping)`은 mapping에 있는 key 개수를 반환하는 함수 호출입니다.",
+      "how_to_read": "각 key가 어떤 responsibility를 대표하는지 먼저 봅니다.",
+      "key_point": "modular 구조는 loader, store, engine, renderer처럼 책임을 나눠 수정·테스트 범위를 줄이는 데 도움이 됩니다.",
+      "common_mistake": "module을 나누면 버그가 절대 생기지 않는다고 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "modules = {\"loader\": \"load\", \"renderer\": \"render\"}\ncount = len(modules)",
+      "walkthrough": "서로 다른 두 책임이 별도 module로 나뉘어 있습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "dict에는 네 개의 분리된 responsibility가 있습니다. 한 module의 수정이 다른 책임과 덜 얽히게 설계할 수 있습니다.",
+      "why_correct": "modularity의 핵심이 responsibility separation이기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "버그가 절대 생기지 않는다",
+        "why_wrong": "구조 분리는 관리성을 높일 뿐 bug zero를 보장하지 않습니다.",
+        "misread_step": "maintainability 향상을 절대적 correctness 보장으로 과장한 경우입니다."
+      },
+      "takeaway": "modular architecture는 **responsibility separation → smaller change scope → easier testing**으로 읽습니다."
+    },
+    "target_statement": "module_count = len(modular_modules)",
+    "focus_span": "len(modular_modules)",
+    "focus_mode": "subexpression",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "monolith",
+      "modular structure",
+      "module responsibility",
+      "test scope"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY41_L10_kg_lora_pipeline_architecture_001",
     "level": 10,
-    "title": "KG/LoRA pipeline architecture 읽기",
+    "title": "KG/LoRA pipeline의 Validation gate 읽기",
     "concepts": [
-      "pipeline_architecture",
-      "KG",
-      "LoRA",
-      "validation"
+      "if_statement",
+      "boolean_operation",
+      "raise_statement",
+      "literal"
     ],
-    "reading_goal": "KG/LoRA 작업을 단계별 파이프라인 구조로 읽는 연습을 한다.",
-    "code": "Input chunks\n  -> Node extraction\n  -> Node promotion\n  -> Edge extraction\n  -> Validation\n  -> Dataset / KG output",
-    "question_type": "meaning_choice",
-    "question": "이 구조에서 Validation 단계의 역할은?",
+    "reading_goal": "pipeline 중간 validation 결과가 False일 때 output 생성을 차단하는 gate를 읽는다.",
+    "code": "pipeline = [\"node_extraction\", \"node_promotion\", \"edge_extraction\", \"validation\", \"output\"]\nvalidation_passed = False\nif not validation_passed:\n    raise ValueError(\"invalid pipeline output\")",
+    "question_type": "multiple_choice",
+    "question": "이 구조에서 Validation 단계의 역할은 무엇인가?",
     "choices": [
       "입력 chunk를 무조건 삭제한다",
       "모델 응답을 항상 믿고 그대로 저장한다",
@@ -366,22 +799,57 @@
       "앞 단계 산출물이 규칙에 맞는지 검사하고 깨진 결과를 걸러낸다"
     ],
     "answer": "앞 단계 산출물이 규칙에 맞는지 검사하고 깨진 결과를 걸러낸다",
-    "explanation": "이 그림의 Validation은 node·edge 추출 결과가 schema, 참조, 품질 규칙을 만족하는지 검사하고 부적합 결과를 final output에서 제외하거나 재처리로 보낸다. 각 단계의 입력·출력 version과 checkpoint를 남겨야 실패 지점에서 재개하고 어느 변환이 문제를 만들었는지 추적할 수 있다.",
+    "explanation": "Validation 결과가 False면 예외가 발생해 output 단계로 정상 진행하지 못합니다. Validation은 모델 생성 결과를 무조건 신뢰하지 않고 규칙 위반을 차단하는 단계이기 때문입니다. 헷갈리기 쉬운 오답: 모델 응답을 항상 믿고 그대로 저장한다 그 행동을 막기 위해 validation gate가 존재합니다. 오독 지점: 생성과 검증 단계를 같은 것으로 본 경우입니다. AI/KG pipeline은 **generation → validation → promotion/output**을 분리해서 읽습니다.",
     "side_card_ids": [],
-    "project_context": "노드패스, 노드승격, 엣지패스, 평가셋 생성 흐름을 전체 지형으로 읽는 카드다."
+    "project_context": "노드패스·노드승격·엣지패스·평가셋 생성 흐름에서 validation을 독립 gate로 보는 구조와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "if_statement",
+    "reading_goal_internal": "pipeline 중간 validation 결과가 False일 때 output 생성을 차단하는 gate를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`if not validation_passed:`는 validation 결과가 False일 때 branch를 실행합니다.",
+      "how_to_read": "Validation이 앞 단계와 최종 output 사이에 왜 있는지 데이터 흐름과 함께 봅니다.",
+      "key_point": "validation은 node/edge 산출물이 규칙과 schema를 만족하는지 확인하고 깨진 결과가 dataset/KG로 승격되는 것을 막습니다.",
+      "common_mistake": "모델 출력은 생성됐으니 그대로 저장해도 된다고 생각하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "validated = False\nif not validated:\n    status = \"blocked\"",
+      "walkthrough": "validation 실패 시 output이 blocked 상태가 됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "Validation 결과가 False면 예외가 발생해 output 단계로 정상 진행하지 못합니다.",
+      "why_correct": "Validation은 모델 생성 결과를 무조건 신뢰하지 않고 규칙 위반을 차단하는 단계이기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "모델 응답을 항상 믿고 그대로 저장한다",
+        "why_wrong": "그 행동을 막기 위해 validation gate가 존재합니다.",
+        "misread_step": "생성과 검증 단계를 같은 것으로 본 경우입니다."
+      },
+      "takeaway": "AI/KG pipeline은 **generation → validation → promotion/output**을 분리해서 읽습니다."
+    },
+    "target_statement": "if not validation_passed:",
+    "focus_span": "if not validation_passed:",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "KG pipeline",
+      "LoRA",
+      "validation",
+      "pipeline architecture"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY41_L10_architecture_diagram_001",
     "level": 10,
-    "title": "architecture diagram 읽기",
+    "title": "component 순서에서 architecture data-flow edge 만들기",
     "concepts": [
-      "architecture_diagram",
-      "data_flow",
-      "component"
+      "call",
+      "slice",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "아키텍처 그림을 박스와 화살표의 의미로 읽는다.",
-    "code": "[User]\n  -> [PWA]\n  -> [API]\n  -> [Service]\n  -> [Repository]\n  -> [JSON/DB]",
-    "question_type": "meaning_choice",
+    "reading_goal": "component sequence에서 인접 pair를 만들어 architecture 화살표 방향을 읽는다.",
+    "code": "components = [\"User\", \"PWA\", \"API\", \"Service\", \"Repository\", \"JSON/DB\"]\nedges = list(zip(components, components[1:]))\nfirst_edge = edges[0]",
+    "question_type": "multiple_choice",
     "question": "아키텍처 다이어그램에서 화살표는 보통 무엇을 뜻하는가?",
     "choices": [
       "파일을 삭제하는 순서",
@@ -390,10 +858,44 @@
       "데이터나 요청이 이동하는 방향"
     ],
     "answer": "데이터나 요청이 이동하는 방향",
-    "explanation": "이 다이어그램에서는 화살표가 요청이나 데이터가 다음 component로 흐르는 주 방향을 나타낸다. 하지만 다른 그림에서는 dependency, event, network connection을 뜻할 수 있고 응답 방향이 생략될 수도 있다. 실제 의미는 제목, legend, 화살표 종류와 함께 확인해야 한다.",
+    "explanation": "components를 인접 pair로 만들면 User→PWA, PWA→API처럼 앞에서 뒤로 흐르는 연결을 얻습니다. architecture arrow가 component 간 data/request flow를 나타내는 표현으로 사용되기 때문입니다. 헷갈리기 쉬운 오답: Git 브랜치 이름 components는 runtime/system layer이며 Git branch metadata가 아닙니다. 오독 지점: architecture flow와 version-control concept를 혼동한 경우입니다. diagram은 **node/component와 arrow/flow를 분리해** 읽습니다.",
     "side_card_ids": [
       "PYV102_A7_ARCHITECTURE_DESIGN"
     ],
-    "project_context": "학습앱, RAG 검색, KG 파이프라인을 그림으로 볼 때 흐름을 따라 읽는 훈련이 된다."
+    "project_context": "학습앱·RAG 검색·KG pipeline architecture를 그림으로 볼 때 요청과 데이터 흐름을 따라 읽는 데 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "component sequence에서 인접 pair를 만들어 architecture 화살표 방향을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`zip(left, right)`는 두 iterable의 같은 위치 항목을 pair로 묶는 함수 호출입니다.",
+      "how_to_read": "원본 components와 한 칸 뒤 slice를 나란히 놓아 어떤 pair가 만들어지는지 봅니다.",
+      "key_point": "architecture diagram의 화살표는 보통 요청, 데이터, dependency가 어느 방향으로 이동하는지 나타냅니다.",
+      "common_mistake": "화살표를 파일 삭제 순서나 단순 화면 배치 순서로 해석하기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "parts = [\"Client\", \"API\", \"DB\"]\nedges = list(zip(parts, parts[1:]))",
+      "walkthrough": "edges는 Client→API, API→DB 두 흐름 pair를 만듭니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "components를 인접 pair로 만들면 User→PWA, PWA→API처럼 앞에서 뒤로 흐르는 연결을 얻습니다.",
+      "why_correct": "architecture arrow가 component 간 data/request flow를 나타내는 표현으로 사용되기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "Git 브랜치 이름",
+        "why_wrong": "components는 runtime/system layer이며 Git branch metadata가 아닙니다.",
+        "misread_step": "architecture flow와 version-control concept를 혼동한 경우입니다."
+      },
+      "takeaway": "diagram은 **node/component와 arrow/flow를 분리해** 읽습니다."
+    },
+    "target_statement": "edges = list(zip(components, components[1:]))",
+    "focus_span": "zip(components, components[1:])",
+    "focus_mode": "subexpression",
+    "coverage_domain": "architecture_and_design",
+    "coverage_topics": [
+      "architecture diagram",
+      "data flow",
+      "component",
+      "request direction"
+    ],
+    "pedagogical_intent": "identify_meaning"
   }
 ]

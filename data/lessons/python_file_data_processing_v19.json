@@ -2,471 +2,974 @@
   {
     "id": "PY19_L06_csv_dictreader_001",
     "level": 6,
-    "title": "CSV DictReader 읽기",
+    "title": "CSV 헤더가 DictReader row의 key가 되는 과정 읽기",
     "concepts": [
-      "for",
-      "import",
-      "print",
-      "csv",
-      "DictReader",
-      "file",
-      "row"
+      "call",
+      "with_statement",
+      "for_statement",
+      "subscription"
     ],
-    "reading_goal": "CSV 파일을 행 단위 dict로 읽는 코드를 이해한다.",
-    "code": "import csv\n\nwith open(\"items.csv\", \"r\", encoding=\"utf-8\", newline=\"\") as f:\n    reader = csv.DictReader(f)\n    for row in reader:\n        print(row[\"title\"])",
+    "reading_goal": "`csv.DictReader`가 헤더 기반 dict row를 만드는 결과 구조를 읽는다.",
+    "code": "import csv\nfrom io import StringIO\nf = StringIO('title,level\\nJSONL,6\\n')\nreader = csv.DictReader(f)\nrow = next(reader)\nprint(row['title'])",
     "question_type": "meaning_choice",
-    "question": "csv.DictReader의 특징은?",
+    "question": "`csv.DictReader(f)`로 읽은 `row`의 특징은?",
     "choices": [
-      "파일을 zip으로 압축한다",
-      "JSONL만 읽는다",
-      "각 행을 컬럼명 기반 dict처럼 읽는다",
-      "이미지를 텍스트로 바꾼다"
+      "헤더 이름으로 값을 조회할 수 있는 dict 같은 행",
+      "항상 정수 index로만 접근하는 tuple",
+      "CSV 전체를 하나의 문자열로 반환",
+      "모든 값을 자동으로 숫자로 변환"
     ],
-    "answer": "각 행을 컬럼명 기반 dict처럼 읽는다",
-    "explanation": "DictReader는 첫 줄 헤더를 key로 사용해 각 행을 dict처럼 읽게 해준다. CSV DictReader는 CSV의 각 행을 dict처럼 읽게 해 주는 도구다. 열 이름이 key가 되고 각 칸의 값이 value가 되므로, 코드에서 어떤 column을 참조하는지 확인해야 한다.",
+    "answer": "헤더 이름으로 값을 조회할 수 있는 dict 같은 행",
+    "explanation": "1) StringIO의 첫 줄 `title,level`이 헤더다. 2) `csv.DictReader(f)`가 헤더를 key 이름으로 사용하는 reader를 만든다. 3) 다음 행 `JSONL,6`이 `{'title':'JSONL','level':'6'}`처럼 읽힌다. 4) `row['title']`로 컬럼명을 사용해 값을 꺼낸다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
-    "project_context": "doc_master.csv, registry, audit TSV/CSV를 읽을 때 기본이 되는 패턴이다."
+    "project_context": "학습 로그 CSV의 특정 컬럼을 열 번호 대신 이름으로 안전하게 읽는 데 연결됩니다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "`csv.DictReader`가 헤더 기반 dict row를 만드는 결과 구조를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`csv.DictReader`는 CSV 행을 위치만 있는 list가 아니라 헤더 이름을 key로 가진 mapping 형태로 제공합니다.",
+      "how_to_read": "reader 생성 전에 첫 줄이 헤더인지 확인하고 이후 `row['컬럼명']` 접근이 어떤 값에 연결되는지 봅니다.",
+      "key_point": "`csv.DictReader(f)`를 사용하면 `row['title']`처럼 컬럼명 기반으로 값을 읽을 수 있어 열 순서보다 의미가 드러납니다.",
+      "common_mistake": "DictReader가 숫자 문자열을 자동으로 int로 바꾼다고 생각하면 안 됩니다. 기본적으로 CSV 필드 값은 문자열입니다."
+    },
+    "teaching_example": {
+      "code": "import csv\nfrom io import StringIO\nf = StringIO('name,score\\nA,9\\n')\nreader = csv.DictReader(f)\nrow = next(reader)\nprint(row['name'])",
+      "walkthrough": "헤더 `name`이 dict key가 되어 첫 데이터 행의 `A`를 이름으로 조회할 수 있습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) StringIO의 첫 줄 `title,level`이 헤더다. 2) `csv.DictReader(f)`가 헤더를 key 이름으로 사용하는 reader를 만든다. 3) 다음 행 `JSONL,6`이 `{'title':'JSONL','level':'6'}`처럼 읽힌다. 4) `row['title']`로 컬럼명을 사용해 값을 꺼낸다.",
+      "why_correct": "`csv.DictReader(f)`를 사용하면 `row['title']`처럼 컬럼명 기반으로 값을 읽을 수 있어 열 순서보다 의미가 드러납니다.",
+      "common_wrong_choice": {
+        "choice": "모든 값을 자동으로 숫자로 변환",
+        "why_wrong": "DictReader는 컬럼명 매핑을 제공하지만 데이터 타입을 자동 추론해 숫자로 바꾸지는 않습니다.",
+        "misread_step": "헤더와 row key의 대응을 확인한다."
+      },
+      "takeaway": "`DictReader`는 CSV를 **헤더 이름 → 각 행의 값** 관계로 읽게 해 코드 의미를 분명하게 만든다."
+    },
+    "target_statement": "csv.DictReader(f)",
+    "focus_span": "csv.DictReader(f)",
+    "focus_mode": "subexpression",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "CSV",
+      "DictReader",
+      "header",
+      "dict row"
+    ],
+    "pedagogical_intent": "interpret_result"
   },
   {
     "id": "PY19_L06_tsv_delimiter_001",
     "level": 6,
-    "title": "TSV delimiter 읽기",
+    "title": "CSV 모듈에서 TSV 구분자를 명시하는 인자 읽기",
     "concepts": [
-      "import",
-      "print",
-      "tsv",
-      "delimiter",
-      "csv",
-      "file"
+      "argument_passing",
+      "call",
+      "literal"
     ],
-    "reading_goal": "탭으로 구분된 TSV 파일을 csv 모듈로 읽는 방법을 이해한다.",
-    "code": "import csv\n\nwith open(\"nodes.tsv\", \"r\", encoding=\"utf-8\", newline=\"\") as f:\n    reader = csv.DictReader(f, delimiter=\"\\t\")\n    rows = list(reader)\n\nprint(len(rows))",
-    "question_type": "meaning_choice",
-    "question": "delimiter='\\t'의 의미는?",
+    "reading_goal": "`delimiter='\\t'` keyword argument가 TSV 입력의 탭 경계를 reader에 전달하는 의미를 읽는다.",
+    "code": "import csv\nfrom io import StringIO\nf = StringIO('id\\ttitle\\n1\\tJSONL\\n2\\tCSV\\n')\nreader = csv.DictReader(f, delimiter='\\t')\nrows = list(reader)\nprint(len(rows))",
+    "question_type": "concept_reading",
+    "question": "`delimiter='\\t'`를 빼면 TSV를 의도대로 읽기 어려운 이유는?",
     "choices": [
-      "쉼표를 컬럼 구분자로 쓴다",
-      "파일을 삭제한다",
-      "탭 문자를 컬럼 구분자로 쓴다",
-      "탭을 모두 제거한다"
+      "DictReader 기본 구분자는 쉼표이므로 탭 경계를 명시해야 해서",
+      "TSV는 Python에서 읽을 수 없는 형식이라서",
+      "탭은 항상 줄바꿈으로 처리돼서",
+      "delimiter는 행 개수를 제한하는 인자라서"
     ],
-    "answer": "탭 문자를 컬럼 구분자로 쓴다",
-    "explanation": "TSV는 tab-separated values의 줄임말이다. delimiter=\"\\t\"를 지정하면 DictReader가 탭을 열 경계로 사용하고 첫 줄을 헤더로 읽는다. 값 안에 쉼표가 있어도 탭이 아니므로 열이 나뉘지 않지만, 탭이나 줄바꿈 자체가 든 값은 CSV와 마찬가지로 올바른 quoting 규칙이 필요하다.",
+    "answer": "DictReader 기본 구분자는 쉼표이므로 탭 경계를 명시해야 해서",
+    "explanation": "1) TSV 텍스트는 컬럼 사이가 탭 문자로 구분되어 있다. 2) DictReader 호출에서 `delimiter='\\t'`를 명시한다. 3) reader는 쉼표 대신 탭을 기준으로 필드를 나눈다. 4) `list(reader)`가 파싱된 행들을 materialize한다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
-    "project_context": "KG 후보/리뷰/매핑 TSV를 읽을 때 자주 보이는 코드다."
+    "project_context": "CSV/TSV 학습 데이터가 섞인 파이프라인에서 형식별 reader 설정을 정확히 읽는 데 연결됩니다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "argument_passing",
+    "reading_goal_internal": "`delimiter='\\t'` keyword argument가 TSV 입력의 탭 경계를 reader에 전달하는 의미를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "keyword argument는 함수의 특정 옵션에 값을 이름으로 전달합니다.",
+      "how_to_read": "`DictReader`의 기본 쉼표 구분과 이 코드가 명시한 탭 구분을 비교해서 읽습니다.",
+      "key_point": "`delimiter='\\t'`는 입력이 TSV라는 사실을 reader 설정에 반영해 탭마다 컬럼을 나누게 합니다.",
+      "common_mistake": "파일 확장자가 `.tsv`라는 사실만으로 DictReader가 자동으로 탭을 알아낸다고 생각하면 안 됩니다. delimiter를 명시해야 합니다."
+    },
+    "teaching_example": {
+      "code": "import csv\nfrom io import StringIO\nf = StringIO('a\\tb\\n1\\t2\\n')\nrows = list(csv.DictReader(f, delimiter='\\t'))\nprint(rows[0]['b'])",
+      "walkthrough": "탭이 컬럼 경계로 사용되어 두 번째 필드가 `b` key의 값이 됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) TSV 텍스트는 컬럼 사이가 탭 문자로 구분되어 있다. 2) DictReader 호출에서 `delimiter='\\t'`를 명시한다. 3) reader는 쉼표 대신 탭을 기준으로 필드를 나눈다. 4) `list(reader)`가 파싱된 행들을 materialize한다.",
+      "why_correct": "`delimiter='\\t'`는 입력이 TSV라는 사실을 reader 설정에 반영해 탭마다 컬럼을 나누게 합니다.",
+      "common_wrong_choice": {
+        "choice": "delimiter는 행 개수를 제한하는 인자라서",
+        "why_wrong": "delimiter는 필드 경계를 정하는 설정이지 행 개수 제한 옵션이 아닙니다.",
+        "misread_step": "입력 형식의 실제 구분 문자와 reader 설정을 맞춘다."
+      },
+      "takeaway": "CSV 모듈은 TSV도 읽을 수 있지만 **delimiter 설정을 입력 형식과 맞춰야** 한다."
+    },
+    "target_statement": "delimiter='\\t'",
+    "focus_span": "delimiter='\\t'",
+    "focus_mode": "subexpression",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "TSV",
+      "delimiter",
+      "DictReader",
+      "tab"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY19_L07_jsonl_stream_001",
     "level": 7,
-    "title": "JSONL 한 줄씩 읽기",
+    "title": "JSONL 파일을 `for line in f`로 한 줄씩 읽기",
     "concepts": [
-      "if",
-      "for",
-      "import",
-      "print",
-      "continue",
-      "jsonl",
-      "streaming",
-      "json",
-      "large_file"
+      "for_statement",
+      "with_statement",
+      "continue_statement"
     ],
-    "reading_goal": "대용량 JSONL을 한 번에 메모리에 올리지 않고 처리하는 코드를 읽는다.",
-    "code": "import json\n\nwith open(\"chunks.jsonl\", \"r\", encoding=\"utf-8\") as f:\n    for line in f:\n        if not line.strip():\n            continue\n        item = json.loads(line)\n        print(item[\"chunk_id\"])",
-    "question_type": "meaning_choice",
-    "question": "for line in f 방식의 장점은?",
+    "reading_goal": "파일 객체를 직접 반복해 JSONL을 한 줄씩 처리하는 실행 흐름을 읽는다.",
+    "code": "import json\nfrom io import StringIO\n\nf = StringIO(\"{\\\"chunk_id\\\": 10}\\n\\n{\\\"chunk_id\\\": 11}\\n\")\nfor line in f:\n    if not line.strip():\n        continue\n    item = json.loads(line)\n    print(item[\"chunk_id\"])",
+    "question_type": "multiple_choice",
+    "question": "`for line in f:`를 가장 정확히 읽은 것은?",
     "choices": [
-      "항상 파일 전체를 한 번에 읽는다",
-      "JSON을 자동 수정한다",
-      "파일을 한 줄씩 읽어 메모리 사용을 줄인다",
-      "네트워크를 차단한다"
+      "f에서 한 줄씩 받아 line에 넣어 반복한다.",
+      "파일 전체를 한 번에 list로 만든다.",
+      "JSON 오류를 자동 수정한다.",
+      "항상 첫 줄만 읽고 끝난다."
     ],
-    "answer": "파일을 한 줄씩 읽어 메모리 사용을 줄인다",
-    "explanation": "파일 객체를 직접 반복하면 한 번에 한 줄씩 읽으므로 read_text처럼 파일 전체 문자열을 메모리에 만들지 않는다. 빈 줄은 건너뛰고 각 줄을 json.loads로 파싱한다. 하지만 한 줄의 JSON 오류가 나면 이 코드 전체는 그 자리에서 중단되므로, 계속 처리하거나 재개하려면 줄 번호와 오류를 별도로 기록하는 try/except가 필요하다.",
+    "answer": "f에서 한 줄씩 받아 line에 넣어 반복한다.",
+    "explanation": "f는 여러 줄을 가진 파일 객체처럼 동작한다. for는 f에서 다음 줄을 하나씩 line에 넣는다. 빈 줄이면 continue로 건너뛰고, 나머지는 json.loads로 dict로 바꾼다. 파일 객체가 iterable이어서 for가 줄 단위로 값을 차례로 받기 때문입니다. 헷갈리기 쉬운 오답: 파일 전체를 한 번에 list로 만든다. `for line in f` 자체에는 전체를 list로 materialize하는 호출이 없습니다. 오독 지점: 반복 대상이 iterator인지, 전체 수집 함수가 따로 호출되는지 구분해야 합니다. 파일 객체를 직접 for로 반복하면 줄을 순서대로 처리할 수 있어 큰 텍스트 파일을 streaming 방식으로 다루기 좋습니다.",
     "side_card_ids": [
       "PYV158_A1_JSON_FLOW"
     ],
-    "project_context": "70k+ chunks나 node/edge 후보 jsonl을 처리할 때 필요한 실전 패턴이다."
+    "project_context": "대규모 chunk/node/edge JSONL을 한 번에 메모리에 올리지 않고 순차 처리하는 맥락이다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "for_statement",
+    "reading_goal_internal": "파일 객체를 직접 반복해 JSONL을 한 줄씩 처리하는 실행 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "for statement는 반복 가능한 객체에서 값을 하나씩 꺼내 변수에 넣고 body를 반복 실행합니다. 파일 객체를 반복하면 일반적으로 한 줄씩 문자열을 받습니다.",
+      "how_to_read": "`in` 오른쪽 반복대상이 무엇을 하나씩 내는지 확인하고, 각 cycle에서 변수에 어떤 값이 들어가는지 body까지 따라갑니다.",
+      "key_point": "대용량 JSONL의 메모리 절약은 파일 처리 의미이고 Python 문법 초점은 파일 객체를 직접 순회하는 for statement입니다.",
+      "common_mistake": "`for line in f`가 파일 전체를 먼저 list로 만든다고 생각하기 쉽습니다. 코드에는 `list(f)`나 `read()`가 없고 파일 iterator에서 줄을 차례로 받습니다."
+    },
+    "teaching_example": {
+      "code": "from io import StringIO\n\nf = StringIO(\"a\\nb\\n\")\nfor line in f:\n    print(line.strip())",
+      "walkthrough": "파일 같은 StringIO 객체에서 a 줄, b 줄을 차례로 받아 각 cycle에서 출력합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "f는 여러 줄을 가진 파일 객체처럼 동작한다. for는 f에서 다음 줄을 하나씩 line에 넣는다. 빈 줄이면 continue로 건너뛰고, 나머지는 json.loads로 dict로 바꾼다.",
+      "why_correct": "파일 객체가 iterable이어서 for가 줄 단위로 값을 차례로 받기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "파일 전체를 한 번에 list로 만든다.",
+        "why_wrong": "`for line in f` 자체에는 전체를 list로 materialize하는 호출이 없습니다.",
+        "misread_step": "반복 대상이 iterator인지, 전체 수집 함수가 따로 호출되는지 구분해야 합니다."
+      },
+      "takeaway": "파일 객체를 직접 for로 반복하면 줄을 순서대로 처리할 수 있어 큰 텍스트 파일을 streaming 방식으로 다루기 좋습니다."
+    },
+    "target_statement": "for line in f:",
+    "focus_span": "for line in f:",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "JSONL",
+      "streaming",
+      "large_file",
+      "line_iteration"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY19_L07_write_jsonl_001",
     "level": 7,
-    "title": "JSONL 저장 루프 읽기",
+    "title": "`ensure_ascii=False`를 keyword argument로 json.dumps에 전달하기",
     "concepts": [
-      "for",
-      "import",
-      "jsonl",
-      "write",
-      "ensure_ascii",
-      "file"
+      "argument_passing",
+      "call",
+      "literal",
+      "for_statement"
     ],
-    "reading_goal": "dict 목록을 JSONL 파일로 저장하는 코드를 읽는다.",
-    "code": "import json\n\nrows = [{\"id\": \"a1\", \"label\": \"LiDAR\"}, {\"id\": \"a2\", \"label\": \"Radar\"}]\n\nwith open(\"nodes.jsonl\", \"w\", encoding=\"utf-8\") as f:\n    for row in rows:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")",
+    "reading_goal": "호출 괄호 안에서 이름이 붙은 `ensure_ascii=False`가 별도 변수 대입이 아니라 json.dumps의 keyword argument라는 점을 읽는다.",
+    "code": "import json\nfrom io import StringIO\n\nrows = [{\"id\": \"n1\", \"label\": \"한글\"}]\nbuffer = StringIO()\nfor row in rows:\n    line = json.dumps(row, ensure_ascii=False)\n    buffer.write(line + \"\\n\")\nprint(\"한글\" in buffer.getvalue())",
     "question_type": "meaning_choice",
-    "question": "ensure_ascii=False를 쓰는 이유에 가장 가까운 것은?",
+    "question": "`ensure_ascii=False`를 가장 정확하게 읽은 설명은 무엇인가?",
     "choices": [
-      "파일을 압축하려고",
-      "항상 영어로 번역하려고",
-      "한글 같은 비ASCII 문자를 읽기 좋게 저장하려고",
-      "줄바꿈을 제거하려고"
+      "json.dumps의 ensure_ascii 매개변수에 Boolean False를 이름으로 전달한다",
+      "ensure_ascii라는 새 전역 변수를 만든다",
+      "문자열 'False'를 위치 인자로 전달한다",
+      "JSONL 파일을 자동으로 디스크에 저장한다"
     ],
-    "answer": "한글 같은 비ASCII 문자를 읽기 좋게 저장하려고",
-    "explanation": "ensure_ascii=False는 비ASCII 문자를 \\uXXXX escape 대신 사람이 읽을 수 있는 문자로 JSON 문자열에 기록한다. UTF-8 encoding과 함께 쓰므로 한글도 그대로 보인다. 각 row 뒤에 줄바꿈을 붙여 JSONL 한 레코드를 완성한다. \"w\" 모드는 기존 nodes.jsonl을 먼저 비우므로 이어 쓰기가 필요한 작업에서는 덮어쓰기 정책을 확인해야 한다.",
+    "answer": "json.dumps의 ensure_ascii 매개변수에 Boolean False를 이름으로 전달한다",
+    "explanation": "1) json.dumps 호출 괄호 안의 인자 목록을 확인한다. 2) 첫 위치 인자 row 뒤에 `ensure_ascii=False`가 있다. 3) 등호 왼쪽은 매개변수 이름 ensure_ascii이고 오른쪽은 Boolean False다. 4) 따라서 False가 해당 매개변수에 keyword argument로 전달된다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
-    "project_context": "한국어 기술문서 chunk, node label, evidence snippet을 저장할 때 중요하다."
+    "project_context": "한글이 포함된 레코드를 사람이 읽기 쉬운 JSONL로 직렬화하는 데이터 저장 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "argument_passing",
+    "reading_goal_internal": "호출 괄호 안에서 이름이 붙은 `ensure_ascii=False`가 별도 변수 대입이 아니라 json.dumps의 keyword argument라는 점을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "keyword argument는 함수 호출에서 받을 매개변수 이름을 직접 적고 값을 전달하는 문법입니다.",
+      "how_to_read": "등호 왼쪽 이름과 오른쪽 값을 나눠 보고, 전체가 함수 호출 괄호 안에 있는지 확인합니다.",
+      "key_point": "따옴표 없는 False가 ensure_ascii 매개변수에 전달되어 한글을 읽기 쉬운 문자로 유지합니다.",
+      "common_mistake": "호출 안 `ensure_ascii=False`를 호출 밖의 새 변수 대입으로 읽기 쉽습니다."
+    },
+    "teaching_example": {
+      "code": "import json\nrow = {\"name\": \"서울\"}\ntext = json.dumps(row, ensure_ascii=False)\nprint(\"서울\" in text)",
+      "walkthrough": "False가 ensure_ascii에 이름으로 전달되어 JSON 문자열 안에 서울 문자가 그대로 남습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) json.dumps 호출 괄호 안의 인자 목록을 확인한다. 2) 첫 위치 인자 row 뒤에 `ensure_ascii=False`가 있다. 3) 등호 왼쪽은 매개변수 이름 ensure_ascii이고 오른쪽은 Boolean False다. 4) 따라서 False가 해당 매개변수에 keyword argument로 전달된다.",
+      "why_correct": "함수 호출 괄호 안 `name=value` 형태이므로 keyword argument이며 값은 Boolean False입니다.",
+      "common_wrong_choice": {
+        "choice": "ensure_ascii라는 새 전역 변수를 만든다",
+        "why_wrong": "이 등호는 호출의 인자 목록 안에 있으므로 독립 assignment 문이 아닙니다.",
+        "misread_step": "등호가 어디에 놓였는지, 즉 함수 호출 괄호 안인지부터 확인합니다."
+      },
+      "takeaway": "keyword argument는 **호출 확인 → 매개변수 이름 확인 → 오른쪽 값 평가 → 이름으로 전달** 순서로 읽습니다."
+    },
+    "target_statement": "ensure_ascii=False",
+    "focus_span": "ensure_ascii=False",
+    "focus_mode": "subexpression",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "jsonl",
+      "json.dumps",
+      "ensure_ascii",
+      "unicode",
+      "line_output"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY19_L08_encoding_fallback_001",
     "level": 8,
-    "title": "인코딩 fallback 읽기",
+    "title": "UnicodeDecodeError 뒤 cp949 fallback 읽기",
     "concepts": [
-      "def",
-      "function",
-      "return",
-      "encoding",
-      "utf8",
-      "cp949",
-      "try_except"
+      "except_clause",
+      "try_statement",
+      "call",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "UTF-8로 실패하면 CP949로 다시 읽는 코드를 이해한다.",
-    "code": "def read_text_fallback(path):\n    try:\n        return path.read_text(encoding=\"utf-8\")\n    except UnicodeDecodeError:\n        return path.read_text(encoding=\"cp949\")",
-    "question_type": "meaning_choice",
-    "question": "UnicodeDecodeError가 나면 무엇을 하는가?",
+    "reading_goal": "첫 decode 호출이 특정 예외를 만들면 실행이 typed except로 이동하고 다른 인코딩으로 다시 decode하는 순서를 읽는다.",
+    "code": "raw = \"한글\".encode(\"cp949\")\ntry:\n    text = raw.decode(\"utf-8\")\nexcept UnicodeDecodeError:\n    text = raw.decode(\"cp949\")",
+    "question_type": "multiple_choice",
+    "question": "첫 번째 `raw.decode(\"utf-8\")`가 `UnicodeDecodeError`를 발생시키면 다음에 실행되는 것은?",
     "choices": [
-      "파일을 삭제한다",
-      "항상 빈 문자열을 반환한다",
-      "cp949 인코딩으로 다시 읽는다",
-      "서버를 실행한다"
+      "`raw.decode(\"cp949\")`",
+      "프로그램이 반드시 즉시 종료된다",
+      "`raw.encode(\"utf-8\")`",
+      "`text = None`"
     ],
-    "answer": "cp949 인코딩으로 다시 읽는다",
-    "explanation": "첫 UTF-8 decode가 실패할 때만 cp949로 다시 읽는다. 오래된 한국어 Windows 파일에는 도움이 될 수 있지만, 실제 encoding이 다른 파일도 cp949가 오류 없이 잘못된 글자로 해석할 수 있다. 출처의 encoding metadata나 탐지 결과를 우선하고, fallback을 썼다는 사실을 기록해 조용한 데이터 손상을 막아야 한다.",
+    "answer": "`raw.decode(\"cp949\")`",
+    "explanation": "첫 decode 호출에서 `UnicodeDecodeError`가 나면 try의 정상 경로는 중단됩니다. 같은 타입을 적은 except 절이 선택되고 그 안의 `raw.decode(\"cp949\")`가 실행됩니다. typed except는 지정한 예외 타입이 발생했을 때 해당 처리 블록으로 실행을 이동시키기 때문입니다. 헷갈리기 쉬운 오답: 프로그램이 반드시 즉시 종료된다 이 예외는 바로 아래 typed except에서 처리되므로 처리 경로가 존재합니다. 오독 지점: 예외 발생과 미처리 예외를 같은 상황으로 본 경우입니다. fallback 코드는 **첫 시도 → 특정 예외 발생 → 일치하는 except → 두 번째 시도** 순서로 읽습니다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
-    "project_context": "공공기관 자료, CSV, HWP/PDF 추출 텍스트에서 인코딩 문제가 자주 생긴다."
+    "project_context": "공공기관 CSV·추출 텍스트처럼 UTF-8이 아닌 한국어 자료를 읽을 때 인코딩 fallback 흐름을 확인하는 코드와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "except_clause",
+    "reading_goal_internal": "첫 decode 호출이 특정 예외를 만들면 실행이 typed except로 이동하고 다른 인코딩으로 다시 decode하는 순서를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`except UnicodeDecodeError:`는 try 영역에서 `UnicodeDecodeError`가 발생했을 때만 실행되는 typed except 절입니다.",
+      "how_to_read": "try 안의 첫 decode가 성공하는지 먼저 보고, 실패해 해당 예외가 발생하면 try의 나머지 정상 흐름을 건너뛰고 이 except 블록으로 이동한다고 읽습니다.",
+      "key_point": "fallback의 핵심은 '무조건 cp949'가 아니라 **첫 해석이 실패했을 때만** 두 번째 해석을 시도한다는 실행 순서입니다.",
+      "common_mistake": "두 decode가 항상 차례대로 모두 실행된다고 생각하기 쉽습니다. 첫 decode가 성공하면 except 블록은 실행되지 않습니다."
+    },
+    "teaching_example": {
+      "code": "raw = \"문서\".encode(\"cp949\")\ntry:\n    text = raw.decode(\"utf-8\")\nexcept UnicodeDecodeError:\n    text = raw.decode(\"cp949\")",
+      "walkthrough": "첫 UTF-8 decode가 실패해 `UnicodeDecodeError`가 발생하고, typed except가 이를 잡아 cp949 decode를 실행합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "첫 decode 호출에서 `UnicodeDecodeError`가 나면 try의 정상 경로는 중단됩니다. 같은 타입을 적은 except 절이 선택되고 그 안의 `raw.decode(\"cp949\")`가 실행됩니다.",
+      "why_correct": "typed except는 지정한 예외 타입이 발생했을 때 해당 처리 블록으로 실행을 이동시키기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "프로그램이 반드시 즉시 종료된다",
+        "why_wrong": "이 예외는 바로 아래 typed except에서 처리되므로 처리 경로가 존재합니다.",
+        "misread_step": "예외 발생과 미처리 예외를 같은 상황으로 본 경우입니다."
+      },
+      "takeaway": "fallback 코드는 **첫 시도 → 특정 예외 발생 → 일치하는 except → 두 번째 시도** 순서로 읽습니다."
+    },
+    "target_statement": "except UnicodeDecodeError:",
+    "focus_span": "except UnicodeDecodeError:",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "encoding fallback",
+      "utf-8",
+      "cp949",
+      "UnicodeDecodeError"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY19_L08_path_join_mkdir_001",
     "level": 8,
-    "title": "Path 결합과 폴더 생성 읽기",
+    "title": "mkdir()의 parents=True 키워드 인자 읽기",
     "concepts": [
-      "import",
-      "pathlib",
-      "mkdir",
-      "path_join",
-      "directory"
+      "argument_passing",
+      "call",
+      "attribute_access",
+      "literal"
     ],
-    "reading_goal": "출력 폴더를 만들고 파일 경로를 조립하는 코드를 읽는다.",
+    "reading_goal": "메서드 호출 안 `parents=True`를 일반 대입이 아니라 `parents` parameter에 True를 전달하는 keyword argument로 읽는다.",
     "code": "from pathlib import Path\n\nout_dir = Path(\"derived\") / \"clean\" / \"inbox\"\nout_dir.mkdir(parents=True, exist_ok=True)\nout_file = out_dir / \"manifest.jsonl\"",
-    "question_type": "meaning_choice",
-    "question": "parents=True의 의미는?",
+    "question_type": "multiple_choice",
+    "question": "`parents=True`가 `mkdir()` 호출에 전달하는 의미는 무엇인가?",
     "choices": [
       "부모 폴더를 삭제한다",
-      "파일을 읽기 전용으로 만든다",
-      "중간 폴더가 없어도 함께 만든다",
-      "경로를 문자열로만 바꾼다"
+      "필요한 상위 폴더도 함께 만들 수 있게 한다",
+      "대상 경로를 문자열로 바꾼다",
+      "파일을 읽기 전용으로 만든다"
     ],
-    "answer": "중간 폴더가 없어도 함께 만든다",
-    "explanation": "Path의 / 연산자는 운영체제에 맞게 경로 요소를 결합한다. mkdir의 parents=True는 derived와 clean 같은 누락된 부모 디렉터리도 만들고, exist_ok=True는 목표 디렉터리가 이미 있을 때의 FileExistsError를 막는다. 같은 위치에 일반 파일이 있으면 여전히 실패하며, out_file은 경로만 만들 뿐 파일을 생성하지 않는다.",
+    "answer": "필요한 상위 폴더도 함께 만들 수 있게 한다",
+    "explanation": "호출 괄호 안 `parents=True`는 `mkdir()`의 `parents` parameter에 True를 전달합니다. 이 옵션은 필요한 상위 경로까지 함께 생성할 수 있게 합니다. `parents`는 pathlib의 `mkdir()`이 상위 디렉터리를 함께 만들지 결정하는 keyword parameter이기 때문입니다. 헷갈리기 쉬운 오답: 대상 경로를 문자열로 바꾼다 문자열 변환과 관련된 호출이나 parameter가 아닙니다. 오독 지점: Path 객체와 mkdir 옵션의 역할을 섞어 읽은 경우입니다. 호출 안 `name=value`는 **parameter 이름을 지정해 값을 전달하는 keyword argument**입니다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
-    "project_context": "derived, tmp, reports 같은 산출물 폴더를 자동 생성할 때 자주 쓴다."
+    "project_context": "derived·tmp·reports 같은 여러 단계의 산출물 디렉터리를 자동 준비하는 코드와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "argument_passing",
+    "reading_goal_internal": "메서드 호출 안 `parents=True`를 일반 대입이 아니라 `parents` parameter에 True를 전달하는 keyword argument로 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "함수나 메서드 호출 괄호 안의 `name=value`는 parameter 이름을 직접 지정해 값을 전달하는 keyword argument입니다.",
+      "how_to_read": "등호 왼쪽 `parents`를 parameter 이름으로, 오른쪽 `True`를 전달할 값으로 구분합니다.",
+      "key_point": "`parents=True`는 `mkdir()` 호출의 동작 옵션을 지정하며, 별도의 변수 `parents`에 대입하는 문장이 아닙니다.",
+      "common_mistake": "호출 괄호 안의 `=`를 일반 대입문으로 읽기 쉽습니다. 이 위치에서는 keyword argument입니다."
+    },
+    "teaching_example": {
+      "code": "from pathlib import Path\n\ncache_dir = Path(\"build\") / \"cache\" / \"images\"\ncache_dir.mkdir(parents=True, exist_ok=True)",
+      "walkthrough": "`parents=True`가 `mkdir()`의 `parents` parameter에 True를 전달해 필요한 상위 디렉터리 생성도 허용합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "호출 괄호 안 `parents=True`는 `mkdir()`의 `parents` parameter에 True를 전달합니다. 이 옵션은 필요한 상위 경로까지 함께 생성할 수 있게 합니다.",
+      "why_correct": "`parents`는 pathlib의 `mkdir()`이 상위 디렉터리를 함께 만들지 결정하는 keyword parameter이기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "대상 경로를 문자열로 바꾼다",
+        "why_wrong": "문자열 변환과 관련된 호출이나 parameter가 아닙니다.",
+        "misread_step": "Path 객체와 mkdir 옵션의 역할을 섞어 읽은 경우입니다."
+      },
+      "takeaway": "호출 안 `name=value`는 **parameter 이름을 지정해 값을 전달하는 keyword argument**입니다."
+    },
+    "target_statement": "out_dir.mkdir(parents=True, exist_ok=True)",
+    "focus_span": "parents=True",
+    "focus_mode": "subexpression",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "pathlib",
+      "mkdir",
+      "parents",
+      "output directory"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY19_L08_glob_sort_001",
     "level": 8,
-    "title": "glob 결과 정렬 읽기",
+    "title": "sorted()로 glob 처리 순서 안정화하기",
     "concepts": [
-      "for",
-      "import",
-      "print",
-      "glob",
-      "sort",
-      "pathlib",
-      "deterministic"
+      "call",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "파일 목록을 항상 같은 순서로 처리하기 위해 정렬하는 코드를 읽는다.",
+    "reading_goal": "중첩 호출에서 glob 결과가 먼저 만들어지고 그 iterable이 `sorted()`에 들어가 정렬된 새 리스트가 되는 순서를 읽는다.",
     "code": "from pathlib import Path\n\nfiles = sorted(Path(\"data/lessons\").glob(\"*.json\"))\nfor path in files:\n    print(path.name)",
-    "question_type": "meaning_choice",
-    "question": "sorted를 붙이는 이유는?",
+    "question_type": "multiple_choice",
+    "question": "이 코드에서 바깥 `sorted(...)` 호출이 직접 하는 일은 무엇인가?",
     "choices": [
-      "파일 내용을 정렬해서 바꾸기 위해",
-      "JSON을 삭제하기 위해",
-      "처리 순서를 안정적으로 만들기 위해",
-      "확장자를 바꾸기 위해"
+      "JSON 파일 내용을 수정한다",
+      "glob으로 얻은 경로 항목을 정렬한 새 리스트를 만든다",
+      "모든 JSON 파일을 삭제한다",
+      "경로 확장자를 바꾼다"
     ],
-    "answer": "처리 순서를 안정적으로 만들기 위해",
-    "explanation": "파일 시스템이 주는 순서는 항상 의도대로 보장되지 않을 수 있어 정렬이 유용하다. glob은 패턴에 맞는 파일 목록을 찾고, sort는 그 목록의 순서를 고정한다. 파일 처리 코드는 순서에 따라 결과가 달라질 수 있으므로 정렬 여부가 중요하다.",
+    "answer": "glob으로 얻은 경로 항목을 정렬한 새 리스트를 만든다",
+    "explanation": "안쪽 glob 호출은 경로 iterable을 만들고, 바깥 `sorted()`가 그 항목들을 정렬한 새 리스트를 반환합니다. 파일 내용 자체는 바꾸지 않습니다. `sorted()`는 iterable을 받아 정렬된 새 list를 반환하는 내장 함수이기 때문입니다. 헷갈리기 쉬운 오답: JSON 파일 내용을 수정한다 `sorted()`에 전달되는 것은 파일 내용이 아니라 Path 항목 iterable입니다. 오독 지점: 정렬 대상이 무엇인지 괄호 안 표현식을 확인하지 않은 경우입니다. 중첩 호출은 **안쪽 결과 → 바깥 함수 입력 → 바깥 반환값** 순서로 읽습니다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
-    "project_context": "lesson 파일 검증, chunk parts 병합, clean pack 처리 순서를 안정화하는 데 중요하다."
+    "project_context": "lesson 검증·chunk 병합·clean pack 처리에서 입력 파일 순서를 매번 동일하게 유지하는 코드와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "중첩 호출에서 glob 결과가 먼저 만들어지고 그 iterable이 `sorted()`에 들어가 정렬된 새 리스트가 되는 순서를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`sorted(iterable)`은 iterable의 항목을 정렬한 **새 리스트**를 반환하는 함수 호출입니다.",
+      "how_to_read": "먼저 괄호 안 iterable이 무엇인지 확인하고, 그 항목들에 정렬을 적용한 결과 리스트가 호출 위치의 값이 된다고 읽습니다.",
+      "key_point": "여기서 `sorted()`를 붙이는 목적은 파일 내용을 바꾸는 것이 아니라 **파일 처리 순서를 안정적으로 정하는 것**입니다.",
+      "common_mistake": "`sorted()`가 원본 파일 자체를 수정하거나 파일 내용까지 정렬한다고 생각하기 쉽습니다. 이 호출이 다루는 것은 경로 항목의 순서입니다."
+    },
+    "teaching_example": {
+      "code": "from pathlib import Path\n\npaths = [Path(\"b.json\"), Path(\"a.json\")]\nordered = sorted(paths)",
+      "walkthrough": "두 Path 객체를 이름 순서대로 정렬한 새 리스트가 만들어져 `a.json`이 `b.json`보다 앞에 옵니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "안쪽 glob 호출은 경로 iterable을 만들고, 바깥 `sorted()`가 그 항목들을 정렬한 새 리스트를 반환합니다. 파일 내용 자체는 바꾸지 않습니다.",
+      "why_correct": "`sorted()`는 iterable을 받아 정렬된 새 list를 반환하는 내장 함수이기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "JSON 파일 내용을 수정한다",
+        "why_wrong": "`sorted()`에 전달되는 것은 파일 내용이 아니라 Path 항목 iterable입니다.",
+        "misread_step": "정렬 대상이 무엇인지 괄호 안 표현식을 확인하지 않은 경우입니다."
+      },
+      "takeaway": "중첩 호출은 **안쪽 결과 → 바깥 함수 입력 → 바깥 반환값** 순서로 읽습니다."
+    },
+    "target_statement": "files = sorted(Path(\"data/lessons\").glob(\"*.json\"))",
+    "focus_span": "sorted(Path(\"data/lessons\").glob(\"*.json\"))",
+    "focus_mode": "subexpression",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "glob",
+      "sorted",
+      "deterministic order",
+      "lesson files"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY19_L09_sha256_file_001",
     "level": 9,
-    "title": "파일 SHA256 해시 계산 읽기",
+    "title": "SHA-256 파일 읽기의 rb mode 해석하기",
     "concepts": [
-      "for",
-      "import",
-      "print",
-      "sha256",
-      "hash",
-      "file",
-      "integrity"
+      "argument_passing",
+      "call",
+      "with_statement",
+      "literal"
     ],
-    "reading_goal": "파일을 chunk 단위로 읽어 해시를 계산하는 코드를 이해한다.",
-    "code": "import hashlib\n\nh = hashlib.sha256()\nwith open(\"pack.zip\", \"rb\") as f:\n    for block in iter(lambda: f.read(1024 * 1024), b\"\"):\n        h.update(block)\n\nprint(h.hexdigest())",
-    "question_type": "meaning_choice",
-    "question": "파일을 rb로 여는 이유는?",
+    "reading_goal": "open 호출의 두 번째 positional argument가 binary read mode를 지정한다는 구조를 읽는다.",
+    "code": "import hashlib\n\nh = hashlib.sha256()\nwith open(\"pack.zip\", \"rb\") as f:\n    for block in iter(lambda: f.read(1024 * 1024), b\"\"):\n        h.update(block)\ndigest = h.hexdigest()",
+    "question_type": "multiple_choice",
+    "question": "`\"rb\"`를 전달하는 주된 이유는 무엇인가?",
     "choices": [
-      "한글을 자동 번역하려고",
-      "파일을 텍스트로만 읽으려고",
-      "바이너리 모드로 읽어 정확한 바이트 해시를 계산하려고",
-      "JSON으로 변환하려고"
+      "파일을 바이너리 모드로 읽어 실제 bytes를 해시에 사용하려고",
+      "파일명을 자동 번역하려고",
+      "ZIP을 JSON으로 바꾸려고",
+      "해시 길이를 8자로 줄이려고"
     ],
-    "answer": "바이너리 모드로 읽어 정확한 바이트 해시를 계산하려고",
-    "explanation": "SHA-256은 bytes를 입력받으므로 rb로 열어 줄바꿈 변환이나 문자 decoding 없이 파일의 실제 바이트를 block별로 h에 누적한다. 같은 digest는 실수로 내용이 바뀌었는지 확인하는 강한 신호지만, 해시만 받은 경우 공격자가 파일과 digest를 모두 바꿀 수 있으므로 출처 인증은 서명이나 신뢰된 digest 채널이 별도로 필요하다.",
+    "answer": "파일을 바이너리 모드로 읽어 실제 bytes를 해시에 사용하려고",
+    "explanation": "`open('pack.zip', 'rb')`에서 두 번째 positional argument가 binary read mode를 선택합니다. 이후 `f.read(...)`가 bytes를 반환해 hash update에 들어갑니다. SHA-256은 byte sequence를 입력으로 계산하기 때문입니다. 헷갈리기 쉬운 오답: ZIP을 JSON으로 바꾸려고 open mode는 serialization 형식을 변환하지 않습니다. 오독 지점: 파일 읽기 mode와 데이터 변환을 혼동한 경우입니다. 파일 hash 코드는 **경로 → binary mode → bytes 읽기 → digest 누적**으로 읽습니다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW",
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
-    "project_context": "zip 분할/이동/중복 정리에서 파일 무결성을 확인하는 데 쓰인다."
+    "project_context": "ZIP 이동·분할·업로드 전후에 파일 내용이 바뀌지 않았는지 SHA-256으로 확인하는 무결성 점검과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "argument_passing",
+    "reading_goal_internal": "open 호출의 두 번째 positional argument가 binary read mode를 지정한다는 구조를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "함수 호출 괄호 안에서 이름 없이 위치로 전달하는 값은 positional argument입니다.",
+      "how_to_read": "`open(path, mode)`에서 첫 값과 둘째 값이 각각 어떤 parameter에 대응하는지 순서대로 봅니다.",
+      "key_point": "`rb`는 텍스트 decoding 없이 파일 bytes를 읽는 binary read mode입니다.",
+      "common_mistake": "`b`가 백업을 뜻한다고 생각하기 쉽습니다. 여기서는 binary를 뜻합니다."
+    },
+    "teaching_example": {
+      "code": "with open(\"image.bin\", \"rb\") as f:\n    chunk = f.read(4)",
+      "walkthrough": "두 번째 positional argument `rb` 때문에 image.bin을 bytes로 읽습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`open('pack.zip', 'rb')`에서 두 번째 positional argument가 binary read mode를 선택합니다. 이후 `f.read(...)`가 bytes를 반환해 hash update에 들어갑니다.",
+      "why_correct": "SHA-256은 byte sequence를 입력으로 계산하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "ZIP을 JSON으로 바꾸려고",
+        "why_wrong": "open mode는 serialization 형식을 변환하지 않습니다.",
+        "misread_step": "파일 읽기 mode와 데이터 변환을 혼동한 경우입니다."
+      },
+      "takeaway": "파일 hash 코드는 **경로 → binary mode → bytes 읽기 → digest 누적**으로 읽습니다."
+    },
+    "target_statement": "with open(\"pack.zip\", \"rb\") as f:",
+    "focus_span": "\"rb\"",
+    "focus_mode": "subexpression",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "SHA-256",
+      "binary mode",
+      "file hash",
+      "integrity"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY19_L09_zip_extract_001",
     "level": 9,
-    "title": "zip 압축 해제 코드 읽기",
+    "title": "ZipFile.extractall()의 대상 디렉터리 읽기",
     "concepts": [
-      "import",
-      "zipfile",
-      "extract",
-      "archive",
-      "path"
+      "call",
+      "argument_passing",
+      "with_statement",
+      "literal"
     ],
-    "reading_goal": "zip 파일을 지정 폴더로 푸는 코드를 읽는다.",
-    "code": "from pathlib import Path\nfrom zipfile import ZipFile\n\nzip_path = Path(\"pack.clean.zip\")\nout_dir = Path(\"tmp/unpacked\")\nout_dir.mkdir(parents=True, exist_ok=True)\n\nwith ZipFile(zip_path) as zf:\n    zf.extractall(out_dir)",
-    "question_type": "meaning_choice",
-    "question": "extractall(out_dir)의 의미는?",
+    "reading_goal": "ZipFile instance의 extractall 메서드가 out_dir을 받아 archive 전체를 해당 위치에 추출하는 호출을 읽는다.",
+    "code": "from pathlib import Path\nfrom zipfile import ZipFile\n\nzip_path = Path(\"pack.clean.zip\")\nout_dir = Path(\"tmp/unpacked\")\nout_dir.mkdir(parents=True, exist_ok=True)\nwith ZipFile(zip_path) as zf:\n    zf.extractall(out_dir)",
+    "question_type": "multiple_choice",
+    "question": "`zf.extractall(out_dir)`의 의미는 무엇인가?",
     "choices": [
-      "out_dir를 zip으로 압축한다",
-      "zip을 삭제한다",
-      "zip 안의 파일들을 out_dir로 푼다",
-      "파일명을 해시로 바꾼다"
+      "ZIP 안의 항목들을 out_dir 아래에 푼다",
+      "out_dir를 ZIP으로 압축한다",
+      "ZIP 파일을 삭제한다",
+      "모든 파일명을 해시값으로 바꾼다"
     ],
-    "answer": "zip 안의 파일들을 out_dir로 푼다",
-    "explanation": "extractall(out_dir)은 archive의 모든 항목을 out_dir 아래에 푼다. 신뢰하지 않는 zip은 경로 이동 항목, 절대 경로, symlink, 지나치게 큰 압축 해제 크기 같은 위험이 있을 수 있으므로 이름과 크기·개수·링크를 검사하고 격리된 새 디렉터리에 풀어야 한다. 기존 파일 충돌도 extraction 전에 확인한다.",
+    "answer": "ZIP 안의 항목들을 out_dir 아래에 푼다",
+    "explanation": "`zf`는 ZIP archive를 나타내고 `extractall(out_dir)`은 archive 안 모든 항목을 지정한 경로에 추출합니다. extractall 메서드의 역할이 archive extraction이기 때문입니다. 헷갈리기 쉬운 오답: out_dir를 ZIP으로 압축한다 그 역할은 archive 생성 쪽이고 현재 메서드 이름은 extract입니다. 오독 지점: 압축과 압축 해제를 반대로 읽은 경우입니다. archive 코드는 **어떤 객체의 어떤 메서드인지** 먼저 확인합니다.",
     "side_card_ids": [
       "PYF95_A4_PATHLIB_PATH"
     ],
-    "project_context": "clean pack, upload pack, 분할 압축본을 확인할 때 필요한 기본 코드다."
+    "project_context": "clean pack이나 업로드 pack을 별도 디렉터리에 풀어 내용과 manifest를 검증하는 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "ZipFile instance의 extractall 메서드가 out_dir을 받아 archive 전체를 해당 위치에 추출하는 호출을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`obj.method(arg)`는 객체의 method를 호출하면서 argument를 전달하는 표현식입니다.",
+      "how_to_read": "점 왼쪽 객체, method 이름, 괄호 안 argument의 역할을 차례로 확인합니다.",
+      "key_point": "`extractall(out_dir)`의 out_dir은 압축 해제 결과가 놓일 대상 디렉터리입니다.",
+      "common_mistake": "extractall이 out_dir 자체를 압축한다고 생각하기 쉽습니다. 반대로 ZIP 내용을 out_dir에 풉니다."
+    },
+    "teaching_example": {
+      "code": "from zipfile import ZipFile\nfrom pathlib import Path\n\nwith ZipFile(\"sample.zip\") as archive:\n    archive.extractall(Path(\"unpacked\"))",
+      "walkthrough": "sample.zip 안의 항목을 unpacked 디렉터리 아래에 추출합니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`zf`는 ZIP archive를 나타내고 `extractall(out_dir)`은 archive 안 모든 항목을 지정한 경로에 추출합니다.",
+      "why_correct": "extractall 메서드의 역할이 archive extraction이기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "out_dir를 ZIP으로 압축한다",
+        "why_wrong": "그 역할은 archive 생성 쪽이고 현재 메서드 이름은 extract입니다.",
+        "misread_step": "압축과 압축 해제를 반대로 읽은 경우입니다."
+      },
+      "takeaway": "archive 코드는 **어떤 객체의 어떤 메서드인지** 먼저 확인합니다."
+    },
+    "target_statement": "zf.extractall(out_dir)",
+    "focus_span": "zf.extractall(out_dir)",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "zipfile",
+      "extractall",
+      "archive",
+      "path"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY19_L09_manifest_create_001",
     "level": 9,
-    "title": "파일 manifest 생성 읽기",
+    "title": "Path.stat().st_size로 파일 크기 metadata 읽기",
     "concepts": [
-      "for",
-      "import",
-      "manifest",
-      "metadata",
-      "file",
-      "jsonl"
+      "attribute_access",
+      "call",
+      "assignment",
+      "literal"
     ],
-    "reading_goal": "폴더 안 파일 목록을 메타데이터 JSONL로 저장하는 흐름을 읽는다.",
-    "code": "import json\nfrom pathlib import Path\n\nroot = Path(\"data/raw\")\nwith open(\"manifest.jsonl\", \"w\", encoding=\"utf-8\") as out:\n    for path in sorted(root.rglob(\"*.pdf\")):\n        row = {\"path\": str(path), \"name\": path.name, \"size\": path.stat().st_size}\n        out.write(json.dumps(row, ensure_ascii=False) + \"\\n\")",
-    "question_type": "meaning_choice",
-    "question": "path.stat().st_size는 무엇을 가져오는가?",
+    "reading_goal": "method call로 얻은 stat result 객체에서 st_size attribute를 읽는 중첩 표현식을 해석한다.",
+    "code": "from pathlib import Path\n\npath = Path(\"manifest.jsonl\")\nsize = path.stat().st_size",
+    "question_type": "multiple_choice",
+    "question": "`st_size`가 나타내는 값은 무엇인가?",
     "choices": [
+      "파일 크기",
       "파일 내용 전체",
       "파일 확장자",
-      "파일 크기",
       "부모 폴더 이름"
     ],
     "answer": "파일 크기",
-    "explanation": "stat()은 파일 메타데이터를 주고 st_size는 크기 바이트 값을 의미한다. manifest는 여러 파일의 목록과 메타데이터를 기록하는 표처럼 볼 수 있다. 어떤 파일을 포함했는지, 경로와 상태가 어떻게 저장되는지 확인하면 재처리가 쉬워진다.",
+    "explanation": "`path.stat()` 결과에서 `.st_size` attribute를 읽습니다. 이 값은 파일 크기를 나타내는 정수입니다. st_size가 stat result의 size metadata field이기 때문입니다. 헷갈리기 쉬운 오답: 파일 내용 전체 내용은 별도의 read 동작으로 읽고 st_size는 metadata 숫자입니다. 오독 지점: 파일 metadata와 파일 contents를 혼동한 경우입니다. manifest 코드는 **metadata 객체 생성 → 필요한 attribute 조회**로 읽습니다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW",
       "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
     ],
-    "project_context": "수집 파일을 나중에 재처리할 수 있게 목록화하는 기본 manifest 패턴이다."
+    "project_context": "수집 파일 manifest에 path·name·size 같은 metadata를 남겨 재처리와 무결성 확인에 활용하는 흐름과 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "attribute_access",
+    "reading_goal_internal": "method call로 얻은 stat result 객체에서 st_size attribute를 읽는 중첩 표현식을 해석한다.",
+    "concept_explanation": {
+      "what_it_is": "`obj.attr`은 객체의 attribute 값을 읽는 attribute access입니다.",
+      "how_to_read": "점 왼쪽 표현식을 먼저 계산해 어떤 객체인지 정한 뒤 그 객체의 attribute를 읽습니다.",
+      "key_point": "`path.stat()`이 metadata 객체를 만들고 `.st_size`가 그 객체의 파일 크기 값을 읽습니다.",
+      "common_mistake": "`st_size`가 파일 내용 전체를 반환한다고 생각하기 쉽습니다. 숫자 크기 metadata입니다."
+    },
+    "teaching_example": {
+      "code": "from pathlib import Path\npath = Path(\"note.txt\")\nsize = path.stat().st_size",
+      "walkthrough": "stat 결과 객체에서 st_size attribute를 읽어 파일 크기 숫자를 얻습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`path.stat()` 결과에서 `.st_size` attribute를 읽습니다. 이 값은 파일 크기를 나타내는 정수입니다.",
+      "why_correct": "st_size가 stat result의 size metadata field이기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "파일 내용 전체",
+        "why_wrong": "내용은 별도의 read 동작으로 읽고 st_size는 metadata 숫자입니다.",
+        "misread_step": "파일 metadata와 파일 contents를 혼동한 경우입니다."
+      },
+      "takeaway": "manifest 코드는 **metadata 객체 생성 → 필요한 attribute 조회**로 읽습니다."
+    },
+    "target_statement": "size = path.stat().st_size",
+    "focus_span": "path.stat().st_size",
+    "focus_mode": "subexpression",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "manifest",
+      "metadata",
+      "file size",
+      "Path.stat"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY19_L09_safe_filename_001",
     "level": 9,
-    "title": "파일명 정규화 함수 읽기",
+    "title": "name[:120] slice로 파일명 길이 제한하기",
     "concepts": [
-      "def",
-      "function",
-      "return",
-      "import",
-      "filename",
-      "normalization",
-      "regex",
-      "safe_path"
+      "slice",
+      "return_statement",
+      "literal"
     ],
-    "reading_goal": "파일명에 위험한 문자를 안전한 문자로 바꾸는 코드를 읽는다.",
-    "code": "import re\n\ndef safe_name(name):\n    name = name.strip()\n    name = re.sub(r\"[\\\\/:*?\\\"<>|]\", \"_\", name)\n    return name[:120]",
-    "question_type": "meaning_choice",
-    "question": "return name[:120]의 목적은?",
+    "reading_goal": "문자열 slice에서 시작 생략과 stop 120의 의미를 읽어 반환 문자열 길이를 제한하는 구조를 해석한다.",
+    "code": "import re\n\ndef safe_name(name):\n    name = name.strip()\n    name = re.sub(r\"[\\\\/:*?\\\"<>|]\", \"_\", name)\n    return name[:120]\n\nresult = safe_name(\"  report?.pdf  \")",
+    "question_type": "multiple_choice",
+    "question": "`name[:120]`을 사용하는 주된 목적은 무엇인가?",
     "choices": [
+      "파일명이 너무 길어지는 것을 제한한다",
       "앞 120개 파일을 삭제한다",
       "문자열을 숫자로 바꾼다",
-      "파일명이 너무 길어지는 것을 제한한다",
-      "확장자를 제거한다"
+      "확장자를 항상 제거한다"
     ],
     "answer": "파일명이 너무 길어지는 것을 제한한다",
-    "explanation": "첫 줄은 앞뒤 공백을 제거하고 re.sub는 Windows에서 금지되는 여러 문자를 밑줄로 바꾼다. [:120]은 Python 문자 수를 제한할 뿐 byte 길이나 전체 경로 길이를 보장하지 않는다. 빈 이름, CON 같은 예약명, 끝의 점·공백, Unicode 정규화, 같은 결과로 변환되는 이름의 충돌과 확장자 보존도 별도로 처리해야 완전한 안전 파일명이 된다.",
+    "explanation": "`[:120]`은 문자열 앞부분에서 최대 120문자만 선택해 반환합니다. slice stop 120이 반환 범위를 제한하기 때문입니다. 헷갈리기 쉬운 오답: 앞 120개 파일을 삭제한다 slice 대상은 파일 목록이 아니라 name 문자열입니다. 오독 지점: 문자열 slice를 파일 삭제 연산으로 잘못 해석한 경우입니다. slice는 **대상 sequence와 start/stop 범위**를 먼저 확인합니다.",
     "side_card_ids": [],
-    "project_context": "PDF 제목, 웹 제목, 기관 자료명을 파일명으로 바꿀 때 필요한 방어 코드다."
+    "project_context": "웹 제목·PDF 제목을 로컬 파일명으로 바꿀 때 과도하게 긴 이름을 제한하는 방어 처리와 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "slice",
+    "reading_goal_internal": "문자열 slice에서 시작 생략과 stop 120의 의미를 읽어 반환 문자열 길이를 제한하는 구조를 해석한다.",
+    "concept_explanation": {
+      "what_it_is": "`sequence[start:stop]`은 start부터 stop 직전까지 잘라내는 slice입니다.",
+      "how_to_read": "start가 생략되면 처음부터, stop은 포함하지 않는다고 봅니다.",
+      "key_point": "`name[:120]`은 문자열의 앞 최대 120문자만 남깁니다.",
+      "common_mistake": "index 120 문자까지 포함해 121문자를 반환한다고 생각하기 쉽습니다. stop index는 포함되지 않습니다."
+    },
+    "teaching_example": {
+      "code": "text = \"abcdef\"\nshort = text[:3]",
+      "walkthrough": "index 0,1,2의 abc만 선택되고 index 3은 포함되지 않습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "`[:120]`은 문자열 앞부분에서 최대 120문자만 선택해 반환합니다.",
+      "why_correct": "slice stop 120이 반환 범위를 제한하기 때문입니다.",
+      "common_wrong_choice": {
+        "choice": "앞 120개 파일을 삭제한다",
+        "why_wrong": "slice 대상은 파일 목록이 아니라 name 문자열입니다.",
+        "misread_step": "문자열 slice를 파일 삭제 연산으로 잘못 해석한 경우입니다."
+      },
+      "takeaway": "slice는 **대상 sequence와 start/stop 범위**를 먼저 확인합니다."
+    },
+    "target_statement": "return name[:120]",
+    "focus_span": "name[:120]",
+    "focus_mode": "subexpression",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "filename",
+      "slice",
+      "normalization",
+      "length limit"
+    ],
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY19_L10_resume_done_set_001",
     "level": 10,
-    "title": "resume 가능한 처리 루프 읽기",
+    "title": "이미 완료된 row에서 continue로 현재 회차만 건너뛰기",
     "concepts": [
-      "if",
-      "for",
-      "continue",
-      "resume",
-      "checkpoint",
-      "set",
-      "batch"
+      "continue_statement",
+      "for_statement",
+      "if_statement",
+      "membership_test"
     ],
-    "reading_goal": "이미 처리한 id를 건너뛰고 중단 지점부터 이어가는 코드를 읽는다.",
-    "code": "done_ids = set(load_done_ids(\"done.txt\"))\n\nfor row in rows:\n    if row[\"id\"] in done_ids:\n        continue\n    process(row)\n    append_done_id(\"done.txt\", row[\"id\"])",
+    "reading_goal": "continue가 실행된 현재 반복 회차의 아래 문장을 생략하고 반복문의 다음 항목으로 이동하는 실행 순서를 추적한다.",
+    "code": "done_ids = {\"a\"}\nrows = [{\"id\": \"a\"}, {\"id\": \"b\"}]\nprocessed = []\n\nfor row in rows:\n    if row[\"id\"] in done_ids:\n        continue\n    processed.append(row[\"id\"])\n\nprint(processed)",
     "question_type": "meaning_choice",
-    "question": "if row['id'] in done_ids: continue의 의미는?",
+    "question": "첫 row의 id가 `\"a\"`일 때 `continue` 실행 직후 흐름은 어떻게 되는가?",
     "choices": [
-      "이미 처리한 항목만 다시 처리한다",
-      "모든 항목을 삭제한다",
-      "이미 처리한 항목은 건너뛴다",
-      "done.txt를 비운다"
+      "첫 row의 processed.append를 건너뛰고 다음 row로 이동한다",
+      "for 문 전체를 즉시 끝낸다",
+      "첫 row를 processed에 추가한 뒤 다음 row로 이동한다",
+      "done_ids를 비운다"
     ],
-    "answer": "이미 처리한 항목은 건너뛴다",
-    "explanation": "done_ids에 있는 id는 continue로 건너뛰고, 새 항목은 process가 성공한 뒤 done.txt에 기록한다. set membership은 평균적으로 빠르다. 다만 process의 외부 효과는 성공했는데 완료 기록이 실패하면 재실행 때 중복 처리될 수 있다. 작업을 idempotent하게 만들거나 결과와 완료 상태를 하나의 transaction으로 기록하고, 동시 worker의 중복 실행도 제어해야 한다.",
+    "answer": "첫 row의 processed.append를 건너뛰고 다음 row로 이동한다",
+    "explanation": "1) 첫 row는 {\"id\": \"a\"}다. 2) \"a\"는 done_ids에 있으므로 if 조건이 True다. 3) continue가 실행된다. 4) 같은 for 본문의 아래 `processed.append(...)`는 첫 회차에서 실행되지 않는다. 5) for 문은 끝나지 않고 둘째 row로 이동한다.",
     "side_card_ids": [
       "PYV159_A1_CHECKPOINT_RESUME_FLOW"
     ],
-    "project_context": "샤드/노드패스/파일 추출 작업처럼 오래 걸리는 루틴에 필요한 패턴이다."
+    "project_context": "오래 걸리는 shard·node·파일 처리에서 이미 완료한 id는 건너뛰고 새 항목부터 이어서 처리하는 resume 루프에 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "continue_statement",
+    "reading_goal_internal": "continue가 실행된 현재 반복 회차의 아래 문장을 생략하고 반복문의 다음 항목으로 이동하는 실행 순서를 추적한다.",
+    "concept_explanation": {
+      "what_it_is": "`continue`는 현재 반복 회차의 남은 본문을 건너뛰고 바로 다음 반복 회차로 이동하는 문장입니다.",
+      "how_to_read": "continue가 실행되는 조건을 먼저 확인하고, 조건이 참이라면 같은 들여쓰기 블록에서 continue 아래에 있는 문장은 이번 회차에 실행하지 않는다고 읽습니다.",
+      "key_point": "`continue`는 for 문 전체를 끝내는 `break`와 다릅니다. **현재 회차만 건너뛰고 다음 항목은 계속 처리합니다.**",
+      "common_mistake": "continue를 만나면 반복문 자체가 끝난다고 생각하기 쉽습니다. 다음 항목이 있으면 반복은 계속됩니다."
+    },
+    "teaching_example": {
+      "code": "values = [1, 2, 3]\nseen = []\nfor value in values:\n    if value == 2:\n        continue\n    seen.append(value)\nprint(seen)",
+      "walkthrough": "value가 2인 회차에서 continue가 append를 건너뛰므로 seen에는 1과 3만 남습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) 첫 row는 {\"id\": \"a\"}다. 2) \"a\"는 done_ids에 있으므로 if 조건이 True다. 3) continue가 실행된다. 4) 같은 for 본문의 아래 `processed.append(...)`는 첫 회차에서 실행되지 않는다. 5) for 문은 끝나지 않고 둘째 row로 이동한다.",
+      "why_correct": "continue는 현재 회차의 남은 본문만 건너뛰므로 첫 row를 추가하지 않고 다음 row 처리를 계속합니다.",
+      "common_wrong_choice": {
+        "choice": "for 문 전체를 즉시 끝낸다",
+        "why_wrong": "반복문 전체를 즉시 종료하는 문장은 break이고, continue는 다음 반복 회차로 이동합니다.",
+        "misread_step": "continue와 break가 반복 흐름에 미치는 범위를 구분합니다."
+      },
+      "takeaway": "`continue`는 **현재 회차의 아래 코드 건너뛰기 → 다음 항목으로 반복 계속**이라고 읽습니다."
+    },
+    "target_statement": "continue",
+    "focus_span": "continue",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "logging_monitoring_operations",
+    "coverage_topics": [
+      "resume",
+      "checkpoint",
+      "done_ids",
+      "batch_processing"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY19_L10_failed_list_001",
     "level": 10,
-    "title": "실패 목록 수집 패턴 읽기",
+    "title": "except Exception as e에서 잡은 예외 객체를 e로 사용하기",
     "concepts": [
-      "for",
-      "print",
-      "error_handling",
-      "failed_list",
-      "try_except",
-      "batch"
+      "except_clause",
+      "try_statement",
+      "call",
+      "assignment"
     ],
-    "reading_goal": "배치 처리 중 실패한 파일만 따로 모으는 코드를 읽는다.",
-    "code": "failed = []\n\nfor path in files:\n    try:\n        convert(path)\n    except Exception as e:\n        failed.append({\"path\": str(path), \"error\": str(e)})\n\nprint(\"failed\", len(failed))",
+    "reading_goal": "except의 `as e` 부분이 잡힌 현재 예외 객체에 이름을 붙이고 그 이름이 except 본문에서 사용되는 흐름을 읽는다.",
+    "code": "def convert(path):\n    if path == \"bad.pdf\":\n        raise ValueError(\"broken file\")\n    return \"ok\"\n\nfailed = []\nfor path in [\"good.pdf\", \"bad.pdf\"]:\n    try:\n        convert(path)\n    except Exception as e:\n        failed.append({\"path\": path, \"error\": str(e)})\n\nprint(failed[0][\"error\"])",
     "question_type": "meaning_choice",
-    "question": "이 코드가 실패해도 전체 루프가 계속될 수 있는 이유는?",
+    "question": "`except Exception as e:`에서 이름 `e`가 가리키는 것은 무엇인가?",
     "choices": [
-      "오류가 절대 나지 않기 때문에",
-      "files가 항상 비어 있기 때문에",
-      "try/except로 각 파일의 오류를 잡기 때문에",
-      "convert가 실행되지 않기 때문에"
+      "현재 잡힌 예외 객체",
+      "실패한 파일 경로 문자열",
+      "failed 리스트 전체",
+      "항상 문자열 Exception"
     ],
-    "answer": "try/except로 각 파일의 오류를 잡기 때문에",
-    "explanation": "각 convert 호출을 try/except로 감싸므로 Exception이 발생한 파일은 path와 오류 문자열을 failed에 추가한 뒤 다음 반복으로 넘어간다. 모든 Exception을 같은 방식으로 삼키면 디스크 부족이나 설정 오류 같은 시스템 전체 문제도 계속 반복할 수 있다. 예상 가능한 항목별 오류만 잡고, 치명적 오류는 중단하며, 오류 문자열의 민감 정보도 정제해야 한다.",
+    "answer": "현재 잡힌 예외 객체",
+    "explanation": "1) good.pdf는 정상 처리된다. 2) bad.pdf에서는 ValueError(\"broken file\")가 발생한다. 3) `except Exception as e:`가 이 예외를 잡는다. 4) `as e`가 잡힌 ValueError 객체를 e에 연결한다. 5) 본문에서 str(e)를 호출해 \"broken file\" 문자열을 얻는다.",
     "side_card_ids": [
       "PYV161_A1_BATCH_MEMORY_FLOW"
     ],
-    "project_context": "PDF 추출, zip 해제, JSON 파싱, 수집 파일 처리에서 꼭 필요한 운용 패턴이다."
+    "project_context": "PDF 추출·JSON 파싱 같은 배치 처리에서 예상 가능한 항목별 실패를 경로와 오류 정보와 함께 수집하는 패턴에 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "except_clause",
+    "reading_goal_internal": "except의 `as e` 부분이 잡힌 현재 예외 객체에 이름을 붙이고 그 이름이 except 본문에서 사용되는 흐름을 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`except SomeError as e:`는 지정한 예외를 잡으면서 발생한 예외 객체를 임시 이름 `e`에 바인딩하는 절입니다.",
+      "how_to_read": "try에서 어떤 예외가 발생했는지 확인하고, 그 타입이 except에 맞으면 본문으로 이동합니다. `as e`가 있으면 그 예외 객체를 e라는 이름으로 본문에서 참조할 수 있습니다.",
+      "key_point": "`e`는 고정 문자열이나 오류 코드가 아니라 **이번에 실제로 잡힌 예외 객체를 가리키는 이름**입니다.",
+      "common_mistake": "`as e`가 예외를 문자열로 자동 변환한다고 생각하기 쉽습니다. 문자열이 필요하면 `str(e)`처럼 별도 호출이 필요합니다."
+    },
+    "teaching_example": {
+      "code": "try:\n    int(\"bad\")\nexcept ValueError as err:\n    message = str(err)\n    print(type(err).__name__)",
+      "walkthrough": "int()가 만든 ValueError 객체가 err에 바인딩되어 except 본문에서 str(err)와 type(err)로 사용할 수 있습니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) good.pdf는 정상 처리된다. 2) bad.pdf에서는 ValueError(\"broken file\")가 발생한다. 3) `except Exception as e:`가 이 예외를 잡는다. 4) `as e`가 잡힌 ValueError 객체를 e에 연결한다. 5) 본문에서 str(e)를 호출해 \"broken file\" 문자열을 얻는다.",
+      "why_correct": "`as e`는 현재 처리 중인 예외 객체에 이름을 붙이는 문법이므로 e는 그 객체를 가리킵니다.",
+      "common_wrong_choice": {
+        "choice": "실패한 파일 경로 문자열",
+        "why_wrong": "파일 경로는 반복 변수 path가 가리키고, e는 except가 잡은 예외 객체를 가리킵니다.",
+        "misread_step": "for 반복 변수 path와 except의 예외 바인딩 이름 e를 분리해서 읽습니다."
+      },
+      "takeaway": "`except ... as name`은 **예외 잡기 → 예외 객체를 name에 바인딩 → 본문에서 name 사용** 순서입니다."
+    },
+    "target_statement": "except Exception as e:",
+    "focus_span": "except Exception as e:",
+    "focus_mode": "compound_header",
+    "coverage_domain": "exceptions_debugging",
+    "coverage_topics": [
+      "failed_list",
+      "batch_processing",
+      "error_capture",
+      "conversion"
+    ],
+    "pedagogical_intent": "read_execution_order"
   },
   {
     "id": "PY19_L10_atomic_write_001",
     "level": 10,
-    "title": "임시 파일 후 교체 저장 읽기",
+    "title": "tmp.replace(path)에서 호출 대상과 목적지 경로 읽기",
     "concepts": [
-      "import",
+      "call",
+      "attribute_access",
+      "argument_passing",
+      "assignment"
+    ],
+    "reading_goal": "`object.method(arg)` 형태에서 tmp Path 객체의 replace 메서드에 최종 path가 인자로 전달되는 구조를 분리해 읽는다.",
+    "code": "from pathlib import Path\n\npath = Path(\"result.json\")\ntmp = path.with_suffix(\".tmp\")\n\ntmp.write_text('{\"ok\": true}', encoding=\"utf-8\")\ntmp.replace(path)",
+    "question_type": "meaning_choice",
+    "question": "`tmp.replace(path)`에서 `replace` 메서드를 호출하는 대상 객체는 무엇인가?",
+    "choices": [
+      "tmp",
+      "path",
+      "Path 클래스",
+      "문자열 result.json"
+    ],
+    "answer": "tmp",
+    "explanation": "1) path는 최종 result.json Path다. 2) tmp는 result.tmp Path다. 3) `tmp.replace`에서 점 왼쪽 tmp가 메서드 receiver다. 4) 괄호 안 path는 replace에 전달되는 인자다. 5) 따라서 replace 메서드를 호출하는 객체는 tmp다.",
+    "side_card_ids": [],
+    "project_context": "manifest·progress·검증 결과를 임시 파일에 먼저 쓴 뒤 최종 경로로 교체하는 안전 저장 패턴에 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "call",
+    "reading_goal_internal": "`object.method(arg)` 형태에서 tmp Path 객체의 replace 메서드에 최종 path가 인자로 전달되는 구조를 분리해 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "메서드 호출은 `object.method(arguments)` 형태로 특정 객체가 제공하는 동작을 호출합니다.",
+      "how_to_read": "`tmp.replace(path)`에서는 점 왼쪽 tmp가 호출 대상 객체, 점 오른쪽 replace가 메서드 이름, 괄호 안 path가 전달 인자라고 나누어 읽습니다.",
+      "key_point": "이 줄에서 `path`는 메서드를 호출하는 객체가 아니라 **replace에 전달되는 목적지 인자**입니다.",
+      "common_mistake": "`path.replace(tmp)`처럼 호출 방향을 반대로 읽기 쉽습니다. 점 바로 왼쪽 객체가 메서드 호출의 주체입니다."
+    },
+    "teaching_example": {
+      "code": "from pathlib import Path\nsource = Path(\"draft.tmp\")\ntarget = Path(\"draft.txt\")\nsource.replace(target)",
+      "walkthrough": "호출 대상은 source이고 target은 replace에 전달되는 목적지 Path 인자입니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) path는 최종 result.json Path다. 2) tmp는 result.tmp Path다. 3) `tmp.replace`에서 점 왼쪽 tmp가 메서드 receiver다. 4) 괄호 안 path는 replace에 전달되는 인자다. 5) 따라서 replace 메서드를 호출하는 객체는 tmp다.",
+      "why_correct": "`object.method(...)` 문법에서 점 왼쪽 object가 호출 대상이므로 정답은 tmp입니다.",
+      "common_wrong_choice": {
+        "choice": "path",
+        "why_wrong": "path는 호출 괄호 안에 들어가는 목적지 인자이고, 메서드 호출 대상은 점 왼쪽 tmp입니다.",
+        "misread_step": "점 왼쪽 receiver와 괄호 안 argument를 분리해 읽습니다."
+      },
+      "takeaway": "메서드 호출은 **대상 객체 → 메서드 이름 → 괄호 안 인자**로 구조를 나눠 읽습니다."
+    },
+    "target_statement": "tmp.replace(path)",
+    "focus_span": "tmp.replace(path)",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
       "atomic_write",
       "temp_file",
       "replace",
       "safe_write"
     ],
-    "reading_goal": "저장 중 실패해도 원본 파일 손상을 줄이는 패턴을 이해한다.",
-    "code": "from pathlib import Path\n\npath = Path(\"result.json\")\ntmp = path.with_suffix(\".tmp\")\n\ntmp.write_text(\"{\\\"ok\\\": true}\", encoding=\"utf-8\")\ntmp.replace(path)",
-    "question_type": "meaning_choice",
-    "question": "tmp.replace(path)의 의미는?",
-    "choices": [
-      "최종 파일을 삭제하고 끝낸다",
-      "tmp 내용을 출력만 한다",
-      "임시 파일을 최종 파일 위치로 교체한다",
-      "확장자를 jsonl로 바꾼다"
-    ],
-    "answer": "임시 파일을 최종 파일 위치로 교체한다",
-    "explanation": "result.tmp를 완전히 쓴 뒤 replace가 같은 디렉터리의 result.json 위치로 이름을 바꾼다. 같은 filesystem에서 운영체제가 atomic rename을 제공하면 독자가 중간 파일을 볼 위험이 줄어든다. 하지만 write가 storage에 영구 반영됐음을 보장하려면 flush/fsync와 디렉터리 fsync 정책이 필요할 수 있고, 권한·filesystem·다른 process 조건에 따라 replace도 실패할 수 있다.",
-    "side_card_ids": [],
-    "project_context": "중요한 manifest, progress, 검증 결과를 안전하게 저장할 때 쓸 수 있다."
+    "pedagogical_intent": "identify_meaning"
   },
   {
     "id": "PY19_L10_large_file_count_001",
     "level": 10,
-    "title": "대용량 파일 줄 수 세기",
+    "title": "파일 한 줄마다 count += 1로 현재 개수 갱신하기",
     "concepts": [
-      "for",
-      "print",
-      "large_file",
-      "streaming",
-      "count",
-      "memory"
+      "augmented_assignment",
+      "for_statement",
+      "with_statement",
+      "literal"
     ],
-    "reading_goal": "큰 파일을 전체 로드하지 않고 줄 수만 세는 코드를 읽는다.",
-    "code": "count = 0\nwith open(\"chunks.jsonl\", \"r\", encoding=\"utf-8\") as f:\n    for _ in f:\n        count += 1\n\nprint(count)",
-    "question_type": "meaning_choice",
-    "question": "이 방식이 read_text().splitlines()보다 유리한 점은?",
+    "reading_goal": "`count += 1`이 현재 count 값을 읽어 1을 더한 뒤 같은 이름에 새 값을 저장하는 상태 변화를 반복 회차마다 추적한다.",
+    "code": "from io import StringIO\n\ncount = 0\nstream = StringIO(\"a\\nb\\nc\\n\")\nfor _ in stream:\n    count += 1\n\nprint(count)",
+    "question_type": "output_prediction",
+    "question": "stream에 세 줄이 있을 때 반복 종료 후 `count`의 값은 무엇인가?",
     "choices": [
-      "항상 더 작은 결과를 만든다",
-      "파일을 자동 압축한다",
-      "파일 전체를 메모리에 올리지 않는다",
-      "인코딩이 필요 없다"
+      "0",
+      "1",
+      "2",
+      "3"
     ],
-    "answer": "파일 전체를 메모리에 올리지 않는다",
-    "explanation": "파일을 연 뒤 for _ in f가 한 줄씩 순차적으로 읽을 때마다 count를 1씩 늘린다. 그래서 파일 전체 문자열이나 모든 줄 목록을 메모리에 한꺼번에 만들지 않고 줄 수를 셀 수 있다. 마지막 print(count)는 실제 줄 수를 출력하며, 장점은 큰 파일에서도 메모리 사용량이 비교적 작다는 점이다.",
+    "answer": "3",
+    "explanation": "1) 반복 전 count는 0이다. 2) 첫 줄 회차에서 `0 + 1` 결과 1을 count에 저장한다. 3) 둘째 회차에서 2가 된다. 4) 셋째 회차에서 3이 된다. 5) 반복 종료 후 count는 3이다.",
     "side_card_ids": [
       "PYV161_A1_BATCH_MEMORY_FLOW",
       "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
     ],
-    "project_context": "수 GB chunk jsonl처럼 큰 파일을 점검할 때 필요한 독해다."
+    "project_context": "수 GB JSONL처럼 전체 메모리 로드가 부담스러운 파일을 순차 읽으면서 레코드 수만 집계하는 패턴에 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "augmented_assignment",
+    "reading_goal_internal": "`count += 1`이 현재 count 값을 읽어 1을 더한 뒤 같은 이름에 새 값을 저장하는 상태 변화를 반복 회차마다 추적한다.",
+    "concept_explanation": {
+      "what_it_is": "`count += 1`은 현재 count에 1을 더한 결과를 다시 count에 저장하는 복합 대입입니다.",
+      "how_to_read": "이 문장이 실행될 때마다 count의 **현재 값**을 먼저 확인하고 1을 더한 새 값을 같은 이름에 저장한다고 읽습니다.",
+      "key_point": "반복문 안에 있으므로 한 번만 증가하는 것이 아니라 **본문이 실행되는 각 회차마다** 1씩 증가합니다.",
+      "common_mistake": "`+= 1`이 초기값 0에만 계속 1을 더한다고 생각하기 쉽습니다. 매 회차 직전의 최신 count 값에서 다시 계산합니다."
+    },
+    "teaching_example": {
+      "code": "count = 0\nfor _ in [10, 20]:\n    count += 1\nprint(count)",
+      "walkthrough": "첫 반복 뒤 count는 1, 둘째 반복 뒤 2가 되어 마지막에 2가 출력됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) 반복 전 count는 0이다. 2) 첫 줄 회차에서 `0 + 1` 결과 1을 count에 저장한다. 3) 둘째 회차에서 2가 된다. 4) 셋째 회차에서 3이 된다. 5) 반복 종료 후 count는 3이다.",
+      "why_correct": "세 줄 때문에 본문이 세 번 실행되고 각 회차마다 count가 1씩 증가하므로 최종값은 3입니다.",
+      "common_wrong_choice": {
+        "choice": "1",
+        "why_wrong": "`count += 1`은 반복문 안에 있어 첫 회차뿐 아니라 세 회차 모두에서 실행됩니다.",
+        "misread_step": "문장이 어디에 들여쓰기되어 있는지 보고 실행 횟수를 반복 횟수와 연결합니다."
+      },
+      "takeaway": "복합 대입은 **현재 값 읽기 → 연산 → 같은 대상에 새 값 저장**을 매 실행마다 반복합니다."
+    },
+    "target_statement": "count += 1",
+    "focus_span": "count += 1",
+    "focus_mode": "whole_statement",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "large_file",
+      "streaming",
+      "line_count",
+      "memory"
+    ],
+    "pedagogical_intent": "trace_state"
   },
   {
     "id": "PY19_L10_file_exists_guard_001",
     "level": 10,
-    "title": "파일 존재 여부 guard 읽기",
+    "title": "파일이 없을 때 if guard가 raise 경로를 선택하는 흐름 읽기",
     "concepts": [
-      "if",
-      "import",
-      "exists",
-      "guard",
-      "file",
-      "error_handling"
+      "if_statement",
+      "boolean_operation",
+      "call",
+      "raise_statement"
     ],
-    "reading_goal": "입력 파일이 없을 때 명확한 오류를 내는 코드를 읽는다.",
-    "code": "from pathlib import Path\n\ninput_path = Path(\"input.jsonl\")\nif not input_path.exists():\n    raise FileNotFoundError(f\"missing input: {input_path}\")",
+    "reading_goal": "exists() 결과에 not을 적용한 최종 조건값을 먼저 구하고, 그 값이 True일 때 if 본문의 예외 경로가 선택되는 실행 순서를 읽는다.",
+    "code": "from pathlib import Path\n\ninput_path = Path(\"input.jsonl\")\ninput_exists = False\n\nif not input_exists:\n    raise FileNotFoundError(f\"missing input: {input_path}\")",
     "question_type": "meaning_choice",
-    "question": "이 guard의 목적은?",
+    "question": "`input_exists`가 False일 때 `if not input_exists:`가 선택하는 흐름은 무엇인가?",
     "choices": [
-      "파일이 없으면 자동 생성하기",
-      "항상 성공으로 처리하기",
-      "입력 파일이 없을 때 조기에 명확히 실패시키기",
-      "확장자를 바꾸기"
+      "if 본문으로 들어가 FileNotFoundError를 발생시킨다",
+      "if 본문을 건너뛰고 정상 처리한다",
+      "input_exists를 자동으로 True로 바꾼다",
+      "input_path 파일을 자동 생성한다"
     ],
-    "answer": "입력 파일이 없을 때 조기에 명확히 실패시키기",
-    "explanation": "exists가 False이면 뒤 처리로 가지 않고 구체적인 path가 든 FileNotFoundError를 일찍 발생시킨다. 다만 exists는 같은 이름의 디렉터리에도 True이므로 입력이 일반 파일이어야 한다면 input_path.is_file()을 검사해야 한다. 검사 직후 파일이 사라질 수도 있으므로 실제 open 오류도 여전히 처리해야 한다.",
+    "answer": "if 본문으로 들어가 FileNotFoundError를 발생시킨다",
+    "explanation": "1) input_exists는 False다. 2) 조건 안 `not input_exists`를 계산하면 True다. 3) if는 True 조건이므로 본문으로 들어간다. 4) FileNotFoundError 객체를 만들어 raise한다. 5) 따라서 파일이 없는 상태를 조기에 실패로 처리한다.",
     "side_card_ids": [
       "PYV160_A1_FILE_PATH_ENCODING_FLOW"
     ],
-    "project_context": "긴 파이프라인에서 잘못된 경로를 빠르게 잡아내는 습관이다."
+    "project_context": "긴 데이터 파이프라인을 시작하기 전에 필수 입력 경로가 없으면 조기에 명확한 오류로 중단하는 guard 패턴에 연결된다.",
+    "authoring_version": "V2.3",
+    "primary_concept": "if_statement",
+    "reading_goal_internal": "exists() 결과에 not을 적용한 최종 조건값을 먼저 구하고, 그 값이 True일 때 if 본문의 예외 경로가 선택되는 실행 순서를 읽는다.",
+    "concept_explanation": {
+      "what_it_is": "`if condition:`은 condition을 먼저 평가하고 그 결과가 truthy일 때만 들여쓴 본문을 실행합니다.",
+      "how_to_read": "`if not input_path.exists():`처럼 조건 안에 호출과 not이 함께 있으면, 먼저 exists()의 반환값을 구하고 not으로 뒤집은 뒤 그 최종 Boolean으로 if 분기를 결정합니다.",
+      "key_point": "if 문 자체의 역할은 **완성된 조건값을 보고 본문을 실행할지 결정하는 것**입니다.",
+      "common_mistake": "파일이 존재할 때 raise한다고 반대로 읽기 쉽습니다. `not` 때문에 exists()가 False일 때 if 조건은 True가 됩니다."
+    },
+    "teaching_example": {
+      "code": "exists = False\nif not exists:\n    result = \"missing\"\nelse:\n    result = \"ready\"\nprint(result)",
+      "walkthrough": "exists가 False이면 not False가 True가 되어 if 본문인 missing 경로가 선택됩니다."
+    },
+    "answer_explanation": {
+      "step_by_step": "1) input_exists는 False다. 2) 조건 안 `not input_exists`를 계산하면 True다. 3) if는 True 조건이므로 본문으로 들어간다. 4) FileNotFoundError 객체를 만들어 raise한다. 5) 따라서 파일이 없는 상태를 조기에 실패로 처리한다.",
+      "why_correct": "`not False`가 True이므로 if 본문이 선택되고 그 안의 raise가 실행됩니다.",
+      "common_wrong_choice": {
+        "choice": "if 본문을 건너뛰고 정상 처리한다",
+        "why_wrong": "그 흐름은 최종 if 조건이 False일 때 가능한데 현재 `not input_exists`는 True입니다.",
+        "misread_step": "input_exists 원래 값에서 끝내지 말고 `not`까지 적용한 최종 조건을 계산합니다."
+      },
+      "takeaway": "if 문은 **조건 표현식 전체를 먼저 평가 → True이면 본문 실행** 순서로 읽습니다."
+    },
+    "target_statement": "if not input_exists:",
+    "focus_span": "if not input_exists:",
+    "focus_mode": "compound_header",
+    "coverage_domain": "files_paths_serialization",
+    "coverage_topics": [
+      "file_exists",
+      "guard_clause",
+      "input_validation",
+      "file_error"
+    ],
+    "pedagogical_intent": "read_execution_order"
   }
 ]
