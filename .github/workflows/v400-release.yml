@@ -1,0 +1,59 @@
+name: v400-release
+
+on:
+  push:
+    branches:
+      - main
+      - agent/v400-1-release-polish-20260821
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v400-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-gate:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: V400 JavaScript syntax
+        run: |
+          node --check src/pwa/release_polish_v400_1.js
+          node --check src/pwa/sw_v400_1.js
+          node --check src/pwa/consumer_ux_v349.js
+          node --check src/pwa/diagnostic_v400_2.js
+          node --check src/pwa/diagnostic_remediation_v400_2.js
+          node --check src/pwa/admin_mode_v1.js
+          node --check src/pwa/developer_mode_v1.js
+          node --check tools/audit_v400_release_polish.js
+
+      - name: Manifest JSON
+        run: python -m json.tool src/pwa/manifest.json > /dev/null
+
+      - name: Lesson validation
+        run: python tools/validate_lessons.py
+
+      - name: V400.1 release polish audit
+        run: node tools/audit_v400_release_polish.js
+
+      - name: Diff integrity
+        run: git diff --check
