@@ -1,0 +1,55 @@
+name: V400 release gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v400-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: JavaScript syntax
+        run: |
+          node --check src/pwa/app.js
+          node --check src/pwa/learning_home_v343.js
+          node --check src/pwa/v400_pedagogy_runtime.js
+          node --check src/pwa/diagnostic_v400_2.js
+          node --check src/pwa/diagnostic_remediation_v400_2.js
+          node --check src/pwa/developer_mode_v1.js
+          node --check src/pwa/developer_auth_v1_config.js
+          node --check src/pwa/developer_auth_v1.js
+          node --check src/pwa/admin_mode_v1.js
+          node --check src/pwa/v400_release_polish.js
+
+      - name: JSON and release wiring
+        run: |
+          python -m json.tool src/pwa/manifest.json >/dev/null
+          python -m json.tool data/diagnostic/diagnostic_v400_2.json >/dev/null
+          python -m json.tool data_i18n/en/diagnostic/diagnostic_v400_2.json >/dev/null
+          grep -q 'v400_release_polish.js' src/pwa/developer_auth_v1_config.js
+          grep -q 'data-view="diagnostic"' src/pwa/index.html
+          grep -q 'admin_mode_v1.js' src/pwa/index.html
+
+      - name: Existing lesson validation
+        run: python tools/validate_lessons.py
+
+      - name: Diff integrity
+        run: git diff --check
