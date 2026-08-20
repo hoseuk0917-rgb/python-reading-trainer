@@ -2,9 +2,12 @@ name: V400 release gate
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - agent/v400-1-release-polish-r2-20260821
   pull_request:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -17,6 +20,7 @@ concurrency:
 jobs:
   release-smoke:
     runs-on: ubuntu-24.04
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,6 +29,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
       - name: JavaScript syntax
         run: |
@@ -38,18 +47,24 @@ jobs:
           node --check src/pwa/developer_auth_v1.js
           node --check src/pwa/admin_mode_v1.js
           node --check src/pwa/v400_release_polish.js
+          node --check src/pwa/release_polish_v400_1.js
+          node --check src/pwa/sw_v400_1.js
+          node --check tools/audit_v400_release_polish.js
 
       - name: JSON and release wiring
         run: |
           python -m json.tool src/pwa/manifest.json >/dev/null
           python -m json.tool data/diagnostic/diagnostic_v400_2.json >/dev/null
           python -m json.tool data_i18n/en/diagnostic/diagnostic_v400_2.json >/dev/null
-          grep -q 'v400_release_polish.js' src/pwa/developer_auth_v1_config.js
           grep -q 'data-view="diagnostic"' src/pwa/index.html
           grep -q 'admin_mode_v1.js' src/pwa/index.html
+          grep -q 'release_polish_v400_1.js' src/pwa/index.html
 
       - name: Existing lesson validation
         run: python tools/validate_lessons.py
+
+      - name: V400.1 release polish audit
+        run: node tools/audit_v400_release_polish.js
 
       - name: Diff integrity
         run: git diff --check
