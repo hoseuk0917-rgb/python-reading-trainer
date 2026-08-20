@@ -41,9 +41,8 @@
   function groupForView(viewName) {
     if (viewName === "learn") return "learn";
     if (viewName === "practice") return "practice";
-    if (TOOL_VIEWS.has(viewName)) return "tools";
-    if (LEARNING_VIEWS.has(viewName)) return "library";
-    return "learn";
+    if (viewName === "progress") return "progress";
+    return "more";
   }
 
   function closeMenu(returnFocus) {
@@ -107,59 +106,179 @@
     const topbar = document.querySelector(".topbar");
     const legacyTabs = document.querySelector("nav.tabs");
     if (!topbar || !legacyTabs) return false;
+
     const nav = document.createElement("nav");
     nav.id = "consumerNavV349";
     nav.className = "consumer-nav-v349";
-    nav.setAttribute("aria-label", t("주요 메뉴", "Primary navigation"));
-    const learn = makeNavButton("consumerLearnV349", t("학습", "Learn"), "⌂", "learn");
-    const practice = makeNavButton("consumerPracticeV349", t("실전", "Practice"), "✓", "practice");
-    const tools = makeNavButton("consumerToolsV349", t("도구", "Tools"), "⌘", "tools");
-    const library = makeNavButton("consumerLibraryV349", t("내 학습", "My learning"), "☰", "library");
-    learn.addEventListener("click", function () { invokeView("learn", { home: true }); });
-    practice.addEventListener("click", function () { invokeView("practice"); });
-    const toolsMenu = makeMenu("consumerToolsMenuV349", [
-      { view: "code", label: t("코드해석", "Code explainer"), help: t("붙여넣은 코드의 흐름을 읽습니다.", "Read the flow of pasted code.") },
-      { view: "command", label: t("명령어해석", "Command explainer"), help: t("터미널 명령의 영향과 위험을 봅니다.", "Review command effects and risks.") },
-      { view: "project", label: t("프로젝트분석", "Project analyzer"), help: t("프로젝트 구조를 읽기 전용으로 분석합니다.", "Analyze project structure read-only.") }
-    ]);
-    const libraryMenu = makeMenu("consumerLibraryMenuV349", [
-      { view: "progress", label: t("진행현황", "Progress"), help: t("다음 할 일과 전체 진도를 봅니다.", "See the next action and overall progress.") },
-      { view: "outline", label: t("목차", "Outline"), help: t("개념과 관련 카드를 찾아봅니다.", "Browse concepts and related cards.") },
-      { view: "notes", label: t("메모", "Notes"), help: t("저장한 학습 메모를 모아봅니다.", "Review saved study notes.") }
-    ]);
-    tools.setAttribute("aria-haspopup", "menu");
-    tools.setAttribute("aria-expanded", "false");
-    tools.setAttribute("aria-controls", toolsMenu.id);
-    library.setAttribute("aria-haspopup", "menu");
-    library.setAttribute("aria-expanded", "false");
-    library.setAttribute("aria-controls", libraryMenu.id);
-    tools.addEventListener("click", function () { openPopover(toolsMenu, tools); });
-    library.addEventListener("click", function () { openPopover(libraryMenu, library); });
+    nav.setAttribute(
+      "aria-label",
+      t("주요 메뉴", "Primary navigation")
+    );
+
+    const learn = makeNavButton(
+      "consumerLearnV349",
+      t("학습", "Learn"),
+      "⌂",
+      "learn"
+    );
+
+    const practice = makeNavButton(
+      "consumerPracticeV349",
+      t("실전", "Practice"),
+      "✓",
+      "practice"
+    );
+
+    const progress = makeNavButton(
+      "consumerProgressV349",
+      t("진행", "Progress"),
+      "◔",
+      "progress"
+    );
+
+    const more = makeNavButton(
+      "consumerMoreV349",
+      t("더보기", "More"),
+      "•••",
+      "more"
+    );
+
+    learn.addEventListener(
+      "click",
+      function () {
+        invokeView("learn", { home: true });
+      }
+    );
+
+    practice.addEventListener(
+      "click",
+      function () {
+        invokeView("practice");
+      }
+    );
+
+    progress.addEventListener(
+      "click",
+      function () {
+        invokeView("progress");
+      }
+    );
+
+    const moreMenu = makeMenu(
+      "consumerMoreMenuV349",
+      [
+        {
+          view: "outline",
+          label: t("목차", "Outline"),
+          help: t(
+            "개념과 관련 카드를 찾아봅니다.",
+            "Browse concepts and related cards."
+          )
+        },
+        {
+          view: "notes",
+          label: t("메모", "Notes"),
+          help: t(
+            "저장한 학습 메모를 모아봅니다.",
+            "Review saved study notes."
+          )
+        },
+        {
+          view: "code",
+          label: t("코드해석", "Code explainer"),
+          help: t(
+            "붙여넣은 코드의 흐름을 읽습니다.",
+            "Read the flow of pasted code."
+          )
+        },
+        {
+          view: "command",
+          label: t("명령어해석", "Command explainer"),
+          help: t(
+            "터미널 명령의 영향과 위험을 봅니다.",
+            "Review command effects and risks."
+          )
+        },
+        {
+          view: "project",
+          label: t("프로젝트분석", "Project analyzer"),
+          help: t(
+            "프로젝트 구조를 읽기 전용으로 분석합니다.",
+            "Analyze project structure read-only."
+          )
+        }
+      ]
+    );
+
+    more.setAttribute("aria-haspopup", "menu");
+    more.setAttribute("aria-expanded", "false");
+    more.setAttribute("aria-controls", moreMenu.id);
+
+    more.addEventListener(
+      "click",
+      function () {
+        openPopover(moreMenu, more);
+      }
+    );
+
     nav.appendChild(learn);
     nav.appendChild(practice);
-    nav.appendChild(tools);
-    nav.appendChild(library);
-    nav.appendChild(toolsMenu);
-    nav.appendChild(libraryMenu);
-    legacyTabs.insertAdjacentElement("beforebegin", nav);
-    document.body.classList.add("consumer-ux-v349-ready");
+    nav.appendChild(progress);
+    nav.appendChild(more);
+    nav.appendChild(moreMenu);
+
+    legacyTabs.insertAdjacentElement(
+      "beforebegin",
+      nav
+    );
+
+    document.body.classList.add(
+      "consumer-ux-v349-ready"
+    );
+
     syncPrimaryNav();
     return true;
   }
 
   function syncPrimaryNav() {
-    const nav = document.getElementById("consumerNavV349");
+    const nav = document.getElementById(
+      "consumerNavV349"
+    );
+
     if (!nav) return;
+
     const view = activeViewName();
     const group = groupForView(view);
-    nav.querySelectorAll(".consumer-nav-button-v349").forEach(function (btn) {
+
+    nav.querySelectorAll(
+      ".consumer-nav-button-v349"
+    ).forEach(function (btn) {
       const active = btn.dataset.group === group;
-      btn.classList.toggle("active", active);
-      if (active) btn.setAttribute("aria-current", "page");
-      else btn.removeAttribute("aria-current");
+
+      btn.classList.toggle(
+        "active",
+        active
+      );
+
+      if (active) {
+        btn.setAttribute(
+          "aria-current",
+          "page"
+        );
+      } else {
+        btn.removeAttribute(
+          "aria-current"
+        );
+      }
     });
-    nav.querySelectorAll(".consumer-popover-v349 [data-view]").forEach(function (btn) {
-      btn.classList.toggle("active", btn.dataset.view === view);
+
+    nav.querySelectorAll(
+      ".consumer-popover-v349 [data-view]"
+    ).forEach(function (btn) {
+      btn.classList.toggle(
+        "active",
+        btn.dataset.view === view
+      );
     });
   }
 
