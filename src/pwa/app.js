@@ -881,6 +881,26 @@ function getCurrentCard() {
   return cards[currentIndex];
 }
 
+// === DEVELOPER_MODE_V1_BRIDGE START ===
+window.PRTDeveloperBridgeV1 = Object.freeze({
+  getCurrentCard: function() {
+    return getCurrentCard();
+  },
+  getAllCards: function() {
+    return cards.slice();
+  },
+  getCurrentIndex: function() {
+    return currentIndex;
+  },
+  getCurrentLanguage: function() {
+    return currentLanguage;
+  },
+  renderCurrentCard: function() {
+    renderCard();
+  }
+});
+// === DEVELOPER_MODE_V1_BRIDGE END ===
+
 function setView(viewName) {
   document.querySelectorAll(".view").forEach(function(view) {
     view.classList.remove("active-view");
