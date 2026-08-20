@@ -26,10 +26,21 @@
     const opts = options || {};
     if (viewName === "learn" && opts.home !== false) window.__learningHomeV343Intent = "home";
     try {
-      if (typeof setView === "function") setView(viewName);
-      else {
-        const legacy = document.querySelector('.tab-btn[data-view="' + viewName + '"]');
-        if (legacy) legacy.click();
+      const legacy = document.querySelector(
+        '.tab-btn[data-view="' + viewName + '"]'
+      );
+
+      if (
+        viewName === "diagnostic"
+        && legacy
+      ) {
+        legacy.click();
+      } else if (
+        typeof setView === "function"
+      ) {
+        setView(viewName);
+      } else if (legacy) {
+        legacy.click();
       }
     } catch (error) {
       console.warn("V349 view navigation failed", error);
@@ -167,6 +178,14 @@
     const moreMenu = makeMenu(
       "consumerMoreMenuV349",
       [
+        {
+          view: "diagnostic",
+          label: t("진단", "Diagnostic"),
+          help: t(
+            "8개 독해 축을 진단하고 맞춤 학습을 시작합니다.",
+            "Assess eight reading axes and start tailored learning."
+          )
+        },
         {
           view: "outline",
           label: t("목차", "Outline"),
