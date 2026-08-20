@@ -895,6 +895,21 @@ window.PRTDeveloperBridgeV1 = Object.freeze({
   getCurrentLanguage: function() {
     return currentLanguage;
   },
+  openCardById: function(cardId) {
+    const targetId = String(cardId || "");
+    const targetIndex = cards.findIndex(function(card) {
+      return card && String(card.id || "") === targetId;
+    });
+
+    if (targetIndex < 0) {
+      return false;
+    }
+
+    currentIndex = targetIndex;
+    setView("learn");
+    renderCard();
+    return true;
+  },
   renderCurrentCard: function() {
     renderCard();
   }

@@ -2403,6 +2403,28 @@ Production lesson JSON is never written by Developer Mode V1.</div>
         runFullRegression: runFullRegression,
         exportPatch: exportPatch,
         exportAllStaged: exportAllStagedV11,
+        getStagedIndex: function () {
+            return Object.assign(
+                {},
+                loadStagedIndexV11()
+            );
+        },
+        getSavedDraft: function (
+            language,
+            cardId
+        ) {
+            const value = readSavedDraft(
+                String(language || ""),
+                String(cardId || "")
+            );
+
+            return value
+                ? JSON.parse(JSON.stringify(value))
+                : null;
+        },
+        getCatalog: function () {
+            return loadCatalog();
+        },
         isDeveloperHostAllowed: isDeveloperHostAllowedV11,
         isDeveloperAccessAllowed: isDeveloperAccessAllowedV12,
         grantRemoteAccess: grantRemoteAccessV12,
