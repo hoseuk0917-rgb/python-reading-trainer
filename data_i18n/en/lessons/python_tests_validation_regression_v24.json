@@ -1,422 +1,990 @@
 [
-  {
-    "id": "PY24_L07_pytest_assert_001",
-    "level": 7,
-    "title": "An Introduction to pytest Assertions",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "pytest",
-      "assert",
-      "test"
-    ],
-    "reading_goal": "Read the basic test that checks whether the function's result matches the expected value.",
-    "code": "def normalize(text):\n    return text.strip().lower()\n\ndef test_normalize():\n    assert normalize(\" LiDAR \") == \"lidar\"",
-    "question_type": "meaning_choice",
-    "question": "What happens if the assert condition is False?",
-    "choices": [
-      "The test fails",
-      "It always passes",
-      "The file is deleted",
-      "The server is deployed"
-    ],
-    "answer": "The test fails",
-    "explanation": "pytest marks a test as failed if an `assert` statement inside a `test_` function fails. A pytest `assert` compares the expected value with the actual value to indicate a test failure. When reading a failure message, you should first check which value differed from the expected one. Therefore, the conclusion is that “the test fails.”",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "You can start by testing small functions such as normalization, ID generation, and side card matching."
-  },
-  {
-    "id": "PY24_L07_duplicate_id_check_001",
-    "level": 7,
-    "title": "Reading the Code for Duplicate ID Check",
-    "concepts": [
-      "if",
-      "for",
-      "validation",
-      "duplicate_id",
-      "set",
-      "quality"
-    ],
-    "reading_goal": "Read the validation code that checks for duplicates by adding IDs that have already been checked to a set.",
-    "code": "seen = set()\nduplicates = []\nfor card in cards:\n    if card[\"id\"] in seen:\n        duplicates.append(card[\"id\"])\n    seen.add(card[\"id\"])",
-    "question_type": "meaning_choice",
-    "question": "What is recorded in the duplicates list?",
-    "choices": [
-      "Each card ID that appears again after its first occurrence",
-      "All card IDs after deduplication",
-      "Answer text",
-      "File paths"
-    ],
-    "answer": "Each card ID that appears again after its first occurrence",
-    "explanation": "When an ID is already in seen, the code appends it to duplicates and then keeps the ID in seen. If the same ID appears three times, the second and third occurrences each append it, so duplicates contains it twice. Use a set for duplicates too if only unique duplicated IDs are needed.",
-    "side_card_ids": [],
-    "project_context": "This is linked to the verification process that checks for \"DUPLICATE IDS: OK\" after each update."
-  },
-  {
-    "id": "PY24_L08_answer_in_choices_001",
-    "level": 8,
-    "title": "Check if the correct answer is among the choices",
-    "concepts": [
-      "if",
-      "for",
-      "validation",
-      "answer",
-      "choices",
-      "quality"
-    ],
-    "reading_goal": "Read the code that checks whether the answer to a multiple-choice card is actually among the choices.",
-    "code": "bad = []\nfor card in cards:\n    if card[\"answer\"] not in card[\"choices\"]:\n        bad.append(card[\"id\"])",
-    "question_type": "meaning_choice",
-    "question": "What's the problem with the cards in the \"bad\" pile?",
-    "choices": [
-      "The correct answer is not among the choices.",
-      "There are too many concepts.",
-      "The level is low",
-      "The file is too large."
-    ],
-    "answer": "The correct answer is not among the choices.",
-    "explanation": "For the app to allow users to select the correct answer button, the `answer` value must be included in `choices`. The code that checks whether the correct answer is included in `choices` verifies the basic integrity of the multiple-choice card. It must compare the correct answer string with the option strings to ensure they are exactly the same.",
-    "side_card_ids": [],
-    "project_context": "ANSWER NOT IN CHOICES: OK—This is directly related to the verification item."
-  },
-  {
-    "id": "PY24_L08_missing_side_card_check_001",
-    "level": 8,
-    "title": "Missing side_card reference check",
-    "concepts": [
-      "if",
-      "for",
-      "validation",
-      "side_card",
-      "reference",
-      "integrity"
-    ],
-    "reading_goal": "Check whether the `side_card_id` referenced by the card is actually in the list of side cards.",
-    "code": "side_ids = {side[\"id\"] for side in side_cards}\nmissing = []\nfor card in cards:\n    for sid in card.get(\"side_card_ids\", []):\n        if sid not in side_ids:\n            missing.append((card[\"id\"], sid))",
-    "question_type": "meaning_choice",
-    "question": "What goes in \"missing\"?",
-    "choices": [
-      "Reference to a non-existent side_card_id",
-      "Top Side Card (Full View)",
-      "Empty concepts",
-      "HTTP 304 Log"
-    ],
-    "answer": "Reference to a non-existent side_card_id",
-    "explanation": "If you reference a side card that doesn't exist, it may cause issues with the rendering of the right-side tooltip. The missing side_card reference check verifies whether the side card linked by the lesson actually exists in the data. If a non-existent ID is found, the display of related reading material may be broken. Therefore, the correct answer is “Reference to a non-existent side_card_id.”",
-    "side_card_ids": [],
-    "project_context": "MISSING SIDE CARD REFERENCES: This is linked to the \"OK\" verification item."
-  },
-  {
-    "id": "PY24_L08_schema_required_fields_001",
-    "level": 8,
-    "title": "Read the schema validation for required fields",
-    "concepts": [
-      "if",
-      "for",
-      "print",
-      "schema",
-      "required_fields",
-      "validation"
-    ],
-    "reading_goal": "Read the code that checks whether all required fields are present in the card JSON.",
-    "code": "required = {\"id\", \"level\", \"title\", \"question\", \"choices\", \"answer\"}\nfor card in cards:\n    missing = required - set(card.keys())\n    if missing:\n        print(card.get(\"id\"), missing)",
-    "question_type": "meaning_choice",
-    "question": "required - What does `set(card.keys())` look for?",
-    "choices": [
-      "Required fields not on the card",
-      "All card values",
-      "Possible Correct Answers",
-      "Duplicate files"
-    ],
-    "answer": "Required fields not on the card",
-    "explanation": "The set difference between required and card.keys() finds required names that are absent as dictionary keys. When missing is nonempty, the code prints the card ID and missing set. This checks only key presence, not whether a value is None or empty, whether level and choices have the right types, or whether extra fields are allowed; those need schema validation.",
-    "side_card_ids": [
-      "PYV158_A1_VALIDATION_FLOW",
-      "PYV158_A1_SCHEMA_FLOW"
-    ],
-    "project_context": "As the number of cards increases, schema validation should be automated."
-  },
-  {
-    "id": "PY24_L09_json_parse_all_001",
-    "level": 9,
-    "title": "Read the Full JSON Parse Smoke Test",
-    "concepts": [
-      "for",
-      "import",
-      "print",
-      "json",
-      "parse",
-      "smoke_test",
-      "validation"
-    ],
-    "reading_goal": "Read about a smoke test to quickly verify that all lesson JSON is parseable.",
-    "code": "import json\nfrom pathlib import Path\n\nfor path in Path(\"data/lessons\").glob(\"*.json\"):\n    json.loads(path.read_text(encoding=\"utf-8\"))\n    print(\"OK\", path.name)",
-    "question_type": "meaning_choice",
-    "question": "What kinds of problems can this test detect?",
-    "choices": [
-      "JSON Syntax Error",
-      "CSS Color Error",
-      "GitHub Password Error",
-      "Monitor Resolution Error"
-    ],
-    "answer": "JSON Syntax Error",
-    "explanation": "For each .json file, the code reads all text and uses json.loads to check JSON syntax. One invalid file raises and stops the loop before later files are checked, and glob does not search nested directories recursively. Successful parsing also does not validate the card schema or ID and answer relationships, so semantic validation must follow the smoke test.",
-    "side_card_ids": [
-      "PYV158_A1_JSON_FLOW"
-    ],
-    "project_context": "This is the default validation that runs first when a new lesson file is added."
-  },
-  {
-    "id": "PY24_L09_regression_total_cards_001",
-    "level": 9,
-    "title": "Reading the Regression Test for Total Number of Cards",
-    "concepts": [
-      "if",
-      "regression_test",
-      "total_count",
-      "validation"
-    ],
-    "reading_goal": "Understand the regression test used to verify that the number of cards has not decreased after the new reinforcement.",
-    "code": "previous_total = 552\ncurrent_total = len(cards)\nif current_total < previous_total:\n    raise AssertionError(\"card count decreased\")",
-    "question_type": "meaning_choice",
-    "question": "What if `current_total` is less than `previous_total`?",
-    "choices": [
-      "It is treated as a regression and rejected",
-      "I consider it normal",
-      "Generates cards automatically",
-      "Delete GitHub Pages"
-    ],
-    "answer": "It is treated as a regression and rejected",
-    "explanation": "When current_total is below 552, the code raises AssertionError. This detects a suspicious decrease but cannot detect an increase, an incorrect replacement with the same count, or exactly which file is missing. Validate expected counts per manifest plus an ID snapshot or explicitly approved baseline to diagnose regressions accurately.",
-    "side_card_ids": [],
-    "project_context": "This auxiliary check detects a total-count decrease caused by a missing lesson-loading entry."
-  },
-  {
-    "id": "PY24_L09_snapshot_hash_001",
-    "level": 9,
-    "title": "Read: Comparing Snapshot Hashes",
-    "concepts": [
-      "comment",
-      "def",
-      "function",
-      "return",
-      "import",
-      "print",
-      "snapshot",
-      "hash",
-      "regression",
-      "integrity"
-    ],
-    "reading_goal": "Read about a system that compares the hashes of important files to detect unintended changes.",
-    "code": "import hashlib\nfrom pathlib import Path\n\ndef sha256(path):\n    return hashlib.sha256(Path(path).read_bytes()).hexdigest()\n\nbefore = sha256(\"src/pwa/app.js\")\n# patch here\nafter = sha256(\"src/pwa/app.js\")\nprint(before == after)",
-    "question_type": "meaning_choice",
-    "question": "What does it mean if `before == after` is False?",
-    "choices": [
-      "The file contents have changed.",
-      "The file is definitely fine.",
-      "The server went down.",
-      "The JSON has been parsed"
-    ],
-    "answer": "The file contents have changed.",
-    "explanation": "If bytes differ between the two reads, the SHA-256 digests will differ with overwhelming probability and the comparison prints False. A matching digest is strong evidence against accidental change, but it does not show which lines changed, and an untrusted hash does not establish source authenticity. Review the git diff and expected change scope too.",
-    "side_card_ids": [
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "It can be used to monitor files that have changed before and after a patch or to verify the integrity of the output."
-  },
-  {
-    "id": "PY24_L10_server_200_smoke_001",
-    "level": 10,
-    "title": "Reading \"Local Server 200 Smoke Test\"",
-    "concepts": [
-      "for",
-      "import",
-      "smoke_test",
-      "http_status",
-      "local_server",
-      "requests"
-    ],
-    "reading_goal": "Read the test that verifies whether the app's core files and the new JSON return a 200 response.",
-    "code": "import requests\n\nurls = [\n    \"http://127.0.0.1:8790/src/pwa/index.html\",\n    \"http://127.0.0.1:8790/data/lessons/python_tests_validation_regression_v24.json\",\n]\nfor url in urls:\n    r = requests.get(url, timeout=5)\n    assert r.status_code == 200, (url, r.status_code)",
-    "question_type": "meaning_choice",
-    "question": "What happens to the assert if the status_code is 404?",
-    "choices": [
-      "Fail",
-      "It always passes",
-      "Creates files automatically",
-      "Deploy the server"
-    ],
-    "answer": "Fail",
-    "explanation": "A 404 makes status_code == 200 false, so assert raises AssertionError. A timeout or connection failure instead raises from requests.get. Because requests follows redirects by default, a final 200 does not prove that the original URL returned the expected file, and the test does not validate the JSON or HTML body or content version. It checks only one part of availability.",
-    "side_card_ids": [],
-    "project_context": "This is an automated version of the process used to verify that the JSON values for v1 through v23 return a 200 status code in the local server logs."
-  },
-  {
-    "id": "PY24_L10_ci_github_actions_001",
-    "level": 10,
-    "title": "Reading GitHub Actions CI YAML",
-    "concepts": [
-      "github_actions",
-      "ci",
-      "yaml",
-      "test"
-    ],
-    "reading_goal": "Reads the CI configuration that automatically runs validation commands upon a push.",
-    "code": "name: validate\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n      - run: python scripts/validate_lessons.py",
-    "question_type": "meaning_choice",
-    "question": "What does \"on: [push]\" mean in the CI workflow?",
-    "choices": [
-      "Run the workflow when a push event occurs",
-      "Prohibit push",
-      "Always run it locally",
-      "Clear the browser cache"
-    ],
-    "answer": "Run the workflow when a push event occurs",
-    "explanation": "on: [push] starts the workflow for repository push events. The job checks out the repository, prepares Python, and runs the validation script. For reproducibility, specify a Python version and an action-reference policy, and ensure the script exits nonzero on failure. A passing job guarantees only the scope checked by this command.",
-    "side_card_ids": [
-      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
-    ],
-    "project_context": "Once the number of cards has increased, you can use GitHub Actions to automate basic validation."
-  },
-  {
-    "id": "PY24_L10_test_report_summary_001",
-    "level": 10,
-    "title": "Reading the Failure Log Summary Code",
-    "concepts": [
-      "if",
-      "print",
-      "test_report",
-      "failure_summary",
-      "debugging"
-    ],
-    "reading_goal": "Understand the structure that organizes validation failures into human-readable summaries.",
-    "code": "failures = []\nif duplicates:\n    failures.append(f\"duplicate ids: {len(duplicates)}\")\nif bad_answers:\n    failures.append(f\"bad answers: {len(bad_answers)}\")\nif missing_side:\n    failures.append(f\"missing side cards: {len(missing_side)}\")\n\nif failures:\n    print(\"FAIL: \" + \", \".join(failures))\n    raise SystemExit(1)\nprint(\"OK\")",
-    "question_type": "meaning_choice",
-    "question": "If `failures` is empty, what is the output?",
-    "choices": [
-      "OK",
-      "FAIL",
-      "None",
-      "duplicates"
-    ],
-    "answer": "OK",
-    "explanation": "When failures is empty, the code skips the if and prints OK. If any failure exists, it prints the summary and exits with code 1. Printing FAIL but exiting normally, as the original did, can make CI report success, so a machine-readable failure signal is required.",
-    "side_card_ids": [],
-    "project_context": "It's currently useful for generating more automated reports from PowerShell validation logs."
-  },
-  {
-    "id": "PY24_L10_commit_after_tests_001",
-    "level": 10,
-    "title": "Read the Post-Test Commit Routine",
-    "concepts": [
-      "comment",
-      "workflow",
-      "test",
-      "commit",
-      "git"
-    ],
-    "reading_goal": "Understand the safe workflow of committing only after passing verification.",
-    "code": "# 1. run expand script\n# 2. validate JSON/card integrity\n# 3. run local server smoke test\n# 4. git status\n# 5. git add / commit / push",
-    "question_type": "order_choice",
-    "question": "Which of the following is closest to the safest order?",
-    "choices": [
-      "Validation → Local Check → git add/commit/push",
-      "commit → skip verification → push",
-      "push → Create file",
-      "Server Shutdown → Delete JSON"
-    ],
-    "answer": "Validation → Local Check → git add/commit/push",
-    "explanation": "It’s safer to verify the code first, confirm that it loads 200 times locally, and then commit the stable version. The “test-then-commit” routine is a practice designed to ensure that only code that has passed verification is added to the repository. If any tests fail, you should first fix the issue, verify the code again, and then commit it.",
-    "side_card_ids": [
-      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
-    ],
-    "project_context": "This is a card version of the stability routine repeated in v16–v23."
-  },
-  {
-    "id": "PY24_L10_lessonfiles_tail_check_001",
-    "level": 10,
-    "title": "Reading the \"lessonFiles\" tail",
-    "concepts": [
-      "lessonFiles",
-      "tail_check",
-      "regression",
-      "app_js"
-    ],
-    "reading_goal": "Read the code in `app.js` that checks whether the last item in `lessonFiles` is the latest file.",
-    "code": "const expected = \"python_tests_validation_regression_v24.json\";\nconst connected = lessonFiles.some((path) => path.endsWith(\"/\" + expected));\nif (!connected) {\n  throw new Error(\"lesson not connected: \" + expected);\n}",
-    "question_type": "meaning_choice",
-    "question": "What problem is this check intended to catch?",
-    "choices": [
-      "The expected lesson file is absent from the app.js loading list",
-      "A broken CSS color setting",
-      "An incorrect password input",
-      "A different mouse position"
-    ],
-    "answer": "The expected lesson file is absent from the app.js loading list",
-    "explanation": "some searches the full lessonFiles list for a path ending in the expected filename. Checking only the final element creates an unnecessary ordering dependency, while includes can accept a similar longer filename. A stronger check compares the exact path sets from the file manifest and loading list in both directions.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "This ties in with my habit of using `Select-String` to check `APP_DATA_VERSION` and the latest filename."
-  },
-  {
-    "id": "PY24_L10_schema_level_range_001",
-    "level": 10,
-    "title": "Reading Level Range Check",
-    "concepts": [
-      "if",
-      "for",
-      "schema",
-      "level",
-      "range_check",
-      "validation"
-    ],
-    "reading_goal": "Read the code that checks whether the card's difficulty level is within the allowed range.",
-    "code": "for card in cards:\n    level = card[\"level\"]\n    if type(level) is not int or not (1 <= level <= 10):\n        raise ValueError(f\"bad level: {card['id']}={level!r}\")",
-    "question_type": "meaning_choice",
-    "question": "What happens when the level is 11?",
-    "choices": [
-      "A ValueError occurs",
-      "Passes the summit",
-      "The level automatically becomes 10",
-      "The card is hidden"
-    ],
-    "answer": "A ValueError occurs",
-    "explanation": "The code raises ValueError if level is not a Python int or lies outside 1 through 10. Coercing with int(...) would silently accept a schema-invalid string such as \"3\", and bool is an int subclass under a simple isinstance check. type(level) is int checks the intended JSON integer type and the range together.",
-    "side_card_ids": [
-      "PYV158_A1_VALIDATION_FLOW",
-      "PYV158_A1_SCHEMA_FLOW"
-    ],
-    "project_context": "This is a validation process to ensure that the difficulty filter and table of contents statistics remain intact."
-  },
-  {
-    "id": "PY24_L10_ci_fail_fast_001",
-    "level": 10,
-    "title": "Reading About the CI \"Fail-Fast\" Mindset",
-    "concepts": [
-      "ci",
-      "fail_fast",
-      "quality_gate",
-      "automation"
-    ],
-    "reading_goal": "Understand quality gates, which prevent deployment or progression to the next stage if validation fails.",
-    "code": "python scripts/validate_lessons.py\nif ($LASTEXITCODE -ne 0) {\n  throw \"validation failed; stop deploy\"\n}",
-    "question_type": "meaning_choice",
-    "question": "If it's not 0, what does that mean?",
-    "choices": [
-      "The previous command failed",
-      "The previous command was a complete success.",
-      "The Git status is \"clean\"",
-      "The server returned a 200 response."
-    ],
-    "answer": "The previous command failed",
-    "explanation": "\"CI fail fast\" is a method that halts subsequent steps if a validation command fails. If the exit code is not 0, it prevents post-deployment or post-commit tasks from running, thereby reducing errors. In automation, continuing despite a failure can result in incorrect results being deployed, so immediate termination is crucial. Therefore, the correct answer is “The previous command failed.”",
-    "side_card_ids": [
-      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
-    ],
-    "project_context": "This can be used as a quality gate when creating an automated verification script later on."
-  }
+    {
+        "id":  "PY24_L07_pytest_assert_001",
+        "level":  7,
+        "title":  "Reading the flow where `assert` checks the function result and, if true, proceeds to the next line",
+        "concepts":  [
+                         "assert_statement",
+                         "call",
+                         "comparison",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the execution sequence: the conditional expression following `assert` is evaluated first, and if it is True, execution proceeds to the next statement without raising any exceptions.",
+        "code":  "def normalize(text):\n    return text.strip().lower()\n\nassert normalize(\" LiDAR \") == \"lidar\"\nprint(\"PASS\")",
+        "question_type":  "output_prediction",
+        "question":  "What is the output of the current code when the `assert` condition is true?",
+        "choices":  [
+                        "PASS",
+                        "AssertionError",
+                        "lidar",
+                        "True"
+                    ],
+        "answer":  "PASS",
+        "explanation":  "1) The `normalize` call removes spaces, converts the string to lowercase, and returns `lidar`. 2) Comparing the returned string `lidar` with the `lidar` on the right yields `True`. 3) The `assert` checks that the condition is `True` and does not raise an exception. 4) The program reaches the next `print` statement and outputs `PASS`.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "This relates to basic quality verification in pytest-style tests, where the expected behavior of a small normalization function is explicitly defined.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assert_statement",
+        "reading_goal_internal":  "assert 뒤 조건 표현식을 먼저 평가하고 True이면 아무 예외 없이 다음 문장으로 진행하는 실행 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`assert condition` checks whether condition is truthy; if it is falsy, it raises an AssertionError.",
+                                    "how_to_read":  "The entire condition following `assert` is evaluated first, and based on that Boolean value, the program either proceeds normally or raises an `AssertionError`.",
+                                    "key_point":  "Since the result of `normalize` is `lidar`, the comparison is `True`, and the `assert` passes.",
+                                    "common_mistake":  "I do not believe that `assert` stores the result of a comparison as `True` in a variable or automatically outputs it to the screen."
+                                },
+        "teaching_example":  {
+                                 "code":  "value = 3\nassert value == 3\nprint(\"pass\")",
+                                 "walkthrough":  "Since the condition is True, no AssertionError is raised, and the next `print` statement is executed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The `normalize` call removes spaces, converts the string to lowercase, and returns `lidar`. 2) Comparing the returned string `lidar` with the `lidar` on the right yields `True`. 3) The `assert` checks that the condition is `True` and does not raise an exception. 4) The program reaches the next `print` statement and outputs `PASS`.",
+                                   "why_correct":  "Since the `assert` condition is True, normal execution continues.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "AssertionError",
+                                                               "why_wrong":  "An `AssertionError` occurs only when the `assert` condition is falsy.",
+                                                               "misread_step":  "The actual Boolean value of the condition following `assert` is evaluated first."
+                                                           },
+                                   "takeaway":  "\"assert\" should be interpreted as **condition evaluation → passes if truthy / throws an AssertionError if falsy → subsequent flow is determined**."
+                               },
+        "target_statement":  "assert normalize(\" LiDAR \") == \"lidar\"",
+        "focus_span":  "assert normalize(\" LiDAR \") == \"lidar\"",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "pytest",
+                                "assert",
+                                "normalization",
+                                "test"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY24_L07_duplicate_id_check_001",
+        "level":  7,
+        "title":  "`card_id in seen` Check whether the current ID has already appeared",
+        "concepts":  [
+                         "membership_test",
+                         "for_statement",
+                         "call",
+                         "if_statement"
+                     ],
+        "reading_goal":  "It reads the membership results—which return `True` starting from the second occurrence when comparing the current `card_id` to existing items in the seen set—along with the iteration status.",
+        "code":  "ids = [\"A\", \"B\", \"A\"]\nseen = set()\nduplicates = []\nfor card_id in ids:\n    if card_id in seen:\n        duplicates.append(card_id)\n    seen.add(card_id)\nprint(duplicates)",
+        "question_type":  "output_prediction",
+        "question":  "What is contained in `duplicates` after the loop has finished?",
+        "choices":  [
+                        "[\u0027A\u0027]",
+                        "[\u0027A\u0027, \u0027B\u0027]",
+                        "[]",
+                        "[\u0027B\u0027]"
+                    ],
+        "answer":  "[\u0027A\u0027]",
+        "explanation":  "1) During the first check for A, `seen` is empty, so the condition is `False`; afterward, A is added to `seen`. 2) Since this is the first time for B, the condition is `False`; afterward, B is added to `seen`. 3) During the final check for A, `seen` already contains A, so ``card_id in seen`` is `True`. 4) A is added to `duplicates` only for that iteration.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This relates to the key conditions of the QA loop for detecting ID conflicts in large datasets, such as 1,785 cards.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "현재 card_id를 seen set의 기존 항목과 비교해 두 번째 등장부터 True가 되는 membership 결과를 반복 상태와 함께 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`value in set` It checks whether a set already contains the same value and returns a Boolean.",
+                                    "how_to_read":  "Check the current iteration’s `card_id` and compare it to the contents of `seen` immediately before the check.",
+                                    "key_point":  "When checking the second \"A,\" since the first \"A\" is already present in `seen`, the membership result is True.",
+                                    "common_mistake":  "If you reverse the order—by first putting the current ID into `seen` and then checking it—the first occurrence will also be incorrectly flagged as a duplicate."
+                                },
+        "teaching_example":  {
+                                 "code":  "seen = {\"A\"}\nprint(\"A\" in seen)",
+                                 "walkthrough":  "Since A already exists in the set, the result is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) During the first check for A, `seen` is empty, so the condition is `False`; afterward, A is added to `seen`. 2) Since this is the first time for B, the condition is `False`; afterward, B is added to `seen`. 3) During the final check for A, `seen` already contains A, so ``card_id in seen`` is `True`. 4) A is added to `duplicates` only for that iteration.",
+                                   "why_correct":  "The membership condition is True only in the iteration where A appears for the second time.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\u0027A\u0027, \u0027B\u0027]",
+                                                               "why_wrong":  "Since B appears only once, it was not in the “seen” set at the time of the test.",
+                                                               "misread_step":  "In each iteration, maintain the order of the membership check and the `seen.add` operation."
+                                                           },
+                                   "takeaway":  "The duplicate check for \"membership\" follows this sequence: **check current value → check existing \"seen\" → record if necessary → add to \"seen\"**."
+                               },
+        "target_statement":  "card_id in seen",
+        "focus_span":  "card_id in seen",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "duplicate_id",
+                                "set",
+                                "validation",
+                                "membership"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY24_L08_answer_in_choices_001",
+        "level":  8,
+        "title":  "Find the card where the correct answer is not among the options",
+        "concepts":  [
+                         "membership_test",
+                         "if_statement",
+                         "subscription",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the execution flow where the answer and choices for each card are compared, and the code is added to the “bad” list only if ``not in`` is true.",
+        "code":  "cards = [\n    {\"id\": \"c1\", \"answer\": \"A\", \"choices\": [\"A\", \"B\"]},\n    {\"id\": \"c2\", \"answer\": \"C\", \"choices\": [\"A\", \"B\"]},\n]\nbad = []\nfor card in cards:\n    if card[\"answer\"] not in card[\"choices\"]:\n        bad.append(card[\"id\"])",
+        "question_type":  "multiple_choice",
+        "question":  "What is the ID assigned to `bad` after the code executes?",
+        "choices":  [
+                        "c1",
+                        "c2",
+                        "c1 and c2",
+                        "Nothing"
+                    ],
+        "answer":  "c2",
+        "explanation":  "For c1, since A is included in the choices, the condition is false. For c2, since C is not in the list of A and B, the condition is true, and id c2 is added to bad. This is because `not in` returns True only when answer is not present in choices. Common source of confusion: c1. The correct answer for c1, A, is the first item in `choices`. Point of misinterpretation: This occurs when the true condition for `not in` is read in reverse. The correct answer integrity check follows this sequence: **verify the `answer` value → check for membership in `choices` → collect only missing cards**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This relates to quality checks that catch data errors—such as the absence of a correct answer button on multiple-choice cards—before deployment.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "각 card의 answer와 choices를 비교해 `not in`이 참인 경우에만 bad 목록에 들어가는 실행 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`value not in collection` This is a membership test that returns True when there are no values in the collection.",
+                                    "how_to_read":  "Compare the actual string in the answer on the left with all the options on the right.",
+                                    "key_point":  "The body of the `if` statement is executed only for cards where the `not in` condition evaluates to True—that is, cards where the correct answer cannot be selected.",
+                                    "common_mistake":  "It’s easy to misread “True” if “answer” is included in the choices. “`not in`” is True when it is not present."
+                                },
+        "teaching_example":  {
+                                 "code":  "card = {\"answer\": \"B\", \"choices\": [\"A\", \"B\"]}\ninvalid = card[\"answer\"] not in card[\"choices\"]",
+                                 "walkthrough":  "Since B is in the choices, the result of ``not in`` is False."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "In c1, since A is among the options, the condition is false. In c2, since C is not on the list of A and B, the condition is true, and id c2 is added to bad.",
+                                   "why_correct":  "`not in` This is because `is` returns `True` only when the answer is not among the choices.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "c1",
+                                                               "why_wrong":  "The correct answer for c1, A, is the first item in the list of choices.",
+                                                               "misread_step":  "This is a case of reading the true condition of `not in` backward."
+                                                           },
+                                   "takeaway":  "The answer integrity check involves **verifying the **answer** value → checking for membership in the **choices** → collecting only the missing cards**."
+                               },
+        "target_statement":  "if card[\"answer\"] not in card[\"choices\"]:",
+        "focus_span":  "card[\"answer\"] not in card[\"choices\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "answer",
+                                "choices",
+                                "validation",
+                                "integrity"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY24_L08_missing_side_card_check_001",
+        "level":  8,
+        "title":  "Creating an actual set of `side_card` IDs using set comprehension",
+        "concepts":  [
+                         "set_comprehension",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the comprehension that extracts only the id values from the recurring side dict and collects them into a set.",
+        "code":  "side_cards = [{\"id\": \"s1\"}, {\"id\": \"s2\"}, {\"id\": \"s1\"}]\nside_ids = {side[\"id\"] for side in side_cards}",
+        "question_type":  "multiple_choice",
+        "question":  "`side_ids` How many elements are there?",
+        "choices":  [
+                        "1",
+                        "2",
+                        "3",
+                        "4"
+                    ],
+        "answer":  "2",
+        "explanation":  "Extracting the IDs from the three rows in order gives `s1`, `s2`, `s1`. A set does not keep duplicate equal values, so the final elements are only `s1` and `s2`. This is because a set comprehension produces a set with duplicates removed. Common wrong answer: 3. There are three input rows, but the duplicate `s1` remains only once in the set. Misreading point: This happens when the number of input items is treated as the same as the number of unique set elements. A set comprehension **collects iteration results while retaining duplicate values only once**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This is linked to the generation of a set of reference IDs used to verify whether the `side_card_ids` in a lesson card exist in the actual side-card data.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "set_comprehension",
+        "reading_goal_internal":  "반복되는 side dict에서 id value만 추출해 set으로 수집하는 comprehension을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`{expression for item in items}` is a set comprehension that collects the results of applying `expression` to each item in the iteration into a set.",
+                                    "how_to_read":  "For each `side` provided by the `for` loop below, check what value the preceding `side[\u0027id\u0027]` produces.",
+                                    "key_point":  "This set becomes reference data for quickly checking whether referenced IDs exist later.",
+                                    "common_mistake":  "It’s easy to assume this is a dict comprehension because it uses curly braces. However, since it’s a single expression without a colon, it’s a set comprehension."
+                                },
+        "teaching_example":  {
+                                 "code":  "rows = [{\"id\": \"x\"}, {\"id\": \"y\"}]\nids = {row[\"id\"] for row in rows}",
+                                 "walkthrough":  "Collect the IDs from each row to create the set `{\u0027x\u0027,\u0027y\u0027}`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "If you extract the IDs from the three rows in order, they are s1, s2, and s1. Since a set does not store duplicate values, the final elements are s1 and s2.",
+                                   "why_correct":  "Because a set comprehension produces a set with duplicate values removed.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "3",
+                                                               "why_wrong":  "Although there are three input rows, s1 is duplicated and therefore appears only once in the set.",
+                                                               "misread_step":  "This is a case where the number of input items and the number of unique elements in the set are counted as equal."
+                                                           },
+                                   "takeaway":  "Set comprehensions **collect the results of an iteration while ensuring that duplicate values are treated as a single value**."
+                               },
+        "target_statement":  "side_ids = {side[\"id\"] for side in side_cards}",
+        "focus_span":  "{side[\"id\"] for side in side_cards}",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "side card",
+                                "reference integrity",
+                                "set comprehension",
+                                "validation"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY24_L08_schema_required_fields_001",
+        "level":  8,
+        "title":  "Store the result of the set difference of the required keys in `missing`",
+        "concepts":  [
+                         "assignment",
+                         "call",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the flow where the result of calculating the difference between the required key and the actual key, located on the right side of the assignment, is stored in the variable on the left.",
+        "code":  "required = {\"id\", \"level\", \"title\", \"question\", \"choices\", \"answer\"}\ncard = {\"id\": \"c1\", \"level\": 8, \"title\": \"T\", \"question\": \"Q\", \"choices\": [\"A\"]}\nmissing = required - set(card.keys())",
+        "question_type":  "multiple_choice",
+        "question":  "In this code, what are the required fields in ``missing``?",
+        "choices":  [
+                        "answer",
+                        "choices",
+                        "level",
+                        "id"
+                    ],
+        "answer":  "answer",
+        "explanation":  "Of the six keys required, excluding the five keys that `card` already has, only `answer` remains. The result of the calculation on the right is stored in `missing`. This is because the set difference returns only the elements present in the left set but not in the right set. Common mistake: Since the `choices` key already exists in the `card` dictionary, it is not included in `missing`. Misreading: This occurs when the actual `card.keys()` list is not checked. The required field check is interpreted as **comparing the `required` criteria with the actual keys and retaining only the missing names as results**.",
+        "side_card_ids":  [
+                              "PYV158_A1_VALIDATION_FLOW",
+                              "PYV158_A1_SCHEMA_FLOW"
+                          ],
+        "project_context":  "It is linked to schema QA, which checks whether the lesson/card JSON is missing any required fields necessary for app rendering.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "대입문 오른쪽에서 필수 key와 실제 key의 차이를 계산한 결과가 왼쪽 변수에 저장되는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`name = expression` is an assignment that stores the result of the expression on the right-hand side in the new name.",
+                                    "how_to_read":  "It reads as: “Complete the calculation on the right first, then store that final value in the variable on the left.”",
+                                    "key_point":  "In this card, `missing` refers only to required fields that are actually missing from the card, not to all required fields.",
+                                    "common_mistake":  "`required` It’s easy to assume that the entire expression is stored as `missing`. However, the calculation—excluding the actual key on the right—is performed first."
+                                },
+        "teaching_example":  {
+                                 "code":  "required = {\"id\", \"name\"}\nrow = {\"id\": 1}\nmissing = required - set(row.keys())",
+                                 "walkthrough":  "Since the `row` has an `id` but no `name`, the calculation result on the right, `{\u0027name\u0027}`, is stored in `missing`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Of the six keys in `required`, excluding the five keys that `card` already holds, only `answer` remains. The result of the calculation on the right is stored in `missing`.",
+                                   "why_correct":  "Because set difference leaves elements that exist only in the left set and not in the right set.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "choices",
+                                                               "why_wrong":  "Since the `choices` key already exists in the `card` dictionary, it is not marked as missing.",
+                                                               "misread_step":  "This is a case where the actual `card.keys()` list was not checked."
+                                                           },
+                                   "takeaway":  "The \"required field check\" is interpreted as **comparing the **required** criteria with the actual key and returning only the missing names as results**."
+                               },
+        "target_statement":  "missing = required - set(card.keys())",
+        "focus_span":  "missing = required - set(card.keys())",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "schema",
+                                "required fields",
+                                "validation",
+                                "missing keys"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY24_L09_json_parse_all_001",
+        "level":  9,
+        "title":  "Perform a smoke test on all lesson JSON files using json.loads()",
+        "concepts":  [
+                         "call",
+                         "for_statement",
+                         "assignment",
+                         "import_statement"
+                     ],
+        "reading_goal":  "Read the flow where the text in each JSON file must pass through a `json.loads` call for the smoke test to succeed.",
+        "code":  "import json\nfrom pathlib import Path\n\nparsed_files = []\nfor path in Path(\"data/lessons\").glob(\"*.json\"):\n    data = json.loads(path.read_text(encoding=\"utf-8\"))\n    parsed_files.append(path.name)",
+        "question_type":  "multiple_choice",
+        "question":  "What kinds of issues can this smoke test detect on its own?",
+        "choices":  [
+                        "JSON Syntax Error",
+                        "CSS Color Error",
+                        "GitHub Password Error",
+                        "Monitor Resolution Error"
+                    ],
+        "answer":  "JSON Syntax Error",
+        "explanation":  "Since the contents of each file are fed into `json.loads`, incorrect JSON syntax results in an exception at parse time. This is because `json.loads` is a JSON parser. A common source of confusion: CSS color errors. This code reads only JSON text and does not parse CSS at all. Point of Misinterpretation: This occurs when the file format being checked is confused with the role of the parser. “smoke parse” should be interpreted as **reading the file → checking if it passes the parser → early detection of syntax errors**.",
+        "side_card_ids":  [
+                              "PYV158_A1_JSON_FLOW"
+                          ],
+        "project_context":  "This connects to the default file integrity check that can be run immediately after adding a new lesson file.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "각 JSON 파일 text가 json.loads 호출을 통과해야 smoke test가 성공하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`json.loads(text)` is a function call that parses a JSON string into a Python value.",
+                                    "how_to_read":  "We check whether the input string follows valid JSON syntax and what exception is raised if parsing fails.",
+                                    "key_point":  "By parsing each lesson file once, you can quickly catch JSON syntax errors such as misplaced commas, quotation marks, and parentheses.",
+                                    "common_mistake":  "It is easy to assume that a successful \"parse\" means that everything, including the card schema, is valid. JSON syntax validation and schema validation are separate processes."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\ntexts = [\u0027{\"id\": 1}\u0027, \u0027{\"id\": 2}\u0027]\nparsed = [json.loads(text) for text in texts]",
+                                 "walkthrough":  "Since both strings are valid JSON, they are parsed into two dictionaries."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the contents of each file are inserted into ``json.loads``, any incorrect JSON syntax will result in an exception during parsing.",
+                                   "why_correct":  "Because `json.loads` is a JSON parser.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "CSS Color Error",
+                                                               "why_wrong":  "This code reads only JSON text and does not parse CSS at all.",
+                                                               "misread_step":  "This is an instance where the file format being checked was confused with the parser\u0027s role."
+                                                           },
+                                   "takeaway":  "\"smoke parse\" is interpreted as **file reading → determination of whether it passes the parser → early detection of syntax errors**."
+                               },
+        "target_statement":  "data = json.loads(path.read_text(encoding=\"utf-8\"))",
+        "focus_span":  "json.loads(path.read_text(encoding=\"utf-8\"))",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "JSON parse",
+                                "smoke test",
+                                "lesson files",
+                                "validation"
+                            ],
+        "pedagogical_intent":  "predict_exception"
+    },
+    {
+        "id":  "PY24_L09_regression_total_cards_001",
+        "level":  9,
+        "title":  "Preventing a Decrease in Total Card Count Using Regression",
+        "concepts":  [
+                         "if_statement",
+                         "comparison",
+                         "raise_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "It reads the flow where the `if` guard triggers a regression failure when the current count is smaller than the baseline.",
+        "code":  "previous_total = 552\ncards = list(range(540))\ncurrent_total = len(cards)\nif current_total \u003c previous_total:\n    raise AssertionError(\"card count decreased\")",
+        "question_type":  "multiple_choice",
+        "question":  "How should the program handle it if `current_total` is less than `previous_total`?",
+        "choices":  [
+                        "It reports a regression and causes a failure",
+                        "View as normal",
+                        "Automatically generates cards",
+                        "Delete GitHub Pages"
+                    ],
+        "answer":  "It reports a regression and causes a failure",
+        "explanation":  "Since the current total count of 540 is less than the previous value of 552, the program enters the if block and raises an AssertionError. This is because the decrease in the number of cards has been defined as an explicit regression condition. A common source of confusion: The \"consider normal\" conditional statement is written to fail in a decrease scenario. Point of misinterpretation: This occurs when the direction of the “less-than” comparison is read in reverse. The regression guard should be read as **baseline → current metric → whether there is a decrease → fail**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It is linked to an auxiliary QA system that quickly detects regression caused by missing lesson loading, which reduces the total number of cards.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "현재 총수가 baseline보다 작을 때 if guard가 회귀 실패를 발생시키는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if current_total \u003c previous_total:` It compares two numbers and executes the body of the code when the current value is smaller.",
+                                    "how_to_read":  "Enter actual numbers on the left and right to calculate the result of the less-than operator.",
+                                    "key_point":  "If the total number of cards decreases unexpectedly, this can serve as an auxiliary indicator that some lesson files may not have been loaded or were omitted during the generation process.",
+                                    "common_mistake":  "It’s easy to assume that as long as the total count remains the same or increases, the quality of all content is fine. This check only verifies that the quantity does not decrease."
+                                },
+        "teaching_example":  {
+                                 "code":  "before = 10\nnow = 8\nif now \u003c before:\n    status = \"regression\"",
+                                 "walkthrough":  "Since 8 \u003c 10 is True, the system enters a regression state."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the current total count of 540 is less than the previous threshold of 552, the code enters the `if` block and raises an `AssertionError`.",
+                                   "why_correct":  "This is because the reduction in the number of cards was defined as an explicit regression condition.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "View as normal",
+                                                               "why_wrong":  "The conditional statement is written to fail in certain scenarios.",
+                                                               "misread_step":  "This is an example of the \"less-than\" comparison being read in the opposite direction."
+                                                           },
+                                   "takeaway":  "The regression guard reads as **baseline → current metric → whether there is a decrease → fail**."
+                               },
+        "target_statement":  "if current_total \u003c previous_total:",
+        "focus_span":  "if current_total \u003c previous_total:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "regression test",
+                                "card count",
+                                "validation",
+                                "baseline"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY24_L09_snapshot_hash_001",
+        "level":  9,
+        "title":  "Comparing SHA-256 hash equality before and after a patch",
+        "concepts":  [
+                         "comparison",
+                         "assignment",
+                         "call",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the flow that determines whether the file contents are identical based on the equality of the two snapshot hashes.",
+        "code":  "before = \"7a1f\"\nafter = \"91bc\"\nunchanged = before == after",
+        "question_type":  "multiple_choice",
+        "question":  "`unchanged` What does it mean when `ga` is False?",
+        "choices":  [
+                        "The file contents changed.",
+                        "The file is definitely fine.",
+                        "The server has shut down",
+                        "The JSON has been parsed."
+                    ],
+        "answer":  "The file contents changed.",
+        "explanation":  "`7a1f == 91bc` is False. Since the snapshot hash obtained from the file’s contents has changed, this is interpreted as a change in content. This is because the comparison is based on the file’s content hash. A common source of confusion: The file is not necessarily valid; a difference in hashes only indicates whether a change has occurred and does not guarantee validity itself. Point of misinterpretation: This occurs when “change detection” and “quality validation” are treated as the same thing. The snapshot hash should be interpreted as **before hash → after hash → equality → whether the content has changed**.",
+        "side_card_ids":  [
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "This connects to the workflow that uses hashes to monitor file changes before and after a patch and to verify the integrity of checkpoint artifacts.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "두 snapshot hash의 equality 결과로 파일 내용 동일 여부를 판단하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left == right` compares whether two values are equal and returns a boolean.",
+                                    "how_to_read":  "Check the actual hash values stored in `before` and `after` to verify that the strings are exactly the same.",
+                                    "key_point":  "If the same hash is generated, it can be used as an integrity criterion to verify that the content is likely the same; if the hash is different, the content can be considered to have changed.",
+                                    "common_mistake":  "It’s easy to assume that a different hash simply means the filename has changed. Here, we compare the hashes calculated from the file contents."
+                                },
+        "teaching_example":  {
+                                 "code":  "before = \"abc\"\nafter = \"xyz\"\nsame = before == after",
+                                 "walkthrough":  "Since the two strings are different, `same` returns `False`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`7a1f == 91bc` is False. Since the snapshot hash obtained from the file contents has changed, this is interpreted as a change in content.",
+                                   "why_correct":  "This is because the comparison target is the file’s content hash.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "The file is definitely fine.",
+                                                               "why_wrong":  "A hash difference only indicates whether a change has occurred; it does not guarantee correctness itself.",
+                                                               "misread_step":  "This is an example where \"change detection\" and \"quality validation\" were treated as the same thing."
+                                                           },
+                                   "takeaway":  "The \"snapshot hash\" should be read as **before hash → after hash → equality → whether the content has changed**."
+                               },
+        "target_statement":  "unchanged = before == after",
+        "focus_span":  "before == after",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "snapshot",
+                                "SHA-256",
+                                "hash",
+                                "integrity"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY24_L10_server_200_smoke_001",
+        "level":  10,
+        "title":  "Assert that the HTTP status is 200, along with a message",
+        "concepts":  [
+                         "assert_statement",
+                         "comparison",
+                         "f_string"
+                     ],
+        "reading_goal":  "Read the flow where an AssertionError with an f-string message is raised if the status comparison evaluates to False.",
+        "code":  "status_code = 404\nassert status_code == 200, f\"bad status: {status_code}\"",
+        "question_type":  "meaning_choice",
+        "question":  "What is the current result of the `target` `assert`?",
+        "choices":  [
+                        "An AssertionError occurs",
+                        "Passes without exception",
+                        "The status_code changes to 200",
+                        "Returns None"
+                    ],
+        "answer":  "An AssertionError occurs",
+        "explanation":  "1) The status_code is 404. 2) The comparison 404 == 200 evaluates to False. 3) The assert condition is falsy. 4) A bad status (404) results in an AssertionError.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It connects to an HTTP smoke test that quickly verifies whether the core files for the local app and the new lesson JSON are actually available.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assert_statement",
+        "reading_goal_internal":  "status 비교가 False이면 f-string 메시지를 가진 AssertionError가 발생하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`assert condition, message` raises an `AssertionError` containing `message` when `condition` is falsy.",
+                                    "how_to_read":  "First, evaluate `status_code == 200` and use the message expression only if the result is False.",
+                                    "key_point":  "A 404 response fails this quality gate even if the request itself completed without any Python exceptions.",
+                                    "common_mistake":  "It’s easy to assume that the `assert` statement will pass as long as `status_code` exists as a number."
+                                },
+        "teaching_example":  {
+                                 "code":  "status=500\nassert status==200, f\"status={status}\"",
+                                 "walkthrough":  "Since 500==200 is False, an AssertionError occurs."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The status_code is 404. 2) The comparison 404 == 200 evaluates to False. 3) The assert condition is falsy. 4) A bad status (404) results in an AssertionError.",
+                                   "why_correct":  "Since the expected HTTP status 200 differs from the actual 404, the assert fails.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Passes without exception",
+                                                               "why_wrong":  "The conditional expression evaluates to False, so the assert statement cannot be passed.",
+                                                               "misread_step":  "It’s easy to assume that the `assert` statement will pass as long as `status_code` exists as a number."
+                                                           },
+                                   "takeaway":  "`assert-with-message` is read in the following order: condition evaluation → message evaluation (if the condition fails) → `AssertionError`."
+                               },
+        "target_statement":  "assert status_code == 200, f\"bad status: {status_code}\"",
+        "focus_span":  "assert status_code == 200, f\"bad status: {status_code}\"",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "smoke_test",
+                                "http_status",
+                                "local_server",
+                                "availability"
+                            ],
+        "pedagogical_intent":  "predict_exception"
+    },
+    {
+        "id":  "PY24_L10_ci_github_actions_001",
+        "level":  10,
+        "title":  "The CI runner imports `validate_lessons` from the validation module",
+        "concepts":  [
+                         "from_import_statement",
+                         "call",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Distinguish between the module location following `from` and the function name to be imported following `import` to associate the validation callable with the current namespace.",
+        "code":  "from validation import validate_lessons\n\nresult = validate_lessons()\nprint(result)",
+        "question_type":  "meaning_choice",
+        "question":  "What is the specific name being imported in the `from-import` statement?",
+        "choices":  [
+                        "validate_lessons",
+                        "validation",
+                        "result",
+                        "print"
+                    ],
+        "answer":  "validate_lessons",
+        "explanation":  "1) The validation following `from` refers to the module’s location. 2) `validate_lessons` following `import` is the name to be imported. 3) The imported name can be called directly within the current code.",
+        "side_card_ids":  [
+                              "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
+                          ],
+        "project_context":  "It is connected to a GitHub Actions CI setup that automatically runs the same Python validation logic on push events.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "from_import_statement",
+        "reading_goal_internal":  "from 뒤 모듈 위치와 import 뒤 가져올 함수 이름을 구분해 현재 namespace에 validation callable을 연결한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`from module import name` It imports a specific name from a module into the current namespace.",
+                                    "how_to_read":  "Read the text following “from” as the source location, and the text following “import” as the name to be used.",
+                                    "key_point":  "Since the actual GitHub Actions YAML is a Python external configuration, the Python target on the card refers to the import structure of the validator code that CI will execute.",
+                                    "common_mistake":  "It’s easy to assume that the entire `validation` module has been renamed to `validate_lessons`."
+                                },
+        "teaching_example":  {
+                                 "code":  "from math import sqrt\nprint(sqrt(9))",
+                                 "walkthrough":  "We import the `sqrt` function from the `math` module and call it directly."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The validation following `from` refers to the module’s location. 2) `validate_lessons` following `import` is the name to be imported. 3) The imported name can be called directly within the current code.",
+                                   "why_correct":  "In a `from-import` statement, the name following `import` is what is actually imported.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "validation",
+                                                               "why_wrong":  "`validation` is the source module that imports the name.",
+                                                               "misread_step":  "It’s easy to assume that the entire `validation` module has been renamed to `validate_lessons`."
+                                                           },
+                                   "takeaway":  "The `from-import` syntax is read by separating the source module from the name being imported."
+                               },
+        "target_statement":  "from validation import validate_lessons",
+        "focus_span":  "from validation import validate_lessons",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "github_actions",
+                                "ci",
+                                "validation",
+                                "python_runner"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY24_L10_test_report_summary_001",
+        "level":  10,
+        "title":  "Enter the failure branch when the `failures` list is not empty",
+        "concepts":  [
+                         "if_statement",
+                         "literal",
+                         "call",
+                         "raise_statement"
+                     ],
+        "reading_goal":  "The flow checks the list for \"truthiness\"; if it is empty, it skips the if block and proceeds along the \"OK\" path.",
+        "code":  "failures=[]\nif failures:\n    result=\"FAIL\"\nelse:\n    result=\"OK\"\nprint(result)",
+        "question_type":  "output_prediction",
+        "question":  "What is the current result?",
+        "choices":  [
+                        "OK",
+                        "FAIL",
+                        "[]",
+                        "None"
+                    ],
+        "answer":  "OK",
+        "explanation":  "1) `failures` is an empty list. 2) An empty list is falsy. 3) The `if` block is skipped, and the `else` block is executed. 4) `OK` is stored in `result`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It connects to a test-report flow that summarizes multiple validation failures at once but clearly outputs “OK” if there are no failures.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "리스트 truthiness를 평가해 비어 있으면 if 본문을 건너뛰고 OK 경로로 진행하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "An `if` statement executes the indented body only when the conditional expression evaluates to `truthy`.",
+                                    "how_to_read":  "First, check the current length and truthiness of `failures`.",
+                                    "key_point":  "Since an empty list is falsy, the program does not enter the failure branch.",
+                                    "common_mistake":  "Since a list is an object, it’s easy to assume that it’s “truthy” even when it’s empty."
+                                },
+        "teaching_example":  {
+                                 "code":  "errors=[]\nif errors:\n    print(\"FAIL\")\nprint(\"OK\")",
+                                 "walkthrough":  "An empty list is falsy, so it skips \"FAIL\" and prints only \"OK.\""
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `failures` is an empty list. 2) An empty list is falsy. 3) The `if` block is skipped, and the `else` block is executed. 4) `OK` is stored in `result`.",
+                                   "why_correct":  "Since an empty list evaluates to False, the \"OK\" path is selected.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "FAIL",
+                                                               "why_wrong":  "\"FAIL\" is selected when there is at least one item under \"failures.\"",
+                                                               "misread_step":  "Since a list is an object, it’s easy to assume that it’s “truthy” even when it’s empty."
+                                                           },
+                                   "takeaway":  "If the condition is a collection, its truthiness may vary depending on whether it is empty."
+                               },
+        "target_statement":  "if failures:",
+        "focus_span":  "if failures:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "test_report",
+                                "failure_summary",
+                                "debugging",
+                                "exit_status"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY24_L10_commit_after_tests_001",
+        "level":  10,
+        "title":  "Evaluating both safe commit sequences and insufficient regression evidence",
+        "concepts":  [
+                         "literal",
+                         "assignment",
+                         "subscription",
+                         "boolean_operation"
+                     ],
+        "reading_goal":  "After reading that the target list represents the safe sequence of validate → smoke → status → commit → push, the learner determines that if regression verification is missing from the current evidence, additional verification is required before proceeding to commit/push.",
+        "code":  "steps = [\"validate\", \"local smoke\", \"git status\", \"commit\", \"push\"]\nchecks = {\n    \"validate\": True,\n    \"local smoke\": True,\n    \"regression\": False,\n}\nready_for_commit = (\n    checks[\"validate\"]\n    and checks[\"local smoke\"]\n    and checks[\"regression\"]\n)\nprint(steps.index(\"commit\"), ready_for_commit)",
+        "question_type":  "safety",
+        "question":  "What is the most appropriate next step in this patch review?",
+        "choices":  [
+                        "Perform additional regression verification before committing or pushing — maintain the safe order of the target list, but the current evidence is still insufficient.",
+                        "Since `validate` and `local smoke` passed, I’ll push this immediately regardless of the regression results.",
+                        "Since the commit is at index 3 in the list, it is automatically approved.",
+                        "If the `git status` step is present, all functional regressions are considered to have already been verified."
+                    ],
+        "answer":  "Perform additional regression verification before committing or pushing — maintain the safe order of the target list, but the current evidence is still insufficient.",
+        "explanation":  "1) The `target list` represents a safe sequence where `validate`, `local smoke`, and `git status` come before `commit`. 2) In the current checks, `validate` and `local smoke` are True. 3) However, since `regression` is False, `ready_for_commit`—the result of the AND operation of these three conditions—is False. 4) Therefore, even if the procedure includes a `commit` step, proceeding to that step is not permitted given the current `evidence` status. 5) After addressing the regression issue, the decision to approve must be reassessed.",
+        "side_card_ids":  [
+                              "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
+                          ],
+        "project_context":  "Strengthen the ability to independently determine what further verification is needed after making changes in APEX, rather than hastily approving changes based on passing just a few tests.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "literal",
+        "reading_goal_internal":  "target list가 validate→smoke→status→commit→push의 안전한 순서를 표현한다는 것을 읽고, 현재 evidence에서 regression 검증이 빠져 있으면 commit/push로 진행하기 전에 추가 검증이 필요함을 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A list literal stores values in the order they are written. A procedural list can represent order, but you must determine separately whether each step has actually gathered sufficient evidence.",
+                                    "how_to_read":  "First, read the order of the target list and verify which validation steps precede the commit. Next, check whether the current evidence map contains all the validations required for approval.",
+                                    "key_point":  "Currently, `validate` and `local smoke` are True, but `regression_ok` is False. Therefore, it is appropriate to complete the regression verification before proceeding to the commit stage in the target sequence.",
+                                    "common_mistake":  "You should not conclude that “testing was sufficient” simply because two validations passed, nor should you interpret the presence of “commit” in the list of procedures as meaning you must commit right now."
+                                },
+        "teaching_example":  {
+                                 "code":  "steps = [\"test\", \"review\", \"commit\"]\nchecks = {\"test\": True, \"review\": False}\nready = checks[\"test\"] and checks[\"review\"]\nprint(steps[2], ready)",
+                                 "walkthrough":  "Even though there is a `commit` in this workflow, since `review` is `False`, the current approval status is `False`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The `target list` represents a safe sequence where `validate`, `local smoke`, and `git status` come before `commit`. 2) In the current checks, `validate` and `local smoke` are True. 3) However, since `regression` is False, `ready_for_commit`—the result of the AND operation of these three conditions—is False. 4) Therefore, even if the procedure includes a `commit` step, proceeding to that step is not permitted given the current `evidence` status. 5) After addressing the regression issue, the decision to approve must be reassessed.",
+                                   "why_correct":  "Task order and current approval readiness are different information, and the regression evidence has not yet been satisfied.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Since `validate` and `local smoke` passed, I’ll push this immediately regardless of the regression results.",
+                                                               "why_wrong":  "The two PASS results do not prove the absence of regression, and regression is a prerequisite for the ready_for_commit calculation.",
+                                                               "misread_step":  "Read the text by distinguishing between the next procedural step and the step that can be taken based on current evidence."
+                                                           },
+                                   "takeaway":  "Approval for patch reviews is determined based on the following sequence: **safety verification → mandatory evidence checklist → missing gate check → additional verification or approval**."
+                               },
+        "target_statement":  "steps = [\"validate\", \"local smoke\", \"git status\", \"commit\", \"push\"]",
+        "focus_span":  "[\"validate\", \"local smoke\", \"git status\", \"commit\", \"push\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "workflow",
+                                "test",
+                                "commit",
+                                "approval_decision",
+                                "insufficient_evidence"
+                            ],
+        "pedagogical_intent":  "interpret_result",
+        "subtype":  "list_literal",
+        "secondary_concepts":  [
+                                   "assignment",
+                                   "subscription",
+                                   "boolean_operation"
+                               ],
+        "prerequisites":  [
+                              "literal",
+                              "assignment"
+                          ],
+        "semantic_operations":  [
+                                    "safe_commit_sequence",
+                                    "approval_readiness_check",
+                                    "insufficient_test_diagnosis"
+                                ],
+        "reading_steps":  [
+                              "The target list represents a safe sequence in which `validate`, `local smoke`, and `git status` appear before `commit`.",
+                              "Currently, \"validate\" and \"local smoke\" are True in the checks.",
+                              "However, since `regression` is False, `ready_for_commit`—which is the result of the `and` operation on the three conditions—is False.",
+                              "Therefore, even if the procedure includes a “commit” step, you must not proceed to that step in the current evidence state.",
+                              "After supplementing the regression verification, a decision on approval must be made again."
+                          ],
+        "same_syntax_example":  "steps = [\"test\", \"commit\", \"push\"]\nprint(steps.index(\"commit\"))"
+    },
+    {
+        "id":  "PY24_L10_lessonfiles_tail_check_001",
+        "level":  10,
+        "title":  "Distinguish between verifying a single lesson connection and planning for thorough validation prior to deployment.",
+        "concepts":  [
+                         "call",
+                         "generator_expression",
+                         "call",
+                         "assignment",
+                         "boolean_operation"
+                     ],
+        "reading_goal":  "After reading the scope—which states that `any(...)` only checks whether the expected lesson path is connected—determine the additional set of schema, AST, runtime, and regression verification tests required to safely deploy the new card changes.",
+        "code":  "lesson_files = [\"data/a.json\", \"data/python_new_lesson.json\"]\nexpected = \"python_new_lesson.json\"\nconnected = any(path.endswith(expected) for path in lesson_files)\nschema_and_ids_ok = True\nast_ok = True\nruntime_semantics_ok = True\nexisting_regression_ok = True\nprint(connected)",
+        "question_type":  "safety",
+        "question":  "What is the most thorough validation plan before deploying a new lesson change while `connected` is True?",
+        "choices":  [
+                        "Verify all of the following: connection checks, schema/ID validation, Python AST, deterministic runtime semantic checks, and existing regression checks.",
+                        "If `connected` is True, deploy immediately without further verification.",
+                        "If the file name contains the word “lesson,” the schema and execution results are automatically considered correct.",
+                        "Assume that if the AST passes, there are also no duplicate card IDs or answer errors."
+                    ],
+        "answer":  "Verify all of the following: connection checks, schema/ID validation, Python AST, deterministic runtime semantic checks, and existing regression checks.",
+        "explanation":  "1) The `target any` call only checks whether there is at least one path in `lesson_files` that ends with “expected.” 2) Since the current second path ends with “expected,” `connected` is True. 3) However, `target` does not include JSON fields, duplicate IDs, Python syntax, correct execution values, or comparisons with existing cards. 4) Therefore, you must add the appropriate schema/ID, AST, runtime semantics, and regression gate for each risk.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "Strengthen the ability to explain what needs to be tested after making changes in APEX.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "`any(...)`가 expected lesson 경로의 연결 여부만 확인한다는 범위를 읽고, 새 카드 변경을 안전하게 배포하기 위해 추가로 필요한 schema·AST·runtime·regression 검증 묶음을 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`any(iterable)` checks whether any of the items is truthy. Therefore, while this target is suitable for verifying the existence of a path connection, it does not check the accuracy of the entire card content.",
+                                    "how_to_read":  "First, verify which Booleans the generator is producing. For any schema, syntax, execution, or existing card regression not observed during that check, identify them as requiring a separate gate.",
+                                    "key_point":  "Currently, since the target is True, it is confirmed that the expected file is linked to lesson_files. However, this expression does not account for JSON schema, Python AST, answer semantics, or regression on existing cards at all.",
+                                    "common_mistake":  "It is easy to assume that if a single validation passes, the entire change is safe. A validation plan must combine appropriate evidence for each claim."
+                                },
+        "teaching_example":  {
+                                 "code":  "paths = [\"data/a.json\", \"data/new.json\"]\nexpected = \"new.json\"\nprint(any(path.endswith(expected) for path in paths))",
+                                 "walkthrough":  "`True` simply indicates that a single path to `new.json` has been linked. It does not check the file’s schema or the execution results."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The `target any` call only checks whether there is at least one path in `lesson_files` that ends with “expected.” 2) Since the current second path ends with “expected,” `connected` is True. 3) However, `target` does not include JSON fields, duplicate IDs, Python syntax, correct execution values, or comparisons with existing cards. 4) Therefore, you must add the appropriate schema/ID, AST, runtime semantics, and regression gate for each risk.",
+                                   "why_correct":  "A verification plan is only sufficient if it combines the risks actually observed by each gate. Verifying path connections alone is not enough to prove content, syntax, execution, and regression.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "If `connected` is True, deploy immediately without further verification.",
+                                                               "why_wrong":  "`connected=True` only verifies that the loading list is connected; malformed schemas, execution errors, and existing regressions may remain unchanged.",
+                                                               "misread_step":  "Don’t just look at the names “PASS” and “FAIL”; write down the actual operands and observation ranges for each verification expression."
+                                                           },
+                                   "takeaway":  "The verification plan is designed as follows: **List of risks caused by changes → Gates that directly monitor each risk → Results of all required gates → Deployment decision**."
+                               },
+        "target_statement":  "any(path.endswith(expected) for path in lesson_files)",
+        "focus_span":  "any(path.endswith(expected) for path in lesson_files)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "lesson_files",
+                                "connection_check",
+                                "regression",
+                                "validation_plan",
+                                "evidence_scope"
+                            ],
+        "pedagogical_intent":  "interpret_result",
+        "subtype":  "function_call",
+        "secondary_concepts":  [
+                                   "generator_expression",
+                                   "call",
+                                   "assignment",
+                                   "boolean_operation"
+                               ],
+        "prerequisites":  [
+                              "call",
+                              "generator_expression"
+                          ],
+        "semantic_operations":  [
+                                    "lesson_connection_check",
+                                    "validation_plan_selection",
+                                    "evidence_scope_judgment"
+                                ],
+        "reading_steps":  [
+                              "The `target any` call simply checks whether there is at least one path in `lesson_files` that ends with “expected.”",
+                              "Since the second path currently ends with `expected`, `connected` is True.",
+                              "However, the target does not include JSON fields, duplicate IDs, Python syntax, correct execution values, or comparisons with existing cards.",
+                              "Therefore, you must add the appropriate schema/ID, AST, runtime semantics, and regression gate for each risk."
+                          ],
+        "same_syntax_example":  "files = [\"a.json\", \"b.json\"]\nexpected = \"b.json\"\nprint(any(path.endswith(expected) for path in files))"
+    },
+    {
+        "id":  "PY24_L10_schema_level_range_001",
+        "level":  10,
+        "title":  "Check whether `level` is between 1 and 10 using a chained comparison",
+        "concepts":  [
+                         "comparison",
+                         "name_reference",
+                         "if_statement"
+                     ],
+        "reading_goal":  "Read `1 \u003c= level \u003c= 10` as a range comparison where True is true only if both the lower bound and upper bound are satisfied.",
+        "code":  "level = 11\nin_range = 1 \u003c= level \u003c= 10\nprint(in_range)",
+        "question_type":  "output_prediction",
+        "question":  "What is the value of `in_range` when `level` is 11?",
+        "choices":  [
+                        "False",
+                        "True",
+                        "11",
+                        "10"
+                    ],
+        "answer":  "False",
+        "explanation":  "1) The left side, 1 \u003c= 11, is True. 2) The right side, 11 \u003c= 10, is False. 3) Range comparisons require both conditions to be satisfied. 4) Therefore, the overall result is False.",
+        "side_card_ids":  [
+                              "PYV158_A1_VALIDATION_FLOW",
+                              "PYV158_A1_SCHEMA_FLOW"
+                          ],
+        "project_context":  "This is linked to schema validation that limits the card level to an acceptable range to ensure that difficulty filters and statistics remain intact.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "`1 \u003c= level \u003c= 10`을 lower bound와 upper bound를 모두 만족해야 True인 범위 비교로 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "Python’s chained comparison allows for a concise way to express range checks such as `1 \u003c= level and level \u003c= 10`.",
+                                    "how_to_read":  "With the current value of `level` in the center, check the lower bound on the left and the upper bound on the right, respectively.",
+                                    "key_point":  "Both comparisons must be true for the overall result to be True.",
+                                    "common_mistake":  "It’s easy to assume that if just one boundary is met, the whole condition is True."
+                                },
+        "teaching_example":  {
+                                 "code":  "level=5\nprint(1 \u003c= level \u003c= 10)",
+                                 "walkthrough":  "Since both 1\u003c=5 and 5\u003c=10 are True, the entire expression is also True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The left side, 1 \u003c= 11, is True. 2) The right side, 11 \u003c= 10, is False. 3) Range comparisons require both conditions to be satisfied. 4) Therefore, the overall result is False.",
+                                   "why_correct":  "The range validation fails because the value exceeds the upper bound of 10.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "True",
+                                                               "why_wrong":  "Only the lower bound is satisfied, and the comparison with the upper bound returns False.",
+                                                               "misread_step":  "It’s easy to assume that if just one boundary is met, the whole condition is True."
+                                                           },
+                                   "takeaway":  "A chained comparison checks both boundaries relative to the middle value."
+                               },
+        "target_statement":  "1 \u003c= level \u003c= 10",
+        "focus_span":  "1 \u003c= level \u003c= 10",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "schema",
+                                "level_range",
+                                "validation",
+                                "card"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY24_L10_ci_fail_fast_001",
+        "level":  10,
+        "title":  "Distinguish between what a “fail-fast gate” guarantees and claims that require additional evidence",
+        "concepts":  [
+                         "raise_statement",
+                         "call",
+                         "if_statement",
+                         "literal",
+                         "return_statement"
+                     ],
+        "reading_goal":  "Read the behavior where a `raise` in the event of validation failure interrupts the normal deployment flow, and determine what claims are directly proven by the fact that validation passed or failed.",
+        "code":  "validation_ok = False\nstatus = \"not deployed\"\n\ntry:\n    if not validation_ok:\n        raise RuntimeError(\"validation failed; stop deploy\")\n    status = \"deployed\"\nexcept RuntimeError:\n    status = \"blocked\"\n\nprint(status)",
+        "question_type":  "safety",
+        "question":  "It has been confirmed that a failure in this test blocks deployment. What is the correct way to state, “This fix has improved performance and all affected areas are safe”?",
+        "choices":  [
+                        "This \"fail-fast\" result alone is insufficient; performance requires a Before→After benchmark for the same workload, and the scope of impact requires additional regression verification of related callers and consumers.",
+                        "Since a RuntimeError occurred once, performance improvements and the absence of any regressions are automatically proven.",
+                        "Since the exception message contains the word “deploy,” the overall system safety is proven.",
+                        "Since the `validation_ok` variable is a Boolean, no further validation is required."
+                    ],
+        "answer":  "This \"fail-fast\" result alone is insufficient; performance requires a Before→After benchmark for the same workload, and the scope of impact requires additional regression verification of related callers and consumers.",
+        "explanation":  "1) Because `validation_ok` is False, execution enters the `if` body. 2) The target `raise` produces a `RuntimeError`, skipping the normal deploy assignment. 3) The `except` catches the exception and changes `status` to `blocked`, confirming fail-fast behavior. 4) However, this run does not measure latency, throughput, or memory, and it does not check regressions in other callers or consumers. 5) Therefore, stronger claims about performance or overall safety require additional evidence appropriate to each claim.",
+        "side_card_ids":  [
+                              "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
+                          ],
+        "project_context":  "At APEX, we avoid making excessive performance or safety claims based solely on passing tests; instead, we cultivate the habit of requiring pre- and post-change measurements as well as caller and consumer regression testing.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "raise_statement",
+        "reading_goal_internal":  "validation 실패 시 raise가 deploy 정상 흐름을 중단한다는 동작을 읽고, validation 통과/실패 사실이 어떤 주장까지 직접 증명하는지 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`raise RuntimeError(...)` This interrupts the normal flow and raises an exception to the parent handler. While this prevents deployment after a failed validation, other assertions beyond the scope of validation are not automatically verified.",
+                                    "how_to_read":  "First, verify that `raise` is actually executed in the failure input. Next, distinguish between “what this gate checked” and “whether it proved performance, memory, and all caller impacts.”",
+                                    "key_point":  "With the current `validation_ok=False`, a `RuntimeError` occurs and the code never reaches the deploy state. This is evidence of fail-fast behavior, not evidence of better performance or of the absence of every regression.",
+                                    "common_mistake":  "It is easy to generalize the fact that a single test passed or that a failure was successfully prevented as evidence that “the change is safe in every respect.”"
+                                },
+        "teaching_example":  {
+                                 "code":  "def gate(ok):\n    if not ok:\n        raise RuntimeError(\"blocked\")\n    return \"allowed\"\ntry:\n    gate(False)\nexcept RuntimeError:\n    print(\"blocked\")",
+                                 "walkthrough":  "When a `False` input is provided, `raise` is executed, so the `allowed` return statement is never reached. This test directly verifies only the exception-handling behavior."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Because `validation_ok` is False, execution enters the `if` body. 2) The target `raise` produces a `RuntimeError`, skipping the normal deploy assignment. 3) The `except` catches the exception and changes `status` to `blocked`, confirming fail-fast behavior. 4) However, this run does not measure latency, throughput, or memory, and it does not check regressions in other callers or consumers. 5) Therefore, stronger claims about performance or overall safety require additional evidence appropriate to each claim.",
+                                   "why_correct":  "The scope of the evidence does not exceed the scope of the tests actually performed. “Fail-fast” demonstrates termination upon failure; performance and scope of impact require separate measurement and regression testing.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Since a RuntimeError occurred once, performance improvements and the absence of any regressions are automatically proven.",
+                                                               "why_wrong":  "An exception merely indicates an interruption in the control flow; it does not measure performance metrics or whether regression has occurred in other paths.",
+                                                               "misread_step":  "Separately list the facts actually observed in the test and the stronger conclusions the report intends to draw, then compare them."
+                                                           },
+                                   "takeaway":  "The distinction between claims and evidence is categorized as follows: **what the examiner has observed → claims that can be directly proven → claims that have not yet been measured → additional verification required**."
+                               },
+        "target_statement":  "raise RuntimeError(\"validation failed; stop deploy\")",
+        "focus_span":  "raise RuntimeError(\"validation failed; stop deploy\")",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "ci",
+                                "fail_fast",
+                                "quality_gate",
+                                "validation_evidence",
+                                "claim_boundary"
+                            ],
+        "pedagogical_intent":  "predict_exception",
+        "subtype":  "raise_exception",
+        "secondary_concepts":  [
+                                   "call",
+                                   "if_statement",
+                                   "literal",
+                                   "return_statement"
+                               ],
+        "prerequisites":  [
+                              "call",
+                              "if_statement"
+                          ],
+        "semantic_operations":  [
+                                    "ci_failure_raise",
+                                    "deploy_block",
+                                    "validation_claim_boundary"
+                                ],
+        "reading_steps":  [
+                              "Since `validation_ok` is False, the program enters the `if` block.",
+                              "The `target raise` statement raises a `RuntimeError`, causing the program to skip the normal deployment process.",
+                              "Since `except` catches the exception and changes the status to `blocked`, the fail-fast behavior is confirmed.",
+                              "However, this run did not measure latency, throughput, or memory, nor did it check for regression in other callers or consumers.",
+                              "Therefore, stronger performance and overall safety claims require additional evidence to support them, respectively."
+                          ],
+        "same_syntax_example":  "try:\n    raise RuntimeError(\"stop\")\nexcept RuntimeError:\n    print(\"blocked\")"
+    }
 ]

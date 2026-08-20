@@ -1,413 +1,916 @@
 [
-  {
-    "id": "PY25_L07_logging_basic_001",
-    "level": 7,
-    "title": "Reading the Default Logging Level",
-    "concepts": [
-      "import",
-      "logging",
-      "info",
-      "warning",
-      "error"
-    ],
-    "reading_goal": "Read the code that logs operational messages at the logging level instead of using `print`.",
-    "code": "import logging\n\nlogging.basicConfig(level=logging.INFO)\nlogging.info(\"harvest started\")\nlogging.warning(\"source returned empty feed\")\nlogging.error(\"curation failed\")",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best matches the meaning of \"warning\" in the log?",
-    "choices": [
-      "Not an immediate concern, but a situation that requires caution",
-      "Always Success",
-      "Detailed Values for Debugging Only",
-      "Command to Install the Program"
-    ],
-    "answer": "Not an immediate concern, but a situation that requires caution",
-    "explanation": "\"INFO\" indicates normal flow, \"WARNING\" indicates a cautionary state, and \"ERROR\" indicates a failure. Logging is a method of recording events that occur during execution. Categorizing logs by severity level—such as debug, info, warning, and error—makes it easier to identify the root cause of a problem. Therefore, the return/call result represents a \"state that does not require immediate termination but does require attention.\"",
-    "side_card_ids": [],
-    "project_context": "When reading the status of collection, curation, and learning batches, it is important to distinguish between log levels."
-  },
-  {
-    "id": "PY25_L07_try_except_log_001",
-    "level": 7,
-    "title": "Reading try/except logs",
-    "concepts": [
-      "try_except",
-      "logging",
-      "error_handling"
-    ],
-    "reading_goal": "Understand the structure for logging and rethrowing errors when an exception occurs.",
-    "code": "try:\n    run_job()\nexcept Exception:\n    logging.exception(\"job failed\")\n    raise",
-    "question_type": "meaning_choice",
-    "question": "Why rewrite `raise`?",
-    "choices": [
-      "To record the error and report the failure to higher-ups,",
-      "To completely hide the error",
-      "To ensure success every time",
-      "To delete the log files"
-    ],
-    "answer": "To record the error and report the failure to higher-ups,",
-    "explanation": "Inside except, logging.exception records the current exception message and traceback, while bare raise propagates that same exception to the caller. logging.error(..., e) alone can omit the traceback and lose the failure location. Sanitize tokens, passwords, and personal data from logs, and keep broad Exception boundaries as small as possible.",
-    "side_card_ids": [
-      "DEV_logging_001"
-    ],
-    "project_context": "This is a basic pattern that prevents you from quietly ignoring deployment failures."
-  },
-  {
-    "id": "PY25_L08_traceback_reading_001",
-    "level": 8,
-    "title": "Reading traceback line numbers",
-    "concepts": [
-      "return",
-      "traceback",
-      "debugging",
-      "line_number"
-    ],
-    "reading_goal": "Learn how to locate the filename and line number in the error log and navigate to the source of the problem.",
-    "code": "Traceback (most recent call last):\n  File \"jobs/curate.py\", line 42, in run_curate\n    rows = load_items()\n  File \"jobs/curate.py\", line 18, in load_items\n    return json.loads(raw)\njson.decoder.JSONDecodeError: Expecting value",
-    "question_type": "meaning_choice",
-    "question": "Where exactly did the error occur?",
-    "choices": [
-      "json.loads(raw) on line 18 of jobs/curate.py",
-      "The function definition on line 42 of jobs/curate.py",
-      "Location of the import statement on the very first line of the file",
-      "Where to Configure the GitHub Pages URL"
-    ],
-    "answer": "json.loads(raw) on line 18 of jobs/curate.py",
-    "explanation": "The further down the traceback you go, the closer you are to the actual location where the exception occurred. A traceback is a log that shows where an error originated and which functions it passed through before occurring. Start by checking the error message, filename, and line number at the very bottom. Therefore, the return/call result is “json.loads(raw) at line 18 of jobs/curate.py.”",
-    "side_card_ids": [
-      "PYV158_A1_DEBUGGING_FLOW"
-    ],
-    "project_context": "This exercise involves identifying the line of code causing the error in the pasted error log."
-  },
-  {
-    "id": "PY25_L08_structured_log_001",
-    "level": 8,
-    "title": "Reading About Structured Logging",
-    "concepts": [
-      "print",
-      "structured_logging",
-      "json_log",
-      "run_id"
-    ],
-    "reading_goal": "Understand the structure that stores state in a key-value format instead of as string logs.",
-    "code": "log = {\n    \"event\": \"curate_done\",\n    \"run_id\": run_id,\n    \"items_seen\": 120,\n    \"items_written\": 20,\n}\nprint(json.dumps(log, ensure_ascii=False))",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best describes the advantages of a structured log?",
-    "choices": [
-      "This makes it easy to search later using fields like event/run_id/items_written",
-      "It's always written in a way that makes it hard for people to read.",
-      "This feature automatically deletes files.",
-      "This method completes the entire authentication process without using a database."
-    ],
-    "answer": "This makes it easy to search later using fields like event/run_id/items_written",
-    "explanation": "A one-line JSON object lets a collector parse and filter fields such as event, run_id, and counts. This example merely prints JSON and has no timestamp, severity, schema version, or destination management. Ensure values are JSON-serializable, omit secrets and personal data, and define log size and retention policies.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "It is linked to the run_id, stats, and status summary of home-curator."
-  },
-  {
-    "id": "PY25_L08_run_id_trace_001",
-    "level": 8,
-    "title": "Reading the run_id",
-    "concepts": [
-      "run_id",
-      "trace",
-      "pipeline",
-      "audit"
-    ],
-    "reading_goal": "Understand the structure that links multiple levels of logs by grouping them under a single run_id.",
-    "code": "run_id = \"run_20260529_001\"\nlogging.info(\"start harvest run_id=%s\", run_id)\nitems = harvest(run_id=run_id)\nlogging.info(\"finish harvest run_id=%s count=%s\", run_id, len(items))",
-    "question_type": "meaning_choice",
-    "question": "Why is `run_id` included in multiple logs?",
-    "choices": [
-      "To group logs from the same execution for later reference",
-      "To ensure that the execution fails without fail",
-      "To delete a card ID",
-      "To clear your browser cache"
-    ],
-    "answer": "To group logs from the same execution for later reference",
-    "explanation": "Passing one run_id through start, processing, finish logs, and downstream calls lets operators group events from one execution. Generate a collision-resistant ID across workers and time zones, do not trust an arbitrary user-supplied value, and propagate it consistently through the entire request or job context.",
-    "side_card_ids": [],
-    "project_context": "It is linked to the audit logs for the collection→refinement→curation→serving process."
-  },
-  {
-    "id": "PY25_L09_retry_backoff_001",
-    "level": 9,
-    "title": "Reading the retry/backoff loop",
-    "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "try_except",
-      "import",
-      "range",
-      "retry",
-      "backoff",
-      "timeout",
-      "resilience"
-    ],
-    "reading_goal": "I'm reading some code that waits briefly and then retries in the event of a temporary failure.",
-    "code": "import random\nimport time\n\ndef call_with_retry(max_attempts=3):\n    if max_attempts < 1:\n        raise ValueError(\"max_attempts must be positive\")\n    for attempt in range(max_attempts):\n        try:\n            return call_api()\n        except TimeoutError:\n            if attempt == max_attempts - 1:\n                raise\n            wait = 2 ** attempt + random.uniform(0, 0.5)\n            time.sleep(wait)",
-    "question_type": "meaning_choice",
-    "question": "When attempt is 2, what is the exponential-backoff base value 2 ** attempt?",
-    "choices": [
-      "4",
-      "2",
-      "3",
-      "8"
-    ],
-    "answer": "4",
-    "explanation": "2 ** 2 equals 4. The code avoids sleeping after the final failure, re-raises the original TimeoutError, and adds small jitter so clients do not all retry together. Retry only transient failures and operations that are safe to repeat, and respect Retry-After, a total deadline, and an attempt limit.",
-    "side_card_ids": [
-      "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
-    ],
-    "project_context": "This pattern is used when external APIs, RSS feeds, model calls, or GitHub calls temporarily fail."
-  },
-  {
-    "id": "PY25_L09_timeout_guard_001",
-    "level": 9,
-    "title": "Reading the timeout protection code",
-    "concepts": [
-      "import",
-      "timeout",
-      "requests",
-      "network",
-      "ops"
-    ],
-    "reading_goal": "I am reading about a structure that sets a timeout to prevent network requests from waiting indefinitely.",
-    "code": "import requests\n\nresponse = requests.get(url, timeout=10)\nresponse.raise_for_status()",
-    "question_type": "meaning_choice",
-    "question": "What does \"timeout=10\" mean in a timeout guard?",
-    "choices": [
-      "Set a limit so you don't have to wait too long for a response",
-      "10. Be sure to try again.",
-      "Delete 10 files",
-      "Always set the status code to 10"
-    ],
-    "answer": "Set a limit so you don't have to wait too long for a response",
-    "explanation": "In Requests, timeout=10 is used to limit connection and socket-read inactivity; it is not a guaranteed ten-second total wall-clock deadline. DNS, redirects, multiple response chunks, and another retry layer can make total time longer. raise_for_status turns 4xx and 5xx into HTTPError, so distinguish timeout, connection, and HTTP failures.",
-    "side_card_ids": [
-      "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
-    ],
-    "project_context": "This is the default defense mechanism in collector/validator/external API call code."
-  },
-  {
-    "id": "PY25_L09_health_check_001",
-    "level": 9,
-    "title": "Reading the health check endpoint",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "health_check",
-      "api",
-      "monitoring"
-    ],
-    "reading_goal": "Understand the endpoint for quickly checking if the server is up.",
-    "code": "@app.get(\"/health\")\ndef health():\n    return {\"ok\": True, \"version\": APP_VERSION}",
-    "question_type": "meaning_choice",
-    "question": "/What is the main purpose of the health endpoint?",
-    "choices": [
-      "Quickly check the server's current status",
-      "Delete all data from the database",
-      "Prints the user's password",
-      "Perform a Git push"
-    ],
-    "answer": "Quickly check the server's current status",
-    "explanation": "This endpoint proves only that the process can answer the request and read APP_VERSION, which is a liveness signal. It does not check whether a database, queue, or external API is ready. Separate restart-oriented liveness from traffic-oriented readiness, and give dependency checks short timeouts and overload protection.",
-    "side_card_ids": [],
-    "project_context": "This is a good way to test things out after launching a FastAPI search API or serving API."
-  },
-  {
-    "id": "PY25_L09_metrics_counter_001",
-    "level": 9,
-    "title": "Reading the metrics counter",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "try_except",
-      "metrics",
-      "counter",
-      "monitoring",
-      "requests"
-    ],
-    "reading_goal": "Read the basic structure for counting the number of requests and failures.",
-    "code": "metrics = {\"requests\": 0, \"errors\": 0}\n\ndef handle_request():\n    metrics[\"requests\"] += 1\n    try:\n        return run()\n    except Exception:\n        metrics[\"errors\"] += 1\n        raise",
-    "question_type": "meaning_choice",
-    "question": "What happens to `errors` if an exception occurs in `run()`?",
-    "choices": [
-      "1 increases",
-      "It is initialized to 0",
-      "The number of requests is decreasing",
-      "It never changes"
-    ],
-    "answer": "1 increases",
-    "explanation": "On one call where run raises, requests increments by one, then errors increments by one before the exception propagates. This in-memory dictionary is separate per process, is not necessarily safe under thread or async concurrency, and resets on restart. Use a concurrency-safe metrics client and central backend with consistent request and error definitions.",
-    "side_card_ids": [],
-    "project_context": "This is the most basic way to track request volume, error rate, and failure rate."
-  },
-  {
-    "id": "PY25_L10_alert_condition_001",
-    "level": 10,
-    "title": "Reading the alert condition",
-    "concepts": [
-      "if",
-      "alert",
-      "error_rate",
-      "monitoring"
-    ],
-    "reading_goal": "Reads the conditions under which a notification is triggered when the error rate exceeds the threshold.",
-    "code": "error_rate = errors / max(total_requests, 1)\nif error_rate > 0.05:\n    send_alert(f\"high error rate: {error_rate:.2%}\")",
-    "question_type": "meaning_choice",
-    "question": "Why use `max(total_requests, 1)` when `total_requests` is 0?",
-    "choices": [
-      "To avoid a division-by-zero error",
-      "To ensure the error rate is always 100%",
-      "To turn off notifications completely",
-      "To delete the number of requests"
-    ],
-    "answer": "To avoid a division-by-zero error",
-    "explanation": "max(total_requests, 1) prevents division by zero and produces an error rate of zero when there are no requests. A rate from one or two requests is noisy, so alerts also need minimum traffic, a time window, duration, and severity. Correlate the ratio with latency and absolute error count rather than declaring an incident from one number.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "This is the basic approach to monitoring error rates in serving APIs or collection batches."
-  },
-  {
-    "id": "PY25_L10_audit_log_001",
-    "level": 10,
-    "title": "Reading the audit log",
-    "concepts": [
-      "def",
-      "function",
-      "audit_log",
-      "security",
-      "traceability",
-      "database"
-    ],
-    "reading_goal": "Understand the structure of an audit log that records who performed which important tasks.",
-    "code": "def write_audit(user_id, action, target_id):\n    repo.insert_audit_log({\n        \"user_id\": user_id,\n        \"action\": action,\n        \"target_id\": target_id,\n        \"created_at\": now_iso(),\n    })",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best reflects the purpose of an audit log?",
-    "choices": [
-      "To track the subject, action, and object of important tasks",
-      "To allow all logins",
-      "To force the cache to be retained",
-      "To compress JSON"
-    ],
-    "answer": "To track the subject, action, and object of important tasks",
-    "explanation": "The record stores who acted, what action occurred, which target was affected, and when. Important audits may also need outcome, request or run ID, and policy-approved source context. Protect the log with least privilege and tamper-resistant storage, time synchronization, and retention and deletion rules, while excluding secrets and unnecessary personal data.",
-    "side_card_ids": [],
-    "project_context": "It is linked to the management of private assets, API keys, and the history of prompt and scoring changes."
-  },
-  {
-    "id": "PY25_L10_stale_job_reaper_001",
-    "level": 10,
-    "title": "Read \"Stale Job Reaper\"",
-    "concepts": [
-      "def",
-      "function",
-      "stale_job",
-      "reaper",
-      "cron",
-      "run_status"
-    ],
-    "reading_goal": "I am reading the operational code that resolves tasks that have remained in the \"running\" state for a long time as errors.",
-    "code": "def reap_stale_runs(db, cutoff_time):\n    db.execute(\"\"\"\n        UPDATE runs\n        SET status = 'error', error_message = 'stale run reaped'\n        WHERE status = 'running' AND started_at < ?\n    \"\"\", (cutoff_time,))",
-    "question_type": "meaning_choice",
-    "question": "Which runs does this code clean up?",
-    "choices": [
-      "Runs that have remained in the \"running\" state for a long time",
-      "All successful runs",
-      "Files that haven't been started yet",
-      "All items"
-    ],
-    "answer": "Runs that have remained in the \"running\" state for a long time",
-    "explanation": "The statement marks every running row started before cutoff as error. It can incorrectly reap a legitimate long job, so prefer an updated heartbeat or lease expiry and compare ownership or version in the update to avoid a race with job completion. Audit the affected-row count too.",
-    "side_card_ids": [
-      "PL_cron_001"
-    ],
-    "project_context": "home-curator D1 is directly linked to the table reaper logic."
-  },
-  {
-    "id": "PY25_L10_cron_log_001",
-    "level": 10,
-    "title": "Reading the worker cron log",
-    "concepts": [
-      "cron",
-      "worker",
-      "scheduled_job",
-      "log"
-    ],
-    "reading_goal": "Read the structure that allows you to check the logs to see which tasks the scheduler executed and when.",
-    "code": "export default {\n  async scheduled(event, env, ctx) {\n    console.log(\"cron fired\", event.cron)\n    ctx.waitUntil(runCurate(env))\n  }\n}",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best describes the meaning of `ctx.waitUntil(runCurate(env))`?",
-    "choices": [
-      "Register an asynchronous task in a schedule event so that it runs to completion",
-      "Delete the cron schedule",
-      "Hide all log output",
-      "Restore the DB table to its initial state"
-    ],
-    "answer": "Register an asynchronous task in a schedule event so that it runs to completion",
-    "explanation": "ctx.waitUntil registers the promise so the platform tracks work after the scheduled handler returns, within the platform execution lifetime. It does not provide unlimited execution or guaranteed completion; limits, exceptions, or deployment can interrupt it. Make runCurate idempotent and add failure logging, retry, durable checkpoints, and rejection observation.",
-    "side_card_ids": [],
-    "project_context": "This ties in with the workflow of checking cron execution logs using `wrangler tail`."
-  },
-  {
-    "id": "PY25_L10_cost_quota_monitor_001",
-    "level": 10,
-    "title": "Reading Cost/Quota Monitoring Code",
-    "concepts": [
-      "if",
-      "quota",
-      "cost",
-      "rate_limit",
-      "monitoring"
-    ],
-    "reading_goal": "I'm reading the code that issues a warning when usage approaches the budget or limit.",
-    "code": "usage_ratio = used_credits / max(total_credits, 1)\nif usage_ratio > 0.8:\n    logging.warning(\"credit usage high: %.1f%%\", usage_ratio * 100)",
-    "question_type": "meaning_choice",
-    "question": "If the usage_ratio is 0.85, what kind of log is generated?",
-    "choices": [
-      "Warning log",
-      "\"debug\" only",
-      "No logs",
-      "Always an error"
-    ],
-    "answer": "Warning log",
-    "explanation": "When total_credits is positive and the ratio is 0.85, it exceeds 0.8 and emits a warning. If total_credits is zero, max(...,1) only avoids a division error and does not create a meaningful quota ratio; treat that as a configuration error. A warning does not prevent spending, so add hard budgets, rate limits, and a trustworthy provider-usage source.",
-    "side_card_ids": [],
-    "project_context": "These are operational practices for safely using AWS credits, LLM API usage, and free quotas."
-  },
-  {
-    "id": "PY25_L10_incident_summary_001",
-    "level": 10,
-    "title": "Reading a Fault Summary Object",
-    "concepts": [
-      "incident",
-      "summary",
-      "ops",
-      "postmortem"
-    ],
-    "reading_goal": "Understand the method of structuring the cause, impact, action, and next steps when a problem arises.",
-    "code": "incident = {\n    \"symptom\": \"Loading screen stuck\",\n    \"impact\": \"cards not visible\",\n    \"root_cause\": \"old app.js cache\",\n    \"fix\": \"bump asset query version\",\n    \"next_action\": \"add cache-bust validation\"\n}",
-    "question_type": "meaning_choice",
-    "question": "What does the \"root_cause\" field contain?",
-    "choices": [
-      "The Root Cause of the Problem",
-      "Username",
-      "Correct Answer on the Card",
-      "CSS File Size"
-    ],
-    "answer": "The Root Cause of the Problem",
-    "explanation": "root_cause should contain an evidence-confirmed underlying cause, not merely a symptom. The object is a useful start for separating symptom, impact, cause, fix, and next action, but lacks timestamp, detection, affected version, evidence links, owner, and verification. Label the cause as a hypothesis until it is confirmed.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "This ties into the habit of summarizing the current situation, next steps, and related commands whenever you move on to the next dialogue window."
-  }
+    {
+        "id":  "PY25_L07_logging_basic_001",
+        "level":  7,
+        "title":  "Reading the `logging.WARNING` module attribute",
+        "concepts":  [
+                         "attribute_access",
+                         "assignment",
+                         "import_statement"
+                     ],
+        "reading_goal":  "Use dot notation after the module name to read the logging-level constant and trace the assignment result.",
+        "code":  "import logging\nlevel = logging.WARNING\nprint(level)",
+        "question_type":  "multiple_choice",
+        "question":  "`logging.WARNING` What value is stored in ``level`` when this is executed?",
+        "choices":  [
+                        "30",
+                        "20",
+                        "40",
+                        "\"WARNING\""
+                    ],
+        "answer":  "30",
+        "explanation":  "In the Python logging module, `INFO` is defined as 20, `WARNING` as 30, and `ERROR` as 40. Therefore, ``logging.WARNING`` is 30, and that value is assigned to ``level``. This is because the `WARNING` module attribute points to the integer constant 30. Common source of confusion: “WARNING” `WARNING` is the attribute name, not the actual value of that attribute. Point of confusion: In dot notation, you must distinguish between the name itself and the value it refers to. Accessing a module attribute is a syntax that reads the actual value referred to by the name on the right side of the dot.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This simplifies a situation where you read severity levels from logs for collection, curation, or training batches.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "attribute_access",
+        "reading_goal_internal":  "모듈 이름 뒤의 점 표기법으로 logging 레벨 상수를 읽고 대입 결과를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "Attribute access is an expression that reads a name contained within an object or module, in the form ``object.name``.",
+                                    "how_to_read":  "First, identify what the target to the left of the dot is, then find the value referred to by the attribute name to the right of the dot.",
+                                    "key_point":  "`logging.WARNING` is not the string `\"WARNING\"`, but rather the integer level constant 30 provided by the logging module.",
+                                    "common_mistake":  "It is easy to mistake an attribute name for a string that is printed as-is. In reality, the value that the name refers to is used."
+                                },
+        "teaching_example":  {
+                                 "code":  "import logging\ninfo_level = logging.INFO\nprint(info_level)",
+                                 "walkthrough":  "`logging.INFO` is a constant at the INFO level in the logging module, and since its value is 20, 20 is printed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "In the Python logging module, INFO is defined as 20, WARNING as 30, and ERROR as 40. Therefore, ``logging.WARNING`` is 30, and that value is assigned to ``level``.",
+                                   "why_correct":  "WARNING Because the module attribute points to the integer constant 30.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "\"WARNING\"",
+                                                               "why_wrong":  "`WARNING` is an attribute name, not the actual value of that attribute.",
+                                                               "misread_step":  "In dot notation, you must distinguish between the name itself and the value it refers to."
+                                                           },
+                                   "takeaway":  "Accessing module attributes is a syntax that reads the actual value pointed to by the name to the right of the dot."
+                               },
+        "target_statement":  "level = logging.WARNING",
+        "focus_span":  "logging.WARNING",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "logging",
+                                "warning level",
+                                "module constants",
+                                "operations"
+                            ],
+        "pedagogical_intent":  "predict_output"
+    },
+    {
+        "id":  "PY25_L07_try_except_log_001",
+        "level":  7,
+        "title":  "Re-raise an exception using a bare `raise` statement inside an `except` block",
+        "concepts":  [
+                         "raise_statement",
+                         "except_clause",
+                         "call"
+                     ],
+        "reading_goal":  "Understand that a parameterless `raise` inside an `except` block does not create a new exception but re-raises the exception currently being handled.",
+        "code":  "import logging\n\ndef run_job():\n    raise RuntimeError(\"job failed\")\n\ntry:\n    run_job()\nexcept RuntimeError:\n    logging.exception(\"job failed\")\n    raise",
+        "question_type":  "multiple_choice",
+        "question":  "What does the parameterless ``raise`` at the end of the `except` block do?",
+        "choices":  [
+                        "Pass the currently caught RuntimeError back up the call chain.",
+                        "Creates a new ValueError",
+                        "Completely hide exceptions",
+                        "Change the log level to INFO"
+                    ],
+        "answer":  "Pass the currently caught RuntimeError back up the call chain.",
+        "explanation":  "If `run_job()` raises a RuntimeError, the `except` block is executed. After logging, encountering a bare `raise` causes the currently handled RuntimeError to be raised again and propagated to the outer caller. This is because a parameterless `raise` inside an `except` block is a Python syntax that re-propagates the current exception. Common Misconception: The exception is completely hidden. On the contrary, the exception is propagated back out. Point of Misinterpretation: You must read the roles of the `logging` call and the `raise` statement separately. A bare `raise` within an `except` block is a statement that rethrows the current exception as-is.",
+        "side_card_ids":  [
+                              "DEV_logging_001"
+                          ],
+        "project_context":  "This is a pattern where a batch failure is not treated as a success (with only a log entry) but is reported as a failure to the parent executor.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "raise_statement",
+        "reading_goal_internal":  "except 블록 안의 인자 없는 `raise`가 새 예외를 만드는 것이 아니라 현재 처리 중인 예외를 다시 발생시키는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A `raise` statement used without arguments inside an `except` block is a statement that re-raises the currently caught exception as-is.",
+                                    "how_to_read":  "First, check which exception was caught by the `except` clause, and note that after `raise`, the exception handling does not end within the current function but is propagated outward.",
+                                    "key_point":  "Just because a log entry was created doesn’t mean the failure has been resolved. If there is a bare `raise`, the same failure will continue to be propagated to the caller.",
+                                    "common_mistake":  "It’s easy to assume that exceptions are automatically re-raised if `raise` is omitted. However, if an `except` block completes normally, the exception is considered handled; therefore, `raise` is required to propagate it further."
+                                },
+        "teaching_example":  {
+                                 "code":  "try:\n    int(\"x\")\nexcept ValueError:\n    print(\"bad number\")\n    raise",
+                                 "walkthrough":  "A `ValueError` from `int(\"x\")` is caught by `except`, the message is printed, and then a bare `raise` re-triggers the same `ValueError`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`run_job()` If this RuntimeError is raised, the `except` block will execute. After logging, when it encounters `bare`raise``, the currently being handled RuntimeError is raised again and passed to the outer caller.",
+                                   "why_correct":  "This is because a parameterless `raise` inside an `except` block is a Python construct that re-propagates the current exception.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Completely hide exceptions",
+                                                               "why_wrong":  "It does the opposite: it passes the exception back outward by re-raising it.",
+                                                               "misread_step":  "You should read the roles of the `logging` call and the `raise` statement separately."
+                                                           },
+                                   "takeaway":  "The `raise` statement in an `except` block rethrows the current exception as-is."
+                               },
+        "target_statement":  "raise",
+        "focus_span":  "raise",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "exceptions_debugging",
+        "coverage_topics":  [
+                                "try except",
+                                "logging.exception",
+                                "reraise",
+                                "batch failure"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY25_L08_traceback_reading_001",
+        "level":  8,
+        "title":  "Selecting the most immediate frame in a traceback using [-1]",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "When a traceback in “most recent call last” form is structured, read the sequence indices so that the last frame is the one closest to the direct error location.",
+        "code":  "frames = [\n    {\"file\": \"jobs/curate.py\", \"line\": 42, \"code\": \"rows = load_items()\"},\n    {\"file\": \"jobs/curate.py\", \"line\": 18, \"code\": \"return json.loads(raw)\"},\n]\norigin = frames[-1]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the most direct error location pointed to by `origin`?",
+        "choices":  [
+                        "jobs/curate.py line 42",
+                        "jobs/curate.py line 18",
+                        "frames line -1",
+                        "Unknown"
+                    ],
+        "answer":  "jobs/curate.py line 18",
+        "explanation":  "The last item in `frames` contains information for `jobs/curate.py`, line 18, `return json.loads(raw)`. Because `frames[-1]` selects this dict, `origin` is the line 18 frame. In Python, index -1 selects the last item in a sequence, and this data places the deepest traceback frame last. A tempting wrong answer is `jobs/curate.py line 42`; line 42 is the higher-level frame that called `load_items()`, while line 18 directly executed `json.loads(raw)`. The key to reading a traceback is to **follow the call path downward and identify the most direct exception frame**.",
+        "side_card_ids":  [
+                              "PYV158_A1_DEBUGGING_FLOW"
+                          ],
+        "project_context":  "This ties into the debugging habit of first isolating the call path and the actual point where the exception occurred from a long traceback.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "most recent call last 형태의 traceback을 구조화했을 때 마지막 frame이 직접 오류 지점에 가장 가깝다는 순서를 sequence index로 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "sequence[-1] is a subscription that reads the last item in sequence.",
+                                    "how_to_read":  "It states that frames are stored in order from the outermost call to the innermost call, and that -1 selects the last and deepest frame.",
+                                    "key_point":  "Since the original “traceback” text is not Python code, convert it into structured frame data and focus the Python syntax explanation on `[-1]` indexing.",
+                                    "common_mistake":  "It is easy to assume that the first frame in a traceback is the exact location of the error. In a `most recent call last` traceback, the lower frames are closer to the point where the exception occurred."
+                                },
+        "teaching_example":  {
+                                 "code":  "frames = [\n    {\"file\": \"app.py\", \"line\": 20},\n    {\"file\": \"parser.py\", \"line\": 7},\n]\norigin = frames[-1]",
+                                 "walkthrough":  "Since -1 selects the last frame, `origin` is a dictionary containing information from line 7 of `parser.py`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The last item in `frames` contains information from `jobs/curate.py`, line 18: `return json.loads(raw)`. Since `frames[-1]` selects this dictionary, the origin is the frame on line 18.",
+                                   "why_correct":  "In Python, an index of -1 selects the last item in a sequence, and this data is because the deepest frame of the traceback was placed at the end.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "jobs/curate.py line 42",
+                                                               "why_wrong":  "Line 42 is the parent frame that called `load_items()`, and the frame that directly executed `json.loads(raw)` is line 18.",
+                                                               "misread_step":  "This is a case where the location where the call was initiated is not distinguished from the deeper location where the actual exception occurred."
+                                                           },
+                                   "takeaway":  "The core concept of a **traceback** is **to trace down the call stack to find the most immediate exception frame**."
+                               },
+        "target_statement":  "origin = frames[-1]",
+        "focus_span":  "frames[-1]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "exceptions_debugging",
+        "coverage_topics":  [
+                                "traceback",
+                                "stack frame",
+                                "error location",
+                                "JSONDecodeError"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY25_L08_structured_log_001",
+        "level":  8,
+        "title":  "Creating a single line of structured log using `json.dumps()`",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "argument_passing",
+                         "attribute_access",
+                         "literal"
+                     ],
+        "reading_goal":  "Understand the input-output relationship where `dict` is converted to a string via a call to `json.dumps()`.",
+        "code":  "import json\n\nlog = {\"event\": \"curate_done\", \"run_id\": \"run_001\", \"items_seen\": 120, \"items_written\": 20}\nline = json.dumps(log, ensure_ascii=False)",
+        "question_type":  "multiple_choice",
+        "question":  "What is the data type of `line`?",
+        "choices":  [
+                        "str",
+                        "dict",
+                        "list",
+                        "int"
+                    ],
+        "answer":  "str",
+        "explanation":  "`json.dumps()` receives the `log` dict and returns JSON text. That return value is assigned to `line`, so `line` is a `str`. This is because `dumps` is a serialize-to-string function. Common wrong answer: `dict`. `dict` is the input type before the call; the call result is a string. Misreading point: This happens when the function input and return value are confused. `json.dumps()` **serializes a Python structure into a JSON string**.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "It connects to code that records batch and collection task logs as single-line JSON logs to make them easy to search by field.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "dict가 json.dumps() 호출을 거쳐 문자열로 변환되는 입력·출력 관계를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "json.dumps(value) is a function call that serializes a Python value into a JSON-formatted string.",
+                                    "how_to_read":  "It reads that the `log dict` inside the parentheses is the input, and the result of the call is a string that can be easily written to a file or stdout.",
+                                    "key_point":  "The searchability of structured logs is domain context; the Python focus is the `dumps()` call that converts a dict to a string.",
+                                    "common_mistake":  "It’s easy to assume that `dumps` returns a `dict` as-is. The return type is `str`."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\n\nlog = {\"event\": \"start\", \"count\": 3}\nline = json.dumps(log)",
+                                 "walkthrough":  "The `dict` is serialized into a JSON string and stored in `line`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "json.dumps() takes a log dict as input and returns JSON text. Since the return value is assigned to line, the data type of line is str.",
+                                   "why_correct":  "This is because `dumps` is a serialize-to-string function.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "dict",
+                                                               "why_wrong":  "`dict` is the data type of the input value before the call, and the result of the call is a string.",
+                                                               "misread_step":  "This is a case of not distinguishing a function’s input from its return value."
+                                                           },
+                                   "takeaway":  "`json.dumps()` **serializes a Python structure into a JSON string**."
+                               },
+        "target_statement":  "line = json.dumps(log, ensure_ascii=False)",
+        "focus_span":  "json.dumps(log, ensure_ascii=False)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "structured log",
+                                "JSON log",
+                                "event",
+                                "run_id"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY25_L08_run_id_trace_001",
+        "level":  8,
+        "title":  "Compare the two `run_id` values to verify if they are from the same execution",
+        "concepts":  [
+                         "comparison",
+                         "assignment",
+                         "subscription",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the sequence that retrieves the correlation ID from each of the two dictionaries and compares them to see if they are the same string.",
+        "code":  "start_log = {\"event\": \"harvest_start\", \"run_id\": \"run_20260529_001\"}\nfinish_log = {\"event\": \"harvest_finish\", \"run_id\": \"run_20260529_001\", \"count\": 12}\nsame_run = start_log[\"run_id\"] == finish_log[\"run_id\"]",
+        "question_type":  "multiple_choice",
+        "question":  "What value is stored in `same_run`?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "12",
+                        "harvest_finish"
+                    ],
+        "answer":  "True",
+        "explanation":  "When you look up the `run_id` key in each of the two dictionaries, the same string is returned. The result of the equality comparison is `True` because the string values are exactly the same. A common source of confusion: `False`—even though the `event` names are different, the comparison is not between the `event`s but between the `run_id`s. Point of misinterpretation: This occurs when the actual operands in the comparison expression are confused with other fields. Correlation tracking determines the result by **exactly comparing the same identifier values**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to code that groups start, middle, and end logs from a long batch execution under the same `run_id` to track the flow of a single execution.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "두 dict에서 correlation id를 각각 꺼내 같은 문자열인지 비교하는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`a == b` compares whether two values are equal and returns a boolean.",
+                                    "how_to_read":  "First, check the `run_id` string generated by both subscriptions, and then determine whether they are identical by comparing their values.",
+                                    "key_point":  "\"run_id\" tracking is an operational context, and the focus in Python is on the equality comparison of the two log field values.",
+                                    "common_mistake":  "Since the event names are different—start and finish—it’s easy to assume they are separate executions. The criterion for determining whether they are the same execution is the `run_id` value in this case."
+                                },
+        "teaching_example":  {
+                                 "code":  "first = {\"trace_id\": \"t7\"}\nlast = {\"trace_id\": \"t7\"}\nsame = first[\"trace_id\"] == last[\"trace_id\"]",
+                                 "walkthrough":  "Since the two trace_id strings are the same, `same` is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "If you look up the `run_id` key in each of the two dictionaries, you’ll get the same string. The result of the equality comparison is `True`.",
+                                   "why_correct":  "This is because the string values are exactly the same.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "Although the event name is different, the comparison is based on the `run_id`, not the event.",
+                                                               "misread_step":  "This is a case where the actual operands in a comparison expression were confused with other fields."
+                                                           },
+                                   "takeaway":  "Correlation tracking is determined by **exactly comparing the same identifier values**."
+                               },
+        "target_statement":  "same_run = start_log[\"run_id\"] == finish_log[\"run_id\"]",
+        "focus_span":  "start_log[\"run_id\"] == finish_log[\"run_id\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "run_id",
+                                "trace correlation",
+                                "logging",
+                                "execution trace"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY25_L09_retry_backoff_001",
+        "level":  9,
+        "title":  "2 ** Calculating the default exponential backoff value using ** attempt**",
+        "concepts":  [
+                         "arithmetic",
+                         "assignment",
+                         "for_statement",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the power expression that uses the number of retries as an exponent to increase the base wait time.",
+        "code":  "attempt = 2\nbase_wait = 2 ** attempt",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `base_wait`?",
+        "choices":  [
+                        "4",
+                        "2",
+                        "3",
+                        "8"
+                    ],
+        "answer":  "4",
+        "explanation":  "Since `attempt=2`, the expression becomes `2 ** 2`, and the result is 4. This is because `**` is the exponentiation operator. A common source of confusion: “2 2” refers to the `attempt` value itself, not the result of the exponentiation calculation. Point of misinterpretation: This occurs when the exponentiation operation is not applied. “Exponential backoff” should be read as: **`attempt` value → exponentiation calculation → increasing wait value**.",
+        "side_card_ids":  [
+                              "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
+                          ],
+        "project_context":  "This ties into the resilience pattern, which gradually increases the retry interval when external API, RSS, or model calls temporarily fail.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "arithmetic",
+        "reading_goal_internal":  "retry 횟수 attempt를 지수로 사용해 기본 대기시간이 커지는 power expression을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`base ** exponent` is a power operation that raises base to the power of exponent.",
+                                    "how_to_read":  "Perform the calculation using the current values of the left and right exponents.",
+                                    "key_point":  "`2 ** attempt` increases the default waiting time (e.g., 1, 2, 4) as `attempt` increases from 0 to 1 to 2.",
+                                    "common_mistake":  "`**` is easier to read as “multiply twice.” In Python, it is the exponentiation operator."
+                                },
+        "teaching_example":  {
+                                 "code":  "attempt = 3\nwait = 2 ** attempt",
+                                 "walkthrough":  "Because `2 ** 3` is 8, `wait` is 8."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since `attempt=2`, the expression becomes `2 ** 2`, and the result is 4.",
+                                   "why_correct":  "`**` This is because it is the power operator.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "2",
+                                                               "why_wrong":  "2 is the value of `attempt` itself, not the result of the `power` calculation.",
+                                                               "misread_step":  "This is the case where the exponentiation operation is not applied."
+                                                           },
+                                   "takeaway":  "\"Exponential backoff\" is interpreted as **attempt value → power calculation → increasing wait time**."
+                               },
+        "target_statement":  "base_wait = 2 ** attempt",
+        "focus_span":  "2 ** attempt",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "retry",
+                                "backoff",
+                                "timeout",
+                                "resilience"
+                            ],
+        "pedagogical_intent":  "predict_output"
+    },
+    {
+        "id":  "PY25_L09_timeout_guard_001",
+        "level":  9,
+        "title":  "Reading the `timeout=10` keyword argument in a network call",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "assignment",
+                         "class_definition"
+                     ],
+        "reading_goal":  "In the `get` method call, the number passed as the “timeout” parameter is interpreted as the wait limit setting.",
+        "code":  "class Client:\n    def get(self, url, timeout):\n        return {\"url\": url, \"timeout\": timeout, \"status\": 200}\n\nclient = Client()\nurl = \"https://example.test/data\"\nresponse = client.get(url, timeout=10)",
+        "question_type":  "multiple_choice",
+        "question":  "`timeout=10` Which of the following is the closest in meaning?",
+        "choices":  [
+                        "Set a response timeout to prevent learners from waiting too long for a response.",
+                        "Be sure to try 10 times",
+                        "Delete 10 files.",
+                        "Always set `status` to 10"
+                    ],
+        "answer":  "Set a response timeout to prevent learners from waiting too long for a response.",
+        "explanation":  "Since the `get` call passes 10 as the `timeout` parameter, this setting is interpreted as limiting situations where requests take too long. This is because the `timeout` option is a setting related to the maximum wait time for a request. A common source of confusion: this is not a parameter that specifies the number of retries (e.g., “must retry 10 times”). Point of misinterpretation: This occurs when “timeout” and “retry” are viewed as the same concept. Network defense code interprets **timeout and retry settings as distinct from one another**.",
+        "side_card_ids":  [
+                              "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
+                          ],
+        "project_context":  "This ties into operational safeguards that specify timeouts to prevent collectors, validators, and external API calls from getting stuck indefinitely.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "get method 호출에서 timeout 이름으로 전달되는 숫자가 대기 제한 설정이라는 의미를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`timeout=10` is a keyword argument that passes the number 10 by specifying the parameter name when it is called.",
+                                    "how_to_read":  "Check separately what option the keyword represents and what the value on the right is.",
+                                    "key_point":  "A timeout is a basic safeguard that prevents external requests from waiting indefinitely.",
+                                    "common_mistake":  "It is easy to assume that `timeout=10` means the request will be retried exactly 10 times. This setting is different from the number of retries."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Client:\n    def get(self, url, timeout):\n        return timeout\n\nclient = Client()\nlimit = client.get(\"/data\", timeout=5)",
+                                 "walkthrough":  "The value 5 for the `timeout` keyword argument is passed to the method parameter."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the `get` call passes 10 as the `timeout` parameter, this is interpreted as a setting that limits situations where requests take too long.",
+                                   "why_correct":  "This is because the `timeout` option is a setting related to the maximum request timeout.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Be sure to try 10 times",
+                                                               "why_wrong":  "It is not a parameter that specifies the retry count.",
+                                                               "misread_step":  "This is an example where \"timeout\" and \"retry\" are treated as the same concept."
+                                                           },
+                                   "takeaway":  "The network defense code **distinguishes between timeout and retry settings**."
+                               },
+        "target_statement":  "response = client.get(url, timeout=10)",
+        "focus_span":  "timeout=10",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "timeout",
+                                "network",
+                                "request",
+                                "guard"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY25_L09_health_check_001",
+        "level":  9,
+        "title":  "Register the `health` handler with the `@app.get(\"/health\")` decorator.",
+        "concepts":  [
+                         "decorator",
+                         "call",
+                         "function_definition",
+                         "return_statement",
+                         "class_definition"
+                     ],
+        "reading_goal":  "Read the structure where the decorator, located immediately above the function definition, binds the `health` function to a specific route.",
+        "code":  "class App:\n    def __init__(self):\n        self.routes = {}\n    def get(self, path):\n        def decorator(func):\n            self.routes[path] = func\n            return func\n        return decorator\n\nAPP_VERSION = \"1.2.0\"\napp = App()\n\n@app.get(\"/health\")\ndef health():\n    return {\"ok\": True, \"version\": APP_VERSION}\n\nresult = app.routes[\"/health\"]()",
+        "question_type":  "multiple_choice",
+        "question":  "Which of the following best describes the role of `@app.get(\"/health\")`?",
+        "choices":  [
+                        "Register the `health` function as a handler for the `/health` path.",
+                        "Deletes all data from the database",
+                        "Prints the user\u0027s password",
+                        "Run `git push`."
+                    ],
+        "answer":  "Register the `health` function as a handler for the `/health` path.",
+        "explanation":  "`app.get(\u0027/health\u0027)` returns a decorator, and this decorator stores the `health` function under the `/health` key in the routes mapping. This is because the function decorator is written to link the function definition with the route metadata. A common source of confusion: “Executes a Git push.” The decorator implementation contains no Git operations whatsoever. Point of Misinterpretation: This occurs when the reader confuses web route registration with a deployment command. The endpoint code should be read as **route decorator → handler function → returned health payload**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This ties into the operational workflow of quickly checking the basic status and version via `/health` after launching a search API or serving API.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "decorator",
+        "reading_goal_internal":  "함수 정의 바로 위 decorator가 health 함수를 특정 route와 연결하는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The ``@decorator(...)`` above the function is function decorator syntax that applies the decorator at the time the function is defined.",
+                                    "how_to_read":  "Check what configuration the decorator expression creates and which function immediately below it the decorator is applied to.",
+                                    "key_point":  "In web frameworks, this pattern of using decorators to link URL paths to handler functions is frequently used.",
+                                    "common_mistake":  "It is easy to assume that the `decorator` line itself immediately calls the `health` function. Here, its role is to establish a registration/transformation relationship with the function."
+                                },
+        "teaching_example":  {
+                                 "code":  "routes = {}\ndef route(path):\n    def decorate(func):\n        routes[path] = func\n        return func\n    return decorate\n\n@route(\"/ping\")\ndef ping():\n    return \"ok\"",
+                                 "walkthrough":  "The decorator registers the ping function to the /ping key."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`app.get(\u0027/health\u0027)` returns a decorator, and this decorator stores the `health` function under the `/health` key in the routes mapping.",
+                                   "why_correct":  "This is because the function decorator is written to link the function definition with the route metadata.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Run `git push`.",
+                                                               "why_wrong":  "Implementing a decorator involves no Git operations whatsoever.",
+                                                               "misread_step":  "This is a case of confusing web route registration with a deployment command."
+                                                           },
+                                   "takeaway":  "The endpoint code is read as **route decorator → handler function → returned health payload**."
+                               },
+        "target_statement":  "@app.get(\"/health\")",
+        "focus_span":  "@app.get(\"/health\")",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "health check",
+                                "endpoint",
+                                "monitoring",
+                                "version"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY25_L09_metrics_counter_001",
+        "level":  9,
+        "title":  "When an exception occurs, increment the errors counter by 1 using += 1",
+        "concepts":  [
+                         "augmented_assignment",
+                         "subscription",
+                         "except_clause",
+                         "function_definition"
+                     ],
+        "reading_goal":  "In the `except` branch, read the state change where the dict\u0027s existing error count is accumulated with an augmented assignment.",
+        "code":  "metrics = {\"requests\": 0, \"errors\": 0}\n\ndef run():\n    raise RuntimeError(\"failed\")\n\ndef handle_request():\n    metrics[\"requests\"] += 1\n    try:\n        return run()\n    except Exception:\n        metrics[\"errors\"] += 1\n        raise\n\ntry:\n    handle_request()\nexcept RuntimeError:\n    pass",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `metrics[\"errors\"]` after execution?",
+        "choices":  [
+                        "1",
+                        "0",
+                        "-1",
+                        "2"
+                    ],
+        "answer":  "1",
+        "explanation":  "The `run` function fails, so control flows to the `except` block, and 1 is added to the existing value of `errors` (which was 0). Even if the exception is caught outside this block, the value of `counter` remains 1 because augmented assignment actually modifies the existing value in the dictionary. A common source of confusion: the statement that increments `counter` is executed in the 0-exception branch. Point of misinterpretation: This occurs when the reader mistakenly assumes that the previous state change is undone because of the `raise`. The monitoring counter follows the sequence: **event occurrence branch → lookup of existing value → cumulative increment**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to the basic metrics pattern for monitoring the health of APIs or collectors by tracking request volume, error rates, and failure rates.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "augmented_assignment",
+        "reading_goal_internal":  "except branch에서 dict의 기존 error count가 augmented assignment로 누적되는 상태 변화를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`target += 1` is an augmented assignment that adds 1 to the current value of `target` and stores the result back in the same place.",
+                                    "how_to_read":  "Check the existing value of the left target and apply the increment on the right.",
+                                    "key_point":  "By accumulating the error counter, you can observe the percentage of failed requests out of the total number of requests.",
+                                    "common_mistake":  "It’s easy to assume that `+= 1` always initializes the value to 1. It actually adds 1 to the existing value."
+                                },
+        "teaching_example":  {
+                                 "code":  "stats = {\"errors\": 2}\nstats[\"errors\"] += 1",
+                                 "walkthrough":  "Adding 1 to the existing value 2 makes `errors` equal to 3."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the `run` function fails, the program proceeds to the `except` block and adds 1 to the existing value of `errors` (which was 0). Even if the exception is caught outside this block, the `counter` value remains 1.",
+                                   "why_correct":  "This is because augmented assignment actually modifies the existing values in the dictionary.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "0",
+                                                               "why_wrong":  "The statement that increments the counter is executed in the exception branch.",
+                                                               "misread_step":  "This is an example of a case where the user mistakenly believed that the `raise` statement undid the state change that occurred earlier."
+                                                           },
+                                   "takeaway":  "The \"monitoring counter\" is interpreted as **event occurrence → checking the existing value → cumulative increase**."
+                               },
+        "target_statement":  "metrics[\"errors\"] += 1",
+        "focus_span":  "metrics[\"errors\"] += 1",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "metrics",
+                                "counter",
+                                "errors",
+                                "requests",
+                                "monitoring"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY25_L10_alert_condition_001",
+        "level":  10,
+        "title":  "Determine whether the error rate exceeds 5% \u003e using a comparison",
+        "concepts":  [
+                         "comparison",
+                         "if_statement",
+                         "arithmetic",
+                         "call"
+                     ],
+        "reading_goal":  "It reads the flow where the current decimal value of `error_rate` is compared to the threshold of 0.05, and `True` is returned if it exceeds the threshold.",
+        "code":  "errors = 6\ntotal_requests = 100\nerror_rate = errors / max(total_requests, 1)\n\nshould_alert = error_rate \u003e 0.05\nprint(should_alert)",
+        "question_type":  "output_prediction",
+        "question":  "`error_rate \u003e 0.05` What is the result?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "0.05",
+                        "6"
+                    ],
+        "answer":  "True",
+        "explanation":  "1) The denominator is 100. 2) `error_rate` is 0.06. 3) `threshold` is 0.05. 4) `0.06 \u003e 0.05` is True. 5) Therefore, `should_alert` is True.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "It is connected to monitoring logic that determines whether to trigger an alert based on whether the error rate in the serving API or collection batch exceeds the operational threshold.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "error_rate의 현재 소수값과 threshold 0.05를 비교해 초과한 경우 True가 되는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`a \u003e b` is a comparison expression that evaluates to True when the left-hand side is strictly greater than the right-hand side.",
+                                    "how_to_read":  "Treat both numbers as having the same unit and check whether the left-hand side `error_rate` is greater than 0.05.",
+                                    "key_point":  "`\u003e` Since the equality operator does not include the value itself, exactly 0.05 is False, and 0.06 is True.",
+                                    "common_mistake":  "When seeing the expression “5%,” it is easy to confuse 0.05 with 5 or to assume that it includes equality, as in `\u003e=`."
+                                },
+        "teaching_example":  {
+                                 "code":  "rate = 0.04\nthreshold = 0.03\nprint(rate \u003e threshold)",
+                                 "walkthrough":  "Since 0.04 is greater than 0.03, the comparison result is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The denominator is 100. 2) `error_rate` is 0.06. 3) `threshold` is 0.05. 4) `0.06 \u003e 0.05` is True. 5) Therefore, `should_alert` is True.",
+                                   "why_correct":  "Since the current error rate of 6% is strictly higher than the threshold of 5%, the comparison result is True.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "For the result to be \"False,\" the error rate must be 0.05 or lower, but the current value is 0.06.",
+                                                               "misread_step":  "First, calculate `error_rate` as an actual decimal value, and then compare it to `threshold`."
+                                                           },
+                                   "takeaway":  "Threshold comparisons follow this sequence: **calculate current metric → check threshold → determine if greater than → Boolean result**."
+                               },
+        "target_statement":  "error_rate \u003e 0.05",
+        "focus_span":  "error_rate \u003e 0.05",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "alert",
+                                "error_rate",
+                                "monitoring",
+                                "threshold"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY25_L10_audit_log_001",
+        "level":  10,
+        "title":  "Reading the result of calling the `append()` method on the `audit_log` list",
+        "concepts":  [
+                         "call",
+                         "attribute_access",
+                         "argument_passing",
+                         "literal"
+                     ],
+        "reading_goal":  "`object.method(argument)` Distinguish between the target object, the method name, and the arguments, and read how the list changes after `append`.",
+        "code":  "audit_log = []\nrecord = {\n    \"user_id\": \"u7\",\n    \"action\": \"update_policy\",\n    \"target_id\": \"policy-3\",\n    \"created_at\": \"2026-08-18T01:00:00+09:00\",\n}\nresult = audit_log.append(record)\nprint(len(audit_log), result)",
+        "question_type":  "output_prediction",
+        "question":  "What is the final output after executing `audit_log.append(record)`?",
+        "choices":  [
+                        "1 None",
+                        "0 None",
+                        "1 record",
+                        "None 1"
+                    ],
+        "answer":  "1 None",
+        "explanation":  "1) A record is appended to the empty `audit_log`. 2) The number of items in the list becomes 1. 3) Since `list.append` returns `None`, `None` is stored in `result`. 4) Therefore, `print(len(audit_log), result)` outputs `1 None`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It is linked to an audit trail structure that records changes to important settings, permissions, and confidential assets along with actor, action, target, and time.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "`object.method(argument)`에서 호출 대상 객체와 메서드 이름, 전달값을 구분하고 append 뒤 리스트 상태가 어떻게 바뀌는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A method call executes an action associated with a specific object in the form `object.method(...)`.",
+                                    "how_to_read":  "`audit_log.append(record)` In this context, the dot to the left of `audit_log` indicates the target object, `append` is the method being called, and `record` is the argument.",
+                                    "key_point":  "`list.append()` adds the passed object to the end of the list and returns `None`.",
+                                    "common_mistake":  "It is easy to assume that `append` returns the record itself with the added element. Although the list’s state changes, the return value is `None`."
+                                },
+        "teaching_example":  {
+                                 "code":  "events = []\nevent = {\"kind\": \"login\"}\nresult = events.append(event)\nprint(len(events), result)",
+                                 "walkthrough":  "Although one `event` is added to the list, the return value of the `append` call is `None`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) A record is appended to the empty `audit_log`. 2) The number of items in the list becomes 1. 3) Since `list.append` returns `None`, `None` is stored in `result`. 4) Therefore, `print(len(audit_log), result)` outputs `1 None`.",
+                                   "why_correct":  "Since `append` modifies the list directly and returns `None`, the length is 1 and `result` is `None`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "1 record",
+                                                               "why_wrong":  "`record` is an item added to the list, not the return value of the `append` call.",
+                                                               "misread_step":  "Track changes in an object’s state and method return values separately."
+                                                           },
+                                   "takeaway":  "A method call involves **checking the target object → passing arguments → verifying the object’s state change and return value**."
+                               },
+        "target_statement":  "audit_log.append(record)",
+        "focus_span":  "audit_log.append(record)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "audit_log",
+                                "traceability",
+                                "actor_action_target",
+                                "security"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY25_L10_stale_job_reaper_001",
+        "level":  10,
+        "title":  "Check both the \"running\" state and the start time before the cutoff using \"and\"",
+        "concepts":  [
+                         "boolean_operation",
+                         "comparison",
+                         "subscription",
+                         "if_statement"
+                     ],
+        "reading_goal":  "`and`: The left condition is evaluated first, and only if it is true is the right condition checked to determine whether both conditions are true.",
+        "code":  "run = {\"status\": \"running\", \"started_at\": 80}\ncutoff_time = 100\nis_stale = run[\"status\"] == \"running\" and run[\"started_at\"] \u003c cutoff_time\nprint(is_stale)",
+        "question_type":  "output_prediction",
+        "question":  "What is the result of the `and` expression?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "running",
+                        "80"
+                    ],
+        "answer":  "True",
+        "explanation":  "1) ``running == running`` is True. 2) The `and` operator also evaluates the right-hand side, ``80 \u003c 100``. 3) The right-hand side is also True. 4) Therefore, the entire expression is True.",
+        "side_card_ids":  [
+                              "PL_cron_001"
+                          ],
+        "project_context":  "This is linked to the selection criteria of the operational reaper, which handles errors only for tasks that have remained in a long-running state.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "boolean_operation",
+        "reading_goal_internal":  "`and` 왼쪽 조건을 먼저 평가하고 참일 때만 오른쪽 조건을 확인해 두 조건이 모두 참인지 판정한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`A and B` evaluates B only if A is truthy; if A is falsy, it does not evaluate B and terminates with A’s result.",
+                                    "how_to_read":  "First, check if `status` is `running`, and if that condition is true, check if `started_at` is earlier than `cutoff`.",
+                                    "key_point":  "To be targeted by the \"stale reaper,\" an object must satisfy both conditions—it must not simply be old or running.",
+                                    "common_mistake":  "It is easy to interpret “and” as “or,” leading one to mistakenly believe that the condition is met as long as either of the two is true."
+                                },
+        "teaching_example":  {
+                                 "code":  "job = {\"state\": \"running\", \"age\": 12}\nneeds_reap = job[\"state\"] == \"running\" and job[\"age\"] \u003e 10\nprint(needs_reap)",
+                                 "walkthrough":  "Since the left-hand \"running\" condition is True, the right-hand \"age\" condition is also evaluated, and since both are True, the overall result is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) ``running == running`` is True. 2) The `and` operator also evaluates the right-hand side, ``80 \u003c 100``. 3) The right-hand side is also True. 4) Therefore, the entire expression is True.",
+                                   "why_correct":  "Since both conditions are True, this run is determined to be a target for the stale reaper.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "For the condition to be false, `status` must not be `running`, or `started_at` must not be before the cutoff time.",
+                                                               "misread_step":  "The two comparisons are evaluated separately and then combined using the short-circuit behavior of the \"and\" operator."
+                                                           },
+                                   "takeaway":  "`and` evaluates **the left-hand side first → the right-hand side if necessary → and then determines whether both are true**."
+                               },
+        "target_statement":  "run[\"status\"] == \"running\" and run[\"started_at\"] \u003c cutoff_time",
+        "focus_span":  "run[\"status\"] == \"running\" and run[\"started_at\"] \u003c cutoff_time",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "stale_job",
+                                "reaper",
+                                "run_status",
+                                "cutoff_time"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY25_L10_cron_log_001",
+        "level":  10,
+        "title":  "Awaiting the completion of `run_curate()` in the cron handler",
+        "concepts":  [
+                         "await_expression",
+                         "async_function_definition",
+                         "call",
+                         "assignment"
+                     ],
+        "reading_goal":  "Read the flow where, after an asynchronous call is initiated following `await`, the next step of the current coroutine does not proceed until that task is completed and the result is returned.",
+        "code":  "import asyncio\n\nasync def run_curate():\n    await asyncio.sleep(0)\n    return \"curated\"\n\nasync def scheduled():\n    cron = \"0 * * * *\"\n    print(\"cron fired\", cron)\n    result = await run_curate()\n    print(result)\n\nasyncio.run(scheduled())",
+        "question_type":  "meaning_choice",
+        "question":  "`result = await run_curate()` What value is stored in `result`?",
+        "choices":  [
+                        "curated",
+                        "run_curate function object",
+                        "None",
+                        "0 * * * *"
+                    ],
+        "answer":  "curated",
+        "explanation":  "1) Calling `run_curate()` creates an awaitable task. 2) `await` waits for that task to complete. 3) The coroutine returns `curated`. 4) Since that value is the result of the `await` expression, it is stored in `result`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It is integrated into the operational workflow that manages the sequence of long-running curate tasks and execution logs in periodically executed cron jobs.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "await_expression",
+        "reading_goal_internal":  "await 뒤의 비동기 호출을 시작한 뒤 그 작업이 완료되어 결과를 줄 때까지 현재 coroutine의 다음 단계가 진행되지 않는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`await expression` is an expression that waits for an awaitable operation to complete and receives its result within the current asynchronous function.",
+                                    "how_to_read":  "First, I interpret that calling `run_curate()` obtains a coroutine, and that `await` executes and waits for that task to complete before receiving the return value.",
+                                    "key_point":  "`await` is not a statement that unconditionally halts the entire program; rather, it causes the current coroutine to wait for its task to complete.",
+                                    "common_mistake":  "It’s easy to misread this as the log below being executed immediately, ignoring `await`, before `run_curate` completes."
+                                },
+        "teaching_example":  {
+                                 "code":  "import asyncio\n\nasync def fetch():\n    await asyncio.sleep(0)\n    return \"ready\"\n\nasync def main():\n    value = await fetch()\n    print(value)\n\nasyncio.run(main())",
+                                 "walkthrough":  "Once the `fetch` coroutine completes and returns `ready`, the result is stored in `value` and printed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Calling `run_curate()` creates an awaitable task. 2) `await` waits for that task to complete. 3) The coroutine returns `curated`. 4) Since that value is the result of the `await` expression, it is stored in `result`.",
+                                   "why_correct":  "Since the final return value of the coroutine following `await` is the string `curated`, `result` is also `curated`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "run_curate function object",
+                                                               "why_wrong":  "Because parentheses are present, this creates an actual coroutine call rather than passing a function object, and then uses `await`.",
+                                                               "misread_step":  "Distinguish between function names, coroutines (which are the results of calls), and the final return value following `await`."
+                                                           },
+                                   "takeaway":  "`await` is interpreted in the following order: **asynchronous call → wait for completion → receive return value → proceed to the next statement**."
+                               },
+        "target_statement":  "await run_curate()",
+        "focus_span":  "await run_curate()",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "cron",
+                                "scheduled_job",
+                                "async_task",
+                                "operations"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY25_L10_cost_quota_monitor_001",
+        "level":  10,
+        "title":  "Determine whether the usage ratio exceeds 80% using \u003e",
+        "concepts":  [
+                         "comparison",
+                         "arithmetic",
+                         "if_statement",
+                         "call"
+                     ],
+        "reading_goal":  "It evaluates the current decimal value of `usage_ratio` against 0.8 to determine whether it strictly exceeds the threshold, returning a Boolean result.",
+        "code":  "used_credits = 85\ntotal_credits = 100\nusage_ratio = used_credits / max(total_credits, 1)\nquota_high = usage_ratio \u003e 0.8\nprint(quota_high)",
+        "question_type":  "output_prediction",
+        "question":  "What is the result of `usage_ratio \u003e 0.8`?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "0.8",
+                        "85"
+                    ],
+        "answer":  "True",
+        "explanation":  "1) The usage ratio is 0.85. 2) The threshold is 0.8. 3) ``0.85 \u003e 0.8`` is True. 4) Therefore, `quota_high` is set to True.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It connects to operational monitoring that provides early warnings about limited credit/quota usage, such as for AWS, GPU, and LLM APIs.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "usage_ratio의 현재 소수값을 0.8과 비교해 기준을 엄격히 초과하는지 Boolean 결과로 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`a \u003e b` is a comparison expression that evaluates to True when the left-hand side is greater than the right-hand side.",
+                                    "how_to_read":  "First, calculate usage_ratio using actual numbers, then compare it to a threshold of 0.8 in the same units.",
+                                    "key_point":  "Because `\u003e` does not include equality, a value of exactly 0.8 makes the condition False.",
+                                    "common_mistake":  "It is easier to read when 80% is compared to the number 80 or when `\u003e` is read as `\u003e=`."
+                                },
+        "teaching_example":  {
+                                 "code":  "ratio = 45 / 50\nprint(ratio \u003e 0.8)",
+                                 "walkthrough":  "45/50 is 0.9, and since 0.9 is greater than 0.8, the result is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The usage ratio is 0.85. 2) The threshold is 0.8. 3) ``0.85 \u003e 0.8`` is True. 4) Therefore, `quota_high` is set to True.",
+                                   "why_correct":  "Since the current usage rate of 85% exceeds 80%, the greater-than comparison evaluates to True.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "For the result to be \"False,\" the usage rate must be 0.8 or lower, but it is currently 0.85.",
+                                                               "misread_step":  "First, calculate the ratio, and then perform the threshold comparison in a separate step."
+                                                           },
+                                   "takeaway":  "Threshold comparison is described as **calculate current metric → check threshold → compare relationship → Boolean result**."
+                               },
+        "target_statement":  "usage_ratio \u003e 0.8",
+        "focus_span":  "usage_ratio \u003e 0.8",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "quota",
+                                "cost_monitoring",
+                                "usage_ratio",
+                                "warning_threshold"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY25_L10_incident_summary_001",
+        "level":  10,
+        "title":  "Retrieving the root_cause value from the incident dict",
+        "concepts":  [
+                         "subscription",
+                         "literal",
+                         "assignment"
+                     ],
+        "reading_goal":  "Read the flow that finds a dictionary key that exactly matches the key inside the square brackets and returns the associated value.",
+        "code":  "incident = {\n    \"symptom\": \"Loading screen stuck\",\n    \"impact\": \"cards not visible\",\n    \"root_cause\": \"old app.js cache\",\n    \"fix\": \"bump asset query version\",\n    \"next_action\": \"add cache-bust validation\",\n}\nprint(incident[\"root_cause\"])",
+        "question_type":  "output_prediction",
+        "question":  "What is the string returned by `incident[\"root_cause\"]`?",
+        "choices":  [
+                        "old app.js cache",
+                        "Loading screen stuck",
+                        "root_cause",
+                        "cards not visible"
+                    ],
+        "answer":  "old app.js cache",
+        "explanation":  "1) The lookup key is `root_cause`. 2) Find the same key within the `incident`. 3) The associated value is `old app.js cache`. 4) Therefore, that string is the lookup result.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "It links to an incident summary that breaks down the details of the issue into symptoms, impacts, verified causes, actions taken, and recurrence prevention measures.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "대괄호 안 key와 정확히 같은 딕셔너리 key를 찾아 연결된 value를 반환하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping[key]` returns the value associated with the key in a dictionary.",
+                                    "how_to_read":  "Find `root_cause` in the list of keys to the left of the colon in `incident`, and read the string to its right as the result.",
+                                    "key_point":  "Since `symptom` and `root_cause` are different fields, the symptom string must not be misinterpreted as the cause.",
+                                    "common_mistake":  "It’s easy to assume that the key name “root_cause” itself is returned."
+                                },
+        "teaching_example":  {
+                                 "code":  "report = {\"symptom\": \"slow\", \"cause\": \"cache miss\"}\nprint(report[\"cause\"])",
+                                 "walkthrough":  "The \"cache miss\" string associated with the `cause` key is returned."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The lookup key is `root_cause`. 2) Find the same key within the `incident`. 3) The associated value is `old app.js cache`. 4) Therefore, that string is the lookup result.",
+                                   "why_correct":  "Since the value stored directly in the `root_cause` key of the dictionary is `old app.js cache`, this is the correct answer.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Loading screen stuck",
+                                                               "why_wrong":  "That string is the value of the `symptom` field and is associated with a key other than `root_cause`.",
+                                                               "misread_step":  "Read the text by accurately matching the key-value pairs."
+                                                           },
+                                   "takeaway":  "A dictionary lookup follows the sequence: **check the lookup key → find the key with the same name → return the associated value**."
+                               },
+        "target_statement":  "incident[\"root_cause\"]",
+        "focus_span":  "incident[\"root_cause\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "incident",
+                                "postmortem",
+                                "root_cause",
+                                "operations"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    }
 ]

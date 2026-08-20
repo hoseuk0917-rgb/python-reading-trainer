@@ -1,421 +1,996 @@
 [
-  {
-    "id": "PY46_L06_resume_safe_pipeline_001",
-    "level": 6,
-    "title": "Read \"Resume-Safe Pipeline\"",
-    "concepts": [
-      "if",
-      "for",
-      "continue",
-      "resume_safe",
-      "pipeline",
-      "restart"
-    ],
-    "reading_goal": "Understand the pipeline structure that allows you to resume execution even if it is paused.",
-    "code": "for shard in shards:\n    if is_done(shard):\n        continue\n    run_shard(shard)",
-    "question_type": "meaning_choice",
-    "question": "What is the key feature of the resume-safe pipeline?",
-    "choices": [
-      "Skipping tasks that have already been completed and continuing with only the remaining tasks",
-      "Always starting over from the beginning",
-      "Deleting completed files without exception",
-      "Marking something as complete without verification"
-    ],
-    "answer": "Skipping tasks that have already been completed and continuing with only the remaining tasks",
-    "explanation": "Completed shards are skipped only when is_done reflects a trustworthy status recorded atomically with successful output. Resume safety also requires run_shard to tolerate re-execution at crash boundaries and handle checkpoint corruption, version mismatch, and out-of-order parallel completion. File existence alone is insufficient.",
-    "side_card_ids": [],
-    "project_context": "It is required for time-consuming tasks such as creating KG node_pass shards or large-capacity cards."
-  },
-  {
-    "id": "PY46_L06_checkpoint_file_001",
-    "level": 6,
-    "title": "Reading the checkpoint file",
-    "concepts": [
-      "checkpoint",
-      "state_file",
-      "progress"
-    ],
-    "reading_goal": "Understand the concept of a checkpoint, which saves the progress of a task to a file.",
-    "code": "checkpoint.json\n{\n  \"last_done\": \"shard_0042\",\n  \"updated_at\": \"2026-05-31\"\n}",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of a checkpoint file?",
-    "choices": [
-      "Record how far you've gotten in your work",
-      "Delete all results",
-      "Create a GitHub account",
-      "Clear the browser cache"
-    ],
-    "answer": "Record how far you've gotten in your work",
-    "explanation": "A checkpoint durably records progress plus the input and code version needed to resume. A single last_done value is safe only for fixed ordered completion; parallel or reordered work can leave earlier shards unfinished. Use a completed-ID set or per-shard state and update it atomically when needed.",
-    "side_card_ids": [
-      "PYV159_A1_LEARNING_UX_FLOW",
-      "PYV159_A1_CHECKPOINT_RESUME_FLOW"
-    ],
-    "project_context": "If you keep track of the shard range, the number of completed operations, and the last processed ID, recovery after a failure will be easier."
-  },
-  {
-    "id": "PY46_L07_done_marker_001",
-    "level": 7,
-    "title": "Read the \"done\" marker",
-    "concepts": [
-      "done_marker",
-      "completion_flag",
-      "job_status"
-    ],
-    "reading_goal": "Understand why a separate marker is used to indicate that a task is complete.",
-    "code": "output.jsonl\noutput.done",
-    "question_type": "meaning_choice",
-    "question": "Why is there a separate \"done\" marker like `output.done`?",
-    "choices": [
-      "Distinguish validated completion from mere output-file existence",
-      "Guarantee the output content without validation",
-      "Delete the output",
-      "Replace every checkpoint"
-    ],
-    "answer": "Distinguish validated completion from mere output-file existence",
-    "explanation": "A marker represents validated completion instead of mere file existence. Link it to the output hash, row count, and version, and publish it atomically only after output is durably closed. A detached empty output.done file can itself become a stale marker.",
-    "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY"
-    ],
-    "project_context": "If you assume the process is complete just because a `node_pass` output exists, you run the risk of a partial output."
-  },
-  {
-    "id": "PY46_L07_partial_output_001",
-    "level": 7,
-    "title": "Reading partial output",
-    "concepts": [
-      "partial_output",
-      "incomplete_file",
-      "crash"
-    ],
-    "reading_goal": "I understand that an output file that was cut off midway may appear to be a normal result.",
-    "code": "result.jsonl exists\nbut only 57 / 200 rows written",
-    "question_type": "meaning_choice",
-    "question": "Why is partial output dangerous?",
-    "choices": [
-      "This is because, even if the file exists, the results may not have been written to the end of the file.",
-      "Because the files are always too large",
-      "Because JSONL can never be validated",
-      "Because PowerShell cannot read it"
-    ],
-    "answer": "This is because, even if the file exists, the results may not have been written to the end of the file.",
-    "explanation": "A partial output is an output that was saved only partially because the process was interrupted. Since simply checking whether the file exists might lead one to mistakenly believe it is a complete file, the content must be verified. Storing a completion flag or a record of successful verification makes it easy to distinguish between intermediate and final outputs. Therefore, the correct answer is “Because even if the file exists, the results may not have been written to the end.”",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "If an AWS or local shard stops in the middle, using only `output exists skip` may result in data being missed."
-  },
-  {
-    "id": "PY46_L07_output_exists_skip_risk_001",
-    "level": 7,
-    "title": "output exists skip dangerous read",
-    "concepts": [
-      "if",
-      "output_exists",
-      "skip_risk",
-      "validation"
-    ],
-    "reading_goal": "I understand the risks associated with a method that skips a file simply because it exists.",
-    "code": "if output_path.exists():\n    skip_job()  # risky",
-    "question_type": "meaning_choice",
-    "question": "Why is this \"skip\" method dangerous?",
-    "choices": [
-      "This is because you might mistake a corrupted output or a partial output for a completed one",
-      "Because it runs only when the file is missing",
-      "Because the Python syntax is incorrect",
-      "Because Git pushes are done automatically"
-    ],
-    "answer": "This is because you might mistake a corrupted output or a partial output for a completed one",
-    "explanation": "For safety, the skip condition should be based on passing validation or a \"done\" marker, rather than the existence of a file. \"Output exists skip\" refers to the risk of skipping a task simply because a result file exists. You must verify whether the file is a final version or a corrupted intermediate output. Therefore, the correct answer is “because corrupted or partial output could be mistaken for a completed result.”",
-    "side_card_ids": [],
-    "project_context": "This ties in with the issue we previously identified: \"You shouldn't skip this just because there's already an output.\""
-  },
-  {
-    "id": "PY46_L08_validate_before_done_001",
-    "level": 8,
-    "title": "Read \"Validate Before Marking as Done\"",
-    "concepts": [
-      "validation",
-      "done_marker",
-      "quality_gate"
-    ],
-    "reading_goal": "Understand why results must be verified before marking the task as complete.",
-    "code": "run_job()\nvalidate_output()\nwrite_done_marker()",
-    "question_type": "meaning_choice",
-    "question": "When is the safest time to use the \"done\" marker?",
-    "choices": [
-      "After output is durably written and validation passes",
-      "Before the job starts",
-      "Immediately after creating an empty file",
-      "Without checking the output"
-    ],
-    "answer": "After output is durably written and validation passes",
-    "explanation": "Fully write and close output, validate it, and then atomically publish the done marker. Ensure validation covers the required schema, expected count, and hash. When output and marker live in different stores, recovery must reconcile a crash between those operations.",
-    "side_card_ids": [],
-    "project_context": "For the lesson card extension as well, I generated the JSON, verified that there were no duplicate IDs, answers, or side_card references, and then committed the changes."
-  },
-  {
-    "id": "PY46_L08_atomic_write_001",
-    "level": 8,
-    "title": "Atomic Write and Read",
-    "concepts": [
-      "atomic_write",
-      "temp_file",
-      "rename"
-    ],
-    "reading_goal": "Understand the pattern of writing to a temporary file first and then renaming it to the final filename after a successful operation.",
-    "code": "tmp = output.with_suffix('.tmp')\nwrite_result(tmp)\ntmp.replace(output)",
-    "question_type": "meaning_choice",
-    "question": "What are the advantages of the \"create a temp file, then rename it\" pattern?",
-    "choices": [
-      "Reduces the risk of a file that was interrupted midway being saved under the final output name",
-      "Always hide the file",
-      "makes verification impossible",
-      "It always causes Git conflicts."
-    ],
-    "answer": "Reduces the risk of a file that was interrupted midway being saved under the final output name",
-    "explanation": "Writing and validating a temporary file on the same filesystem before replacement reduces the window in which partial content appears under the final name. Rename atomicity and overwrite behavior depend on OS and filesystem, while power-loss durability may also require flush or fsync and directory synchronization. Clean up abandoned temporary files.",
-    "side_card_ids": [
-      "PYV102_A7_FILE_SAFE_WRITE"
-    ],
-    "project_context": "This is a safe output pattern when writing large JSONL, manifest, and audit TSV files."
-  },
-  {
-    "id": "PY46_L08_idempotent_job_001",
-    "level": 8,
-    "title": "Reading an idempotent job",
-    "concepts": [
-      "comment",
-      "idempotent",
-      "rerun_safe",
-      "automation"
-    ],
-    "reading_goal": "Understand the concept of idempotence, whereby repeating the same operation does not produce inconsistent results.",
-    "code": "upsert(item)\n# run once or twice -> final state is same",
-    "question_type": "meaning_choice",
-    "question": "What does \"idempotent job\" mean?",
-    "choices": [
-      "Even if it is run multiple times, the final state does not unnecessarily duplicate itself.",
-      "This means it can only be executed once",
-      "This means the results are always random.",
-      "It means you shouldn't verify it"
-    ],
-    "answer": "Even if it is run multiple times, the final state does not unnecessarily duplicate itself.",
-    "explanation": "An idempotent operation has the same observable final state whether the same input and idempotency key are applied once or repeatedly. An upsert needs the correct UNIQUE key and update semantics, and external side effects such as email need separate deduplication records. Skipping completed work is an optimization, not the definition itself.",
-    "side_card_ids": [
-      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
-    ],
-    "project_context": "The \"already exists\" and \"already linked\" guards in scripts v41 through v45 serve as idempotent safeguards."
-  },
-  {
-    "id": "PY46_L08_retry_queue_001",
-    "level": 8,
-    "title": "Reading the retry queue",
-    "concepts": [
-      "if",
-      "retry_queue",
-      "failed_items",
-      "rerun"
-    ],
-    "reading_goal": "Understand the retry queue, which collects only the failed items and processes them again.",
-    "code": "if job_failed(item):\n    retry_queue.append(item_id)",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of the retry queue?",
-    "choices": [
-      "To rerun only the failed items",
-      "To delete a successful entry",
-      "In order to start over from scratch on every item, without exception",
-      "To automatically undo a Git commit"
-    ],
-    "answer": "To rerun only the failed items",
-    "explanation": "A retry queue separates transient failures for later execution. Store an input-version or payload reference, error, attempt count, and next retry time rather than only item_id. After a maximum, send the job to dead-letter handling or human review, and make processing idempotent.",
-    "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY"
-    ],
-    "project_context": "Only the list of failures in node extraction, edge promotion, and lesson validation can be reprocessed."
-  },
-  {
-    "id": "PY46_L09_failed_only_rerun_001",
-    "level": 9,
-    "title": "Read \"Rerun only failed items\"",
-    "concepts": [
-      "for",
-      "failed_only_rerun",
-      "selective_retry",
-      "cost_saving"
-    ],
-    "reading_goal": "Understand the advantages of a method that re-runs only the failed items.",
-    "code": "failed_ids = load_failed_ids('audit.tsv')\nfor item_id in failed_ids:\n    rerun(item_id)",
-    "question_type": "meaning_choice",
-    "question": "What are the advantages of \"failed only rerun\"?",
-    "choices": [
-      "We reduce time and costs by not repeating tasks that have already been successfully completed",
-      "Hiding the cause of failure",
-      "Delete the verification log",
-      "It always creates more duplicates"
-    ],
-    "answer": "We reduce time and costs by not repeating tasks that have already been successfully completed",
-    "explanation": "Rerunning only failure IDs can avoid successful-work cost. Confirm that the audit matches the current input and code version and that upstream dependencies for failures have not changed. If a shared implementation changed, successful items still need regression testing.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "To save on AWS GPU costs or LLM call costs, it’s important to have a system that only reruns failed runs."
-  },
-  {
-    "id": "PY46_L09_shard_status_001",
-    "level": 9,
-    "title": "Read shard status",
-    "concepts": [
-      "shard",
-      "status",
-      "batch_job"
-    ],
-    "reading_goal": "Understand how to manage the progress of multiple shards using a table.",
-    "code": "shard_id | total | done | status\n0031     | 200   | 200  | DONE\n0067     | 200   | 154  | RUNNING",
-    "question_type": "meaning_choice",
-    "question": "Why do we need a shard status table?",
-    "choices": [
-      "To see at a glance which pieces are complete, in progress, or failed",
-      "To delete all shards",
-      "To prevent the use of the GPU",
-      "To change the file encoding"
-    ],
-    "answer": "To see at a glance which pieces are complete, in progress, or failed",
-    "explanation": "Per-shard total, done, and status reveal remaining work and failure areas. To know whether RUNNING is alive, include worker or lease ID and updated_at or heartbeat, and keep the definition of total and duplicate handling consistent. Record state transitions atomically.",
-    "side_card_ids": [
-      "CS_batch_shard_001"
-    ],
-    "project_context": "This ties in with the method used to manage the progress of shards 0031 through 0100 in AWS node_pass."
-  },
-  {
-    "id": "PY46_L09_progress_log_001",
-    "level": 9,
-    "title": "Read the progress log",
-    "concepts": [
-      "print",
-      "progress_log",
-      "observability",
-      "long_running_job"
-    ],
-    "reading_goal": "I understand why it's important to keep a progress log for tasks that take a long time.",
-    "code": "print(f'DONE {done}/{total} shard={shard_id}')",
-    "question_type": "meaning_choice",
-    "question": "Why is a progress log important?",
-    "choices": [
-      "Because it allows you to determine whether the task has stopped or is still in progress",
-      "Because the verification of results can be omitted",
-      "Because the speed is always getting faster",
-      "Because GitHub repositories are created automatically"
-    ],
-    "answer": "Because it allows you to determine whether the task has stopped or is still in progress",
-    "explanation": "A progress log shows the last observed done count and shard and helps diagnosis. A stale buffered line or repeated output cannot prove the process is healthy or output is durable. Include timestamp, attempt, and worker ID, and compare with checkpoint, heartbeat, and actual output.",
-    "side_card_ids": [],
-    "project_context": "Log entries such as \"done,\" \"running_processes,\" and \"GPU util\" in the `node_pass status` message fall into this category."
-  },
-  {
-    "id": "PY46_L09_heartbeat_001",
-    "level": 9,
-    "title": "Reading the heartbeat",
-    "concepts": [
-      "while",
-      "heartbeat",
-      "liveness",
-      "watchdog"
-    ],
-    "reading_goal": "Understand the heartbeat, which periodically indicates that a process is still running.",
-    "code": "while running:\n    write_heartbeat(now())\n    sleep(60)",
-    "question_type": "meaning_choice",
-    "question": "What does \"heartbeat\" tell us?",
-    "choices": [
-      "The process could emit a liveness signal at that time",
-      "The work output is correct",
-      "Every shard is complete",
-      "No deadlock can occur"
-    ],
-    "answer": "The process could emit a liveness signal at that time",
-    "explanation": "A heartbeat means the loop could write a signal at that timestamp. A recent heartbeat suggests process liveness but does not prove useful progress or correct durable output. Set staleness thresholds from the expected interval and delays, and compare progress counters and worker leases.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "This can be used to monitor the status when running LoRA/node_pass on a server for an extended period of time."
-  },
-  {
-    "id": "PY46_L10_crash_recovery_001",
-    "level": 10,
-    "title": "Read about crash recovery",
-    "concepts": [
-      "crash_recovery",
-      "restart",
-      "checkpoint"
-    ],
-    "reading_goal": "Understand the process of recovering from a program crash by verifying the checkpoint and output.",
-    "code": "on_start:\n  load checkpoint\n  scan outputs\n  validate done markers\n  resume pending jobs",
-    "question_type": "meaning_choice",
-    "question": "What should you do first during crash recovery?",
-    "choices": [
-      "Verify the checkpoint and the previous output state again.",
-      "Delete all results without exception",
-      "Mark as complete without verification",
-      "Let's start with a Git push"
-    ],
-    "answer": "Verify the checkpoint and the previous output state again.",
-    "explanation": "At startup, reconcile checkpoint, output, and done markers with their input and code versions and define which evidence is authoritative. Preserve only outputs with valid hash, schema, and count; quarantine or idempotently reprocess partial and stale states. Blindly trusting the checkpoint can skip work.",
-    "side_card_ids": [
-      "PYV159_A1_CHECKPOINT_RESUME_FLOW"
-    ],
-    "project_context": "This routine checks for truncated shards, partial JSONL, and missing \"done\" markers."
-  },
-  {
-    "id": "PY46_L10_final_manifest_001",
-    "level": 10,
-    "title": "Reading the final manifest",
-    "concepts": [
-      "final_manifest",
-      "audit",
-      "reproducibility"
-    ],
-    "reading_goal": "Understand why the list of final deliverables and the verification results are recorded in a manifest.",
-    "code": "final_manifest.tsv\noutput_path\trows\tsha256\tstatus\tvalidated_at",
-    "question_type": "meaning_choice",
-    "question": "What are the benefits of having a final manifest?",
-    "choices": [
-      "Recheck final paths, row counts, hashes, and validation status",
-      "Modify every output automatically",
-      "Prove a process is still running",
-      "Publish secret keys"
-    ],
-    "answer": "Recheck final paths, row counts, hashes, and validation status",
-    "explanation": "output_path, rows, sha256, status, and validated_at provide evidence for expected files, record counts, exact bytes, and validation time. Also manage hash algorithm, generator version, manifest integrity, and input provenance so that evidence remains trustworthy.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "A final manifest is required when bundling KG pack, clean text, lesson files, and shard outputs."
-  },
-  {
-    "id": "PY46_L10_resume_safe_nodepass_001",
-    "level": 10,
-    "title": "Reading the \"resume-safe\" node_pass",
-    "concepts": [
-      "for",
-      "node_pass",
-      "resume_safe",
-      "shard_pipeline"
-    ],
-    "reading_goal": "Apply the \"resume-safe\" principle to actual long-running tasks, such as the KG node_pass.",
-    "code": "for shard in pending_shards:\n    run_node_pass(shard)\n    validate_jsonl(shard.output)\n    mark_done(shard)",
-    "question_type": "meaning_choice",
-    "question": "When should `mark_done` be called in the `resume-safe` `node_pass`?",
-    "choices": [
-      "After durable output passes JSONL validation",
-      "Before output is written",
-      "When the process starts",
-      "Whenever a partial file exists"
-    ],
-    "answer": "After durable output passes JSONL validation",
-    "explanation": "After run_node_pass stores output durably and validate_jsonl checks schema, count, and references, mark_done records completion atomically. A crash between validation and marker can cause a rerun, so processing and storage must be idempotent. Link failure records and input and model versions to shard state.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "These are key habits for stabilizing the node extraction, node promotion, and edge promotion pipelines."
-  }
+    {
+        "id":  "PY46_L06_resume_safe_pipeline_001",
+        "level":  6,
+        "title":  "In the completed shard, skip execution with ``continue``.",
+        "concepts":  [
+                         "continue_statement",
+                         "for_statement",
+                         "if_statement",
+                         "call"
+                     ],
+        "reading_goal":  "The `continue` statement skips only the remaining statements of the current iteration without terminating the entire loop.",
+        "code":  "shards = [\"shard_001\", \"shard_002\", \"shard_003\"]\ndone = {\"shard_001\", \"shard_002\"}\nran = []\n\ndef is_done(shard):\n    return shard in done\n\ndef run_shard(shard):\n    ran.append(shard)\n\nfor shard in shards:\n    if is_done(shard):\n        continue\n    run_shard(shard)\n\nprint(ran)",
+        "question_type":  "meaning_choice",
+        "question":  "`is_done(shard)` What happens when ``continue`` is executed in the session where ``True`` is set?",
+        "choices":  [
+                        "Skip the current episode’s “`run_shard(shard)`” and move on to the next shard.",
+                        "End the entire `for` loop immediately.",
+                        "Run `run_shard` twice.",
+                        "Delete the `shards` list"
+                    ],
+        "answer":  "Skip the current episode’s “`run_shard(shard)`” and move on to the next shard.",
+        "explanation":  "If the current shard is in the “completed” state, the `if` condition evaluates to `True`. When `continue` is executed, the `run_shard(shard)` below is not executed in this iteration. The `for` loop retrieves the next shard and continues. This is because `continue` is defined to skip only the current iteration. Common misconception: It immediately terminates the entire `for` loop. Terminating the entire loop is the role of `break`, while `continue` moves to the next iteration. Key distinction: Understand the difference in control flow between `continue` and `break`. `continue` skips the remaining code of the current iteration and moves to the next iteration.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This is a pipeline flow that skips already completed work after interruption/restart and processes only the remaining shards.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "continue_statement",
+        "reading_goal_internal":  "continue statement가 전체 반복을 끝내지 않고 현재 회차의 남은 문장만 건너뛰는 효과를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`continue` is a statement that skips the remaining code in the current iteration and moves on to the next iteration.",
+                                    "how_to_read":  "continue Look for the sentence that remains at the same indentation level below and read that it will not be executed in this session.",
+                                    "key_point":  "`continue` is different from `break`. It does not terminate the entire loop but moves on to the next item.",
+                                    "common_mistake":  "It’s easy to assume that the entire `for` loop terminates when it encounters a completed shard. That behavior is similar to a `break`, whereas `continue` moves on to the next shard."
+                                },
+        "teaching_example":  {
+                                 "code":  "for n in [1, 2, 3]:\n    if n == 2:\n        continue\n    print(n)",
+                                 "walkthrough":  "Since only the `print` statement in the second iteration is skipped, 1 and 3 are printed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "If the current shard is in the \"completed\" state, the `if` statement evaluates to `True`. If `continue` is executed, the line below—``run_shard(shard)``—will not be executed in this iteration. The `for` loop then retrieves the next shard and continues.",
+                                   "why_correct":  "This is because the definition of `continue` is that it skips only the current iteration.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "End the entire `for` loop immediately.",
+                                                               "why_wrong":  "The `break` statement terminates the entire loop, while `continue` moves to the next iteration.",
+                                                               "misread_step":  "Distinguish between the control flow differences of `continue` and `break`."
+                                                           },
+                                   "takeaway":  "`continue` skips the remaining code in the current iteration and moves on to the next iteration."
+                               },
+        "target_statement":  "continue",
+        "focus_span":  "continue",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "architecture_and_design",
+        "coverage_topics":  [
+                                "resume",
+                                "pipeline",
+                                "checkpoint",
+                                "continue"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY46_L06_checkpoint_file_001",
+        "level":  6,
+        "title":  "Read the last completion point from the checkpoint dictionary",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Understand that a checkpoint records the last completion point, allowing you to pause and resume later.",
+        "code":  "checkpoint = {\"last_done\": \"shard_0042\", \"updated_at\": \"2026-05-31\"}\nlast_done = checkpoint[\"last_done\"]\nprint(last_done)",
+        "question_type":  "meaning_choice",
+        "question":  "What is the role of the checkpoint file that stores `checkpoint[\"last_done\"]` in `shard_0042`?",
+        "choices":  [
+                        "It records the progress made so that you can resume from that point after pausing.",
+                        "Make sure every shard is re-run from the beginning each time.",
+                        "To display only the current date,",
+                        "To automatically delete completed shard files,"
+                    ],
+        "answer":  "It records the progress made so that you can resume from that point after pausing.",
+        "explanation":  "1) The `last_done` field in the checkpoint records the last completed shard. 2) The file remains even if the program is interrupted. 3) In the next run, this value can be read to resume from the point where the task was left off. This explanation interprets the Python target of this card—which records how far the task has been completed so it can resume from that point after an interruption—by connecting it to legacy/domain objectives. Common Misconception: It forces all shards to be re-run from the beginning every time. This option focuses only on specific syntax or contextual details of the code and misses the core meaning of the card. Point of Misinterpretation: It focuses solely on matching the string “`shard_0042`,” overlooking why the checkpoint is saved to a file. The checkpoint is a state file designed to **save the last completion point → read it upon restart → resume execution**.",
+        "side_card_ids":  [
+                              "PYV159_A1_LEARNING_UX_FLOW",
+                              "PYV159_A1_CHECKPOINT_RESUME_FLOW"
+                          ],
+        "project_context":  "This refers to the context of reading the last completed point from a checkpoint when resuming an interrupted batch job.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "checkpoint에 마지막 완료 지점을 기록해 중단 후 재개하는 역할을 이해한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A `dict key lookup` is a syntax used to retrieve the value of a field with a specific name.",
+                                    "how_to_read":  "Find the key inside the square brackets in the checkpoint definition and read the value to its right.",
+                                    "key_point":  "`last_done` The key point here is that **this value serves as the reference point for the resume**, rather than a value lookup.",
+                                    "common_mistake":  "If you focus only on the `shard_0042` string, you’ll miss why checkpoints are saved as files."
+                                },
+        "teaching_example":  {
+                                 "code":  "state = {\"last_page\": 7, \"saved_at\": \"10:30\"}\nprint(state[\"last_page\"])",
+                                 "walkthrough":  "The value of the `last_page` key, which is 7, is printed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The `last_done` field in a checkpoint records the last completed shard. 2) The file remains even if the program is interrupted. 3) During the next run, this value can be read to resume execution from the point where it left off.",
+                                   "why_correct":  "This explanation interprets the Python target of this card—which states that progress is recorded so that work can be resumed from that point after being interrupted—by linking it to legacy/domain objectives.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Make sure every shard is re-run from the beginning each time.",
+                                                               "why_wrong":  "This option focuses only on certain aspects of the code’s syntax or context and misses the core meaning of the card.",
+                                                               "misread_step":  "If you focus only on the `shard_0042` string, you’ll miss why checkpoints are saved as files."
+                                                           },
+                                   "takeaway":  "A checkpoint is a state file used to **save the last completion point → read it upon restart → and continue execution**."
+                               },
+        "target_statement":  "last_done = checkpoint[\"last_done\"]",
+        "focus_span":  "checkpoint[\"last_done\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "checkpoint",
+                                "resume",
+                                "last_done",
+                                "progress"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY46_L07_done_marker_001",
+        "level":  7,
+        "title":  "Expressing verified completion information using a single dict literal",
+        "concepts":  [
+                         "literal",
+                         "assignment",
+                         "subscription"
+                     ],
+        "reading_goal":  "Interpret the key-value pairs within the curly braces as indicating that the `marker` is a data structure that preserves both the \"validated\" state and the row count.",
+        "code":  "done_marker = {\"validated\": True, \"rows\": 200}\nprint(done_marker[\"validated\"])",
+        "question_type":  "output_prediction",
+        "question":  "What is the value of the `validated` key in this `done` marker dictionary?",
+        "choices":  [
+                        "True",
+                        "200",
+                        "validated",
+                        "False"
+                    ],
+        "answer":  "True",
+        "explanation":  "1) The dict literal has two keys: `validated` and `rows`. 2) The value associated with the `validated` key is the Boolean `True`. 3) The value `200` associated with the `rows` key is a different entry. 4) `done_marker[\u0027validated\u0027]` returns `True` and prints it.",
+        "side_card_ids":  [
+                              "PYV102_A7_ASYNC_CONCURRENCY"
+                          ],
+        "project_context":  "The actual \"done\" marker also records metadata such as the output hash, row count, and version, allowing for the distinction between a partial output and a successful completion.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "literal",
+        "reading_goal_internal":  "중괄호 안 key-value 쌍을 읽어 marker가 validated 상태와 row count를 함께 보존하는 자료 구조임을 해석한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A dictionary literal creates a dictionary object by writing key-value pairs directly into the code in the form ``{key: value, ...}``.",
+                                    "how_to_read":  "Split the contents of the curly braces into pairs separated by commas, and read what each key refers to.",
+                                    "key_point":  "The `validated` key points to `True`, and the `rows` key points to 200.",
+                                    "common_mistake":  "There is no need to interpret the order of keys in a `dict literal` as the order of completion or priority. What matters is the meaning of each key-value pair."
+                                },
+        "teaching_example":  {
+                                 "code":  "status = {\"ok\": True, \"count\": 3}\nprint(status[\"count\"])",
+                                 "walkthrough":  "The `dict literal` creates two key-value pairs and retrieves the value 3 for the `count` key."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The dict literal has two keys: `validated` and `rows`. 2) The value associated with the `validated` key is the Boolean `True`. 3) The value `200` associated with the `rows` key is a different entry. 4) `done_marker[\u0027validated\u0027]` returns `True` and prints it.",
+                                   "why_correct":  "In a dictionary literal, the validated key is directly associated with `True`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "200",
+                                                               "why_wrong":  "200 is the value of the `rows` key, not the value of the `validated` key.",
+                                                               "misread_step":  "Read each key and the value immediately to its right as a pair."
+                                                           },
+                                   "takeaway":  "A dictionary literal is read as **identifying key-value pairs → selecting the required key → interpreting the associated value**."
+                               },
+        "target_statement":  "{\"validated\": True, \"rows\": 200}",
+        "focus_span":  "{\"validated\": True, \"rows\": 200}",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "done_marker",
+                                "completion_flag",
+                                "validation",
+                                "metadata"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY46_L07_partial_output_001",
+        "level":  7,
+        "title":  "`written_rows \u003c expected_rows` Determining Whether It Is a Partial Output",
+        "concepts":  [
+                         "comparison",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "It compares the current number of lines written with the expected number of lines to determine, as a Boolean value, whether the actual result has been written incompletely.",
+        "code":  "written_rows = 57\nexpected_rows = 200\nis_partial = written_rows \u003c expected_rows\nprint(is_partial)",
+        "question_type":  "output_prediction",
+        "question":  "If only 57 lines have been written but 200 lines are expected, what does `is_partial` mean?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "57",
+                        "200"
+                    ],
+        "answer":  "True",
+        "explanation":  "1) The current value of `written_rows` is 57. 2) The current value of `expected_rows` is 200. 3) Evaluating ``57 \u003c 200`` returns True. 4) That Boolean is stored in `is_partial` and printed.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "This connects to the process of detecting a partial state through count-based verification when a JSONL shard is interrupted midway or when only the file remains after bulk generation.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "현재 작성 행 수와 기대 행 수를 비교해 실제 결과가 아직 덜 쓰였는지 Boolean으로 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left \u003c right` compares whether the value on the left is less than the value on the right and returns a Boolean.",
+                                    "how_to_read":  "Treat the two values as actual numbers and preserve the direction of the inequality.",
+                                    "key_point":  "Since 57 is less than 200, the partial check returns True.",
+                                    "common_mistake":  "If you omit the comparison of quantities based solely on the fact that the file exists, you may miss the \"incomplete output\" result."
+                                },
+        "teaching_example":  {
+                                 "code":  "written = 9\nexpected = 10\nprint(written \u003c expected)",
+                                 "walkthrough":  "Since 9 is less than 10, \"True\" is printed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The current value of `written_rows` is 57. 2) The current value of `expected_rows` is 200. 3) Evaluating ``57 \u003c 200`` returns True. 4) That Boolean is stored in `is_partial` and printed.",
+                                   "why_correct":  "This is because the actual number of lines written is less than the expected number of lines.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "Because 57 is less than 200, the less-than condition is true.",
+                                                               "misread_step":  "It evaluates the numerical comparison itself first, before attempting to infer whether it has been completed."
+                                                           },
+                                   "takeaway":  "The less-than comparison is read as **checking both values → applying the `\u003c` direction → performing a Boolean calculation → linking it to the state’s meaning**."
+                               },
+        "target_statement":  "written_rows \u003c expected_rows",
+        "focus_span":  "written_rows \u003c expected_rows",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "partial_output",
+                                "row_count",
+                                "incomplete_file",
+                                "validation"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY46_L07_output_exists_skip_risk_001",
+        "level":  7,
+        "title":  "Use `and` to require both file existence and successful validation to create a safe skip condition",
+        "concepts":  [
+                         "boolean_operation",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "When `output_exists` on the left is True, evaluate `validation_passed` on the right as well; the whole condition is True only if both are True.",
+        "code":  "output_exists = True\nvalidation_passed = False\nskip_ready = output_exists and validation_passed\nprint(skip_ready)",
+        "question_type":  "output_prediction",
+        "question":  "If the file exists but validation fails, what is ``skip_ready``?",
+        "choices":  [
+                        "False",
+                        "True",
+                        "output_exists",
+                        "None"
+                    ],
+        "answer":  "False",
+        "explanation":  "1) The value of `output_exists` is True. 2) Since the left-hand side is truthy, the right-hand side, `validation_passed`, is also evaluated. 3) `validation_passed` is False. 4) The result of combining True and False is False.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This ties into the safety principle in the “resume-safe” pipeline, which does not simply check for the presence of “output exists,” but verifies the results or the “done” marker before skipping.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "boolean_operation",
+        "reading_goal_internal":  "왼쪽 output_exists가 True일 때 오른쪽 validation_passed까지 평가하고 둘 다 True여야 전체 조건이 True가 되는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`A and B` If A is falsy, it stops there; if A is truthy, it evaluates up to B to determine the result.",
+                                    "how_to_read":  "The left-hand condition is evaluated first, and only if it is True is the right-hand condition checked.",
+                                    "key_point":  "In the example, although a file exists, the validation failed, so the overall result for True and False is False.",
+                                    "common_mistake":  "You should not assume that `skip_ready` is True simply because `output_exists` is True."
+                                },
+        "teaching_example":  {
+                                 "code":  "exists = True\nchecked = True\nprint(exists and checked)",
+                                 "walkthrough":  "Since both the left and right sides are True, the overall result is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The value of `output_exists` is True. 2) Since the left-hand side is truthy, the right-hand side, `validation_passed`, is also evaluated. 3) `validation_passed` is False. 4) The result of combining True and False is False.",
+                                   "why_correct":  "The \"and\" operator evaluates to true only when both conditions are true.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "True",
+                                                               "why_wrong":  "It is not enough for the file to simply exist; it must also pass the validation criteria on the right.",
+                                                               "misread_step":  "In compound conditions, check the Boolean value of each operand separately."
+                                                           },
+                                   "takeaway":  "\"and guard\" is interpreted as **\"left evaluation → right evaluation if necessary → passes only if both are true\"**."
+                               },
+        "target_statement":  "output_exists and validation_passed",
+        "focus_span":  "output_exists and validation_passed",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "output_exists",
+                                "validation",
+                                "skip_guard",
+                                "resume_safe"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY46_L08_validate_before_done_001",
+        "level":  8,
+        "title":  "Read the `if` gate that writes the done marker only after validation succeeds",
+        "concepts":  [
+                         "if_statement",
+                         "call",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the sequence where the return value of a function call serves as an `if` condition to determine whether to execute the call to mark completion.",
+        "code":  "events = []\n\ndef run_job():\n    events.append(\"run\")\n\ndef validate_output():\n    events.append(\"validate\")\n    return True\n\ndef write_done_marker():\n    events.append(\"done\")\n\nrun_job()\nif validate_output():\n    write_done_marker()",
+        "question_type":  "multiple_choice",
+        "question":  "Under what condition does `write_done_marker()` execute?",
+        "choices":  [
+                        "When `validate_output()` returns a truthy value",
+                        "As long as `run_job()` is called,",
+                        "Always.",
+                        "When `events` is empty"
+                    ],
+        "answer":  "When `validate_output()` returns a truthy value",
+        "explanation":  "`validate_output()` The return value serves as the condition for the `if` statement. Only when this value is truthy will the body be executed and the `marker` function be called. This is because the `if` statement determines whether the body is executed based on the truth value of the conditional expression. A common source of confusion: If `run_job()` is simply called, there is a separate validation condition between the `run_job` call and the `marker` call. Point of misinterpretation: This occurs when only the sequential calls are considered, and the “if gate” is ignored. The completion indicator should be read in the following order: **result of the verification call → if evaluation → call to `marker` if successful**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This is linked to a workflow that sets a completion marker before the output verification passes for long batch jobs, preventing them from being resumed incorrectly.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "함수 호출 반환값이 if 조건이 되어 완료 표시 호출의 실행 여부를 결정하는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if condition:` executes the body only when condition is truthy.",
+                                    "how_to_read":  "If the condition is a function call, the result of that call is obtained first; after verifying that the result is true, a decision is made on whether to execute the body.",
+                                    "key_point":  "For the `done` marker, what matters is not simply that it appears later in the sequence, but rather **whether it is located within a branch that executes only when verification succeeds**.",
+                                    "common_mistake":  "It’s easy to assume that a marker is always recorded whenever a validation function is called. However, if the return value is False, the body of the `if` statement is not executed."
+                                },
+        "teaching_example":  {
+                                 "code":  "events = []\n\ndef validate():\n    return False\n\ndef mark_done():\n    events.append(\"done\")\n\nif validate():\n    mark_done()",
+                                 "walkthrough":  "`validate()` Since `ga` is `False`, the `if` block is skipped, and `done` is not added to ``events``."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The return value of `validate_output()` is the `if` condition. Only when this value is truthy does execution enter the body and call the marker function.",
+                                   "why_correct":  "This is because the `if` statement determines whether to execute the body based on the truth value of the conditional expression.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "As long as `run_job()` is called,",
+                                                               "why_wrong":  "There is a separate validation condition between the `run_job` call and the `marker` call.",
+                                                               "misread_step":  "This is a case where only sequential calls were considered, and the if gate was ignored."
+                                                           },
+                                   "takeaway":  "The completion indicator is read in the following order: **verification call result → if statement → marker call on success**."
+                               },
+        "target_statement":  "if validate_output():",
+        "focus_span":  "if validate_output():",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "validation",
+                                "done marker",
+                                "job completion",
+                                "quality gate"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY46_L08_atomic_write_001",
+        "level":  8,
+        "title":  "Reading the positional arguments in `tmp.replace(output)`",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "attribute_access",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read the structure where positional arguments inside the method call parentheses are passed as the destination path for `replace`.",
+        "code":  "from pathlib import Path\n\ntmp = Path(\"result.tmp\")\noutput = Path(\"result.json\")\ntmp.replace(output)",
+        "question_type":  "multiple_choice",
+        "question":  "What is the positional argument passed to `replace()` as the destination?",
+        "choices":  [
+                        "output",
+                        "tmp",
+                        "Path",
+                        "result.tmp"
+                    ],
+        "answer":  "output",
+        "explanation":  "In `tmp.replace(output)`, the `tmp` before the dot is the object calling the method, and the `output` inside the parentheses is the input passed to `replace`. This is because the first expression written inside the parentheses without a name is passed as the first positional argument. Common Confusion: `tmp` is the receiver of the method call, not a positional argument inside the parentheses. Point of Misinterpretation: This occurs when the calling object and the call arguments are not distinguished. A method call should be read as **receiver.method(argument)**.",
+        "side_card_ids":  [
+                              "PYV102_A7_FILE_SAFE_WRITE"
+                          ],
+        "project_context":  "This is linked to a saving pattern where the result is first completed in a temporary file and then replaced with the final path, thereby minimizing the exposure of incomplete files in the event of an intermediate failure.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "메서드 호출 괄호 안 positional argument가 replace의 목적지 경로로 전달되는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "In a function or method call, a value passed by position rather than by name is called a positional argument.",
+                                    "how_to_read":  "Distinguish between the call target and the expression inside the parentheses, and verify the value of each argument.",
+                                    "key_point":  "In `tmp.replace(output)`, `tmp` is the caller, and `output` is the destination argument passed to `replace`.",
+                                    "common_mistake":  "It is easy to assume that `output` is the return value of the `replace` call. In this context, however, it is an argument passed to the method as input."
+                                },
+        "teaching_example":  {
+                                 "code":  "class FileRef:\n    def replace(self, destination):\n        return destination\n\ntmp = FileRef()\noutput = \"final.json\"\nresult = tmp.replace(output)",
+                                 "walkthrough":  "The `output` string is passed as the first positional argument to the `destination` parameter."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`tmp.replace(output)` In the line “`tmp`,” the part before the dot is the object calling the method, and the part inside the parentheses—`output`—is the input passed to the `replace` method.",
+                                   "why_correct":  "This is because the first expression written without a name in parentheses is passed as the first positional argument.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "tmp",
+                                                               "why_wrong":  "`tmp` is the receiver of the method call, not a positional argument inside the parentheses.",
+                                                               "misread_step":  "This is an example where the called object and the call arguments are not distinguished."
+                                                           },
+                                   "takeaway":  "Read method calls by breaking them down into the **receiver.method(argument)** structure."
+                               },
+        "target_statement":  "tmp.replace(output)",
+        "focus_span":  "output",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "atomic write",
+                                "temporary file",
+                                "replace",
+                                "output path"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY46_L08_idempotent_job_001",
+        "level":  8,
+        "title":  "Reading the upsert status, which can be re-executed with the same key",
+        "concepts":  [
+                         "assignment",
+                         "subscription",
+                         "literal"
+                     ],
+        "reading_goal":  "Track the fact that assigning a value to a `dict` key replaces the existing key’s value, and that repeatedly assigning the same value does not change the final state.",
+        "code":  "store = {}\n\ndef upsert(item):\n    store[item[\"id\"]] = item\n\nitem = {\"id\": \"A\", \"status\": \"done\"}\nupsert(item)\nupsert(item)",
+        "question_type":  "multiple_choice",
+        "question":  "After calling `item` twice with the same `upsert(item)`, how many keys does `store` have?",
+        "choices":  [
+                        "0",
+                        "1",
+                        "2",
+                        "3"
+                    ],
+        "answer":  "1",
+        "explanation":  "Both calls use the same dict key because ``item[\u0027id\u0027]`` is ``A``. The second assignment does not add a new key but resets the value of the existing `A`. This is because a dictionary maintains only one entry per key, and assigning a value to an existing key updates that value. A common source of confusion: The fact that the code was executed twice does not mean that two different keys were created. Point of misinterpretation: This occurs when the number of calls is mistakenly equated with the number of dictionary keys. When reading an idempotent storage operation, track **how the key and final value change after re-execution**.",
+        "side_card_ids":  [
+                              "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
+                          ],
+        "project_context":  "This is linked to a structure in batch and collection tasks—which are retried after failure—that prevents the duplicate creation of the same items and ensures convergence to the same final state.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "dict key 대입이 기존 key의 value를 교체하며 같은 값을 반복 대입하면 최종 상태가 달라지지 않는다는 점을 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping[key] = value` is a subscription assignment that stores a value under a specific key in a dictionary.",
+                                    "how_to_read":  "First calculate the key expression, then store the right-hand value at that position. If the same key already exists, its previous value is replaced.",
+                                    "key_point":  "If you repeatedly save the same item with the same ID, the item is not added repeatedly; instead, the state of the item with that key is maintained.",
+                                    "common_mistake":  "It’s easy to assume that since the function was called twice, two dict entries were created. However, a dict does not store duplicate keys."
+                                },
+        "teaching_example":  {
+                                 "code":  "store = {}\nitem = {\"id\": \"X\", \"value\": 1}\nstore[item[\"id\"]] = item\nstore[item[\"id\"]] = item",
+                                 "walkthrough":  "Since the same dict is stored under the key `X` both times, the final number of keys is one."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since `item[\u0027id\u0027]` is `A` in both calls, they use the same dictionary key. The second assignment does not add a new key but resets the value of the existing `A`.",
+                                   "why_correct":  "This is because a `dict` maintains only one instance of each key; assigning a value to an existing key updates that value.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "2",
+                                                               "why_wrong":  "The fact that it was executed twice does not mean that two different keys were created.",
+                                                               "misread_step":  "This is an example where the number of calls is considered equal to the number of dict keys."
+                                                           },
+                                   "takeaway":  "When reading an idempotent save, track **how the key and final value change after re-execution**."
+                               },
+        "target_statement":  "store[item[\"id\"]] = item",
+        "focus_span":  "store[item[\"id\"]] = item",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "architecture_and_design",
+        "coverage_topics":  [
+                                "idempotent job",
+                                "upsert",
+                                "retry safety",
+                                "state"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY46_L08_retry_queue_001",
+        "level":  8,
+        "title":  "Put a failed task into the retry queue with `append()`.",
+        "concepts":  [
+                         "call",
+                         "attribute_access",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Track the state change where, after passing the `if` condition, the `list.append` call adds the new ID to the end of the existing queue.",
+        "code":  "retry_queue = [\"job-1\"]\nitem = {\"id\": \"job-2\", \"failed\": True}\nitem_id = item[\"id\"]\nif item[\"failed\"]:\n    retry_queue.append(item_id)",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `retry_queue` after the code runs?",
+        "choices":  [
+                        "[\"job-1\", \"job-2\"]",
+                        "[\"job-2\"]",
+                        "[\"job-1\"]",
+                        "[]"
+                    ],
+        "answer":  "[\"job-1\", \"job-2\"]",
+        "explanation":  "Since the `failed` value of `item` is `True`, the code enters the `if` block. ``append(item_id)`` appends ``job-2`` to the end of the existing ``job-1``. ``append()`` appends a single value to the end of the existing list. A common source of confusion: `[\"job-2\"]` `append` adds a new item after the existing items without replacing the existing list. Point of Misinterpretation: This occurs when `append` is misread as if it were assigning a new list. The retry queue should be interpreted as following the flow: **check for failure conditions → append failure ID → reprocess later**.",
+        "side_card_ids":  [
+                              "PYV102_A7_ASYNC_CONCURRENCY"
+                          ],
+        "project_context":  "This connects to the operational workflow that collects only the items that failed in the collection, conversion, and verification batch for separate retries.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "if 조건을 통과한 뒤 list.append 호출이 기존 queue의 끝에 새 id를 추가하는 상태 변화를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`list.append(value)` is a method call that adds a single item, `value`, to the end of a list.",
+                                    "how_to_read":  "Check the list state and argument value before the call, then reflect the post-call state where one item has been added to the end.",
+                                    "key_point":  "The purpose of a retry queue is to keep failed items in a separate list so they can be processed again later.",
+                                    "common_mistake":  "`append()` It’s easy to assume that it returns a new list. However, it modifies the original list directly."
+                                },
+        "teaching_example":  {
+                                 "code":  "queue = [\"task-1\"]\nfailed_id = \"task-3\"\nqueue.append(failed_id)",
+                                 "walkthrough":  "`task-3` is added to the end of the existing list, so the queue now contains two items."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the `failed` value of `item` is `True`, the code enters the `if` block. The ``append(item_id)`` statement appends ``job-2`` to the existing ``job-1``.",
+                                   "why_correct":  "`append()` This is because it adds a single value to the end of the existing list.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\"job-2\"]",
+                                                               "why_wrong":  "`append` adds a new item to the end of an existing list without overwriting the existing items.",
+                                                               "misread_step":  "This is an example of interpreting `append` as if it were assigning to a new list."
+                                                           },
+                                   "takeaway":  "The retry queue follows the flow of **check for failure conditions → append failure ID → reprocess later**."
+                               },
+        "target_statement":  "retry_queue.append(item_id)",
+        "focus_span":  "retry_queue.append(item_id)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "retry queue",
+                                "failed job",
+                                "append",
+                                "recovery"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY46_L09_failed_only_rerun_001",
+        "level":  9,
+        "title":  "Iterate only through `failed_ids` to selectively re-execute them",
+        "concepts":  [
+                         "for_statement",
+                         "call",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the flow of the for loop, which uses only the list of failures as an iterable to re-execute the code while excluding successful items.",
+        "code":  "def load_failed_ids(path):\n    return [\"item-03\", \"item-08\"]\n\nrerun_ids = []\ndef rerun(item_id):\n    rerun_ids.append(item_id)\n\nfailed_ids = load_failed_ids(\"audit.tsv\")\nfor item_id in failed_ids:\n    rerun(item_id)",
+        "question_type":  "multiple_choice",
+        "question":  "Which of the following best describes the advantage of \"failed-only rerun\"?",
+        "choices":  [
+                        "Repeating successful tasks reduces time and costs.",
+                        "Hides the cause of failure",
+                        "Delete the validation log",
+                        "It always creates more redundancy."
+                    ],
+        "answer":  "Repeating successful tasks reduces time and costs.",
+        "explanation":  "`load_failed_ids` returns only the failed items—item-03 and item-08—and the `for` loop calls `rerun` only for these two items. This is because the iteration itself is limited to the failed items. Common misconception: “It always creates more redundancy.” The goal is to reduce redundant execution of successful items. Point of misinterpretation: This occurs when selective retry and full retry are interpreted in reverse. “Selective retry” should be read as **extract the list of failures → loop only over failed items → reuse successful items**.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "This connects to an operational pattern that saves resources in long GPU batches or paid LLM calls by rerunning only failed shards or rows.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "for_statement",
+        "reading_goal_internal":  "실패 목록만 iterable로 사용해 성공 항목을 제외하고 재실행하는 for loop 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`for item in iterable:` This is a for statement that iterates over the body of the code, adding the values of the iterable to `item` one by one.",
+                                    "how_to_read":  "Check which values are contained in the collection being iterated over.",
+                                    "key_point":  "\"Failed-only rerun\" allows you to process only the failed items without rerunning the entire batch, thereby reducing time and GPU/API costs.",
+                                    "common_mistake":  "It is easy to think the `for` loop automatically iterates over the entire original task list. Its current iterable is only `failed_ids`."
+                                },
+        "teaching_example":  {
+                                 "code":  "failed = [\"b\", \"d\"]\nrerun = []\nfor item in failed:\n    rerun.append(item)",
+                                 "walkthrough":  "Since only b and d are subject to iteration, only those two values are included in `rerun`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`load_failed_ids` returns only the failed items `item-03` and `item-08`, so the `for` loop calls `rerun` only for those two items.",
+                                   "why_correct":  "This is because repeated input is restricted to failed items.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "It always creates more redundancy.",
+                                                               "why_wrong":  "The goal is to reduce redundant execution of successful items.",
+                                                               "misread_step":  "This is an example where \"selective re-execution\" and \"full re-execution\" were interpreted incorrectly."
+                                                           },
+                                   "takeaway":  "Read selective retry as **extract the failure list → loop over only failed items → reuse successful items**."
+                               },
+        "target_statement":  "for item_id in failed_ids:",
+        "focus_span":  "for item_id in failed_ids:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "cli_and_automation",
+        "coverage_topics":  [
+                                "failed-only rerun",
+                                "selective retry",
+                                "batch",
+                                "cost saving"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY46_L09_shard_status_001",
+        "level":  9,
+        "title":  "Select only the “RUNNING” shards from the status table",
+        "concepts":  [
+                         "list_comprehension",
+                         "comparison",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the flow that filters only `RUNNING` items from shard-status records to find the pieces currently in progress.",
+        "code":  "shards = [\n    {\"shard_id\": \"0031\", \"total\": 200, \"done\": 200, \"status\": \"DONE\"},\n    {\"shard_id\": \"0067\", \"total\": 200, \"done\": 154, \"status\": \"RUNNING\"},\n]\nrunning_ids = [row[\"shard_id\"] for row in shards if row[\"status\"] == \"RUNNING\"]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `running_ids`?",
+        "choices":  [
+                        "[\"0067\"]",
+                        "[\"0031\"]",
+                        "[\"0031\", \"0067\"]",
+                        "[]"
+                    ],
+        "answer":  "[\"0067\"]",
+        "explanation":  "Among the two rows, only 0067 has a status of RUNNING, so the result of the comprehension is `[\u00270067\u0027]`. This is because the filter condition `row[\u0027status\u0027] == \u0027RUNNING\u0027` is True only for 0067. A common source of confusion: [\"0031\", \"0067\"] 0031 is excluded from the filter because its status is DONE. Point of misreading: This occurs when the if filter in the comprehension is ignored. Shard monitoring follows the sequence: **status records → filter → extraction of required shard IDs**.",
+        "side_card_ids":  [
+                              "CS_batch_shard_001"
+                          ],
+        "project_context":  "It connects to an operations dashboard that allows you to quickly check the status of completed, in-progress, and failed shards when executing large-scale GPU/LLM tasks split into shards.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "list_comprehension",
+        "reading_goal_internal":  "shard 상태 레코드에서 RUNNING 항목만 필터링해 현재 진행 중 조각을 찾는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`[expression for item in items if condition]` This is a filtered list comprehension that adds only items that satisfy the condition to a new list.",
+                                    "how_to_read":  "Check the iteration target, the value to be inserted into the result, and the final filter condition in that order.",
+                                    "key_point":  "By structuring the status by shard, you can quickly identify completed, in-progress, and failed shards.",
+                                    "common_mistake":  "It’s easy to assume that all shard_ids are included in the result. Only rows with a status of RUNNING remain."
+                                },
+        "teaching_example":  {
+                                 "code":  "jobs = [{\"id\": \"a\", \"status\": \"DONE\"}, {\"id\": \"b\", \"status\": \"RUNNING\"}]\nrunning = [job[\"id\"] for job in jobs if job[\"status\"] == \"RUNNING\"]",
+                                 "walkthrough":  "Since only “b” is RUNNING, “running” is [\u0027b\u0027]."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Of the two rows, only 0067 has a status of RUNNING, so the result of the comprehension is ``[\u00270067\u0027]``.",
+                                   "why_correct":  "This is because the filter condition `row[\u0027status\u0027] == \u0027RUNNING\u0027` is True only in 0067.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\"0031\", \"0067\"]",
+                                                               "why_wrong":  "0031 is excluded from the filter because its status is DONE.",
+                                                               "misread_step":  "This is a case where the `if` filter in `comprehension` was ignored."
+                                                           },
+                                   "takeaway":  "Shard monitoring is described as **state record → filter → extraction of required shard IDs**."
+                               },
+        "target_statement":  "running_ids = [row[\"shard_id\"] for row in shards if row[\"status\"] == \"RUNNING\"]",
+        "focus_span":  "[row[\"shard_id\"] for row in shards if row[\"status\"] == \"RUNNING\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "shard",
+                                "status",
+                                "batch job",
+                                "progress"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY46_L09_progress_log_001",
+        "level":  9,
+        "title":  "Convert `done/total` and the shard ID into `progress` f-strings",
+        "concepts":  [
+                         "f_string",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the process by which several progress state variables are inserted into an f-string to form a single line of human-readable log.",
+        "code":  "done = 154\ntotal = 200\nshard_id = \"0067\"\nmessage = f\"DONE {done}/{total} shard={shard_id}\"",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `message`?",
+        "choices":  [
+                        "DONE 154/200 shard=0067",
+                        "DONE {done}/{total} shard={shard_id}",
+                        "154",
+                        "0067"
+                    ],
+        "answer":  "DONE 154/200 shard=0067",
+        "explanation":  "The values of the three variables are inserted into the f-string in order, resulting in `DONE 154/200 shard=0067`. This is because the f-string evaluates the expression within the curly braces to its current value. A common source of confusion: DONE {done}/{total} shard={shard_id} This format represents the template as it appears before the f-string is evaluated. Point of confusion: This is the case before f-string substitution is applied. The progress log is structured as **key status value → f-string → operational message that can be read at a glance**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This ties into operations where progress on time-consuming tasks—such as node extraction, LoRA, and large-scale validation—is tracked via brief logs.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "f_string",
+        "reading_goal_internal":  "여러 진행 상태 변수가 f-string에 삽입되어 사람이 읽기 쉬운 로그 한 줄이 되는 과정을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "An f-string is a syntax that constructs a string by inserting the current value into the `{expression}` placeholder.",
+                                    "how_to_read":  "Check the current value of the variable inside each set of curly braces and combine it with a literal string.",
+                                    "key_point":  "For long tasks, include both the \"done\" and \"total\" counts along with the shard ID to make it easy to determine whether the task is in progress or has been paused.",
+                                    "common_mistake":  "`{done}` It’s easy to assume that the same characters will be printed as-is. In f-strings, they are replaced with variable values."
+                                },
+        "teaching_example":  {
+                                 "code":  "done = 3\ntotal = 5\nmsg = f\"DONE {done}/{total}\"",
+                                 "walkthrough":  "\"msg\" becomes `DONE 3/5`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The values of the three variables are inserted into the f-string in order, resulting in `DONE 154/200 shard=0067`.",
+                                   "why_correct":  "This is because the f-string evaluates the expression within the curly braces to its current value.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "DONE {done}/{total} shard={shard_id}",
+                                                               "why_wrong":  "This is the template before the f-string is evaluated.",
+                                                               "misread_step":  "This is a case of not applying f-string substitution."
+                                                           },
+                                   "takeaway":  "Create the **progress log** by converting **key state values → f-strings → operational messages that are easy to read at a glance**."
+                               },
+        "target_statement":  "message = f\"DONE {done}/{total} shard={shard_id}\"",
+        "focus_span":  "f\"DONE {done}/{total} shard={shard_id}\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "progress log",
+                                "observability",
+                                "long-running job",
+                                "shard"
+                            ],
+        "pedagogical_intent":  "predict_output"
+    },
+    {
+        "id":  "PY46_L09_heartbeat_001",
+        "level":  9,
+        "title":  "Read a `while` loop that records a heartbeat while running.",
+        "concepts":  [
+                         "while_statement",
+                         "call",
+                         "assignment",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the condition check and termination flow of the `while` loop that records the heartbeat as long as the `liveness` flag is true.",
+        "code":  "heartbeats = []\n\ndef write_heartbeat(timestamp):\n    heartbeats.append(timestamp)\n\nrunning = True\nwhile running:\n    write_heartbeat(\"10:04\")\n    running = False",
+        "question_type":  "multiple_choice",
+        "question":  "What does `heartbeat` primarily indicate?",
+        "choices":  [
+                        "Is the workflow still active?",
+                        "Is the answer always correct?",
+                        "Is the file compressed?",
+                        "Has the Git remote address changed?"
+                    ],
+        "answer":  "Is the workflow still active?",
+        "explanation":  "While the `while` loop is executing, the heartbeat logging function is called to demonstrate that the process is running periodically. This is because a heartbeat is a typical liveness signal. A common source of confusion: Just because the correct answer is always returned does not guarantee that the process is alive or that the result is correct. Point of misinterpretation: This is a case where liveness and quality verification are confused. Operational status should be interpreted by **separating liveness signals from result verification**.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "This is linked to the operation of a watchdog or heartbeat mechanism that monitors whether a process has stopped when running long-running model inference or batch jobs on a server.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "while_statement",
+        "reading_goal_internal":  "liveness flag가 참인 동안 heartbeat를 기록하는 while loop의 조건 검사와 종료 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`while condition:` is a while statement that repeats the body as long as `condition` is truthy.",
+                                    "how_to_read":  "Track the value of the condition before the loop and how that condition changes within the loop body.",
+                                    "key_point":  "A heartbeat is used not to assess the quality of the results, but to verify that the process is still active and is periodically sending a signal.",
+                                    "common_mistake":  "It’s easy to assume that if there’s a heartbeat, the task results are always normal. Liveness and correctness are separate concepts."
+                                },
+        "teaching_example":  {
+                                 "code":  "running = True\nbeats = []\nwhile running:\n    beats.append(\"alive\")\n    running = False",
+                                 "walkthrough":  "Once “alive” is recorded, “running” becomes False, and the loop ends."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "While the `while` loop is running, the `heartbeat` function is called to indicate that the process is running periodically.",
+                                   "why_correct":  "This is because a heartbeat is a typical liveness signal.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Is the answer always correct?",
+                                                               "why_wrong":  "The fact that a process is still running does not guarantee the correctness of the result.",
+                                                               "misread_step":  "This is an instance where \"liveness\" was confused with \"quality verification.\""
+                                                           },
+                                   "takeaway":  "Read operational state by **separating liveness signals from result validation**."
+                               },
+        "target_statement":  "while running:",
+        "focus_span":  "while running:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "heartbeat",
+                                "liveness",
+                                "watchdog",
+                                "long-running job"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY46_L10_crash_recovery_001",
+        "level":  10,
+        "title":  "Find the impact of changing the crash-recovery completion decision on `pending` and downstream artifacts.",
+        "concepts":  [
+                         "for_statement",
+                         "membership_test",
+                         "if_statement",
+                         "call",
+                         "literal"
+                     ],
+        "reading_goal":  "Based on the current behavior—where the `for` loop checks each job and leaves items not found in ``validated_done`` in the `pending` queue—we will determine which jobs are incorrectly excluded and assess the scope of that impact if the completion criterion is changed to simply the existence of a checkpoint.",
+        "code":  "jobs = [\"shard_01\", \"shard_02\", \"shard_03\"]\nvalidated_done = {\"shard_01\"}\ncheckpoint_done = {\"shard_01\", \"shard_02\"}\npending = []\n\nfor job in jobs:\n    if job not in validated_done:\n        pending.append(job)\n\nprint(pending)",
+        "question_type":  "risk_finding",
+        "question":  "If a patch were made to change the current `validated_done` standard to the `checkpoint_done` standard, what would be the most significant scope of impact?",
+        "choices":  [
+                        "Even though shard_02 has not yet completed verification, it is removed from the \"pending\" state and is not re-executed, which may result in missing downstream results that depend on it.",
+                        "The `for` loop is automatically converted to parallel execution",
+                        "shard_01 must be executed twice",
+                        "The order of the `jobs` list is automatically reversed"
+                    ],
+        "answer":  "Even though shard_02 has not yet completed verification, it is removed from the \"pending\" state and is not re-executed, which may result in missing downstream results that depend on it.",
+        "explanation":  "1) Currently, the `for` loop is checking `shard_01`, `shard_02`, and `shard_03` in sequence. 2) Since `validated_done` contains only `shard_01`, `shard_02` and `shard_03` remain in `pending`. 3) Since shard_02 is also in `checkpoint_done`, changing the `authority` condition removes shard_02 from `pending`. 4) However, since shard_02 is not in `validated_done`, its actual completion has not been verified. 5) Therefore, the impact extends not only to the omission of re-executing shard_02 but also to the downstream stage that merges its output.",
+        "side_card_ids":  [
+                              "PYV159_A1_CHECKPOINT_RESUME_FLOW"
+                          ],
+        "project_context":  "This addresses a weakness in APEX where, after modifying a single line of code, the impact on surrounding calls and data was not sufficiently explained. The same line of reasoning can be applied to resume-safe pipelines, checkpoints, and cache-validity determinations.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "for_statement",
+        "reading_goal_internal":  "for 반복이 각 job을 검사해 `validated_done`에 없는 항목을 pending에 남기는 현재 동작을 읽고, 완료 기준을 단순 checkpoint 존재로 바꾸면 어떤 job이 잘못 제외되는지와 그 영향 범위를 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`for job in jobs:` iterates through the items in `jobs` one by one. In recovery logic, the actual scope of re-execution is determined not only by the loop itself but also by the “completion authority” referenced by the loop body.",
+                                    "how_to_read":  "For each job, verify the difference between `validated_done` and `checkpoint_done`, and when conditions change, confirm that jobs removed from the `pending` state have actually been validated. Next, examine the downstream stages that use the output from those removed jobs.",
+                                    "key_point":  "shard_02 has a checkpoint but is not included in validated_done. Therefore, while the current code leaves shard_02 as a candidate for re-execution, a patch that relies solely on checkpoints might incorrectly skip shard_02.",
+                                    "common_mistake":  "Do not immediately treat the existence of a checkpoint file as proof of completion. Since it could represent partial output, a marker just before failure, or a corrupted output, it must be distinguished from actual verification completion."
+                                },
+        "teaching_example":  {
+                                 "code":  "jobs = [\"a\", \"b\"]\nvalidated_done = {\"a\"}\npending = []\nfor job in jobs:\n    if job not in validated_done:\n        pending.append(job)\nprint(pending)",
+                                 "walkthrough":  "\"a\" is excluded because it has been verified, while \"b\" remains in \"pending\" because it has not been verified. The key point is not whether the file exists, but which set of completion statuses is used as the authority."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Currently, the `for` loop is checking `shard_01`, `shard_02`, and `shard_03` in sequence. 2) Since `validated_done` contains only `shard_01`, `shard_02` and `shard_03` remain in `pending`. 3) Since shard_02 is also in `checkpoint_done`, changing the `authority` condition removes shard_02 from `pending`. 4) However, since shard_02 is not in `validated_done`, its actual completion has not been verified. 5) Therefore, the impact extends not only to the omission of re-executing shard_02 but also to the downstream stage that merges its output.",
+                                   "why_correct":  "What the patch changes is not simply the set name, but the “authority that considers it complete.” If an unverified shard is skipped, the output of that shard—as well as the aggregates and manifests that use it—may be incorrect.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "The `for` loop is automatically converted to parallel execution",
+                                                               "why_wrong":  "Changing the set of completions only alters the membership determination; it does not convert a regular for loop into parallel syntax.",
+                                                               "misread_step":  "Don’t just look at the modified lines; track the targets that are executed or skipped based on those conditions, along with their downstream consumers."
+                                                           },
+                                   "takeaway":  "The scope of impact is traced from **modified evaluation criteria → changed execution targets → generated/missing output → downstream consumers**."
+                               },
+        "target_statement":  "for job in jobs:",
+        "focus_span":  "for job in jobs:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "crash_recovery",
+                                "checkpoint",
+                                "validated_done",
+                                "impact_scope",
+                                "downstream_output"
+                            ],
+        "pedagogical_intent":  "read_execution_order",
+        "subtype":  "basic_for",
+        "secondary_concepts":  [
+                                   "membership_test",
+                                   "if_statement",
+                                   "call",
+                                   "literal"
+                               ],
+        "prerequisites":  [
+                              "membership_test",
+                              "if_statement"
+                          ],
+        "semantic_operations":  [
+                                    "recovery_scan",
+                                    "completion_authority_check",
+                                    "impact_scope_trace"
+                                ],
+        "reading_steps":  [
+                              "Currently, the `for` loop is checking `shard_01`, `shard_02`, and `shard_03` in sequence.",
+                              "Since `validated_done` contains only `shard_01`, `shard_02` and `shard_03` currently remain in `pending`.",
+                              "Because `checkpoint_done` also contains `shard_02`, changing the condition authority removes `shard_02` from `pending`.",
+                              "However, since shard_02 is not in validated_done, its completion has not been verified.",
+                              "Therefore, the scope of impact includes not only the omission of the re-execution of shard_02 but also the downstream stage where its output is combined."
+                          ],
+        "same_syntax_example":  "jobs = [\"a\", \"b\"]\ndone = {\"a\"}\npending = []\nfor job in jobs:\n    if job not in done:\n        pending.append(job)\nprint(pending)"
+    },
+    {
+        "id":  "PY46_L10_final_manifest_001",
+        "level":  10,
+        "title":  "Grouping final output information into a dict literal",
+        "concepts":  [
+                         "literal",
+                         "assignment",
+                         "subscription"
+                     ],
+        "reading_goal":  "Read the structure where three key-value pairs within curly braces form a single manifest dictionary.",
+        "code":  "manifest = {\"file\": \"nodes.jsonl\", \"rows\": 120, \"status\": \"PASS\"}\nprint(manifest[\"rows\"])",
+        "question_type":  "output_prediction",
+        "question":  "What is the value of `manifest[\u0027rows\u0027]`?",
+        "choices":  [
+                        "120",
+                        "nodes.jsonl",
+                        "PASS",
+                        "3"
+                    ],
+        "answer":  "120",
+        "explanation":  "1) Find the `rows` key. 2) The value associated with that key is 120. 3) The square bracket lookup returns 120.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "It is connected to the audit workflow that seals the KG pack, lesson batch, and shard output into the final manifest.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "literal",
+        "reading_goal_internal":  "중괄호 안 key-value 쌍 세 개가 하나의 manifest dict가 되는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A dict literal creates a single mapping consisting of `{key: value}` pairs.",
+                                    "how_to_read":  "Ensure that the key on the left of each colon corresponds exactly to the value on the right.",
+                                    "key_point":  "`manifest` groups filenames, row counts, and validation statuses into the same record for tracking.",
+                                    "common_mistake":  "It is easy to count the number of words in an internal string as the number of items in a dictionary."
+                                },
+        "teaching_example":  {
+                                 "code":  "m={\"name\":\"a\",\"status\":\"PASS\"}\nprint(len(m))",
+                                 "walkthrough":  "Since there are two key-value pairs, the length is 2."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Find the `rows` key. 2) The value associated with that key is 120. 3) The square bracket lookup returns 120.",
+                                   "why_correct":  "The value of the `rows` key is stored as the integer 120.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "3",
+                                                               "why_wrong":  "3 refers only to the number of keys in the manifest; it is not the value of `rows`.",
+                                                               "misread_step":  "It is easy to count the number of words in an internal string as the number of items in a dictionary."
+                                                           },
+                                   "takeaway":  "A dictionary literal reads the key-value pairs first."
+                               },
+        "target_statement":  "manifest = {\"file\": \"nodes.jsonl\", \"rows\": 120, \"status\": \"PASS\"}",
+        "focus_span":  "{\"file\": \"nodes.jsonl\", \"rows\": 120, \"status\": \"PASS\"}",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "final_manifest",
+                                "audit",
+                                "hash",
+                                "row_count"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY46_L10_resume_safe_nodepass_001",
+        "level":  10,
+        "title":  "Skip the current iteration using `continue` in the `complete` shard",
+        "concepts":  [
+                         "continue_statement",
+                         "for_statement",
+                         "if_statement",
+                         "membership_test"
+                     ],
+        "reading_goal":  "`continue` skips the remaining body of the current iteration and moves to the next item.",
+        "code":  "done={\"s1\",\"s3\"}\nran=[]\nfor shard in [\"s1\",\"s2\",\"s3\"]:\n    if shard in done:\n        continue\n    ran.append(shard)\nprint(ran)",
+        "question_type":  "output_prediction",
+        "question":  "What is the shard remaining in `ran`?",
+        "choices":  [
+                        "[\u0027s2\u0027]",
+                        "[\u0027s1\u0027,\u0027s3\u0027]",
+                        "[\u0027s1\u0027,\u0027s2\u0027,\u0027s3\u0027]",
+                        "[]"
+                    ],
+        "answer":  "[\u0027s2\u0027]",
+        "explanation":  "1) s1 is \"done,\" so it continues. 2) s2 is not \"done,\" so it is appended. 3) s3 is also \"done,\" so it continues. 4) Therefore, only s2 is executed.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "It connects to the resume-safe pattern, which prevents duplicate processing of verified shards during node-pass re-execution.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "continue_statement",
+        "reading_goal_internal":  "`continue`가 현재 반복의 남은 본문을 건너뛰고 다음 항목으로 이동하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`continue` interrupts the current iteration of the nearest loop and moves on to the next iteration.",
+                                    "how_to_read":  "Verify that the conditions under which `continue` is executed and the subsequent call to `run_shard` are within the same loop body.",
+                                    "key_point":  "In a completed shard, `run_shard` is not called again.",
+                                    "common_mistake":  "It is easy to confuse `continue` with `break` because `continue` terminates the entire `for` loop."
+                                },
+        "teaching_example":  {
+                                 "code":  "ran=[]\nfor x in [1,2,3]:\n    if x==2:\n        continue\n    ran.append(x)\nprint(ran)",
+                                 "walkthrough":  "Skip only the 2nd iteration, resulting in [1, 3]."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) s1 is \"done,\" so it continues. 2) s2 is not \"done,\" so it is appended. 3) s3 is also \"done,\" so it continues. 4) Therefore, only s2 is executed.",
+                                   "why_correct":  "Since completed items are skipped using `continue`, only s2 remains.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\u0027s1\u0027,\u0027s3\u0027]",
+                                                               "why_wrong":  "Those two are, in fact, skipped completion shards.",
+                                                               "misread_step":  "It is easy to confuse `continue` with `break` because `continue` terminates the entire `for` loop."
+                                                           },
+                                   "takeaway":  "\"continue\" skips the text below in the current session and moves to the next iteration."
+                               },
+        "target_statement":  "continue",
+        "focus_span":  "continue",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "resume_safe",
+                                "node_pass",
+                                "checkpoint",
+                                "skip_done"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    }
 ]

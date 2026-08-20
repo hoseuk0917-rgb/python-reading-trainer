@@ -1,514 +1,1104 @@
 [
-  {
-    "id": "PY20_L07_fastapi_app_001",
-    "level": 7,
-    "title": "Read: Creating a FastAPI App",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "import",
-      "fastapi",
-      "app",
-      "api_server"
-    ],
-    "reading_goal": "Read about the basic structure for creating a FastAPI app object and attaching an endpoint.",
-    "code": "from fastapi import FastAPI\n\napp = FastAPI()\n\n@app.get(\"/health\")\ndef health():\n    return {\"ok\": True}",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of @app.get('/health')?",
-    "choices": [
-      "Delete the `health` function",
-      "Compress HTML files",
-      "Map the GET /health request to the health function",
-      "Initialize the database"
-    ],
-    "answer": "Map the GET /health request to the health function",
-    "explanation": "A FastAPI decorator maps a specific HTTP route to a Python function. When a browser or frontend calls that route, the associated function is executed. The health endpoint is also frequently used to quickly check whether the server is up and running.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "This is the most basic structure of the Local RAG API, Search API, and Learning App API servers."
-  },
-  {
-    "id": "PY20_L07_get_query_param_001",
-    "level": 7,
-    "title": "Reading GET Query Parameters",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "fastapi",
-      "query_parameter",
-      "get"
-    ],
-    "reading_goal": "Understand the structure in which URL query parameters are passed as function arguments.",
-    "code": "@app.get(\"/search\")\ndef search(q: str, limit: int = 5):\n    return {\"query\": q, \"limit\": limit}",
-    "question_type": "meaning_choice",
-    "question": "If I call it using /search?q=lidar and omit the limit, what is the limit value?",
-    "choices": [
-      "0",
-      "None",
-      "5",
-      "lidar"
-    ],
-    "answer": "5",
-    "explanation": "A query parameter is a value appended to the end of a URL. If you specify a default value, such as `limit: int = 5`, the value 5 is automatically inserted when the user omits it. Query parameters are often used for optional values passed via the URL, such as search terms, page size, and filters.",
-    "side_card_ids": [],
-    "project_context": "This is the standard pattern for sending search bar input via an API."
-  },
-  {
-    "id": "PY20_L08_path_param_001",
-    "level": 8,
-    "title": "Reading path parameters",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "fastapi",
-      "path_parameter",
-      "endpoint"
-    ],
-    "reading_goal": "Reads a structure in which a portion of the URL path is passed as a function argument.",
-    "code": "@app.get(\"/cards/{card_id}\")\ndef get_card(card_id: str):\n    return {\"card_id\": card_id}",
-    "question_type": "meaning_choice",
-    "question": "If I make a request to /cards/PY20_001, what is the card_id?",
-    "choices": [
-      "cards",
-      "card_id",
-      "PY20_001",
-      "None"
-    ],
-    "answer": "PY20_001",
-    "explanation": "The URL value at the {card_id} position is passed as the function argument `card_id`. A path parameter is a value included in the URL path. For example, this is used when retrieving data based on a specific ID from the path, and you must verify how it is mapped to the function argument. Therefore, the return/call result is ‘PY20_001’.",
-    "side_card_ids": [],
-    "project_context": "This is a common pattern in the Card Details, Document Details, and Node Details APIs."
-  },
-  {
-    "id": "PY20_L08_post_body_pydantic_001",
-    "level": 8,
-    "title": "Reading POST Body and PyDantic Models",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "class",
-      "import",
-      "post",
-      "request_body",
-      "pydantic",
-      "validation"
-    ],
-    "reading_goal": "Reads the structure of the JSON request body, which is validated against a PyDantic model.",
-    "code": "from pydantic import BaseModel\n\nclass SearchRequest(BaseModel):\n    query: str\n    top_k: int = 5\n\n@app.post(\"/search\")\ndef search(req: SearchRequest):\n    return {\"query\": req.query, \"top_k\": req.top_k}",
-    "question_type": "meaning_choice",
-    "question": "If \"top_k\" is not included in the request JSON, what value is used?",
-    "choices": [
-      "0",
-      "Error",
-      "5",
-      "query"
-    ],
-    "answer": "5",
-    "explanation": "This is because the default value for `top_k` in the Pydantic model is set to `int = 5`. The POST body and the Pydantic model work together to convert the JSON sent by the user into a validated object. You can see where the required fields, types, and default values are defined.",
-    "side_card_ids": [],
-    "project_context": "This is the structure used when designing the body of RAG search requests, node extraction requests, and training question requests."
-  },
-  {
-    "id": "PY20_L08_response_model_001",
-    "level": 8,
-    "title": "Reading the response_model",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "class",
-      "fastapi",
-      "response_model",
-      "pydantic",
-      "schema"
-    ],
-    "reading_goal": "Reads a structure that restricts the API response format to Pydantic models.",
-    "code": "class SearchResponse(BaseModel):\n    answer: str\n    citations: list[str]\n\n@app.post(\"/answer\", response_model=SearchResponse)\ndef answer(req: SearchRequest):\n    return {\"answer\": \"...\", \"citations\": [\"doc1\"]}",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of `response_model=SearchResponse`?",
-    "choices": [
-      "Delete the request",
-      "Change the server port",
-      "Adapt the response format to match the SearchResponse schema",
-      "Automatically generates HTML"
-    ],
-    "answer": "Adapt the response format to match the SearchResponse schema",
-    "explanation": "FastAPI uses response_model for OpenAPI documentation and validates, serializes, and filters the returned value according to SearchResponse. Here, answer must be a string and citations a list of strings. Extra internal fields are normally excluded in favor of declared response fields, which can reduce accidental disclosure, but only if the correct model is specified.",
-    "side_card_ids": [
-      "DATA_schema_001"
-    ],
-    "project_context": "It is important to consistently maintain the response structure expected by the front-end app."
-  },
-  {
-    "id": "PY20_L08_http_exception_001",
-    "level": 8,
-    "title": "Reading HTTPExceptions",
-    "concepts": [
-      "if",
-      "def",
-      "function",
-      "return",
-      "import",
-      "http_exception",
-      "status_code",
-      "error_response"
-    ],
-    "reading_goal": "Read the code that returns an HTTP error when the conditions are not met.",
-    "code": "from fastapi import HTTPException\n\n@app.get(\"/items/{item_id}\")\ndef get_item(item_id: str):\n    item = db.get(item_id)\n    if item is None:\n        raise HTTPException(status_code=404, detail=\"item not found\")\n    return item",
-    "question_type": "meaning_choice",
-    "question": "If there is no item, what HTTP status is returned?",
-    "choices": [
-      "200",
-      "304",
-      "404",
-      "500"
-    ],
-    "answer": "404",
-    "explanation": "An HTTPException (status_code=404) returns a \"Not Found\" response. An HTTPException is an exception used in FastAPI to intentionally return an error response. You should check what the status code and detail message indicate to the user.",
-    "side_card_ids": [],
-    "project_context": "This is the method for explicitly handling missing items in the Card/Document/Node Lookup API."
-  },
-  {
-    "id": "PY20_L09_status_code_001",
-    "level": 9,
-    "title": "Reading HTTP Status Code Branches",
-    "concepts": [
-      "if",
-      "return",
-      "try_except",
-      "http_status",
-      "200",
-      "400",
-      "500",
-      "api"
-    ],
-    "reading_goal": "Understand the meaning of the different HTTP status codes returned depending on the situation.",
-    "code": "if not query:\n    raise HTTPException(status_code=400, detail=\"query required\")\n\ntry:\n    result = run_search(query)\nexcept Exception:\n    raise HTTPException(status_code=500, detail=\"server error\")\n\nreturn result",
-    "question_type": "meaning_choice",
-    "question": "Why does it return a 400 error if the query is empty?",
-    "choices": [
-      "Since the server file is missing,",
-      "Since the cache is valid,",
-      "Because the client request was incorrect,",
-      "Because it was a success"
-    ],
-    "answer": "Because the client request was incorrect,",
-    "explanation": "An empty query fails this API's input requirement, so the code raises a client-error 400. Every other Exception from run_search becomes a 500 in this example. A real server should avoid replacing an existing HTTPException with 500, distinguish expected failures, log internal causes safely, and avoid sending sensitive details to the client.",
-    "side_card_ids": [],
-    "project_context": "This is the basics of distinguishing between 400, 404, and 500 errors when debugging APIs."
-  },
-  {
-    "id": "PY20_L09_cors_001",
-    "level": 9,
-    "title": "Reading CORS Middleware",
-    "concepts": [
-      "import",
-      "cors",
-      "middleware",
-      "frontend",
-      "api"
-    ],
-    "reading_goal": "Reads the CORS settings required when the front end calls an API located at a different address.",
-    "code": "from fastapi.middleware.cors import CORSMiddleware\n\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=[\"http://localhost:8790\"],\n    allow_methods=[\"*\"],\n    allow_headers=[\"*\"],\n)",
-    "question_type": "meaning_choice",
-    "question": "Why is `localhost:8790` included in `allow_origins`?",
-    "choices": [
-      "I want to block that address",
-      "I want to change the server port to 8790",
-      "To allow API calls from that address's frontend,",
-      "I'm trying to delete a JSON file"
-    ],
-    "answer": "To allow API calls from that address's frontend,",
-    "explanation": "An origin combines scheme, host, and port. For browser frontend code running at http://localhost:8790 to read an API on another origin, the server must allow that frontend origin in its CORS response. CORS is a cross-origin browser rule, not authentication or API access control. Restrict wildcard methods and headers to the ranges actually needed.",
-    "side_card_ids": [],
-    "project_context": "This is a common issue encountered when connecting a static PWA to a local FastAPI server."
-  },
-  {
-    "id": "PY20_L09_dependency_injection_001",
-    "level": 9,
-    "title": "Depends: Reading About Dependency Injection",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "import",
-      "depends",
-      "dependency_injection",
-      "fastapi"
-    ],
-    "reading_goal": "Read the structure that prepares common dependencies before processing the request.",
-    "code": "from fastapi import Depends\n\ndef get_db():\n    return db\n\n@app.get(\"/items\")\ndef list_items(db=Depends(get_db)):\n    return db.list_items()",
-    "question_type": "meaning_choice",
-    "question": "What is the role of Depends(get_db)?",
-    "choices": [
-      "Delete the database connection information",
-      "It blocks the HTTP request itself",
-      "Pass the result of `get_db` as an argument before running the endpoint.",
-      "Change it to return an HTML page"
-    ],
-    "answer": "Pass the result of `get_db` as an argument before running the endpoint.",
-    "explanation": "Before calling the endpoint, FastAPI resolves get_db and passes its returned value as the db argument of list_items. Depends reuses setup and cleanup for concerns such as authentication, settings, and database sessions. A real session commonly uses a yield dependency to open and close the resource rather than returning one global object, and dependency injection alone does not add authorization.",
-    "side_card_ids": [
-      "PYV102_A7_ARCHITECTURE_DESIGN"
-    ],
-    "project_context": "You can avoid having to repeat database connections, user authentication, and configuration loading for each endpoint."
-  },
-  {
-    "id": "PY20_L09_background_task_001",
-    "level": 9,
-    "title": "Reading BackgroundTasks",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "import",
-      "background_task",
-      "fastapi",
-      "async_job"
-    ],
-    "reading_goal": "It reads the structure that executes the task in the background after a response.",
-    "code": "from fastapi import BackgroundTasks\n\ndef save_log(query: str):\n    logs.append(query)\n\n@app.post(\"/search\")\ndef search(req: SearchRequest, background_tasks: BackgroundTasks):\n    background_tasks.add_task(save_log, req.query)\n    return {\"ok\": True}",
-    "question_type": "meaning_choice",
-    "question": "What does `background_tasks.add_task(save_log, req.query)` mean?",
-    "choices": [
-      "Delete `save_log`",
-      "Fails the request",
-      "Register `save_log` as a background job",
-      "Shut down the server"
-    ],
-    "answer": "Register `save_log` as a background job",
-    "explanation": "add_task registers save_log(req.query) to run after the response is sent. This suits small auxiliary work that should not delay the response, but the task still runs in the server process, can be lost if that process stops, and cannot report failure through the already-sent client response. Use a durable queue and worker for long or must-complete work.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "This pattern can be used to store query logs, usage history, and analytics events."
-  },
-  {
-    "id": "PY20_L09_uvicorn_run_001",
-    "level": 9,
-    "title": "Reading the uvicorn execution command",
-    "concepts": [
-      "uvicorn",
-      "fastapi",
-      "host",
-      "port"
-    ],
-    "reading_goal": "Reads information about which module, app, and port the FastAPI server is running on.",
-    "code": "uvicorn search_api:app --host 127.0.0.1 --port 8000 --reload",
-    "question_type": "meaning_choice",
-    "question": "What does search_api:app mean?",
-    "choices": [
-      "Delete app.py",
-      "Open file number 8000",
-      "Import the app object from the search_api module and run it as an ASGI app",
-      "Clear the browser cache"
-    ],
-    "answer": "Import the app object from the search_api module and run it as an ASGI app",
-    "explanation": "search_api:app names an importable module path and the ASGI application object inside it. The module need not be one file named search_api.py; it can also be a package path. --reload watches source changes for development, so production normally disables it and uses appropriate process and proxy configuration.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "This is the command structure for running a FastAPI application with a local development server."
-  },
-  {
-    "id": "PY20_L10_async_endpoint_001",
-    "level": 10,
-    "title": "Reading an async endpoint",
-    "concepts": [
-      "return",
-      "async",
-      "await",
-      "endpoint",
-      "fastapi"
-    ],
-    "reading_goal": "I'm reading about the structure of using `await` to wait for operations on asynchronous endpoints.",
-    "code": "@app.get(\"/health\")\nasync def health():\n    status = await check_database()\n    return {\"db\": status}",
-    "question_type": "meaning_choice",
-    "question": "What does `await check_database()` mean?",
-    "choices": [
-      "Delete `check_database`",
-      "It always fails immediately.",
-      "Wait until the asynchronous task `check_database` finishes",
-      "Create a new database"
-    ],
-    "answer": "Wait until the asynchronous task `check_database` finishes",
-    "explanation": "await suspends the current health task until the check_database coroutine completes. If that coroutine yields control while waiting for non-blocking I/O, the server can run other ready tasks in the meantime. Merely changing a function to async def does not make a blocking database driver or CPU-bound work non-blocking.",
-    "side_card_ids": [],
-    "project_context": "This often occurs in server code that involves a mix of external APIs, databases, and file I/O."
-  },
-  {
-    "id": "PY20_L10_frontend_fetch_001",
-    "level": 10,
-    "title": "Understanding Front-End Fetch API Calls",
-    "concepts": [
-      "return",
-      "fetch",
-      "frontend",
-      "api",
-      "json"
-    ],
-    "reading_goal": "Understand the process of calling the Local API and reading JSON in browser JavaScript.",
-    "code": "async function search(q) {\n  const res = await fetch(\"http://127.0.0.1:8000/search?q=\" + encodeURIComponent(q));\n  const data = await res.json();\n  return data;\n}",
-    "question_type": "meaning_choice",
-    "question": "Why use `encodeURIComponent(q)`?",
-    "choices": [
-      "To encrypt search terms so they cannot be recovered",
-      "I'm trying to shut down the API server",
-      "To safely include spaces and special characters from search terms in the URL",
-      "I want to convert JSON to CSV"
-    ],
-    "answer": "To safely include spaces and special characters from search terms in the URL",
-    "explanation": "encodeURIComponent percent-encodes spaces, &, #, and other characters so q occupies one query-value position. It is not encryption or access control. fetch normally resolves even for a 404 or 500, so this function should inspect res.ok, and its caller must handle non-JSON responses and network errors.",
-    "side_card_ids": [
-      "PYV158_A1_JSON_FLOW"
-    ],
-    "project_context": "This is the process for integrating the local RAG API into a static PWA."
-  },
-  {
-    "id": "PY20_L10_fetch_error_handling_001",
-    "level": 10,
-    "title": "Read About Handling Fetch Errors",
-    "concepts": [
-      "fetch",
-      "error_handling",
-      "http_status",
-      "frontend"
-    ],
-    "reading_goal": "I'm reading code that clearly throws an error when an HTTP response fails.",
-    "code": "const res = await fetch(\"/api/search?q=lidar\");\nif (!res.ok) {\n  throw new Error(\"API failed: \" + res.status);\n}\nconst data = await res.json();",
-    "question_type": "meaning_choice",
-    "question": "What happens if `res.ok` is false?",
-    "choices": [
-      "It always parses the data correctly.",
-      "Automatically restart the server",
-      "It throws an error and does not proceed to data parsing.",
-      "Change the response to 200"
-    ],
-    "answer": "It throws an error and does not proceed to data parsing.",
-    "explanation": "Response.ok is true for statuses from 200 through 299. When it is false, throw stops this async flow, so this function does not reach res.json. To keep the UI usable, the caller must catch the error and provide a user message or retry action. Handle a network-level fetch rejection at the same boundary.",
-    "side_card_ids": [
-      "WEB_frontend_backend_001"
-    ],
-    "project_context": "This is a practical pattern that prevents the front end from silently ignoring API failures."
-  },
-  {
-    "id": "PY20_L10_api_timeout_retry_001",
-    "level": 10,
-    "title": "Reading a fetch Timeout and AbortController Flow",
-    "concepts": [
-      "return",
-      "timeout",
-      "retry",
-      "fetch",
-      "AbortController"
-    ],
-    "reading_goal": "I'm reading about a system that completes slow API requests within a timeout and retries them if they fail.",
-    "code": "async function fetchWithTimeout(url, ms = 10000) {\n  const controller = new AbortController();\n  const timer = setTimeout(() => controller.abort(), ms);\n  try {\n    return await fetch(url, { signal: controller.signal });\n  } finally {\n    clearTimeout(timer);\n  }\n}",
-    "question_type": "meaning_choice",
-    "question": "When is `controller.abort()` called?",
-    "choices": [
-      "As soon as the request is successful, always",
-      "After parsing the JSON",
-      "ms When a timeout occurs as time passes",
-      "Before the page loads for the first time"
-    ],
-    "answer": "ms When a timeout occurs as time passes",
-    "explanation": "After ms elapses, the setTimeout callback calls controller.abort(), and a still-running fetch normally rejects with AbortError. If fetch settles first, finally clears the timer. This function implements a timeout but no retry at all. If retries are added, distinguish timeout from user cancellation and apply attempt limits and backoff only to safe requests.",
-    "side_card_ids": [
-      "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
-    ],
-    "project_context": "This code prevents the frontend from waiting indefinitely when the local RAG API is slow."
-  },
-  {
-    "id": "PY20_L10_static_plus_api_001",
-    "level": 10,
-    "title": "Distinguishing Between Static PWAs and API Servers",
-    "concepts": [
-      "comment",
-      "static_app",
-      "api_server",
-      "architecture",
-      "pwa"
-    ],
-    "reading_goal": "Understand that static file servers and API servers perform different functions.",
-    "code": "# Static development server\npython -m http.server 8790 --bind 127.0.0.1\n# Serves HTML/CSS/JS/JSON files from a directory\n\n# ASGI API development server\nuvicorn search_api:app --host 127.0.0.1 --port 8000\n# Application code handles search, question, and DB requests",
-    "question_type": "meaning_choice",
-    "question": "Which of the following most closely matches the role of the uvicorn server?",
-    "choices": [
-      "Provide only the HTML files as-is",
-      "Create a Git commit",
-      "Handling dynamic requests such as searches, queries, and database lookups",
-      "Managing Browser Bookmarks"
-    ],
-    "answer": "Handling dynamic requests such as searches, queries, and database lookups",
-    "explanation": "The first command is a development server that mostly serves files directly from the current directory. The second runs an ASGI application whose route functions generate dynamic responses from input. FastAPI can also be configured to serve static files, so the roles are not a technical impossibility to combine; both example settings are for localhost development.",
-    "side_card_ids": [
-      "PYV160_A1_PWA_STATE_STORAGE_FLOW",
-      "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
-    ],
-    "project_context": "This structure distinguishes the responsibilities and development ports of a static frontend and a dynamic API."
-  },
-  {
-    "id": "PY20_L10_api_service_repository_001",
-    "level": 10,
-    "title": "Understanding the API-Service-Repository Flow",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "class",
-      "api",
-      "service",
-      "repository",
-      "architecture"
-    ],
-    "reading_goal": "I understand the structure in which the endpoint does not handle everything itself but delegates tasks to services and repositories.",
-    "code": "@app.get(\"/search\")\ndef search(q: str):\n    return search_service.search(q)\n\nclass SearchService:\n    def search(self, q):\n        chunks = self.repo.find_chunks(q)\n        return self.answer_builder.build(q, chunks)",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best explains why the endpoint calls `search_service.search(q)`?",
-    "choices": [
-      "To eliminate the search logic",
-      "To ensure that q is always an empty string,",
-      "To separate the API layer from the search logic,",
-      "To render HTML directly,"
-    ],
-    "answer": "To separate the API layer from the search logic,",
-    "explanation": "It is easier to maintain the system if the endpoint focuses on requests and responses, while the service handles the actual search logic. The API-Service-Repository flow is a structure in which the endpoint receives requests, the service processes the rules, and the repository handles the database. This structure is advantageous for testing and maintenance.",
-    "side_card_ids": [],
-    "project_context": "This is the structure needed to develop the Education Service/RAG Service MVP in a more streamlined way."
-  },
-  {
-    "id": "PY20_L10_request_logging_001",
-    "level": 10,
-    "title": "Reading Request Log Middleware",
-    "concepts": [
-      "return",
-      "try_except",
-      "import",
-      "print",
-      "middleware",
-      "logging",
-      "request",
-      "api"
-    ],
-    "reading_goal": "Read about the middleware architecture that logs the path and processing time of every request.",
-    "code": "import time\n\n@app.middleware(\"http\")\nasync def log_requests(request, call_next):\n    start = time.perf_counter()\n    status = 500\n    try:\n        response = await call_next(request)\n        status = response.status_code\n        return response\n    finally:\n        elapsed = time.perf_counter() - start\n        print(request.method, request.url.path, status, elapsed)",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of `call_next(request)`?",
-    "choices": [
-      "Block the request unconditionally",
-      "Shut down the server",
-      "Pass the request to the next processing step and receive a response",
-      "Delete the database"
-    ],
-    "answer": "Pass the request to the next processing step and receive a response",
-    "explanation": "call_next passes the request through later middleware and the endpoint and returns the response. Initializing status to 500 lets finally record elapsed time and a failure status even when later processing raises. perf_counter is suitable for elapsed duration because wall-clock adjustments affect it less. In production, use a structured logger and request ID, and do not log sensitive queries or headers.",
-    "side_card_ids": [],
-    "project_context": "This is the foundation of operational code that tracks API usage, response times, and error statuses."
-  }
+    {
+        "id":  "PY20_L07_fastapi_app_001",
+        "level":  7,
+        "title":  "Reading FastAPI Endpoint Decorators",
+        "concepts":  [
+                         "decorator",
+                         "call",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the `@app.get(...)` decorator as separating the Python syntax applied to the function definition below from the meaning of FastAPI route registration.",
+        "code":  "from fastapi import FastAPI\n\napp = FastAPI()\n\n@app.get(\"/health\")\ndef health():\n    return {\"ok\": True}",
+        "question_type":  "multiple_choice",
+        "question":  "Considering both Python syntax and FastAPI semantics, what is the role of `@app.get(\"/health\")`?",
+        "choices":  [
+                        "Apply a decorator to the `health` function immediately below and register it as the GET /health route.",
+                        "Delete the `health` function.",
+                        "Saves the string `/health` to a file.",
+                        "Create a database table."
+                    ],
+        "answer":  "Apply a decorator to the `health` function immediately below and register it as the GET /health route.",
+        "explanation":  "`@` is decorator syntax. `app.get(\"/health\")` creates a decorator and applies it to the `health` function definition immediately below it. FastAPI uses this information to associate the GET /health request with the health function. This is because the decorator is applied to the function definition, and FastAPI’s `get` decorator serves as a route registration. Commonly mistaken answer: Delete the health function. A decorator is not a syntax that removes a function; rather, it is used to wrap or register a defined function. Point of misinterpretation: The `@` line and the function definition immediately below it must be read as a pair. The `@decorator` is applied to the definition immediately below it, and the framework can use this syntax to register a route.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "This is the basic FastAPI structure for registering a health endpoint on a search, RAG, and learning app API server.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "decorator",
+        "reading_goal_internal":  "`@app.get(...)` decorator가 아래 함수 정의에 적용되는 Python 문법과 FastAPI route 등록 의미를 분리해 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A decorator is a Python syntax that wraps or registers an object using an `@expression` immediately above a function or class definition.",
+                                    "how_to_read":  "First, examine the expression following the @ symbol, and then read it in context to determine which function definition immediately below it the decorator applies to.",
+                                    "key_point":  "The registration of the GET /health route refers to the FastAPI library, while the focus on Python syntax applies to the decorator used in the ``health`` function definition.",
+                                    "common_mistake":  "`@app.get(...)` It is easy to assume that the `health` function is called immediately. A decorator is a syntax applied at the time a function is defined and differs from a regular function call."
+                                },
+        "teaching_example":  {
+                                 "code":  "def tag(name):\n    def decorate(func):\n        return func\n    return decorate\n\n@tag(\"ready\")\ndef check():\n    return True",
+                                 "walkthrough":  "The @tag(\"ready\") decorator is applied to the definition of the `check` function immediately below. This is a separate step from the function call that executes `check`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`@` is decorator syntax. `app.get(\"/health\")` creates a decorator and applies it to the `health` function definition immediately below it. FastAPI uses this information to map the GET /health request to the `health` function.",
+                                   "why_correct":  "This is because decorators are applied to function definitions, and FastAPI’s `get` decorator serves to register a route.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Delete the `health` function.",
+                                                               "why_wrong":  "A decorator is not a syntax that removes functions, but is used to wrap or register defined functions.",
+                                                               "misread_step":  "@ The line and the function definition immediately below it should be read as a pair."
+                                                           },
+                                   "takeaway":  "`@decorator` applies to the definition immediately below, and the framework can use this syntax for purposes such as route registration."
+                               },
+        "target_statement":  "@app.get(\"/health\")",
+        "focus_span":  "@app.get(\"/health\")",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "FastAPI",
+                                "decorator",
+                                "GET_endpoint",
+                                "health_check"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY20_L07_get_query_param_001",
+        "level":  7,
+        "title":  "Reading Default Query Parameters",
+        "concepts":  [
+                         "parameter_definition",
+                         "function_definition",
+                         "type_annotation"
+                     ],
+        "reading_goal":  "Interpret `limit: int = 5` in the function definition as a parameter with a default value and track its value when the function is called without arguments.",
+        "code":  "def search(q: str, limit: int = 5):\n    return {\"query\": q, \"limit\": limit}\n\nresult = search(\"lidar\")\nprint(result[\"limit\"])",
+        "question_type":  "output_prediction",
+        "question":  "What value does the last line output?",
+        "choices":  [
+                        "5",
+                        "0",
+                        "None",
+                        "lidar"
+                    ],
+        "answer":  "5",
+        "explanation":  "In the `search` definition, the default value for `limit` is 5. The `search(\"lidar\")` call passes only `q` and does not pass the `limit` argument. Therefore, `limit` is set to 5, and the `limit` value in the returned dictionary is also 5. This is because the default value of the default parameter is used for omitted arguments. A common source of confusion: Since `limit = 5` is defined, omitting the `limit` argument results in 5 being used, not `None`. Point of confusion: You must check whether the parameter definition includes a default value. If a parameter has a default value, the defined default value is used when that argument is omitted in the call.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "The context involves understanding the query parameter structure of a search API, where the search term is provided and the `limit` parameter uses a default value if omitted.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "parameter_definition",
+        "reading_goal_internal":  "함수 정의의 `limit: int = 5`를 기본값이 있는 매개변수로 읽고 생략 호출 시 값을 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A default parameter is a parameter specified in a function definition in the form `name=default_value`, which determines the value to use when the caller omits the value.",
+                                    "how_to_read":  "Separate the parameter name, annotation, and default value after `=`, then check whether the call supplies an argument for that parameter.",
+                                    "key_point":  "The way FastAPI maps to URL query parameters is specific to the framework, while the focus in Python is on the definition of the `limit` default parameter.",
+                                    "common_mistake":  "It is easy to interpret `limit: int = 5` as meaning that only 5 can be used each time the function is called. However, if an argument is passed, that value replaces the default value."
+                                },
+        "teaching_example":  {
+                                 "code":  "def page(size: int = 10):\n    return size\n\nprint(page())",
+                                 "walkthrough":  "Since the `size` value was omitted in the call, the default value of 10 from the definition is used."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "In the `search` definition, the default value for `limit` is 5. The `search(\"lidar\")` call passes only `q` and does not pass a `limit` argument. Therefore, `limit` is 5, and the `limit` value in the returned dictionary is also 5.",
+                                   "why_correct":  "This is because the default value of the default parameter is used for the omitted argument.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "None",
+                                                               "why_wrong":  "Since `limit` is defined as ``= 5``, it will be set to 5 rather than `None` if omitted.",
+                                                               "misread_step":  "You must check whether the parameter definition has a default value."
+                                                           },
+                                   "takeaway":  "For parameters with default values, if the corresponding argument is omitted in a call, the defined default value is used."
+                               },
+        "target_statement":  "def search(q: str, limit: int = 5):",
+        "focus_span":  "limit: int = 5",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "FastAPI",
+                                "query_parameter",
+                                "default_value",
+                                "search_API"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY20_L08_path_param_001",
+        "level":  8,
+        "title":  "Read the last path segment of the URL as [-1]",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Interpret the rule that a negative index of -1 in a sequence points to the last item within the context of path parameters.",
+        "code":  "parts = \"/cards/PY20_001\".strip(\"/\").split(\"/\")\ncard_id = parts[-1]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the string stored in `card_id`?",
+        "choices":  [
+                        "cards",
+                        "PY20_001",
+                        "/cards",
+                        "-1"
+                    ],
+        "answer":  "PY20_001",
+        "explanation":  "Splitting the path results in a list of two items. ``parts[-1]`` reads the last item in that list, ``PY20_001``, and the assignment statement stores that value in ``card_id``. This is because the ``-1`` index of a Python sequence selects the last item. A common source of confusion: `cards` `cards` is the first item in the list and the value to be read as ``parts[0]``. Point of confusion: This occurs when the direction of negative indices is mistakenly interpreted as counting from the beginning. ``seq[-1]`` **always** reads the last item of the sequence.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to code that treats the final segment of a URL as an identifier in the Card, Document, and Node detail APIs.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "sequence에서 음수 인덱스 -1이 마지막 항목을 가리키는 규칙을 path parameter 문맥에서 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`sequence[index]` is a subscription that reads items at the specified position. A negative index `-1` points to the very last item.",
+                                    "how_to_read":  "First, check the actual order of the items in `parts`, and interpret `-1` as selecting the last item.",
+                                    "key_point":  "The FastAPI path parameter is in the context of coverage, and the Python syntax directly evaluated in this card is `[-1]`, which retrieves the last item in a sequence.",
+                                    "common_mistake":  "It is easy to mistake `-1` for the first item or a non-existent position. In a Python sequence, `-1` refers to the last item—the one at the end."
+                                },
+        "teaching_example":  {
+                                 "code":  "parts = \"users/alice\".split(\"/\")\nuser_id = parts[-1]",
+                                 "walkthrough":  "`parts` is `[\"users\", \"alice\"]`, and `parts[-1]` returns the last string, `alice`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Splitting the path results in a list of two items. ``parts[-1]`` reads the last item in that list, ``PY20_001``, and the assignment statement stores that value in ``card_id``.",
+                                   "why_correct":  "This is because the `-1` index in a Python sequence selects the last item.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "cards",
+                                                               "why_wrong":  "`cards` is the first item in the list and is the value to be read as `parts[0]`.",
+                                                               "misread_step":  "This is an example of misinterpreting the direction of negative indices as being counted from the beginning."
+                                                           },
+                                   "takeaway":  "`seq[-1]` It **always reads the last item in the sequence**."
+                               },
+        "target_statement":  "card_id = parts[-1]",
+        "focus_span":  "parts[-1]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "FastAPI",
+                                "path parameter",
+                                "URL segment",
+                                "card detail"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY20_L08_post_body_pydantic_001",
+        "level":  8,
+        "title":  "Reading the top_k value, which is omitted as a default parameter",
+        "concepts":  [
+                         "parameter_definition",
+                         "function_definition",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the function definition in the form ``name=default`` and track what value is assigned to the `parameter` when that argument is omitted from the call.",
+        "code":  "def make_request(query, top_k=5):\n    return {\"query\": query, \"top_k\": top_k}\n\nrequest = make_request(\"python\")",
+        "question_type":  "multiple_choice",
+        "question":  "What value is used for `make_request(\"python\")` in the `top_k` call?",
+        "choices":  [
+                        "None",
+                        "0",
+                        "5",
+                        "python"
+                    ],
+        "answer":  "5",
+        "explanation":  "The ``top_k=5`` in the function definition specifies the default value. Since the actual call passes only `query`, ``top_k`` is assigned the value 5 specified in the definition. This is because a default parameter uses the specified default value when that argument is omitted in a call. Common misconception: None`top_k` has an explicit default value of 5, so it does not become None even if omitted. Point of confusion: This occurs when the omission of an argument is mistakenly equated with the absence of a default value. `parameter=default` defines the **value to be used when the argument is omitted in a call**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to code that reads the structure of the RAG search and node extraction API, which applies default values when optional request fields are omitted.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "parameter_definition",
+        "reading_goal_internal":  "함수 정의의 `name=default` 형태를 읽고 호출에서 해당 argument가 빠졌을 때 어떤 값이 parameter에 들어가는지 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`parameter=default` in a function definition is syntax that specifies the default value to use when the caller omits that argument.",
+                                    "how_to_read":  "First, check the default value in the definition, then verify whether that argument is present in the actual call. If it is not present, use the default value specified in the definition.",
+                                    "key_point":  "This connects to Pydantic default field values, but the direct Python syntax focus of this card is `top_k=5` in the function parameter definition.",
+                                    "common_mistake":  "It is easy to think a parameter automatically becomes `None` when no value is passed in the call. If a default value is defined, that default is used."
+                                },
+        "teaching_example":  {
+                                 "code":  "def make_job(name, retries=3):\n    return {\"name\": name, \"retries\": retries}\n\njob = make_job(\"index\")",
+                                 "walkthrough":  "Because the `retries` argument is omitted in the call, the default value 3 is bound to the parameter."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`top_k=5` in the function definition sets the default value. Because the actual call passes only `query`, `top_k` receives the value 5 from the definition.",
+                                   "why_correct":  "The \"default parameter\" uses a default value when that argument is omitted in a call.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "None",
+                                                               "why_wrong":  "Since `top_k` has an explicit default value of 5, omitting it does not result in `None`.",
+                                                               "misread_step":  "This is an example where the omission of an argument and the absence of a default value are treated as the same situation."
+                                                           },
+                                   "takeaway":  "`parameter=default` defines the **value to use when an argument is omitted in a call**."
+                               },
+        "target_statement":  "def make_request(query, top_k=5):",
+        "focus_span":  "top_k=5",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "POST body",
+                                "Pydantic",
+                                "default value",
+                                "top_k"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY20_L08_response_model_001",
+        "level":  8,
+        "title":  "response_model=... Reading keyword arguments",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "assignment",
+                         "name_reference",
+                         "class_definition"
+                     ],
+        "reading_goal":  "In a function call, the structure “`name=value`” is a keyword argument, where the object on the right is passed as the specified parameter.",
+        "code":  "class SearchResponse:\n    pass\n\ndef register_route(path, *, response_model):\n    return {\"path\": path, \"schema\": response_model.__name__}\n\nroute = register_route(\"/answer\", response_model=SearchResponse)",
+        "question_type":  "multiple_choice",
+        "question":  "`response_model` What is the value passed as a parameter?",
+        "choices":  [
+                        "SearchResponse class object",
+                        "\"/answer\" string",
+                        "route dict",
+                        "None"
+                    ],
+        "answer":  "SearchResponse class object",
+        "explanation":  "In `response_model=SearchResponse`, the left side is the parameter name and the right side is the expression to be passed. Since `SearchResponse` is a class, an instance of that class is passed to the parameter. This is because keyword arguments associate a value with a specific parameter in the call using the `parameter=value` format. A common source of confusion: The string \"/answer\" `/answer` is the first positional argument and is not the value associated with `response_model`. Point of Misinterpretation: This occurs when the target to which positional and keyword arguments are bound is not distinguished. The `name=value` within the call is a **keyword argument that passes `value` to a parameter named `name`**.",
+        "side_card_ids":  [
+                              "DATA_schema_001"
+                          ],
+        "project_context":  "This is linked to code that reads the call format, which connects the API response structure expected by the front-end app to an explicit response schema.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "함수 호출에서 `name=value` 형태가 keyword argument이며 오른쪽 객체가 지정한 parameter로 전달되는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The `parameter=value` form inside a call is a keyword argument that names the parameter directly when passing the value.",
+                                    "how_to_read":  "Read the code by distinguishing the parameter name on the left side of the equals sign from the actual value passed on the right side.",
+                                    "key_point":  "FastAPI’s response schema is a domain-specific concept, and the focus of the Python syntax is on passing the keyword argument `response_model=SearchResponse`.",
+                                    "common_mistake":  "The `=` inside a call is easy to read as a standard variable assignment. Inside function call parentheses, it is keyword argument syntax used to specify parameter names."
+                                },
+        "teaching_example":  {
+                                 "code":  "class UserSchema:\n    pass\n\ndef register(path, *, model):\n    return model.__name__\n\nschema_name = register(\"/users\", model=UserSchema)",
+                                 "walkthrough":  "`model=UserSchema` It passes an instance of the ``UserSchema`` class by name to the ``model`` parameter."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "In `response_model=SearchResponse`, the left side is the parameter name and the right side is the expression to be passed. Since `SearchResponse` is a class, an instance of that class is passed to the parameter.",
+                                   "why_correct":  "A keyword argument is used because it associates a value with a specific parameter in the call using the `parameter=value` format.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "\"/answer\" string",
+                                                               "why_wrong":  "`/answer` is the first positional argument and is not a value bound to ``response_model``.",
+                                                               "misread_step":  "This is a case where the distinction between positional and keyword arguments has not been made."
+                                                           },
+                                   "takeaway":  "The `name=value` in the call is a **keyword argument that passes `value` to a parameter named `name`**."
+                               },
+        "target_statement":  "route = register_route(\"/answer\", response_model=SearchResponse)",
+        "focus_span":  "response_model=SearchResponse",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "FastAPI",
+                                "response_model",
+                                "response schema",
+                                "API contract"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY20_L08_http_exception_001",
+        "level":  8,
+        "title":  "Starting the error flow for missing items using `raise`",
+        "concepts":  [
+                         "raise_statement",
+                         "call",
+                         "if_statement",
+                         "except_clause",
+                         "class_definition"
+                     ],
+        "reading_goal":  "Read the sequence in which the normal flow is interrupted the moment `raise` is executed within the `if` condition, and control flows to the exception handling path.",
+        "code":  "class HTTPError(Exception):\n    def __init__(self, status_code):\n        self.status_code = status_code\n\ntry:\n    item = None\n    if item is None:\n        raise HTTPError(404)\n    status = 200\nexcept HTTPError as error:\n    status = error.status_code",
+        "question_type":  "multiple_choice",
+        "question":  "What is the final `item` value when `None` is `status`?",
+        "choices":  [
+                        "200",
+                        "404",
+                        "None",
+                        "HTTPError"
+                    ],
+        "answer":  "404",
+        "explanation":  "Since `item` is None, the program enters the `if` block. When `raise HTTPError(404)` is executed, the flow immediately switches to the exception handling path, skipping `status = 200`. The `except` clause extracts the `status_code` (404) from the exception object and stores it. This is because `raise` raises an exception and immediately halts normal execution at that point. A common source of confusion: The line `status = 200` is located in the normal execution path following the `raise`, so it is not reached during this execution. Point of Misinterpretation: This occurs when one reads that the normal code below continues to execute even after `raise` is executed. When `raise` is encountered, **normal execution stops at that point and transitions to the exception handling path**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to code that, when encountering a missing item in the card, document, or node query API, does not return it as a valid response but instead triggers an explicit 404 error flow.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "raise_statement",
+        "reading_goal_internal":  "if 조건 안의 raise가 실행되는 순간 정상 흐름이 중단되고 예외 처리 경로로 이동하는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`raise SomeError(...)` This statement creates an exception object and immediately interrupts the current normal execution flow to pass it to the exception handler.",
+                                    "how_to_read":  "First, check the conditions under which `raise` is executed; if it is executed, do not continue reading the normal flow below it, but instead proceed to the matching `except` block or the caller’s exception handler.",
+                                    "key_point":  "\"404\" refers to the API domain, and the focus of the Python syntax is that **`raise` interrupts the current normal flow**.",
+                                    "common_mistake":  "It is easy to assume that the normal `return` following `raise` is executed next. However, when an exception is unhandled, the program does not continue along the normal path from the point where `raise` occurs."
+                                },
+        "teaching_example":  {
+                                 "code":  "class MissingError(Exception):\n    pass\n\ntry:\n    value = None\n    if value is None:\n        raise MissingError(\"missing\")\nexcept MissingError:\n    state = \"not found\"",
+                                 "walkthrough":  "Since the condition is true, `raise` is executed, interrupting the normal flow of execution and causing the program to proceed to `except MissingError`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since `item` is `None`, the program enters the `if` block. When `raise HTTPError(404)` is executed, the flow immediately switches to the exception handling path, skipping `status = 200`. The `except` clause extracts the `status_code` (404) from the exception object and stores it.",
+                                   "why_correct":  "This is because `raise` raises an exception and immediately terminates normal execution.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "200",
+                                                               "why_wrong":  "`status = 200` is on the normal path after `raise`, so this execution never reaches it.",
+                                                               "misread_step":  "This is an instance where the learner interpreted that the normal code below continues to execute even after `raise` is executed."
+                                                           },
+                                   "takeaway":  "When you encounter `raise`, read it as **stopping the normal flow at that point and moving to the exception handling path**."
+                               },
+        "target_statement":  "raise HTTPError(404)",
+        "focus_span":  "raise HTTPError(404)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "HTTPException",
+                                "404",
+                                "missing item",
+                                "API error"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY20_L09_status_code_001",
+        "level":  9,
+        "title":  "Reading the \"empty query\" error with status_code=400",
+        "concepts":  [
+                         "argument_passing",
+                         "raise_statement",
+                         "call",
+                         "if_statement",
+                         "class_definition"
+                     ],
+        "reading_goal":  "Read the structure where 400 is passed as a keyword argument to the HTTPException constructor when input validation fails.",
+        "code":  "class HTTPException(Exception):\n    def __init__(self, status_code, detail):\n        self.status_code = status_code\n        self.detail = detail\n\nquery = \"\"\ntry:\n    if not query:\n        raise HTTPException(status_code=400, detail=\"query required\")\nexcept HTTPException as exc:\n    status = exc.status_code",
+        "question_type":  "multiple_choice",
+        "question":  "`status` What value is stored in ?",
+        "choices":  [
+                        "200",
+                        "400",
+                        "404",
+                        "500"
+                    ],
+        "answer":  "400",
+        "explanation":  "An empty query enters the `if` block and raises an `HTTPException` with `status_code=400`. The `except` block reads 400 because that is the actual keyword argument value passed to the constructor. Commonly confused incorrect answer: 500. 500 is a status code used for internal server errors, but this branch is for missing client input. Point of misinterpretation: This occurs when the cause of the error and the role of the status code are not distinguished. HTTP status codes are interpreted in conjunction with the **actual cause of the branch and the constructor argument**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This is linked to a response design that distinguishes between a missing required query in the search API (returns a 400) and an unexpected internal server failure (returns a separate 500).",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "입력 validation 실패 시 HTTPException 생성자에 400이 keyword argument로 전달되는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`status_code=400` is a keyword argument that specifies the parameter name when passing a value in a call.",
+                                    "how_to_read":  "We’ll separate the name on the left side of the equals sign from the actual value on the right to see which settings are determined by the constructor.",
+                                    "key_point":  "An empty query can be classified as a client request error—resulting from the client failing to provide the required input—rather than an internal server failure.",
+                                    "common_mistake":  "It’s easy to assume that all API errors are handled as 500 errors. However, you can distinguish between input validation failures and internal server errors."
+                                },
+        "teaching_example":  {
+                                 "code":  "class AppError(Exception):\n    def __init__(self, status_code):\n        self.status_code = status_code\n\nerror = AppError(status_code=422)",
+                                 "walkthrough":  "The value 422 for the `status_code` keyword argument is stored in `error.status_code`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "An empty query triggers the `if` block and raises an `HTTPException` with `status_code=400`. The `except` block catches the 400 error.",
+                                   "why_correct":  "This is because the actual value passed to the constructor as a keyword argument is 400.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "500",
+                                                               "why_wrong":  "500 is a status code that can be used for internal server errors, and the current branch is the \"missing client input\" branch.",
+                                                               "misread_step":  "This is an example where the cause of the error and the role of the status code were not distinguished."
+                                                           },
+                                   "takeaway":  "HTTP status codes are read in conjunction with the **actual cause of the branch and the constructor argument**."
+                               },
+        "target_statement":  "raise HTTPException(status_code=400, detail=\"query required\")",
+        "focus_span":  "status_code=400",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "HTTP status",
+                                "400",
+                                "500",
+                                "API validation",
+                                "client error"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY20_L09_cors_001",
+        "level":  9,
+        "title":  "Reading the `CORS allow_origins` keyword argument",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "literal",
+                         "class_definition"
+                     ],
+        "reading_goal":  "Read the structure where the list of frontend origins is passed as a named argument in the middleware configuration call.",
+        "code":  "class App:\n    def __init__(self):\n        self.middleware = {}\n    def add_middleware(self, name, allow_origins):\n        self.middleware[name] = allow_origins\n\napp = App()\napp.add_middleware(\"CORSMiddleware\", allow_origins=[\"http://localhost:8790\"])\nallowed = app.middleware[\"CORSMiddleware\"]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `origin` stored in `allowed`?",
+        "choices":  [
+                        "http://localhost:8790",
+                        "http://localhost:8000",
+                        "https://example.com",
+                        "All source"
+                    ],
+        "answer":  "http://localhost:8790",
+        "explanation":  "The only item in the list passed to `allow_origins` is `http://localhost:8790`, and that list is stored in the configuration. The keyword argument value itself is the list of allowed origins. Common wrong answer: all origins. The current code specifies one particular origin rather than a wildcard.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This relates to the process of aligning the browser’s CORS allowed origins when developing a local frontend alongside a separate API server.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "middleware 설정 호출에서 frontend origin 목록이 이름 있는 argument로 전달되는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`allow_origins=[...]` is a keyword argument that passes a list value to the call.",
+                                    "how_to_read":  "Check the keyword name and the list item to its right.",
+                                    "key_point":  "Since an origin is a combination of scheme, host, and port, that origin must be included in the list to allow access to the localhost:8790 frontend.",
+                                    "common_mistake":  "It is easy to think CORS permission also provides user authentication. CORS is configuration related to browser cross-origin rules."
+                                },
+        "teaching_example":  {
+                                 "code":  "class App:\n    def configure(self, allow_origins):\n        return allow_origins\n\napp = App()\norigins = app.configure(allow_origins=[\"http://localhost:3000\"])",
+                                 "walkthrough":  "A list containing a single `origin` is passed to the `allow_origins` keyword argument."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The only item in the list passed to `allow_origins` is `http://localhost:8790`, and that list is stored in the configuration.",
+                                   "why_correct":  "This is because the keyword argument value itself is a list of allowed origins.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "All source",
+                                                               "why_wrong":  "The current code specifies only one specific origin, not a wildcard.",
+                                                               "misread_step":  "This is a case where the origin setting was confused with other settings, such as the wildcard in `allow_methods/headers`."
+                                                           },
+                                   "takeaway":  "The CORS settings specify the **exact origin strings** to be allowed."
+                               },
+        "target_statement":  "app.add_middleware(\"CORSMiddleware\", allow_origins=[\"http://localhost:8790\"])",
+        "focus_span":  "allow_origins=[\"http://localhost:8790\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "CORS",
+                                "middleware",
+                                "frontend",
+                                "origin",
+                                "localhost"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY20_L09_dependency_injection_001",
+        "level":  9,
+        "title":  "Reading injection parameters of the form `db=Depends(get_db)`",
+        "concepts":  [
+                         "parameter_definition",
+                         "call",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the structure in which the default expression of a function parameter is linked to a dependency provider.",
+        "code":  "class DB:\n    def list_items(self):\n        return [\"a\", \"b\"]\n\ndef get_db():\n    return DB()\n\ndef Depends(provider):\n    return provider()\n\ndef list_items(db=Depends(get_db)):\n    return db.list_items()\n\nresult = list_items()",
+        "question_type":  "multiple_choice",
+        "question":  "`result` What is the value of ?",
+        "choices":  [
+                        "[\"a\", \"b\"]",
+                        "DB",
+                        "get_db",
+                        "None"
+                    ],
+        "answer":  "[\"a\", \"b\"]",
+        "explanation":  "`get_db` creates a DB instance, and `Depends` returns its value. That object is used as the default for `db`, and the result of the `list_items` method is returned. This is because the actual DB object is bound to the default parameter. Common misconception: The `get_db` result contains the DB’s `list_items` return value, not the `provider` function itself. Point of confusion: This occurs when the dependency provider is confused with the final result of the endpoint. Read the DI code as **provider → dependency resolution → endpoint parameter → actual usage**.",
+        "side_card_ids":  [
+                              "PYV102_A7_ARCHITECTURE_DESIGN"
+                          ],
+        "project_context":  "This ties into a structure where common preparatory tasks—such as database sessions, authentication, and configuration—are defined and injected outside the endpoint function.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "parameter_definition",
+        "reading_goal_internal":  "함수 parameter의 default expression이 dependency provider와 연결되는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`parameter=expression` is a parameter definition with a default value used when an argument is omitted in a call.",
+                                    "how_to_read":  "Distinguish between parameter names and default expressions on the right side of the equals sign.",
+                                    "key_point":  "In FastAPI, `Depends` is a mechanism that resolves dependencies before an endpoint is executed and provides them as arguments, such as a database.",
+                                    "common_mistake":  "It’s easy to assume that using dependency injection automatically handles authorization checks. However, the role varies depending on which dependencies are defined."
+                                },
+        "teaching_example":  {
+                                 "code":  "def provide():\n    return \"service\"\n\ndef Inject(provider):\n    return provider()\n\ndef run(service=Inject(provide)):\n    return service\n\nresult = run()",
+                                 "walkthrough":  "If the `service` argument is omitted, the `service` string—which is the result of the default expression—is used."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`get_db` creates a DB instance, and `Depends` returns its value. That object is used as the default for `db`, and the result of the `list_items` method is returned.",
+                                   "why_correct":  "This is because the `default parameter` is actually linked to a DB object.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "get_db",
+                                                               "why_wrong":  "The `result` variable contains the `list_items` return value from the database, not the `provider` function itself.",
+                                                               "misread_step":  "This is an instance where the final results of the dependency provider and the endpoint were confused."
+                                                           },
+                                   "takeaway":  "The DI code is read as **provider → dependency resolution → endpoint parameter → actual usage**."
+                               },
+        "target_statement":  "def list_items(db=Depends(get_db)):",
+        "focus_span":  "db=Depends(get_db)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "architecture_and_design",
+        "coverage_topics":  [
+                                "dependency injection",
+                                "Depends",
+                                "DB",
+                                "endpoint"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY20_L09_background_task_001",
+        "level":  9,
+        "title":  "Registering the `save_log` task with `add_task()`",
+        "concepts":  [
+                         "call",
+                         "argument_passing",
+                         "subscription",
+                         "class_definition",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the structure where a function object and a query value are passed to a method call to register information about a task to be executed later.",
+        "code":  "class BackgroundTasks:\n    def __init__(self):\n        self.tasks = []\n    def add_task(self, func, arg):\n        self.tasks.append((func.__name__, arg))\n\ndef save_log(query):\n    pass\n\nrequest = {\"query\": \"rag\"}\nbackground_tasks = BackgroundTasks()\nbackground_tasks.add_task(save_log, request[\"query\"])\nregistered = background_tasks.tasks[0]",
+        "question_type":  "multiple_choice",
+        "question":  "`registered` What is the value of ?",
+        "choices":  [
+                        "(\"save_log\", \"rag\")",
+                        "(\"rag\", \"save_log\")",
+                        "(\"save_log\", None)",
+                        "[]"
+                    ],
+        "answer":  "(\"save_log\", \"rag\")",
+        "explanation":  "`add_task` takes a `save_log` function object and a `rag` string, and stores the function name and argument as a tuple. This is because the method definition appends `(func.__name__, arg)` to the task list. Common mistake: (\"rag\", \"save_log\")—the argument passing order is function, then query. Misreading point: This occurs when the order of positional arguments in the method call is reversed. Registering a background task follows the sequence: **callable → argument → task queue registration**.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "This ties into a workflow that registers additional tasks—such as storing small logs—to be processed after the response, without delaying the search response.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "method call에 함수 객체와 query 값을 전달해 나중에 실행할 작업 정보를 등록하는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`obj.add_task(func, arg)` A method call is a way to pass a function and its arguments to an object’s method for execution.",
+                                    "how_to_read":  "Distinguish whether the first argument is a callable and whether the subsequent argument is a value to be passed to that callable.",
+                                    "key_point":  "In practice, FastAPI BackgroundTasks can be used to register small additional tasks to be executed after a response is sent.",
+                                    "common_mistake":  "It’s easy to assume that `save_log` is executed immediately when `add_task` is called. The key point is that the task is registered."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Tasks:\n    def __init__(self): self.items = []\n    def add_task(self, func, arg): self.items.append((func.__name__, arg))\n\ndef save(value): pass\n\ntasks = Tasks()\ntasks.add_task(save, \"x\")",
+                                 "walkthrough":  "The function name `save` and the argument `x` are added to the task list."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`add_task` takes a `save_log` function object and the string ``rag``, and stores the function name and argument as a tuple.",
+                                   "why_correct":  "This is because the method definition appends `(func.__name__, arg)` to the task list.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "(\"rag\", \"save_log\")",
+                                                               "why_wrong":  "The order of argument passing is function, then query.",
+                                                               "misread_step":  "This is a case where the order of the positional arguments in a method call has been reversed."
+                                                           },
+                                   "takeaway":  "Registering a background task is described as **callable → argument → task queue registration**."
+                               },
+        "target_statement":  "background_tasks.add_task(save_log, request[\"query\"])",
+        "focus_span":  "background_tasks.add_task(save_log, request[\"query\"])",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "async_and_concurrency",
+        "coverage_topics":  [
+                                "background task",
+                                "FastAPI",
+                                "add_task",
+                                "response"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY20_L09_uvicorn_run_001",
+        "level":  9,
+        "title":  "Split the `search_api:app` reference into the module and app names",
+        "concepts":  [
+                         "assignment",
+                         "call",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the flow of unpacking the ASGI application reference—separated by colons—into two values and assigning them to respective variables.",
+        "code":  "app_ref = \"search_api:app\"\nmodule_name, app_name = app_ref.split(\":\")",
+        "question_type":  "multiple_choice",
+        "question":  "`module_name` What are the possible combinations of values for ``app_name``?",
+        "choices":  [
+                        "search_api / app",
+                        "app / search_api",
+                        "search_api:app / None",
+                        "uvicorn / app"
+                    ],
+        "answer":  "search_api / app",
+        "explanation":  "`search_api:app`.split(\u0027:\u0027) creates `[\u0027search_api\u0027, \u0027app\u0027]`, and the unpacking assignment stores the values in the two variables in order. This is because the colon separates the module name from the object name. Common mistake: The order of the split results for `app` and `search_api` is preserved from the left side of the original string. Misinterpretation: This occurs when the order of the unpacking variables is reversed. ASGI references are read in the format **module path : application object**.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "This relates to the structure used when running a FastAPI/ASGI app with uvicorn to specify the importable module path and the application object name.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "colon으로 구분된 ASGI application reference를 두 값으로 나눠 각 변수에 unpack하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`a, b = iterable` is an unpacking assignment that stores the values of the iterable sequentially into multiple variables.",
+                                    "how_to_read":  "Check how many values the expression on the right produces and match them to the order of the names on the left.",
+                                    "key_point":  "`search_api:app` The first part represents the path to the module to be imported, and the second part represents the name of the application object within it.",
+                                    "common_mistake":  "It is easy to think `search_api:app` is one Python variable name. In uvicorn context, this notation separates a module from an object."
+                                },
+        "teaching_example":  {
+                                 "code":  "ref = \"package:service\"\nmodule, name = ref.split(\":\")",
+                                 "walkthrough":  "\"module\" becomes \"package,\" and \"name\" becomes \"service.\""
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`search_api:app`.split(\u0027:\u0027) creates `[\u0027search_api\u0027, \u0027app\u0027]`, and unpacking assignment stores the elements in the two variables in order.",
+                                   "why_correct":  "This is because the colon separates module and object names.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "app / search_api",
+                                                               "why_wrong":  "The order of the split results is preserved starting from the left of the original string.",
+                                                               "misread_step":  "This is an example of applying variable unpacking in the reverse order."
+                                                           },
+                                   "takeaway":  "Read an ASGI reference in the form **module path : application object**."
+                               },
+        "target_statement":  "module_name, app_name = app_ref.split(\":\")",
+        "focus_span":  "app_ref.split(\":\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "uvicorn",
+                                "ASGI",
+                                "module path",
+                                "app object",
+                                "host",
+                                "port"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY20_L10_async_endpoint_001",
+        "level":  10,
+        "title":  "Using `await` to check the database and retrieve the coroutine’s return value",
+        "concepts":  [
+                         "await_expression",
+                         "async_function_definition",
+                         "call",
+                         "assignment",
+                         "return_statement"
+                     ],
+        "reading_goal":  "`await coroutine()` Read the sequence that waits for this asynchronous operation to complete, uses its return value as the result of the expression, and stores it in the variable on the left.",
+        "code":  "async def check_database():\n    return \u0027ok\u0027\n\nasync def health():\n    status = await check_database()\n    return {\u0027db\u0027: status}",
+        "question_type":  "meaning_choice",
+        "question":  "`check_database()` If ``\u0027ok\u0027`` returns ``await check_database()``, what is the result of the expression ``?",
+        "choices":  [
+                        "ok",
+                        "True",
+                        "check_database",
+                        "None"
+                    ],
+        "answer":  "ok",
+        "explanation":  "1) `health` is executed and creates a `check_database()` coroutine. 2) At the `await` point, it waits for that coroutine to complete. 3) `check_database` returns the string `ok`. 4) The value of the `await` expression also becomes `ok`. 5) That value is stored in `status`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "The FastAPI health endpoint is connected to server code that waits for the results of an asynchronous database status check and then includes them in the response.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "await_expression",
+        "reading_goal_internal":  "`await coroutine()`이 비동기 작업의 완료를 기다리고 그 반환값을 표현식 결과로 만들어 왼쪽 변수에 저장하는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`await` suspends the current coroutine until an awaitable asynchronous operation is complete and returns the result as the value of the expression.",
+                                    "how_to_read":  "Read `status = await check_database()` as starting the `check_database()` asynchronous operation, waiting for its completed result, and then assigning that value to `status`.",
+                                    "key_point":  "The result of `await` is not simply a True/False value indicating that it “waited,” but rather **the actual value returned by the operation that was awaited**.",
+                                    "common_mistake":  "It’s easy to assume that simply writing `async def` causes all internal code to run in parallel automatically. `await` indicates the point where the current coroutine is waiting for a specific asynchronous result."
+                                },
+        "teaching_example":  {
+                                 "code":  "async def load_status():\n    return \u0027ready\u0027\n\nasync def main():\n    status = await load_status()\n    return status",
+                                 "walkthrough":  "When `load_status` completes and returns `ready`, the result of the `await` expression also becomes `ready` and is stored in `status`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `health` is executed and creates a `check_database()` coroutine. 2) At the `await` point, it waits for that coroutine to complete. 3) `check_database` returns the string `ok`. 4) The value of the `await` expression also becomes `ok`. 5) That value is stored in `status`.",
+                                   "why_correct":  "`await` Since it returns the result of a completed awaitable, the expression’s value in this case is ``ok``.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "True",
+                                                               "why_wrong":  "Instead of automatically converting `await` to a Boolean indicating success or failure, pass the actual string returned by `check_database`.",
+                                                               "misread_step":  "Distinguish between the role of `await` itself and the return value of the function being awaited, then connect the two flows."
+                                                           },
+                                   "takeaway":  "`await` It is read in the following order: **wait for the asynchronous task to complete → receive the task’s return value → use it in the outer expression**."
+                               },
+        "target_statement":  "await check_database()",
+        "focus_span":  "await check_database()",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "async_and_concurrency",
+        "coverage_topics":  [
+                                "fastapi",
+                                "async_endpoint",
+                                "await",
+                                "database_health"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY20_L10_frontend_fetch_001",
+        "level":  10,
+        "title":  "Use the `quote()` function to encode search terms as a URL-safe string",
+        "concepts":  [
+                         "call",
+                         "from_import_statement",
+                         "assignment",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Pass the current search string to the `quote(query)` function call and read the returned percent-encoded string.",
+        "code":  "from urllib.parse import quote\n\nquery = \u0027air taxi\u0027\nencoded = quote(query)\nprint(encoded)",
+        "question_type":  "output_prediction",
+        "question":  "`quote(query)` What is the string returned by this function?",
+        "choices":  [
+                        "air%20taxi",
+                        "air taxi",
+                        "air+taxi",
+                        "True"
+                    ],
+        "answer":  "air%20taxi",
+        "explanation":  "1) `query` contains the string ``air taxi``. 2) That string is passed as an argument to `quote()`. 3) `quote()` percent-encodes the whitespace characters as ``%20``. 4) It returns a new string: ``air%20taxi``. 5) The return value is stored in `encoded`.",
+        "side_card_ids":  [
+                              "PYV158_A1_JSON_FLOW"
+                          ],
+        "project_context":  "This ties into the process of safely including search terms containing spaces or special characters in query parameters in a static frontend or Python API client.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "`quote(query)` 함수 호출에 현재 검색 문자열을 전달하고, 반환된 percent-encoded 새 문자열을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`quote(value)` is a function call in the Python standard library that returns a new string in which characters with special meaning in URLs are percent-encoded.",
+                                    "how_to_read":  "First, check the actual string of the query, pass that value as an argument to `quote()`, and then read the new string returned by the function as the result of the call.",
+                                    "key_point":  "URL encoding does not encrypt search terms; rather, it **converts them into a string format that can be safely represented within a URL**.",
+                                    "common_mistake":  "It’s easy to assume that calling a function automatically changes the original `query` variable itself. `quote()` returns a new, encoded string."
+                                },
+        "teaching_example":  {
+                                 "code":  "from urllib.parse import quote\nterm = \u0027uam test\u0027\nencoded = quote(term)\nprint(encoded)",
+                                 "walkthrough":  "`uam%20test`, where `spaces` has been replaced with ``%20``, is created as the new return value."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `query` contains the string ``air taxi``. 2) That string is passed as an argument to `quote()`. 3) `quote()` percent-encodes the whitespace characters as ``%20``. 4) It returns a new string: ``air%20taxi``. 5) The return value is stored in `encoded`.",
+                                   "why_correct":  "Since the result of Python’s `urllib.parse.quote(\u0027air taxi\u0027)` is `air%20taxi`, that string is the correct answer.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "air+taxi",
+                                                               "why_wrong":  "`quote()` encodes this space as ``%20``. The format ``+`` can be found in other URL encoding functions/rules.",
+                                                               "misread_step":  "Verify that the function used is indeed ``quote()``, and read the string returned by that function."
+                                                           },
+                                   "takeaway":  "Function calls are read in the following order: **check input values → function transformation → where the new return value is stored**."
+                               },
+        "target_statement":  "quote(query)",
+        "focus_span":  "quote(query)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "frontend_api",
+                                "url_encoding",
+                                "query_parameter",
+                                "http_request"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY20_L10_fetch_error_handling_001",
+        "level":  10,
+        "title":  "Raise a RuntimeError on a failed HTTP status to terminate subsequent processing",
+        "concepts":  [
+                         "raise_statement",
+                         "call",
+                         "f_string",
+                         "if_statement"
+                     ],
+        "reading_goal":  "Read the process in which the `raise` statement raises an exception object, interrupting the normal execution flow of the current function and preventing it from proceeding to the next statement.",
+        "code":  "def parse_response(status, payload):\n    if status \u003e= 400:\n        raise RuntimeError(f\"API failed: {status}\")\n    data = payload[\"items\"]\n    return data\n\nparse_response(503, {\"items\": []})",
+        "question_type":  "meaning_choice",
+        "question":  "What is the result of executing the target `raise` statement when `status` is 503?",
+        "choices":  [
+                        "A RuntimeError occurs",
+                        "Returns an empty list as expected.",
+                        "The status changes to 200",
+                        "The payload is deleted"
+                    ],
+        "answer":  "A RuntimeError occurs",
+        "explanation":  "1) The status is 503. 2) ``503 \u003e= 400`` is True. 3) The `RuntimeError(...)` call in the `if` block creates an exception object. 4) `raise` raises that object. 5) Since there is no code within this function to catch the exception, the assignment to `data` and the `return` statement below are not executed.",
+        "side_card_ids":  [
+                              "WEB_frontend_backend_001"
+                          ],
+        "project_context":  "It connects to the flow where the front end or API client treats 4xx/5xx responses as explicit failures rather than parsing them as normal data.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "raise_statement",
+        "reading_goal_internal":  "raise 문이 예외 객체를 발생시켜 현재 함수의 정상 실행 흐름을 중단하고 뒤 문장으로 진행하지 않게 하는 과정을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`raise ExceptionType(...)` is a statement that explicitly raises an exception object to interrupt the current normal execution flow.",
+                                    "how_to_read":  "First, check which exception object is created by the expression following `raise`, and then read that when that exception occurs, execution does not proceed directly to the next statement in the current function.",
+                                    "key_point":  "`raise` does not simply print an error message; it **actually raises an exception**.",
+                                    "common_mistake":  "It is easy to think the next line in the same function keeps running after `raise`. If the exception is not handled there, the normal flow stops at that point."
+                                },
+        "teaching_example":  {
+                                 "code":  "def check(code):\n    if code \u003e= 400:\n        raise ValueError(f\"bad code: {code}\")\n    return \"ok\"\n\ncheck(404)",
+                                 "walkthrough":  "Since 404 satisfies the condition, a ValueError is raised, and the code at `return \u0027ok\u0027` is not executed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The status is 503. 2) ``503 \u003e= 400`` is True. 3) The `RuntimeError(...)` call in the `if` block creates an exception object. 4) `raise` raises that object. 5) Since there is no code within this function to catch the exception, the assignment to `data` and the `return` statement below are not executed.",
+                                   "why_correct":  "Since `raise RuntimeError(...)` is executed on the path where the condition is true, the correct answer is that a RuntimeError is raised.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Returns an empty list as expected.",
+                                                               "why_wrong":  "That return path can only be reached if `raise` is not executed.",
+                                                               "misread_step":  "Do not keep reading normal statements after `raise`; identify where the exception interrupts control flow."
+                                                           },
+                                   "takeaway":  "`raise` is interpreted in the following order: **create an exception object → raise the exception → interrupt the current normal flow**."
+                               },
+        "target_statement":  "raise RuntimeError(f\"API failed: {status}\")",
+        "focus_span":  "raise RuntimeError(f\"API failed: {status}\")",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "http_status",
+                                "fetch_error",
+                                "frontend_api",
+                                "error_handling"
+                            ],
+        "pedagogical_intent":  "predict_exception"
+    },
+    {
+        "id":  "PY20_L10_api_timeout_retry_001",
+        "level":  10,
+        "title":  "Catch the `TimeoutError` in a `typed except` block and proceed to the retry path",
+        "concepts":  [
+                         "except_clause",
+                         "try_statement",
+                         "raise_statement",
+                         "assignment"
+                     ],
+        "reading_goal":  "Read the sequence in which, when a TimeoutError occurs inside a `try` block, the `except` clause with the correct type is selected and its body is executed.",
+        "code":  "def request_once():\n    raise TimeoutError(\"request exceeded limit\")\n\ntry:\n    response = request_once()\n    action = \"done\"\nexcept TimeoutError:\n    action = \"retry\"\n\nprint(action)",
+        "question_type":  "output_prediction",
+        "question":  "If `request_once()` raises a `TimeoutError`, what is the last action that is printed?",
+        "choices":  [
+                        "retry",
+                        "done",
+                        "TimeoutError",
+                        "None"
+                    ],
+        "answer":  "retry",
+        "explanation":  "1) Call `request_once()` inside `try`. 2) The function raises `TimeoutError`. 3) Execution does not reach `action = \u0027done\u0027`. 4) The matching `except TimeoutError:` clause is selected. 5) `retry` is stored in `action`, and the final `print` outputs `retry`.",
+        "side_card_ids":  [
+                              "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
+                          ],
+        "project_context":  "It is linked to recovery logic that switches to a limited retry path instead of waiting indefinitely when a slow API call exceeds the timeout limit.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "except_clause",
+        "reading_goal_internal":  "try 안에서 TimeoutError가 발생했을 때 타입이 맞는 except 절이 선택되고 그 본문이 실행되는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`except TimeoutError:` This is a handling clause that executes when the exception raised in the preceding `try` block is of the `TimeoutError` class.",
+                                    "how_to_read":  "Execute the `try` block from the top; if an exception occurs, check the exception type, find the matching `except` clause, and jump to its body.",
+                                    "key_point":  "The `except` statement is not a syntax that **causes** a timeout, but rather a handling path that **catches** a TimeoutError that has already occurred.",
+                                    "common_mistake":  "It’s easy to assume that even if an exception occurs in a `try` block, both the normal flow and the `except` block will execute. When an exception occurs, execution jumps to the appropriate `except` block."
+                                },
+        "teaching_example":  {
+                                 "code":  "try:\n    raise TimeoutError(\"slow\")\nexcept TimeoutError:\n    result = \"retry\"\nprint(result)",
+                                 "walkthrough":  "When a TimeoutError occurs, the typed except block catches it and stores \"retry\" in `result`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Call `request_once()` inside `try`. 2) The function raises `TimeoutError`. 3) Execution does not reach `action = \u0027done\u0027`. 4) The matching `except TimeoutError:` clause is selected. 5) `retry` is stored in `action`, and the final `print` outputs `retry`.",
+                                   "why_correct":  "Since the exception that occurred is specifically a TimeoutError, the typed except block is executed, and the action becomes a retry.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "done",
+                                                               "why_wrong":  "The assignment is executed only when `request_once()` returns normally without raising an exception.",
+                                                               "misread_step":  "Do not continue reading the try block after the line where the exception occurred; instead, check which except statement the control flows to."
+                                                           },
+                                   "takeaway":  "A typed `except` statement is read in the following order: **exception occurs → type comparison → execution of the matching `except` block**."
+                               },
+        "target_statement":  "except TimeoutError:",
+        "focus_span":  "except TimeoutError:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "exceptions_debugging",
+        "coverage_topics":  [
+                                "timeout",
+                                "retry",
+                                "api_request",
+                                "resilience"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY20_L10_static_plus_api_001",
+        "level":  10,
+        "title":  "Reading the branching of roles between the static server and the API server using the `match` statement",
+        "concepts":  [
+                         "match_statement",
+                         "case_clause",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the flow where the current string of the target is compared with each literal case, and only the first matching branch is executed.",
+        "code":  "server_kind = \"api\"\n\nmatch server_kind:\n    case \"static\":\n        role = \"serve files\"\n    case \"api\":\n        role = \"dynamic request handling\"\n    case _:\n        role = \"unknown\"\n\nprint(role)",
+        "question_type":  "output_prediction",
+        "question":  "What role is output when `server_kind` is `\"api\"`?",
+        "choices":  [
+                        "dynamic request handling",
+                        "serve files",
+                        "unknown",
+                        "api"
+                    ],
+        "answer":  "dynamic request handling",
+        "explanation":  "1) `server_kind` is an API. 2) This is different from the first `static` case. 3) It matches the second API case. 4) The `role` assignment in that body is executed. 5) Therefore, the final `print` outputs “dynamic request handling.”",
+        "side_card_ids":  [
+                              "PYV160_A1_PWA_STATE_STORAGE_FLOW",
+                              "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
+                          ],
+        "project_context":  "This ties into a structure that distinguishes the responsibilities of a development server, which serves static files, and an API server, which performs searches, handles queries, and queries the database.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "match_statement",
+        "reading_goal_internal":  "match 대상의 현재 문자열을 각 literal case와 비교해 처음 일치한 분기만 실행되는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The `match` statement compares a single target value against multiple `case` patterns and executes the body of the matching branch.",
+                                    "how_to_read":  "First, check the current value of the target, then compare it with the cases below, starting from the top, to find the matching branch.",
+                                    "key_point":  "In Python syntax, the key concept—rather than knowledge of static/API architecture—is **target value → case comparison → execution of the matching branch**.",
+                                    "common_mistake":  "It is easy to assume that the body of every case is executed in order. In a literal case, one correct branch is selected."
+                                },
+        "teaching_example":  {
+                                 "code":  "kind = \"worker\"\nmatch kind:\n    case \"web\":\n        role = \"serve page\"\n    case \"worker\":\n        role = \"run jobs\"\n    case _:\n        role = \"unknown\"\nprint(role)",
+                                 "walkthrough":  "Since `kind` is `worker`, the second case is selected, so the role becomes `run jobs`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `server_kind` is an API. 2) This is different from the first `static` case. 3) It matches the second API case. 4) The `role` assignment in that body is executed. 5) Therefore, the final `print` outputs “dynamic request handling.”",
+                                   "why_correct":  "Since the literal case matching the target API is selected, the dynamic request handling branch is executed.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "serve files",
+                                                               "why_wrong":  "`serve_files` is the value of the first case, which is selected only when `server_kind` is `static`.",
+                                                               "misread_step":  "It accurately compares the target string with each case literal."
+                                                           },
+                                   "takeaway":  "`match` It is read in the following order: **check target value → compare with case → execute the matching branch**."
+                               },
+        "target_statement":  "match server_kind:",
+        "focus_span":  "match server_kind:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "architecture_and_design",
+        "coverage_topics":  [
+                                "static_app",
+                                "api_server",
+                                "architecture",
+                                "server_role"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY20_L10_api_service_repository_001",
+        "level":  10,
+        "title":  "Reading the `repo` attribute of a `SearchService` instance",
+        "concepts":  [
+                         "attribute_access",
+                         "class_definition",
+                         "call",
+                         "assignment"
+                     ],
+        "reading_goal":  "Track the flow where `object.attr` identifies the instance to the left of the dot, reads the attribute value stored in that instance, and uses it for the next access.",
+        "code":  "class Repository:\n    def __init__(self, name):\n        self.name = name\n\nclass SearchService:\n    def __init__(self, repo):\n        self.repo = repo\n\nservice = SearchService(Repository(\"main\"))\nprint(service.repo.name)",
+        "question_type":  "meaning_choice",
+        "question":  "What does the expression `service.repo` refer to?",
+        "choices":  [
+                        "Repository objects stored in a SearchService instance",
+                        "string service",
+                        "The SearchService class itself",
+                        "None"
+                    ],
+        "answer":  "Repository objects stored in a SearchService instance",
+        "explanation":  "1) `Repository(\"main\")` creates a `Repository` object. 2) That object is passed to the `repo` parameter of the `SearchService` constructor. 3) `self.repo = repo` stores it in the service instance attribute. 4) `service.repo` reads that stored `Repository` object again. 5) Reading `.name` then gives `main`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "The Service is connected to a hierarchical application structure that stores repository dependencies and accesses them as needed.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "attribute_access",
+        "reading_goal_internal":  "`object.attr`에서 점 왼쪽 인스턴스를 확인하고 그 인스턴스에 저장된 속성값을 읽어 다음 접근에 사용하는 흐름을 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`object.attr` This is attribute access, where an attribute with the name `attr` is read from the object pointed to by `object`.",
+                                    "how_to_read":  "First identify the object to the left of the dot, then find the current value stored in that object’s `attr` attribute.",
+                                    "key_point":  "`service.repo` This is not syntax for creating a new independent variable called `repo`, but rather **an expression that reads the value of the `repo` attribute stored within the `service` instance**.",
+                                    "common_mistake":  "In `service.repo`, `repo` is easy to read as a module or global variable. It is a value belonging to the `service` object to the left of the dot."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Worker:\n    def __init__(self, queue):\n        self.queue = queue\n\nworker = Worker(\"jobs\")\nprint(worker.queue)",
+                                 "walkthrough":  "If you read the `queue` attribute saved when the worker was created as `worker.queue`, you will see the `jobs`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `Repository(\"main\")` creates a `Repository` object. 2) That object is passed to the `repo` parameter of the `SearchService` constructor. 3) `self.repo = repo` stores it in the service instance attribute. 4) `service.repo` reads that stored `Repository` object again. 5) Reading `.name` then gives `main`.",
+                                   "why_correct":  "Since the Repository object saved in the constructor is an instance attribute of the service’s `repo`, `service.repo` refers to that object.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "The SearchService class itself",
+                                                               "why_wrong":  "`service` is an instance that has already been created, and `repo` is an attribute stored in that instance.",
+                                                               "misread_step":  "Read the code by distinguishing whether the name on the left side of the dot is a class or an instance, and what attribute is on the right side of the dot."
+                                                           },
+                                   "takeaway":  "Instance attribute access is read in the following order: **identify the target instance → locate the attribute name → return the stored current value**."
+                               },
+        "target_statement":  "service.repo",
+        "focus_span":  "service.repo",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "architecture_and_design",
+        "coverage_topics":  [
+                                "api_service_repository",
+                                "service_layer",
+                                "repository",
+                                "dependency"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY20_L10_request_logging_001",
+        "level":  10,
+        "title":  "Write a log entry in `finally` even when request processing fails",
+        "concepts":  [
+                         "finally_clause",
+                         "try_statement",
+                         "raise_statement",
+                         "call"
+                     ],
+        "reading_goal":  "Track the execution order so that even if an exception occurs inside the `try` block, the `finally` clause is executed before control exits the function.",
+        "code":  "events = []\n\ndef handle_request():\n    raise RuntimeError(\"endpoint failed\")\n\ntry:\n    handle_request()\nfinally:\n    events.append(\"logged\")",
+        "question_type":  "meaning_choice",
+        "question":  "What happens to the `finally` block when `handle_request()` raises a RuntimeError?",
+        "choices":  [
+                        "This code runs before the exception is propagated outward.",
+                        "If an exception occurs, it is always skipped.",
+                        "Automatically replaces `RuntimeError` with `None`",
+                        "It executes before the `try` block."
+                    ],
+        "answer":  "This code runs before the exception is propagated outward.",
+        "explanation":  "1) The `handle_request()` function is called within the `try` block. 2) A `RuntimeError` occurs. 3) The normal flow of the `try` block is interrupted. 4) However, before exiting the `try` block, the `finally` block executes, and `logged` is added to `events`. 5) Since `finally` is not an `except` clause that catches exceptions, the original `RuntimeError` continues to propagate.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "The API middleware is connected to a system that logs operational data—such as processing time, status, and request ID—regardless of whether the endpoint is successful.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "finally_clause",
+        "reading_goal_internal":  "try 안에서 예외가 발생하더라도 함수 밖으로 빠져나가기 전에 finally 절이 실행되는 순서를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A `finally` clause is a cleanup region that runs before leaving the `try` statement, regardless of whether the `try` block completed normally.",
+                                    "how_to_read":  "I interpret this as: First, check whether a normal return or an exception occurs inside the `try` block; regardless of the path taken, the `finally` block is executed, and then the final control flow continues.",
+                                    "key_point":  "`finally` is not a success-handling block that executes only when there are no errors, but rather a **cleanup and logging point that executes even when an exception occurs**.",
+                                    "common_mistake":  "It is easy to assume that when `raise` is executed in the `try` block, the `finally` block is skipped and the program exits the function immediately."
+                                },
+        "teaching_example":  {
+                                 "code":  "events = []\ntry:\n    raise ValueError(\"bad\")\nfinally:\n    events.append(\"cleanup\")\nprint(events)",
+                                 "walkthrough":  "Even when a `ValueError` occurs, `finally` executes first and adds `cleanup`, after which the exception propagates outward."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The `handle_request()` function is called within the `try` block. 2) A `RuntimeError` occurs. 3) The normal flow of the `try` block is interrupted. 4) However, before exiting the `try` block, the `finally` block executes, and `logged` is added to `events`. 5) Since `finally` is not an `except` clause that catches exceptions, the original `RuntimeError` continues to propagate.",
+                                   "why_correct":  "`finally` executes before leaving the `try` statement regardless of whether an exception occurred, so logging happens first.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "If an exception occurs, it is always skipped.",
+                                                               "why_wrong":  "The opposite is the key role of `finally`, which allows cleanup code to run even if an exception occurs.",
+                                                               "misread_step":  "Do not assume that the program exits immediately after a `raise` occurs; instead, check for the presence of a `finally` clause."
+                                                           },
+                                   "takeaway":  "`finally` is read in the following order: **execute `try` → determine normal/exception path → execute `finally` before exiting**."
+                               },
+        "target_statement":  "finally:",
+        "focus_span":  "finally:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "request_logging",
+                                "middleware",
+                                "elapsed_time",
+                                "failure_logging"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    }
 ]

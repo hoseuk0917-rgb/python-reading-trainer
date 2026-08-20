@@ -1,710 +1,1544 @@
 [
-  {
-    "id": "PY6_L06_requirements_001",
-    "level": 6,
-    "title": "Reading requirements.txt",
-    "concepts": [
-      "comment",
-      "requirements",
-      "package",
-      "pip"
-    ],
-    "reading_goal": "Reads the list of packages required by the Python project.",
-    "code": "# requirements.txt\nfastapi==0.115.0\nuvicorn==0.30.0\npandas==2.2.0",
-    "question_type": "meaning_choice",
-    "question": "What does this file represent?",
-    "choices": [
-      "Python packages and versions to install",
-      "HTML Page Structure",
-      "Git Commit List",
-      "DB Table Data"
-    ],
-    "answer": "Python packages and versions to install",
-    "explanation": "A `requirements.txt` file lists Python packages that can be installed with a command such as `pip install -r requirements.txt`. Here, `==` requests the shown versions of FastAPI, Uvicorn, and pandas. This still does not fix the Python version, operating system, or every transitive dependency, so exact environment reproduction may need a lock file or additional environment metadata.",
-    "side_card_ids": [
-      "DEV_package_manager_001"
-    ],
-    "project_context": "This is the first thing I check when verifying dependencies before running a server or app project."
-  },
-  {
-    "id": "PY6_L06_pyproject_001",
-    "level": 6,
-    "title": "Reading pyproject.toml",
-    "concepts": [
-      "comment",
-      "pyproject",
-      "package",
-      "metadata"
-    ],
-    "reading_goal": "Reads the file structure that declares the project name, version, and dependencies.",
-    "code": "# pyproject.toml excerpt\n[project]\nname = \"reading-trainer\"\nversion = \"0.1.0\"\ndependencies = [\"fastapi\", \"pandas\"]",
-    "question_type": "meaning_choice",
-    "question": "What goes into \"dependencies\"?",
-    "choices": [
-      "List of Required Packages",
-      "User Password",
-      "CSS Colors",
-      "Execution Log"
-    ],
-    "answer": "List of Required Packages",
-    "explanation": "Inside the `[project]` table, `name` and `version` are project metadata, while `dependencies` lists direct packages needed when the project is installed. A `pyproject.toml` file may also contain a `build-system` table and tool-specific settings. Because this example gives no version ranges, it allows current compatible releases and is not the same as a lock file that reproduces one exact environment.",
-    "side_card_ids": [
-      "DEV_package_manager_001"
-    ],
-    "project_context": "These days, when I look at the structure of Python projects, I often see this alongside `requirements`."
-  },
-  {
-    "id": "PY6_L07_import_path_001",
-    "level": 7,
-    "title": "Reading Module Import Paths",
-    "concepts": [
-      "print",
-      "import",
-      "module",
-      "package"
-    ],
-    "reading_goal": "Understand the relationship between the folder structure and the import paths.",
-    "code": "from app.services.search import search_docs\n\nresults = search_docs(\"LiDAR\")\nprint(len(results))",
-    "question_type": "meaning_choice",
-    "question": "Where does `search_docs` come from?",
-    "choices": [
-      "The module in `app/services/search.py`",
-      "CSS file",
-      "Browser localStorage",
-      "GitHub Issues"
-    ],
-    "answer": "The module in `app/services/search.py`",
-    "explanation": "`app.services.search` usually maps to the module `app/services/search.py` or to an `app/services/search` package, and `search_docs` is the name imported from it. The import succeeds only when the parent of the `app` package is on Python's module search path and that name is actually defined. Check the package layout and how the project is launched instead of inferring the path from the current directory alone.",
-    "side_card_ids": [
-      "SC_import_pm_reading"
-    ],
-    "project_context": "This is the basic ability to track the location of features in an app that is split across multiple files."
-  },
-  {
-    "id": "PY6_L09_fastapi_router_001",
-    "level": 9,
-    "title": "Reading FastAPI Router Connections",
-    "concepts": [
-      "comment",
-      "import",
-      "fastapi",
-      "router",
-      "module"
-    ],
-    "reading_goal": "Read about the architecture for connecting a separate API router to the main app.",
-    "code": "# app/main.py\nfrom fastapi import FastAPI\nfrom app.api.routes import router\n\napp = FastAPI()\napp.include_router(router, prefix=\"/api\")",
-    "question_type": "meaning_choice",
-    "question": "What does \"prefix='/api'\" mean?",
-    "choices": [
-      "Prepend \"/api\" to the router path",
-      "Change the database name to \"api\"",
-      "Set the server port",
-      "Compress the file"
-    ],
-    "answer": "Prepend \"/api\" to the router path",
-    "explanation": "`include_router` attaches a separate router to the app and prepends a prefix to the path. A FastAPI router is a structure that groups and manages related API paths. Dividing routers by functionality simplifies the main app and makes it easier to locate endpoints.",
-    "side_card_ids": [],
-    "project_context": "When reviewing the structure of a FastAPI project, it is important to understand the relationship between `app/main.py` and the routes files."
-  },
-  {
-    "id": "PY6_L09_apirouter_001",
-    "level": 9,
-    "title": "Reading APIRouter Files",
-    "concepts": [
-      "comment",
-      "def",
-      "function",
-      "return",
-      "import",
-      "fastapi",
-      "APIRouter",
-      "endpoint"
-    ],
-    "reading_goal": "Read about how paths and functions are linked in the APIRouter file.",
-    "code": "# app/api/routes.py\nfrom fastapi import APIRouter\n\nrouter = APIRouter()\n\n@router.get(\"/health\")\ndef health():\n    return {\"ok\": True}",
-    "question_type": "meaning_choice",
-    "question": "Why does the final path become `/api/health`?",
-    "choices": [
-      "The prefix in main.py and the router path are combined",
-      "The health function name determines the entire URL",
-      "Every GET request automatically receives /api",
-      "A JSON response automatically changes the path"
-    ],
-    "answer": "The prefix in main.py and the router path are combined",
-    "explanation": "The main app includes this router with `prefix=\"/api\"`, and the router declares `@router.get(\"/health\")`. FastAPI combines those two path parts to produce `/api/health`; the function name and JSON return value do not change the URL. `APIRouter` lets related endpoints live in a separate module while the main app controls their shared prefix.",
-    "side_card_ids": [
-      "PL_endpoint_001"
-    ],
-    "project_context": "This is a training exercise for tracking actual URLs when an API file is split into multiple parts."
-  },
-  {
-    "id": "PY6_L08_settings_class_001",
-    "level": 8,
-    "title": "Reading the Settings Class",
-    "concepts": [
-      "import",
-      "print",
-      "settings",
-      "env",
-      "class"
-    ],
-    "reading_goal": "Understand the structure that groups environment variables into configuration objects for reading.",
-    "code": "import os\n\nclass Settings:\n    api_key = os.environ.get(\"OPENAI_API_KEY\")\n    model = os.environ.get(\"MODEL\", \"gpt-4o-mini\")\n\nsettings = Settings()\nprint(settings.model)",
-    "question_type": "meaning_choice",
-    "question": "If there is no MODEL environment variable, what happens to the model?",
-    "choices": [
-      "gpt-4o-mini",
-      "None",
-      "OPENAI_API_KEY",
-      "Error"
-    ],
-    "answer": "gpt-4o-mini",
-    "explanation": "The class body evaluates `os.environ.get(\"MODEL\", \"gpt-4o-mini\")` when `Settings` is defined. Because `MODEL` is absent, the class attribute `model` stores the default \"gpt-4o-mini\", and `settings.model` prints it. This code does not reread the environment for every instance, and a missing `api_key` remains `None`, so required-setting validation would need to be added separately.",
-    "side_card_ids": [
-      "PL_env_001",
-      "DEV_api_key_001"
-    ],
-    "project_context": "This is a pattern for consolidating settings from the API server and the LLM app in one place."
-  },
-  {
-    "id": "PY6_L06_gitignore_001",
-    "level": 6,
-    "title": "Reading .gitignore",
-    "concepts": [
-      "comment",
-      "gitignore",
-      "env",
-      "venv"
-    ],
-    "reading_goal": "It reads the file and folder paths to exclude from Git.",
-    "code": "# .gitignore excerpt\n.env\n.venv/\n__pycache__/\noutputs/",
-    "question_type": "meaning_choice",
-    "question": "Why is the .env file added to .gitignore?",
-    "choices": [
-      "Preventing the Leakage of Confidential Settings",
-      "Improving HTML Performance",
-      "Image Compression",
-      "DB Query Optimization"
-    ],
-    "answer": "Preventing the Leakage of Confidential Settings",
-    "explanation": "The `.env` pattern helps prevent an untracked `.env` file from being added by normal Git commands, which reduces the risk of committing API keys. It does not protect a file that Git already tracks. If a secret was committed or pushed, rotate it; `.gitignore` is not a secret store.",
-    "side_card_ids": [
-      "DEV_dotenv_001"
-    ],
-    "project_context": "These are the basics for securely managing a public GitHub repository."
-  },
-  {
-    "id": "PY6_L08_github_actions_001",
-    "level": 8,
-    "title": "Understanding GitHub Actions Triggers",
-    "concepts": [
-      "comment",
-      "github_actions",
-      "ci",
-      "yaml"
-    ],
-    "reading_goal": "Read about the structure that triggers automated tasks when pushing to the main branch.",
-    "code": "# GitHub Actions workflow excerpt\non:\n  push:\n    branches: [main]\n\njobs:\n  test:\n    runs-on: ubuntu-latest",
-    "question_type": "meaning_choice",
-    "question": "When is this workflow run?",
-    "choices": [
-      "When pushed to the main branch",
-      "Every second",
-      "When opening a file",
-      "When the browser is refreshed"
-    ],
-    "answer": "When pushed to the main branch",
-    "explanation": "GitHub Actions automatically run actions in response to repository events. \"on: push: branches: [main]\" is a condition that specifies the action should run when a push is made to the main branch. Therefore, the correct answer is “when a push is made to the main branch.”",
-    "side_card_ids": [],
-    "project_context": "This is the foundation for reading deployment and test automation logs."
-  },
-  {
-    "id": "PY6_L08_js_localstorage_001",
-    "level": 8,
-    "title": "Reading localStorage JS Code",
-    "concepts": [
-      "javascript",
-      "localStorage",
-      "json"
-    ],
-    "reading_goal": "I'm reading code that saves state as a JSON string in the browser's storage.",
-    "code": "const raw = localStorage.getItem(\"progress\") || \"{}\";\nconst progress = JSON.parse(raw);\nprogress.seen = progress.seen || {};\nlocalStorage.setItem(\"progress\", JSON.stringify(progress));",
-    "question_type": "meaning_choice",
-    "question": "In what format is data stored in localStorage?",
-    "choices": [
-      "String",
-      "Python dict as-is",
-      "Image",
-      "SQLite database file"
-    ],
-    "answer": "String",
-    "explanation": "localStorage stores simple string data in the browser. Since objects cannot be stored directly, they must be converted to strings using `JSON.stringify` before being stored. When retrieving the data, it must be converted back to an object using `JSON.parse`, and precautions must be taken against corrupted strings.",
-    "side_card_ids": [
-      "WEB_localstorage_001"
-    ],
-    "project_context": "It is directly linked to the current learning app's progress and note-saving structure."
-  },
-  {
-    "id": "PY6_L08_js_fetch_json_001",
-    "level": 8,
-    "title": "Reading JSON with `fetch`",
-    "concepts": [
-      "javascript",
-      "fetch",
-      "json"
-    ],
-    "reading_goal": "Read the flow in which the browser fetches a JSON file and checks the length of the array.",
-    "code": "fetch(\"../../data/lessons/cards_seed_v1.json\")\n  .then(function(res) { return res.json(); })\n  .then(function(cards) { console.log(cards.length); });",
-    "question_type": "meaning_choice",
-    "question": "What does `res.json()` do?",
-    "choices": [
-      "Convert the response body to a JavaScript object or array",
-      "Delete the file",
-      "Start Server",
-      "Applying CSS"
-    ],
-    "answer": "Convert the response body to a JavaScript object or array",
-    "explanation": "`fetch(...)` returns a Promise, and `res` in the first `then` is an HTTP `Response`. `res.json()` reads the body, parses it as JSON, and returns another Promise that resolves to the resulting JavaScript value; the next `then` receives that value as `cards`. JSON can produce values other than objects and arrays, and `res.json()` does not check HTTP error statuses such as 404, so production code normally checks `res.ok` and handles parse failures.",
-    "side_card_ids": [
-      "WEB_html_css_js_001"
-    ],
-    "project_context": "Currently, the app reads the lesson JSON and displays it as cards."
-  },
-  {
-    "id": "PY6_L09_service_worker_install_001",
-    "level": 9,
-    "title": "Reading the Service Worker install Event",
-    "concepts": [
-      "service_worker",
-      "pwa",
-      "cache"
-    ],
-    "reading_goal": "Read about the process of preparing the cache when a PWA is installed.",
-    "code": "self.addEventListener(\"install\", function(event) {\n  event.waitUntil(caches.open(\"app-v1\"));\n});",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of `caches.open('app-v1')`?",
-    "choices": [
-      "Open Cache Storage",
-      "Delete Database",
-      "Running Python",
-      "Git push"
-    ],
-    "answer": "Open Cache Storage",
-    "explanation": "During the install event, `event.waitUntil(...)` keeps installation pending until its Promise settles. `caches.open('app-v1')` opens the named Cache or creates it if it does not exist. This snippet does not cache any files because it never calls `add`, `addAll`, or `put`; offline reads also need a fetch strategy that uses the cache.",
-    "side_card_ids": [
-      "WEB_pwa_001",
-      "PL_cache_001"
-    ],
-    "project_context": "This is necessary when developing a learning app into a mobile PWA."
-  },
-  {
-    "id": "PY6_L10_openai_client_001",
-    "level": 10,
-    "title": "Reading an OpenAI Responses API call",
-    "concepts": [
-      "import",
-      "print",
-      "openai",
-      "llm",
-      "api",
-      "client"
-    ],
-    "reading_goal": "Understand how a Responses API client sends a role-labeled input message and reads the generated text.",
-    "code": "import os\nfrom openai import OpenAI\n\nclient = OpenAI(api_key=os.environ[\"OPENAI_API_KEY\"])\nresponse = client.responses.create(\n    model=\"gpt-5.6\",\n    input=[{\"role\": \"user\", \"content\": \"hello\"}]\n)\nprint(response.output_text)",
-    "question_type": "meaning_choice",
-    "question": "What does the `input` array represent?",
-    "choices": [
-      "Input messages to send to the model",
-      "DB Table",
-      "List of File Paths",
-      "CSS Rules"
-    ],
-    "answer": "Input messages to send to the model",
-    "explanation": "The Responses API is recommended for new text-generation integrations. Its `input` can be a single string or, as here, a list of messages with `role` and `content`. This example sends \"hello\" with the user role and reads the SDK's aggregated text convenience property, `response.output_text`. A real call also requires a configured API key, network access, account permission, billing, and access to the selected model.",
-    "side_card_ids": [
-      "AI_llm_001"
-    ],
-    "project_context": "This is the basic workflow for integrating an educational LLM/RAG API."
-  },
-  {
-    "id": "PY6_L10_bedrock_invoke_001",
-    "level": 10,
-    "title": "Reading the Bedrock `invoke_model` Structure",
-    "concepts": [
-      "import",
-      "bedrock",
-      "llm",
-      "aws",
-      "api"
-    ],
-    "reading_goal": "Read the workflow for invoking a model using AWS Bedrock Runtime.",
-    "code": "import boto3\n\nclient = boto3.client(\"bedrock-runtime\", region_name=\"us-east-1\")\nresult = client.invoke_model(\n    modelId=model_id,\n    contentType=\"application/json\",\n    body=body_json\n)",
-    "question_type": "meaning_choice",
-    "question": "What does `modelId` specify?",
-    "choices": [
-      "Model to call",
-      "File name",
-      "DB Column",
-      "Browser address"
-    ],
-    "answer": "Model to call",
-    "explanation": "`modelId` identifies the Bedrock model, inference profile, or deployment resource to invoke. `body` contains the model-specific prompt and inference parameters as JSON, and `contentType=\"application/json\"` declares that request format. The returned `result` is not the generated text itself; its `body` stream must be read and parsed. Because request and response schemas differ by model, isolating them behind an adapter is safer.",
-    "side_card_ids": [
-      "AI_llm_001",
-      "PL_endpoint_001"
-    ],
-    "project_context": "It is connected to reading the Bedrock call logs in Node-Pass/teacher generation."
-  },
-  {
-    "id": "PY6_L08_dataset_split_001",
-    "level": 8,
-    "title": "Reading the dataset split code",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "dataset",
-      "train",
-      "valid",
-      "test",
-      "slice"
-    ],
-    "reading_goal": "Read the code for splitting the data into training, validation, and test sets.",
-    "code": "def split_dataset(rows):\n    train = rows[:80]\n    valid = rows[80:90]\n    test = rows[90:]\n    return train, valid, test",
-    "question_type": "meaning_choice",
-    "question": "Which index range is included in `test`?",
-    "choices": [
-      "Index 90 through the end",
-      "The first 80",
-      "80–89",
-      "Empty List"
-    ],
-    "answer": "Index 90 through the end",
-    "explanation": "A slice includes its start index, so `rows[90:]` puts index 90—the 91st element—through the end into `test`. `train` contains indexes 0–79 and `valid` contains 80–89, so the three ranges do not overlap. This code uses fixed counts rather than proportions and does not shuffle the rows, so an existing sort order can bias the split.",
-    "side_card_ids": [
-      "AI_eval_001"
-    ],
-    "project_context": "This is a basic concept that distinguishes between LoRA training data and the evaluation set."
-  },
-  {
-    "id": "PY6_L08_accuracy_001",
-    "level": 8,
-    "title": "Reading the Accuracy Calculation",
-    "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "accuracy",
-      "eval",
-      "zip"
-    ],
-    "reading_goal": "Read the code that calculates accuracy by comparing the predicted values and the actual values at the same positions.",
-    "code": "def compute_accuracy(preds, labels):\n    correct = 0\n    for pred, label in zip(preds, labels):\n        if pred == label:\n            correct += 1\n    return correct / len(labels)",
-    "question_type": "meaning_choice",
-    "question": "What does `zip(preds, labels)` do?",
-    "choices": [
-      "Repeat the process of matching predictions with the correct answers",
-      "Delete both",
-      "Convert to a string",
-      "Save to the database"
-    ],
-    "answer": "Repeat the process of matching predictions with the correct answers",
-    "explanation": "`zip(preds, labels)` pairs values at the same positions and stops at the end of the shorter input. Matching pairs increment `correct`, which is then divided by the number of labels. If the lengths differ, some values are never compared and the metric may be misleading; an empty `labels` list also causes `ZeroDivisionError`. A production evaluator should validate equal, nonzero lengths first.",
-    "side_card_ids": [
-      "AI_eval_001"
-    ],
-    "project_context": "This is the foundation for understanding model, rule, and classifier performance evaluation."
-  },
-  {
-    "id": "PY6_L07_error_parse_001",
-    "level": 7,
-    "title": "Reading Error Log Categories",
-    "concepts": [
-      "if",
-      "def",
-      "function",
-      "return",
-      "error",
-      "log",
-      "classification"
-    ],
-    "reading_goal": "Read the code that classifies error types from a single line of log output.",
-    "code": "def parse_error_line(line):\n    if \"FileNotFoundError\" in line:\n        return \"missing_file\"\n    if \"Timeout\" in line:\n        return \"timeout\"\n    return \"unknown\"",
-    "question_type": "meaning_choice",
-    "question": "What happens if a timeout is included?",
-    "choices": [
-      "timeout",
-      "missing_file",
-      "unknown",
-      "FileNotFoundError"
-    ],
-    "answer": "timeout",
-    "explanation": "When the line contains \"Timeout\" and the earlier `FileNotFoundError` test is false, the second branch returns \"timeout\". If both strings occur, the first return wins and produces \"missing_file\", so condition order matters. This is a case-sensitive substring heuristic; structured exception types and explicit priority rules are more reliable for production log classification.",
-    "side_card_ids": [
-      "DEV_debugging_001"
-    ],
-    "project_context": "This is linked to the automatic classification of failure causes in long execution logs."
-  },
-  {
-    "id": "PY6_L08_manifest_tsv_001",
-    "level": 8,
-    "title": "Reading a TSV Manifest File",
-    "concepts": [
-      "for",
-      "def",
-      "function",
-      "return",
-      "manifest",
-      "tsv",
-      "file"
-    ],
-    "reading_goal": "Reads the column structure of a tab-delimited manifest TSV file.",
-    "code": "def load_manifest(path):\n    rows = []\n    with open(path, \"r\", encoding=\"utf-8\") as f:\n        for line in f:\n            doc_id, file_path = line.rstrip(\"\\n\").split(\"\\t\")\n            rows.append({\"doc_id\": doc_id, \"path\": file_path})\n    return rows",
-    "question_type": "meaning_choice",
-    "question": "What does `split('\\\\t')` use as the delimiter?",
-    "choices": [
-      "Tab",
-      "Comma",
-      "One space",
-      "Period"
-    ],
-    "answer": "Tab",
-    "explanation": "`split(\"\\t\")` separates each line on tab characters, so the answer is Tab. Assigning the result to `doc_id, file_path` requires exactly two fields on every line; fewer or additional tabs raise `ValueError`. For quoted fields, embedded tabs, headers, or other real TSV rules, using the `csv` module with `delimiter=\"\\t\"` is safer than a plain string split.",
-    "side_card_ids": [],
-    "project_context": "It is linked to document registry, KG evidence map, and file list processing."
-  },
-  {
-    "id": "PY6_L06_normalize_id_001",
-    "level": 6,
-    "title": "Reading the ID Normalization Function",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "print",
-      "normalization",
-      "str",
-      "id"
-    ],
-    "reading_goal": "Read the workflow for converting document IDs into a format that is easy to compare.",
-    "code": "def normalize_doc_id(value):\n    return value.strip().lower().replace(\" \", \"_\")\n\nprint(normalize_doc_id(\" Doc 001 \"))",
-    "question_type": "output_prediction",
-    "question": "What's the output?",
-    "choices": [
-      "doc_001",
-      "Doc 001",
-      " doc 001 ",
-      "DOC_001"
-    ],
-    "answer": "doc_001",
-    "explanation": "`strip()` first removes the outer spaces, producing \"Doc 001\". `lower()` makes it \"doc 001\", and `replace(\" \", \"_\")` changes the remaining space to produce `doc_001`. This function normalizes only case and spaces; it does not handle slashes, punctuation, or repeated separators. Real ID policies also need collision checks because different inputs can normalize to the same result.",
-    "side_card_ids": [
-      "SC_normalization"
-    ],
-    "project_context": "It is directly linked to the normalization of doc_id, node_id, and slug."
-  },
-  {
-    "id": "PY6_L06_slug_001",
-    "level": 6,
-    "title": "Reading About Slug Generation",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "print",
-      "slug",
-      "str",
-      "filename"
-    ],
-    "reading_goal": "I'm reading some code that converts strings into \"slugs\" suitable for use in URLs or filenames.",
-    "code": "def make_slug(title):\n    return title.lower().replace(\"/\", \"-\").replace(\" \", \"-\")\n\nprint(make_slug(\"AI / RAG Notes\"))",
-    "question_type": "output_prediction",
-    "question": "Which one is closest to the output?",
-    "choices": [
-      "ai---rag-notes",
-      "AI / RAG Notes",
-      "ai/rag/notes",
-      "notes"
-    ],
-    "answer": "ai---rag-notes",
-    "explanation": "After lowercasing, the slash becomes one hyphen and the spaces on both sides become two more, producing `ai---rag-notes`. That is the correct output for this input, but the function does not clean every punctuation character or collapse repeated hyphens, so it does not guarantee a generally safe URL or filename slug. A production policy should also handle allowed characters, empty results, and collisions.",
-    "side_card_ids": [],
-    "project_context": "This is linked to creating node page filenames, URL slugs, and deliverable names."
-  },
-  {
-    "id": "PY6_L08_top_items_001",
-    "level": 8,
-    "title": "Read the Top N Selections",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "ranking",
-      "sorted",
-      "slice"
-    ],
-    "reading_goal": "I can see the pattern of sorting by score and selecting only the top few.",
-    "code": "def select_top_items(items, limit=20):\n    items = sorted(items, key=lambda x: x[\"score\"], reverse=True)\n    return items[:limit]",
-    "question_type": "meaning_choice",
-    "question": "What does `items[:limit]` mean?",
-    "choices": [
-      "Select only the first limit items",
-      "Do not delete after the limit",
-      "Always delete 20",
-      "Return only the score"
-    ],
-    "answer": "Select only the first limit items",
-    "explanation": "`sorted(..., reverse=True)` creates a new list ordered from highest to lowest `score`, and `items[:limit]` returns at most the first `limit` entries. The caller's original list is not reordered here. If fewer entries exist, they are all returned; a missing `score` raises `KeyError`, and a negative limit no longer matches the intended ‘top N’ meaning.",
-    "side_card_ids": [
-      "PL_curation_001"
-    ],
-    "project_context": "It is frequently used for home curation, rankings, and filtering recommendation results."
-  },
-  {
-    "id": "PY6_L10_reading_queue_001",
-    "level": 10,
-    "title": "Understanding the Process of Creating a Reading Queue",
-    "concepts": [
-      "if",
-      "for",
-      "def",
-      "function",
-      "return",
-      "reading_queue",
-      "filter",
-      "domain"
-    ],
-    "reading_goal": "Read how allowed domains are collected in their original order and limited to a ten-item reading queue.",
-    "code": "def build_reading_queue(candidates):\n    queue = []\n    for item in candidates:\n        if item[\"domain\"] in [\"UAM\", \"AI\", \"Robotics\"]:\n            queue.append(item)\n    return queue[:10]",
-    "question_type": "meaning_choice",
-    "question": "What are the conditions for being added to the queue?",
-    "choices": [
-      "The domain is one of UAM, AI, or Robotics",
-      "All items",
-      "score is 0",
-      "Item without a URL"
-    ],
-    "answer": "The domain is one of UAM, AI, or Robotics",
-    "explanation": "The loop keeps each item whose `domain` is UAM, AI, or Robotics, preserving candidate order. `queue[:10]` then returns at most the first ten matching items. The code performs no score sort or deduplication, and bracket access raises `KeyError` for an item without `domain`.",
-    "side_card_ids": [],
-    "project_context": "It is linked to a user's daily reading queue and content selection in the learning app."
-  },
-  {
-    "id": "PY6_L07_count_by_level_001",
-    "level": 7,
-    "title": "Reading the Card Count by Level",
-    "concepts": [
-      "for",
-      "def",
-      "function",
-      "return",
-      "aggregation",
-      "dict",
-      "level"
-    ],
-    "reading_goal": "Read the code that counts the number of cards in each level of a card array.",
-    "code": "def count_by_level(cards):\n    counts = {}\n    for card in cards:\n        level = card[\"level\"]\n        counts[level] = counts.get(level, 0) + 1\n    return counts",
-    "question_type": "meaning_choice",
-    "question": "What are the keys in the `counts` dictionary?",
-    "choices": [
-      "level",
-      "card id",
-      "title",
-      "answer"
-    ],
-    "answer": "level",
-    "explanation": "Each card's `level` becomes a key in `counts`. For a level not seen before, `counts.get(level, 0)` starts at 0; later cards at that level reuse the current count and add 1. The result has the form `{level: card count}`. A card without a `level` key raises `KeyError`, so schema validation should precede a bulk count.",
-    "side_card_ids": [],
-    "project_context": "This helps you understand the current app progress and table of contents statistics."
-  },
-  {
-    "id": "PY6_L07_find_card_001",
-    "level": 7,
-    "title": "Find a Card by ID",
-    "concepts": [
-      "if",
-      "def",
-      "function",
-      "return",
-      "search",
-      "for",
-      "id"
-    ],
-    "reading_goal": "Read the flow for finding an item with a specific ID in the list.",
-    "code": "def find_card(cards, card_id):\n    for card in cards:\n        if card[\"id\"] == card_id:\n            return card\n    return None",
-    "question_type": "meaning_choice",
-    "question": "If I can't find my card, what do I return?",
-    "choices": [
-      "None",
-      "Empty dict",
-      "The First Card",
-      "Error"
-    ],
-    "answer": "None",
-    "explanation": "The function checks cards from the beginning and immediately returns the first dictionary whose `card[\"id\"]` equals `card_id`. Only when no match is found does execution reach the final `return None`. This is a linear scan, not a hash-table lookup; for frequent searches across many cards, an `id`-to-card index may be more efficient.",
-    "side_card_ids": [
-      "PYV97_A1_LOOP_01"
-    ],
-    "project_context": "This connects to the flow of finding the current card, related cards, or note targets within the app."
-  },
-  {
-    "id": "PY6_L09_progress_migration_001",
-    "level": 9,
-    "title": "Reading Progress Data Migration",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "migration",
-      "localStorage",
-      "dict"
-    ],
-    "reading_goal": "Read the code that migrates existing stored data to the new structure.",
-    "code": "def migrate_progress(old):\n    return {\n        \"seen\": old.get(\"seen\", {}),\n        \"correct\": old.get(\"correct\", {}),\n        \"confused\": old.get(\"confused\", {})\n    }",
-    "question_type": "meaning_choice",
-    "question": "What if \"confused\" isn't in \"old\"?",
-    "choices": [
-      "Use an empty dict",
-      "Error",
-      "Copy \"seen\"",
-      "Delete All"
-    ],
-    "answer": "Use an empty dict",
-    "explanation": "When the `confused` key is absent, `old.get(\"confused\", {})` returns a new empty dictionary, so the answer is ‘Use an empty dict.’ If the key exists with the value `None`, the default is not used. The existing `seen`, `correct`, and `confused` dictionaries are also reused rather than copied, so a production migration should validate types and decide whether copies are required.",
-    "side_card_ids": [
-      "WEB_localstorage_001"
-    ],
-    "project_context": "This is necessary to preserve existing users' progress when changing the app's data structure."
-  },
-  {
-    "id": "PY6_L09_card_schema_validation_001",
-    "level": 9,
-    "title": "Read Card Schema Validation",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "schema",
-      "validation",
-      "list_comprehension"
-    ],
-    "reading_goal": "Read the code that checks whether any required fields are missing from the card.",
-    "code": "def validate_card(card):\n    required = [\"id\", \"level\", \"title\", \"question\", \"answer\"]\n    missing = [key for key in required if key not in card]\n    return missing",
-    "question_type": "meaning_choice",
-    "question": "What is included in the \"missing\" category during card schema validation?",
-    "choices": [
-      "List of Missing Required Keys",
-      "All keys",
-      "List of Correct Answers",
-      "List of Side Cards"
-    ],
-    "answer": "List of Missing Required Keys",
-    "explanation": "The list comprehension tests each required name with `key not in card` and collects only absent keys. The result is therefore a list of missing required keys, or an empty list when all are present. This validates presence only; it does not check empty values, the type of `level`, or whether `answer` occurs in `choices`.",
-    "side_card_ids": [
-      "DATA_schema_001"
-    ],
-    "project_context": "This is necessary to verify that the app does not crash when a large number of cards are added."
-  }
+    {
+        "id":  "PY6_L06_requirements_001",
+        "level":  6,
+        "title":  "Reading packages and versions into a dependency dictionary",
+        "concepts":  [
+                         "literal",
+                         "assignment"
+                     ],
+        "reading_goal":  "It explains that `requirements.txt` declares the Python packages and versions required to run the project.",
+        "code":  "requirements = {\"fastapi\": \"0.115.0\", \"uvicorn\": \"0.30.0\", \"pandas\": \"2.2.0\"}\nprint(requirements[\"pandas\"])",
+        "question_type":  "meaning_choice",
+        "question":  "If this dependency dictionary models the contents of `requirements.txt` in Python, what does it represent?",
+        "choices":  [
+                        "Names of Python packages to install for the project and their required versions",
+                        "List of files not to be committed to Git",
+                        "Environment variable names and secret values",
+                        "List of HTTP Status Codes"
+                    ],
+        "answer":  "Names of Python packages to install for the project and their required versions",
+        "explanation":  "1) Each key represents a package name. 2) Each value represents the required version. 3) Installing this list will ensure your project meets its expected Python dependencies. The Python package names and required versions to install in the project are explanations derived by interpreting the “Python target” on this card in the context of legacy/domain purposes. Common Misconception: A list of files not to be pushed to Git. This option focuses only on certain aspects of the code’s syntax or context and misses the core meaning of the card. Point of Misinterpretation: It’s easy to read only a single dict value and overlook the fact that `requirements.txt` is a list of packages and versions used to reproduce the runtime environment. `requirements` records **package names + versions** for installation and environment reproduction.",
+        "side_card_ids":  [
+                              "DEV_package_manager_001"
+                          ],
+        "project_context":  "This refers to the context of reading package names and version information—as expressed in dependency files such as `requirements.txt`—using Python data structures.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "literal",
+        "reading_goal_internal":  "requirements.txt가 프로젝트 실행에 필요한 Python 패키지와 버전을 선언한다는 의미를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A dictionary literal is a syntax that combines multiple key-value pairs into a single value. It can be used to represent configuration or dependency information as names and values.",
+                                    "how_to_read":  "Match the package names to the right of the colon with the version strings to the left, pairing them one by one.",
+                                    "key_point":  "`pandas: 2.2.0` The key point is that **\"requirements\" refers to the entire list of dependencies** rather than a single lookup pair.",
+                                    "common_mistake":  "If you focus only on a single `dict` value, it’s easy to overlook the fact that `requirements.txt` is a list of packages and versions used to reproduce the execution environment."
+                                },
+        "teaching_example":  {
+                                 "code":  "versions = {\"numpy\": \"2.0\", \"pytest\": \"8.0\"}\nprint(versions[\"pytest\"])",
+                                 "walkthrough":  "Since the value associated with the `pytest` key is ``8.0``, that string is printed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Each key represents a package name. 2) Each value represents the required version. 3) Installing this list will ensure your project meets its Python dependency requirements.",
+                                   "why_correct":  "The names of Python packages to install for the project and their required versions are explained in this card by interpreting the Python target in relation to legacy/domain objectives.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "List of files not to be committed to Git",
+                                                               "why_wrong":  "This option focuses only on certain aspects of the code’s syntax or context and misses the core meaning of the card.",
+                                                               "misread_step":  "If you focus only on a single `dict` value, it’s easy to overlook the fact that `requirements.txt` is a list of packages and versions used to reproduce the execution environment."
+                                                           },
+                                   "takeaway":  "\"Requirements\" refers to the **package name + version**, which is used for installation and reproducing the environment."
+                               },
+        "target_statement":  "requirements = {\"fastapi\": \"0.115.0\", \"uvicorn\": \"0.30.0\", \"pandas\": \"2.2.0\"}",
+        "focus_span":  "{\"fastapi\": \"0.115.0\", \"uvicorn\": \"0.30.0\", \"pandas\": \"2.2.0\"}",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "modules_packages_environment",
+        "coverage_topics":  [
+                                "requirements",
+                                "dependencies",
+                                "package_version",
+                                "project_environment"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY6_L06_pyproject_001",
+        "level":  6,
+        "title":  "Extracting the list of dependencies from the project settings dictionary",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the flow of retrieving a list value by looking up a specific key in the `subscription` dict.",
+        "code":  "project = {\n    \"name\": \"reading-trainer\",\n    \"version\": \"0.1.0\",\n    \"dependencies\": [\"fastapi\", \"pandas\"],\n}\ndependencies = project[\"dependencies\"]\nprint(dependencies)",
+        "question_type":  "output_prediction",
+        "question":  "What value does `project[\"dependencies\"]` return?",
+        "choices":  [
+                        "[\u0027fastapi\u0027, \u0027pandas\u0027]",
+                        "reading-trainer",
+                        "0.1.0",
+                        "dependencies"
+                    ],
+        "answer":  "[\u0027fastapi\u0027, \u0027pandas\u0027]",
+        "explanation":  "Find the `dependencies` key in the `project` dictionary. Its value is a list of ``[\u0027fastapi\u0027, \u0027pandas\u0027]``. The square bracket lookup returns that list and stores it in the `dependencies` variable. This is because the value associated with the `dependencies` key in the dictionary is that list. Common mistake: “dependencies” is the key name, and the return value is the value associated with that key. Point of confusion: Separate the string inside the square brackets from the actual return value. When you encounter “`data[key]`” in the configuration dict, you read the actual value pointed to by the key.",
+        "side_card_ids":  [
+                              "DEV_package_manager_001"
+                          ],
+        "project_context":  "This context involves reading the project metadata and dependency relationships in `pyproject.toml` as a Python dictionary.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "설정 dict의 특정 key를 subscription으로 조회해 list value를 얻는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A dictionary subscription `data[\"key\"]` retrieves the value associated with that key.",
+                                    "how_to_read":  "Within the `project`, locate the ``dependencies`` key enclosed in square brackets, and check the data type and value of the actual value stored to its right.",
+                                    "key_point":  "The `dependencies` value is not a single string, but a list containing multiple package names.",
+                                    "common_mistake":  "`dependencies` It’s easy to think that the string “key” itself is the result. The result of a bracket lookup is the value associated with the key."
+                                },
+        "teaching_example":  {
+                                 "code":  "config = {\"name\": \"demo\", \"tools\": [\"ruff\", \"pytest\"]}\ntools = config[\"tools\"]\nprint(tools)",
+                                 "walkthrough":  "The list associated with the `tools` key—`[\u0027ruff\u0027, \u0027pytest\u0027]`—is returned."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Find the `dependencies` key in the `project` dictionary. Its value is the list `[\u0027fastapi\u0027, \u0027pandas\u0027]`. Use the square bracket notation to retrieve that list and store it in the `dependencies` variable.",
+                                   "why_correct":  "This is because the value associated with the `dependencies` key in the `dict` is that list.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "dependencies",
+                                                               "why_wrong":  "This is a key name, and the return value is the value associated with that key.",
+                                                               "misread_step":  "Separate the string inside the square brackets from the actual return value."
+                                                           },
+                                   "takeaway":  "When the ``data[key]`` is encountered in the `settings` dict, the actual value pointed to by the key is read."
+                               },
+        "target_statement":  "dependencies = project[\"dependencies\"]",
+        "focus_span":  "project[\"dependencies\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "modules_packages_environment",
+        "coverage_topics":  [
+                                "pyproject",
+                                "project_metadata",
+                                "dependencies",
+                                "configuration"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY6_L07_import_path_001",
+        "level":  7,
+        "title":  "Read the code, paying attention to module boundaries, to determine whether the actual call path extends all the way to the imported `search_docs`.",
+        "concepts":  [
+                         "from_import_statement",
+                         "call",
+                         "return_statement",
+                         "assignment"
+                     ],
+        "reading_goal":  "Read the structure where `from app.services.search import search_docs` binds a callable from an external project module to the current namespace, and the call path `handle_query -\u003e run_search -\u003e search_docs` actually reaches that name.",
+        "code":  "from app.services.search import search_docs\n\ndef run_search(term):\n    return search_docs(term)\n\ndef handle_query(term):\n    return run_search(term)\n\nresults = handle_query(\"LiDAR\")\nprint(len(results))",
+        "question_type":  "flow",
+        "question":  "The call path starting from `handle_query(\"LiDAR\")` ultimately leads to `search_docs` in an external project module. What is the statement that binds that callable to the current namespace, making this path possible?",
+        "choices":  [
+                        "from app.services.search import search_docs",
+                        "return run_search(term)",
+                        "return search_docs(term)",
+                        "results = handle_query(\"LiDAR\")"
+                    ],
+        "answer":  "from app.services.search import search_docs",
+        "explanation":  "1) In the `from import` statement, `app.services.search` is the source module path, and `search_docs` is the name introduced into the current namespace. 2) `handle_query(term)` calls `run_search(term)`. 3) `run_search(term)` reaches the `search_docs(term)` call site. 4) Therefore, the actual call path is `handle_query` → `run_search` → `search_docs`. 5) The `from-import` statement is what allows this final callable to be called without the module prefix.",
+        "side_card_ids":  [
+                              "SC_import_pm_reading"
+                          ],
+        "project_context":  "When checking where a function modified in APEX is actually called, develop the habit of reading not just a single file, but connecting it across import/dependency boundaries all the way to the actual call site.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "from_import_statement",
+        "reading_goal_internal":  "from app.services.search import search_docs가 외부 프로젝트 모듈의 callable을 현재 namespace에 바인딩하고, handle_query -\u003e run_search -\u003e search_docs의 실제 호출 경로가 그 이름까지 도달하는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`from module.path import name` directly binds the name of the specified module to the current namespace. When the code subsequently calls that name, execution is transferred to the imported callable.",
+                                    "how_to_read":  "First separate the module path after `from` from the name after `import`. Then start at the call on the entry side, follow the local helper, and verify that you reach the actual call site of the imported name.",
+                                    "key_point":  "Currently, `target` retrieves `search_docs` from `app.services.search`. `handle_query` proceeds through `run_search` until it reaches the actual call to `search_docs(term)`.",
+                                    "common_mistake":  "You should not assume that a function has actually been executed simply because it was imported. An import is evidence of name binding; to determine whether it has been executed, you must separately verify whether the control flow reaches the actual call site."
+                                },
+        "teaching_example":  {
+                                 "code":  "from pathlib import PurePath\n\ndef get_suffix(name):\n    return PurePath(name).suffix\n\nprint(get_suffix(\"cards.json\"))",
+                                 "walkthrough":  "PurePath is bound to the current namespace in pathlib and is actually used at the call site of get_suffix’s PurePath(name). The import and the actual call are different steps."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) In the `from import` statement, `app.services.search` is the source module path, and `search_docs` is the name introduced into the current namespace. 2) `handle_query(term)` calls `run_search(term)`. 3) `run_search(term)` reaches the `search_docs(term)` call site. 4) Therefore, the actual call path is `handle_query` → `run_search` → `search_docs`. 5) The `from-import` statement is what allows this final callable to be called without the module prefix.",
+                                   "why_correct":  "Because `from app.services.search import search_docs` directly binds the `search_docs` name from the external module to the current namespace, `run_search` can call that callable without the module prefix.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "return search_docs(term)",
+                                                               "why_wrong":  "This line is the actual call site for the imported callable, but it is not the statement that imports the name `search_docs` into the current namespace.",
+                                                               "misread_step":  "After highlighting the `import boundary` and the actual call site separately, distinguish the roles each plays in the call path."
+                                                           },
+                                   "takeaway":  "Module path tracing follows the sequence: **check the source of the import → current-name binding → entry call → local caller chain → actual call of the imported callable**."
+                               },
+        "target_statement":  "from app.services.search import search_docs",
+        "focus_span":  "from app.services.search import search_docs",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "modules_packages_environment",
+        "coverage_topics":  [
+                                "module_path",
+                                "package",
+                                "from_import",
+                                "name_binding",
+                                "call_path",
+                                "cross_module_dependency"
+                            ],
+        "pedagogical_intent":  "identify_meaning",
+        "subtype":  "from_import",
+        "secondary_concepts":  [
+                                   "call",
+                                   "return_statement",
+                                   "assignment"
+                               ],
+        "prerequisites":  [
+                              "name_reference",
+                              "call"
+                          ],
+        "semantic_operations":  [
+                                    "module_name_import",
+                                    "cross_module_name_binding",
+                                    "call_path_trace",
+                                    "project_service_call"
+                                ],
+        "reading_steps":  [
+                              "In the `from import` statement, the source module path is `app.services.search`, and the name bound to the current namespace is `search_docs`.",
+                              "`handle_query(term)` calls `run_search(term)`.",
+                              "`run_search(term)` actually calls the imported callable `search_docs(term)`.",
+                              "Therefore, the execution path starting from `handle_query` passes through `run_search` and reaches `search_docs`.",
+                              "The `import` statement itself does not execute `search_docs`; rather, it binds a name to the current namespace so that it can be used at subsequent call sites."
+                          ],
+        "same_syntax_example":  "from pathlib import PurePath\n\ndef parent_of(name):\n    return PurePath(name).parent\n\nprint(parent_of(\"data/cards.json\"))"
+    },
+    {
+        "id":  "PY6_L09_fastapi_router_001",
+        "level":  9,
+        "title":  "Understanding the meaning of `prefix=\u0027/api\u0027` in `include_router()`",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "class_definition"
+                     ],
+        "reading_goal":  "Read the structure where a prefix keyword argument determines the beginning of the path in a router registration method call.",
+        "code":  "class App:\n    def __init__(self):\n        self.routes = []\n    def include_router(self, router, prefix):\n        self.routes.extend(prefix + path for path in router)\n\nrouter = [\"/health\", \"/items\"]\napp = App()\napp.include_router(router, prefix=\"/api\")\nfirst_route = app.routes[0]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `first_route`?",
+        "choices":  [
+                        "/api/health",
+                        "/health",
+                        "/api",
+                        "/items"
+                    ],
+        "answer":  "/api/health",
+        "explanation":  "The prefix `/api` is added before the router’s `/health`, so `/api/health` is added to the routes. This is because the `prefix` keyword argument in the `include_router` call specifies the prefix for the common path. Common mistake: `/health`. That value is the original path within the router, not the final path after the prefix is applied. Source of confusion: This occurs when the prefix option is not applied. For a separate API route, the formula is **router path + include prefix = final URL**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "In a FastAPI project, `app/main.py` is linked to a structure where the `routes` module is included to apply a common API prefix.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "router 등록 method 호출에서 prefix keyword argument가 경로 앞부분을 결정하는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`prefix=\u0027/api\u0027` is a keyword argument that passes a string value with a name in a method call.",
+                                    "how_to_read":  "We look at what kind of option the keyword is and what value the string on the right actually passes.",
+                                    "key_point":  "In FastAPI `include_router`, `prefix` is used to add a common path in front of the routes owned by the router.",
+                                    "common_mistake":  "It is easy to think `prefix` changes the server port or database name. It is an option related to the beginning of a URL path."
+                                },
+        "teaching_example":  {
+                                 "code":  "class App:\n    def include(self, router, prefix):\n        return prefix + router[\"path\"]\n\napp = App()\nroute = app.include({\"path\": \"/items\"}, prefix=\"/v1\")",
+                                 "walkthrough":  "The prefix /v1 is appended to the router path /items, resulting in /v1/items."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The prefix `/health` is added before the router’s `/api`, so `/api/health` is added to the routes.",
+                                   "why_correct":  "This is because the prefix keyword argument in the `include_router` call specifies the beginning of the common path.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "/health",
+                                                               "why_wrong":  "That value is the original path inside the router, not the final path after the prefix is applied.",
+                                                               "misread_step":  "This is the case when the `prefix` option is not applied."
+                                                           },
+                                   "takeaway":  "A separated API route is read as **router path + include prefix = final URL**."
+                               },
+        "target_statement":  "app.include_router(router, prefix=\"/api\")",
+        "focus_span":  "prefix=\"/api\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "FastAPI",
+                                "router",
+                                "prefix",
+                                "module structure"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY6_L09_apirouter_001",
+        "level":  9,
+        "title":  "Combining the router prefix and route path into a single string using the \"+\" operator",
+        "concepts":  [
+                         "arithmetic",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the process by which the main prefix and router path are combined into a single final URL through string concatenation.",
+        "code":  "prefix = \"/api\"\nroute_path = \"/health\"\nfinal_path = prefix + route_path",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `final_path`?",
+        "choices":  [
+                        "/api/health",
+                        "/health",
+                        "/api",
+                        "health/api"
+                    ],
+        "answer":  "/api/health",
+        "explanation":  "`\u0027/api\u0027 + \u0027/health\u0027` This creates the string \"`/api/health`\" because the string \"addition\" concatenates the two path fragments in order. A common source of confusion: The value only reflects the internal path of the /health router and does not account for the main prefix. Point of misinterpretation: This occurs when the combination of routes across modules is not traced to the end. A separate route **traces both the prefix and the local path**.",
+        "side_card_ids":  [
+                              "PL_endpoint_001"
+                          ],
+        "project_context":  "This relates to the reading exercise that tracks the actual call URLs when an API file is split into multiple modules.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "arithmetic",
+        "reading_goal_internal":  "문자열 addition으로 main prefix와 router path가 하나의 최종 URL이 되는 과정을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "In strings, `left + right` is an addition operation that concatenates the two strings.",
+                                    "how_to_read":  "Concatenate the actual values of the left and right strings in order.",
+                                    "key_point":  "Even if you separate the router, you must track the final URL by combining the router path and the include prefix.",
+                                    "common_mistake":  "It’s easy to assume that the `health` function name automatically determines the entire URL. However, the URL is determined by the `path` and `prefix` settings."
+                                },
+        "teaching_example":  {
+                                 "code":  "prefix = \"/v1\"\npath = \"/users\"\nfull = prefix + path",
+                                 "walkthrough":  "When the two strings are concatenated, “full” becomes /v1/users."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`\u0027/api\u0027 + \u0027/health\u0027` creates the string `/api/health`.",
+                                   "why_correct":  "This is because the string `addition` concatenates the two path fragments in order.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "/health",
+                                                               "why_wrong":  "This value reflects only the internal routes of the router and does not include the main prefix.",
+                                                               "misread_step":  "This is a case where the combination of routes between modules was not tracked to the end."
+                                                           },
+                                   "takeaway":  "A separate route **traces both the prefix and the local path**."
+                               },
+        "target_statement":  "final_path = prefix + route_path",
+        "focus_span":  "prefix + route_path",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "APIRouter",
+                                "route",
+                                "prefix",
+                                "final URL"
+                            ],
+        "pedagogical_intent":  "predict_output"
+    },
+    {
+        "id":  "PY6_L08_settings_class_001",
+        "level":  8,
+        "title":  "Reading Settings Values Using the `dict.get()` Default",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "attribute_access",
+                         "argument_passing",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the flow where a call to `dict.get()` during the initialization of a configuration object returns the second argument if the key is not found.",
+        "code":  "class Settings:\n    def __init__(self, env):\n        self.api_key = env.get(\"OPENAI_API_KEY\")\n        self.model = env.get(\"MODEL\", \"gpt-4o-mini\")\n\nenv = {\"OPENAI_API_KEY\": \"demo-key\"}\nsettings = Settings(env)",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `settings.model`?",
+        "choices":  [
+                        "gpt-4o-mini",
+                        "None",
+                        "MODEL",
+                        "demo-key"
+                    ],
+        "answer":  "gpt-4o-mini",
+        "explanation":  "Since the `MODEL` key is not present in `env`, `env.get(\"MODEL\", \"gpt-4o-mini\")` returns the second argument. That result is stored in `self.model`. This is because `dict.get` returns the default value provided when the key is absent. A common source of confusion: None is returned when there is no second default argument, but in this case, `gpt-4o-mini` is explicitly specified. Common Misinterpretation: This occurs when the second argument of `get()` is ignored. `dict.get(key, default)` **returns the default value if the key is not found**.",
+        "side_card_ids":  [
+                              "PL_env_001",
+                              "DEV_api_key_001"
+                          ],
+        "project_context":  "This relates to a structure in which an API server or LLM app aggregates configuration values into a single object, while setting defaults for any omitted options.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "설정 객체 초기화 중 dict.get() 호출이 key 부재 시 두 번째 인자를 반환하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping.get(key, default)` is a method call that returns the corresponding value if the key exists, or the default value if it does not.",
+                                    "how_to_read":  "First, it checks whether the `env` object contains a `MODEL` key; if not, it uses the second argument (a string) as the result.",
+                                    "key_point":  "The settings class is domain context; the Python syntax focus is the second argument to `get()`, which serves as the fallback.",
+                                    "common_mistake":  "It’s easy to assume that if a key is missing, the value is always None. If a second argument is provided, that value is returned."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Config:\n    def __init__(self, env):\n        self.region = env.get(\"REGION\", \"seoul\")\n\nconfig = Config({})",
+                                 "walkthrough":  "Since there is no REGION key, `get()` returns the default value `seoul`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the `MODEL` key is not present in `env`, `env.get(\"MODEL\", \"gpt-4o-mini\")` returns the second argument. That result is stored in `self.model`.",
+                                   "why_correct":  "This is because `dict.get` returns the default value provided when the key is absent.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "None",
+                                                               "why_wrong":  "The second default argument is `None` when omitted, but here `gpt-4o-mini` is explicitly specified.",
+                                                               "misread_step":  "This is an example where the second argument of `get()` is ignored."
+                                                           },
+                                   "takeaway":  "`dict.get(key, default)` **returns the default value when the key is missing**."
+                               },
+        "target_statement":  "self.model = env.get(\"MODEL\", \"gpt-4o-mini\")",
+        "focus_span":  "env.get(\"MODEL\", \"gpt-4o-mini\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "modules_packages_environment",
+        "coverage_topics":  [
+                                "settings",
+                                "environment",
+                                "default value",
+                                "dict get"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY6_L06_gitignore_001",
+        "level":  6,
+        "title":  "ignore Check if `.env` is present in the path set",
+        "concepts":  [
+                         "membership_test",
+                         "assignment"
+                     ],
+        "reading_goal":  "It explains that the purpose of `.gitignore` is to prevent repository leaks by excluding confidential configuration files such as `.env`.",
+        "code":  "ignored_paths = {\".env\", \".venv/\", \"__pycache__/\", \"outputs/\"}\nignored = \".env\" in ignored_paths\nprint(ignored)",
+        "question_type":  "meaning_choice",
+        "question":  "What is the most important reason why `.env` is classified as an item to be ignored because it is located within `ignored_paths`?",
+        "choices":  [
+                        "To prevent sensitive settings, such as API keys, from being committed to a Git repository and leaked,",
+                        "To prevent Python from reading the .env file,",
+                        "Always trying to double the speed of Git commits",
+                        "To delete all environment variables"
+                    ],
+        "answer":  "To prevent sensitive settings, such as API keys, from being committed to a Git repository and leaked,",
+        "explanation":  "1) `.env` is on the ignore list. 2) `.env` may contain sensitive settings such as API keys. 3) Exclude it to prevent it from being added to Git, thereby reducing the risk of secret leakage. To prevent sensitive settings like API keys from being committed to the Git repository and leaked, this explanation interprets the Python target on this card in the context of legacy/domain objectives. Common Misconceptions: This option focuses only on specific syntax or context within the code to prevent Python from reading the `.env` file, thereby missing the card’s core meaning. Point of Misinterpretation: If you only get the “True” value for `.env in ignored_paths` correct, you miss why it should be ignored and the fact that separate measures are needed for files that have already been tracked. The `.env` file is generally ignored to **prevent the exposure of secret settings in the repository**.",
+        "side_card_ids":  [
+                              "DEV_dotenv_001"
+                          ],
+        "project_context":  "This refers to the context of checking a list of settings—such as `.env`—that exclude files from Git tracking as Python values.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "`.gitignore`에서 `.env` 같은 비밀 설정 파일을 제외해 저장소 유출을 막는 목적을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`x in collection` is a membership test that checks whether x is contained in collection.",
+                                    "how_to_read":  "It checks the string to be found on the left and compares it with the actual items in the set on the right.",
+                                    "key_point":  "\"membership True\" should be interpreted as **a security policy intended to exclude `.env` from version control**.",
+                                    "common_mistake":  "If you only get the \"True\" value for `.env in ignored_paths` correct, you’ll miss why it needs to be ignored and the fact that files that have already been tracked require separate action."
+                                },
+        "teaching_example":  {
+                                 "code":  "blocked = {\"secret.txt\", \"token.json\"}\nprint(\"token.json\" in blocked)",
+                                 "walkthrough":  "Since `token.json` exists as an item in the set, `True` is output."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `.env` is on the ignore list. 2) `.env` may contain sensitive settings such as API keys. 3) Exclude this to prevent it from being included in Git commits, thereby reducing the risk of information leaks.",
+                                   "why_correct":  "This explanation interprets the Python target on this card in the context of legacy/domain purposes to prevent confidential settings, such as API keys, from being committed to a Git repository and leaked.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "To prevent Python from reading the .env file,",
+                                                               "why_wrong":  "This option focuses only on certain aspects of the code’s syntax or context and misses the core meaning of the card.",
+                                                               "misread_step":  "If you only get the \"True\" value for `.env in ignored_paths` correct, you’ll miss why it needs to be ignored and the fact that files that have already been tracked require separate action."
+                                                           },
+                                   "takeaway":  "`.env` is generally ignored to **prevent the exposure of confidential settings**."
+                               },
+        "target_statement":  "ignored = \".env\" in ignored_paths",
+        "focus_span":  "\".env\" in ignored_paths",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "gitignore",
+                                "secret",
+                                "env_file",
+                                "membership"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY6_L08_github_actions_001",
+        "level":  8,
+        "title":  "Checking Two CI Trigger Conditions Together Using “and”",
+        "concepts":  [
+                         "boolean_operation",
+                         "comparison",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read whether the condition for running the CI is met only when both comparison results are combined with `and` and both are true.",
+        "code":  "event = {\"type\": \"push\", \"branch\": \"main\"}\nshould_run = event[\"type\"] == \"push\" and event[\"branch\"] == \"main\"",
+        "question_type":  "multiple_choice",
+        "question":  "`should_run` What value is stored in ?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "push",
+                        "main"
+                    ],
+        "answer":  "True",
+        "explanation":  "Both comparison expressions evaluate to True, and ``and`` evaluates to True when both values are true. This is because the event type is “push” and the branch is “main.” A common source of confusion: False—there are no false conditions among the two. Point of misreading: This occurs when the actual value of one of the two comparisons is misread. The `` is used to check whether **all conditions are true**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It connects to a workflow that verifies CI conditions—which execute testing and deployment tasks only on `main` pushes—using structured Python state.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "boolean_operation",
+        "reading_goal_internal":  "두 개의 비교 결과를 `and`로 결합해 모두 참일 때만 CI 실행 조건이 성립하는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`A and B` is a Boolean operation that evaluates to true when both operands are truthy.",
+                                    "how_to_read":  "Evaluate the left and right comparisons separately and verify that both results are True.",
+                                    "key_point":  "The GitHub Actions YAML is the context for coverage, and the focus on Python syntax is on `and`, which combines the two trigger conditions.",
+                                    "common_mistake":  "It’s easy to assume that as long as it’s a `push`, the result is `True` regardless of the branch. However, on `and`, both conditions are required."
+                                },
+        "teaching_example":  {
+                                 "code":  "event = {\"type\": \"push\", \"branch\": \"dev\"}\nshould_run = event[\"type\"] == \"push\" and event[\"branch\"] == \"main\"",
+                                 "walkthrough":  "The first comparison is True, but the second is False, so the overall result of the `and` operator is False."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Each of the two expressions evaluates to True, and `and` evaluates to True only when both values are true.",
+                                   "why_correct":  "This is because the event type is \"push\" and the branch is \"main.\"",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "None of the two conditions are false.",
+                                                               "misread_step":  "This is a case where the actual value of one of the two comparisons was misread."
+                                                           },
+                                   "takeaway":  "`and` is used to check whether **all conditions are true**."
+                               },
+        "target_statement":  "should_run = event[\"type\"] == \"push\" and event[\"branch\"] == \"main\"",
+        "focus_span":  "event[\"type\"] == \"push\" and event[\"branch\"] == \"main\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "GitHub Actions",
+                                "push",
+                                "main branch",
+                                "CI trigger"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY6_L08_js_localstorage_001",
+        "level":  8,
+        "title":  "Creating a string for storage using `json.dumps()`",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "argument_passing",
+                         "attribute_access",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Note that the return value of the function call that converts a `dict` to JSON text is a string.",
+        "code":  "import json\n\nprogress = {\"seen\": {\"c1\": True}}\nraw = json.dumps(progress, ensure_ascii=False)",
+        "question_type":  "multiple_choice",
+        "question":  "`raw` What is the data type of ?",
+        "choices":  [
+                        "str",
+                        "dict",
+                        "list",
+                        "bytes"
+                    ],
+        "answer":  "str",
+        "explanation":  "`json.dumps()` serializes the `progress` dict into text using JSON syntax. Since the return value is assigned to `raw`, the type of `raw` is `str`. This is because the return type of `dumps` is a JSON string. A common source of confusion: `dict dict` refers to the input value, while the result of the call is a string. Point of misinterpretation: This occurs when the data types of the function’s input and return values are confused. ``json.dumps()`` is a conversion from **Python value → JSON string**.",
+        "side_card_ids":  [
+                              "WEB_localstorage_001"
+                          ],
+        "project_context":  "This connects to the state-saving flow that converts learning progress and notes into JSON strings before storing them in the browser storage.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "dict를 JSON text로 바꾸는 함수 호출의 반환값이 문자열이라는 점을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`json.dumps(value)` is a function call that serializes a Python value into a JSON-formatted string.",
+                                    "how_to_read":  "Check the data type of the input variable `progress` and note that the return value of `dumps` is a new string.",
+                                    "key_point":  "`localStorage` operates in a browser domain context, and in Python, the stringification step immediately before storage is modeled using `json.dumps()`.",
+                                    "common_mistake":  "It’s easy to assume that `dumps` modifies the original dictionary. It returns a new string."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\n\nstate = {\"done\": True}\nraw = json.dumps(state)",
+                                 "walkthrough":  "Since the `dict` is converted to JSON text, `raw` becomes a string."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`json.dumps()` serializes the `progress` dictionary into text formatted as JSON. Since the return value is assigned to `raw`, the type of `raw` is `str`.",
+                                   "why_correct":  "This is because the return contract for `dumps` is a JSON string.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "dict",
+                                                               "why_wrong":  "`dict` is the input, and the result of the call is a string.",
+                                                               "misread_step":  "This is an example of confusion between the data types of a function’s input and return values."
+                                                           },
+                                   "takeaway":  "`json.dumps()` converts a **Python value → JSON string**."
+                               },
+        "target_statement":  "raw = json.dumps(progress, ensure_ascii=False)",
+        "focus_span":  "json.dumps(progress, ensure_ascii=False)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "localStorage",
+                                "JSON string",
+                                "browser state",
+                                "serialization"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY6_L08_js_fetch_json_001",
+        "level":  8,
+        "title":  "Restoring the response string as a list using `json.loads()`",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "attribute_access",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read the data structure resulting from the function call that parses the JSON text, and distinguish between the string and the parsed list.",
+        "code":  "import json\n\nresponse_text = \u0027[{\"id\": \"c1\"}, {\"id\": \"c2\"}]\u0027\ncards = json.loads(response_text)",
+        "question_type":  "multiple_choice",
+        "question":  "`cards` What is the data type of ?",
+        "choices":  [
+                        "list",
+                        "str",
+                        "dict",
+                        "bytes"
+                    ],
+        "answer":  "list",
+        "explanation":  "The outer structure of `response_text` is a JSON array. `loads` converts this into a Python list and stores it in `cards`, because JSON arrays map to lists in Python. A common source of confusion: `str str` refers to the type of `response_text` before parsing. Point of misinterpretation: This occurs when the input before the call and the result after the call are not distinguished. ``json.loads()`` returns **a Python value that matches the structure of the JSON string**.",
+        "side_card_ids":  [
+                              "WEB_html_css_js_001"
+                          ],
+        "project_context":  "It connects to the app’s loading flow, which parses the lesson JSON response and uses it as an array of cards.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "JSON text를 파싱하는 함수 호출의 결과 자료구조를 읽고 문자열과 파싱된 list를 구분한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`json.loads(text)` parses a JSON-formatted string and returns the corresponding Python value.",
+                                    "how_to_read":  "Check the outermost JSON structure within the string; if it is an array, it is interpreted as a Python list.",
+                                    "key_point":  "`fetch` is a JavaScript concept, and here we reliably reproduce only the parsing stage without network communication.",
+                                    "common_mistake":  "It’s easy to assume that `loads` always returns a dictionary. If the top-level structure of the JSON is an array, it returns a list."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\n\nresponse_text = \u0027[1, 2, 3]\u0027\nvalues = json.loads(response_text)",
+                                 "walkthrough":  "Since we are parsing a JSON array string, `values` becomes a Python list."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The outer structure of `response_text` is a JSON array. `loads` converts this into a Python list and stores it in `cards`.",
+                                   "why_correct":  "This is because a JSON array is mapped to a list in Python.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "str",
+                                                               "why_wrong":  "`str` is the type of `response_text` before parsing.",
+                                                               "misread_step":  "This is an example where the input before the call and the result after the call are not distinguished."
+                                                           },
+                                   "takeaway":  "`json.loads()` returns **Python values that match the structure of the JSON string**."
+                               },
+        "target_statement":  "cards = json.loads(response_text)",
+        "focus_span":  "json.loads(response_text)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "fetch JSON",
+                                "response body",
+                                "JSON parsing",
+                                "lesson cards"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY6_L09_service_worker_install_001",
+        "level":  9,
+        "title":  "Understanding the meaning of \"caches.open(\u0027app-v1\u0027)\" when opening a cache",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "class_definition"
+                     ],
+        "reading_goal":  "Read the structure where a name is passed to the `open` method of a cache storage object to retrieve a specific cache.",
+        "code":  "class CacheStorage:\n    def __init__(self):\n        self.names = set()\n    def open(self, name):\n        self.names.add(name)\n        return {\"name\": name}\n\ncaches = CacheStorage()\ncache = caches.open(\"app-v1\")",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `cache[\"name\"]`?",
+        "choices":  [
+                        "app-v1",
+                        "cache",
+                        "install",
+                        "None"
+                    ],
+        "answer":  "app-v1",
+        "explanation":  "`caches.open(\u0027app-v1\u0027)` In the call, the string “app-v1” is passed as the cache name, and the returned dictionary also contains the same name. This is because the `open` method is modeled to select or create a named cache. A common source of confusion: `install` refers to the lifecycle context, and the cache name is “app-v1.” Point of misreading: This is a case where the event name and cache name were confused. The PWA cache code reads as **cache storage object → open name → versioned cache**.",
+        "side_card_ids":  [
+                              "WEB_pwa_001",
+                              "PL_cache_001"
+                          ],
+        "project_context":  "This is linked to the “install” step, which prepares a versioned cache to store app resources when installing the learning app as a PWA.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "cache storage 객체의 open method에 이름을 전달해 특정 cache를 얻는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`obj.open(name)` This is a method call that passes `name` to the `open` method of an object.",
+                                    "how_to_read":  "Check whether the object to the left of the dot is the cache storage and whether the string inside the parentheses is a cache name.",
+                                    "key_point":  "During the Service Worker installation phase, it is common to prepare cache space to store resources such as the app shell.",
+                                    "common_mistake":  "`caches.open` It’s easy to think this refers to opening a browser tab or a database. Here, it refers to named cache storage."
+                                },
+        "teaching_example":  {
+                                 "code":  "class CacheStore:\n    def open(self, name):\n        return {\"name\": name}\nstore = CacheStore()\ncache = store.open(\"assets-v2\")",
+                                 "walkthrough":  "The name \"assets-v2\" is passed to `open`, and a value representing its cache is returned."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`caches.open(\u0027app-v1\u0027)` In the call, the string \"app-v1\" is passed as the cache name, and the same name is included in the returned dictionary.",
+                                   "why_correct":  "This is because the `open` method is modeled to select or create a named cache.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "install",
+                                                               "why_wrong":  "\"install\" refers to the lifecycle context, and the cache name is \"app-v1.\"",
+                                                               "misread_step":  "This is an instance where the event name was confused with the cache name."
+                                                           },
+                                   "takeaway":  "The PWA cache code reads as **cache storage object → open name → versioned cache**."
+                               },
+        "target_statement":  "cache = caches.open(\"app-v1\")",
+        "focus_span":  "caches.open(\"app-v1\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "service worker",
+                                "PWA",
+                                "cache",
+                                "install"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY6_L10_openai_client_001",
+        "level":  10,
+        "title":  "Passing messages as input keyword arguments in an LLM client call",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "literal",
+                         "class_definition"
+                     ],
+        "reading_goal":  "In the context of \"keyword arguments,\" understand the difference in roles: the left side represents the parameter name, and the right side represents the value to be evaluated and passed.",
+        "code":  "class Responses:\n    def create(self, model, input):\n        return {\"model\": model, \"input\": input}\n\nclass LLMClient:\n    def __init__(self):\n        self.responses = Responses()\n\nclient = LLMClient()\nmessages = [{\"role\": \"user\", \"content\": \"hello\"}]\nresponse = client.responses.create(model=\"demo-model\", input=messages)\nprint(response[\"input\"][0][\"content\"])",
+        "question_type":  "meaning_choice",
+        "question":  "Given `input=messages`, what value is passed to the `input` parameter of the `create` function?",
+        "choices":  [
+                        "[{\"role\": \"user\", \"content\": \"hello\"}]",
+                        "\"hello\"",
+                        "\"input\"",
+                        "\"demo-model\""
+                    ],
+        "answer":  "[{\"role\": \"user\", \"content\": \"hello\"}]",
+        "explanation":  "1) `messages` is a list containing a single `role/content` dictionary. 2) The `input=` part of the call specifies the name of the parameter to be received. 3) The current list value of `messages` on the right is passed to the `input` parameter. 4) `create` inserts that list as-is into the `input` value of `response`.",
+        "side_card_ids":  [
+                              "AI_llm_001"
+                          ],
+        "project_context":  "This ties into the common Python client pattern where a list of messages structured by role and content is generated in an educational LLM/RAG client and passed as input to the call.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "keyword argument에서 왼쪽은 받을 매개변수 이름이고 오른쪽은 평가해 전달할 값이라는 역할 차이를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A keyword argument is a name=value pair used in a function call to specify the name of a parameter to which a value is passed.",
+                                    "how_to_read":  "In `input=messages`, “input” is interpreted as the parameter name, and “messages” is interpreted as the actual list value in the current scope.",
+                                    "key_point":  "The entire `messages` list, which contains a `role/content` dictionary, is passed as a single value to the `input` parameter.",
+                                    "common_mistake":  "It is easy to misinterpret `input=messages` as a regular assignment statement outside a function or to assume that only the `hello` string is passed directly."
+                                },
+        "teaching_example":  {
+                                 "code":  "def submit(payload=None):\n    return payload\n\nmessages = [{\"role\": \"user\", \"content\": \"hi\"}]\nresult = submit(payload=messages)\nprint(result[0][\"content\"])",
+                                 "walkthrough":  "`payload=messages` passes the entire `messages` list to the `payload` parameter."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `messages` is a list containing a single `role/content` dictionary. 2) The `input=` part of the call specifies the name of the parameter to be received. 3) The current list value of `messages` on the right is passed to the `input` parameter. 4) `create` inserts that list as-is into the `input` value of `response`.",
+                                   "why_correct":  "The entire list referenced by `messages` on the right side of the `keyword argument` is passed to the `input` parameter.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "\"hello\"",
+                                                               "why_wrong":  "\"hello\" is the value of the \"content\" key in the dictionary inside the passed list; it is not the entire value of the input.",
+                                                               "misread_step":  "It is easy to misinterpret `input=messages` as a regular assignment statement outside a function or to assume that only the `hello` string is passed directly."
+                                                           },
+                                   "takeaway":  "A keyword argument is read in the following order: parameter name, evaluation of the expression on the right, and passing of the corresponding value."
+                               },
+        "target_statement":  "input=messages",
+        "focus_span":  "input=messages",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "llm_client",
+                                "message_input",
+                                "role_content",
+                                "api_client_pattern"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY6_L10_bedrock_invoke_001",
+        "level":  10,
+        "title":  "Reading the `invoke_model` method call in the Bedrock client",
+        "concepts":  [
+                         "call",
+                         "argument_passing",
+                         "attribute_access",
+                         "assignment"
+                     ],
+        "reading_goal":  "In the `object.method(...)` structure, distinguish between the called object (client), the method `invoke_model`, and the arguments passed to it, and understand the flow where the return value is stored in `result`.",
+        "code":  "class BedrockClient:\n    def invoke_model(self, modelId, contentType, body):\n        return {\"modelId\": modelId, \"contentType\": contentType, \"body\": body}\n\nclient = BedrockClient()\nmodel_id = \"demo-model\"\nbody_json = \u0027{\"prompt\":\"hello\"}\u0027\nresult = client.invoke_model(modelId=model_id, contentType=\"application/json\", body=body_json)\nprint(result[\"modelId\"])",
+        "question_type":  "meaning_choice",
+        "question":  "What is the target object that calls the `invoke_model` method in the `target` expression?",
+        "choices":  [
+                        "client",
+                        "model_id",
+                        "body_json",
+                        "result"
+                    ],
+        "answer":  "client",
+        "explanation":  "1) In the dot notation `client.invoke_model`, identify the name to the left of the dot. 2) `client` is the object on which the method is being called. 3) `invoke_model` is the name of the method being called on that object. 4) The values `modelId`, `contentType`, and `body` inside the parentheses are the arguments passed to the method.",
+        "side_card_ids":  [
+                              "AI_llm_001",
+                              "PL_endpoint_001"
+                          ],
+        "project_context":  "The cloud LLM runtime client connects to the code structure that sends inference requests using the model ID and request body.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "object.method(...) 구조에서 호출 대상 client와 메서드 invoke_model, 전달 인자를 구분하고 반환값이 result에 저장되는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A method call in the form `object.method(arguments)` is an expression that executes behavior provided by a particular object.",
+                                    "how_to_read":  "First, check the client on the left side of the dot, then read “invoke_model” on the right side of the dot as the method name, and finally check the arguments inside the parentheses.",
+                                    "key_point":  "`model_id` and `body_json` are not the targets of method calls but rather arguments passed to `invoke_model`.",
+                                    "common_mistake":  "It is easy to misinterpret `invoke_model` as a standalone function or to mistake `model_id` for the object being called."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Client:\n    def send(self, payload):\n        return {\"sent\": payload}\n\nclient = Client()\nprint(client.send(\"ping\"))",
+                                 "walkthrough":  "The client is the target of the method call, send is the method, and ping is passed as an argument."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) In the dot notation `client.invoke_model`, identify the name to the left of the dot. 2) `client` is the object on which the method is being called. 3) `invoke_model` is the name of the method being called on that object. 4) The values `modelId`, `contentType`, and `body` inside the parentheses are the arguments passed to the method.",
+                                   "why_correct":  "In the `object.method` structure, the element to the left of the dot (`client`) is the target of the method call, so the correct answer is `client`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "model_id",
+                                                               "why_wrong":  "`model_id` is only the value on the right side of the `modelId` keyword argument; it is not the target of the method call.",
+                                                               "misread_step":  "It is easy to misinterpret `invoke_model` as a standalone function or to mistake `model_id` for the object being called."
+                                                           },
+                                   "takeaway":  "When reading a method call, separate the target object, method name, arguments, and return value."
+                               },
+        "target_statement":  "client.invoke_model(modelId=model_id, contentType=\"application/json\", body=body_json)",
+        "focus_span":  "client.invoke_model(modelId=model_id, contentType=\"application/json\", body=body_json)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "bedrock_runtime",
+                                "model_inference",
+                                "client",
+                                "request_body"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY6_L08_dataset_split_001",
+        "level":  8,
+        "title":  "[90:] Reading the test range using `slice`",
+        "concepts":  [
+                         "slice",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "In dataset partitioning, we learn the rule that a slice containing only `start` selects the entire sequence, including the starting position.",
+        "code":  "def split_dataset(rows):\n    train = rows[:80]\n    valid = rows[80:90]\n    test = rows[90:]\n    return train, valid, test",
+        "question_type":  "multiple_choice",
+        "question":  "`test` What is the index of the first element included in the list?",
+        "choices":  [
+                        "80",
+                        "89",
+                        "90",
+                        "91"
+                    ],
+        "answer":  "90",
+        "explanation":  "In `rows[90:]`, the starting index is 90, and the start is included. Therefore, the first item in `test` corresponds to index 90 in the original `rows`. This is because a basic slice includes the start position in the result. Common mistake: 91. The value 91 results from confusing 1-based positions with indices. Point of confusion: Counting Python indices as if they were human-readable sequential numbers. `seq[start:]` returns elements **from the start index up to but not including the end**.",
+        "side_card_ids":  [
+                              "AI_eval_001"
+                          ],
+        "project_context":  "This is linked to the code that reads slice boundaries when dividing LoRA training data and validation/test data into intervals.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "slice",
+        "reading_goal_internal":  "start만 있는 slice가 시작 위치를 포함해 sequence 끝까지 선택하는 규칙을 데이터셋 분할에서 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`seq[start:]` is a slice that retrieves elements from the start index to the end of the sequence.",
+                                    "how_to_read":  "If `start` is 90, it selects the item at index 90 and all subsequent items.",
+                                    "key_point":  "A slice includes its start index. If the end is omitted, it continues through the last item.",
+                                    "common_mistake":  "It’s easy to mistake index 89 for “starting from the 90th element.” In Python, index 90 refers to the 91st element."
+                                },
+        "teaching_example":  {
+                                 "code":  "rows = list(range(10))\ntail = rows[7:]",
+                                 "walkthrough":  "Since the selection ranges from index 7 to the end, the tail is [7, 8, 9]."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "In `rows[90:]`, the starting index is 90, and the starting index is included. Therefore, the first item in `test` corresponds to index 90 in the original `rows`.",
+                                   "why_correct":  "This is because a basic slice includes the start position in the result.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "91",
+                                                               "why_wrong":  "91 is a value produced by confusing a one-based position with an index.",
+                                                               "misread_step":  "This is an example of counting Python indices as if they were people’s numbers in a line."
+                                                           },
+                                   "takeaway":  "`seq[start:]` It retrieves **from the start index to the end**."
+                               },
+        "target_statement":  "test = rows[90:]",
+        "focus_span":  "rows[90:]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "dataset split",
+                                "train",
+                                "validation",
+                                "test",
+                                "slice"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY6_L08_accuracy_001",
+        "level":  8,
+        "title":  "Use `zip()` to pair predictions and correct answers by position",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "argument_passing",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read that the `zip()` call groups corresponding values from multiple iterables into a tuple and outputs them in order.",
+        "code":  "preds = [\"cat\", \"dog\", \"bird\"]\nlabels = [\"cat\", \"bird\", \"bird\"]\npairs = list(zip(preds, labels))",
+        "question_type":  "multiple_choice",
+        "question":  "`pairs[1]` What is the value of ?",
+        "choices":  [
+                        "(\u0027dog\u0027, \u0027bird\u0027)",
+                        "(\u0027cat\u0027, \u0027cat\u0027)",
+                        "(\u0027bird\u0027, \u0027bird\u0027)",
+                        "(\u0027dog\u0027, \u0027dog\u0027)"
+                    ],
+        "answer":  "(\u0027dog\u0027, \u0027bird\u0027)",
+        "explanation":  "`zip` combines the ``dog`` from `preds[1]` and the ``bird`` from `labels[1]` into a tuple at the same index. After converting it to a list, the element at index 1 is that second tuple. This is because `zip` combines elements at the same position in iterables into tuples. Common mistake: (\u0027dog\u0027, \u0027dog\u0027)—the second label is not \"dog\" but \"bird.\" Point of confusion: This occurs when the `preds` value is used twice. ``zip(a, b)`` reads **the values at the same indices and pairs them into tuples**.",
+        "side_card_ids":  [
+                              "AI_eval_001"
+                          ],
+        "project_context":  "This is linked to the step preceding the calculation of accuracy—which compares predictions with ground truth values at the same positions—in the evaluation of models, rules, and classifiers.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "zip() 호출이 여러 iterable의 같은 위치 값을 tuple로 묶어 순서대로 내놓는 것을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`zip(a, b)` is a function call that sequentially generates tuples containing the corresponding values from the two iterables.",
+                                    "how_to_read":  "Read the first elements as a pair, the second elements as the next pair, and so on.",
+                                    "key_point":  "The accuracy calculation is a domain-specific context, and the focus of the Python syntax is the `zip()` call, which pairs two values at the same position.",
+                                    "common_mistake":  "It’s easy to think of it as a function that concatenates two lists. `zip` pairs elements at the same positions."
+                                },
+        "teaching_example":  {
+                                 "code":  "xs = [1, 2]\nys = [\"a\", \"b\"]\npairs = list(zip(xs, ys))",
+                                 "walkthrough":  "The first values are paired as `(1, \"a\")`, and the second values as `(2, \"b\")`, resulting in a list of two tuples."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`zip` pairs `dog` from `preds[1]` with `bird` from `labels[1]` as values at the same position. After converting it to a list, index 1 refers to the second tuple.",
+                                   "why_correct":  "This is because `zip` groups elements at the same index in an iterable into a tuple.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "(\u0027dog\u0027, \u0027dog\u0027)",
+                                                               "why_wrong":  "The second label is “bird,” not “dog.”",
+                                                               "misread_step":  "This is a case where the `preds` value is used only twice."
+                                                           },
+                                   "takeaway":  "`zip(a, b)` **pairs values at the same indices into tuples**."
+                               },
+        "target_statement":  "pairs = list(zip(preds, labels))",
+        "focus_span":  "zip(preds, labels)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "accuracy",
+                                "evaluation",
+                                "zip",
+                                "prediction label pairs"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY6_L07_error_parse_001",
+        "level":  7,
+        "title":  "If the conditions are met, return the error classification result using `return`.",
+        "concepts":  [
+                         "return_statement",
+                         "if_statement",
+                         "membership_test"
+                     ],
+        "reading_goal":  "The `return` statement within the selected `if` branch terminates the function’s execution and traces the flow of the value back to the calling location.",
+        "code":  "def parse_error_line(line):\n    if \"FileNotFoundError\" in line:\n        return \"missing_file\"\n    if \"Timeout\" in line:\n        return \"timeout\"\n    return \"unknown\"\n\nresult = parse_error_line(\"Request Timeout after 10s\")\nprint(result)",
+        "question_type":  "output_prediction",
+        "question":  "What is the output of the last line`print(result)`?",
+        "choices":  [
+                        "timeout",
+                        "missing_file",
+                        "unknown",
+                        "Timeout"
+                    ],
+        "answer":  "timeout",
+        "explanation":  "The input does not contain a `FileNotFoundError`, but it does contain a `Timeout`. Therefore, the program enters the second `if` statement and executes ``return \"timeout\"``. The function terminates at that point, and `timeout` is stored in `result`. This is because the selected return value in the execution path becomes the result of the function call. Common misconception: The function ends the moment it returns `unknown timeout`, so it does not reach the `return unknown` at the very bottom. Point of confusion: Do not interpret the code as continuing to execute the code below even after encountering a `return`. A `return` statement returns a value and simultaneously terminates the current function execution.",
+        "side_card_ids":  [
+                              "DEV_debugging_001"
+                          ],
+        "project_context":  "This is the flow of a diagnostic function that takes a single line from the collection and search execution log and converts the error type into a short classification value.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "return_statement",
+        "reading_goal_internal":  "선택된 if 분기 안의 return이 함수 실행을 끝내고 호출한 곳으로 값을 전달하는 흐름을 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`return value` This statement marks the end of the function’s execution and returns `value` to the point where the function was called.",
+                                    "how_to_read":  "It is interpreted as: “When the `return` statement is reached, its value is recorded as the result, and the statements below it in the same function are no longer executed.”",
+                                    "key_point":  "If the `return` statement in the second `if` statement is executed, the program will not proceed all the way down to the `return \"unknown\"` at the very bottom.",
+                                    "common_mistake":  "It is easy to misunderstand that all `return` statements within a function are executed sequentially. In reality, the first `return` encountered along the execution path terminates the function."
+                                },
+        "teaching_example":  {
+                                 "code":  "def classify(text):\n    if \"WARN\" in text:\n        return \"warning\"\n    return \"other\"\n\nprint(classify(\"WARN disk\"))",
+                                 "walkthrough":  "Since the WARN condition is true, the function returns a warning and terminates, so the `other` block is not executed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The input does not contain a `FileNotFoundError`, but it does contain a `Timeout`. Therefore, the program enters the second `if` statement and executes ``return \"timeout\"``. The function terminates immediately, and `timeout` is stored in `result`.",
+                                   "why_correct":  "This is because the return value selected along the execution path becomes the result of the function call.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "unknown",
+                                                               "why_wrong":  "The moment `timeout` is returned, the function ends, so execution never reaches the bottom `return unknown`.",
+                                                               "misread_step":  "Do not interpret the text as meaning that the code below continues to execute even after encountering a `return` statement."
+                                                           },
+                                   "takeaway":  "`return` returns a value and terminates the current function’s execution at the same time."
+                               },
+        "target_statement":  "return \"timeout\"",
+        "focus_span":  "return \"timeout\"",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "exceptions_debugging",
+        "coverage_topics":  [
+                                "error log",
+                                "classification",
+                                "return",
+                                "Timeout"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY6_L08_manifest_tsv_001",
+        "level":  8,
+        "title":  "Splitting a single line of TSV into two fields using `split(\\t)`",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "argument_passing",
+                         "literal"
+                     ],
+        "reading_goal":  "Read what substrings are returned when a tab delimiter is passed to the `split` string method.",
+        "code":  "line = \"doc-17\\tdata/docs/doc-17.txt\"\ndoc_id, file_path = line.split(\"\\t\")",
+        "question_type":  "multiple_choice",
+        "question":  "What is the string stored in `file_path`?",
+        "choices":  [
+                        "doc-17",
+                        "data/docs/doc-17.txt",
+                        "\\t",
+                        "line"
+                    ],
+        "answer":  "data/docs/doc-17.txt",
+        "explanation":  "`line.split(\"\\t\")` creates two strings by splitting on the tab character. In unpacking assignment, the second result is stored in `file_path` because the substring to the right of the tab is the second returned element. Common wrong answer: `doc-17`. `doc-17` is the first result, so it is stored in `doc_id`. Misreading point: This happens when the positional mapping in unpacking is read backward. `split(\"\\t\")` is a **method call that splits a string at tab boundaries**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This is linked to input processing that reads tab-delimited manifests such as the document registry and KG evidence map.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "문자열 메서드 split에 탭 구분자를 전달했을 때 어떤 부분 문자열들이 반환되는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`text.split(separator)` is a method call that splits a string at the position where the separator appears and returns a list of substrings.",
+                                    "how_to_read":  "First, identify the delimiter inside the parentheses, then use that character as a boundary to split the original string into left and right parts.",
+                                    "key_point":  "`\\t` is a tab character. It is different from a single space or a comma.",
+                                    "common_mistake":  "It’s easy to assume that `\\t` represents the two characters “backslash” and “t” as they appear. In string literals, it represents a single tab character."
+                                },
+        "teaching_example":  {
+                                 "code":  "line = \"u1\\tusers/u1.json\"\nuser_id, path = line.split(\"\\t\")",
+                                 "walkthrough":  "Separated by a single tab, the two strings `u1` and `users/u1.json` are created and assigned in order."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`line.split(\"\\t\")` splits the string into two parts based on tabs. In unpacking assignment, the second result is stored in `file_path`.",
+                                   "why_correct":  "This is because the string on the right side of the tab is the second return element.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "doc-17",
+                                                               "why_wrong":  "Since doc-17 is the first result, it is stored in doc_id.",
+                                                               "misread_step":  "This is an example of misreading the position of an unpacking operator."
+                                                           },
+                                   "takeaway":  "`split(\"\\t\")` is a **method call that splits a string using tabs as delimiters**."
+                               },
+        "target_statement":  "doc_id, file_path = line.split(\"\\t\")",
+        "focus_span":  "line.split(\"\\t\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "TSV",
+                                "manifest",
+                                "split",
+                                "tab delimiter"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY6_L06_normalize_id_001",
+        "level":  6,
+        "title":  "Normalize IDs by following the string method chain from left to right",
+        "concepts":  [
+                         "call",
+                         "return_statement",
+                         "attribute_access"
+                     ],
+        "reading_goal":  "Trace a method chain in the order where the string returned by the method on the left becomes the target of the next method.",
+        "code":  "def normalize_doc_id(value):\n    return value.strip().lower().replace(\" \", \"_\")\n\nprint(normalize_doc_id(\" Doc 001 \"))",
+        "question_type":  "output_prediction",
+        "question":  "What is the return value of `normalize_doc_id(\" Doc 001 \")`?",
+        "choices":  [
+                        "doc_001",
+                        "Doc 001",
+                        " doc 001 ",
+                        "DOC_001"
+                    ],
+        "answer":  "doc_001",
+        "explanation":  "The initial string has spaces at both ends. `strip` removes these to create `Doc 001`. `lower` changes it to `doc 001`. `replace` replaces the space in the middle with `_` to create `doc_001`. `return` returns this value. If you apply the method chain in the actual order of execution, the result is `doc_001`. A common source of confusion: This option stops at the result of `strip` on `Doc 001` and does not apply the subsequent `lower` and `replace` methods. Point of misinterpretation: The reader follows every method in the chain from left to right. They interpret the method chain as the return value of the previous call becoming the argument for the next call.",
+        "side_card_ids":  [
+                              "SC_normalization"
+                          ],
+        "project_context":  "This is the context for reading string-processing code that normalizes `doc_id` or `node_id` into a format that is easy to compare.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "method chain에서 왼쪽 메서드의 반환 문자열이 다음 메서드의 대상이 되는 순서를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A method chain is a pattern in which the return value of one method is used to call the next method immediately.",
+                                    "how_to_read":  "Starting from the left, write down the intermediate results one step at a time. The order is: `strip()` result → `lower()` result → `replace()` result.",
+                                    "key_point":  "The methods are not applied to the original value simultaneously; rather, each subsequent method receives the string created by the preceding method.",
+                                    "common_mistake":  "It’s easy to assume that `replace` replaces all leading and trailing spaces in the original string with underscores. However, since `strip` is executed first, the leading and trailing spaces are already removed."
+                                },
+        "teaching_example":  {
+                                 "code":  "text = \"  Hello World  \"\nresult = text.strip().lower().replace(\" \", \"-\")\nprint(result)",
+                                 "walkthrough":  "The results follow in the order: strip → `Hello World`, lower → `hello world`, replace → `hello-world`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The initial string has spaces at both ends. `strip` removes these to create `Doc 001`. `lower` changes it to `doc 001`. `replace` replaces the space in the middle with `_` to create `doc_001`. `return` returns this value.",
+                                   "why_correct":  "If you apply the method chain in the actual order of execution, the result is `doc_001`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Doc 001",
+                                                               "why_wrong":  "This option stops at the `strip` result and does not apply the subsequent `lower` and `replace` operations.",
+                                                               "misread_step":  "It traverses all methods in the chain from left to right."
+                                                           },
+                                   "takeaway":  "A method chain is defined as a sequence where the return value of the previous call becomes the argument for the next call."
+                               },
+        "target_statement":  "return value.strip().lower().replace(\" \", \"_\")",
+        "focus_span":  "value.strip().lower().replace(\" \", \"_\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "normalization",
+                                "string_methods",
+                                "document_id"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY6_L06_slug_001",
+        "level":  6,
+        "title":  "Return the converted slug string using `return`",
+        "concepts":  [
+                         "return_statement",
+                         "call",
+                         "attribute_access"
+                     ],
+        "reading_goal":  "Read the flow where the `return` statement returns the final value of the expression on the right as the result of the function call.",
+        "code":  "def make_slug(title):\n    return title.lower().replace(\"/\", \"-\").replace(\" \", \"-\")\n\nslug = make_slug(\"AI / RAG Notes\")\nprint(slug)",
+        "question_type":  "output_prediction",
+        "question":  "What is the string returned by `make_slug(\"AI / RAG Notes\")`?",
+        "choices":  [
+                        "ai---rag-notes",
+                        "AI / RAG Notes",
+                        "ai/rag/notes",
+                        "notes"
+                    ],
+        "answer":  "ai---rag-notes",
+        "explanation":  "`lower` converts the string to `ai / rag notes`. The first `replace` replaces `/` with `-`, resulting in `ai - rag notes`. The second `replace` operation replaces each space with `-`, resulting in `ai---rag-notes`. The `return` statement returns this string as the result of the call. This is because the final string obtained after fully evaluating the expression on the right side of the `return` is `ai---rag-notes`. Commonly Misunderstood Incorrect Answer: This is the original string passed to the `AI / RAG Notes` function, and the `lower` and `replace` operations are executed before the `return` statement. Point of confusion: The return value must be determined after the entire expression on the right side of the `return` statement has been evaluated. A `return expression` returns the final result of evaluating that expression as the function’s return value.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "The context involves reading code that converts a URL slug or a filename string and returns it as the result of a function.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "return_statement",
+        "reading_goal_internal":  "return statement가 오른쪽 표현식의 최종 값을 함수 호출 결과로 돌려준다는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`return expression` evaluates the expression on the right, returns its value as the result of the function call, and terminates the function’s execution.",
+                                    "how_to_read":  "\"return\" is read as: \"First, the expression on the right is evaluated all the way through, and its final value is returned to the calling location.\"",
+                                    "key_point":  "The main focus of this card is not the names of the string conversion methods themselves, but the fact that the final converted value is returned outside the function via `return`.",
+                                    "common_mistake":  "It is easy to assume that `return` simply returns the original value of `title`. In reality, it returns the result of the calculation at the end of the method chain on the right."
+                                },
+        "teaching_example":  {
+                                 "code":  "def clean_name(name):\n    return name.strip().lower()\n\nresult = clean_name(\"  Mina  \")\nprint(result)",
+                                 "walkthrough":  "The final string, ``mina``, which has been processed with `strip` and `lower`, is stored in `result` via the `return` statement."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`lower` converts the string into `ai / rag notes`. The first `replace` changes `/` to `-`, resulting in `ai - rag notes`. The second `replace` changes each space to `-`, resulting in `ai---rag-notes`. `return` returns this string as the result of the call.",
+                                   "why_correct":  "return Because the final string resulting from evaluating the expression on the right is `ai---rag-notes`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "AI / RAG Notes",
+                                                               "why_wrong":  "This is the original string passed to the function, and the `lower` and `replace` operations are executed before the `return` statement.",
+                                                               "misread_step":  "You must evaluate the entire expression on the right side of `return` and then determine the return value."
+                                                           },
+                                   "takeaway":  "`return expression` returns the final evaluated value of `expression` as the result of the function call."
+                               },
+        "target_statement":  "return title.lower().replace(\"/\", \"-\").replace(\" \", \"-\")",
+        "focus_span":  "return title.lower().replace(\"/\", \"-\").replace(\" \", \"-\")",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "slug",
+                                "string_normalization",
+                                "return",
+                                "file_name"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY6_L08_top_items_001",
+        "level":  8,
+        "title":  "[:limit] Selecting only the top N items using `slice`",
+        "concepts":  [
+                         "slice",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the rule for selecting up to limit slices from the front of a sorted sequence that contain only stop elements.",
+        "code":  "items = [\n    {\"id\": \"a\", \"score\": 0.95},\n    {\"id\": \"b\", \"score\": 0.80},\n    {\"id\": \"c\", \"score\": 0.60},\n]\nlimit = 2\ntop_items = items[:limit]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the ID included in `top_items`?",
+        "choices":  [
+                        "a, b",
+                        "b, c",
+                        "a, c",
+                        "c only"
+                    ],
+        "answer":  "a, b",
+        "explanation":  "Items are ordered from highest score to lowest as a, b, c. Since ``items[:2]`` selects only the first two items, the IDs are a and b. This is because `stop 2` is excluded, so only indices 0 and 1 are included in the result. Common misconceptions: b and c are the last two items, but `` slices from the front. Misreading: This occurs when the starting position of the slice is mistakenly interpreted as being at the end. ``seq[:limit]`` selects **up to limit items from the front**.",
+        "side_card_ids":  [
+                              "PL_curation_001"
+                          ],
+        "project_context":  "This relates to code that displays only the top portion with the highest scores in home curation, search results, and recommendation lists.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "slice",
+        "reading_goal_internal":  "정렬된 sequence에서 stop만 있는 slice가 앞에서 최대 limit개를 선택하는 규칙을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`seq[:stop]` is a slice that selects the portion of the sequence from the beginning up to but not including the `stop` index.",
+                                    "how_to_read":  "After converting the `limit` value to an actual number, read it as ranging from index 0 to `limit-1`, inclusive.",
+                                    "key_point":  "Sorting is a prerequisite in the ranking process, and the Python syntax focus of this card is the `slice` operator, which trims the beginning of the sorted results.",
+                                    "common_mistake":  "It is easy to assume that `stop` includes the index itself. However, `stop` is excluded."
+                                },
+        "teaching_example":  {
+                                 "code":  "items = [\"gold\", \"silver\", \"bronze\"]\nlimit = 2\ntop = items[:limit]",
+                                 "walkthrough":  "Only indices 0 and 1 are included, so `top` contains the two items `gold` and `silver`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The items are ordered from highest score as `a`, `b`, `c`. `items[:2]` selects only the first two items, so the IDs are `a` and `b`.",
+                                   "why_correct":  "Because stop value 2 is excluded, only indices 0 and 1 appear in the result.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "b, c",
+                                                               "why_wrong":  "That combination consists of the last two items, and ``[:2]`` is truncated from the beginning.",
+                                                               "misread_step":  "This is an example of misreading the starting position of a slice as being further to the right."
+                                                           },
+                                   "takeaway":  "`seq[:limit]` selects **up to limit elements from the beginning**."
+                               },
+        "target_statement":  "top_items = items[:limit]",
+        "focus_span":  "items[:limit]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "ranking",
+                                "top N",
+                                "sorted",
+                                "slice"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY6_L10_reading_queue_001",
+        "level":  10,
+        "title":  "Select the first 10 items of the reading queue with a basic slice.",
+        "concepts":  [
+                         "slice",
+                         "return_statement",
+                         "for_statement",
+                         "membership_test"
+                     ],
+        "reading_goal":  "Since the starting position is [:10], which is the beginning, and “stop 10” is excluded, this indicates that up to 10 items are selected from indices 0 through 9.",
+        "code":  "queue = [f\"item-{i}\" for i in range(12)]\nselected = queue[:10]\nprint(len(selected), selected[-1])",
+        "question_type":  "output_prediction",
+        "question":  "If there are 12 items in the queue, how many items are selected by `queue[:10]`?",
+        "choices":  [
+                        "9",
+                        "10",
+                        "11",
+                        "12"
+                    ],
+        "answer":  "10",
+        "explanation":  "1) The queue contains 12 items, numbered from 0 to 11. 2) [:10] starts from the beginning. 3) It does not include index 10. 4) Therefore, a total of 10 items, numbered 0 through 9, are selected.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It is connected to the flow that shows the user only the top 10 candidates from the “daily reading queue” that meet the criteria.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "slice",
+        "reading_goal_internal":  "[:10]에서 시작 위치는 처음이고 stop 10은 포함하지 않아 인덱스 0부터 9까지 최대 10개를 선택한다는 점을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`sequence[:stop]` creates a new sequence starting from the beginning of the original sequence and ending just before the `stop` index.",
+                                    "how_to_read":  "Since the starting value is omitted, it is interpreted as starting from 0 and excluding the stop value of 10 itself.",
+                                    "key_point":  "If the queue length is less than 10, only the items that are present are returned, and an IndexError is not raised.",
+                                    "common_mistake":  "It’s easy to assume that it returns 11, including stop 10."
+                                },
+        "teaching_example":  {
+                                 "code":  "items = list(range(8))\nprint(items[:3])",
+                                 "walkthrough":  "Only the three items with indices 0, 1, and 2 are selected, resulting in [0, 1, 2]."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The queue contains 12 items, numbered from 0 to 11. 2) [:10] starts from the beginning. 3) It does not include index 10. 4) Therefore, a total of 10 items, numbered 0 through 9, are selected.",
+                                   "why_correct":  "Since the \"stop\" character is excluded from the basic slice, [:10] selects up to 10 items.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "11",
+                                                               "why_wrong":  "If you read the slice as including index 10, you may think there are 11 items, but the stop position is excluded.",
+                                                               "misread_step":  "It’s easy to assume that it returns 11, including stop 10."
+                                                           },
+                                   "takeaway":  "First, check the rule that `slice` includes the `start` but excludes the `stop`."
+                               },
+        "target_statement":  "queue[:10]",
+        "focus_span":  "queue[:10]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "learning_product_context",
+        "coverage_topics":  [
+                                "reading_queue",
+                                "filter",
+                                "domain",
+                                "queue_limit"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY6_L07_count_by_level_001",
+        "level":  7,
+        "title":  "Storing the cumulative count for the same key in a `dict`",
+        "concepts":  [
+                         "assignment",
+                         "subscription",
+                         "call",
+                         "arithmetic"
+                     ],
+        "reading_goal":  "Track the flow where the expression on the right-hand side of the assignment reads the existing count, adds 1, and then updates the same dictionary key.",
+        "code":  "cards = [{\"level\": 7}, {\"level\": 8}, {\"level\": 7}]\ncounts = {}\nfor card in cards:\n    level = card[\"level\"]\n    counts[level] = counts.get(level, 0) + 1\nprint(counts)",
+        "question_type":  "output_prediction",
+        "question":  "After all iterations are complete, what is the value stored in ``counts``?",
+        "choices":  [
+                        "{7: 2, 8: 1}",
+                        "{7: 1, 8: 1}",
+                        "{7: 2, 8: 2}",
+                        "{0: 3}"
+                    ],
+        "answer":  "{7: 2, 8: 1}",
+        "explanation":  "Level 7 appears twice—on the first and third cards—and level 8 appears once. Since 1 is added to the existing count and stored under the same key in each iteration, the final dictionary is {7: 2, 8: 1}. Since the existing count is read from the right and the value is incremented by 1, continuously overwriting the same level key on the left, the actual number of occurrences accumulates. Common mistake: {7: 1, 8: 1} This results from overlooking the step where, when Level 7 appears for the second time, the existing value of 1 is read and updated to 2. Point of Misinterpretation: Double-check the order—the right-hand side of the assignment statement, `counts.get(level, 0) + 1`, is evaluated first, and then the left-hand side key is updated. Cumulative assignment follows the sequence: read existing value → perform calculation → store new value at the same location.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to the process of aggregating the number of learning cards by level to generate progress reports or table-of-contents statistics.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "subscription 대입문의 오른쪽에서 기존 개수를 읽고 1을 더한 뒤 같은 dict key에 갱신하는 흐름을 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`counts[level] = ...` is an assignment that stores the calculated right-hand result under the `level` key in the dict.",
+                                    "how_to_read":  "The code is read from right to left. First, `counts.get(level, 0)` retrieves the existing count, adds 1, and then stores the new value in the left-hand `counts[level]`.",
+                                    "key_point":  "If the same level appears again, it reads the existing value and increments it by 1, so the count accumulates. A level encountered for the first time starts at the default value of 0 (`get(..., 0)`).",
+                                    "common_mistake":  "`get(level, 0)` It’s easy to assume that this dict automatically stores a value of 0. ``get()`` only reads the value; the actual update is performed by the outer assignment statement."
+                                },
+        "teaching_example":  {
+                                 "code":  "items = [{\"group\": \"A\"}, {\"group\": \"A\"}, {\"group\": \"B\"}]\ncounts = {}\nfor item in items:\n    group = item[\"group\"]\n    counts[group] = counts.get(group, 0) + 1\nprint(counts)",
+                                 "walkthrough":  "A starts as 0+1, which equals 1, and the second A is 1+1, which equals 2. Since B appears first and equals 1, the result is {\u0027A\u0027: 2, \u0027B\u0027: 1}."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Level 7 appears twice—on the first and third cards—and level 8 appears once. Since we add 1 to the existing count and store it under the same key in each iteration, the final dictionary is {7: 2, 8: 1}.",
+                                   "why_correct":  "Since the value is read from the right, incremented by 1, and continuously overwritten onto the key at the same level on the left, the actual count accumulates.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "{7: 1, 8: 1}",
+                                                               "why_wrong":  "This is the result of missing the step to read the existing value 1 again and update it to 2 when level 7 appeared for the second time.",
+                                                               "misread_step":  "Double-check the order: the expression `counts.get(level, 0) + 1` on the right side of the expression is evaluated first, and then the key on the left is updated."
+                                                           },
+                                   "takeaway":  "Cumulative assignment is read in the following order: read existing value → perform calculation → store new value at the same location."
+                               },
+        "target_statement":  "counts[level] = counts.get(level, 0) + 1",
+        "focus_span":  "counts[level] = counts.get(level, 0) + 1",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "aggregation",
+                                "count by level",
+                                "dict update"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY6_L07_find_card_001",
+        "level":  7,
+        "title":  "Returning `None` when a search fails completely",
+        "concepts":  [
+                         "return_statement",
+                         "for_statement",
+                         "if_statement",
+                         "comparison",
+                         "subscription"
+                     ],
+        "reading_goal":  "Distinguish between when an early return occurs during a loop and when a return None occurs after the loop has completely finished.",
+        "code":  "def find_card(cards, card_id):\n    for card in cards:\n        if card[\"id\"] == card_id:\n            return card\n    return None\n\ncards = [{\"id\": \"A1\"}, {\"id\": \"B2\"}]\nresult = find_card(cards, \"C3\")\nprint(result)",
+        "question_type":  "output_prediction",
+        "question":  "What is the final output when `card_id` is `\"C3\"`?",
+        "choices":  [
+                        "None",
+                        "{\u0027id\u0027: \u0027A1\u0027}",
+                        "{\u0027id\u0027: \u0027B2\u0027}",
+                        "KeyError"
+                    ],
+        "answer":  "None",
+        "explanation":  "The IDs of the two cards are compared sequentially, but there is no value matching C3. Therefore, the ``return card`` inside the loop is never executed, and ``return None`` is executed after the `for` loop ends. Since the final `return` is outside the loop and is only reached when all candidates have failed, the return value is `None`. A common source of confusion: This code does not automatically return the first item of `{\u0027id\u0027: \u0027A1\u0027}`. It only returns that card if ``card[\"id\"] == card_id`` is true. Common Misinterpretation: You must check the `if` condition inside the loop for each `card` and track which `return` statement is actually reached. Multiple `return` statements within a function create different exit paths depending on their position and conditions.",
+        "side_card_ids":  [
+                              "PYV97_A1_LOOP_01"
+                          ],
+        "project_context":  "This is connected to the flow where a search failure is represented as `None` when searching for the current card or related cards by ID.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "return_statement",
+        "reading_goal_internal":  "반복 중의 조기 return과 반복이 모두 끝난 뒤의 return None이 서로 언제 실행되는지 구분한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`return None` A ``None`` is a `return` statement that causes a function to return a `` value instead of a specific result object and terminate immediately.",
+                                    "how_to_read":  "First, look at where this line is located in the function. Since it is outside the loop, the preceding `return` statement is not executed during the loop; it is executed only after the loop has completed.",
+                                    "key_point":  "In a search function, if a match is found, the function ends with an inner `return`; if nothing is found, the final `return None` can be used to indicate a failure.",
+                                    "common_mistake":  "It’s easy to read that if the first card doesn’t match, it immediately returns `None`. Since `return None` is outside the `for` block, it is executed only after all cards have been checked."
+                                },
+        "teaching_example":  {
+                                 "code":  "def find_user(users, wanted):\n    for user in users:\n        if user[\"name\"] == wanted:\n            return user\n    return None\n\nprint(find_user([{\"name\": \"Mina\"}], \"Jin\"))",
+                                 "walkthrough":  "Because `Mina` differs from `Jin`, the `return` inside the loop does not execute. After the loop finishes, execution reaches `return None` and returns `None`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "It compares the IDs of the two cards in sequence, but there is no value matching C3. Therefore, the `return card` inside the loop is never executed, and `return None` is executed after the for loop ends.",
+                                   "why_correct":  "Since the final `return` statement is outside the loop and is reached only when all candidates have failed, the return value is `None`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "{\u0027id\u0027: \u0027A1\u0027}",
+                                                               "why_wrong":  "This code does not automatically return the first item. It returns that card only when `card[\"id\"] == card_id` is true.",
+                                                               "misread_step":  "Check the `if` condition for each card inside the loop and trace which `return` is actually reached."
+                                                           },
+                                   "takeaway":  "Multiple `return` statements within a function create different exit paths depending on their position and conditions."
+                               },
+        "target_statement":  "return None",
+        "focus_span":  "return None",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "data_structures",
+        "coverage_topics":  [
+                                "linear search",
+                                "find by id",
+                                "not found"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY6_L09_progress_migration_001",
+        "level":  9,
+        "title":  "Filling in the missing `confused` field, which was omitted by default in `dict.get()`",
+        "concepts":  [
+                         "call",
+                         "literal",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the structure used as a fallback value when the second argument of `dict.get` is a missing key.",
+        "code":  "def migrate_progress(old):\n    return {\n        \"seen\": old.get(\"seen\", {}),\n        \"correct\": old.get(\"correct\", {}),\n        \"confused\": old.get(\"confused\", {}),\n    }\n\nmigrated = migrate_progress({\"seen\": {\"c1\": True}, \"correct\": {}})\nconfused = migrated[\"confused\"]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `confused`?",
+        "choices":  [
+                        "{}",
+                        "Error",
+                        "Copy `seen`",
+                        "None"
+                    ],
+        "answer":  "{}",
+        "explanation":  "In `old.get(\u0027confused\u0027, {})`, since the `confused` key does not exist, the second argument `{}` is returned. This is because `dict.get` returns the default specified for a missing key. A common source of confusion: This is a `get` call with a default value, not an `error subscription`. Point of misreading: This occurs when `old[\u0027confused\u0027]` is confused with `old.get(...)`. The code reads as **possibility of a missing field → get default → filling in the new structure**.",
+        "side_card_ids":  [
+                              "WEB_localstorage_001"
+                          ],
+        "project_context":  "Even as the app’s structure grows, it connects to a migration that safely handles the omission of new fields in historical user data.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "dict.get의 두 번째 argument가 missing key일 때 fallback value로 사용되는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping.get(key, default)` is a method call that returns the corresponding value if `key` exists, or `default` if it does not.",
+                                    "how_to_read":  "Distinguish between the first argument (the key to search for) and the second argument (the fallback default).",
+                                    "key_point":  "Since a new field added during migration may not exist in historical data, setting a default value allows you to preserve existing user data while expanding the structure.",
+                                    "common_mistake":  "It’s easy to assume that `get` will always raise a `KeyError` if no key is provided. However, if a default value is provided, it returns that value."
+                                },
+        "teaching_example":  {
+                                 "code":  "old = {\"seen\": {\"c1\": True}}\nwrong = old.get(\"wrong\", {})",
+                                 "walkthrough":  "Since there is no \"wrong key,\" an empty dictionary is returned."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the `confused` key is missing in `old.get(\u0027confused\u0027, {})`, the second argument `{}` is returned.",
+                                   "why_correct":  "This is because `dict.get` returns the default value specified for a missing key.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Error",
+                                                               "why_wrong":  "We are using `get` with a default value instead of `subscription`.",
+                                                               "misread_step":  "This is an example of confusion between `old[\u0027confused\u0027]` and `old.get(...)`."
+                                                           },
+                                   "takeaway":  "The compatibility code reads as **possible missing field → get default → fill in new structure**."
+                               },
+        "target_statement":  "\"confused\": old.get(\"confused\", {})",
+        "focus_span":  "old.get(\"confused\", {})",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "learning_product_context",
+        "coverage_topics":  [
+                                "migration",
+                                "progress",
+                                "dict get",
+                                "backward compatibility"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY6_L09_card_schema_validation_001",
+        "level":  9,
+        "title":  "Group only the missing items from the required keys into a \"comprehension\" block",
+        "concepts":  [
+                         "list_comprehension",
+                         "membership_test",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the filtered comprehension that iterates through a required list and adds only keys not found in the card to a new list.",
+        "code":  "def validate_card(card):\n    required = [\"id\", \"level\", \"title\", \"question\", \"answer\"]\n    missing = [key for key in required if key not in card]\n    return missing\n\nresult = validate_card({\"id\": \"c1\", \"level\": 9, \"title\": \"T\", \"question\": \"Q\"})",
+        "question_type":  "multiple_choice",
+        "question":  "`result` What is the value of ?",
+        "choices":  [
+                        "[\"answer\"]",
+                        "[]",
+                        "[\"id\"]",
+                        "[\"question\", \"answer\"]"
+                    ],
+        "answer":  "[\"answer\"]",
+        "explanation":  "Four of the five keys in `required` exist in `card`, but `answer` is missing. The comprehension leaves only `answer` in the new list. This is because the `key not in card` condition is True only for “answer.” A common source of confusion: [] “answer” is a required key that is not actually in the card. Point of misreading: This occurs when the list of keys in the card is not checked all the way through. For schema QA, read it as **required list → membership check → missing key collection**.",
+        "side_card_ids":  [
+                              "DATA_schema_001"
+                          ],
+        "project_context":  "This connects to the pre-QA process to ensure the learning app does not crash due to missing required fields when expanding cards in bulk.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "list_comprehension",
+        "reading_goal_internal":  "required list를 순회하며 card에 없는 key만 새 리스트에 남기는 filtered comprehension을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`[item for item in items if condition]` is a filtered list comprehension that adds only items for which `condition` is True to a new list.",
+                                    "how_to_read":  "Check the iteration target, the value to retain, and the final filter condition in that order.",
+                                    "key_point":  "When generating cards in bulk, you must automatically detect missing required fields to reduce runtime errors.",
+                                    "common_mistake":  "It’s easy to assume that all keys from `required` are included in `missing`. Only keys that satisfy the `not in card` condition are included."
+                                },
+        "teaching_example":  {
+                                 "code":  "required = [\"id\", \"title\"]\nrow = {\"id\": \"x\"}\nmissing = [key for key in required if key not in row]",
+                                 "walkthrough":  "The `id` exists, but only the `title` is missing; the missing element is [\u0027title\u0027]."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Four of the five keys in `required` exist in `card`, but `answer` is missing. The `comprehension` leaves only `answer` in the new list.",
+                                   "why_correct":  "`key not in card` This is because the condition is True only in `answer`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[]",
+                                                               "why_wrong":  "The \"answer\" key is not actually on the card.",
+                                                               "misread_step":  "This is a case where the list of keys in the `card` was not checked all the way to the end."
+                                                           },
+                                   "takeaway":  "Schema QA reads this as **required list → membership check → missing key collection**."
+                               },
+        "target_statement":  "missing = [key for key in required if key not in card]",
+        "focus_span":  "[key for key in required if key not in card]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "schema validation",
+                                "required keys",
+                                "missing fields",
+                                "card QA"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    }
 ]

@@ -1,452 +1,1085 @@
 [
-  {
-    "id": "PY21_L07_sqlite_connect_001",
-    "level": 7,
-    "title": "SQLite3 Connection and Query Reading",
-    "concepts": [
-      "import",
-      "print",
-      "sqlite",
-      "connect",
-      "execute",
-      "fetchall"
-    ],
-    "reading_goal": "Read the process of connecting to an SQLite database and retrieving the results of a SELECT query.",
-    "code": "import sqlite3\n\nconn = sqlite3.connect(\"app.db\")\nrows = conn.execute(\"SELECT id, title FROM items LIMIT 10\").fetchall()\nprint(len(rows))\nconn.close()",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of `fetchall()`?",
-    "choices": [
-      "Delete the DB file",
-      "It simply stores SQL as a string",
-      "Retrieves all rows from the query results",
-      "Start the server"
-    ],
-    "answer": "Retrieves all rows from the query results",
-    "explanation": "fetchall returns all remaining result rows as a list. Because this query has LIMIT 10, it returns at most ten rows, but an unbounded large query can consume substantial memory. To close the connection even after an exception, use a clear connection lifecycle in addition to a transaction context such as with sqlite3.connect(...) as conn.",
-    "side_card_ids": [],
-    "project_context": "This is the basic code for reading a local meta database or a test SQLite database."
-  },
-  {
-    "id": "PY21_L07_parameterized_query_001",
-    "level": 7,
-    "title": "Reading SQL with Parameter Binding",
-    "concepts": [
-      "sql",
-      "parameterized_query",
-      "security",
-      "sqlite"
-    ],
-    "reading_goal": "Read about SQL patterns for safely passing parameters instead of concatenating strings.",
-    "code": "item_id = \"item_001\"\nrow = conn.execute(\n    \"SELECT title FROM items WHERE id = ?\",\n    (item_id,)\n).fetchone()",
-    "question_type": "meaning_choice",
-    "question": "In the statement \"WHERE id = ?,\" what does \"?\" mean?",
-    "choices": [
-      "Find only the ID \"question mark\"",
-      "Delete All Rows",
-      "A placeholder for a parameter that will be safely bound later",
-      "Query Comments"
-    ],
-    "answer": "A placeholder for a parameter that will be safely bound later",
-    "explanation": "? is a placeholder for one SQL value, and the trailing comma in (item_id,) creates a one-element tuple. The driver binds the value separately from SQL syntax, reducing injection risk compared with string concatenation. Placeholders cannot represent identifiers such as table or column names; restrict those dynamic parts with an allowlist.",
-    "side_card_ids": [],
-    "project_context": "This is the standard security pattern for including search terms, item_id, and user_id in a database query."
-  },
-  {
-    "id": "PY21_L08_insert_commit_001",
-    "level": 8,
-    "title": "Reading INSERT and COMMIT Statements",
-    "concepts": [
-      "insert",
-      "commit",
-      "transaction",
-      "sqlite"
-    ],
-    "reading_goal": "Understand the process of inserting a new row into the database and confirming the save with a commit.",
-    "code": "conn.execute(\n    \"INSERT INTO items(id, title) VALUES (?, ?)\",\n    (\"item_001\", \"LiDAR basics\")\n)\nconn.commit()",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of `conn.commit()`?",
-    "choices": [
-      "Cancel the query",
-      "Delete the table",
-      "Save the changes to the database.",
-      "Compress the file"
-    ],
-    "answer": "Save the changes to the database.",
-    "explanation": "Modification operations such as INSERT or UPDATE generate write operations to the database. Changes are only finalized after a commit, ensuring they appear reliably in subsequent queries. If an error occurs before the commit, a rollback is possible, allowing multiple changes to be treated as a single transaction. Therefore, the correct answer is “to permanently save the changes to the database.”",
-    "side_card_ids": [
-      "DEV_git_001"
-    ],
-    "project_context": "It is important to read the code that handles collecting items, running logs, and saving progress."
-  },
-  {
-    "id": "PY21_L08_rollback_001",
-    "level": 8,
-    "title": "Read About Rollback Exception Handling",
-    "concepts": [
-      "rollback",
-      "transaction",
-      "try_except",
-      "database"
-    ],
-    "reading_goal": "I'm reading about a pattern for rolling back changes when a database operation fails.",
-    "code": "try:\n    conn.execute(\"INSERT INTO items(id, title) VALUES (?, ?)\", (id, title))\n    conn.commit()\nexcept Exception:\n    conn.rollback()\n    raise",
-    "question_type": "meaning_choice",
-    "question": "Why is a rollback performed in the `except` block?",
-    "choices": [
-      "To save the successful result twice",
-      "To delete the database",
-      "To roll back a failed transaction change",
-      "To hide the error"
-    ],
-    "answer": "To roll back a failed transaction change",
-    "explanation": "If execute or commit raises an Exception, rollback reverses uncommitted transaction changes on this connection, then bare raise propagates the original error. It cannot undo changes that were already committed or a transaction on another connection. In real code, define the expected database exception boundary and use a connection context manager to make commit and rollback scope clear.",
-    "side_card_ids": [],
-    "project_context": "This is a defense pattern required when performing write operations on tables such as `runs`, `items`, and `curations`."
-  },
-  {
-    "id": "PY21_L08_schema_create_table_001",
-    "level": 8,
-    "title": "Reading the CREATE TABLE schema",
-    "concepts": [
-      "schema",
-      "create_table",
-      "primary_key",
-      "sql"
-    ],
-    "reading_goal": "Read the columns and primary key from the SQL statement that creates the table.",
-    "code": "CREATE TABLE IF NOT EXISTS items (\n  id TEXT PRIMARY KEY NOT NULL,\n  title TEXT NOT NULL,\n  source_url TEXT,\n  created_at TEXT NOT NULL\n);",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best describes the meaning of an `id` column marked as a PRIMARY KEY?",
-    "choices": [
-      "A value that is always empty",
-      "Long Explanatory Text",
-      "A unique identifier that distinguishes each row",
-      "External file path"
-    ],
-    "answer": "A unique identifier that distinguishes each row",
-    "explanation": "A PRIMARY KEY uniquely locates a row and disallows duplicate key values. This example also declares id NOT NULL explicitly, avoiding SQLite rowid-table exceptions that can otherwise permit a null non-integer primary key. NOT NULL on title and created_at does not reject an empty string or validate a date format.",
-    "side_card_ids": [],
-    "project_context": "This is a basic exercise in reading D1/Supabase/SQLite schema.sql."
-  },
-  {
-    "id": "PY21_L08_not_null_001",
-    "level": 8,
-    "title": "Reading the NOT NULL Constraint",
-    "concepts": [
-      "not_null",
-      "constraint",
-      "schema",
-      "sql"
-    ],
-    "reading_goal": "Understand the constraint that a DB column must not be empty.",
-    "code": "CREATE TABLE runs (\n  id TEXT PRIMARY KEY,\n  job_name TEXT NOT NULL,\n  status TEXT NOT NULL\n);",
-    "question_type": "meaning_choice",
-    "question": "What does job_name TEXT NOT NULL directly prohibit?",
-    "choices": [
-      "Numeric values",
-      "An empty string",
-      "A NULL value",
-      "A duplicate string"
-    ],
-    "answer": "A NULL value",
-    "explanation": "NOT NULL prevents SQL NULL from being stored in that column. It does not reject \"\" or a whitespace-only string. If a job name must contain non-whitespace text, add a rule such as CHECK(length(trim(job_name)) > 0) or application validation.",
-    "side_card_ids": [],
-    "project_context": "This is a database constraint that prevents required fields from being omitted in the run status log."
-  },
-  {
-    "id": "PY21_L09_foreign_key_001",
-    "level": 9,
-    "title": "Reading FOREIGN KEY Relationships",
-    "concepts": [
-      "foreign_key",
-      "relationship",
-      "schema",
-      "sql"
-    ],
-    "reading_goal": "Read a structure in which values in one table reference the IDs in another table.",
-    "code": "CREATE TABLE curations (\n  id TEXT PRIMARY KEY,\n  item_id TEXT NOT NULL,\n  FOREIGN KEY (item_id) REFERENCES items(id)\n);",
-    "question_type": "meaning_choice",
-    "question": "What does \"FOREIGN KEY (item_id) REFERENCES items(id)\" mean?",
-    "choices": [
-      "Delete the \"items\" table",
-      "item_id is always empty.",
-      "`curations.item_id` references `items.id`",
-      "\"curations\" is a file folder"
-    ],
-    "answer": "`curations.item_id` references `items.id`",
-    "explanation": "This FOREIGN KEY declares that curations.item_id refers to items.id. The database must actually enforce foreign keys to reject missing parents or apply delete behavior. In SQLite, verify PRAGMA foreign_keys = ON for each connection, and separately decide how to handle existing orphan rows and the ON DELETE policy.",
-    "side_card_ids": [],
-    "project_context": "This concept prevents the \"orphan\" problem, where curations point to items that do not exist."
-  },
-  {
-    "id": "PY21_L09_join_001",
-    "level": 9,
-    "title": "Reading JOIN Queries",
-    "concepts": [
-      "join",
-      "sql",
-      "relationship",
-      "select"
-    ],
-    "reading_goal": "Read the SQL query that joins two tables to retrieve the necessary fields together.",
-    "code": "SELECT c.position, i.title, i.source_url\nFROM curations c\nJOIN items i ON c.item_id = i.id\nWHERE c.page = 'home'\nORDER BY c.position;",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of the JOIN clause \"JOIN items i ON c.item_id = i.id\"?",
-    "choices": [
-      "Delete all items",
-      "Randomly changes the position",
-      "Link \"curations\" and \"items\" based on \"item_id\" and \"id\"",
-      "Hide the source_url"
-    ],
-    "answer": "Link \"curations\" and \"items\" based on \"item_id\" and \"id\"",
-    "explanation": "JOIN is an SQL feature that combines rows from multiple related tables and retrieves them together. It allows you to view data that is separated—such as user information and order information—as a single result set. The ON condition determines which columns from the two tables to match for the join, thereby determining the meaning of the resulting rows. Therefore, the correct answer is “Join the ‘curations’ and ‘items’ tables based on the ‘item_id’ and ‘id’ columns.”",
-    "side_card_ids": [
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "This is the structure used when retrieving both card and source item information from the Home Curation API."
-  },
-  {
-    "id": "PY21_L09_index_001",
-    "level": 9,
-    "title": "CREATE INDEX: Read",
-    "concepts": [
-      "index",
-      "query_performance",
-      "sql"
-    ],
-    "reading_goal": "Understand why indexes are created on columns that are frequently queried.",
-    "code": "CREATE INDEX IF NOT EXISTS idx_items_source\nON items(source_url);",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best reflects the purpose of this index?",
-    "choices": [
-      "To delete source_url",
-      "To encrypt all URLs",
-      "To speed up searches using the `source_url` condition",
-      "To rename a table"
-    ],
-    "answer": "To speed up searches using the `source_url` condition",
-    "explanation": "An index is a secondary structure designed to help find data more quickly based on specific column conditions. While it can speed up queries, it may increase write overhead and storage space. Just like an index in a book, an index helps you find a location quickly, but it must be updated whenever the data changes.",
-    "side_card_ids": [
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "This is related to the performance of duplicate URL checks, claim hash lookups, and date-based lookups."
-  },
-  {
-    "id": "PY21_L09_upsert_001",
-    "level": 9,
-    "title": "UPSERT Read",
-    "concepts": [
-      "upsert",
-      "insert",
-      "update",
-      "conflict"
-    ],
-    "reading_goal": "Read the SQL pattern that updates the table if the record exists and inserts it if it doesn't.",
-    "code": "INSERT INTO items(id, title, source_url)\nVALUES (?, ?, ?)\nON CONFLICT(id) DO UPDATE SET\n  title = excluded.title,\n  source_url = excluded.source_url;",
-    "question_type": "meaning_choice",
-    "question": "What does \"ON CONFLICT(id) DO UPDATE\" mean?",
-    "choices": [
-      "If the same ID exists, delete the record from the database.",
-      "It always performs INSERT operations",
-      "If the same ID already exists, update it.",
-      "Ignore the ID"
-    ],
-    "answer": "If the same ID already exists, update it.",
-    "explanation": "\"UPSERT\" is an operational pattern that combines \"INSERT\" and \"UPDATE.\" It is used in a workflow where a new row is inserted if it doesn't exist, and the existing row is updated if it does. \"ON CONFLICT(id)\" means that if the ID already exists, it is treated as a conflict, and in that case, the logic for \"DO UPDATE\" is executed.",
-    "side_card_ids": [],
-    "project_context": "It reliably handles duplicates when reloading collection items or source metadata."
-  },
-  {
-    "id": "PY21_L10_pagination_001",
-    "level": 10,
-    "title": "Reading LIMIT/OFFSET Pagination",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "pagination",
-      "limit",
-      "offset",
-      "sql"
-    ],
-    "reading_goal": "Read the SQL query that retrieves data in pages from the List API.",
-    "code": "def list_items(conn, page: int, page_size: int = 20):\n    offset = (page - 1) * page_size\n    return conn.execute(\n        \"SELECT id, title FROM items ORDER BY created_at DESC LIMIT ? OFFSET ?\",\n        (page_size, offset)\n    ).fetchall()",
-    "question_type": "meaning_choice",
-    "question": "If page=3 and page_size=20, what is the offset?",
-    "choices": [
-      "20",
-      "60",
-      "40",
-      "3"
-    ],
-    "answer": "40",
-    "explanation": "For page 3, (3-1)*20 produces offset 40, so the query skips forty rows and returns at most twenty. Validate that page and page_size are positive and cap page_size. Add a unique tie-breaker such as id to ORDER BY so rows with equal created_at values do not move unpredictably across page boundaries.",
-    "side_card_ids": [
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "This is the basic pagination required for the Card/Document/Search Results List API."
-  },
-  {
-    "id": "PY21_L10_repository_pattern_001",
-    "level": 10,
-    "title": "Reading About the Repository Function Pattern",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "class",
-      "repository",
-      "database",
-      "architecture"
-    ],
-    "reading_goal": "Understand the structure of separating DB access code into repository functions.",
-    "code": "class ItemRepository:\n    def __init__(self, conn):\n        self.conn = conn\n\n    def find_by_id(self, item_id: str):\n        return self.conn.execute(\n            \"SELECT * FROM items WHERE id = ?\",\n            (item_id,)\n        ).fetchone()",
-    "question_type": "meaning_choice",
-    "question": "Which of the following most closely resembles the role of an ItemRepository?",
-    "choices": [
-      "Rendering an HTML page",
-      "Clear the browser cache",
-      "Groups the logic for accessing the `items` table",
-      "Execute `git push`"
-    ],
-    "answer": "Groups the logic for accessing the `items` table",
-    "explanation": "A repository consolidates database access code in one place, separating it from service and API code. The repository pattern is a method of grouping database access code into a single layer. This facilitates maintenance by ensuring that service logic does not need to be directly aware of SQL details. Therefore, the result of this approach is that “the logic for accessing the `items` table is consolidated.”",
-    "side_card_ids": [
-      "PYV158_A1_DATABASE_FLOW"
-    ],
-    "project_context": "This design ensures that FastAPI endpoints do not contain a large amount of SQL code."
-  },
-  {
-    "id": "PY21_L10_migration_001",
-    "level": 10,
-    "title": "Reading Migration SQL",
-    "concepts": [
-      "migration",
-      "alter_table",
-      "schema_change"
-    ],
-    "reading_goal": "Read the SQL code that adds a new column to an existing table.",
-    "code": "ALTER TABLE items\nADD COLUMN summary TEXT;",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of this SQL statement?",
-    "choices": [
-      "Delete the \"items\" table",
-      "Create a \"summary\" table",
-      "Add a \"summary\" column to the \"items\" table",
-      "Delete all rows"
-    ],
-    "answer": "Add a \"summary\" column to the \"items\" table",
-    "explanation": "ALTER TABLE ... ADD COLUMN adds a nullable summary column to the existing items table. A migration records such schema changes in version order and applies each once per environment. Check the database engine's supported operation and locking behavior, and plan backups, transactions, rollback or forward fixes, and a migration table that tracks applied versions.",
-    "side_card_ids": [],
-    "project_context": "This is the foundation for understanding migrations as the D1/Supabase schema continues to expand."
-  },
-  {
-    "id": "PY21_L10_d1_prepare_bind_001",
-    "level": 10,
-    "title": "Reading Cloudflare D1 prepare/bind",
-    "concepts": [
-      "d1",
-      "prepare",
-      "bind",
-      "cloudflare"
-    ],
-    "reading_goal": "In D1, I'm reading about a structure that executes SQL and parameters separately.",
-    "code": "const row = await env.DB.prepare(\n  \"SELECT id, title FROM items WHERE id = ?\"\n).bind(itemId).first();",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of `bind(itemId)`?",
-    "choices": [
-      "Delete the database",
-      "Hide the title",
-      "Bind the value of `itemId` to the `?` placeholder in the SQL statement.",
-      "Create the \"items\" table"
-    ],
-    "answer": "Bind the value of `itemId` to the `?` placeholder in the SQL statement.",
-    "explanation": "env.DB is the D1 binding configured for the Worker, and prepare creates a statement. bind(itemId) supplies the ? value separately, reducing SQL injection risk compared with string concatenation. first() returns the first result row, so caller code must distinguish a missing row from an execution error.",
-    "side_card_ids": [],
-    "project_context": "This is the basic flow for executing a D1 prepared statement from a Cloudflare Worker."
-  },
-  {
-    "id": "PY21_L10_supabase_select_001",
-    "level": 10,
-    "title": "Reading the Supabase SELECT Chain",
-    "concepts": [
-      "supabase",
-      "select",
-      "database",
-      "api_client"
-    ],
-    "reading_goal": "Reading the `from/select/eq` chain in the Supabase JS client.",
-    "code": "const { data, error } = await supabase\n  .from(\"items\")\n  .select(\"id,title,source_url\")\n  .eq(\"id\", itemId)\n  .single();",
-    "question_type": "meaning_choice",
-    "question": "What does .eq('id', itemId) mean?",
-    "choices": [
-      "Delete the 'id' column",
-      "Retrieve all rows",
-      "Filter only rows where the id is equal to itemId",
-      "Encrypt the itemId"
-    ],
-    "answer": "Filter only rows where the id is equal to itemId",
-    "explanation": ".from selects the items table, select names returned columns, and eq keeps rows whose id equals itemId. single expects exactly one row and reports an error for zero or multiple rows. Because the code also destructures error, it must inspect it. Protect authorization with server-side authentication and RLS policies, not only a client-side filter.",
-    "side_card_ids": [],
-    "project_context": "This is necessary for reading the Supabase serving layer/publishing layer access code."
-  },
-  {
-    "id": "PY21_L10_orphan_check_001",
-    "level": 10,
-    "title": "Read the query for checking orphan rows",
-    "concepts": [
-      "orphan",
-      "left_join",
-      "integrity",
-      "sql"
-    ],
-    "reading_goal": "Read the SQL query that finds rows with no references.",
-    "code": "SELECT c.id, c.item_id\nFROM curations c\nLEFT JOIN items i ON c.item_id = i.id\nWHERE i.id IS NULL;",
-    "question_type": "meaning_choice",
-    "question": "What does \"WHERE i.id IS NULL\" look for?",
-    "choices": [
-      "All normal operations",
-      "All rows in `items`",
-      "Curations rows that do not match any items",
-      "\"curations\" table name"
-    ],
-    "answer": "Curations rows that do not match any items",
-    "explanation": "If a value in the right table is NULL after a LEFT JOIN, it means there is no corresponding record. An orphan row check is a process of identifying rows that have no parent data to which they should be linked. You must check the foreign key relationships and join conditions to see if there are any missing references. Therefore, the correct answer is “curations rows that do not match any items.”",
-    "side_card_ids": [
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "It is used to check data consistency, such as in the verification of \"curations → items orphan.\""
-  },
-  {
-    "id": "PY21_L10_repository_api_flow_001",
-    "level": 10,
-    "title": "Understanding the API-Service-Repository-DB Workflow",
-    "concepts": [
-      "if",
-      "def",
-      "function",
-      "return",
-      "class",
-      "api",
-      "service",
-      "repository",
-      "database"
-    ],
-    "reading_goal": "Understand the flow of a request from the endpoint through the service and repository to the database.",
-    "code": "@app.get(\"/items/{item_id}\")\ndef get_item(item_id: str):\n    return item_service.get_item(item_id)\n\nclass ItemService:\n    def get_item(self, item_id):\n        row = self.repo.find_by_id(item_id)\n        if row is None:\n            raise NotFound()\n        return to_response(row)",
-    "question_type": "meaning_choice",
-    "question": "What is the role of `repo.find_by_id` in this structure?",
-    "choices": [
-      "Create an HTTP route",
-      "Change the browser's CSS",
-      "Find the \"item\" row in the database",
-      "Create a Git commit"
-    ],
-    "answer": "Find the \"item\" row in the database",
-    "explanation": "The API receives requests, the service handles business logic, and the repository manages database access. The API-Service-Repository-DB flow is a structure in which a request travels from the API through the service logic to the repository layer and then to the database. The responsibilities of each layer must be clearly defined. Therefore, the result of the call is “finding an item row in the database.”",
-    "side_card_ids": [
-      "PYV158_A1_DATABASE_FLOW"
-    ],
-    "project_context": "This is the required architectural structure as the code base grows in the Education Service/RAG Service MVP."
-  }
+    {
+        "id":  "PY21_L07_sqlite_connect_001",
+        "level":  7,
+        "title":  "Reading the ``fetchall()`` call after an SQLite query",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "attribute_access"
+                     ],
+        "reading_goal":  "In the method-call chain, read the sequence where `execute()` is called on the result cursor, followed by `fetchall()` to retrieve all result rows.",
+        "code":  "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\nconn.execute(\"CREATE TABLE items (value INTEGER)\")\nconn.executemany(\"INSERT INTO items(value) VALUES (?)\", [(1,), (2,)])\nrows = conn.execute(\"SELECT value FROM items ORDER BY value\").fetchall()\nprint(rows)\nconn.close()",
+        "question_type":  "output_prediction",
+        "question":  "What value does `print(rows)` output?",
+        "choices":  [
+                        "[(1,), (2,)]",
+                        "[1, 2]",
+                        "2",
+                        "SELECT value FROM items ORDER BY value"
+                    ],
+        "answer":  "[(1,), (2,)]",
+        "explanation":  "The items table receives 1 and 2 as separate rows. The SELECT returns two rows from the value column. Each SQLite result row is a tuple, so `.fetchall()` produces the list `[(1,), (2,)]`. Because `fetchall()` retrieves all result rows and even a one-column SQLite row has the tuple form `(value,)`, the result is not flattened into `[1, 2]`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This refers to the context of loading query results from a local meta-DB or a test SQLite database into Python data structures.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "method-call chain에서 `execute()` 결과 cursor에 `fetchall()`을 호출해 모든 결과 행을 가져오는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A method call is a call made by appending `.method(...)` to an object to execute that object’s functionality. The SQLite cursor’s `fetchall()` retrieves all query result rows that have not yet been fetched.",
+                                    "how_to_read":  "If there is a chain, consider the results starting from the leftmost call. `conn.execute(...)` creates a cursor, and the subsequent `.fetchall()` is called on that cursor.",
+                                    "key_point":  "`fetchall()` is not a function that constructs an SQL string, but rather a step that retrieves the rows from the query results into a Python list.",
+                                    "common_mistake":  "It is easy to treat `execute()` and `fetchall()` as having the same role. `execute()` runs the query and produces a cursor state, while `fetchall()` retrieves the result rows from that cursor."
+                                },
+        "teaching_example":  {
+                                 "code":  "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\nconn.execute(\"CREATE TABLE nums (value INTEGER)\")\nconn.executemany(\"INSERT INTO nums(value) VALUES (?)\", [(3,), (4,)])\nresult = conn.execute(\"SELECT value FROM nums ORDER BY value\").fetchall()\nprint(result)\nconn.close()",
+                                 "walkthrough":  "Since `fetchall()` is called on the cursor created by executing `SELECT`, the two result rows are returned as a list in the format `[(3,), (4,)]`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The `items` table contains 1 and 2, each on a separate row. The `SELECT` statement returns two rows from the `value` column. Since each result row in SQLite is a tuple, the result of `.fetchall()` is a list: `[(1,), (2,)]`.",
+                                   "why_correct":  "`fetchall()` retrieves all remaining result rows, and even a one-column SQLite row has the tuple form `(value,)`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[1, 2]",
+                                                               "why_wrong":  "It does not simply convert the values into a flat list. `fetchall` returns tuples organized by row, packed into a list.",
+                                                               "misread_step":  "Be sure not to overlook the fact that the row-level structure of the query result is a tuple."
+                                                           },
+                                   "takeaway":  "In SQLite, `execute()` creates a cursor, and `fetchall()` retrieves the result rows from that cursor as a list."
+                               },
+        "target_statement":  "rows = conn.execute(\"SELECT value FROM items ORDER BY value\").fetchall()",
+        "focus_span":  "conn.execute(\"SELECT value FROM items ORDER BY value\").fetchall()",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "sqlite3",
+                                "SELECT",
+                                "fetchall",
+                                "query_result"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY21_L07_parameterized_query_001",
+        "level":  7,
+        "title":  "`execute()` Passing a tuple of binding values",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "assignment"
+                     ],
+        "reading_goal":  "In the `execute(sql, params)` call, the second positional argument is a tuple of values to be inserted into the SQL placeholders.",
+        "code":  "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\nconn.execute(\"CREATE TABLE items (id TEXT, title TEXT)\")\nconn.execute(\"INSERT INTO items VALUES (?, ?)\", (\"item_001\", \"Python 읽기\"))\nitem_id = \"item_001\"\ncursor = conn.execute(\"SELECT title FROM items WHERE id = ?\", (item_id,))\nrow = cursor.fetchone()\nprint(row[0])\nconn.close()",
+        "question_type":  "multiple_choice",
+        "question":  "In `conn.execute(..., (item_id,))`, which description most accurately explains the second positional argument `(item_id,)`?",
+        "choices":  [
+                        "It is a one-element tuple containing the values to be bound to the `?` in SQL.",
+                        "It is a string that turns an SQL statement into a comment.",
+                        "This is a signal to close the database connection.",
+                        "This is the syntax for deleting the `item_id` variable."
+                    ],
+        "answer":  "It is a one-element tuple containing the values to be bound to the `?` in SQL.",
+        "explanation":  "`execute()` Two values—an SQL string and a `params` tuple—are passed in order. The ``?`` in the SQL are placeholders for values. The ``(item_id,)`` is a tuple containing a single ``item_001``, so its value is bound to the first ``?``. This is because the SQLite Python API is designed to accept the SQL string and parameter values as separate positional arguments. A common source of confusion: It is a string that turns the SQL statement into a comment. ``(item_id,)`` is not part of the SQL string but is a Python tuple passed separately to ``execute()``. Common Misinterpretation: You must distinguish between the first and second arguments in the call parentheses. In a parameterized query, the SQL string and the value tuple are passed separately, and a single-element tuple requires a trailing comma.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This refers to the context of safely passing `item_id` or `user_id` to an SQLite query condition.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "`execute(sql, params)` 호출에서 두 번째 positional argument가 SQL placeholder에 넣을 값 묶음임을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A positional argument is a syntax in which values are passed in order of position, without specifying names, when calling a function or method.",
+                                    "how_to_read":  "As in `conn.execute(sql, params)`, when there are two arguments, we look at the order in which the first and second values are passed to their respective parameters. The comma in `(item_id,)` creates a one-element tuple.",
+                                    "key_point":  "In SQL, `?` indicates a placeholder where the driver binds a value, and in Python code, that tuple of values is passed as the second positional argument.",
+                                    "common_mistake":  "It’s easy to assume that `(item_id)` alone represents a tuple with a single element. Parentheses alone do not form a tuple; a comma is required, as in `(item_id,)`."
+                                },
+        "teaching_example":  {
+                                 "code":  "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\nconn.execute(\"CREATE TABLE users (id TEXT, name TEXT)\")\nconn.execute(\"INSERT INTO users VALUES (?, ?)\", (\"u1\", \"Mina\"))\nuser_id = \"u1\"\ncursor = conn.execute(\"SELECT name FROM users WHERE id = ?\", (user_id,))\nprint(cursor.fetchone()[0])\nconn.close()",
+                                 "walkthrough":  "Pass the `?` value to be inserted in the `user_id` placeholder in the SELECT statement as a `(user_id,)` tuple to the second positional argument."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Two values—an SQL string and a tuple of parameters—are passed to `execute()` in that order. The `?` in the SQL indicates a placeholder for a value. Since `(item_id,)` is a tuple containing a single value, `item_001`, that value is bound to the first `?`.",
+                                   "why_correct":  "This is because the SQLite Python API is designed to accept SQL strings and parameter values as separate positional arguments.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "It is a string that turns an SQL statement into a comment.",
+                                                               "why_wrong":  "`(item_id,)` is not part of an SQL string but a Python tuple passed separately to `execute()`.",
+                                                               "misread_step":  "You must distinguish between the first and second arguments in the call parentheses."
+                                                           },
+                                   "takeaway":  "In a parameterized query, the SQL string and the tuple of values are passed separately, and a trailing comma is required in a single-element tuple."
+                               },
+        "target_statement":  "cursor = conn.execute(\"SELECT title FROM items WHERE id = ?\", (item_id,))",
+        "focus_span":  "(item_id,)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "sqlite3",
+                                "parameterized_query",
+                                "SQL_parameter_binding",
+                                "security"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY21_L08_insert_commit_001",
+        "level":  8,
+        "title":  "Commit current database changes by calling conn.commit()",
+        "concepts":  [
+                         "call",
+                         "attribute_access",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read about the point at which calling the `conn.commit()` method commits the changes in the current transaction.",
+        "code":  "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\nconn.execute(\"CREATE TABLE items (id TEXT, title TEXT)\")\nconn.execute(\"INSERT INTO items VALUES (?, ?)\", (\"item_001\", \"LiDAR basics\"))\nconn.commit()",
+        "question_type":  "multiple_choice",
+        "question":  "`conn.commit()` What does this actually do when it runs?",
+        "choices":  [
+                        "Commits the changes in the current transaction",
+                        "Delete the `items` table",
+                        "Returns the INSERT statement as a string",
+                        "Set the `connection` variable to `None`"
+                    ],
+        "answer":  "Commits the changes in the current transaction",
+        "explanation":  "First, the `INSERT` statement makes changes to the database. The `conn.commit()` on the next line is a method call on the connection object that commits the changes made in the current transaction. This is because the role of `commit()` is to commit the changes made in the current transaction. Commonly Confused Incorrect Answer: Deletes the `items` table. Deleting a table is a separate SQL operation, such as `DROP TABLE`, and is not the function of `commit()`. Point of Misinterpretation: This occurs when the method name is confused with the role of the preceding SQL statement. `conn.commit()` is a **method call that commits the changes made within the current transaction**.",
+        "side_card_ids":  [
+                              "DEV_git_001"
+                          ],
+        "project_context":  "It is linked to the code that determines when changes recorded in the database—such as collected items, execution logs, and learning progress—are committed.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "`conn.commit()` 메서드 호출이 현재 트랜잭션의 변경을 확정하는 시점을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The `object.method()` syntax is used to call a method belonging to an object. `conn.commit()` calls the `commit` method of the DB connection object.",
+                                    "how_to_read":  "First, verify that `conn` is the current database connection object, and then explain that calling `commit()` commits the changes made in the current transaction.",
+                                    "key_point":  "`commit()` is not a call that creates a new SQL statement, but rather a call that commits changes already made within a transaction boundary.",
+                                    "common_mistake":  "`execute()` Since ``commit()`` succeeded, it’s easy to assume that `` does nothing. However, in connections that use transactions, their roles are different."
+                                },
+        "teaching_example":  {
+                                 "code":  "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\nconn.execute(\"CREATE TABLE notes (id INTEGER, text TEXT)\")\nconn.execute(\"INSERT INTO notes VALUES (?, ?)\", (1, \"memo\"))\nconn.commit()",
+                                 "walkthrough":  "After `INSERT` makes a change, ``conn.commit()`` is called to commit the changes in the current transaction."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "First, the `INSERT` statement makes changes to the database. The ``conn.commit()`` on the next line is a method call on the `connection` object that commits the changes made in the current transaction.",
+                                   "why_correct":  "`commit()` This is because its role is to commit the changes made in the current transaction.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Delete the `items` table",
+                                                               "why_wrong":  "Deleting a table is a separate SQL operation, such as `DROP TABLE`, and is not the behavior of `commit()`.",
+                                                               "misread_step":  "This is an example of a case where the method name was misinterpreted as referring to the preceding SQL statement."
+                                                           },
+                                   "takeaway":  "`conn.commit()` is **a method call that commits the changes made in the current transaction**."
+                               },
+        "target_statement":  "conn.commit()",
+        "focus_span":  "conn.commit()",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "sqlite",
+                                "insert",
+                                "commit",
+                                "transaction"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY21_L08_rollback_001",
+        "level":  8,
+        "title":  "Undoing Undetermined Changes with a call to `conn.rollback()`",
+        "concepts":  [
+                         "call",
+                         "attribute_access",
+                         "name_reference"
+                     ],
+        "reading_goal":  "The `conn.rollback()` call tracks the results of rolling back changes made in the current transaction that have not yet been committed.",
+        "code":  "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\nconn.execute(\"CREATE TABLE items (id TEXT)\")\nconn.commit()\nconn.execute(\"INSERT INTO items VALUES (?)\", (\"item_001\",))\nconn.rollback()\ncount = conn.execute(\"SELECT COUNT(*) FROM items\").fetchone()[0]",
+        "question_type":  "multiple_choice",
+        "question":  "What value is stored in `conn.rollback()` after `count`?",
+        "choices":  [
+                        "0",
+                        "1",
+                        "item_001",
+                        "None"
+                    ],
+        "answer":  "0",
+        "explanation":  "The table-creation state was committed first. One row was later inserted but not committed, and `conn.rollback()` undoes that uncommitted INSERT. Therefore, the queried row count is 0. This is because rollback cancels changes in the current transaction that have not yet been committed. Common wrong answer: 1. For the count to be 1, the INSERT would have to remain, but rollback canceled that change. Misreading point: This happens when the presence of a commit after INSERT and the timing of rollback are not distinguished. After rollback, first identify **which changes were still uncommitted**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It is linked to code that rolls back the transaction to prevent only partial changes from being saved when an error occurs during database storage.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "`conn.rollback()` 호출이 commit되지 않은 현재 트랜잭션 변경을 되돌리는 결과를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`conn.rollback()` calls the rollback method of the connection object.",
+                                    "how_to_read":  "Before a rollback, check which changes have not yet been committed, and then read the next query reflecting the state after those changes have been undone.",
+                                    "key_point":  "A rollback targets changes in the current transaction that have not yet been committed.",
+                                    "common_mistake":  "It is easy to assume that a rollback erases all records that have already been committed in the past. You must distinguish between previous transactions that have already been committed and current uncommitted changes."
+                                },
+        "teaching_example":  {
+                                 "code":  "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\nconn.execute(\"CREATE TABLE logs (value TEXT)\")\nconn.commit()\nconn.execute(\"INSERT INTO logs VALUES (?)\", (\"temp\",))\nconn.rollback()\ncount = conn.execute(\"SELECT COUNT(*) FROM logs\").fetchone()[0]",
+                                 "walkthrough":  "The table creation has already been committed, and the `temp` row inserted afterward is rolled back before the commit, so `count` becomes 0."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The table creation status was committed first. Subsequently, a row was inserted but not committed, and ``conn.rollback()`` rolls back that uncommitted INSERT. Therefore, the number of rows retrieved is 0.",
+                                   "why_correct":  "This is because a rollback reverses changes in the current transaction that have not yet been committed.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "1",
+                                                               "why_wrong":  "For the value to become 1, an INSERT must still be pending, but that change was canceled by a rollback.",
+                                                               "misread_step":  "This is a case where the distinction between whether a commit was made after the INSERT statement and the timing of a rollback was not made."
+                                                           },
+                                   "takeaway":  "When reviewing the results after a rollback, first check **which changes were still uncommitted**."
+                               },
+        "target_statement":  "conn.rollback()",
+        "focus_span":  "conn.rollback()",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "sqlite",
+                                "rollback",
+                                "transaction",
+                                "error recovery"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY21_L08_schema_create_table_001",
+        "level":  8,
+        "title":  "Check whether a primary key constraint is included using `in`",
+        "concepts":  [
+                         "membership_test",
+                         "assignment",
+                         "subscription",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the sequence that checks whether a specific string is included in the list of constraints extracted from a nested dict using ``in``.",
+        "code":  "columns = {\n    \"id\": {\"type\": \"TEXT\", \"constraints\": [\"PRIMARY KEY\", \"NOT NULL\"]},\n    \"title\": {\"type\": \"TEXT\", \"constraints\": [\"NOT NULL\"]},\n}\nis_primary = \"PRIMARY KEY\" in columns[\"id\"][\"constraints\"]",
+        "question_type":  "multiple_choice",
+        "question":  "What value is stored in `is_primary`?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "PRIMARY KEY",
+                        "id"
+                    ],
+        "answer":  "True",
+        "explanation":  "`columns[\"id\"][\"constraints\"]` is `[\"PRIMARY KEY\", \"NOT NULL\"]`. Since `PRIMARY KEY` is in this list, the `in` expression evaluates to True. This is because `in` returns True if the left-hand value exists in the right-hand collection. Commonly Confused Incorrect Answer: False. Since the first item in the actual constraint list is `PRIMARY KEY`, the inclusion check is true. Point of confusion: This occurs when you fail to check the actual contents of the list obtained from the nested subscription. `value in collection` returns **True if the value is present, and False if it is not**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This relates to code that checks identifier constraints when validating database schemas—such as SQLite, D1, and Supabase—as Python metadata.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "중첩 dict에서 꺼낸 제약 목록에 특정 문자열이 포함되는지 `in`으로 검사하는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`x in collection` It checks whether ``x`` is included in the collection and returns True or False.",
+                                    "how_to_read":  "Read it as first obtaining the constraint list on the right, then checking whether that list contains the string `PRIMARY KEY`.",
+                                    "key_point":  "Here, primary key is a database-schema concept; the Python syntax focus is `in`, which checks whether a value is present in a collection.",
+                                    "common_mistake":  "`in` It’s easy to think of this as a syntax for appending a new string. ``in`` checks only for inclusion without changing the state."
+                                },
+        "teaching_example":  {
+                                 "code":  "columns = {\"email\": {\"constraints\": [\"UNIQUE\", \"NOT NULL\"]}}\nis_unique = \"UNIQUE\" in columns[\"email\"][\"constraints\"]",
+                                 "walkthrough":  "Since `UNIQUE` is included in the constraint list for `email`, the membership test result is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`columns[\"id\"][\"constraints\"]` is `[\"PRIMARY KEY\", \"NOT NULL\"]`. Since `PRIMARY KEY` is in this list, the `in` expression evaluates to True.",
+                                   "why_correct":  "This is because `in` returns `True` if the left-hand value is present in the right-hand collection.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "Since the first item on the actual constraint list is ``PRIMARY KEY``, the inclusion check is true.",
+                                                               "misread_step":  "This refers to a case where the actual list contents obtained through a nested subscription have not been verified."
+                                                           },
+                                   "takeaway":  "`value in collection` returns **True if the value is included, and False if it is not**."
+                               },
+        "target_statement":  "is_primary = \"PRIMARY KEY\" in columns[\"id\"][\"constraints\"]",
+        "focus_span":  "\"PRIMARY KEY\" in columns[\"id\"][\"constraints\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "schema",
+                                "primary key",
+                                "table metadata",
+                                "unique identifier"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY21_L08_not_null_001",
+        "level":  8,
+        "title":  "Determining Whether NULL Is Allowed Using \"not in\"",
+        "concepts":  [
+                         "membership_test",
+                         "assignment",
+                         "subscription",
+                         "literal"
+                     ],
+        "reading_goal":  "It reads the rule from the schema metadata that `not in` returns True only when there are no values in the collection.",
+        "code":  "columns = {\n    \"job_name\": {\"type\": \"TEXT\", \"constraints\": [\"NOT NULL\"]},\n    \"status\": {\"type\": \"TEXT\", \"constraints\": [\"NOT NULL\"]},\n}\nallows_null = \"NOT NULL\" not in columns[\"job_name\"][\"constraints\"]",
+        "question_type":  "multiple_choice",
+        "question":  "What value is stored in `allows_null`?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "NOT NULL",
+                        "None"
+                    ],
+        "answer":  "False",
+        "explanation":  "The list of constraints for `job_name` includes ``NOT NULL``. Therefore, the negation check ``\"NOT NULL\" not in ...`` evaluates to `False`. This is because ``not in`` is true only when the value being searched for is not present. A common source of confusion: `True` is only true when ``NOT NULL`` is not in the list. Currently, it exists in the list. Common misinterpretation: This occurs when the true/false conditions for `in` and `not in` are read in reverse. `x not in collection` is **True when x is not present**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It is linked to code that checks the schema metadata to see if required database fields, such as the \"run\" status or job name, allow NULL values.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "`not in`이 collection에 값이 없을 때만 True가 되는 규칙을 schema 메타데이터에서 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`x not in collection` returns True if `x` is not in the collection, and False if it is.",
+                                    "how_to_read":  "`NOT NULL` Since this is an expression that checks whether an item is absent from this list, if “`NOT NULL`” is actually present in the list, the result is interpreted as False.",
+                                    "key_point":  "You must read up to the variable name ``allows_null`` for the statement that `False` “does not allow `NULL`” to make sense.",
+                                    "common_mistake":  "Since the string `NOT NULL` contains `NOT`, it’s easy to misinterpret this as meaning that `not in` would also be True. Python checks whether a value is in a list, not the literal meaning of the string."
+                                },
+        "teaching_example":  {
+                                 "code":  "columns = {\"nickname\": {\"constraints\": []}}\nallows_null = \"NOT NULL\" not in columns[\"nickname\"][\"constraints\"]",
+                                 "walkthrough":  "Since the list of constraints is empty, ``NOT NULL`` is not present, and the result of ``not in`` is `True`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The constraints for `job_name` include `NOT NULL`. Therefore, the negated inclusion check `\"NOT NULL\" not in ...` evaluates to False.",
+                                   "why_correct":  "This is because `not in` returns True only when the value being searched for is not present.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "True",
+                                                               "why_wrong":  "It is True only when `NOT NULL` is not in the list. Currently, it is in the list.",
+                                                               "misread_step":  "This is an example where the true/false conditions for `in` and `not in` were interpreted in reverse."
+                                                           },
+                                   "takeaway":  "`x not in collection` It is **True when x is absent**."
+                               },
+        "target_statement":  "allows_null = \"NOT NULL\" not in columns[\"job_name\"][\"constraints\"]",
+        "focus_span":  "\"NOT NULL\" not in columns[\"job_name\"][\"constraints\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "schema",
+                                "not null",
+                                "constraint",
+                                "required field"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY21_L09_foreign_key_001",
+        "level":  9,
+        "title":  "Check whether the referenced `item_id` is in the actual set of IDs",
+        "concepts":  [
+                         "membership_test",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "The existence of the referenced object—the core of a foreign key relationship—is checked using a Python membership test.",
+        "code":  "item_ids = {\"item-1\", \"item-2\"}\ncuration = {\"id\": \"cur-7\", \"item_id\": \"item-2\"}\nforeign_key_valid = curation[\"item_id\"] in item_ids",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `foreign_key_valid`?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "item-2",
+                        "cur-7"
+                    ],
+        "answer":  "True",
+        "explanation":  "`curation[\u0027item_id\u0027]` Since item-2 exists and the same ID is present in the right-hand set, the result of ``in`` is True. This is because the referenced ID exists in the actual set of target IDs. A common source of confusion: False. Item-2 is explicitly included in the `item_ids` set. Point of misinterpretation: This occurs when the reference ID is not compared against the target ID set. In Python study cards, a foreign key relationship can be safely expressed as **whether the reference ID → target ID exists**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It is linked to the database integrity concept that prevents “orphan” relationships, where a curation points to an item that does not exist.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "foreign-key 관계의 핵심인 참조 대상 존재 여부를 Python membership test로 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`value in container` is a membership test that checks whether `value` exists in `container`.",
+                                    "how_to_read":  "It calculates the ID to be referenced from the left and checks whether the same value exists in the set of IDs on the right.",
+                                    "key_point":  "The core relational meaning of an SQL FOREIGN KEY is that the referenced `item_id` must exist in the target `items.id`.",
+                                    "common_mistake":  "It is easy to assume that a foreign key automatically makes two ID strings the same. The key points are the existence of the referenced object and referential integrity."
+                                },
+        "teaching_example":  {
+                                 "code":  "user_ids = {\"u1\", \"u2\"}\norder = {\"user_id\": \"u2\"}\nvalid = order[\"user_id\"] in user_ids",
+                                 "walkthrough":  "Since u2 is in user_ids, valid is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since `curation[\u0027item_id\u0027]` is item-2 and the same ID exists in the right-hand side set, the result of `in` is True.",
+                                   "why_correct":  "This is because the referenced object ID exists in the set of actual object IDs.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "item-2 is explicitly included in the set of item_ids.",
+                                                               "misread_step":  "This is a case where the reference ID and target ID sets were not compared."
+                                                           },
+                                   "takeaway":  "In Python learning cards, a foreign key relationship can be safely expressed as **\"whether a reference ID → target ID exists\"**."
+                               },
+        "target_statement":  "foreign_key_valid = curation[\"item_id\"] in item_ids",
+        "focus_span":  "curation[\"item_id\"] in item_ids",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "foreign key",
+                                "referential integrity",
+                                "item_id",
+                                "orphan"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY21_L09_join_001",
+        "level":  9,
+        "title":  "Linking curation and items using `item_id` as the key",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the flow of retrieving item mappings using the foreign key value of `curation` to link related item information.",
+        "code":  "items_by_id = {\n    \"i1\": {\"title\": \"Python\", \"source_url\": \"/python\"},\n    \"i2\": {\"title\": \"RAG\", \"source_url\": \"/rag\"},\n}\ncuration = {\"position\": 1, \"item_id\": \"i2\", \"page\": \"home\"}\njoined_item = items_by_id[curation[\"item_id\"]]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `joined_item[\"title\"]`?",
+        "choices":  [
+                        "Python",
+                        "RAG",
+                        "home",
+                        "i2"
+                    ],
+        "answer":  "RAG",
+        "explanation":  "`curation[\u0027item_id\u0027]` It returns i2, and ``items_by_id[\u0027i2\u0027]`` returns an item dictionary whose `title` is `RAG`. This is because the actual value of the relationship key was used in the outer mapping lookup. A common source of confusion: In Python, `i1` is the title of the item, and the current curation refers to `i2`. Point of misinterpretation: This occurs when the value of `item_id` in `curation` is not checked. When reading a JOIN relationship, trace in the following order: **reference key value → target row lookup → joined field**.",
+        "side_card_ids":  [
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "This relates to the concept of a database JOIN, which links home curation records to source item information via an item_id/id relationship.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "curation의 foreign-key 값으로 item mapping을 조회해 관련 item 정보를 연결하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping[key]` is a subscription that reads the value corresponding to the key in a dict.",
+                                    "how_to_read":  "First, the key expression inside the square brackets is evaluated, and then the outer dict is looked up using that actual value.",
+                                    "key_point":  "`items_by_id[curation[\u0027item_id\u0027]]` It links to the item with the same ID as the `item_id` listed in the curation.",
+                                    "common_mistake":  "It’s easy to assume that the string `item_id` inside the square brackets is used directly to query `items_by_id`. First, retrieve the actual ID value from `curation`."
+                                },
+        "teaching_example":  {
+                                 "code":  "users = {\"u1\": {\"name\": \"Kim\"}}\norder = {\"user_id\": \"u1\"}\nuser = users[order[\"user_id\"]]",
+                                 "walkthrough":  "Since the `user_id` in `order` is `u1`, the dictionary from `users[\u0027u1\u0027]` is stored in `user`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`curation[\u0027item_id\u0027]` returns i2, and ``items_by_id[\u0027i2\u0027]`` returns an item dictionary with the title set to \"RAG.\"",
+                                   "why_correct":  "This is because the actual value of the `relationship` key was used in the external mapping lookup.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Python",
+                                                               "why_wrong":  "\"Python\" is the title of item i1, and the current curation refers to i2.",
+                                                               "misread_step":  "This is a case where the `item_id` value for `curation` was not checked."
+                                                           },
+                                   "takeaway":  "When reading a JOIN relationship, trace in the following order: **reference key value → target row lookup → linked field**."
+                               },
+        "target_statement":  "joined_item = items_by_id[curation[\"item_id\"]]",
+        "focus_span":  "items_by_id[curation[\"item_id\"]]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "join",
+                                "relationship",
+                                "item_id",
+                                "lookup"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY21_L09_index_001",
+        "level":  9,
+        "title":  "Reading the target column from index metadata",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "When index names, tables, columns, and purposes are represented as Python metadata, the actual indexed column is read via a key lookup.",
+        "code":  "index_meta = {\n    \"name\": \"idx_items_source\",\n    \"table\": \"items\",\n    \"column\": \"source_url\",\n    \"purpose\": \"speed_lookup\",\n}\nindexed_column = index_meta[\"column\"]",
+        "question_type":  "multiple_choice",
+        "question":  "`indexed_column` What is the string stored in ?",
+        "choices":  [
+                        "source_url",
+                        "items",
+                        "idx_items_source",
+                        "speed_lookup"
+                    ],
+        "answer":  "source_url",
+        "explanation":  "`index_meta[\u0027column\u0027]` returns the `source_url` string associated with the `column` key. This is because the actual target column of the index is stored as a separate value in the metadata dictionary. A common source of confusion: `idx_items_source`—its value is the name of the index, not the target column. Point of Misunderstanding: This occurs when the index name and the indexed column are confused. When reading a database index, **distinguish between the index name and the actual target column**.",
+        "side_card_ids":  [
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "This connects to a design where an index is placed on a database path frequently queried by a condition such as `source_url` for duplicate-URL checks.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "index 이름·table·column·목적을 Python metadata로 표현했을 때 실제 indexed column을 key lookup으로 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`dict[key]` is a subscription that retrieves the value associated with the specified key.",
+                                    "how_to_read":  "It verifies that the current lookup key is `column` and retrieves its value from the metadata.",
+                                    "key_point":  "The original SQL index is applied to `items(source_url)`, which is linked to the performance of queries with the `source_url` condition.",
+                                    "common_mistake":  "It is easy to think the index name `idx_items_source` is the column name. The actual column is the separate metadata field `source_url`."
+                                },
+        "teaching_example":  {
+                                 "code":  "meta = {\"name\": \"idx_user_email\", \"column\": \"email\"}\ncolumn = meta[\"column\"]",
+                                 "walkthrough":  "The value `email` for the column key is stored in the variable."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`index_meta[\u0027column\u0027]` returns the `source_url` string associated with the \"column\" key.",
+                                   "why_correct":  "This is because the actual columns to be indexed were stored as separate values in the metadata dictionary.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "idx_items_source",
+                                                               "why_wrong":  "That value is the name of the index, not the target column.",
+                                                               "misread_step":  "This is an instance where the index name and the indexed column were confused."
+                                                           },
+                                   "takeaway":  "When reading a DB index, **distinguish between the index name and the actual target column**."
+                               },
+        "target_statement":  "indexed_column = index_meta[\"column\"]",
+        "focus_span":  "index_meta[\"column\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "index",
+                                "source_url",
+                                "query performance",
+                                "schema metadata"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY21_L09_upsert_001",
+        "level":  9,
+        "title":  "Branch between `update` and `insert` based on whether `id` exists",
+        "concepts":  [
+                         "if_statement",
+                         "membership_test",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "It checks whether the incoming ID exists in the existing mapping and determines whether the update branch or the insert branch will be executed.",
+        "code":  "items_by_id = {\"i1\": {\"title\": \"old\", \"source_url\": \"/old\"}}\nincoming = {\"id\": \"i1\", \"title\": \"new\", \"source_url\": \"/new\"}\nif incoming[\"id\"] in items_by_id:\n    items_by_id[incoming[\"id\"]] = {\"title\": incoming[\"title\"], \"source_url\": incoming[\"source_url\"]}\nelse:\n    items_by_id[incoming[\"id\"]] = {\"title\": incoming[\"title\"], \"source_url\": incoming[\"source_url\"]}",
+        "question_type":  "multiple_choice",
+        "question":  "After execution, what is the value of `items_by_id[\"i1\"][\"title\"]`?",
+        "choices":  [
+                        "new",
+                        "old",
+                        "i1",
+                        "None"
+                    ],
+        "answer":  "new",
+        "explanation":  "Since `i1` is already in `items_by_id`, the `if` branch is executed. The existing row is replaced with the `incoming` title `new`. This is because the `membership` condition is True, so the assignment in the `update` branch is executed. Common source of confusion: “old old” refers to the existing value before the branch is executed. Point of misinterpretation: This occurs when the state after the “update” branch of an `upsert` is not taken into account. An `upsert` should be interpreted as **key existence check → update or insert → final row state**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This ties into the process of updating collection items or source metadata during repeated loading without creating duplicate rows with the same ID.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "incoming id가 기존 mapping에 있는지 검사해 update branch와 insert branch 중 어느 쪽이 실행되는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if condition:` This executes the body of the code when the condition is True.",
+                                    "how_to_read":  "Calculate the membership test in the conditional expression and read the code by splitting it into the \"update\" flow if True and the \"insert\" flow if False.",
+                                    "key_point":  "UPSERT is a pattern where, if a key already exists, the existing data is updated instead of adding a new duplicate row.",
+                                    "common_mistake":  "It’s easy to assume that `upsert` always means `insert`. However, depending on whether there is a key conflict, an `update` may be executed."
+                                },
+        "teaching_example":  {
+                                 "code":  "rows = {\"a\": 1}\nincoming = {\"id\": \"a\", \"value\": 2}\nif incoming[\"id\"] in rows:\n    rows[incoming[\"id\"]] = incoming[\"value\"]\nelse:\n    rows[incoming[\"id\"]] = incoming[\"value\"]",
+                                 "walkthrough":  "Since `a` already exists, the `if` branch is executed, and the existing value 1 is updated to 2."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since `i1` is already in `items_by_id`, the `if` branch is executed. The existing row is replaced with the `incoming` title `new`.",
+                                   "why_correct":  "This is because the membership condition is True, so the assignment in the `update` role is executed.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "old",
+                                                               "why_wrong":  "`old` is the value that existed before the branch was executed.",
+                                                               "misread_step":  "This is a case where the state after the \"update\" branch of the `upsert` operation has not been reflected."
+                                                           },
+                                   "takeaway":  "\"upsert\" is interpreted as **checking for the existence of a key → update or insert → final row state**."
+                               },
+        "target_statement":  "if incoming[\"id\"] in items_by_id:",
+        "focus_span":  "if incoming[\"id\"] in items_by_id:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "upsert",
+                                "insert",
+                                "update",
+                                "conflict",
+                                "id"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY21_L10_pagination_001",
+        "level":  10,
+        "title":  "Reading an assignment statement that calculates an offset based on a page number and stores it in a variable",
+        "concepts":  [
+                         "assignment",
+                         "arithmetic",
+                         "name_reference",
+                         "parameter_definition"
+                     ],
+        "reading_goal":  "Track the sequence in which the calculation on the right-hand side of the input statement is first evaluated using the current argument values, and the result is stored in `offset`.",
+        "code":  "def list_items(page: int, page_size: int = 20):\n    offset = (page - 1) * page_size\n    return offset\n\nprint(list_items(3, 20))",
+        "question_type":  "meaning_choice",
+        "question":  "When `page=3` and `page_size=20`, what is the value of `offset` immediately after the assignment?",
+        "choices":  [
+                        "20",
+                        "60",
+                        "40",
+                        "3"
+                    ],
+        "answer":  "40",
+        "explanation":  "1) page is 3 and page_size is 20. 2) The expression `3 - 1` inside the parentheses is evaluated first, resulting in 2. 3) `2 * 20` equals 40. 4) The assignment statement stores that value of 40 in offset. 5) Therefore, the current value of `offset` is 40.",
+        "side_card_ids":  [
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "It relates to pagination calculations that convert page numbers from a list API or search results into a DB OFFSET value.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "대입문의 오른쪽 페이지 계산식을 현재 인자 값으로 먼저 평가하고 그 결과가 offset에 저장되는 순서를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The assignment operator evaluates the expression on the right first and then stores the result in the variable on the left.",
+                                    "how_to_read":  "In `offset = (page - 1) * page_size`, the calculation is interpreted as follows: first, `page - 1` is calculated; then, `page_size` is multiplied by that result; and finally, the resulting number is stored in `offset`.",
+                                    "key_point":  "Rather than the pagination domain itself, the important Python reading rule is **finish evaluating the right side → store the result on the left**.",
+                                    "common_mistake":  "It’s easier to read as 60 when calculated directly as `page * page_size`. The expression `page - 1` inside the parentheses is evaluated first."
+                                },
+        "teaching_example":  {
+                                 "code":  "page = 4\nsize = 10\noffset = (page - 1) * size\nprint(offset)",
+                                 "walkthrough":  "Since `(4 - 1) * 10` is calculated first to produce 30, which is then stored in `offset`, 30 is printed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) page is 3 and page_size is 20. 2) The expression `3 - 1` inside the parentheses is evaluated first, resulting in 2. 3) `2 * 20` equals 40. 4) The assignment statement stores that value of 40 in offset. 5) Therefore, the current value of `offset` is 40.",
+                                   "why_correct":  "If you evaluate the right-hand side of the assignment statement in the actual order of evaluation and then save the result, the correct answer is ``40``.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "60",
+                                                               "why_wrong":  "`page * page_size` Since it calculates ``(page - 1) * page_size`` rather than ``, you must first subtract 1.",
+                                                               "misread_step":  "Double-check the order of operations: evaluate the parentheses on the right side of the expression first, then proceed to multiplication."
+                                                           },
+                                   "takeaway":  "The assignment operator **fully evaluates the expression on the right and stores the result in the variable on the left**."
+                               },
+        "target_statement":  "offset = (page - 1) * page_size",
+        "focus_span":  "offset = (page - 1) * page_size",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "pagination",
+                                "offset",
+                                "page_size",
+                                "database_query"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY21_L10_repository_pattern_001",
+        "level":  10,
+        "title":  "Reading an attribute assignment that stores constructor arguments in the `self.conn` attribute",
+        "concepts":  [
+                         "assignment",
+                         "attribute_access",
+                         "parameter_definition",
+                         "class_definition"
+                     ],
+        "reading_goal":  "Track the flow of the `conn` value passed to the constructor as it is stored in an instance attribute via the assignment `self.conn = conn`.",
+        "code":  "class ItemRepository:\n    def __init__(self, conn):\n        self.conn = conn\n\nrepo = ItemRepository(\"DB-01\")\nprint(repo.conn)",
+        "question_type":  "output_prediction",
+        "question":  "`ItemRepository(\u0027DB-01\u0027)` After generation, what is the value of ``repo.conn``?",
+        "choices":  [
+                        "conn",
+                        "DB-01",
+                        "ItemRepository",
+                        "None"
+                    ],
+        "answer":  "DB-01",
+        "explanation":  "1) ItemRepository(\"DB-01\") creates a new instance and calls __init__. 2) The value of the parameter `conn` is \"DB-01\". 3) ``self.conn = conn`` stores that value in the `conn` attribute of the current instance. 4) Since `repo` points to that instance, ``repo.conn`` is \"DB-01\".",
+        "side_card_ids":  [
+                              "PYV158_A1_DATABASE_FLOW"
+                          ],
+        "project_context":  "The Repository object is connected to a structure where dependencies, such as database connections, are passed to the constructor and stored as instance state.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "생성자에 전달된 conn 값이 `self.conn = conn` 대입을 통해 인스턴스 속성에 저장되는 흐름을 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "When an attribute specified with a dot—such as `self.conn = conn`—appears on the left side of an assignment statement, the value on the right is stored in that attribute’s location within the current instance.",
+                                    "how_to_read":  "First, check the current value of the right-hand parameter `conn`, then interpret the left-hand `self.conn` as a storage location within the instance.",
+                                    "key_point":  "`self.conn` and the parameter `conn` have similar names but different roles. The right side is the current value passed into the method, while the left side is the instance attribute that will retain it.",
+                                    "common_mistake":  "`self.conn = conn` It’s easy to read this as a comparison stating that these two names are the same. Here, ``=`` is an assignment that stores a value in an attribute."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Service:\n    def __init__(self, token):\n        self.token = token\n\nservice = Service(\"abc\")\nprint(service.token)",
+                                 "walkthrough":  "After the constructor argument \"abc\" is passed to `token`, `self.token = token` stores it in an instance attribute, so the final output is \"abc.\""
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) ItemRepository(\"DB-01\") creates a new instance and calls __init__. 2) The value of the parameter `conn` is \"DB-01\". 3) ``self.conn = conn`` stores that value in the `conn` attribute of the current instance. 4) Since `repo` points to that instance, ``repo.conn`` is \"DB-01\".",
+                                   "why_correct":  "Since the value on the right-hand side of the attribute assignment is stored directly in the instance attribute, the correct answer is `DB-01`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "conn",
+                                                               "why_wrong":  "`conn` is the parameter name; the actual stored value is the string `DB-01` passed at call time.",
+                                                               "misread_step":  "Distinguish between the variable name itself and the value it currently refers to when reading."
+                                                           },
+                                   "takeaway":  "Attribute assignment is read in the following order: **current value on the right → storage location of `object.attr` on the left**."
+                               },
+        "target_statement":  "self.conn = conn",
+        "focus_span":  "self.conn = conn",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "architecture_and_design",
+        "coverage_topics":  [
+                                "repository_pattern",
+                                "database_connection",
+                                "instance_state",
+                                "dependency_storage"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY21_L10_migration_001",
+        "level":  10,
+        "title":  "Enclosing the migration execution with `conn` within an SQLite transaction boundary",
+        "concepts":  [
+                         "with_statement",
+                         "call",
+                         "attribute_access"
+                     ],
+        "reading_goal":  "Read the execution sequence—which begins with entering the block, executing the SQL, and ending with a commit upon normal termination—when the SQLite connection is placed within the ``with`` statement.",
+        "code":  "import sqlite3\n\ndef apply_migration(conn: sqlite3.Connection):\n    with conn:\n        conn.execute(\"ALTER TABLE items ADD COLUMN summary TEXT\")",
+        "question_type":  "meaning_choice",
+        "question":  "What is the core termination behavior when a ``with conn:`` block in SQLite completes without raising an exception?",
+        "choices":  [
+                        "Commit the current transaction",
+                        "Delete the DB file",
+                        "Be sure to close the connection.",
+                        "Clear the SQL string"
+                    ],
+        "answer":  "Commit the current transaction",
+        "explanation":  "1) `with conn:` enters the SQLite Connection context manager. 2) The indented `conn.execute(...)` executes the migration SQL. 3) If the block ends without an exception, the normal termination path of the context manager is executed. 4) This path commits the current transaction. 5) Therefore, the key termination action is commit.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "When executing a DB schema migration in Python, this aligns with the process of placing the SQL changes within a transaction boundary.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "with_statement",
+        "reading_goal_internal":  "SQLite Connection을 `with` 문에 넣었을 때 블록 진입, SQL 실행, 정상 종료 시 commit으로 이어지는 실행 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`with` A statement executes an indented block between the start and end actions of the context manager. By using an SQLite connection with ``with``, you can link the success or failure handling of a transaction to the block boundary.",
+                                    "how_to_read":  "After entering the `with conn:` block, execute the SQL call within the block, check whether the block terminates normally or raises an exception, and then read the termination behavior of the context manager.",
+                                    "key_point":  "A `with` statement for a SQLite `Connection` helps **commit on normal exit and roll back on exception**, but it should not be read as syntax that automatically closes the connection itself.",
+                                    "common_mistake":  "Based on experience with `with open(...)` in files, it’s easy to assume that `with conn:` also always closes the database connection at the end of the block. The key here is the transaction boundary."
+                                },
+        "teaching_example":  {
+                                 "code":  "import sqlite3\n\ndef save_status(conn: sqlite3.Connection):\n    with conn:\n        conn.execute(\"UPDATE jobs SET status = ? WHERE id = ?\", (\"done\", \"j1\"))",
+                                 "walkthrough":  "It is interpreted as a flow where, once the UPDATE statement inside the block completes without exceptions, the SQLite connection context manager commits the transaction."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `with conn:` enters the SQLite Connection context manager. 2) The indented `conn.execute(...)` executes the migration SQL. 3) If the block ends without an exception, the normal termination path of the context manager is executed. 4) This path commits the current transaction. 5) Therefore, the key termination action is commit.",
+                                   "why_correct":  "When the SQLite Connection context manager behavior is included in the execution sequence, the correct answer is `commits the current transaction`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Be sure to close the connection.",
+                                                               "why_wrong":  "The ``with`` statement in an SQLite connection manages transaction commits and rollbacks, but it is separate from closing the connection.",
+                                                               "misread_step":  "Do not assume that all context managers behave the same way when they close; instead, check what the current context manager is managing."
+                                                           },
+                                   "takeaway":  "The `with` statement is read as a single flow, from **entering the context → executing the block → normal/exception termination**."
+                               },
+        "target_statement":  "with conn:",
+        "focus_span":  "with conn:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "migration",
+                                "schema_change",
+                                "sqlite_transaction",
+                                "alter_table"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY21_L10_d1_prepare_bind_001",
+        "level":  10,
+        "title":  "Passing a single-element tuple as a positional argument to an SQL execution call",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "literal",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read the structure where, in a method call, a one-element tuple `(item_id,)` is passed as the second argument, separate from the SQL string.",
+        "code":  "query = \"SELECT id, title FROM items WHERE id = ?\"\nitem_id = \"item_42\"\nconn.execute(query, (item_id,))",
+        "question_type":  "meaning_choice",
+        "question":  "What is the type of the value passed as the second argument to `conn.execute(query, (item_id,))`?",
+        "choices":  [
+                        "A single string",
+                        "A one-element tuple.",
+                        "Empty list",
+                        "dict"
+                    ],
+        "answer":  "A one-element tuple.",
+        "explanation":  "1) `item_id` is the string `item_42`. 2) In the call parentheses, the first positional argument is the query. 3) The second positional argument is `(item_id,)`. 4) In Python, a comma after a single value creates a one-element tuple. 5) Therefore, the second argument is a tuple in the form `(\u0027item_42\u0027,)`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "Interpret the purpose of `prepare(...).bind(value)` in Legacy D1—which separated SQL from values—as a structure in Python DB calls where the parameter tuple is passed as a separate argument.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "메서드 호출에서 SQL 문자열과 별도로 `(item_id,)` 한 원소 tuple이 두 번째 위치 인자로 전달되는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "Positional arguments are passed to function or method parameter positions in the order written inside the call parentheses. `(item_id,)` is an expression that passes a one-value tuple as a single argument.",
+                                    "how_to_read":  "`conn.execute(query, (item_id,))` It reads from left to right, noting that `query` is passed as the first argument and ``(item_id,)`` as the second.",
+                                    "key_point":  "A tuple with a single element is not created using parentheses alone; it **must include a comma**. If you omit the comma in `(item_id,)`, you may misinterpret the structure of the value passed to the call.",
+                                    "common_mistake":  "It is easy to mistake `(item_id,)` for a value equivalent to the `item_id` string itself. In reality, it is a tuple containing a single `item_id`."
+                                },
+        "teaching_example":  {
+                                 "code":  "def run(sql, params):\n    print(params)\n\nuser_id = \"u7\"\nrun(\"SELECT * FROM users WHERE id = ?\", (user_id,))",
+                                 "walkthrough":  "The `run` call accepts an SQL string and, separately, a one-element tuple named `(\u0027u7\u0027,)` as its second argument."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `item_id` is the string `item_42`. 2) In the call parentheses, the first positional argument is the query. 3) The second positional argument is `(item_id,)`. 4) In Python, a comma after a single value creates a one-element tuple. 5) Therefore, the second argument is a tuple in the form `(\u0027item_42\u0027,)`.",
+                                   "why_correct":  "If you read the call’s argument boundaries and the tuple syntax together, the correct answer is `one-element tuple`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "A single string",
+                                                               "why_wrong":  "Although `item_id` itself is a string, the call is passed a tuple consisting of parentheses and commas: ``(item_id,)``.",
+                                                               "misread_step":  "Check whether the comma inside the call arguments is part of the syntax for creating a data structure."
+                                                           },
+                                   "takeaway":  "When examining function calls, **check separately which values and data structures are passed to each positional argument**."
+                               },
+        "target_statement":  "conn.execute(query, (item_id,))",
+        "focus_span":  "(item_id,)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "prepared_statement",
+                                "parameter_binding",
+                                "cloudflare_d1_context",
+                                "sql_placeholder"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY21_L10_supabase_select_001",
+        "level":  10,
+        "title":  "Specifying filter conditions by calling the eq() method on a query object",
+        "concepts":  [
+                         "call",
+                         "attribute_access",
+                         "argument_passing",
+                         "name_reference"
+                     ],
+        "reading_goal":  "In the `object.method(...)` format, read the called object, method name, and arguments separately.",
+        "code":  "item_id = \"item_42\"\nquery = supabase.table(\"items\").select(\"id,title,source_url\")\nquery.eq(\"id\", item_id)",
+        "question_type":  "meaning_choice",
+        "question":  "`query.eq(\"id\", item_id)` What is the target object for calling the ``eq`` method?",
+        "choices":  [
+                        "query",
+                        "id",
+                        "item_id",
+                        "supabase string"
+                    ],
+        "answer":  "query",
+        "explanation":  "1) In `query.eq`, the name before the dot is `query`. 2) `eq`, after the dot, is the method being called on the `query` object. 3) `\"id\"` and `item_id` inside the parentheses are the arguments passed to `eq`. 4) Therefore, the target object of this method call is `query`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This is used to distinguish between objects, methods, and arguments when reading query builder method chains in DB API clients such as Supabase.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "`object.method(...)` 형태에서 호출 대상 객체와 메서드 이름, 전달 인자를 분리해 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A method call is an expression of the form `object.method(arguments)` that invokes behavior belonging to an object.",
+                                    "how_to_read":  "`query.eq(\"id\", item_id)` When looking at this, first identify what kind of object is on the left side of the dot (`query`), then recognize that the part on the right side of the dot (`eq`) is the method to be called, and read the values inside the parentheses as arguments.",
+                                    "key_point":  "The Python focus of this card is on distinguishing **which method of which object is being called with which arguments**, rather than on Supabase features themselves.",
+                                    "common_mistake":  "It is easy to misread `eq` as an independent function name or mistake the string `id` for a method name. You should distinguish between what comes before and after the dot and the call parentheses."
+                                },
+        "teaching_example":  {
+                                 "code":  "filters = query\nstatus = \"ready\"\nfilters.eq(\"status\", status)",
+                                 "walkthrough":  "The call target is the `filters` object, the method is `eq`, and the arguments passed are the column name ``status`` and the current `status` value."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) In `query.eq`, the name before the dot is `query`. 2) `eq`, after the dot, is the method being called on the `query` object. 3) `\"id\"` and `item_id` inside the parentheses are the arguments passed to `eq`. 4) Therefore, the target object of this method call is `query`.",
+                                   "why_correct":  "In the `object.method(...)` syntax, the object to the left of the dot is the target object, so the correct answer is `query`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "item_id",
+                                                               "why_wrong":  "`item_id` is an argument passed to the `eq` method within parentheses; it is not the object that owns the method.",
+                                                               "misread_step":  "Read the receiver to the left of the dot and the argument in parentheses separately."
+                                                           },
+                                   "takeaway":  "When reading a method call, break down the structure in the order: **target object → method name → arguments**."
+                               },
+        "target_statement":  "query.eq(\"id\", item_id)",
+        "focus_span":  "query.eq(\"id\", item_id)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "supabase",
+                                "select_query",
+                                "equality_filter",
+                                "api_client"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY21_L10_orphan_check_001",
+        "level":  10,
+        "title":  "Organize patch descriptions into three layers: implementation changes, actual behavior changes, and evidence",
+        "concepts":  [
+                         "membership_test",
+                         "subscription",
+                         "literal",
+                         "assignment",
+                         "call"
+                     ],
+        "reading_goal":  "Explain the implementation change—adding `i3` to `item_ids`—the behavioral change where the `orphan` result for the same row changed from `True` to `False`, and the evidence from the actual output ``True False``, without mixing these elements together.",
+        "code":  "def is_orphan(row, item_ids):\n    return row[\"item_id\"] not in item_ids\n\nrow = {\"id\": \"c7\", \"item_id\": \"i3\"}\nbefore_item_ids = {\"i1\", \"i2\"}\nafter_item_ids = {\"i1\", \"i2\", \"i3\"}\nbefore_orphan = is_orphan(row, before_item_ids)\nafter_orphan = is_orphan(row, after_item_ids)\nprint(before_orphan, after_orphan)",
+        "question_type":  "meaning_choice",
+        "question":  "Which of the following most accurately describes this patch as “implementation change → behavior change → evidence”?",
+        "choices":  [
+                        "Implementation: Added i3 to the parent ID set → Behavior: The “orphan” flag for the same row changed from True to False → Evidence: The actual output is “`True False`”",
+                        "Implementation: `orphan` became False → Behavior: Added i3 code → Evidence: The function name is `is_orphan`",
+                        "Implementation: Used `item_ids` as a set → Result: All DB orphans were permanently removed → Evidence: Python was executed",
+                        "Implementation: Added i3 → Results: Both accuracy and performance improved → Evidence: You can tell just by looking at the code, even without a benchmark"
+                    ],
+        "answer":  "Implementation: Added i3 to the parent ID set → Behavior: The “orphan” flag for the same row changed from True to False → Evidence: The actual output is “`True False`”",
+        "explanation":  "1) `target_expression` checks whether the `item_id` of a row is not in `current_item_ids`. 2) Since `i3` is not in `before_set`, ``i3 not in {\u0027i1\u0027,\u0027i2\u0027}`` is True. 3) Since i3 is present in the `After` set, the same `target` result is `False`. 4) The implementation change was adding i3 to the parent ID set. 5) The observable behavior change is that `orphan` on the same row changes from `True` to `False`, and the output ``True False`` serves as evidence for that input.",
+        "side_card_ids":  [
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "This exercise directly addresses the weakness in APEX where the behavior before and after modifications is not accurately explained and sufficient justification is not provided.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "item_ids에 i3를 추가한 구현 변경과, 같은 row의 orphan 결과가 True→False로 바뀐 동작 변화, 실제 출력 `True False`라는 증거를 서로 섞지 않고 설명한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`x not in values` is True when x is not in values. In the patch description, you must separately explain what the code changed, how the behavior changed as a result, and what observations proved it.",
+                                    "how_to_read":  "Calculate the target expression for each “Before” and “After” input. Then, describe the implementation change, the change in the calculation result, and the actual output evidence in one sentence each.",
+                                    "key_point":  "In the \"Before\" section, `item_ids` does not contain `i3`, so `orphan=True`; in the \"After\" section, `i3` has been added, so `orphan=False`. The output ``True False`` is direct evidence of the change in that specific input.",
+                                    "common_mistake":  "If you simply link the implementation to the conclusion—such as “The problem was resolved by adding i3”—and omit the actual behavior or evidence, the verifiability of the patch description is reduced."
+                                },
+        "teaching_example":  {
+                                 "code":  "def missing(value, allowed):\n    return value not in allowed\nprint(missing(\"b\", {\"a\"}), missing(\"b\", {\"a\", \"b\"}))",
+                                 "walkthrough":  "Implementation changes include adding \"b\" to \"allowed\"; behavior changes include True → False; and the evidence is the actual output `True False`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `target_expression` checks whether the `item_id` of a row is not in `current_item_ids`. 2) Since `i3` is not in `before_set`, ``i3 not in {\u0027i1\u0027,\u0027i2\u0027}`` is True. 3) Since i3 is present in the `After` set, the same `target` result is `False`. 4) The implementation change was adding i3 to the parent ID set. 5) The observable behavior change is that `orphan` on the same row changes from `True` to `False`, and the output ``True False`` serves as evidence for that input.",
+                                   "why_correct":  "This is because the code change itself, the fact that the calculation result changed as a result of that change, and the actual execution output—these pieces of evidence—were accurately mapped to different layers.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Implementation: Added i3 → Results: Both accuracy and performance improved → Evidence: You can tell just by looking at the code, even without a benchmark",
+                                                               "why_wrong":  "The current execution only observed orphaned Booleans in a specific row and did not measure any accuracy or performance metrics at all.",
+                                                               "misread_step":  "In the explanatory sentences, highlight “changes made in the code,” “results from the user/data perspective,” and “evidence actually observed,” respectively."
+                                                           },
+                                   "takeaway":  "A good patch description distinguishes between **implementation change ≠ behavior change ≠ proof** and connects these three elements through causal relationships."
+                               },
+        "target_statement":  "row[\"item_id\"] not in item_ids",
+        "focus_span":  "row[\"item_id\"] not in item_ids",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "orphan_check",
+                                "referential_integrity",
+                                "before_after",
+                                "change_explanation",
+                                "proof"
+                            ],
+        "pedagogical_intent":  "interpret_result",
+        "subtype":  "not_in",
+        "secondary_concepts":  [
+                                   "subscription",
+                                   "literal",
+                                   "assignment",
+                                   "call"
+                               ],
+        "prerequisites":  [
+                              "subscription"
+                          ],
+        "semantic_operations":  [
+                                    "referential_integrity_check",
+                                    "before_after_compare",
+                                    "change_behavior_proof_separation"
+                                ],
+        "reading_steps":  [
+                              "The `target expression` checks whether the `item_id` of the `row` is not present in the current `item_ids`.",
+                              "Since `i3` is not in `set`, `i3 not in {\u0027i1\u0027,\u0027i2\u0027}` evaluates to True.",
+                              "Since set contains i3, the target result is False.",
+                              "The implementation change consists of adding i3 to the parent ID set.",
+                              "The observable behavior change is `orphan` changing from True to False on the same row, and the output `True False` is evidence for that input."
+                          ],
+        "same_syntax_example":  "values = {\"a\"}\nprint(\"b\" not in values)"
+    },
+    {
+        "id":  "PY21_L10_repository_api_flow_001",
+        "level":  10,
+        "title":  "Determine whether the happy-path PASS actually verified the `row is None` not-found branch",
+        "concepts":  [
+                         "if_statement",
+                         "identity_test",
+                         "call",
+                         "return_statement",
+                         "comparison"
+                     ],
+        "reading_goal":  "Distinguish between tests with existing IDs that PASSED and the fact that the ``if row is None:`` branch was actually executed, and identify coverage gaps in tests where there are no missing ID inputs.",
+        "code":  "class Repo:\n    def find_by_id(self, item_id):\n        rows = {\"x1\": {\"title\": \"Alpha\"}}\n        return rows.get(item_id)\n\ndef get_item(repo, item_id):\n    row = repo.find_by_id(item_id)\n    if row is None:\n        return \"not found\"\n    return row[\"title\"]\n\nrepo = Repo()\nhappy_pass = get_item(repo, \"x1\") == \"Alpha\"\nprint(happy_pass)",
+        "question_type":  "risk_finding",
+        "question":  "`happy_pass` It is True. Why can’t we conclude—based solely on this result—that the “`if row is None:`” not-found handling has been verified?",
+        "choices":  [
+                        "`x1` In this case, the repository returned a dict, and since ``row is None`` was False, the target branch was not executed; an additional test for a missing ID is required.",
+                        "`happy_pass` If it is True, Python automatically executes each if branch once.",
+                        "Since the Repo class is defined, the None branch is considered verified even without testing.",
+                        "Since the string \"Alpha\" was not printed, the \"not-found\" branch has already been executed."
+                    ],
+        "answer":  "`x1` In this case, the repository returned a dict, and since ``row is None`` was False, the target branch was not executed; an additional test for a missing ID is required.",
+        "explanation":  "1) The \"happy\" test calls `get_item(repo, \u0027x1\u0027)`. 2) Repo.find_by_id(\u0027x1\u0027) returns the {\u0027title\u0027: \u0027Alpha\u0027} dictionary. 3) Since `row is None` evaluates to False, the `return \u0027not found\u0027` statement in the target `if` block is not executed. 4) The `return row[\u0027title\u0027]` below returns “Alpha,” so `happy_pass` becomes True. 5) Therefore, this PASS only validates the existing-row path; the “not-found” branch requires a test with a missing ID input.",
+        "side_card_ids":  [
+                              "PYV158_A1_DATABASE_FLOW"
+                          ],
+        "project_context":  "This addresses the weakness of relying solely on passing tests in APEX without sufficiently verifying impact and unvalidated paths.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "existing id 테스트가 PASS했다는 사실과 `if row is None:` 분기가 실제로 실행됐다는 사실을 구분하고, missing id 입력이 없는 테스트의 coverage gap을 찾는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if` A branch is executed only when the condition is True. Just because a test calls a function does not mean that all branches within that function are automatically verified.",
+                                    "how_to_read":  "First, calculate what the repository returns based on the test input, then check whether the target condition is True or False. If the branch you want to verify is not selected, you must add the input for that branch separately.",
+                                    "key_point":  "In the current test, using id`x1`, since `row` is a dict, ``row is None`` evaluates to False. Therefore, even though `happy_pass=True`, the `not-found` branch has never been executed.",
+                                    "common_mistake":  "You should not generalize the fact that a function test PASSED to the entire branch coverage. In particular, you must verify whether error, not-found, and fallback paths are reached using separate inputs."
+                                },
+        "teaching_example":  {
+                                 "code":  "def classify(value):\n    if value is None:\n        return \"missing\"\n    return \"ok\"\nhappy_pass = classify(1) == \"ok\"\nprint(happy_pass)",
+                                 "walkthrough":  "1 In the input, since the `None` branch is `False`, the `missing return` is not executed. The `missing branch` is not verified by the `happy test PASS` alone."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The \"happy\" test calls `get_item(repo, \u0027x1\u0027)`. 2) Repo.find_by_id(\u0027x1\u0027) returns the {\u0027title\u0027: \u0027Alpha\u0027} dictionary. 3) Since `row is None` evaluates to False, the `return \u0027not found\u0027` statement in the target `if` block is not executed. 4) The `return row[\u0027title\u0027]` below returns “Alpha,” so `happy_pass` becomes True. 5) Therefore, this PASS only validates the existing-row path; the “not-found” branch requires a test with a missing ID input.",
+                                   "why_correct":  "Since the test input caused the condition of the target branch to be False, we did not directly observe the behavior of that branch.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "`happy_pass` If it is True, Python automatically executes each if branch once.",
+                                                               "why_wrong":  "Python currently executes only one path based on the result of the condition in the input, and the testing framework does not automatically execute other branches.",
+                                                               "misread_step":  "It indicates whether the target branch condition was actually True for that input, rather than whether the test function was called."
+                                                           },
+                                   "takeaway":  "Branch testing is performed by following this sequence: **test input → condition value → branch actually reached → observed result → additional input for the branch not reached**."
+                               },
+        "target_statement":  "if row is None:",
+        "focus_span":  "if row is None:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "architecture_and_design",
+        "coverage_topics":  [
+                                "api_service_repository",
+                                "repository_result",
+                                "not_found_flow",
+                                "untested_branch",
+                                "misleading_pass"
+                            ],
+        "pedagogical_intent":  "read_execution_order",
+        "subtype":  "if",
+        "secondary_concepts":  [
+                                   "identity_test",
+                                   "call",
+                                   "return_statement",
+                                   "comparison"
+                               ],
+        "prerequisites":  [
+                              "call",
+                              "identity_test"
+                          ],
+        "semantic_operations":  [
+                                    "repository_lookup",
+                                    "branch_reachability_check",
+                                    "test_gap_diagnosis"
+                                ],
+        "reading_steps":  [
+                              "`happy test` calls `get_item(repo, \u0027x1\u0027)`.",
+                              "Repo.find_by_id(\u0027x1\u0027) returns a {\u0027title\u0027: \u0027Alpha\u0027} dictionary.",
+                              "Since `row is None` evaluates to False, the `return \u0027not found\u0027` statement in the target `if` block is not executed.",
+                              "The `return row[\u0027title\u0027]` below returns \"Alpha,\" causing `happy_pass` to evaluate to `True`.",
+                              "Therefore, this PASS only validates the existing-row path; the not-found branch requires a test with a missing ID."
+                          ],
+        "same_syntax_example":  "def f(value):\n    if value is None:\n        return \"missing\"\n    return \"ok\"\nprint(f(1))"
+    }
 ]

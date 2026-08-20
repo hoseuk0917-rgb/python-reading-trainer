@@ -1,422 +1,920 @@
 [
-  {
-    "id": "PY26_L07_async_await_basic_001",
-    "level": 7,
-    "title": "Introduction to async/await",
-    "concepts": [
-      "return",
-      "async",
-      "await",
-      "coroutine"
-    ],
-    "reading_goal": "Read about the basic concepts of asynchronous functions and `await`.",
-    "code": "async def fetch_item(item_id):\n    data = await api_get(item_id)\n    return data",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best describes the meaning of `await api_get(item_id)`?",
-    "choices": [
-      "Delete `api_get`",
-      "It always fails immediately.",
-      "Save the item_id to a file",
-      "Wait until the asynchronous task is complete"
-    ],
-    "answer": "Wait until the asynchronous task is complete",
-    "explanation": "await suspends the current fetch_item task until the api_get coroutine completes. If api_get yields to the event loop while waiting for non-blocking I/O, another ready task can run. This does not mean an OS thread blocks waiting, nor does it automatically make a blocking function or CPU calculation asynchronous.",
-    "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY"
-    ],
-    "project_context": "This is a pattern commonly seen in code for API calls, file processing, and search servers."
-  },
-  {
-    "id": "PY26_L08_asyncio_gather_001",
-    "level": 8,
-    "title": "Reading Parallel Requests with `asyncio.gather`",
-    "concepts": [
-      "return",
-      "import",
-      "asyncio",
-      "gather",
-      "concurrency"
-    ],
-    "reading_goal": "Read about a structure that runs multiple asynchronous tasks simultaneously and collects their results.",
-    "code": "import asyncio\n\nasync def main(ids):\n    tasks = [fetch_item(x) for x in ids]\n    results = await asyncio.gather(*tasks)\n    return results",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of `asyncio.gather(*tasks)`?",
-    "choices": [
-      "Delete the tasks",
-      "It always executes sequentially.",
-      "Create a Git commit",
-      "Execute multiple asynchronous tasks simultaneously and collect the results"
-    ],
-    "answer": "Execute multiple asynchronous tasks simultaneously and collect the results",
-    "explanation": "gather schedules the coroutines and, if all succeed, returns results in the same order as the inputs. By default, one exception propagates to the awaiting caller, but do not assume every other awaitable is automatically canceled. Choose TaskGroup, return_exceptions, or per-task error handling according to the partial-failure policy.",
-    "side_card_ids": [
-      "PYV161_A1_BATCH_MEMORY_FLOW"
-    ],
-    "project_context": "This is a basic asynchronous pattern used when processing multiple URLs, APIs, and documents simultaneously."
-  },
-  {
-    "id": "PY26_L08_batch_loop_001",
-    "level": 8,
-    "title": "Reading a batch loop",
-    "concepts": [
-      "for",
-      "def",
-      "function",
-      "range",
-      "batch",
-      "loop",
-      "chunking"
-    ],
-    "reading_goal": "Read the code that divides a large list into batches of a certain size for processing.",
-    "code": "def chunks(items, size):\n    for i in range(0, len(items), size):\n        yield items[i:i + size]\n\nfor batch in chunks(rows, 100):\n    process_batch(batch)",
-    "question_type": "meaning_choice",
-    "question": "If there are 250 rows and the size is 100, how many times will a block occur?",
-    "choices": [
-      "2",
-      "100",
-      "250",
-      "3"
-    ],
-    "answer": "3",
-    "explanation": "range starts at 0, 100, and 200, creating slices of 100, 100, and 50 items: three batches. A size of zero makes range raise ValueError, while a negative size produces no batches for this input, so validate a positive integer first. Batching can reduce peak memory, but process_batch failure and resume boundaries still need design.",
-    "side_card_ids": [
-      "PYV161_A1_BATCH_MEMORY_FLOW"
-    ],
-    "project_context": "This method involves dividing large sets of cards, chunks, and node candidates rather than processing them all at once."
-  },
-  {
-    "id": "PY26_L08_shard_range_001",
-    "level": 8,
-    "title": "Reading About Shard Range Processing",
-    "concepts": [
-      "for",
-      "shard",
-      "range",
-      "batch_job"
-    ],
-    "reading_goal": "Understand the structure for executing a large job by dividing it into ranges of shard numbers.",
-    "code": "start_shard = 31\nend_shard = 100\n\nfor shard_id in range(start_shard, end_shard + 1):\n    run_shard(shard_id)",
-    "question_type": "meaning_choice",
-    "question": "What is the last `shard_id` processed by this loop?",
-    "choices": [
-      "99",
-      "31",
-      "101",
-      "100"
-    ],
-    "answer": "100",
-    "explanation": "A shard range is a method of dividing a large task into numbered intervals for processing. Using `range(start, end + 1)` allows you to include the last number. By clearly defining the intervals, you can divide the task so that the ranges do not overlap across multiple PCs or executions. Therefore, the correct answer is “100.”",
-    "side_card_ids": [
-      "PYV161_A1_BATCH_MEMORY_FLOW"
-    ],
-    "project_context": "This is a pattern where a direct connection is established when reading the NodePass/shard processing status."
-  },
-  {
-    "id": "PY26_L09_semaphore_limit_001",
-    "level": 9,
-    "title": "Reading About Semaphore Concurrency Limits",
-    "concepts": [
-      "return",
-      "asyncio",
-      "semaphore",
-      "concurrency_limit"
-    ],
-    "reading_goal": "I'm reading some code that limits the number of tasks running at the same time.",
-    "code": "sem = asyncio.Semaphore(5)\n\nasync def guarded_fetch(url):\n    async with sem:\n        return await fetch(url)",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best describes the meaning of \"Semaphore (5)\"?",
-    "choices": [
-      "I always wait 5 seconds.",
-      "Make him fail five times",
-      "Delete 5 URLs",
-      "Limit the number of concurrent tasks to a maximum of five."
-    ],
-    "answer": "Limit the number of concurrent tasks to a maximum of five.",
-    "explanation": "Cooperating coroutines that share this semaphore can have at most five executions inside the async with region at once. Work outside that region is not limited, and every process has its own semaphore, so this is not a system-wide rate limit. Add a time-based limiter for requests per second and handle timeout and cancellation.",
-    "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY"
-    ],
-    "project_context": "This is necessary to prevent an excessive number of external API calls, downloads, and model inference requests."
-  },
-  {
-    "id": "PY26_L09_worker_pool_001",
-    "level": 9,
-    "title": "Understanding the Worker Pool Structure",
-    "concepts": [
-      "if",
-      "for",
-      "while",
-      "def",
-      "function",
-      "return",
-      "try_except",
-      "import",
-      "range",
-      "worker_pool",
-      "queue",
-      "parallel"
-    ],
-    "reading_goal": "Understand the structure in which multiple workers retrieve tasks from a queue and process them.",
-    "code": "from queue import Queue\nfrom threading import Thread\n\nq = Queue()\nfor item in items:\n    q.put(item)\nfor _ in range(4):\n    q.put(None)\n\ndef worker():\n    while True:\n        item = q.get()\n        try:\n            if item is None:\n                return\n            process(item)\n        finally:\n            q.task_done()\n\nthreads = [Thread(target=worker) for _ in range(4)]\nfor thread in threads:\n    thread.start()\nq.join()\nfor thread in threads:\n    thread.join()",
-    "question_type": "meaning_choice",
-    "question": "Why are we starting four threads?",
-    "choices": [
-      "I'm trying to delete the task four times",
-      "To avoid clearing the queue",
-      "Always try to execute sequentially",
-      "To have multiple workers divide up the work and process it"
-    ],
-    "answer": "To have multiple workers divide up the work and process it",
-    "explanation": "Four threads take different items from one thread-safe Queue and can divide I/O-bound work. Sentinel None values remove the q.empty race and terminate workers. task_done in finally, q.join, and thread.join wait for every retrieved queue item and thread termination. A policy to collect and propagate process exceptions is still needed.",
-    "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY"
-    ],
-    "project_context": "This is a common structure used when parallelizing download, conversion, and verification tasks."
-  },
-  {
-    "id": "PY26_L09_checkpoint_resume_001",
-    "level": 9,
-    "title": "Reading \"checkpoint/resume\"",
-    "concepts": [
-      "if",
-      "for",
-      "continue",
-      "checkpoint",
-      "resume",
-      "long_running_job"
-    ],
-    "reading_goal": "It reads the structure that records completed tasks so they can be skipped when the process is rerun.",
-    "code": "done = load_done_ids(\"done.txt\")\n\nfor item in items:\n    if item.id in done:\n        continue\n    process(item)\n    append_done_id(\"done.txt\", item.id)",
-    "question_type": "meaning_choice",
-    "question": "What happens if `item.id` is in `done`?",
-    "choices": [
-      "Be sure to reprocess it.",
-      "Delete `done.txt`",
-      "Generates an error",
-      "Mark it as already processed and skip it"
-    ],
-    "answer": "Mark it as already processed and skip it",
-    "explanation": "An ID in done is skipped with continue. Convert a large collection of IDs to a set for fast membership tests. If the external effect succeeds but appending the checkpoint fails, resume can repeat the item; use idempotency or an atomic transaction for result and checkpoint, and prevent concurrent workers from claiming the same ID.",
-    "side_card_ids": [
-      "PYV159_A1_CHECKPOINT_RESUME_FLOW"
-    ],
-    "project_context": "It is directly linked to NodePass shards, PDF extraction, and the resumption of bulk API calls."
-  },
-  {
-    "id": "PY26_L09_retry_queue_001",
-    "level": 9,
-    "title": "Reading the retry queue",
-    "concepts": [
-      "for",
-      "try_except",
-      "retry_queue",
-      "failed_items",
-      "resilience"
-    ],
-    "reading_goal": "I'm looking at a system that collects only the failed operations and retries them.",
-    "code": "failed = []\nfor item in items:\n    try:\n        process(item)\n    except Exception:\n        failed.append(item)\n\nfor item in failed:\n    retry_process(item)",
-    "question_type": "meaning_choice",
-    "question": "What goes into the \"failed\" list?",
-    "choices": [
-      "Only successful items",
-      "The ID strings for all items",
-      "Only empty values",
-      "Item for which an exception occurred during processing"
-    ],
-    "answer": "Item for which an exception occurred during processing",
-    "explanation": "The first loop stores the original item object when process raises Exception, and the second loop tries it once more. Broad Exception does not distinguish permanent data errors from transient network failures, and an exception from retry_process is not caught. Record error type, attempt count, last error, and next retry time, and use backoff and dead-letter handling only for safe operations.",
-    "side_card_ids": [],
-    "project_context": "This is useful when recovering only the failed samples from a bulk download, model call, or card creation."
-  },
-  {
-    "id": "PY26_L10_background_job_status_001",
-    "level": 10,
-    "title": "Reading the background job status",
-    "concepts": [
-      "def",
-      "function",
-      "try_except",
-      "background_job",
-      "status",
-      "database",
-      "progress"
-    ],
-    "reading_goal": "Understand the structure for logging the status of long-running tasks to the database.",
-    "code": "def start_job(job_id):\n    repo.update_job(job_id, status=\"running\", progress=0)\n    try:\n        run_long_task(job_id)\n        repo.update_job(job_id, status=\"done\", progress=100)\n    except Exception as e:\n        repo.update_job(job_id, status=\"error\", error=str(e))\n        raise",
-    "question_type": "meaning_choice",
-    "question": "How is the job status saved when an exception occurs?",
-    "choices": [
-      "It is saved as \"done\"",
-      "It always remains \"running\"",
-      "will be deleted",
-      "It is saved as an error"
-    ],
-    "answer": "It is saved as an error",
-    "explanation": "If run_long_task raises, the code attempts to store error status and str(e), then propagates the exception. If that update fails, the job can remain running and the original exception can be masked. Use heartbeats or leases, finally cleanup, sanitized error codes, transition conditions, and a durable transaction to prevent competing workers from overwriting state.",
-    "side_card_ids": [],
-    "project_context": "This is the basic structure for displaying the status of long-running LoRA, NodePass, and collection tasks in the UI."
-  },
-  {
-    "id": "PY26_L10_tmux_nohup_concept_001",
-    "level": 10,
-    "title": "Reading about the concept of long-running processes with tmux/nohup",
-    "concepts": [
-      "comment",
-      "tmux",
-      "nohup",
-      "long_running",
-      "server"
-    ],
-    "reading_goal": "I understand the concept of continuing to run tasks on the server even if my PC disconnects.",
-    "code": "# tmux example\n# tmux new -s nodepass\n# python run_shards.py --start 31 --end 100\n# Press Ctrl+B, then D to detach\n\n# nohup example\n# nohup python run_shards.py > run.log 2>&1 &",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best describes the purpose of `tmux detach`?",
-    "choices": [
-      "Delete the task immediately",
-      "Turn off the GPU",
-      "Deploying GitHub Pages",
-      "Keep the session running in the background without closing it"
-    ],
-    "answer": "Keep the session running in the background without closing it",
-    "explanation": "tmux detach keeps the tmux session and its process alive while disconnecting the current client, allowing a later attach. nohup changes hangup-signal handling, while & backgrounds the process and the redirection sends output to a log. Neither guarantees crash recovery, so track exit status, disk space, log rotation, checkpoints, and a supervisor separately.",
-    "side_card_ids": [],
-    "project_context": "This is an operational concept required when running a shard overnight on EC2 or a workstation."
-  },
-  {
-    "id": "PY26_L10_gpu_batch_size_001",
-    "level": 10,
-    "title": "Understanding the GPU Batch Size Concept",
-    "concepts": [
-      "for",
-      "gpu",
-      "batch_size",
-      "memory",
-      "throughput"
-    ],
-    "reading_goal": "I read some code that explains how `batch_size` affects throughput and memory usage.",
-    "code": "batch_size = 8\nfor batch in chunks(prompts, batch_size):\n    outputs = model.generate(batch)\n    save_outputs(outputs)",
-    "question_type": "meaning_choice",
-    "question": "What are the main problems that can arise if you set the batch_size too large?",
-    "choices": [
-      "Git commit failed",
-      "CSS Breakage",
-      "Sorting JSON Keys",
-      "Insufficient GPU memory"
-    ],
-    "answer": "Insufficient GPU memory",
-    "explanation": "More inputs at once can increase activation and temporary-buffer memory in addition to model weights and cause GPU OOM. Required memory also depends heavily on sequence length, output length, dtype, and model architecture. Confirm whether the library accepts list[str] or requires tokenized tensors, and measure to choose a safe batch size.",
-    "side_card_ids": [],
-    "project_context": "When considering the balance between speed and memory in LoRA inference, node passing, and embedding generation, this is important."
-  },
-  {
-    "id": "PY26_L10_async_producer_consumer_001",
-    "level": 10,
-    "title": "Reading about async producer-consumer",
-    "concepts": [
-      "for",
-      "while",
-      "producer_consumer",
-      "asyncio_queue",
-      "pipeline"
-    ],
-    "reading_goal": "I am reading about an asynchronous structure in which a producer adds items to a queue and a consumer retrieves and processes them.",
-    "code": "queue = asyncio.Queue()\n\nasync def producer(items):\n    for item in items:\n        await queue.put(item)\n\nasync def consumer():\n    while True:\n        item = await queue.get()\n        await process(item)\n        queue.task_done()",
-    "question_type": "meaning_choice",
-    "question": "What is the role of a producer?",
-    "choices": [
-      "Retrieve an item from the queue and process it",
-      "Delete all tasks",
-      "Changing the app's CSS",
-      "Add the items to the queue"
-    ],
-    "answer": "Add the items to the queue",
-    "explanation": "The producer puts each item into the queue, and the consumer gets and processes it. With no maxsize, memory can grow if production is much faster, and with no sentinel the consumer waits forever. Put task_done in try/finally so errors do not strand join, and design a bounded queue, shutdown, cancellation, and error propagation.",
-    "side_card_ids": [],
-    "project_context": "This structure is used to break down a pipeline—such as collection, refinement, and embedding—into distinct stages."
-  },
-  {
-    "id": "PY26_L10_queue_join_001",
-    "level": 10,
-    "title": "queue.join: waiting for completion, read",
-    "concepts": [
-      "for",
-      "print",
-      "queue",
-      "join",
-      "task_done",
-      "completion"
-    ],
-    "reading_goal": "Understand the mechanism that waits until all tasks in the queue are completed.",
-    "code": "for item in items:\n    await queue.put(item)\n\nawait queue.join()\nprint(\"all done\")",
-    "question_type": "meaning_choice",
-    "question": "What does `await queue.join()` mean?",
-    "choices": [
-      "Delete the queue immediately",
-      "Put all the items back",
-      "It always gives an error",
-      "Waits until the tasks in the queue reach the `task_done` state"
-    ],
-    "answer": "Waits until the tasks in the queue reach the `task_done` state",
-    "explanation": "queue.join waits until the unfinished-task count added by put reaches zero through one task_done call per item. Consumers must be running and must call task_done exactly once for every retrieved item. Omitting it waits forever; calling it twice raises ValueError, so wrap processing in try/finally.",
-    "side_card_ids": [
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "It is important to move on to the next step once all download, inference, and verification tasks are complete."
-  },
-  {
-    "id": "PY26_L10_job_manifest_001",
-    "level": 10,
-    "title": "Reading the Job Manifest",
-    "concepts": [
-      "manifest",
-      "batch_job",
-      "status",
-      "resume"
-    ],
-    "reading_goal": "Understand how to manage work items and their statuses using a manifest file.",
-    "code": "{\n  \"job_id\": \"nodepass_20260529\",\n  \"shards\": [31, 32, 33],\n  \"status\": \"running\",\n  \"completed\": [31, 32]\n}",
-    "question_type": "meaning_choice",
-    "question": "What does it mean that [31, 32] is in \"completed\"?",
-    "choices": [
-      "330,000 have been completed",
-      "All shards have failed",
-      "The manifest is empty",
-      "Shards 31 and 32 were recorded as completed"
-    ],
-    "answer": "Shards 31 and 32 were recorded as completed",
-    "explanation": "The completed list says that shards 31 and 32 are recorded as complete; it does not prove that their output is valid. Verify a shard result and checksum before atomically updating the manifest, and validate consistency between status and completed. Concurrent writers need locking or compare-and-swap.",
-    "side_card_ids": [
-      "WEB_pwa_001"
-    ],
-    "project_context": "It aligns well with the routines for checking the shard status, resuming operations, and retrieving outputs."
-  },
-  {
-    "id": "PY26_L10_cancel_graceful_001",
-    "level": 10,
-    "title": "Read \"Graceful Cancel\"",
-    "concepts": [
-      "if",
-      "for",
-      "break",
-      "cancel",
-      "graceful_shutdown",
-      "checkpoint"
-    ],
-    "reading_goal": "When a stop signal is received, the system saves the current state and executes a procedure to safely exit.",
-    "code": "stop_requested = False\n\nfor item in items:\n    if stop_requested:\n        save_checkpoint()\n        break\n    process(item)",
-    "question_type": "meaning_choice",
-    "question": "What happens when `stop_requested` is True?",
-    "choices": [
-      "Continue processing all items",
-      "Delete the file",
-      "Force an increase in the number of GPUs",
-      "Save the checkpoint and exit the loop"
-    ],
-    "answer": "Save the checkpoint and exit the loop",
-    "explanation": "When the condition is true, the code attempts to save a checkpoint and breaks from the loop. This snippet contains no signal handler or other thread that changes stop_requested, so it remains false as shown. A graceful design also needs a cancellation source, current-item atomicity, resource cleanup, checkpoint-failure handling, and preparation for forced termination.",
-    "side_card_ids": [
-      "PYV159_A1_CHECKPOINT_RESUME_FLOW"
-    ],
-    "project_context": "This is an operational practice for safely preserving deliverables before cost constraints or server shutdowns occur."
-  }
+    {
+        "id":  "PY26_L07_async_await_basic_001",
+        "level":  7,
+        "title":  "Waiting for the result of an asynchronous call with `await`",
+        "concepts":  [
+                         "await_expression",
+                         "assignment",
+                         "call"
+                     ],
+        "reading_goal":  "Read the flow within an `async` function where `await` waits for an asynchronous call to complete and evaluates its result as the value of an expression.",
+        "code":  "async def fetch_item(item_id):\n    data = await api_get(item_id)\n    return data",
+        "question_type":  "meaning_choice",
+        "question":  "Which is the most appropriate way to read `await api_get(item_id)`?",
+        "choices":  [
+                        "Skips the `api_get` call",
+                        "Wait until the asynchronous call completes and its result is available.",
+                        "Convert `item_id` to a string",
+                        "Immediately sets `data` to `None`"
+                    ],
+        "answer":  "Wait until the asynchronous call completes and its result is available.",
+        "explanation":  "The `api_get(item_id)` call is initiated inside the `async` function. `await` waits for the result of that asynchronous operation. The prepared value is stored in `data` and returned on the next line. This is because the expression value of `await` is the result of the subsequent asynchronous operation. A common misconception: skipping the `api_get` call. `await` does not skip the call; it waits for the call’s result to be ready. Common Misinterpretation: Do not overlook the fact that there is an actual call expression following `await`. `x = await f()` should be read as storing the value of `f` in `x` once its asynchronous result is ready.",
+        "side_card_ids":  [
+                              "PYV102_A7_ASYNC_CONCURRENCY"
+                          ],
+        "project_context":  "This is a common flow seen in code that receives the results of asynchronous requests—such as from APIs or search servers—and passes them on to the next processing step.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "await_expression",
+        "reading_goal_internal":  "async 함수 안에서 await가 비동기 호출 완료를 기다리고 그 결과를 표현식 값으로 만드는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The `await expression` pauses the execution of the current async function at that point until the asynchronous operation is complete, then receives the result.",
+                                    "how_to_read":  "Treat `await api_get(item_id)` as a single expression, and interpret the value returned after the `api_get` operation completes as the result on the right-hand side of the assignment.",
+                                    "key_point":  "\"await\" is not a syntax that causes the entire program to pause, as with a regular function; rather, it is a construct used within an async flow to wait until the result of a given operation is ready.",
+                                    "common_mistake":  "It’s easy to read `await` as if it were simply a `sleep`. The key point is that it receives the result of the subsequent asynchronous call and makes it available for the next code to use."
+                                },
+        "teaching_example":  {
+                                 "code":  "async def load_user(user_id):\n    user = await fetch_user(user_id)\n    return user",
+                                 "walkthrough":  "After the `fetch_user` operation is complete, the resulting `user` value is stored in a variable and returned."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Inside the async function, start `api_get(item_id)`. `await` waits for the completion result of that asynchronous work. The ready value is stored in `data` and returned on the next line.",
+                                   "why_correct":  "This is because the value of the `await` expression is the result of the subsequent asynchronous operation being completed.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Skips the `api_get` call",
+                                                               "why_wrong":  "`await` does not skip a call; it waits until the call result is ready.",
+                                                               "misread_step":  "It is important not to overlook the fact that there is an actual call expression following `await`."
+                                                           },
+                                   "takeaway":  "`x = await f()` This reads as: \"Once the asynchronous result of f is ready, its value is stored in x.\""
+                               },
+        "target_statement":  "data = await api_get(item_id)",
+        "focus_span":  "await api_get(item_id)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "async_and_concurrency",
+        "coverage_topics":  [
+                                "async",
+                                "await",
+                                "coroutine",
+                                "api_call"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY26_L08_asyncio_gather_001",
+        "level":  8,
+        "title":  "Waiting for Multiple Asynchronous Results with `await asyncio.gather(*tasks)`",
+        "concepts":  [
+                         "await_expression",
+                         "call",
+                         "argument_passing",
+                         "assignment"
+                     ],
+        "reading_goal":  "`await` Read the evaluation order and return value storage flow of the `gather` call enclosed in `...`.",
+        "code":  "import asyncio\n\nasync def main(tasks):\n    results = await asyncio.gather(*tasks)\n    return results",
+        "question_type":  "meaning_choice",
+        "question":  "`await asyncio.gather(*tasks)` Which of the following correctly describes the sequence of events leading up to the result being stored in ``results``?",
+        "choices":  [
+                        "`tasks` Expand it and pass it to `gather`, then wait for the asynchronous task to complete and receive the result.",
+                        "Delete the `tasks` list immediately.",
+                        "Stores the string `gather` in `results`",
+                        "Each task must be called sequentially, one at a time, according to Python syntax."
+                    ],
+        "answer":  "`tasks` Expand it and pass it to `gather`, then wait for the asynchronous task to complete and receive the result.",
+        "explanation":  "After passing multiple awaitables to `*tasks` via `gather()`, `await` waits for the completion of that group of asynchronous tasks. Once they are complete, the result becomes the value of the `await` expression, and that value is stored in `results`. Since the right-hand side of the assignment statement is an `await` expression, the value stored is the result returned by `await` after the asynchronous tasks are completed. A common misconception: Python syntax requires each task to be called sequentially, one at a time. `gather()` is an API for handling multiple awaitables together, and the `await` expression itself is not syntax that calls each task sequentially. Point of confusion: This occurs when the user fails to distinguish between the step where `gather(*tasks)` takes multiple awaitables as arguments and the step where `await` waits for the combined result. `await \u003cexpression\u003e` should be interpreted as **an expression that waits until the asynchronous result is ready and then receives that result as a value**.",
+        "side_card_ids":  [
+                              "PYV161_A1_BATCH_MEMORY_FLOW"
+                          ],
+        "project_context":  "When processing multiple API requests or document tasks asynchronously, the ``await`` outside the `gather` call is used to determine when results are returned.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "await_expression",
+        "reading_goal_internal":  "`await`가 감싼 gather 호출의 평가 순서와 반환값 저장 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`await` is an expression that temporarily defers the next step of the current coroutine until an asynchronous task is complete, and then receives the result of that task as a value.",
+                                    "how_to_read":  "`await asyncio.gather(*tasks)` is interpreted as first unpacking `tasks` as arguments and passing them to `gather()`, then waiting until the asynchronous tasks represented by `gather()` are complete, and finally receiving the results.",
+                                    "key_point":  "Here, what is ultimately stored in `results` is not the name of the `gather` function or `tasks` itself, but **the result obtained after the `await` statement completes**.",
+                                    "common_mistake":  "It is easy to think of `await` as a simple \"pause\" command. In reality, it generates a result after the wait is complete and passes it to the next assignment."
+                                },
+        "teaching_example":  {
+                                 "code":  "import asyncio\n\nasync def demo(tasks):\n    values = await asyncio.gather(*tasks)\n    return values",
+                                 "walkthrough":  "Pass multiple awaitables to `*tasks`; `await` waits for `gather()` to complete and then stores the result in `values`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "After passing multiple awaitables to `*tasks` via `gather()`, `await` waits for the completion of that group of asynchronous tasks. Once completed, the result becomes the value of the `await` expression, and that value is stored in `results`.",
+                                   "why_correct":  "Since the right-hand side of the assignment statement is an expression of the form ``await``, the value stored is the result returned by ``await`` after the asynchronous operation is complete.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Each task must be called sequentially, one at a time, according to Python syntax.",
+                                                               "why_wrong":  "`gather()` is an API for handling multiple awaitables together, and the ``await`` expression itself is not a syntax for calling each task sequentially.",
+                                                               "misread_step":  "This is an example where the step where `gather(*tasks)` takes multiple awaitables as arguments and the step where `await` waits for the bundled result are not distinguished."
+                                                           },
+                                   "takeaway":  "`await \u003cexpression\u003e` is read as **an expression that waits until an asynchronous result is ready and then receives that result as a value**."
+                               },
+        "target_statement":  "results = await asyncio.gather(*tasks)",
+        "focus_span":  "await asyncio.gather(*tasks)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "async_and_concurrency",
+        "coverage_topics":  [
+                                "asyncio",
+                                "gather",
+                                "concurrency",
+                                "multiple awaitables"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY26_L08_batch_loop_001",
+        "level":  8,
+        "title":  "Use `yield` to output slices one by one",
+        "concepts":  [
+                         "yield_expression",
+                         "slice",
+                         "arithmetic",
+                         "for_statement"
+                     ],
+        "reading_goal":  "Read the flow where the `yield` statement inside the generator function returns the current batch slice and proceeds to the next iteration.",
+        "code":  "def chunks(items, size):\n    for i in range(0, len(items), size):\n        yield items[i:i + size]\n\nbatches = list(chunks([1, 2, 3, 4, 5], 2))",
+        "question_type":  "meaning_choice",
+        "question":  "What is the first thing produced when `yield items[i:i + size]` is executed once?",
+        "choices":  [
+                        "One `items` slice from the current range",
+                        "Always use the full `items` list",
+                        "Function name string`chunks`",
+                        "The integer count after all iterations have completed"
+                    ],
+        "answer":  "One `items` slice from the current range",
+        "explanation":  "Once the loop variable `i` is determined, `i + size` is calculated first. A slice `items[i:i + size]` is then created within that range, and `yield` returns that slice as a single batch to the caller. Since the actual value on the right side of `yield` is `items[i:i + size]`, the value yielded in this execution is a slice of the current range. Common misconception: Since the range `i:i + size` is always contained within the brackets of the entire `items` list, a slice is created that includes only the current range, not the entire list. Point of Misinterpretation: This occurs when the slice expression evaluated before `yield` is overlooked. `yield expr` is interpreted as **first evaluating `expr` and then yielding its value**.",
+        "side_card_ids":  [
+                              "PYV161_A1_BATCH_MEMORY_FLOW"
+                          ],
+        "project_context":  "This relates to understanding the generator pattern, which passes large sets of cards, chunks, and node candidates in batches rather than loading them all into memory at once.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "yield_expression",
+        "reading_goal_internal":  "generator 함수 안의 `yield`가 현재 batch slice를 반환하고 다음 반복을 이어가는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`yield value` It is an expression in a generator function that yields a single value and remembers the function’s current execution position.",
+                                    "how_to_read":  "`yield items[i:i + size]` should be read as: first, the slice range is calculated to create the current batch, and then that batch is yielded one item at a time to the caller.",
+                                    "key_point":  "Unlike `return`, which immediately terminates the entire function, **execution can resume from the point following `yield`** when the next value is requested.",
+                                    "common_mistake":  "It is easy to mistake `yield` for being exactly the same as `return`. While `return` terminates function execution, `yield` yields a value and then maintains the generator’s state."
+                                },
+        "teaching_example":  {
+                                 "code":  "def chunks(values, step):\n    for j in range(0, len(values), step):\n        yield values[j:j + step]",
+                                 "walkthrough":  "In each iteration, `values[j:j + step]` creates the current range, and `yield` outputs that range one element at a time."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Once the loop variable `i` is defined, `i + size` is calculated first. A slice `items[i:i + size]` is then created within that range, and `yield` sends that slice as a single batch to the caller.",
+                                   "why_correct":  "`yield` Since the actual value on the right is ``items[i:i + size]``, the value exported in this execution is a slice of the current range.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Always use the full `items` list",
+                                                               "why_wrong":  "Since the range ``i:i + size`` is enclosed in square brackets, a slice is created that captures only the current range, not the entire list.",
+                                                               "misread_step":  "`yield` This is a case where the slice expression, which is evaluated first, is skipped."
+                                                           },
+                                   "takeaway":  "`yield expr` is read as **first evaluating expr and then yielding its value**."
+                               },
+        "target_statement":  "yield items[i:i + size]",
+        "focus_span":  "yield items[i:i + size]",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "batch",
+                                "chunking",
+                                "generator",
+                                "slice"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY26_L08_shard_range_001",
+        "level":  8,
+        "title":  "Increase the `stop` value of the `range` by one to iterate through the last shard",
+        "concepts":  [
+                         "for_statement",
+                         "call",
+                         "arithmetic",
+                         "assignment"
+                     ],
+        "reading_goal":  "Track the values generated by `range(start, end + 1)` and the final value that the `for` loop assigns to the loop variable.",
+        "code":  "start_shard = 31\nend_shard = 100\nlast_seen = None\nfor shard_id in range(start_shard, end_shard + 1):\n    last_seen = shard_id",
+        "question_type":  "output_prediction",
+        "question":  "What is the value stored in ``last_seen`` after the loop ends?",
+        "choices":  [
+                        "99",
+                        "31",
+                        "101",
+                        "100"
+                    ],
+        "answer":  "100",
+        "explanation":  "`end_shard + 1` It is 101. Since ``range(31, 101)`` does not include the stop value of 101, it generates values from 31 to 100. In the last iteration, ``shard_id`` is 100, and that value is stored in ``last_seen``. Since the stop value in ``range`` is excluded, setting the stop to 101 results in 100 as the last actual iteration value. Common Misconception: 101. 101 is the stop boundary in ``range``; it is not the value actually assigned to the loop variable. Source of Misunderstanding: This occurs when you overlook the rule that the `stop` value is not included, as described in ``range``. ``for x in range(start, stop)`` assigns values to ``x`` **only up to the value immediately before `stop`**.",
+        "side_card_ids":  [
+                              "PYV161_A1_BATCH_MEMORY_FLOW"
+                          ],
+        "project_context":  "When dividing a large task into ranges of shard numbers and distributing them across multiple executions, this is directly related to accurately reading the inclusion ranges.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "for_statement",
+        "reading_goal_internal":  "`range(start, end + 1)`이 만드는 값과 `for`가 반복 변수에 넣는 마지막 값을 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`for name in iterable:` is a syntax that retrieves items one by one from an iterable, assigns them to the variable `name` on the left, and executes the block.",
+                                    "how_to_read":  "It is read as: first calculate `range(start_shard, end_shard + 1)`, and then assign the numbers generated within that range to `shard_id` one by one.",
+                                    "key_point":  "Since the `stop` value in `range()` is not included, you can set `stop` to `end_shard + 1` to include `end_shard` itself.",
+                                    "common_mistake":  "It is easy to assume that the second argument of `range` is included in the iteration range. However, `stop` is **an inclusive boundary**."
+                                },
+        "teaching_example":  {
+                                 "code":  "first = 4\nlast = 6\nseen = []\nfor part_id in range(first, last + 1):\n    seen.append(part_id)",
+                                 "walkthrough":  "`range(4, 7)` generates the values 4, 5, and 6, and the `for` loop assigns these values sequentially to `part_id`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`end_shard + 1` It is 101. Since ``range(31, 101)`` does not include the stop value of 101, it generates values from 31 to 100. In the last iteration, ``shard_id`` is 100, and that value is stored in ``last_seen``.",
+                                   "why_correct":  "Since the `stop` parameter in `range` is excluded, setting `stop` to 101 results in the last actual iteration value being 100.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "101",
+                                                               "why_wrong":  "101 is the stop boundary for ``range``; it is not actually a value assigned to the loop variable.",
+                                                               "misread_step":  "This is an example of overlooking the rule that the `range`’s stop value is not included."
+                                                           },
+                                   "takeaway":  "`for x in range(start, stop)` assigns values to `x` **only up to the value immediately before stop**."
+                               },
+        "target_statement":  "for shard_id in range(start_shard, end_shard + 1):",
+        "focus_span":  "for shard_id in range(start_shard, end_shard + 1):",
+        "focus_mode":  "clause_header",
+        "coverage_domain":  "cli_and_automation",
+        "coverage_topics":  [
+                                "shard",
+                                "batch job",
+                                "range",
+                                "loop"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY26_L09_semaphore_limit_001",
+        "level":  9,
+        "title":  "Limiting Concurrent Execution Sections with `async` and `Semaphore`",
+        "concepts":  [
+                         "async_with_statement",
+                         "await_expression",
+                         "return_statement",
+                         "async_function_definition"
+                     ],
+        "reading_goal":  "Read the sequence in which `await` is executed after entering the `async` context manager and then exiting the context.",
+        "code":  "import asyncio\n\nsem = asyncio.Semaphore(5)\n\nasync def fetch(url):\n    await asyncio.sleep(0)\n    return f\"fetched:{url}\"\n\nasync def guarded_fetch(url):\n    async with sem:\n        return await fetch(url)",
+        "question_type":  "multiple_choice",
+        "question":  "`Semaphore(5)` Which of the following best describes its role?",
+        "choices":  [
+                        "Limit the number of tasks in this context to a maximum of 5 at any given time.",
+                        "Always wait 5 seconds.",
+                        "Remove 5 URLs",
+                        "No. 5: Raises an exception"
+                    ],
+        "answer":  "Limit the number of tasks in this context to a maximum of 5 at any given time.",
+        "explanation":  "`asyncio.Semaphore(5)` manages 5 concurrent entry slots. Each `guarded_fetch` must pass through `async with sem` to execute the fetch. This is because the semaphore’s counter limits the number of tasks that can be inside the context simultaneously. A common misconception: “It always makes you wait 5 seconds.” The number 5 is not a time value but the semaphore’s maximum concurrent capacity. Point of misinterpretation: This occurs when the number in the constructor is mistakenly interpreted as a time value. The semaphore code should be read as **maximum concurrency → entry into the async context → execution of the internal `await`.**",
+        "side_card_ids":  [
+                              "PYV102_A7_ASYNC_CONCURRENCY"
+                          ],
+        "project_context":  "This is linked to code that limits concurrency to prevent excessive simultaneous execution of external API calls, downloads, and model inference requests.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "async_with_statement",
+        "reading_goal_internal":  "async context manager에 진입한 뒤 await가 실행되고 context를 빠져나오는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`async with manager:` It enters an asynchronous context manager, executes the indented block, and performs asynchronous cleanup procedures upon exit.",
+                                    "how_to_read":  "Check what a `manager` is, and see which `await` operations are executed within that context.",
+                                    "key_point":  "Semaphores can be used to limit the number of tasks that can enter a context at the same time.",
+                                    "common_mistake":  "It is easy to assume that `Semaphore(5)` means a 5-second wait. The number 5 represents the number of concurrent slots allowed."
+                                },
+        "teaching_example":  {
+                                 "code":  "import asyncio\n\nsem = asyncio.Semaphore(2)\n\nasync def work():\n    async with sem:\n        await asyncio.sleep(0)\n        return \"done\"",
+                                 "walkthrough":  "`work` enters the semaphore context, performs the awaited operation, and returns `done`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`asyncio.Semaphore(5)` manages five concurrent-entry slots. Each `guarded_fetch` must pass through `async with sem` before it can execute `fetch`.",
+                                   "why_correct":  "This is because Semaphore’s counter limits the number of tasks that can be in the context at the same time.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Always wait 5 seconds.",
+                                                               "why_wrong":  "5 is not a time value, but the number of concurrent connections allowed by the semaphore.",
+                                                               "misread_step":  "This is an example of a case where the meaning of a number in the constructor was mistakenly interpreted as time."
+                                                           },
+                                   "takeaway":  "The Semaphore code is read as **number of concurrent connections → entry into async context → execution of internal `await`**."
+                               },
+        "target_statement":  "async with sem:",
+        "focus_span":  "async with sem:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "async_and_concurrency",
+        "coverage_topics":  [
+                                "asyncio",
+                                "Semaphore",
+                                "concurrency limit",
+                                "async with"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY26_L09_worker_pool_001",
+        "level":  9,
+        "title":  "Create four worker `Thread` objects with a list comprehension.",
+        "concepts":  [
+                         "list_comprehension",
+                         "call",
+                         "argument_passing",
+                         "assignment",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the list comprehension that creates one Thread object per iteration of the `range` loop to form a worker pool list.",
+        "code":  "from threading import Thread\n\ndef worker():\n    pass\n\nthreads = [Thread(target=worker) for _ in range(4)]",
+        "question_type":  "multiple_choice",
+        "question":  "How many Thread objects are in the `threads` list?",
+        "choices":  [
+                        "1",
+                        "2",
+                        "4",
+                        "8"
+                    ],
+        "answer":  "4",
+        "explanation":  "`range(4)` This is repeated four times, and in each iteration, one ``Thread(target=worker)`` is created. This is because a list comprehension adds the result of the expression on the left to the list in each iteration. A common source of confusion: Even if the expression ``Thread(...)`` is written only once, the comprehension evaluates it four times. Point of Misinterpretation: This occurs when the reader confuses the number of expressions written in the source code with the number of iterations. The creation of the worker pool should be interpreted in the following order: **number of iterations → number of objects created → list size**.",
+        "side_card_ids":  [
+                              "PYV102_A7_ASYNC_CONCURRENCY"
+                          ],
+        "project_context":  "It is linked to a worker pool structure in which multiple workers share the tasks of downloading, converting, and verifying.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "list_comprehension",
+        "reading_goal_internal":  "range 반복마다 Thread 객체 하나를 만들어 worker pool 리스트를 구성하는 list comprehension을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "Basic list comprehension creates a new list by evaluating the expression on the left for each item in the iteration.",
+                                    "how_to_read":  "Check how many times the `for` loop at the back repeats, and see what value the expression at the front produces on each iteration.",
+                                    "key_point":  "Since it is `range(4)`, `Thread(target=worker)` is evaluated four times, creating four worker objects.",
+                                    "common_mistake":  "It’s easy to assume that the `worker` function is executed four times immediately because of `target=worker`. Here, a Thread object is created, and the actual execution begins with a separate `start()` call."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Job:\n    def __init__(self, name):\n        self.name = name\n\njobs = [Job(\"worker\") for _ in range(3)]",
+                                 "walkthrough":  "Because of `range(3)`, three Job objects are created and added to `jobs`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`range(4)` is repeated four times, and one `Thread(target=worker)` is created for each iteration.",
+                                   "why_correct":  "This is because list comprehensions add the result of the expression on the left to the list with each iteration.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "1",
+                                                               "why_wrong":  "Even if the `Thread(...)` expression is written only once, the comprehension is evaluated four times.",
+                                                               "misread_step":  "This is a case where the number of expressions in the source code was confused with the number of iterations."
+                                                           },
+                                   "takeaway":  "When creating a worker pool, read the parameters in the following order: **number of iterations → number of objects created → list size**."
+                               },
+        "target_statement":  "threads = [Thread(target=worker) for _ in range(4)]",
+        "focus_span":  "[Thread(target=worker) for _ in range(4)]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "async_and_concurrency",
+        "coverage_topics":  [
+                                "worker pool",
+                                "thread",
+                                "queue",
+                                "parallel work"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY26_L09_checkpoint_resume_001",
+        "level":  9,
+        "title":  "Skip the item at the checkpoint using `continue`",
+        "concepts":  [
+                         "continue_statement",
+                         "if_statement",
+                         "membership_test",
+                         "for_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the flow where, when the completion condition is true, `continue` skips the current iteration’s processing statement and moves to the next item.",
+        "code":  "done = {\"a\", \"c\"}\nprocessed = []\nfor item_id in [\"a\", \"b\", \"c\"]:\n    if item_id in done:\n        continue\n    processed.append(item_id)",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `processed` after the loop ends?",
+        "choices":  [
+                        "[\"b\"]",
+                        "[\"a\", \"c\"]",
+                        "[\"a\", \"b\", \"c\"]",
+                        "[]"
+                    ],
+        "answer":  "[\"b\"]",
+        "explanation":  "Since \"a\" and \"c\" are in the done set, `continue` is executed. Only \"b\" has a false condition, so `append` is executed. This is because ``continue`` skips only the remaining statements in the current iteration. A common source of confusion: [\"a\", \"c\"]—these two items are actually excluded from the processing list because of `continue`. Point of misinterpretation: This occurs when the meaning of the membership condition is misunderstood. The `resume` code should be interpreted as following the flow: **check if complete → continue → next item**.",
+        "side_card_ids":  [
+                              "PYV159_A1_CHECKPOINT_RESUME_FLOW"
+                          ],
+        "project_context":  "This connects to the workflow where completed items are not reprocessed when resuming operations after pausing node sharding, PDF extraction, or bulk API tasks.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "continue_statement",
+        "reading_goal_internal":  "완료 id 조건이 참일 때 continue가 현재 반복의 처리 문장을 건너뛰고 다음 item으로 이동하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`continue` skips the remainder of the current iteration in a loop and moves on to the next iteration.",
+                                    "how_to_read":  "It first checks the condition for reaching `continue`, and then determines that the statements in the same loop below it will not be executed.",
+                                    "key_point":  "If you mark an item that has already been processed as a checkpoint, you can prevent `process(item)` from being executed again.",
+                                    "common_mistake":  "It’s easy to think that `continue` terminates the entire `for` loop. `break` terminates the entire loop, while `continue` skips to the next iteration."
+                                },
+        "teaching_example":  {
+                                 "code":  "done = {2}\nprocessed = []\nfor item in [1, 2, 3]:\n    if item in done:\n        continue\n    processed.append(item)",
+                                 "walkthrough":  "In line 2, `continue` is executed, skipping `append`, and the result is ``[1, 3]``."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since a and c are in the done set, `continue` is executed. Only b has a false condition, so `append` is executed.",
+                                   "why_correct":  "This is because `continue` skips only the remaining statements in the current iteration.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\"a\", \"c\"]",
+                                                               "why_wrong":  "Those two items are actually excluded from the processing list because of the `continue` statement.",
+                                                               "misread_step":  "This is an example of misinterpreting the meaning of the membership conditions."
+                                                           },
+                                   "takeaway":  "Read the code in the following sequence: **check if complete → continue → next item**."
+                               },
+        "target_statement":  "continue",
+        "focus_span":  "continue",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "checkpoint",
+                                "resume",
+                                "continue",
+                                "long running job"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY26_L09_retry_queue_001",
+        "level":  9,
+        "title":  "Collect only failed items marked with `typed except` into the retry queue",
+        "concepts":  [
+                         "except_clause",
+                         "try_statement",
+                         "call",
+                         "for_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the flow where the `except` block is executed only when an exception occurs in a non-called `try` block, adding the current item to the failure list.",
+        "code":  "failed = []\nfor item in [\"ok-1\", \"bad\", \"ok-2\"]:\n    try:\n        if item == \"bad\":\n            raise RuntimeError(\"failed\")\n    except Exception:\n        failed.append(item)",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `failed` after the loop ends?",
+        "choices":  [
+                        "[\"bad\"]",
+                        "[\"ok-1\", \"ok-2\"]",
+                        "[\"ok-1\", \"bad\", \"ok-2\"]",
+                        "[]"
+                    ],
+        "answer":  "[\"bad\"]",
+        "explanation":  "Of the three iterations, a RuntimeError occurs only in ``bad``. ``except Exception:`` handles that exception and adds ``bad`` to the `failed` list. This is because the `typed` `except` block executes only when that specific exception occurs. Common Misconception: [\"ok-1\", \"bad\", \"ok-2\"]—The `except` block does not execute for items that were processed successfully. Common Misinterpretation: This occurs when the `except` block is read as if it were the normal body of a loop. The retry queue is interpreted as: **check for exceptions → execute `except` → collect failed items**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to the workflow that collects only failure samples from bulk downloads, model calls, and card generation for separate retries.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "except_clause",
+        "reading_goal_internal":  "try 안 호출에서 Exception이 발생했을 때만 except가 실행되어 현재 item을 실패 목록에 넣는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`except Exception:` This is a `typed except` clause that executes when an exception of that type is raised within a `try` block.",
+                                    "how_to_read":  "First, we check which statements in the `try` block might raise an exception, and then apply the `except` block only to the iteration where an exception actually occurred.",
+                                    "key_point":  "The failure queue contains only the items where an exception occurred, not all items.",
+                                    "common_mistake":  "It’s easy to think that the `except` block always runs for every iteration. If the `try` block completes successfully, the `except` block is skipped."
+                                },
+        "teaching_example":  {
+                                 "code":  "failed = []\nfor item in [1, 0, 2]:\n    try:\n        10 / item\n    except ZeroDivisionError:\n        failed.append(item)",
+                                 "walkthrough":  "Since a ZeroDivisionError occurs only when the value is 0, \"failed\" contains only the number 0."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Of the three iterations, a RuntimeError occurs only in `bad`. The `except Exception:` block handles that exception and adds `bad` to `failed`.",
+                                   "why_correct":  "The `typed except` block is executed only when that exception occurs.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\"ok-1\", \"bad\", \"ok-2\"]",
+                                                               "why_wrong":  "In a normally handled item, the body of the `except` statement is not executed.",
+                                                               "misread_step":  "This is a case of reading `except` as if it were the ordinary body of a loop."
+                                                           },
+                                   "takeaway":  "The retry queue works as follows: **check for exceptions → execute `except` → collect failed items**."
+                               },
+        "target_statement":  "except Exception:",
+        "focus_span":  "except Exception:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "retry queue",
+                                "failed items",
+                                "exception",
+                                "resilience"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY26_L10_background_job_status_001",
+        "level":  10,
+        "title":  "Saving the error state when a background job raises an exception",
+        "concepts":  [
+                         "except_clause",
+                         "call",
+                         "raise_statement",
+                         "assignment",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Examine the flow where a background job failure leads to a `status=error` log entry and the propagation of an exception.",
+        "code":  "events=[]\n\ndef update_job(job_id, **fields):\n    events.append((job_id, fields))\n\ndef run_long_task(job_id):\n    raise RuntimeError(\"failed\")\n\ndef start_job(job_id):\n    update_job(job_id, status=\"running\", progress=0)\n    try:\n        run_long_task(job_id)\n        update_job(job_id, status=\"done\", progress=100)\n    except Exception as e:\n        update_job(job_id, status=\"error\", error=str(e))\n        raise",
+        "question_type":  "multiple_choice",
+        "question":  "How is the job status saved when an exception occurs?",
+        "choices":  [
+                        "It is saved as \"done.\"",
+                        "It always remains in the \"running\" state",
+                        "It is deleted",
+                        "It is saved as an error."
+                    ],
+        "answer":  "It is saved as an error.",
+        "explanation":  "An exception occurs, causing the `except` branch to execute and the `error` state to be saved. This is because the `update_job` call within the `except` block explicitly sets `status=\u0027error\u0027`. A common source of confusion: it is saved as `done`. The `done` save is executed only when the `try` block completes successfully. Point of misinterpretation: This occurs when the control flow is lost after an exception occurs. The background job reads the state transition as **running → success=done / failure=error**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to the basic operational structure for tracking the status of long LoRA, NodePath, and collection tasks in the UI.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "except_clause",
+        "reading_goal_internal":  "background job 실패가 status=error 기록과 예외 재전파로 이어지는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`except Exception as e:` is an `except` clause that binds the raised exception object to `e` for handling.",
+                                    "how_to_read":  "After an exception occurs, save the current state, and then check whether the exception is caught or rethrown.",
+                                    "key_point":  "Long-running tasks are easier to manage when their status (running, done, or error) is visible in the UI.",
+                                    "common_mistake":  "It’s easy to assume that the function ends successfully if an error state has been saved. However, because of the final `raise`, the failure continues to propagate."
+                                },
+        "teaching_example":  {
+                                 "code":  "events=[]\ntry:\n    raise RuntimeError(\"bad\")\nexcept Exception as e:\n    events.append((\"error\", str(e)))",
+                                 "walkthrough":  "It catches the exception as `e` and logs the error status and message."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "An exception occurs, causing the `except` branch to execute, and the `error` state is saved.",
+                                   "why_correct":  "except because the call to update_job specifies status=\u0027error\u0027.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "It is saved as \"done.\"",
+                                                               "why_wrong":  "done The `save` statement is executed only if the `try` block completes successfully.",
+                                                               "misread_step":  "This is a case where control flow was lost after an exception occurred."
+                                                           },
+                                   "takeaway":  "The background job reads the state transitions **running → success=done / failure=error**."
+                               },
+        "target_statement":  "except Exception as e:",
+        "focus_span":  "except Exception as e:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "background job",
+                                "status",
+                                "progress",
+                                "error tracking"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY26_L10_tmux_nohup_concept_001",
+        "level":  10,
+        "title":  "Reading while a detached session remains active",
+        "concepts":  [
+                         "boolean_operation",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read as a Boolean the state where a long-running session remains alive even after detaching from the terminal.",
+        "code":  "session = {\"name\": \"nodepass\", \"detached\": True, \"alive\": True}\nkeeps_running = session[\"detached\"] and session[\"alive\"]",
+        "question_type":  "multiple_choice",
+        "question":  "Which of the following best describes the purpose of `tmux detach`?",
+        "choices":  [
+                        "Delete the task immediately.",
+                        "Turn off the GPU",
+                        "Deploy to GitHub Pages",
+                        "Keep running in the background without closing the session."
+                    ],
+        "answer":  "Keep running in the background without closing the session.",
+        "explanation":  "A session is considered \"detached\" yet \"alive,\" meaning that even if it is separated from the terminal, the task continues to run. This is because \"detach\" refers to the action of leaving the view without terminating the session. A common source of confusion: \"turns off the GPU.\" \"Detach\" relates to the session connection status and is not GPU power control. Point of misinterpretation: This occurs when users confuse the terminal session with the hardware state. The concept of tmux/nohup should be understood as **separating the shell connection from the process’s survival**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This ties into the operational concept of maintaining shard operations on EC2/workstations for extended periods, separate from terminal connections.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "boolean_operation",
+        "reading_goal_internal":  "터미널과 분리된 뒤에도 long-running session이 살아 있는 상태를 boolean으로 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left and right` is a boolean operation that evaluates to True when both conditions are truthy.",
+                                    "how_to_read":  "Check the two flags, \"detached\" and \"alive,\" respectively.",
+                                    "key_point":  "The key feature of `tmux detach` is that it allows you to maintain your session and process even after leaving the terminal view.",
+                                    "common_mistake":  "It’s easy to assume that `detach` means to terminate a process."
+                                },
+        "teaching_example":  {
+                                 "code":  "session={\"detached\":True,\"alive\":True}\nrunning=session[\"detached\"] and session[\"alive\"]",
+                                 "walkthrough":  "Since both flags are True, it is considered “running” even in the detached state."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The session is \"detached\" but \"alive,\" meaning that even if it is detached from the terminal, the task continues to run.",
+                                   "why_correct":  "This is because `detach` removes the view without terminating the session.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Turn off the GPU",
+                                                               "why_wrong":  "`detach` relates to the session connection status and is not related to GPU power control.",
+                                                               "misread_step":  "This is an instance where the user confused the terminal session with the hardware status."
+                                                           },
+                                   "takeaway":  "The concept of `tmux/nohup` is understood as **separating the shell connection from process survival**."
+                               },
+        "target_statement":  "keeps_running = session[\"detached\"] and session[\"alive\"]",
+        "focus_span":  "session[\"detached\"] and session[\"alive\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "tmux",
+                                "nohup",
+                                "long running",
+                                "detach"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY26_L10_gpu_batch_size_001",
+        "level":  10,
+        "title":  "Reading about GPU batch_size and the amount processed at once",
+        "concepts":  [
+                         "call",
+                         "for_statement",
+                         "argument_passing",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the structure where the `size` argument in the `batch` generation call controls the batch size passed to `model.generate`.",
+        "code":  "batch_size = 8\nfor batch in chunks(prompts, batch_size):\n    outputs = model.generate(batch)\n    save_outputs(outputs)",
+        "question_type":  "multiple_choice",
+        "question":  "What are the main problems that can occur if the `batch_size` is set too large?",
+        "choices":  [
+                        "Git commit failed",
+                        "CSS rendering issues",
+                        "Sorting JSON Keys",
+                        "GPU memory shortage"
+                    ],
+        "answer":  "GPU memory shortage",
+        "explanation":  "If the batch_size is too large, the amount of input and activation data loaded onto the GPU at once may increase. This is because GPU memory usage often increases in close proportion to the batch dimension. A common source of confusion: CSS rendering issues. The GPU batch size and frontend CSS are not directly related. Point of misinterpretation: This occurs when users confuse compute settings with UI issues. Batch tuning considers both **throughput gains and memory limitations**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This relates to the decision-making process of balancing throughput and VRAM in LoRA inference, node passing, and embedding generation.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "batch 생성 호출의 size argument가 model.generate에 들어가는 묶음 크기를 조절하는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`chunks(prompts, batch_size)` This is a function call that takes prompts and batch size as arguments.",
+                                    "how_to_read":  "Let’s see how `batch_size` limits the maximum size of each batch.",
+                                    "key_point":  "Increasing the batch size can improve throughput, but it also increases GPU memory usage, which may raise the risk of an Out-of-Memory (OOM) error.",
+                                    "common_mistake":  "It’s easy to assume that a larger `batch_size` is always better."
+                                },
+        "teaching_example":  {
+                                 "code":  "batch_size=2\nprompts=[1,2,3,4]\nbatches=[prompts[i:i+batch_size] for i in range(0,len(prompts),batch_size)]",
+                                 "walkthrough":  "They are grouped in pairs to form two batches."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "If the `batch_size` is too large, the amount of input and activation data loaded onto the GPU at once may increase.",
+                                   "why_correct":  "This is because GPU memory often increases in close correlation with the batch dimension.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "CSS rendering issues",
+                                                               "why_wrong":  "GPU batch size and frontend CSS are not directly related.",
+                                                               "misread_step":  "This is an instance where the learner confused the \"compute setting\" with a UI issue."
+                                                           },
+                                   "takeaway":  "Batch tuning considers both **throughput gains and memory limitations**."
+                               },
+        "target_statement":  "for batch in chunks(prompts, batch_size):",
+        "focus_span":  "chunks(prompts, batch_size)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "performance_and_compute",
+        "coverage_topics":  [
+                                "GPU",
+                                "batch size",
+                                "memory",
+                                "throughput"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY26_L10_async_producer_consumer_001",
+        "level":  10,
+        "title":  "Reading the `await` statement where the `producer` places an `item` into an `asyncio.Queue`",
+        "concepts":  [
+                         "await_expression",
+                         "call",
+                         "for_statement",
+                         "async_function_definition"
+                     ],
+        "reading_goal":  "Read the description of the separation of roles, where the producer places an item into the queue and the consumer retrieves it in a separate step.",
+        "code":  "import asyncio\nqueue = asyncio.Queue()\n\nasync def producer(items):\n    for item in items:\n        await queue.put(item)\n\nasync def consumer():\n    while True:\n        item = await queue.get()\n        await process(item)\n        queue.task_done()",
+        "question_type":  "multiple_choice",
+        "question":  "What is the role of a producer?",
+        "choices":  [
+                        "Retrieve an item from the queue and process it.",
+                        "Delete all tasks",
+                        "Changing the app’s CSS",
+                        "Add items to the queue"
+                    ],
+        "answer":  "Add items to the queue",
+        "explanation":  "The key call within the producer loop is `queue.put(item)`, while `queue.get()` is executed on the consumer side. This is because the producer’s role is to supply work items to the queue. A common source of confusion: “Pulling an item from the queue and processing it”—that action corresponds to the consumer’s `get/process` step. Point of misinterpretation: This occurs when the roles of the producer and consumer are reversed. The producer-consumer model is divided as follows: **produce → queue.put / consume → queue.get + process**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This is linked to an asynchronous structure that divides the collection→cleaning→embedding pipeline into step-by-step workers.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "await_expression",
+        "reading_goal_internal":  "producer가 item을 queue에 넣고 consumer가 별도 단계에서 꺼내는 역할 분리를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`await queue.put(item)` This is an `await` expression that waits until the `async put` operation on the queue is complete.",
+                                    "how_to_read":  "It distinguishes between the roles of the producer, which generates and supplies data, and the consumer, which processes it.",
+                                    "key_point":  "A producer-consumer structure can use queues to separate stages with different speeds, such as collection, cleaning, and embedding.",
+                                    "common_mistake":  "It is easy to think the producer removes an item from the queue and processes it."
+                                },
+        "teaching_example":  {
+                                 "code":  "import asyncio\nqueue=asyncio.Queue()\nasync def producer():\n    await queue.put(\"x\")",
+                                 "walkthrough":  "The producer adds x to the queue."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The key call within the producer loop is `queue.put(item)`, and `queue.get()` is executed on the consumer side.",
+                                   "why_correct":  "This is because the producer is responsible for supplying work items to the queue.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Retrieve an item from the queue and process it.",
+                                                               "why_wrong":  "That operation corresponds to the consumer’s get/process stage.",
+                                                               "misread_step":  "This is a case where the roles of the producer and consumer have been reversed."
+                                                           },
+                                   "takeaway":  "The producer-consumer pattern is broken down as follows: **produce → queue.put / consume → queue.get + process**."
+                               },
+        "target_statement":  "await queue.put(item)",
+        "focus_span":  "await queue.put(item)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "async_and_concurrency",
+        "coverage_topics":  [
+                                "producer consumer",
+                                "asyncio queue",
+                                "pipeline",
+                                "backpressure"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY26_L10_queue_join_001",
+        "level":  10,
+        "title":  "Wait for all queued tasks to complete using `await queue.join()`",
+        "concepts":  [
+                         "await_expression",
+                         "call",
+                         "async_function_definition"
+                     ],
+        "reading_goal":  "Read about the completion barrier, which prevents progression to the next step until all work items in the queue have been marked as `task_done`.",
+        "code":  "for item in items:\n    await queue.put(item)\n\nawait queue.join()\nprint(\"all done\")",
+        "question_type":  "multiple_choice",
+        "question":  "`await queue.join()` What does this mean?",
+        "choices":  [
+                        "Delete the queue immediately",
+                        "Reinsert all items",
+                        "It always throws an error",
+                        "Wait until the tasks in the queue are marked as `task_done`."
+                    ],
+        "answer":  "Wait until the tasks in the queue are marked as `task_done`.",
+        "explanation":  "`queue.join` tracks the number of tasks put into the queue and `task_done` calls, and completes when the unfinished count reaches 0. This is because the completion meaning of `asyncio.Queue.join` is tied to `task_done` bookkeeping. Common misconception: “It immediately deletes the queue.” Join is not an operation that terminates the queue’s lifecycle; it is a completion wait. Point of confusion: This occurs when join is mistakenly interpreted as resource deletion. Queue completion follows the sequence: **put → process → task_done → join released**.",
+        "side_card_ids":  [
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "It is linked to the point at which the process should move on to the next pipeline phase after all asynchronous worker tasks have completed.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "await_expression",
+        "reading_goal_internal":  "queue에 등록된 work item이 모두 task_done될 때까지 다음 단계로 넘어가지 않는 completion barrier를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`await queue.join()` This is an `await` expression that waits until the count of unfinished tasks in the queue reaches 0.",
+                                    "how_to_read":  "Let’s take a look at how `put` and `task_done` work together.",
+                                    "key_point":  "This can be used as a completion barrier when it’s time to begin the next step after all download, inference, and verification tasks are complete.",
+                                    "common_mistake":  "It is easy to think `join` deletes the queue itself."
+                                },
+        "teaching_example":  {
+                                 "code":  "# producer put 2 items\n# consumer task_done twice\n# await queue.join() then continues",
+                                 "walkthrough":  "`join` waits until it receives a completion signal for both tasks."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`queue.join` completes when tracking of jobs added with `put` and calls to `task_done` brings the unfinished count to 0.",
+                                   "why_correct":  "Because the completion meaning of `asyncio.Queue.join` is tied to `task_done` bookkeeping.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Delete the queue immediately",
+                                                               "why_wrong":  "`join` is not an operation that removes the queue from the lifecycle; rather, it is a completion wait.",
+                                                               "misread_step":  "This is an instance where `join` was mistaken for resource deletion."
+                                                           },
+                                   "takeaway":  "Queue completion is read in the following order: **put → process → task_done → release the join**."
+                               },
+        "target_statement":  "await queue.join()",
+        "focus_span":  "await queue.join()",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "async_and_concurrency",
+        "coverage_topics":  [
+                                "queue join",
+                                "task_done",
+                                "completion",
+                                "async pipeline"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY26_L10_job_manifest_001",
+        "level":  10,
+        "title":  "Reading the list of completed shards in the job manifest",
+        "concepts":  [
+                         "membership_test",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the \"membership\" field in the `manifest`\u0027s `completed` list to determine which shards have already been completed.",
+        "code":  "manifest = {\n    \"job_id\": \"nodepass_20260529\",\n    \"shards\": [31, 32, 33],\n    \"status\": \"running\",\n    \"completed\": [31, 32],\n}\nshard_32_done = 32 in manifest[\"completed\"]",
+        "question_type":  "multiple_choice",
+        "question":  "What does it mean that ``[31, 32]`` is included in `completed`?",
+        "choices":  [
+                        "330,000 completed",
+                        "All shards have failed",
+                        "`manifest` is empty",
+                        "Shards 31 and 32 were recorded as completed."
+                    ],
+        "answer":  "Shards 31 and 32 were recorded as completed.",
+        "explanation":  "Since the “completed list” is “`[31, 32]`,” these two shards are recorded as completed. This is because the “completed” field in the manifest serves as a collection of completed shard IDs. A common source of confusion: “330,000 are completed,” but “33” is not in the “completed list.” Point of misinterpretation: This occurs when the complete list of shards is confused with the “completed” subset. The manifest should be read by **separating the complete list of tasks from the completed subset**.",
+        "side_card_ids":  [
+                              "WEB_pwa_001"
+                          ],
+        "project_context":  "It is linked to the manifest, which determines which tasks have already been completed when checking the shard’s status, resuming operations, or retrieving outputs.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "manifest의 completed list가 어떤 shard를 이미 끝낸 것으로 기록하는지 membership으로 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`value in sequence` is a membership test that checks whether a value exists within a sequence.",
+                                    "how_to_read":  "First, check the list of completed keys in `manifest`.",
+                                    "key_point":  "The job manifest serves as a reference to track which shards have been completed, ensuring they are not reprocessed when resuming.",
+                                    "common_mistake":  "It’s easy to assume that if `status` is `running`, the `completed` list is always empty."
+                                },
+        "teaching_example":  {
+                                 "code":  "manifest={\"completed\":[1,2]}\ndone=2 in manifest[\"completed\"]",
+                                 "walkthrough":  "Since 2 is on the completed list, `done` is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the `completed list` is ``[31, 32]``, both shards are recorded as completed.",
+                                   "why_correct":  "Because the `completed` field in the manifest serves as a collection of completed shard IDs.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "330,000 completed",
+                                                               "why_wrong":  "33 is not on the completed list.",
+                                                               "misread_step":  "This is a case where the \"full list of shards\" was confused with the \"completed subset.\""
+                                                           },
+                                   "takeaway":  "`manifest` reads by **separating the entire task list from the completed subset**."
+                               },
+        "target_statement":  "shard_32_done = 32 in manifest[\"completed\"]",
+        "focus_span":  "32 in manifest[\"completed\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "job manifest",
+                                "shard",
+                                "resume",
+                                "status"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY26_L10_cancel_graceful_001",
+        "level":  10,
+        "title":  "Save a checkpoint and then use a `break` to gracefully cancel",
+        "concepts":  [
+                         "break_statement",
+                         "if_statement",
+                         "call",
+                         "for_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the sequence where the state is saved first when a break is requested, and the loop is safely terminated with a `break`.",
+        "code":  "stop_requested = True\nitems = [\"a\", \"b\", \"c\"]\nprocessed = []\ncheckpoint_saved = False\n\ndef save_checkpoint():\n    global checkpoint_saved\n    checkpoint_saved = True\n\nfor item in items:\n    if stop_requested:\n        save_checkpoint()\n        break\n    processed.append(item)",
+        "question_type":  "multiple_choice",
+        "question":  "What does it do when `stop_requested` is True?",
+        "choices":  [
+                        "Continue processing all items",
+                        "Delete the file",
+                        "Force an increase in GPUs",
+                        "Save the checkpoint and exit the loop"
+                    ],
+        "answer":  "Save the checkpoint and exit the loop",
+        "explanation":  "Since the stop flag is True, the `break` statement is executed after the checkpoint is saved. This is because the graceful shutdown sequence is written to save the checkpoint and then exit the loop. A common source of confusion: “Continue processing all items.” The `break` statement immediately terminates the current loop. Point of misinterpretation: This occurs when the control flow effect of `break` is overlooked. A graceful cancellation follows the sequence **stop flag → checkpoint → break**.",
+        "side_card_ids":  [
+                              "PYV159_A1_CHECKPOINT_RESUME_FLOW"
+                          ],
+        "project_context":  "This is linked to an operational pattern that allows the work status to be safely saved before budget constraints or server shutdown, so that it can be resumed later.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "break_statement",
+        "reading_goal_internal":  "중단 요청 시 상태를 먼저 저장하고 break로 loop를 안전하게 종료하는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`break` is a statement that immediately terminates the current loop.",
+                                    "how_to_read":  "Be sure to also review any cleanup or saving tasks that occur before the `break`.",
+                                    "key_point":  "\"Graceful cancel\" leaves a checkpoint instead of immediately forcing a termination, thereby increasing the likelihood of resuming later.",
+                                    "common_mistake":  "It’s easy to think that `break` terminates the entire program. It actually exits the current loop."
+                                },
+        "teaching_example":  {
+                                 "code":  "saved=[]\nfor x in [1,2,3]:\n    if x==2:\n        saved.append(\"checkpoint\")\n        break",
+                                 "walkthrough":  "It sets a checkpoint at `x=2` and exits the loop."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the `abort` flag is True, the `break` statement is executed after calling the checkpoint save function.",
+                                   "why_correct":  "This is because the \"graceful shutdown\" sequence is implemented as a loop that terminates after saving.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Continue processing all items",
+                                                               "why_wrong":  "`break` immediately terminates the current loop.",
+                                                               "misread_step":  "This is an example of failing to recognize the control flow effect of `break`."
+                                                           },
+                                   "takeaway":  "\"graceful cancel\" is read in the order **stop flag → checkpoint → break**."
+                               },
+        "target_statement":  "break",
+        "focus_span":  "break",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "graceful cancel",
+                                "checkpoint",
+                                "break",
+                                "shutdown"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    }
 ]

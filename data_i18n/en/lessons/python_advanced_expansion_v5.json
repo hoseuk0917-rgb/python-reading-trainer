@@ -1,632 +1,1351 @@
 [
-  {
-    "id": "PY5_L09_inheritance_001",
-    "level": 9,
-    "title": "Reading About Inheritance and Method Overriding",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "print",
-      "class",
-      "inheritance",
-      "method"
-    ],
-    "reading_goal": "Understand the process by which a child class overrides a parent method.",
-    "code": "class Animal:\n    def speak(self):\n        return \"sound\"\n\nclass Dog(Animal):\n    def speak(self):\n        return \"bark\"\n\npet = Dog()\nprint(pet.speak())",
-    "question_type": "output_prediction",
-    "question": "What's the output?",
-    "choices": [
-      "sound",
-      "bark",
-      "Dog",
-      "Animal"
-    ],
-    "answer": "bark",
-    "explanation": "Because `pet` is an instance of `Dog`, Python first looks for `speak` on `Dog` when `pet.speak()` is called. `Dog` defines a method with the same name, so `Dog.speak` overrides the inherited `Animal.speak` and returns \"bark\". If `Dog` did not define `speak`, Python would use the inherited parent method and return \"sound\" instead.",
-    "side_card_ids": [
-      "PYV116_A1_OVERRIDE_SUPER",
-      "PYV116_A1_INHERITANCE_BASIC"
-    ],
-    "project_context": "This is necessary for understanding the structure of class-based app and server code and libraries."
-  },
-  {
-    "id": "PY5_L09_property_001",
-    "level": 9,
-    "title": "@property Read",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "print",
-      "class",
-      "property",
-      "method"
-    ],
-    "reading_goal": "Understand the @property syntax, which allows methods to be read as if they were properties.",
-    "code": "class Config:\n    def __init__(self, mode):\n        self.mode = mode\n\n    @property\n    def is_fast(self):\n        return self.mode == \"fast\"\n\ncfg = Config(\"fast\")\nprint(cfg.is_fast)",
-    "question_type": "output_prediction",
-    "question": "What's the output?",
-    "choices": [
-      "False",
-      "fast",
-      "is_fast",
-      "True"
-    ],
-    "answer": "True",
-    "explanation": "`Config(\"fast\")` stores \"fast\" in `self.mode`. Reading `cfg.is_fast` then runs the method marked with `@property`, even though no call parentheses are written, and the comparison `self.mode == \"fast\"` returns `True`. Unlike the stored `mode` attribute, `is_fast` is a computed attribute whose getter runs each time it is accessed.",
-    "side_card_ids": [
-      "PYV116_A1_WHEN_CLASS_HELPS"
-    ],
-    "project_context": "This is often seen when reading computed properties from configuration objects or model objects."
-  },
-  {
-    "id": "PY5_L09_decorator_wrapper_001",
-    "level": 9,
-    "title": "Understanding the Decorator-Wrapper Pattern",
-    "concepts": [
-      "def",
-      "return",
-      "print",
-      "decorator",
-      "function",
-      "wrapper"
-    ],
-    "reading_goal": "Read how a decorator adds an action before the original function runs.",
-    "code": "def log_call(fn):\n    def wrapper():\n        print(\"before\")\n        fn()\n    return wrapper\n\n@log_call\ndef run():\n    print(\"run\")\n\nrun()",
-    "question_type": "meaning_choice",
-    "question": "What is displayed before `run()` is executed?",
-    "choices": [
-      "run",
-      "wrapper",
-      "log_call",
-      "before"
-    ],
-    "answer": "before",
-    "explanation": "After the function definition, `@log_call` has the same effect as `run = log_call(run)`, so the name `run` now refers to the returned `wrapper`. Calling `run()` prints \"before\" first, then calls the original function stored in `fn`, which prints \"run\". This example adds only a before-action; code after `fn()` would be needed to add an after-action.",
-    "side_card_ids": [],
-    "project_context": "You often come across decorators in FastAPI, click, pytest fixtures, and other places."
-  },
-  {
-    "id": "PY5_L09_custom_context_001",
-    "level": 9,
-    "title": "Reading a Custom Context Manager",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "print",
-      "context_manager",
-      "with",
-      "class"
-    ],
-    "reading_goal": "Reads the methods that are executed upon entry and exit.",
-    "code": "class Timer:\n    def __enter__(self):\n        print(\"start\")\n        return self\n\n    def __exit__(self, exc_type, exc, tb):\n        print(\"end\")\n\nwith Timer():\n    print(\"work\")",
-    "question_type": "meaning_choice",
-    "question": "Which of the following is closest to the output order?",
-    "choices": [
-      "work → start → end",
-      "end → start → work",
-      "\"work\" only",
-      "start → work → end"
-    ],
-    "answer": "start → work → end",
-    "explanation": "Entering `with Timer()` calls `__enter__` first and prints \"start\". The indented block then prints \"work\", and leaving the block calls `__exit__`, which prints \"end\". The order is therefore start → work → end. `__exit__` is also called when the block raises an exception, which makes it useful for cleanup; returning `None` here does not suppress such an exception.",
-    "side_card_ids": [
-      "PYF95_A4_WITH_FILE"
-    ],
-    "project_context": "This is related to reading code for files, database connections, locks, and session management."
-  },
-  {
-    "id": "PY5_L10_asyncio_run_001",
-    "level": 10,
-    "title": "Understanding the asyncio.run Flow",
-    "concepts": [
-      "return",
-      "import",
-      "print",
-      "async",
-      "await",
-      "asyncio"
-    ],
-    "reading_goal": "Understand the flow of executing an asynchronous `main` function and receiving the result using `await`.",
-    "code": "import asyncio\n\nasync def fetch():\n    return \"data\"\n\nasync def main():\n    result = await fetch()\n    print(result)\n\nasyncio.run(main())",
-    "question_type": "output_prediction",
-    "question": "What's the output?",
-    "choices": [
-      "fetch",
-      "main",
-      "None",
-      "data"
-    ],
-    "answer": "data",
-    "explanation": "`main()` creates a coroutine object, and `asyncio.run(...)` starts an event loop to execute it. Inside `main`, `await fetch()` runs `fetch`, receives \"data\", stores it in `result`, and then prints data. `asyncio.run` is normally used once at the top-level entry point of an async program; note that it receives the coroutine created by `main()`, not the function name `main` by itself.",
-    "side_card_ids": [
-      "PYV102_A7_ASYNC_CONCURRENCY"
-    ],
-    "project_context": "This can be seen in code that calls asynchronous API servers, crawlers, and agent tools."
-  },
-  {
-    "id": "PY5_L10_httpx_async_001",
-    "level": 10,
-    "title": "Reading About httpx Asynchronous API Calls",
-    "concepts": [
-      "return",
-      "import",
-      "httpx",
-      "async",
-      "api",
-      "client"
-    ],
-    "reading_goal": "Read about the structure for sending asynchronous HTTP requests using `async` and `await`.",
-    "code": "import httpx\n\nasync def get_items():\n    async with httpx.AsyncClient() as client:\n        res = await client.get(\"https://example.com/api/items\")\n        return res.status_code",
-    "question_type": "meaning_choice",
-    "question": "What is `await client.get(...)` waiting for?",
-    "choices": [
-      "Deleting Files",
-      "Creating a Database Table",
-      "CSS Rendering",
-      "HTTP Response"
-    ],
-    "answer": "HTTP Response",
-    "explanation": "The `async with` block opens an `AsyncClient` and closes its connection resources on exit. At `await client.get(...)`, the current `get_items` coroutine pauses for the HTTP request and response, while the event loop may run other coroutines that have already been scheduled. This one function does not make multiple requests concurrent by itself; multiple request coroutines must be scheduled together, for example as tasks or with `gather`.",
-    "side_card_ids": [
-      "PL_endpoint_001",
-      "AI_latency_001",
-      "PYV102_A7_ASYNC_CONCURRENCY"
-    ],
-    "project_context": "This often occurs during bulk API calls or in FastAPI's internal asynchronous code."
-  },
-  {
-    "id": "PY5_L09_fastapi_post_body_001",
-    "level": 9,
-    "title": "Reading the POST Body in FastAPI",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "class",
-      "import",
-      "fastapi",
-      "post",
-      "pydantic",
-      "request_body"
-    ],
-    "reading_goal": "Reads the structure of the POST request body as it is parsed into a Pydantic model.",
-    "code": "from fastapi import FastAPI\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass Question(BaseModel):\n    text: str\n\n@app.post(\"/api/ask\")\ndef ask(body: Question):\n    return {\"question\": body.text}",
-    "question_type": "meaning_choice",
-    "question": "Where does the value of `body.text` come from?",
-    "choices": [
-      "File name",
-      "CSS Class",
-      "Git Branches",
-      "Request Body"
-    ],
-    "answer": "Request Body",
-    "explanation": "The POST body is the data sent by the client to the server. FastAPI parses this into the `Question` model and extracts the `text` field. If the request body structure does not match the model, a validation error will occur, so you must first check the API input schema.",
-    "side_card_ids": [],
-    "project_context": "It connects directly to the learning app API, the RAG query API, and the internal server code."
-  },
-  {
-    "id": "PY5_L09_fastapi_status_001",
-    "level": 9,
-    "title": "Reading FastAPI Status Codes",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "fastapi",
-      "status_code",
-      "endpoint"
-    ],
-    "reading_goal": "The endpoint reads the structure that specifies the success status code.",
-    "code": "@app.get(\"/api/items\", status_code=200)\ndef list_items():\n    return [{\"id\": 1, \"title\": \"A\"}]",
-    "question_type": "meaning_choice",
-    "question": "What is status_code=200 closest to?",
-    "choices": [
-      "File size",
-      "Number of repetitions",
-      "DB ID",
-      "Success Response Status"
-    ],
-    "answer": "Success Response Status",
-    "explanation": "HTTP status codes use numbers to indicate the result of a server request. A 200 generally means the request was successful and the response can be processed normally. However, just because the status code is 200 does not mean the response content is always correct, so the body structure must also be verified separately.",
-    "side_card_ids": [
-      "PL_endpoint_001"
-    ],
-    "project_context": "This is necessary for tracking API server responses and client errors."
-  },
-  {
-    "id": "PY5_L09_fastapi_cors_001",
-    "level": 9,
-    "title": "Understanding FastAPI CORS Configuration",
-    "concepts": [
-      "import",
-      "cors",
-      "fastapi",
-      "middleware"
-    ],
-    "reading_goal": "Reads the browser's \"Allow cross-origin requests\" setting.",
-    "code": "from fastapi.middleware.cors import CORSMiddleware\n\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=[\"https://example.com\"],\n    allow_methods=[\"GET\", \"POST\"]\n)",
-    "question_type": "meaning_choice",
-    "question": "What does `allow_origins` specify?",
-    "choices": [
-      "DB Table",
-      "Model Name",
-      "File extension",
-      "Allowed Web Sources"
-    ],
-    "answer": "Allowed Web Sources",
-    "explanation": "An origin is the combination of scheme, host, and port. `allow_origins` lists the exact browser front-end origins that the server permits to use this API across origins. The middleware returns the matching CORS response headers and handles preflight requests according to the allowed origins and methods. CORS is not authentication or API authorization, and it is not a firewall that blocks non-browser clients.",
-    "side_card_ids": [
-      "WEB_cors_001"
-    ],
-    "project_context": "This is a common scenario when integrating a separate API server with a GitHub Pages front end."
-  },
-  {
-    "id": "PY5_L09_sqlite_insert_001",
-    "level": 9,
-    "title": "Reading an INSERT Statement in SQLite",
-    "concepts": [
-      "import",
-      "sqlite",
-      "sql",
-      "insert",
-      "commit"
-    ],
-    "reading_goal": "Read the process of inserting a new row into the database and committing the changes.",
-    "code": "import sqlite3\n\nconn = sqlite3.connect(\"app.db\")\nconn.execute(\n    \"INSERT INTO notes(title, body) VALUES (?, ?)\",\n    (\"memo\", \"hello\")\n)\nconn.commit()",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of `conn.commit()`?",
-    "choices": [
-      "Reading a File",
-      "Cancel Request",
-      "Refresh the browser",
-      "Save Changes"
-    ],
-    "answer": "Save Changes",
-    "explanation": "INSERT is an SQL statement that adds a new row to a database table. In SQLite, you must execute a `COMMIT` after running the statement for the changes to be permanently committed to the database. Since the changes remain as pending operations within the connection until the `COMMIT` is executed, it is important to clearly define the point at which the changes are finalized.",
-    "side_card_ids": [
-      "LANG_sql_query_001"
-    ],
-    "project_context": "It is linked to the code that stores notes, progress, and curation results in the database."
-  },
-  {
-    "id": "PY5_L09_sql_parameter_001",
-    "level": 9,
-    "title": "Reading About SQL Parameter Binding",
-    "concepts": [
-      "sql",
-      "parameter",
-      "security"
-    ],
-    "reading_goal": "It reads a structure that passes SQL values as parameters instead of concatenating strings directly.",
-    "code": "query = \"SELECT * FROM items WHERE source = ?\"\nrows = conn.execute(query, (source_name,)).fetchall()",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of the `?` placeholder and tuple argument?",
-    "choices": [
-      "Delete Column",
-      "Generate HTML",
-      "File Compression",
-      "Safe Passing of SQL Values"
-    ],
-    "answer": "Safe Passing of SQL Values",
-    "explanation": "The `?` is a placeholder for one SQL value, and `(source_name,)` is a one-element tuple containing the value to bind there. The sqlite driver handles the value separately from SQL syntax, which reduces SQL injection risk and applies the necessary quoting. Placeholders bind values; they cannot replace SQL structure such as table or column names.",
-    "side_card_ids": [
-      "PYV158_A1_DATABASE_FLOW",
-      "LANG_sql_query_001"
-    ],
-    "project_context": "This is important in server code that queries the database based on user input."
-  },
-  {
-    "id": "PY5_L08_pandas_concat_001",
-    "level": 8,
-    "title": "Understanding pandas' `concat` function",
-    "concepts": [
-      "print",
-      "pandas",
-      "concat",
-      "dataframe"
-    ],
-    "reading_goal": "Read the code that concatenates two DataFrames vertically.",
-    "code": "combined = pd.concat([df_old, df_new], ignore_index=True)\nprint(len(combined))",
-    "question_type": "meaning_choice",
-    "question": "Which of the following is closest to the purpose of `concat`?",
-    "choices": [
-      "Delete the table",
-      "Create an image",
-      "Call the API",
-      "Join the two tables together"
-    ],
-    "answer": "Join the two tables together",
-    "explanation": "With its default `axis=0`, `pd.concat` appends the rows of `df_new` below those of `df_old`. `ignore_index=True` discards the old row labels and assigns a new 0-based index to the result. Differing column names can create missing values, and `concat` does not remove duplicate rows by itself.",
-    "side_card_ids": [],
-    "project_context": "This is often used when combining existing data with newly collected data."
-  },
-  {
-    "id": "PY5_L08_pandas_drop_duplicates_001",
-    "level": 8,
-    "title": "Reading `drop_duplicates`",
-    "concepts": [
-      "pandas",
-      "dedup",
-      "url"
-    ],
-    "reading_goal": "Read the code that removes duplicate rows based on a specific column.",
-    "code": "clean = df.drop_duplicates(subset=[\"url\"])",
-    "question_type": "meaning_choice",
-    "question": "What does `subset=['url']` mean?",
-    "choices": [
-      "Delete the \"url\" column",
-      "Save the URL as a filename",
-      "Print only the URL",
-      "Remove duplicates based on the URL"
-    ],
-    "answer": "Remove duplicates based on the URL",
-    "explanation": "`subset=[\"url\"]` tells pandas to compare only the `url` values when deciding whether rows are duplicates. When a URL appears more than once, the default `keep=\"first\"` keeps the first row and removes later ones, returning the result as `clean` without changing `df` here. Keeping the newest row instead requires an intentional sort order and `keep` policy.",
-    "side_card_ids": [
-      "DATA_dedup_001"
-    ],
-    "project_context": "It links directly to the removal of duplicate article/document/source URLs."
-  },
-  {
-    "id": "PY5_L08_pandas_pivot_001",
-    "level": 8,
-    "title": "Reading a Pivot Table",
-    "concepts": [
-      "pandas",
-      "pivot",
-      "aggregation"
-    ],
-    "reading_goal": "Read the code that generates a summary table showing averages by group.",
-    "code": "table = df.pivot_table(index=\"domain\", values=\"score\", aggfunc=\"mean\")",
-    "question_type": "meaning_choice",
-    "question": "What does this code calculate?",
-    "choices": [
-      "Delete the 'score' column",
-      "Save the domain to a file",
-      "Convert all values to strings",
-      "Average score by domain"
-    ],
-    "answer": "Average score by domain",
-    "explanation": "`pivot_table` makes each distinct `domain` a result row through `index=\"domain\"`, then applies `aggfunc=\"mean\"` to the `score` values in that group. The result is therefore a table of average score by domain. Unlike a plain `pivot`, `pivot_table` can combine multiple source rows for the same group with an aggregation function.",
-    "side_card_ids": [],
-    "project_context": "It is useful for summarizing quality, scores, and status by domain."
-  },
-  {
-    "id": "PY5_L08_numpy_axis_001",
-    "level": 8,
-    "title": "Reading NumPy axes",
-    "concepts": [
-      "import",
-      "print",
-      "numpy",
-      "axis",
-      "array"
-    ],
-    "reading_goal": "I understand that `axis=0` refers to column-wise aggregation.",
-    "code": "import numpy as np\n\nx = np.array([[1, 2, 3], [4, 5, 6]])\nprint(x.sum(axis=0))",
-    "question_type": "output_prediction",
-    "question": "Which one is closest to the output?",
-    "choices": [
-      "[6 15]",
-      "21",
-      "[1 2 3]",
-      "[5 7 9]"
-    ],
-    "answer": "[5 7 9]",
-    "explanation": "`x` has shape (2, 3): two rows and three columns. `sum(axis=0)` removes axis 0, the row axis, by adding values down the rows: 1+4, 2+5, and 3+6. One value remains per column, so the result is [5 7 9]. With `axis=1`, each row would be summed instead, producing [6 15].",
-    "side_card_ids": [],
-    "project_context": "This is required to read the shapes of embeddings, tensors, and numerical data."
-  },
-  {
-    "id": "PY5_L08_numpy_broadcast_001",
-    "level": 8,
-    "title": "Reading about broadcasting",
-    "concepts": [
-      "import",
-      "print",
-      "numpy",
-      "broadcasting",
-      "array"
-    ],
-    "reading_goal": "Read the structure in which a small array is added to each row of a large array.",
-    "code": "import numpy as np\n\nx = np.array([[1, 2, 3], [4, 5, 6]])\ny = np.array([10, 20, 30])\nprint(x + y)",
-    "question_type": "meaning_choice",
-    "question": "How is y added to x?",
-    "choices": [
-      "Add only the first value",
-      "Always an error",
-      "Delete x",
-      "It is applied repeatedly to each row"
-    ],
-    "answer": "It is applied repeatedly to each row",
-    "explanation": "`x` has shape (2, 3) and `y` has shape (3,). NumPy compares dimensions from the right, so the matching length 3 lets `y` align with each row of `x` for element-wise addition. The result is [[11, 22, 33], [14, 25, 36]]. NumPy does not need to copy `y` twice; incompatible trailing dimensions—neither equal nor 1—would raise `ValueError` instead.",
-    "side_card_ids": [],
-    "project_context": "This is important when reading code related to model inputs, vector operations, and normalization."
-  },
-  {
-    "id": "PY5_L10_chunk_loop_001",
-    "level": 10,
-    "title": "Reading the chunk generation loop",
-    "concepts": [
-      "for",
-      "def",
-      "function",
-      "return",
-      "range",
-      "chunk",
-      "loop",
-      "text_processing"
-    ],
-    "reading_goal": "I follow the process of dividing a long text into segments of a certain length.",
-    "code": "def make_chunks(text, size):\n    chunks = []\n    for i in range(0, len(text), size):\n        chunks.append(text[i:i+size])\n    return chunks",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of `range(0, len(text), size)`?",
-    "choices": [
-      "It always produces 0.",
-      "Delete the text",
-      "Query the database",
-      "Move the position by the size interval"
-    ],
-    "answer": "Move the position by the size interval",
-    "explanation": "`range(0, len(text), size)` moves `i` through 0, `size`, 2*`size`, and so on. Each `text[i:i+size]` slice adds up to `size` characters, so only the final chunk may be shorter and this code creates no overlap. `size` must be positive. Because the split is character-based, production RAG chunking needs extra logic when token limits or word boundaries matter.",
-    "side_card_ids": [
-      "AI_context_window_001",
-      "AI_chunking_001"
-    ],
-    "project_context": "This is the basic workflow for RAG chunking and processing long documents."
-  },
-  {
-    "id": "PY5_L10_evidence_attach_001",
-    "level": 10,
-    "title": "Reading the Evidence ID Attachment Flow",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "evidence",
-      "rag",
-      "list_comprehension"
-    ],
-    "reading_goal": "It reads the structure that includes a list of document IDs used in the response.",
-    "code": "def attach_evidence(answer, docs):\n    return {\n        \"answer\": answer,\n        \"evidence_ids\": [doc[\"id\"] for doc in docs]\n    }",
-    "question_type": "meaning_choice",
-    "question": "What goes into `evidence_ids`?",
-    "choices": [
-      "Full text of the reply",
-      "Model Name",
-      "DB Password",
-      "List of IDs in docs"
-    ],
-    "answer": "List of IDs in docs",
-    "explanation": "The list comprehension walks through `docs` in order and collects each `doc[\"id\"]` into `evidence_ids`. The returned dictionary contains both the original `answer` and that ID list. This trace makes it possible to find sources later, but attaching IDs alone does not verify that those documents actually support the answer. A document without an `id` would also raise `KeyError`.",
-    "side_card_ids": [
-      "PYV161_A1_EVIDENCE_LINEAGE_FLOW",
-      "AI_hallucination_001"
-    ],
-    "project_context": "It is important for evidence-based RAG and verifiable answer structures."
-  },
-  {
-    "id": "PY5_L10_claim_check_001",
-    "level": 10,
-    "title": "Reading a literal claim containment check",
-    "concepts": [
-      "if",
-      "def",
-      "function",
-      "return",
-      "claim",
-      "evidence",
-      "validation"
-    ],
-    "reading_goal": "Read a simple rule that checks whether the literal claim string occurs in the evidence text.",
-    "code": "def check_claim(answer, evidence):\n    if answer[\"claim\"] not in evidence[\"text\"]:\n        return \"needs_review\"\n    return \"supported\"",
-    "question_type": "meaning_choice",
-    "question": "What if the claim isn't in the evidence text?",
-    "choices": [
-      "supported",
-      "promoted",
-      "DONE",
-      "needs_review"
-    ],
-    "answer": "needs_review",
-    "explanation": "The `not in` test checks only whether the exact `answer[\"claim\"]` string occurs inside `evidence[\"text\"]`. It returns `needs_review` when absent and `supported` when present. A paraphrase can be missed, while an accidental substring match may still lack supporting context, so the `supported` label does not prove semantic support. This is a simple triage heuristic for deciding what needs stronger or human review.",
-    "side_card_ids": [
-      "AI_guardrail_001",
-      "PYV161_A1_EVIDENCE_LINEAGE_FLOW"
-    ],
-    "project_context": "This is a basic string heuristic that may be used before stronger RAG claim verification."
-  },
-  {
-    "id": "PY5_L10_agent_router_001",
-    "level": 10,
-    "title": "Reading the Agent Router",
-    "concepts": [
-      "if",
-      "def",
-      "function",
-      "return",
-      "agent",
-      "router",
-      "tool_calling"
-    ],
-    "reading_goal": "Read about agent routing, which directs calls to different agents based on the type of task.",
-    "code": "def route_task(task):\n    if task[\"type\"] == \"search\":\n        return search_tool(task[\"query\"])\n    if task[\"type\"] == \"write_file\":\n        return write_file(task[\"path\"], task[\"content\"])\n    return chat(task[\"message\"])",
-    "question_type": "meaning_choice",
-    "question": "If `type` is `search`, what is called?",
-    "choices": [
-      "write_file",
-      "chat",
-      "commit",
-      "search_tool"
-    ],
-    "answer": "search_tool",
-    "explanation": "The agent router selects which processing flow to send the task to based on the task type. If the task type is “search,” it enters the search branch. Think of the router code as a flowchart that passes the task to the appropriate function or tool rather than processing it directly. Therefore, the return/call result is “search_tool.”",
-    "side_card_ids": [
-      "AI_agent_001",
-      "AI_tool_calling_001"
-    ],
-    "project_context": "These are key patterns for understanding Code Agent and automation workflows."
-  },
-  {
-    "id": "PY5_L10_failure_summary_001",
-    "level": 10,
-    "title": "Read the Summary of Failure Causes",
-    "concepts": [
-      "for",
-      "def",
-      "function",
-      "return",
-      "failure",
-      "dict",
-      "aggregation"
-    ],
-    "reading_goal": "Read the code that counts and summarizes the reasons for the failed rows.",
-    "code": "def summarize_failures(rows):\n    by_reason = {}\n    for row in rows:\n        reason = row.get(\"reason\", \"unknown\")\n        by_reason[reason] = by_reason.get(reason, 0) + 1\n    return by_reason",
-    "question_type": "meaning_choice",
-    "question": "What is the role of by_reason?",
-    "choices": [
-      "List of Deleted Files",
-      "Model Parameters",
-      "API Token",
-      "Tally of Failures by Cause"
-    ],
-    "answer": "Tally of Failures by Cause",
-    "explanation": "For each row, the code reads `reason`, using \"unknown\" when the key is absent. `by_reason.get(reason, 0)` starts an unseen reason at 0 and reuses the current count on later occurrences, then adds 1. The returned dictionary has the form `{failure reason: occurrence count}`. Frequency helps identify recurring problems, but impact should also be considered when setting repair priority.",
-    "side_card_ids": [],
-    "project_context": "It is directly linked to dataset failure analysis, regression testing, and the quality improvement loop."
-  },
-  {
-    "id": "PY5_L10_curation_skip_001",
-    "level": 10,
-    "title": "Reading the Curation Skip Conditions",
-    "concepts": [
-      "if",
-      "def",
-      "function",
-      "return",
-      "curation",
-      "filter",
-      "score",
-      "dedup"
-    ],
-    "reading_goal": "I can see the pattern of eliminating candidates based on duplicate URLs and low scores.",
-    "code": "def should_skip(item, seen_urls):\n    if item[\"url\"] in seen_urls:\n        return True\n    if item.get(\"score\", 0) < 0.5:\n        return True\n    return False",
-    "question_type": "meaning_choice",
-    "question": "Under what conditions is it skipped?",
-    "choices": [
-      "Always skip",
-      "If the score is high, skip",
-      "If there is a URL, always pass it through",
-      "This URL has already been viewed, or the score is less than 0.5"
-    ],
-    "answer": "This URL has already been viewed, or the score is less than 0.5",
-    "explanation": "The first `if` immediately returns `True` when the item's URL is already in `seen_urls`. Even for a new URL, the second `if` returns `True` when the score is below 0.5, so the two branches behave like an OR condition. A score of exactly 0.5 is kept. A missing score defaults to 0 and is skipped, while a missing `url` key raises `KeyError` because bracket access is used.",
-    "side_card_ids": [
-      "PL_curation_001",
-      "DATA_dedup_001"
-    ],
-    "project_context": "It is directly linked to the process of selecting collected data and creating a reading list."
-  }
+    {
+        "id":  "PY5_L09_inheritance_001",
+        "level":  9,
+        "title":  "Reading the Dog class and method overrides with a base class",
+        "concepts":  [
+                         "class_definition",
+                         "function_definition",
+                         "call",
+                         "return_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the code to determine which implementation is selected when a method with the same name in a subclass is called in conjunction with the base class notation.",
+        "code":  "class Animal:\n    def speak(self):\n        return \"sound\"\n\nclass Dog(Animal):\n    def speak(self):\n        return \"bark\"\n\npet = Dog()\nprint(pet.speak())",
+        "question_type":  "multiple_choice",
+        "question":  "What is the direct reason that `pet.speak()` returns `bark`?",
+        "choices":  [
+                        "Because Dog has overridden speak(),",
+                        "Since `Animal` does not have a `speak()` method,",
+                        "Since `Dog` is a string,",
+                        "Because `print` changes the value to `bark`."
+                    ],
+        "answer":  "Because Dog has overridden speak(),",
+        "explanation":  "`Dog(Animal)` establishes an inheritance relationship, and the Dog class redefines `speak()`. Since `pet` is a Dog instance, `pet.speak()` uses Dog’s method to return `bark`. This is because when a subclass overrides a method with the same name as its parent, that implementation is selected when the subclass instance is called. A common source of confusion: Since Animal does not have a `speak()` method, the subclass also has `speak()` and returns `sound`. Point of Misinterpretation: This occurs when the body of the parent class is not examined. Inheritance code follows this sequence: **check the base class → check for overriding → select the implementation that matches the instance type**.",
+        "side_card_ids":  [
+                              "PYV116_A1_OVERRIDE_SUPER",
+                              "PYV116_A1_INHERITANCE_BASIC"
+                          ],
+        "project_context":  "This ties into understanding the differences in behavior between base classes and subclasses in class-based app and server code, as well as in libraries.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "class_definition",
+        "reading_goal_internal":  "base class 표기와 subclass 내부의 같은 이름 메서드를 연결해 호출 시 어떤 구현이 선택되는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`class Child(Base):` This is a class definition where ``Child`` inherits from ``Base``.",
+                                    "how_to_read":  "After checking the base class in parentheses, see if a method with the same name is redefined in the subclass body.",
+                                    "key_point":  "Although Dog inherits from Animal, it directly redefines `speak()`, so Dog instances use Dog’s implementation.",
+                                    "common_mistake":  "It’s easy to assume that the parent method is always executed because it’s inherited. However, if a subclass overrides the same method, its implementation takes precedence."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Vehicle:\n    def kind(self):\n        return \"vehicle\"\n\nclass Bike(Vehicle):\n    def kind(self):\n        return \"bike\"\n\nitem = Bike()\nprint(item.kind())",
+                                 "walkthrough":  "Although `Bike` inherits from `Vehicle`, it overrides `kind()`, so `bike` is printed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`Dog(Animal)` It establishes an inheritance relationship, and the Dog class redefines ``speak()``. Since ``pet`` is a Dog instance, ``pet.speak()`` uses Dog’s methods to return ``bark``.",
+                                   "why_correct":  "This is because when a subclass overrides a method with the same name as its parent, that implementation is selected when the subclass instance is called.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Since `Animal` does not have a `speak()` method,",
+                                                               "why_wrong":  "The `Animal` class also has a ``speak()`` method and returns a ``sound``.",
+                                                               "misread_step":  "This is a case where the body of the parent class has not been checked."
+                                                           },
+                                   "takeaway":  "Inheritance code is read as **check the base class → check if it is overridden → select the implementation that matches the instance type**."
+                               },
+        "target_statement":  "class Dog(Animal):",
+        "focus_span":  "class Dog(Animal):",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "functions_and_oop",
+        "coverage_topics":  [
+                                "inheritance",
+                                "method override",
+                                "class",
+                                "method call"
+                            ],
+        "pedagogical_intent":  "compare_behavior"
+    },
+    {
+        "id":  "PY5_L09_property_001",
+        "level":  9,
+        "title":  "Understanding the structure where `@property` is applied to the method immediately below it",
+        "concepts":  [
+                         "decorator",
+                         "function_definition",
+                         "attribute_access",
+                         "comparison",
+                         "class_definition"
+                     ],
+        "reading_goal":  "Read about the relationship between function decorators and decorated methods, and understand why the calculated value is accessed without parentheses.",
+        "code":  "class Config:\n    def __init__(self, mode):\n        self.mode = mode\n\n    @property\n    def is_fast(self):\n        return self.mode == \"fast\"\n\ncfg = Config(\"fast\")\nprint(cfg.is_fast)",
+        "question_type":  "multiple_choice",
+        "question":  "`cfg.is_fast` Why does the calculation produce a result even when read without parentheses?",
+        "choices":  [
+                        "Since @property is applied to is_fast,",
+                        "Since `mode` is a string,",
+                        "Because `print` automatically calls the method.",
+                        "Since `Config` uses inheritance,"
+                    ],
+        "answer":  "Since @property is applied to is_fast,",
+        "explanation":  "`@property` turns the `is_fast` method immediately below it into a property. Therefore, accessing the `cfg.is_fast` property triggers the execution of the internal function, and since the current mode is `fast`, it returns `True`. This is because the property decorator allows a method to be used as a descriptor-based property. Common misconception: Since `print` automatically calls the method, it simply outputs the passed value and does not perform property conversion. Point of Misinterpretation: This is a case where the role of the decorator was mistakenly attributed to `print`. Note that a decorator **is applied to the definition immediately below it and can subsequently change how it is used**.",
+        "side_card_ids":  [
+                              "PYV116_A1_WHEN_CLASS_HELPS"
+                          ],
+        "project_context":  "This relates to reading code that exposes values calculated from configuration objects or model objects as if they were regular attributes.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "decorator",
+        "reading_goal_internal":  "function decorator와 decorated method의 관계를 읽고 호출 괄호 없이 계산된 값을 접근하는 이유를 이해한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A function decorator is a syntax where `@name` is written immediately above a function definition to wrap or transform that definition with different behavior.",
+                                    "how_to_read":  "Treat the decorator line and the `def` immediately below it as a pair, and observe how their usage changes afterward.",
+                                    "key_point":  "`@property` `is_fast`, when applied, reads values from an instance in the form of attribute access, such as ``cfg.is_fast``.",
+                                    "common_mistake":  "It’s easy to assume that `cfg.is_fast()` must be called. The `property` executes an internal getter when the attribute is accessed."
+                                },
+        "teaching_example":  {
+                                 "code":  "class User:\n    def __init__(self, active):\n        self.active = active\n\n    @property\n    def status(self):\n        return \"on\" if self.active else \"off\"\n\nuser = User(True)\nprint(user.status)",
+                                 "walkthrough":  "Since `status` is a property, reading it as `user.status` will output `on`, which is the result of an internal calculation."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`@property` This creates the ``is_fast`` method as a property. Therefore, accessing the attribute ``cfg.is_fast`` triggers the execution of the internal function, and since the current mode is `fast`, it returns `True`.",
+                                   "why_correct":  "This is because a property decorator allows methods to be accessed as descriptor-based attributes.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Because `print` automatically calls the method.",
+                                                               "why_wrong":  "`print` simply outputs the values passed to it; it does not perform property conversion.",
+                                                               "misread_step":  "This is an example where the role of a decorator was mistakenly described as that of `print`."
+                                                           },
+                                   "takeaway":  "Read that a **decorator is applied to the definition immediately below it and can be used differently afterward**."
+                               },
+        "target_statement":  "@property",
+        "focus_span":  "@property",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "functions_and_oop",
+        "coverage_topics":  [
+                                "property",
+                                "decorator",
+                                "computed attribute",
+                                "class"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY5_L09_decorator_wrapper_001",
+        "level":  9,
+        "title":  "Read the execution flow where a function decorator applies a wrapper.",
+        "concepts":  [
+                         "decorator",
+                         "function_definition",
+                         "call",
+                         "return_statement",
+                         "name_reference"
+                     ],
+        "reading_goal":  "A decorator returns a wrapper when defining a function and tracks the flow so that subsequent calls begin with the wrapper.",
+        "code":  "def log_call(fn):\n    def wrapper():\n        print(\"before\")\n        fn()\n    return wrapper\n\n@log_call\ndef run():\n    print(\"run\")\n\nrun()",
+        "question_type":  "multiple_choice",
+        "question":  "In the final `run()` call, what is printed before `run`?",
+        "choices":  [
+                        "run",
+                        "wrapper",
+                        "log_call",
+                        "before"
+                    ],
+        "answer":  "before",
+        "explanation":  "`@log_call` When applied, ``log_call`` returns ``wrapper``. Subsequent calls to ``run()`` execute the `wrapper`, which first outputs ``before`` and then calls the original `run`. This is because the function returned by the decorator is bound to the name of the decorated function. A common source of confusion: The original `run` is called later within the `wrapper` at ``fn()``. Point of Misinterpretation: This occurs when you overlook the fact that the target of the call is the wrapper after the decorator has been applied. The wrapper decorator follows this sequence: **wrapping at definition → wrapper execution begins upon call → original function call**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This ties into the fundamentals of reading code from decorator-based libraries, such as FastAPI routes, click commands, and testing tools.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "decorator",
+        "reading_goal_internal":  "decorator가 함수 정의 시 wrapper를 반환하고 이후 호출이 wrapper부터 시작되는 흐름을 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`@decorator` is a syntax that passes the function definition immediately below it to the decorator, thereby associating the transformed function object with that name.",
+                                    "how_to_read":  "First, look at what the decorator function returns, and then track which function actually starts when the decorated function is called.",
+                                    "key_point":  "`log_call` Since it returns ``wrapper``, the subsequent ``run()`` begins with the wrapper behavior.",
+                                    "common_mistake":  "It is easy to think that a decorator is redefined every time `run()` is called. However, the decorator is applied when the function is defined, and when the function is called, the wrapped function is executed."
+                                },
+        "teaching_example":  {
+                                 "code":  "def trace(fn):\n    def wrapped():\n        print(\"trace\")\n        fn()\n    return wrapped\n\n@trace\ndef save():\n    print(\"save\")\n\nsave()",
+                                 "walkthrough":  "Since the `decorator` returns `wrapped`, when it is called, `trace` is printed first, followed by the original `save` function."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`@log_call` When applied, ``log_call`` returns ``wrapper``. Subsequently, the call to ``run()`` executes the wrapper, which first prints ``before`` and then calls the original `run`.",
+                                   "why_correct":  "This is because the function returned by the decorator is associated with the name of the decorated function.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "run",
+                                                               "why_wrong":  "Originally, `run` is called later within the `fn()` function in the wrapper.",
+                                                               "misread_step":  "This is an instance where the learner failed to recognize that the target of the call is `wrapper` after the decorator was applied."
+                                                           },
+                                   "takeaway":  "A wrapper decorator is interpreted in the following order: **wrapping upon definition → wrapper execution upon call → call to the original function**."
+                               },
+        "target_statement":  "@log_call",
+        "focus_span":  "@log_call",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "functions_and_oop",
+        "coverage_topics":  [
+                                "decorator",
+                                "wrapper",
+                                "function call",
+                                "execution order"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY5_L09_custom_context_001",
+        "level":  9,
+        "title":  "Understanding the Execution Order of `with` in a Custom Context Manager",
+        "concepts":  [
+                         "with_statement",
+                         "call",
+                         "class_definition",
+                         "function_definition",
+                         "literal"
+                     ],
+        "reading_goal":  "Track the order in which the `with` statement executes the context manager’s entry, body, and exit operations.",
+        "code":  "class Timer:\n    def __enter__(self):\n        print(\"start\")\n        return self\n\n    def __exit__(self, exc_type, exc, tb):\n        print(\"end\")\n\nwith Timer():\n    print(\"work\")",
+        "question_type":  "multiple_choice",
+        "question":  "Which of the following is closest to the order of output?",
+        "choices":  [
+                        "work → start → end",
+                        "end → start → work",
+                        "\"work\" only",
+                        "start → work → end"
+                    ],
+        "answer":  "start → work → end",
+        "explanation":  "When entering `with Timer():`, `__enter__()` runs first and prints `start`. The body then prints `work`, and when leaving the block, `__exit__()` prints `end`. This is because the context-manager protocol calls entry and exit hooks before and after the `with` block. Common wrong answer: `work → start → end`. Context entry happens before the body. Misreading point: This happens when the entry step of the `with` statement is skipped. Read `with` in the order **enter → body → exit**.",
+        "side_card_ids":  [
+                              "PYF95_A4_WITH_FILE"
+                          ],
+        "project_context":  "It relates to code that safely handles resources—such as files, database connections, locks, and sessions—which require cleanup before and after use.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "with_statement",
+        "reading_goal_internal":  "with statement가 context manager 진입·본문·종료 동작을 어떤 순서로 실행하는지 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`with manager:` is a statement that executes its body between the entry and exit of a context manager.",
+                                    "how_to_read":  "Execute the actions performed upon entry, followed by the indented body, and then the actions performed upon block exit.",
+                                    "key_point":  "In a custom context manager, ``__enter__`` typically handles the behavior at the start, and ``__exit__`` handles the behavior at the end.",
+                                    "common_mistake":  "It’s easy to assume that the body is executed first and `__enter__` comes later. However, the entry handling occurs before the body."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Session:\n    def __enter__(self):\n        print(\"open\")\n        return self\n    def __exit__(self, exc_type, exc, tb):\n        print(\"close\")\n\nwith Session():\n    print(\"use\")",
+                                 "walkthrough":  "It is printed in the following order: “open” at the entry point, “use” in the body, and “close” at the exit point."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "When entering `with Timer():`, `__enter__()` runs first and prints “start.” Next, the main body prints “work,” and upon exiting, `__exit__()` prints “end.”",
+                                   "why_correct":  "Because the context-manager protocol calls entry and exit hooks before and after the `with` block.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "work → start → end",
+                                                               "why_wrong":  "Context initialization occurs before the main text.",
+                                                               "misread_step":  "This is a case where the entry point of the `with` statement was skipped."
+                                                           },
+                                   "takeaway":  "\"with\" is read in the order **enter → body → exit**."
+                               },
+        "target_statement":  "with Timer():",
+        "focus_span":  "with Timer():",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "functions_and_oop",
+        "coverage_topics":  [
+                                "context manager",
+                                "with",
+                                "enter",
+                                "exit"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY5_L10_asyncio_run_001",
+        "level":  10,
+        "title":  "Tracking from `asyncio.run(main())` to the `await` result",
+        "concepts":  [
+                         "call",
+                         "async_function_definition",
+                         "await_expression",
+                         "import_statement"
+                     ],
+        "reading_goal":  "Track the asynchronous execution flow starting from `asyncio.run` through the `await` in `main` to the `fetch` return.",
+        "code":  "import asyncio\n\nasync def fetch():\n    return \"data\"\n\nasync def main():\n    result = await fetch()\n    print(result)\n\nasyncio.run(main())",
+        "question_type":  "multiple_choice",
+        "question":  "What is the output?",
+        "choices":  [
+                        "fetch",
+                        "main",
+                        "None",
+                        "data"
+                    ],
+        "answer":  "data",
+        "explanation":  "The `main` coroutine is executed, and since the result of ``await fetch()`` is ``data``, `result` becomes `data`. The `print` statement then outputs that value because the actual output target is `result`, which stores the return value of `fetch`. A common source of confusion: “main” is just the name of a function; it is not the value that `print` outputs. Common Misinterpretation: This occurs when the name of the called function is confused with the data flow inside the function. For async output, trace the flow as **entry call → await → return value → usage location**.",
+        "side_card_ids":  [
+                              "PYV102_A7_ASYNC_CONCURRENCY"
+                          ],
+        "project_context":  "It relates to reading the entry point and `await` flow in code that calls asynchronous API servers, crawlers, and agent tools.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "asyncio.run에서 시작해 main의 await와 fetch return까지 이어지는 비동기 실행 흐름을 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`asyncio.run(coro)` is a top-level asyncio helper function call used to execute a coroutine.",
+                                    "how_to_read":  "It identifies which async function created the coroutine passed in parentheses and follows it all the way to the inner `await`.",
+                                    "key_point":  "The output value is determined not by the name of `asyncio.run` itself, but by the actual return value of the `fetch` function awaited within `main`.",
+                                    "common_mistake":  "It is easy to assume that async functions execute automatically simply by being defined."
+                                },
+        "teaching_example":  {
+                                 "code":  "import asyncio\n\nasync def value():\n    return 3\n\nasync def main():\n    result = await value()\n    print(result)\n\nasyncio.run(main())",
+                                 "walkthrough":  "`value` returns 3, and `main` awaits this value and then prints 3."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the `main` coroutine is executed and the result of `await fetch()` is `data`, `result` becomes `data`. The `print` statement then outputs that value.",
+                                   "why_correct":  "This is because the actual output destination is `result`, which stores the return value of `fetch`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "main",
+                                                               "why_wrong":  "`main` is only a function name; it is not the value printed by `print`.",
+                                                               "misread_step":  "This is an example of confusion between the name of the called object and the data flow within the function."
+                                                           },
+                                   "takeaway":  "We also trace async output using the sequence **entry call → await → return value → usage location**."
+                               },
+        "target_statement":  "asyncio.run(main())",
+        "focus_span":  "asyncio.run(main())",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "async_and_concurrency",
+        "coverage_topics":  [
+                                "asyncio",
+                                "async",
+                                "await",
+                                "coroutine",
+                                "entry point"
+                            ],
+        "pedagogical_intent":  "predict_output"
+    },
+    {
+        "id":  "PY5_L10_httpx_async_001",
+        "level":  10,
+        "title":  "Waiting for an asynchronous HTTP response with `await client.get()`",
+        "concepts":  [
+                         "await_expression",
+                         "call",
+                         "assignment",
+                         "async_function_definition"
+                     ],
+        "reading_goal":  "Read the structure where the `await` statement is used to receive the `response` object upon completion of the `async HTTP client` method.",
+        "code":  "class Response:\n    def __init__(self, status_code):\n        self.status_code = status_code\n\nclass Client:\n    async def get(self, url):\n        return Response(200)\n\nasync def get_items():\n    client = Client()\n    res = await client.get(\"https://example.com/api/items\")\n    return res.status_code",
+        "question_type":  "multiple_choice",
+        "question":  "What is `await client.get(...)` waiting for?",
+        "choices":  [
+                        "Deleting a file",
+                        "Creating a Database Table",
+                        "CSS Rendering",
+                        "HTTP Response"
+                    ],
+        "answer":  "HTTP Response",
+        "explanation":  "`client.get` creates an async task representing an HTTP request, and `await` waits until that task completes and returns a `Response` object. This is because the result of an async HTTP GET is a `Response`. A common source of confusion: CSS rendering code does not contain CSS processing logic. Point of Misinterpretation: This occurs when the role of the HTTP client is confused with UI rendering. Asynchronous HTTP code should be read as **request call → await → response object**.",
+        "side_card_ids":  [
+                              "PL_endpoint_001",
+                              "AI_latency_001",
+                              "PYV102_A7_ASYNC_CONCURRENCY"
+                          ],
+        "project_context":  "This relates to the basic flow of handling bulk API calls or internal asynchronous requests in FastAPI.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "await_expression",
+        "reading_goal_internal":  "async HTTP client method의 완료 결과를 await해 response 객체를 받는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`await expression` is an expression that waits for an awaitable operation to complete and then receives its result.",
+                                    "how_to_read":  "Check what the right-hand side of the `await` call does and where the return value is stored after it completes.",
+                                    "key_point":  "In an async get call from an HTTP client, you must await until the network I/O is complete and the response is received.",
+                                    "common_mistake":  "It is easy to think `await` waits for the URL string itself. It waits for the asynchronous work created by the `get` call."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Client:\n    async def get(self, url):\n        return {\"status\": 201}\n\nasync def run(client):\n    response = await client.get(\"/items\")\n    return response[\"status\"]",
+                                 "walkthrough":  "When the async result of `get` completes, it returns a `response` dictionary and returns status code 201."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`client.get` creates an async task representing an HTTP request, and `await` waits until that task completes and returns a `Response` object.",
+                                   "why_correct":  "This is because the result of an async HTTP GET is a `response`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "CSS Rendering",
+                                                               "why_wrong":  "The code does not contain any CSS processing logic.",
+                                                               "misread_step":  "This is an example of confusing the role of an HTTP client with UI rendering."
+                                                           },
+                                   "takeaway":  "Asynchronous HTTP code follows the pattern: **request call → await → response object**."
+                               },
+        "target_statement":  "res = await client.get(\"https://example.com/api/items\")",
+        "focus_span":  "await client.get(\"https://example.com/api/items\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "async HTTP",
+                                "client",
+                                "await",
+                                "response"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY5_L09_fastapi_post_body_001",
+        "level":  9,
+        "title":  "Reading the `body.text` attribute of the requested model instance",
+        "concepts":  [
+                         "attribute_access",
+                         "assignment",
+                         "class_definition",
+                         "literal"
+                     ],
+        "reading_goal":  "Understand the structure in which the model instance reads `field` as an instance attribute representing the request body.",
+        "code":  "class Question:\n    def __init__(self, text):\n        self.text = text\n\nbody = Question(\"RAG란?\")\nquestion = body.text",
+        "question_type":  "multiple_choice",
+        "question":  "What value is stored in `question`?",
+        "choices":  [
+                        "What is RAG?",
+                        "Question",
+                        "text",
+                        "None"
+                    ],
+        "answer":  "What is RAG?",
+        "explanation":  "`Question(\"RAG란?\")` When the object is created, a string is stored in ``self.text``. Later, ``body.text`` reads that attribute and assigns it to ``question``, because instance attribute access returns the value of the attribute stored in that object. Common source of confusion: “text`text`” is the attribute name, while the actual stored value is “`RAG란?`.” Point of misinterpretation: This occurs when the attribute name and the attribute value are confused. The model object interprets the process as **check instance → check attribute name → read stored value**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "In the learning app’s question API or RAG query API, the request body is verified as a model object before being routed to the server code that reads the fields.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "attribute_access",
+        "reading_goal_internal":  "요청 본문을 나타내는 모델 인스턴스에서 field를 instance attribute로 읽는 구조를 이해한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`object.name` is an expression that reads an attribute associated with an instance.",
+                                    "how_to_read":  "Check what the object on the left is, and find the value of the attribute on the right stored in that instance.",
+                                    "key_point":  "In the context of FastAPI/Pydantic, the request body is prepared as a model instance, and fields can be read as `body.text`. The sample code fixes this as a local object to verify only Python’s native behavior.",
+                                    "common_mistake":  "`body.text` It’s easy to mistake this for a dict key lookup. However, since it uses dot notation rather than square brackets, it’s attribute access."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Message:\n    def __init__(self, content):\n        self.content = content\n\nbody = Message(\"hello\")\nvalue = body.content",
+                                 "walkthrough":  "The `content` attribute of the `Message` instance’s body is read, and `hello` is stored in `value`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`Question(\"RAG란?\")` When generated, the string is stored in ``self.text``. Subsequently, ``body.text`` reads that attribute and assigns it to ``question``.",
+                                   "why_correct":  "Because instance attribute access returns the attribute value stored on that object.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "text",
+                                                               "why_wrong":  "`text` is the attribute name, and the actual stored value is `RAG란?`.",
+                                                               "misread_step":  "This is an instance where the attribute name and attribute value were confused."
+                                                           },
+                                   "takeaway":  "The model interprets the object as **check instance → check attribute name → read stored value**."
+                               },
+        "target_statement":  "question = body.text",
+        "focus_span":  "body.text",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "request body",
+                                "model object",
+                                "attribute",
+                                "API"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY5_L09_fastapi_status_001",
+        "level":  9,
+        "title":  "Reading the `status_code` keyword argument of the `route` decorator",
+        "concepts":  [
+                         "argument_passing",
+                         "decorator",
+                         "call",
+                         "literal"
+                     ],
+        "reading_goal":  "Within a decorator call, read the keyword argument names and values separately and associate them with the route response settings.",
+        "code":  "from fastapi import FastAPI\n\napp = FastAPI()\n\n@app.get(\"/api/items\", status_code=200)\ndef list_items():\n    return [{\"id\": 1, \"title\": \"A\"}]",
+        "question_type":  "multiple_choice",
+        "question":  "In `status_code=200`, what value is `200` passed as?",
+        "choices":  [
+                        "status_code keyword argument",
+                        "Number of repetitions",
+                        "DB id",
+                        "File size"
+                    ],
+        "answer":  "status_code keyword argument",
+        "explanation":  "`status_code=200` is a keyword argument inside the `app.get()` call, so 200 is the setting value passed under the name `status_code`. In Python call syntax, `name=value` passes a value to the parameter with that name. A tempting wrong answer is `DB id`, but this code configures a route decorator rather than reading a database ID. Read `name=value` inside a call as a **setting name and supplied value pair**.",
+        "side_card_ids":  [
+                              "PL_endpoint_001"
+                          ],
+        "project_context":  "It is linked to a code review that configures the API server response status in the route declaration and tracks client errors.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "decorator 호출 안에서 keyword argument 이름과 값을 분리해 읽고 route 응답 설정과 연결한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`name=value` Values passed to a call in this format are keyword arguments.",
+                                    "how_to_read":  "Check what the name on the left refers to and read the actual value on the right.",
+                                    "key_point":  "`status_code=200` is a route configuration value passed to the `app.get()` call, not an iteration count or a DB ID.",
+                                    "common_mistake":  "It’s easy to mistake 200 for the function’s return value. The 200 at this location is the value of an argument passed to the call."
+                                },
+        "teaching_example":  {
+                                 "code":  "def register(path, code=201):\n    return (path, code)\n\nresult = register(\"/users\", code=202)",
+                                 "walkthrough":  "Since `code=202` is a named keyword argument, the value 202 is passed to the `code` parameter."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`status_code=200``app.get()` is a keyword argument within the `` call. Therefore, 200 is a configuration value passed under the name ``status_code``.",
+                                   "why_correct":  "In Python call syntax, `name=value` is a keyword argument that passes a value to the corresponding parameter name.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "DB id",
+                                                               "why_wrong":  "This is not code that reads a DB ID; it is a route decorator configuration.",
+                                                               "misread_step":  "This is a case where the calling context surrounding the number 200 was not checked."
+                                                           },
+                                   "takeaway":  "The ``name=value`` function reads **configuration names and their corresponding values as pairs**."
+                               },
+        "target_statement":  "@app.get(\"/api/items\", status_code=200)",
+        "focus_span":  "status_code=200",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "FastAPI",
+                                "status_code",
+                                "route decorator",
+                                "HTTP response"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY5_L09_fastapi_cors_001",
+        "level":  9,
+        "title":  "Reading the list literal passed to CORS `allow_origins`",
+        "concepts":  [
+                         "literal",
+                         "argument_passing",
+                         "call"
+                     ],
+        "reading_goal":  "The keyword argument reads the items in the list literal on the right to interpret the list of allowed sources.",
+        "code":  "from fastapi import FastAPI\nfrom fastapi.middleware.cors import CORSMiddleware\n\napp = FastAPI()\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=[\"https://example.com\"],\n    allow_methods=[\"GET\", \"POST\"],\n)",
+        "question_type":  "multiple_choice",
+        "question":  "`allow_origins` How many sources are passed to it?",
+        "choices":  [
+                        "0",
+                        "1",
+                        "2",
+                        "All sources"
+                    ],
+        "answer":  "1",
+        "explanation":  "`allow_origins` The list on the right contains only one string. Therefore, there is only one source being passed. This is because the number of items in a list literal is determined by the number of values actually written inside the square brackets. A common source of confusion: Instead of a wildcard string like ``*``, which would mean “all sources,” a specific URL is written here. Point of Misinterpretation: This occurs when you focus only on the CORS concept without verifying the actual list values. For the configuration list, **count the actual items, verify the values, and then connect them to their domain meanings**.",
+        "side_card_ids":  [
+                              "WEB_cors_001"
+                          ],
+        "project_context":  "This relates to security and web settings that restrict allowed origins when connecting a front end, such as GitHub Pages, to a separate API server.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "literal",
+        "reading_goal_internal":  "keyword argument 오른쪽 list literal의 항목을 읽어 허용 출처 목록을 해석한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`[value1, value2]` is a list literal that directly creates a sequence of values.",
+                                    "how_to_read":  "Check the number and values of the items inside the square brackets, then see where that list is passed.",
+                                    "key_point":  "Here, a list containing a single URL string is passed to `allow_origins`.",
+                                    "common_mistake":  "It is easy to assume that because square brackets are used, all sources are automatically allowed. In reality, you should only read the items explicitly listed in the list."
+                                },
+        "teaching_example":  {
+                                 "code":  "allowed_hosts = [\"https://app.example\", \"https://admin.example\"]",
+                                 "walkthrough":  "The list contains two strings in order and represents the allowlist as data."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`allow_origins` The list on the right contains only one string. Therefore, there is also only one source being passed.",
+                                   "why_correct":  "This is because the number of items in a list literal is determined by the number of values actually written inside the square brackets.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "All sources",
+                                                               "why_wrong":  "Instead of a wildcard string `*`, which represents all sources, a single specific URL is listed.",
+                                                               "misread_step":  "This is a case of considering only the CORS concept without checking the actual list values."
+                                                           },
+                                   "takeaway":  "The configuration list **counts the actual items, verifies their values, and then connects them to their domain meanings**."
+                               },
+        "target_statement":  "allow_origins=[\"https://example.com\"]",
+        "focus_span":  "[\"https://example.com\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "CORS",
+                                "allowed origins",
+                                "middleware",
+                                "web origin"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY5_L09_sqlite_insert_001",
+        "level":  9,
+        "title":  "Reading the call to the SQLite conn.commit() method",
+        "concepts":  [
+                         "call",
+                         "attribute_access",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read that calling the `commit` method of the `connection` object after an `INSERT` operation is the step that finalizes transaction changes.",
+        "code":  "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\nconn.execute(\"CREATE TABLE notes(title TEXT, body TEXT)\")\nconn.execute(\n    \"INSERT INTO notes(title, body) VALUES (?, ?)\",\n    (\"memo\", \"hello\"),\n)\nconn.commit()",
+        "question_type":  "multiple_choice",
+        "question":  "`conn.commit()` Which of the following best describes its role?",
+        "choices":  [
+                        "Save Changes",
+                        "Reading Files",
+                        "Cancel Request",
+                        "Refresh the browser"
+                    ],
+        "answer":  "Save Changes",
+        "explanation":  "After an INSERT operation makes changes to the connection, `conn.commit()` is called. Commit finalizes the changes made by that transaction. This is because the commit method of a DB connection is the step that permanently reflects the changes from the pending transaction. Common Confusion: This is a call to a DB connection method, not a file I/O function for reading a file. Point of Misinterpretation: This occurs when the receiver `conn` and the preceding SQL context are not verified. To understand the save flow, you must read the DB code all the way through **executing changes → checking whether to commit**.",
+        "side_card_ids":  [
+                              "LANG_sql_query_001"
+                          ],
+        "project_context":  "It is linked to the transaction flow of the server code that stores notes, progress, and curation results in the database.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "INSERT 실행 이후 connection 객체의 commit 메서드 호출이 transaction 변경을 확정하는 단계임을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`object.method()` calls a method belonging to a specific object.",
+                                    "how_to_read":  "Check the object and method names to the left of the dot, and see how that call handles the state created by the preceding code.",
+                                    "key_point":  "`conn.commit()` is not a call that creates a new INSERT, but rather a step that commits database changes that have already been made.",
+                                    "common_mistake":  "`execute()` Since it’s there, it’s easy to think of a commit as a simple query. Here, however, it’s the process of finalizing an INSERT change."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Session:\n    def commit(self):\n        return \"saved\"\n\nsession = Session()\nresult = session.commit()",
+                                 "walkthrough":  "The receiver is `session`, and the called method is `commit`. The return value is `saved`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "After INSERT makes changes to the connection, `conn.commit()` is called. commit finalizes the changes made by that transaction.",
+                                   "why_correct":  "This is because the `commit` method of a database connection is the step that permanently applies changes made by a pending transaction.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Reading Files",
+                                                               "why_wrong":  "This is a call to a database connection method, not a file I/O function.",
+                                                               "misread_step":  "This is a case where the receiver `conn` and the preceding SQL context were not checked."
+                                                           },
+                                   "takeaway":  "To understand the save flow, you must read the DB code up to the point of **executing the changes → checking whether to commit**."
+                               },
+        "target_statement":  "conn.commit()",
+        "focus_span":  "conn.commit()",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "database_and_storage",
+        "coverage_topics":  [
+                                "SQLite",
+                                "INSERT",
+                                "commit",
+                                "transaction"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY5_L09_sql_parameter_001",
+        "level":  9,
+        "title":  "Read the parameter-tuple argument of SQL `execute()`.",
+        "concepts":  [
+                         "argument_passing",
+                         "literal",
+                         "call",
+                         "assignment",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Note that the second positional argument of the `execute` call is a tuple of values corresponding to SQL placeholders.",
+        "code":  "query = \"SELECT * FROM items WHERE source = ?\"\nsource_name = \"manual\"\nrows = conn.execute(query, (source_name,)).fetchall()",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of the second positional argument in `conn.execute()`?",
+        "choices":  [
+                        "source_name A tuple containing a single item",
+                        "The SQL string itself",
+                        "Empty list",
+                        "Two items dict"
+                    ],
+        "answer":  "source_name A tuple containing a single item",
+        "explanation":  "`execute(query, (source_name,))` The first argument is `query`, and the second is ``(source_name,)``. Due to the trailing comma, the second argument is a one-element tuple. In Python, ``(value,)`` is a one-element tuple, and this value is passed as the second positional argument to `execute`. A common source of confusion: the SQL string itself. The SQL string is the first argument, ``query``. Point of Misinterpretation: This occurs when the order of the two positional arguments is not distinguished. Parameter-binding code checks whether **the SQL statement and the tuple of values are passed as separate arguments**.",
+        "side_card_ids":  [
+                              "PYV158_A1_DATABASE_FLOW",
+                              "LANG_sql_query_001"
+                          ],
+        "project_context":  "This relates to secure server code that passes user and collected data values via parameter binding rather than concatenating them directly into an SQL string.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "execute 호출의 두 번째 positional argument가 SQL placeholder에 대응할 값들의 tuple이라는 점을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "Expressions passed in order without names within parentheses are called positional arguments.",
+                                    "how_to_read":  "Count the arguments from the left and verify the actual type and value of each expression.",
+                                    "key_point":  "The comma in `(source_name,)` indicates that this is a single-element tuple and is passed separately from the query string.",
+                                    "common_mistake":  "It’s easy to assume that just because there are parentheses, it’s a simple string. For a tuple, the trailing comma is key."
+                                },
+        "teaching_example":  {
+                                 "code":  "def execute(query, params):\n    return params\n\nname = \"sensor\"\nparams = execute(\"SELECT ... WHERE name = ?\", (name,))",
+                                 "walkthrough":  "The second positional argument is the one-item tuple `(\"sensor\",)`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`execute(query, (source_name,))` The first argument is `query`, and the second is ``(source_name,)``. Because of the trailing comma, the second argument is a tuple containing a single item.",
+                                   "why_correct":  "In Python, ``(value,)`` is a single-element tuple, and this value is passed as the second positional argument to `execute`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "The SQL string itself",
+                                                               "why_wrong":  "The SQL string is the first argument, `query`.",
+                                                               "misread_step":  "This is a case where the order of the two positional arguments was not distinguished."
+                                                           },
+                                   "takeaway":  "The parameter binding code checks **whether the SQL statement and the value tuple are passed as separate arguments**."
+                               },
+        "target_statement":  "rows = conn.execute(query, (source_name,)).fetchall()",
+        "focus_span":  "(source_name,)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "SQL parameter binding",
+                                "placeholder",
+                                "tuple",
+                                "injection prevention"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY5_L08_pandas_concat_001",
+        "level":  8,
+        "title":  "Concatenating two DataFrames using the `pd.concat()` return value",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "argument_passing",
+                         "attribute_access"
+                     ],
+        "reading_goal":  "Understand the flow of values where the list of DataFrames passed as inputs to the `pd.concat` call and the resulting DataFrame are stored in `combined`.",
+        "code":  "import pandas as pd\ndf_old = pd.DataFrame({\"id\": [1, 2]})\ndf_new = pd.DataFrame({\"id\": [3, 4]})\ncombined = pd.concat([df_old, df_new], ignore_index=True)\nprint(len(combined))",
+        "question_type":  "output_prediction",
+        "question":  "What value does `len(combined)` return after the `concat` call?",
+        "choices":  [
+                        "2",
+                        "3",
+                        "4",
+                        "6"
+                    ],
+        "answer":  "4",
+        "explanation":  "The second row of `df_old` and the second row of `df_new` are passed to the `concat` call. Since the default `axis=0`, the rows are concatenated to return a 4-row DataFrame, which is stored in `combined`. This is because the total number of rows in the two inputs is 2+2. A common source of confusion: This result is based on looking at only the number of rows in one DataFrame. `concat` combines both inputs. Point of misinterpretation: This occurs when the argument list of the call is not checked all the way through. Read the call expression by connecting the input arguments and the return value, and track the variable where the return value is stored.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to data-processing code that combines existing collection results and newly collected results into one table.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "pd.concat 호출의 입력 DataFrame 목록과 반환 DataFrame이 combined에 저장되는 값 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A function call executes a function by passing arguments, and if there is a return value, it is returned as the value of the entire call expression.",
+                                    "how_to_read":  "First inspect the argument list of `pd.concat`, then determine what new DataFrame the call returns and where that return value is stored.",
+                                    "key_point":  "By default, `axis=0` concatenates in the row direction, and `ignore_index=True` renumbers the result indices.",
+                                    "common_mistake":  "It is easy to think `concat` directly mutates `df_old`. This code stores the newly returned result in `combined`."
+                                },
+        "teaching_example":  {
+                                 "code":  "import pandas as pd\na = pd.DataFrame({\"x\": [1, 2]})\nb = pd.DataFrame({\"x\": [3]})\nmerged = pd.concat([a, b], ignore_index=True)\nprint(len(merged))",
+                                 "walkthrough":  "By concatenating the two lines from `a` and the single line from `b`, `merged` ends up with a total of three lines."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Row 2 of `df_old` and row 2 of `df_new` are passed to the `concat` call. Since the default `axis=0`, the rows are concatenated, returning a 4-row DataFrame that is stored in `combined`.",
+                                   "why_correct":  "This is because the number of lines in the two inputs is 2+2.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "2",
+                                                               "why_wrong":  "This is the result of counting only the number of rows in one DataFrame. `concat` combines both inputs.",
+                                                               "misread_step":  "This is a case of not checking the full argument list of the call."
+                                                           },
+                                   "takeaway":  "Read function calls by linking input arguments and return values, and track the variables where the return values are stored."
+                               },
+        "target_statement":  "combined = pd.concat([df_old, df_new], ignore_index=True)",
+        "focus_span":  "pd.concat([df_old, df_new], ignore_index=True)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "pandas concat",
+                                "row stacking",
+                                "ignore_index"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY5_L08_pandas_drop_duplicates_001",
+        "level":  8,
+        "title":  "Specifying a column for duplicate detection using the `subset` keyword argument",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "assignment"
+                     ],
+        "reading_goal":  "Interpret that the `subset` keyword argument in the `drop_duplicates` call specifies a list of columns to use as duplicate comparison criteria.",
+        "code":  "import pandas as pd\ndf = pd.DataFrame({\"url\": [\"/a\", \"/a\", \"/b\"], \"score\": [1, 9, 3]})\nclean = df.drop_duplicates(subset=[\"url\"])\nprint(len(clean))",
+        "question_type":  "meaning_choice",
+        "question":  "What does `subset=[\"url\"]` mean when passed to `drop_duplicates`?",
+        "choices":  [
+                        "Duplicates are determined based on the URL.",
+                        "Delete the `url` column",
+                        "It only prints the URL.",
+                        "Delete all lines."
+                    ],
+        "answer":  "Duplicates are determined based on the URL.",
+        "explanation":  "The expression inside the parentheses `subset=[\"url\"]` passes a list of `url` column names to the `subset` parameter. Therefore, duplicate checks are performed by comparing only the `url` values. This is because the role of `subset` is to specify the columns to be used for the duplicate comparison. A common source of confusion: \"Deleting the url column\"—deleting a column requires a separate operation such as `drop` or `del`. `subset` is a comparison criterion. Point of misinterpretation: This occurs when the meaning of a keyword argument is inferred solely from the word itself, without connecting it to the method name. A keyword argument reads the name and value of a specific option within the call.",
+        "side_card_ids":  [
+                              "DATA_dedup_001"
+                          ],
+        "project_context":  "It is linked to code that specifies the criteria for removing duplicates when the same URL appears repeatedly in the results of article, document, and source collection.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "drop_duplicates 호출의 subset keyword argument가 중복 비교 기준 컬럼 목록을 전달하는 의미를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A keyword argument allows you to pass a value by explicitly specifying the name of the parameter being called.",
+                                    "how_to_read":  "Read `subset=` by connecting the name on the left with the list value on the right to understand what criteria are passed to the function.",
+                                    "key_point":  "`subset=[\"url\"]` This means that you should determine whether there are duplicates based solely on the URL value, not on other columns.",
+                                    "common_mistake":  "It is easy to misread “subset” as meaning “delete the url column.” “subset” merely specifies a comparison criterion; it is not a command to delete a column."
+                                },
+        "teaching_example":  {
+                                 "code":  "import pandas as pd\ndf = pd.DataFrame({\"email\": [\"a@x\", \"a@x\", \"b@x\"], \"name\": [\"A\", \"A2\", \"B\"]})\nclean = df.drop_duplicates(subset=[\"email\"])\nprint(len(clean))",
+                                 "walkthrough":  "Since duplicates are determined based solely on the email address, the second line containing \"a@x\" is removed, leaving two lines."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The function ``subset=[\"url\"]`` inside the call parentheses passes a list of `url` column names to the `subset` parameter. Therefore, duplicate detection is performed by comparing only the `url` values.",
+                                   "why_correct":  "This is because the role of `subset` is to specify the columns to be used for duplicate comparisons.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Delete the `url` column",
+                                                               "why_wrong":  "Deleting columns requires a separate operation such as `drop` or `del`. `subset` is a comparison criterion.",
+                                                               "misread_step":  "This is an instance where the meaning of \"keyword argument\" was inferred based solely on the literal meaning of the words, without linking it to the method name."
+                                                           },
+                                   "takeaway":  "A keyword argument reads both the name and value of a specific option within a call."
+                               },
+        "target_statement":  "clean = df.drop_duplicates(subset=[\"url\"])",
+        "focus_span":  "subset=[\"url\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "drop_duplicates",
+                                "subset",
+                                "URL deduplication"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY5_L08_pandas_pivot_001",
+        "level":  8,
+        "title":  "Reading the index, values, and aggfunc together in a pivot_table() call",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "argument_passing",
+                         "attribute_access"
+                     ],
+        "reading_goal":  "Read the structure of the `pivot_table` method call, where keyword arguments specify the group criteria, value columns, and aggregation method together.",
+        "code":  "import pandas as pd\ndf = pd.DataFrame({\"domain\": [\"a.com\", \"a.com\", \"b.com\"], \"score\": [2, 4, 8]})\ntable = df.pivot_table(index=\"domain\", values=\"score\", aggfunc=\"mean\")\nprint(table.loc[\"a.com\", \"score\"])",
+        "question_type":  "output_prediction",
+        "question":  "What is the value output as the average score on a.com?",
+        "choices":  [
+                        "2.0",
+                        "3.0",
+                        "4.0",
+                        "8.0"
+                    ],
+        "answer":  "3.0",
+        "explanation":  "`index=domain` groups items with the same domain, and `values=score` specifies `score` as the aggregation target. The values 2 and 4 for `a.com` are averaged to yield 3.0. This result comes from applying the three keyword arguments of the `pivot_table` call together. A common source of confusion: 4.0. The value 4 is merely a single row value from a.com, not the average for the entire group. Point of misinterpretation: This occurs when only a single row is read without applying `aggfunc=mean`. For complex method calls, it is easier to track the results by mapping each keyword argument to its corresponding role.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It connects to analysis code that generates group summary tables showing domain-specific quality scores or collection status.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "pivot_table method call의 keyword arguments가 그룹 기준·값 컬럼·집계 방식을 함께 지정하는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "Object method calls are executed in the form `object.method(...)`, and keyword arguments can be used to specify detailed behavior.",
+                                    "how_to_read":  "Read the text by pairing each keyword name with its value following the method name to understand what data is being processed and how.",
+                                    "key_point":  "In this call, `domain` is specified as the group, `score` as the value to be aggregated, and `mean` as the aggregation function.",
+                                    "common_mistake":  "`index=\"domain\"` It is easy to read simply by changing the index numbers in the original DataFrame. In `pivot_table`, it serves to define the group axis of the results."
+                                },
+        "teaching_example":  {
+                                 "code":  "import pandas as pd\ndf = pd.DataFrame({\"team\": [\"A\", \"A\", \"B\"], \"score\": [2, 4, 9]})\ntable = df.pivot_table(index=\"team\", values=\"score\", aggfunc=\"mean\")\nprint(table.loc[\"A\", \"score\"])",
+                                 "walkthrough":  "The average of Group A’s scores 2 and 4, 3.0, is entered into the results table."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`index=domain` groups items with the same domain, and `values=score` specifies `score` as the aggregation target. The values 2 and 4 for `a.com` are averaged to yield a mean of 3.0.",
+                                   "why_correct":  "This is the result of applying all three keyword arguments to the `pivot_table` call.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "4.0",
+                                                               "why_wrong":  "4 is merely a single row value from a.com; it is not the average for the entire group.",
+                                                               "misread_step":  "This is the case where only a single row is read without applying `aggfunc=mean`."
+                                                           },
+                                   "takeaway":  "For complex method calls, it is easier to track the results by mapping each keyword argument to its corresponding role."
+                               },
+        "target_statement":  "table = df.pivot_table(index=\"domain\", values=\"score\", aggfunc=\"mean\")",
+        "focus_span":  "df.pivot_table(index=\"domain\", values=\"score\", aggfunc=\"mean\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "pivot_table",
+                                "group summary",
+                                "mean"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY5_L08_numpy_axis_001",
+        "level":  8,
+        "title":  "Reading the keyword argument `sum(axis=0)`",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "attribute_access"
+                     ],
+        "reading_goal":  "Understand, using actual array values, which axis the `axis` keyword argument in a NumPy method call specifies for aggregation.",
+        "code":  "import numpy as np\nx = np.array([[1, 2, 3], [4, 5, 6]])\nprint(x.sum(axis=0))",
+        "question_type":  "output_prediction",
+        "question":  "`axis=0` Which of the following is closest to the output when combined?",
+        "choices":  [
+                        "[6 15]",
+                        "21",
+                        "[1 2 3]",
+                        "[5 7 9]"
+                    ],
+        "answer":  "[5 7 9]",
+        "explanation":  "x is a 2×3 array. axis=0 reduces the first axis and adds the two values in each column. 1+4=5, 2+5=7, 3+6=9. This is because axis=0 performs the sum in a direction that leaves the results organized by column. Common mistake: [6 15] This is the result of axis=1, which sums values within each row. Point of confusion: This occurs when the aggregation directions for axis 0 and axis 1 are misinterpreted. Numeric array methods check both the axis keyword and the input shape.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to code that reads both shape and axis to determine the aggregation direction for embeddings, tensors, or numerical data.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "NumPy method call의 axis keyword argument가 어느 축을 줄이는 집계를 지정하는지 실제 배열 값으로 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`axis=0` is a keyword argument that passes the integer 0 to the `axis` parameter in a method call.",
+                                    "how_to_read":  "Before the call, examine the array’s shape and values, and check the result shape to see which direction the axis values group and aggregate the elements.",
+                                    "key_point":  "In a 2×3 array, `sum(axis=0)` reduces the row axis, leaving three column-wise sums.",
+                                    "common_mistake":  "It is easier to read `axis=0` as the sum within each row. In this example, the rows above and below are added together, leaving the result for each column."
+                                },
+        "teaching_example":  {
+                                 "code":  "import numpy as np\nx = np.array([[2, 4], [3, 5]])\nprint(x.sum(axis=0))",
+                                 "walkthrough":  "Calculate 2+3 and 4+5 in each column to get [5 9]."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "x is a 2×3 array. axis=0 reduces the first axis and adds the two values in each column. 1+4=5, 2+5=7, and 3+6=9.",
+                                   "why_correct":  "This is because `axis=0` performs the sum in the direction that preserves the results by column.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[6 15]",
+                                                               "why_wrong":  "This is the result of summing within each row (axis=1).",
+                                                               "misread_step":  "This is an example where the aggregation directions of axis 0 and axis 1 were read in reverse."
+                                                           },
+                                   "takeaway":  "Numeric array methods check both the `axis` keyword and the input shape."
+                               },
+        "target_statement":  "print(x.sum(axis=0))",
+        "focus_span":  "axis=0",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "numpy axis",
+                                "sum",
+                                "column aggregation"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY5_L08_numpy_broadcast_001",
+        "level":  8,
+        "title":  "Reading x + y Broadcasting Addition in NumPy Arrays",
+        "concepts":  [
+                         "arithmetic",
+                         "call"
+                     ],
+        "reading_goal":  "In the arithmetic expression `x + y`, read the process by which NumPy’s shape compatibility rules map `y` to each row to compute the element-wise sum.",
+        "code":  "import numpy as np\nx = np.array([[1, 2, 3], [4, 5, 6]])\ny = np.array([10, 20, 30])\nprint(x + y)",
+        "question_type":  "output_prediction",
+        "question":  "What is the result of ``x + y`` with broadcasting applied?",
+        "choices":  [
+                        "[[11, 22, 33], [14, 25, 36]]",
+                        "[11, 22, 33]",
+                        "[5, 7, 9]",
+                        "ValueError"
+                    ],
+        "answer":  "[[11, 22, 33], [14, 25, 36]]",
+        "explanation":  "The length of each row in x and the length of y are both 3. The three values of y are added element-by-element to the first and second rows, respectively, to produce the two result rows. This is because, in NumPy broadcasting, the (3,) vector is compatible with the last dimension of the (2,3) array. A common source of confusion: [11, 22, 33]—this contains only the result for the first row. The same y is applied to the second row as well. Common Misinterpretation: This occurs when the process is calculated as if broadcasting were applied only once to the entire row. When working with array arithmetic, do not focus solely on the operators; also consider the shapes of each operand and the corresponding rules.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to reading shape-based broadcasting results when arrays and vectors are operated on together in model-input, embedding, or normalization code.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "arithmetic",
+        "reading_goal_internal":  "`x + y` arithmetic expression에서 NumPy의 shape 호환 규칙이 y를 각 행에 대응시켜 원소별 합을 만드는 과정을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "In Python, the `+` operator performs the addition operation defined by the object. When used with NumPy arrays, element-wise addition and broadcasting rules may apply.",
+                                    "how_to_read":  "Compare the shapes of the two arrays starting from the rightmost dimension, and if they are compatible, calculate row by row which values correspond and are added together.",
+                                    "key_point":  "(2,3) For arrays and (3,) vectors, the last dimension is 3, so y corresponds to each row.",
+                                    "common_mistake":  "It’s easy to assume that `y` is added only to the first row. However, if the broadcasting conditions are met, the same three positions correspond to every row."
+                                },
+        "teaching_example":  {
+                                 "code":  "import numpy as np\nx = np.array([[1, 2], [3, 4]])\ny = np.array([10, 20])\nprint(x + y)",
+                                 "walkthrough":  "The values 10 and 20 for y correspond to each of the two lines, resulting in [[11,22],[13,24]]."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The length of each row of x and the length of y are both 3. The three values of y are added element-by-element to the first and second rows, respectively, to produce two result rows.",
+                                   "why_correct":  "In NumPy broadcasting, the (3,) vector is compatible with the last dimension of the (2,3) array.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[11, 22, 33]",
+                                                               "why_wrong":  "This includes only the result for the first line. The same y applies to the second line as well.",
+                                                               "misread_step":  "This is a case where the step in which `broadcasting` is repeatedly applied to the entire row was counted only once."
+                                                           },
+                                   "takeaway":  "When studying array arithmetic, don’t just look at the operators; also consider the shape of each operand and the rules governing their interactions."
+                               },
+        "target_statement":  "print(x + y)",
+        "focus_span":  "x + y",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "numpy broadcasting",
+                                "array addition",
+                                "shape"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY5_L10_chunk_loop_001",
+        "level":  10,
+        "title":  "Moving the starting position of a chunk by the step specified in `range(..., size)`",
+        "concepts":  [
+                         "call",
+                         "for_statement",
+                         "slice",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the structure where the third argument of `range` determines the interval between chunk start indices.",
+        "code":  "def make_chunks(text, size):\n    chunks = []\n    for i in range(0, len(text), size):\n        chunks.append(text[i:i+size])\n    return chunks\n\nresult = make_chunks(\"abcdefgh\", 3)",
+        "question_type":  "multiple_choice",
+        "question":  "What is the role of `range(0, len(text), size)`?",
+        "choices":  [
+                        "It always returns 0.",
+                        "Delete the text",
+                        "Queries the database",
+                        "Move the position by a size interval"
+                    ],
+        "answer":  "Move the position by a size interval",
+        "explanation":  "Since the `step` of `range` is `size`, `i` starts at 0 and increases by `size`. That `i` becomes the starting point of each chunk slice, because the third argument of `range` determines the iteration interval. A common source of confusion: the misconception that it always starts at 0—it actually generates multiple indices at `step`-sized intervals until `stop` is reached. Point of misinterpretation: This occurs when the behavior of the `range` function’s `step` parameter is overlooked. The chunk loop should be interpreted as **start index → step size → slice range**.",
+        "side_card_ids":  [
+                              "AI_context_window_001",
+                              "AI_chunking_001"
+                          ],
+        "project_context":  "This connects to the basic workflow for creating fixed-size chunk start positions in RAG chunking and long-document processing.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "range의 세 번째 argument가 chunk 시작 index 간격을 결정하는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`range(start, stop, step)` It generates integers at intervals of `step` from `start` to just before `stop`.",
+                                    "how_to_read":  "The three arguments are identified as the starting value, end boundary, and increment, respectively.",
+                                    "key_point":  "In chunking, shifting `i` by `size` creates a contiguous fixed-size slice.",
+                                    "common_mistake":  "It’s easy to assume that the third argument, `size`, refers to the number of chunks. Here, it refers to the increment of the index."
+                                },
+        "teaching_example":  {
+                                 "code":  "text = \"abcdefgh\"\nstarts = list(range(0, len(text), 3))",
+                                 "walkthrough":  "The starting position of the index moves to 0, 3, and 6."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the step of `range` is `size`, `i` starts at 0 and increments by `size`. That `i` becomes the starting point for each chunk slice.",
+                                   "why_correct":  "This is because the third argument of `range` determines the iteration step.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "It always returns 0.",
+                                                               "why_wrong":  "Generate multiple indexes at step intervals until `stop`.",
+                                                               "misread_step":  "This is an example of overlooking the `step` behavior of `range`."
+                                                           },
+                                   "takeaway":  "A chunk loop is read as **start index → step size → slice range**."
+                               },
+        "target_statement":  "for i in range(0, len(text), size):",
+        "focus_span":  "range(0, len(text), size)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "chunking",
+                                "range",
+                                "loop",
+                                "text processing"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY5_L10_evidence_attach_001",
+        "level":  10,
+        "title":  "Group only the IDs from the docs under `evidence_ids`",
+        "concepts":  [
+                         "list_comprehension",
+                         "subscription",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the flow that extracts only the ID of each `doc` using a comprehension, rather than the entire document object.",
+        "code":  "def attach_evidence(answer, docs):\n    return {\n        \"answer\": answer,\n        \"evidence_ids\": [doc[\"id\"] for doc in docs],\n    }\n\nresult = attach_evidence(\"ok\", [{\"id\": \"d1\"}, {\"id\": \"d2\"}])",
+        "question_type":  "multiple_choice",
+        "question":  "What goes into `evidence_ids`?",
+        "choices":  [
+                        "Full response text",
+                        "Model Name",
+                        "DB password",
+                        "List of IDs in the docs"
+                    ],
+        "answer":  "List of IDs in the docs",
+        "explanation":  "Since `comprehension` reads only the `id` key from each `dict` in `docs`, `d1` and `d2` are included in `evidence_ids`. This is because the resulting expression is `doc[\u0027id\u0027]`. A common source of confusion: the entire response body (`answer`) is stored in a separate `answer` key, while `evidence_ids` collects only the `doc` IDs. Point of misinterpretation: This occurs when the roles of the two fields in the response dictionary are confused. The RAG evidence structure **separates the response from the evidence identifiers** when reading.",
+        "side_card_ids":  [
+                              "PYV161_A1_EVIDENCE_LINEAGE_FLOW",
+                              "AI_hallucination_001"
+                          ],
+        "project_context":  "In evidence-based RAG, it is linked to a structure that allows tracking which documents the answer relied on.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "list_comprehension",
+        "reading_goal_internal":  "문서 객체 전체가 아니라 각 doc의 id만 comprehension으로 추출하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`[expression for item in items]` is a list comprehension that creates a new list from the result of applying `expression` to each item.",
+                                    "how_to_read":  "Distinguish between the `doc` object being iterated over and the expression `doc[\u0027id\u0027]`, which is included in the result each time.",
+                                    "key_point":  "Saving the answer along with its justification ID makes it easier to track which source was used.",
+                                    "common_mistake":  "It’s easy to assume that the entire `doc` dictionary is stored in `evidence_ids`. However, since `expression` is an ID lookup, only the ID values are stored."
+                                },
+        "teaching_example":  {
+                                 "code":  "rows = [{\"id\": \"a\"}, {\"id\": \"b\"}]\nids = [row[\"id\"] for row in rows]",
+                                 "walkthrough":  "ids becomes [\u0027a\u0027,\u0027b\u0027]."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since `comprehension` reads only the `id` key from each dictionary in the docs, `d1` and `d2` are included in `evidence_ids`.",
+                                   "why_correct":  "This is because the result expression is `doc[\u0027id\u0027]`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Full response text",
+                                                               "why_wrong":  "\"answer\" is stored in a separate answer key, and \"evidence_ids\" collects only the doc IDs.",
+                                                               "misread_step":  "This is a case where the roles of the two fields in the `response` dictionary were confused."
+                                                           },
+                                   "takeaway":  "Read a RAG evidence structure by **separating the answer from the evidence identifier**."
+                               },
+        "target_statement":  "\"evidence_ids\": [doc[\"id\"] for doc in docs]",
+        "focus_span":  "[doc[\"id\"] for doc in docs]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "evidence",
+                                "RAG",
+                                "citation ids",
+                                "list comprehension"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY5_L10_claim_check_001",
+        "level":  10,
+        "title":  "If “claim” is not present in the evidence text, return “needs_review.”",
+        "concepts":  [
+                         "membership_test",
+                         "if_statement",
+                         "subscription",
+                         "return_statement",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the flow where the absence of the `claim` substring is checked for `not-in` and sent to the `review` branch.",
+        "code":  "def check_claim(answer, evidence):\n    if answer[\"claim\"] not in evidence[\"text\"]:\n        return \"needs_review\"\n    return \"supported\"\n\nstatus = check_claim({\"claim\": \"Kalman\"}, {\"text\": \"PID controller basics\"})",
+        "question_type":  "multiple_choice",
+        "question":  "If `claim` is not present in the evidence text, what does it return?",
+        "choices":  [
+                        "supported",
+                        "promoted",
+                        "DONE",
+                        "needs_review"
+                    ],
+        "answer":  "needs_review",
+        "explanation":  "Since the string \"Kalman\" is not present in the evidence text, the condition is True, and `needs_review` is returned by the first `return` statement. This is because the `not-in` condition is written to send unsupported candidates to the `review` branch. A common source of confusion: `supported supported` only appears in the final `return` statement when the `if` condition is False. Point of misreading: This occurs when the early return is missed. The basic claim check follows the sequence: **claim → evidence text → membership → review/supported branch**.",
+        "side_card_ids":  [
+                              "AI_guardrail_001",
+                              "PYV161_A1_EVIDENCE_LINEAGE_FLOW"
+                          ],
+        "project_context":  "This is linked to a heuristic that checks for basic consistency between the evidence string and the claim before passing the RAG response to a full-fledged verifier.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "claim substring의 부재를 not-in으로 검사해 review branch로 보내는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left not in right` is a membership test that returns True when `left` is not contained within `right`.",
+                                    "how_to_read":  "Compare the claim string on the left with the evidence text on the right using actual values.",
+                                    "key_point":  "This check is not a comprehensive fact-checker but a basic heuristic based on string matching.",
+                                    "common_mistake":  "If a string is included, it is easy to assume that the claim has been fully proven semantically."
+                                },
+        "teaching_example":  {
+                                 "code":  "claim = \"Paris\"\nevidence = \"France capital is Paris\"\nneeds_review = claim not in evidence",
+                                 "walkthrough":  "Since `Paris` is contained within `evidence`, `needs_review` is False."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the \"Kalman\" string is not present in the evidence text, the condition is True, and `needs_review` is returned in the first return statement.",
+                                   "why_correct":  "Because the `not in` condition is written to send unsupported candidates to the review branch.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "supported",
+                                                               "why_wrong":  "\"supported\" is returned only when the if condition is False in the final return statement.",
+                                                               "misread_step":  "This is a case where an `early return` was missed."
+                                                           },
+                                   "takeaway":  "The basic claim check follows the sequence: **claim → evidence text → membership → review/supported branch**."
+                               },
+        "target_statement":  "if answer[\"claim\"] not in evidence[\"text\"]:",
+        "focus_span":  "answer[\"claim\"] not in evidence[\"text\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "ai_llm_rag",
+        "coverage_topics":  [
+                                "claim validation",
+                                "evidence",
+                                "membership",
+                                "review"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY5_L10_agent_router_001",
+        "level":  10,
+        "title":  "Route to `search_tool` when the `task_type` is `search`",
+        "concepts":  [
+                         "if_statement",
+                         "comparison",
+                         "subscription",
+                         "return_statement",
+                         "call",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read which tool call branch is selected by the task type equality.",
+        "code":  "def search_tool(query):\n    return \"search:\" + query\n\ndef write_file(path, content):\n    return \"write\"\n\ndef chat(message):\n    return \"chat:\" + message\n\ndef route_task(task):\n    if task[\"type\"] == \"search\":\n        return search_tool(task[\"query\"])\n    if task[\"type\"] == \"write_file\":\n        return write_file(task[\"path\"], task[\"content\"])\n    return chat(task[\"message\"])\n\nresult = route_task({\"type\": \"search\", \"query\": \"RAG\"})",
+        "question_type":  "multiple_choice",
+        "question":  "If `type` is `search`, what does it call?",
+        "choices":  [
+                        "write_file",
+                        "chat",
+                        "commit",
+                        "search_tool"
+                    ],
+        "answer":  "search_tool",
+        "explanation":  "Since `task[\u0027type\u0027]` is `search`, the first `if` statement evaluates to `True` and immediately returns the result of calling ``search_tool(task[\u0027query\u0027])``. This is because the `search` task has been explicitly mapped to the `search_tool` branch. A common source of confusion: `chat` is only executed when neither the `search` nor `write_file` branches match. Common misinterpretation: This occurs when the reader overlooks that the function terminates at the first `return`. The router should be interpreted as: **check intent/type → select branch → call tool → return**.",
+        "side_card_ids":  [
+                              "AI_agent_001",
+                              "AI_tool_calling_001"
+                          ],
+        "project_context":  "This ties into the basic orchestration pattern in Code Agent and automated workflows, where different tools are selected depending on the task type.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "task type equality가 어떤 tool 호출 branch를 선택하는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if condition:` executes the corresponding branch when condition is True.",
+                                    "how_to_read":  "Check the type value of `task` and the comparison string, and also see if the subsequent branch is skipped due to `return`.",
+                                    "key_point":  "The agent router analyzes the task intent and dispatches it to the appropriate tool or handler.",
+                                    "common_mistake":  "It’s easy to assume that every tool is called exactly once. If the first matching branch returns, the function terminates."
+                                },
+        "teaching_example":  {
+                                 "code":  "def route(task):\n    if task[\"type\"] == \"calc\":\n        return \"calculator\"\n    return \"chat\"\n\nresult = route({\"type\": \"calc\"})",
+                                 "walkthrough":  "Since the type is `calc`, it returns `calculator` in the first branch."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since `task[\u0027type\u0027]` is `search`, the first `if` statement evaluates to `True` and immediately returns the result of calling `search_tool(task[\u0027query\u0027])`.",
+                                   "why_correct":  "This is because the `search task` was explicitly mapped to the `search_tool` branch.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "chat",
+                                                               "why_wrong":  "`chat` is executed only when none of the preceding `search/write_file` branches match.",
+                                                               "misread_step":  "This is a case where the function termination caused by the first `return` was overlooked."
+                                                           },
+                                   "takeaway":  "The router operates as follows: **check intent/type → select branch → call tool → return**."
+                               },
+        "target_statement":  "if task[\"type\"] == \"search\":",
+        "focus_span":  "task[\"type\"] == \"search\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "architecture_and_design",
+        "coverage_topics":  [
+                                "agent router",
+                                "tool calling",
+                                "task type",
+                                "dispatch"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY5_L10_failure_summary_001",
+        "level":  10,
+        "title":  "Accumulate the count of failures by reason in a dictionary",
+        "concepts":  [
+                         "assignment",
+                         "call",
+                         "for_statement",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the existing count of the `reason` key, increment it by 1, and save it again to track the change in the aggregate state.",
+        "code":  "def summarize_failures(rows):\n    by_reason = {}\n    for row in rows:\n        reason = row.get(\"reason\", \"unknown\")\n        by_reason[reason] = by_reason.get(reason, 0) + 1\n    return by_reason\n\nresult = summarize_failures([{\"reason\": \"timeout\"}, {\"reason\": \"timeout\"}, {\"reason\": \"parse\"}])",
+        "question_type":  "multiple_choice",
+        "question":  "What is the role of `by_reason`?",
+        "choices":  [
+                        "List of Files to Delete",
+                        "Model Parameters",
+                        "API token",
+                        "Count failures by cause."
+                    ],
+        "answer":  "Count failures by cause.",
+        "explanation":  "Since the `reason` of each row is used as the key to increment the existing count by 1, the final dictionary represents the frequency of failure causes. This is because the assignment target is ``by_reason[reason]``, and the right-hand side is the existing count plus 1. A common source of confusion: The dictionary key for model parameters is the failure reason, and there is no code that handles model parameters. Point of misinterpretation: This occurs when the meaning of the keys in the aggregated data is not verified. The aggregation code should be read as **group key → existing count → increment → store**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to the process of identifying recurring failure types within the dataset failure analysis, regression testing, and quality improvement loop.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "reason key의 기존 count를 읽어 1 증가시켜 다시 저장하는 집계 상태 변화를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping[key] = value` is a subscription assignment that stores a new value for a specific key.",
+                                    "how_to_read":  "First, look at the right side to see how the existing count is calculated, then check which key on the left has changed.",
+                                    "key_point":  "Collecting counts by failure cause makes it easier to prioritize which failure types recur.",
+                                    "common_mistake":  "It’s easy to assume that `get(reason, 0)` always returns 0. If the key already exists, it returns the existing value."
+                                },
+        "teaching_example":  {
+                                 "code":  "counts = {}\nreason = \"timeout\"\ncounts[reason] = counts.get(reason, 0) + 1\ncounts[reason] = counts.get(reason, 0) + 1",
+                                 "walkthrough":  "The first substitution yields 1, and the second adds 1 to the existing 1, resulting in 2."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "By using the “reason” in each row as the key and incrementing the existing “count” by 1, the final dictionary represents the frequency of each failure cause.",
+                                   "why_correct":  "This is because the assignment target is ``by_reason[reason]``, and the value on the right is the existing `count+1`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Model Parameters",
+                                                               "why_wrong":  "The \"dict key\" is the reason for the failure, and there is no code that handles model parameters.",
+                                                               "misread_step":  "This is a case where the meaning of the key in the aggregated data was not verified."
+                                                           },
+                                   "takeaway":  "The aggregation code reads as **group key → existing count → increment → save**."
+                               },
+        "target_statement":  "by_reason[reason] = by_reason.get(reason, 0) + 1",
+        "focus_span":  "by_reason[reason] = by_reason.get(reason, 0) + 1",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "failure summary",
+                                "aggregation",
+                                "reason count",
+                                "quality analysis"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY5_L10_curation_skip_001",
+        "level":  10,
+        "title":  "Reading about the “curation skip guard” that filters out seen URLs first",
+        "concepts":  [
+                         "if_statement",
+                         "membership_test",
+                         "return_statement",
+                         "comparison",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the filter flow where duplicate URLs trigger an early return at the first guard and continue through to the subsequent score condition.",
+        "code":  "def should_skip(item, seen_urls):\n    if item[\"url\"] in seen_urls:\n        return True\n    if item.get(\"score\", 0) \u003c 0.5:\n        return True\n    return False\n\nresult = should_skip({\"url\": \"u1\", \"score\": 0.9}, {\"u1\"})",
+        "question_type":  "multiple_choice",
+        "question":  "What are the conditions for skipping?",
+        "choices":  [
+                        "Always skip",
+                        "If the score is high, skip",
+                        "Always include URLs when present.",
+                        "This URL has already been viewed, or the score is less than 0.5"
+                    ],
+        "answer":  "This URL has already been viewed, or the score is less than 0.5",
+        "explanation":  "If the URL is in `seen_urls`, the first condition returns `True`; otherwise, if the score is less than 0.5, the second condition returns `True`. This is because there are two independent early-return guards. A common source of confusion: If the score is high, the `skip` comparison operator is ``\u003c 0.5``, so it skips the lower score. Point of misinterpretation: This occurs when the direction of the comparison is read in reverse. The curation filter should be read as **dedup guard → score guard → final pass**.",
+        "side_card_ids":  [
+                              "PL_curation_001",
+                              "DATA_dedup_001"
+                          ],
+        "project_context":  "This connects to the workflow for selecting collected data and removing duplicates from the reading queue while applying a quality threshold.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "중복 URL을 첫 guard에서 early return하고 이후 score 조건까지 이어지는 필터 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if condition:` executes the branch when condition is True.",
+                                    "how_to_read":  "Check whether subsequent checks are omitted due to the conditions of each `if` statement and the `return` statements within the branches.",
+                                    "key_point":  "If duplicate URLs and low scores are treated as separate guards, the curation criteria will be easier to understand.",
+                                    "common_mistake":  "It’s easy to assume that both conditions must be met to skip. However, since each `if` statement returns `True`, the code will skip if either condition is met."
+                                },
+        "teaching_example":  {
+                                 "code":  "def skip(item, seen):\n    if item[\"id\"] in seen:\n        return True\n    if item[\"score\"] \u003c 1:\n        return True\n    return False\n\nresult = skip({\"id\": \"a\", \"score\": 5}, {\"a\"})",
+                                 "walkthrough":  "Since `id` is already in `seen`, it returns `True` immediately in the first branch."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "If the URL is in `seen_urls`, the first condition returns `True`; otherwise, if the score is less than 0.5, the second condition returns `True`.",
+                                   "why_correct":  "This is because there are two independent early-return guards.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "If the score is high, skip",
+                                                               "why_wrong":  "The comparison operator ``\u003c 0.5`` skips lines with low scores.",
+                                                               "misread_step":  "This is an example of a comparison where the direction was read in reverse."
+                                                           },
+                                   "takeaway":  "The curation filter is read as **dedup guard → score guard → final pass**."
+                               },
+        "target_statement":  "if item[\"url\"] in seen_urls:",
+        "focus_span":  "item[\"url\"] in seen_urls",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "curation",
+                                "dedup",
+                                "score threshold",
+                                "filter"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    }
 ]

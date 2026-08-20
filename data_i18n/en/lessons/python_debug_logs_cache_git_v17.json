@@ -1,460 +1,1032 @@
 [
-  {
-    "id": "PY17_L06_http_server_001",
-    "level": 6,
-    "title": "Reading Local Static Server Commands",
-    "concepts": [
-      "http_server",
-      "localhost",
-      "port",
-      "static_file"
-    ],
-    "reading_goal": "Understand what kind of server the `python -m http.server` command launches.",
-    "code": "Set-Location \"D:\\projects\\python-reading-trainer\"\npython -m http.server 8790 --bind 127.0.0.1",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of this command?",
-    "choices": [
-      "Delete GitHub Pages",
-      "Install the Python package",
-      "Opens the current folder as a local static server on port 8790",
-      "Merge JSON files"
-    ],
-    "answer": "Opens the current folder as a local static server on port 8790",
-    "explanation": "Set-Location changes the working directory, then python -m http.server serves files from that directory over HTTP. 8790 is the port, and --bind 127.0.0.1 restricts connections to the same PC. This server is for local development and inspection, not production use that requires authentication, TLS, performance, and other protections.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "This is a local execution pattern for checking paths and browser loading in a static learning app."
-  },
-  {
-    "id": "PY17_L06_localhost_vs_ip_001",
-    "level": 6,
-    "title": "Distinguishing Between \"localhost\" and Internal IP Addresses",
-    "concepts": [
-      "comment",
-      "localhost",
-      "ip_address",
-      "network",
-      "mobile_test"
-    ],
-    "reading_goal": "Understand why the URLs are different between PC browsers and mobile browsers.",
-    "code": "# View the server from the same PC\nhttp://localhost:8790/src/pwa/index.html\n\n# View the PC server from a phone on the same LAN\nhttp://192.168.0.23:8790/src/pwa/index.html",
-    "question_type": "meaning_choice",
-    "question": "Why doesn't the \"localhost\" address usually work on a phone?",
-    "choices": [
-      "Port 8790 is always blocked, so",
-      "Since I can't open HTML on my phone,",
-      "Since \"localhost\" on a phone refers to the phone itself, not the PC,",
-      "Since Git isn't installed,"
-    ],
-    "answer": "Since \"localhost\" on a phone refers to the phone itself, not the PC,",
-    "explanation": "localhost refers to the device on which the address is entered, so localhost on a phone means the phone itself. To reach a PC server from a phone, the server must bind to the PC's LAN address or 0.0.0.0 rather than only 127.0.0.1, both devices must be on the same network, and the firewall must allow the port. The PC's internal IP varies by environment, so do not copy the example value blindly.",
-    "side_card_ids": [
-      "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
-    ],
-    "project_context": "This is a practical concept for distinguishing between GitHub Pages URLs and local test URLs."
-  },
-  {
-    "id": "PY17_L07_http_log_200_304_001",
-    "level": 7,
-    "title": "Reading Server Logs 200 and 304",
-    "concepts": [
-      "http_status",
-      "200",
-      "304",
-      "cache"
-    ],
-    "reading_goal": "Learn the difference between 200 and 304 in static server logs.",
-    "code": "127.0.0.1 - - [29/May/2026] \"GET /src/pwa/index.html HTTP/1.1\" 200 -\n127.0.0.1 - - [29/May/2026] \"GET /src/pwa/style.css HTTP/1.1\" 304 -",
-    "question_type": "meaning_choice",
-    "question": "What is 304 closest to?",
-    "choices": [
-      "A response stating that the file has been permanently deleted",
-      "A response indicating that the server is down",
-      "Responses indicating that it is acceptable to use the browser cache",
-      "A message stating that the password is incorrect"
-    ],
-    "answer": "Responses indicating that it is acceptable to use the browser cache",
-    "explanation": "200 OK means the request succeeded and usually includes a response body. 304 Not Modified appears after a conditional request such as one using If-None-Match or If-Modified-Since; the server reports that the resource has not changed and does not resend the body. The browser can reuse its cached copy. Both lines show a successful HTTP flow here, but neither proves that the app ran or that the displayed content is current.",
-    "side_card_ids": [
-      "PL_cache_001"
-    ],
-    "project_context": "Loading... This is used to determine whether index/app.js and style.css were actually reloaded when viewing the issue."
-  },
-  {
-    "id": "PY17_L07_query_cache_bust_001",
-    "level": 7,
-    "title": "Reading About Clearing the Query String Cache",
-    "concepts": [
-      "cache_bust",
-      "query_string",
-      "url",
-      "browser_cache"
-    ],
-    "reading_goal": "I understand why the \"?v=\" part at the end of a URL bypasses the cache.",
-    "code": "app.js?v=20260529_v16\nstyle.css?v=20260529_force1\nindex.html?sidefix=1",
-    "question_type": "meaning_choice",
-    "question": "What is the main reason for adding “?v=20260529_v16”?",
-    "choices": [
-      "To permanently change the file name",
-      "I want to compress JSON",
-      "To make the browser recognize it as a different URL from the previous file",
-      "I want to change the port"
-    ],
-    "answer": "To make the browser recognize it as a different URL from the previous file",
-    "explanation": "Changing the query value changes the full URL, so ordinary browser and CDN caches may treat it as a separate entry. This can force another request for deployed JavaScript or CSS. However, a server, CDN, or service worker can be configured to ignore the query, so it is not an unconditional cache bypass. Manage a content version or hash consistently.",
-    "side_card_ids": [
-      "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
-    ],
-    "project_context": "This is a versioned-URL pattern for reducing reuse of stale static assets after deployment."
-  },
-  {
-    "id": "PY17_L08_app_data_version_001",
-    "level": 8,
-    "title": "Reading the APP_DATA_VERSION Function",
-    "concepts": [
-      "return",
-      "cache_bust",
-      "function",
-      "string",
-      "fetch"
-    ],
-    "reading_goal": "Read the function that automatically appends a version to the data file fetch URL.",
-    "code": "const APP_DATA_VERSION = \"20260529_v16\";\nfunction withDataVersion(path) {\n  if (path.indexOf(\"?\") >= 0) return path + \"&v=\" + APP_DATA_VERSION;\n  return path + \"?v=\" + APP_DATA_VERSION;\n}",
-    "question_type": "meaning_choice",
-    "question": "APP_DATA_VERSION: Why does Cache Buster append \"&v=\" if the path already contains a \"?\"?",
-    "choices": [
-      "Just to throw an error all the time",
-      "To delete a file",
-      "Since the second and subsequent parameters in a URL must be separated by &,",
-      "To change the port"
-    ],
-    "answer": "Since the second and subsequent parameters in a URL must be separated by &,",
-    "explanation": "A URL query starts its first parameter with ? and separates later parameters with &, so an ordinary path that already contains ? receives &v=. However, string concatenation can place a query after a #fragment or duplicate an existing v parameter. Production code that accepts varied URLs should set v with URL and URLSearchParams.",
-    "side_card_ids": [
-      "PYV159_A1_FUNCTION_IO_FLOW"
-    ],
-    "project_context": "This cache-refresh structure adds a data version to lesson and side-card JSON requests."
-  },
-  {
-    "id": "PY17_L08_fetch_log_sequence_001",
-    "level": 8,
-    "title": "Reading the fetch log in order",
-    "concepts": [
-      "fetch",
-      "json",
-      "static_server",
-      "debugging"
-    ],
-    "reading_goal": "Read the server logs to see which files the app requested and in what order.",
-    "code": "GET /src/pwa/index.html 200\nGET /src/pwa/app.js?v=20260529_force1 200\nGET /data/curriculum/curriculum_v1.json?v=20260529_v16 200\nGET /data/lessons/python_rag_kg_pipeline_review_v16.json?v=20260529_v16 200",
-    "question_type": "meaning_choice",
-    "question": "What can be concluded with certainty from this log?",
-    "choices": [
-      "The server responded 200 to the v16 lesson request",
-      "The browser parsed the JSON and rendered the page successfully",
-      "The file contents are necessarily current",
-      "The service worker is disabled"
-    ],
-    "answer": "The server responded 200 to the v16 lesson request",
-    "explanation": "The final line shows that the browser requested the v16 lesson URL and the server returned HTTP 200. A 200 response alone does not prove that the body contains the expected JSON, that parsing succeeded, or that the page rendered it. Inspect the Network response body, Console errors, and application state for those later stages.",
-    "side_card_ids": [
-      "PYV158_A1_JSON_FLOW"
-    ],
-    "project_context": "This is a network-log example for checking server response status for lesson and side-card requests."
-  },
-  {
-    "id": "PY17_L08_json_parse_check_001",
-    "level": 8,
-    "title": "Reading the JSON Parsing Validation Loop",
-    "concepts": [
-      "json",
-      "validation",
-      "try_except",
-      "powershell"
-    ],
-    "reading_goal": "Read the PowerShell workflow that opens multiple JSON files to verify whether they can be parsed.",
-    "code": "Get-ChildItem \".\\data\\lessons\" -File -Filter \"*.json\" | ForEach-Object {\n  try {\n    Get-Content $_.FullName -Raw -Encoding UTF8 | ConvertFrom-Json | Out-Null\n    \"OK  $($_.Name)\"\n  } catch {\n    \"BAD $($_.Name) :: $($_.Exception.Message)\"\n  }\n}",
-    "question_type": "meaning_choice",
-    "question": "If `ConvertFrom-Json` fails, which one runs?",
-    "choices": [
-      "Always prints \"OK\"",
-      "git push",
-      "catch block",
-      "Running the Server"
-    ],
-    "answer": "catch block",
-    "explanation": "The JSON parse check verifies whether a string is valid JSON. If a parsing error occurs within the `try` block, control flows to the `catch` block, which outputs a \"BAD\" message. Automating this validation prevents broken JSON files from making it through to the app loading stage. Therefore, the correct answer is “catch block.”",
-    "side_card_ids": [
-      "PYV158_A1_JSON_FLOW"
-    ],
-    "project_context": "This is a validation routine that checks the JSON first, as a corrupted JSON file could cause the app to stop loading."
-  },
-  {
-    "id": "PY17_L08_select_string_001",
-    "level": 8,
-    "title": "Finding a Code Location Using Select-String",
-    "concepts": [
-      "search",
-      "regex",
-      "powershell",
-      "debugging"
-    ],
-    "reading_goal": "Reads the command to search for function names or configuration names within a file.",
-    "code": "Select-String -Path \".\\src\\pwa\\app.js\" `\n  -Pattern \"APP_DATA_VERSION|lessonFiles|renderSideCards\" `\n  -Context 0,3",
-    "question_type": "meaning_choice",
-    "question": "-What does \"Context 0,3\" mean?",
-    "choices": [
-      "Search only these 3 files",
-      "Wait 3 seconds",
-      "Displays the three lines following the matching line together",
-      "Commit #3"
-    ],
-    "answer": "Displays the three lines following the matching line together",
-    "explanation": "Context is an option that displays the lines surrounding a search result. It shows the 0 lines before and 3 lines after the result. Select-String is a PowerShell command used to find a specific string within a file. It is useful for quickly checking code locations, version strings, and file references.",
-    "side_card_ids": [],
-    "project_context": "I used it to locate the renderSideCards and identify the SWAP-IN replacement points."
-  },
-  {
-    "id": "PY17_L09_regex_replace_block_001",
-    "level": 9,
-    "title": "Reading and Replacing Regular Expression Blocks",
-    "concepts": [
-      "regex",
-      "replace",
-      "swap_in",
-      "function"
-    ],
-    "reading_goal": "Reads a pattern that uses a regular expression to find and replace an entire function.",
-    "code": "$pattern = '(?s)function renderSideCards\\(card\\) \\{[\\s\\S]*?\\r?\\n\\}\\r?\\n\\r?\\nfunction markSeen'\n$app = [regex]::Replace($app, $pattern, $newRenderSideCards + \"`r`n`r`nfunction markSeen\")",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of this code?",
-    "choices": [
-      "Delete all JSON",
-      "Changing the GitHub Pages URL",
-      "Find only the `renderSideCards` function and replace it with a new block",
-      "Open the server port"
-    ],
-    "answer": "Find only the `renderSideCards` function and replace it with a new block",
-    "explanation": "Replace matches from the renderSideCards declaration through the later markSeen declaration, then inserts the new function string followed by the markSeen declaration again. If similar text, different line endings, or an unexpected function order appears, this pattern can replace the wrong range or nothing at all. Prefer a syntax-aware edit or an explicit patch for source code, and always inspect the match count and diff.",
-    "side_card_ids": [
-      "PYV159_A1_FUNCTION_IO_FLOW"
-    ],
-    "project_context": "This example shows why a function-level source change needs a precise boundary and diff verification."
-  },
-  {
-    "id": "PY17_L09_git_status_001",
-    "level": 9,
-    "title": "Reading the `git status` Output",
-    "concepts": [
-      "git",
-      "status",
-      "modified",
-      "untracked"
-    ],
-    "reading_goal": "It distinguishes between files that Git tracks and those it does not.",
-    "code": "Changes not staged for commit:\n        modified:   src/pwa/app.js\n\nUntracked files:\n        run_local_server.ps1",
-    "question_type": "meaning_choice",
-    "question": "What does it mean when \"run_local_server.ps1\" is marked as \"Untracked\"?",
-    "choices": [
-      "It has already been pushed to the remote.",
-      "The file was deleted.",
-      "This is a new file that Git hasn't tracked yet.",
-      "That's a Python syntax error."
-    ],
-    "answer": "This is a new file that Git hasn't tracked yet.",
-    "explanation": "`git status` shows the status of changes in the working directory. \"Untracked files\" are new files that Git does not yet track, so they cannot be committed until they are added.",
-    "side_card_ids": [
-      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
-    ],
-    "project_context": "I created a script, and you must read this when deciding whether to include it in a commit."
-  },
-  {
-    "id": "PY17_L09_git_add_commit_push_001",
-    "level": 9,
-    "title": "Understanding the git add/commit/push workflow",
-    "concepts": [
-      "git",
-      "commit",
-      "push",
-      "workflow"
-    ],
-    "reading_goal": "Read about the basic process for pushing local changes to a remote GitHub repository.",
-    "code": "git add src/pwa/app.js data/lessons/python_debug_logs_cache_git_v17.json\ngit commit -m \"Add debug log and cache reading cards\"\ngit push",
-    "question_type": "meaning_choice",
-    "question": "What is the role of `git add` in the commit/push workflow?",
-    "choices": [
-      "Delete the remote repository",
-      "Clear the browser cache",
-      "Stage the files to be included in the commit",
-      "Start the server"
-    ],
-    "answer": "Stage the files to be included in the commit",
-    "explanation": "git add stages the current contents of the two specified files. git commit records the staged snapshot locally, and git push sends commits according to the current branch and configured remote/upstream. Other working-tree changes are not included automatically, so inspect git diff --cached before committing.",
-    "side_card_ids": [],
-    "project_context": "This is the basic flow for recording only verified changes as a meaningful unit and sharing them with a remote branch."
-  },
-  {
-    "id": "PY17_L09_gitignore_reports_001",
-    "level": 9,
-    "title": "Adding \"reports\" to .gitignore",
-    "concepts": [
-      "gitignore",
-      "reports",
-      "untracked",
-      "git"
-    ],
-    "reading_goal": "Understand why the temporary output folder is excluded from Git tracking.",
-    "code": "Add-Content .gitignore \"`nreports/\"\ngit add .gitignore\ngit commit -m \"Ignore local reports directory\"",
-    "question_type": "meaning_choice",
-    "question": "Why is the \"reports/\" directory added to .gitignore?",
-    "choices": [
-      "To prevent the app from running",
-      "To delete the HTML",
-      "To avoid pushing local files, such as verification outputs, to Git",
-      "To secure the port"
-    ],
-    "answer": "To avoid pushing local files, such as verification outputs, to Git",
-    "explanation": "The reports/ pattern makes Git ignore untracked files under that directory by default. Running Add-Content repeatedly can duplicate the line, and adding a path to .gitignore does not automatically stop tracking files that Git already tracks. Also decide whether reports are reproducible local output or official team artifacts before excluding them.",
-    "side_card_ids": [
-      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
-    ],
-    "project_context": "This is an example of deciding by repository policy whether generated local output belongs in version control."
-  },
-  {
-    "id": "PY17_L10_loading_stuck_debug_001",
-    "level": 10,
-    "title": "Loading... Reading the branch causing the freeze",
-    "concepts": [
-      "if",
-      "else",
-      "debugging",
-      "loading",
-      "fetch",
-      "browser_cache"
-    ],
-    "reading_goal": "Learn to categorize the causes of the app getting stuck in the \"Loading\" state based on the logs.",
-    "code": "if index_requested and not app_js_requested:\n    cause = \"HTML opened, but JavaScript did not load: check cache, PWA, or the script tag\"\nelif app_js_requested and data_json_failed:\n    cause = \"JavaScript ran, but loading the data JSON failed\"\nelse:\n    cause = \"Check the browser console error\"",
-    "question_type": "meaning_choice",
-    "question": "If only the index page is requested and there are no requests for app.js, what should you suspect first?",
-    "choices": [
-      "Duplicate IDs in all lesson JSON files",
-      "Deleting a GitHub Account",
-      "HTML Cache/PWA/Script Tag Issues",
-      "Python List Syntax"
-    ],
-    "answer": "HTML Cache/PWA/Script Tag Issues",
-    "explanation": "When the first condition is true, an HTML request is visible but no app.js request is visible, so investigate the script tag, HTML or service-worker cache, browser policy, or network blocking first. The second condition points to a data JSON failure after the JavaScript request. These branches form hypotheses for the next check, not proof of the root cause; verify them with Console and Network evidence.",
-    "side_card_ids": [],
-    "project_context": "This diagnosis narrows a stuck Loading screen by locating the request stage where progress stopped."
-  },
-  {
-    "id": "PY17_L10_side_card_field_bug_001",
-    "level": 10,
-    "title": "Reading the \"Side Card Field Mismatch\" Bug",
-    "concepts": [
-      "field_mismatch",
-      "rendering",
-      "summary",
-      "detail"
-    ],
-    "reading_goal": "I'm reading about a bug where field names don't match—the data exists, but it doesn't appear on the screen.",
-    "code": "const body = document.createElement(\"div\");\nbody.className = \"side-card-body\";\nbody.textContent = sc.body;",
-    "question_type": "meaning_choice",
-    "question": "If the side card data focuses on summary and detail, what is the problem with this code?",
-    "choices": [
-      "Always automatically display all fields on the screen",
-      "An issue occurs that immediately terminates the server",
-      "Since only `sc.body` is read, the `summary` and `detail` elements may not appear on the screen.",
-      "Automatically modifies and saves the JSON file"
-    ],
-    "answer": "Since only `sc.body` is read, the `summary` and `detail` elements may not appear on the screen.",
-    "explanation": "The renderer reads only sc.body, so values stored in summary or detail are never used. If sc.body is undefined, the browser's DOM string conversion can also display an unintended value. Fix the data to use one schema, or handle supported fields with an explicit priority and default, then add a schema test.",
-    "side_card_ids": [
-      "PYV102_A9_RUNTIME_PERFORMANCE_LIST"
-    ],
-    "project_context": "This is a display bug caused by a mismatch between data field names and the renderer contract."
-  },
-  {
-    "id": "PY17_L10_safe_render_fallback_001",
-    "level": 10,
-    "title": "Reading the Rendering Fallback Function",
-    "concepts": [
-      "return",
-      "fallback",
-      "rendering",
-      "or",
-      "side_card"
-    ],
-    "reading_goal": "Read the code that selects values in order from among several candidate fields.",
-    "code": "function getSideText(sc) {\n  return sc.body || sc.summary || sc.description || sc.detail || \"\";\n}",
-    "question_type": "meaning_choice",
-    "question": "What is returned when sc.body is an empty string and sc.summary is present?",
-    "choices": [
-      "The empty sc.body string",
-      "sc.summary",
-      "Always sc.detail",
-      "Always undefined"
-    ],
-    "answer": "sc.summary",
-    "explanation": "|| evaluates the next operand when the left value is falsy, including not only undefined and null but also an empty string, 0, or false. Therefore, a truthy summary is returned when body is empty. This fallback can prevent a blank display but can also hide malformed data, so validate required fields separately and emit a warning.",
-    "side_card_ids": [
-      "PYV102_A9_RUNTIME_PERFORMANCE_LIST"
-    ],
-    "project_context": "This is a compatibility fallback for reading side-card text fields from several schema versions."
-  },
-  {
-    "id": "PY17_L10_pwa_deploy_address_001",
-    "level": 10,
-    "title": "Distinguishing Between GitHub Pages URLs and Local URLs",
-    "concepts": [
-      "comment",
-      "github_pages",
-      "local_server",
-      "deployment",
-      "url"
-    ],
-    "reading_goal": "Understand why the public deployment URL and the local test URL are different.",
-    "code": "# Example public URL: ordinarily unchanged after a normal push\nhttps://<account>.github.io/<repository>/\n\n# Local test URL: accessed from the PC running the server\nhttp://localhost:8790/src/pwa/index.html",
-    "question_type": "meaning_choice",
-    "question": "What happens to the URL after deploying a new commit while keeping the same repository name and Pages settings?",
-    "choices": [
-      "It becomes a completely new URL for every commit",
-      "It exists only while a local server is running",
-      "It ordinarily stays the same while deployed content updates",
-      "It is always identical to localhost"
-    ],
-    "answer": "It ordinarily stays the same while deployed content updates",
-    "explanation": "With the same account, repository, and Pages configuration, an ordinary deployment updates content at the same public URL. Renaming the repository or account or changing the custom domain or Pages configuration can change the address, so it is not absolutely fixed. Local and public URLs are different environments with different paths, caches, and deployment times.",
-    "side_card_ids": [
-      "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
-    ],
-    "project_context": "This card distinguishes a local development address from a public Pages deployment address."
-  },
-  {
-    "id": "PY17_L10_service_recovery_habit_001",
-    "level": 10,
-    "title": "Reading About Recovery Habits After an Experimental Patch",
-    "concepts": [
-      "comment",
-      "rollback",
-      "recovery",
-      "commit",
-      "debugging"
-    ],
-    "reading_goal": "Understand the procedure for establishing a stable point when an experimental patch fails.",
-    "code": "# 1. Inspect the failing change with git diff\n# 2. Disable or revert only that experimental block\n# 3. Validate JSON parsing and lessonFiles\n# 4. Check the local server and browser Console/Network\n# 5. Commit only the verified recovery change",
-    "question_type": "order_choice",
-    "question": "What should you do first if an experimental patch causes the app to fail to load?",
-    "choices": [
-      "Just adding new features indiscriminately",
-      "Delete all lesson files",
-      "Remove the test block and restore normal loading.",
-      "Changing the GitHub Pages URL"
-    ],
-    "answer": "Remove the test block and restore normal loading.",
-    "explanation": "First use the diff and error evidence to identify the change that caused the failure, then disable or revert only that experimental scope. Other unfinished work may exist in the working tree, so do not blindly revert a whole file or repository. Restore normal loading, pass automated checks and browser verification, and record only the verified recovery change.",
-    "side_card_ids": [],
-    "project_context": "This is a minimal-scope recovery procedure that preserves unrelated work after an experimental change breaks the app."
-  }
+    {
+        "id":  "PY17_L06_http_server_001",
+        "level":  6,
+        "title":  "Reading the local `http.server` command in token order",
+        "concepts":  [
+                         "call",
+                         "literal",
+                         "assignment"
+                     ],
+        "reading_goal":  "`\u0027 \u0027.join(command)` Read how to configure this local static server command.",
+        "code":  "command = [\u0027python\u0027, \u0027-m\u0027, \u0027http.server\u0027, \u00278790\u0027, \u0027--bind\u0027, \u0027127.0.0.1\u0027]\nserver_command = \u0027 \u0027.join(command)\nprint(server_command)",
+        "question_type":  "meaning_choice",
+        "question":  "Which of the following most accurately describes the purpose of the assembled command?",
+        "choices":  [
+                        "Command to serve the current folder on a local static server on port 8790",
+                        "Commands to install 8,790 Python packages",
+                        "Command to delete the 127.0.0.1 file",
+                        "Command to automatically deploy to the external internet"
+                    ],
+        "answer":  "Command to serve the current folder on a local static server on port 8790",
+        "explanation":  "1) The `command` list contains the executor, `-m`, module name, port, `--bind`, and address in that order. 2) `\u0027 \u0027.join(command)` joins the tokens with spaces to form a command string. 3) `http.server` serves the current directory as a static file server. 4) The `127.0.0.1` binding restricts the scope to the loopback interface on the same PC.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "This relates to determining the scope of server commands when testing the learning app PWA locally.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "`\u0027 \u0027.join(command)`이 로컬 정적 서버 명령을 어떻게 구성하는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`str.join()` joins the elements of a list of strings into a single string by inserting a separator between them.",
+                                    "how_to_read":  "Read the result of the `join` function while checking where each token in the list is placed within the shell command.",
+                                    "key_point":  "The result of `join` in this example is `python -m http.server 8790 --bind 127.0.0.1`, which is a command to run a local static server on port 8790.",
+                                    "common_mistake":  "`127.0.0.1` should not be interpreted as an address accessible to all devices on the same LAN. The loopback address is typically accessible only within the same device."
+                                },
+        "teaching_example":  {
+                                 "code":  "parts = [\u0027python\u0027, \u0027-m\u0027, \u0027http.server\u0027, \u00278000\u0027]\nprint(\u0027 \u0027.join(parts))",
+                                 "walkthrough":  "Join four tokens with spaces to form the command string `python -m http.server 8000`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The `command` list contains the executor, `-m`, module name, port, `--bind`, and address in that order. 2) `\u0027 \u0027.join(command)` joins the tokens with spaces to form a command string. 3) `http.server` serves the current directory as a static file server. 4) The `127.0.0.1` binding restricts the scope to the loopback interface on the same PC.",
+                                   "why_correct":  "The result of `join` in this example is `python -m http.server 8790 --bind 127.0.0.1`, which is a command to run a local static server on port 8790.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Command to automatically deploy to the external internet",
+                                                               "why_wrong":  "`http.server` and loopback bind refer to running a server for local testing, not external deployment.",
+                                                               "misread_step":  "Interpret the module name, port, and bind address in the command token, respectively."
+                                                           },
+                                   "takeaway":  "It is easier to determine the purpose of a CLI command if you break it down in the order of **interpreter → module → arguments/options → values**."
+                               },
+        "target_statement":  "\u0027 \u0027.join(command)",
+        "focus_span":  "\u0027 \u0027.join(command)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "cli_and_automation",
+        "coverage_topics":  [
+                                "http.server",
+                                "python -m",
+                                "bind",
+                                "localhost",
+                                "command"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY17_L06_localhost_vs_ip_001",
+        "level":  6,
+        "title":  "Reading both the LAN IP and server bind when connecting from a phone to a PC server",
+        "concepts":  [
+                         "subscription",
+                         "f_string",
+                         "assignment"
+                     ],
+        "reading_goal":  "Read about why you select the PC’s LAN IP address when opening a PC server from a phone, along with the server’s bind conditions.",
+        "code":  "server = {\u0027bind_host\u0027: \u00270.0.0.0\u0027, \u0027lan_ip\u0027: \u0027192.168.0.23\u0027, \u0027port\u0027: 8790}\nhost = server[\u0027lan_ip\u0027]\nurl = f\"http://{host}:{server[\u0027port\u0027]}/src/pwa/index.html\"\nprint(url)",
+        "question_type":  "concept_reading",
+        "question":  "To connect to a PC server via the `server[\u0027lan_ip\u0027]` address on a phone, aside from selecting the address, what else must be verified on the server side?",
+        "choices":  [
+                        "Is the server listening on an interface accessible via the LAN, rather than just being bound to 127.0.0.1?",
+                        "Whether port 8790 must be changed to 80",
+                        "Does it look up the `lan_ip` key in the `dict` twice?",
+                        "How do you configure Python on a phone so that `localhost` refers to the PC?"
+                    ],
+        "answer":  "Is the server listening on an interface accessible via the LAN, rather than just being bound to 127.0.0.1?",
+        "explanation":  "1) ``server[\u0027lan_ip\u0027]`` selects the PC’s LAN address. 2) `localhost` on a phone refers to the phone itself. 3) If the PC server is bound only to the loopback interface, remote access will not work even if a LAN IP address is used. 4) Also verify that the server is in a bound state that is accessible from the LAN.",
+        "side_card_ids":  [
+                              "PYV102_A7_RUNTIME_PRODUCT_PATTERNS"
+                          ],
+        "project_context":  "This is related to evaluating both the address and the bind condition when viewing a learning app running on a PC from a smartphone connected to the same Wi-Fi network.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "폰에서 PC 서버를 열 때 PC의 LAN IP를 선택하는 이유와 서버가 loopback 전용 bind이면 주소만 바꿔도 접속되지 않는다는 조건을 함께 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "Dict subscription retrieves the value associated with a key; here it selects the server’s LAN address.",
+                                    "how_to_read":  "First identify the device that opens the URL and apply that `localhost` means that device itself; then also check which interface the server is listening on.",
+                                    "key_point":  "The phone requires the PC’s LAN IP address, but if the PC server is bound only to `127.0.0.1`, you cannot connect simply by entering the LAN IP address.",
+                                    "common_mistake":  "It is easy to assume that simply replacing the host in the client URL with a PC LAN IP address will allow a connection regardless of the server’s bind status."
+                                },
+        "teaching_example":  {
+                                 "code":  "server = {\u0027bind_host\u0027: \u00270.0.0.0\u0027, \u0027lan_ip\u0027: \u0027192.168.1.40\u0027}\nprint(server[\u0027lan_ip\u0027])",
+                                 "walkthrough":  "Other LAN devices must use the PC’s LAN IP address, and the server must listen on an interface accessible from the LAN."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) ``server[\u0027lan_ip\u0027]`` returns the PC’s LAN address, 192.168.0.23. 2) On a phone, `localhost` refers to the phone itself, so it cannot be used as the PC server address. 3) If the server only listens on 127.0.0.1, it will not accept connections coming in through the LAN interface. 4) Therefore, you must verify both the PC’s LAN IP selection and the server’s accessible bind settings.",
+                                   "why_correct":  "This is because, to connect from another device, both the destination address and the interface through which the server actually receives the connection must match.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Whether port 8790 must be changed to 80",
+                                                               "why_wrong":  "The port number itself does not solve localhost/LAN reachability.",
+                                                               "misread_step":  "Check the client’s address and where the server is listening as separate conditions."
+                                                           },
+                                   "takeaway":  "To verify a LAN connection, follow these steps: **The client uses the PC’s LAN IP address → The server listens on an interface accessible via the LAN → Network and firewall rules allow access**."
+                               },
+        "target_statement":  "server[\u0027lan_ip\u0027]",
+        "focus_span":  "server[\u0027lan_ip\u0027]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "localhost",
+                                "loopback",
+                                "LAN IP",
+                                "server bind",
+                                "host selection"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY17_L07_http_log_200_304_001",
+        "level":  7,
+        "title":  "Check if the HTTP status is 304",
+        "concepts":  [
+                         "comparison",
+                         "assignment",
+                         "subscription"
+                     ],
+        "reading_goal":  "Read the expression that compares a structured HTTP status value with 304 to decide whether the state is Not Modified.",
+        "code":  "response = {\"path\": \"/style.css\", \"status\": 304}\nnot_modified = response[\"status\"] == 304\nprint(not_modified)",
+        "question_type":  "output_prediction",
+        "question":  "What value does the last line output?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "304",
+                        "style.css"
+                    ],
+        "answer":  "True",
+        "explanation":  "The value of the `status` key in the `response` dictionary is 304. The comparison expression checks whether this value is equal to the literal 304. Since ``304 == 304``, the result is `True`. This is because both sides of the equality comparison are equal. Commonly confused incorrect answer: 304 304 is the status value used in the comparison, and the final value returned by the expression ``==`` is `True`. Point of confusion: You must distinguish between the original value before the comparison and the boolean result after the comparison. Comparing a status code to a specific value can determine whether that status applies, resulting in a boolean value.",
+        "side_card_ids":  [
+                              "PL_cache_001"
+                          ],
+        "project_context":  "The context involves distinguishing between 200 and 304 responses in static asset request logs to check cache-related status.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "구조화된 HTTP status 값을 304와 비교해 Not Modified 상태인지 판정하는 식을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "An equality comparison is an expression that checks whether two values are equal—`==`—and returns a boolean value.",
+                                    "how_to_read":  "First, the left-hand side expression is evaluated to determine its value, and that value is then compared to the literal on the right-hand side.",
+                                    "key_point":  "The HTTP status code 304 refers to a web context, and the Python syntax focus is on the comparison expression `response[\"status\"] == 304`.",
+                                    "common_mistake":  "It is easy to mistake the status value 304 itself for the result of the comparison, which is True. When ``==`` is added, the final result is a boolean."
+                                },
+        "teaching_example":  {
+                                 "code":  "response = {\"path\": \"/app.js\", \"status\": 200}\nok = response[\"status\"] == 200\nprint(ok)",
+                                 "walkthrough":  "Since the `status` value is 200 and the value on the right is also 200, the result of the equality comparison is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The value of the `status` key in the `response` dictionary is 304. The comparison operator checks whether this value is equal to the literal 304. Since `304 == 304`, the result is `True`.",
+                                   "why_correct":  "This is because the values on both sides of the equality comparison are the same.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "304",
+                                                               "why_wrong":  "304 is the status value used in the comparison, and the final value returned by the `==` expression is True.",
+                                                               "misread_step":  "You must distinguish between the original value before the comparison and the boolean value after the comparison."
+                                                           },
+                                   "takeaway":  "By comparing the status code to a specific value, you can determine whether that status applies and return a boolean value."
+                               },
+        "target_statement":  "not_modified = response[\"status\"] == 304",
+        "focus_span":  "response[\"status\"] == 304",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "HTTP_status",
+                                "304",
+                                "200",
+                                "browser_cache"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY17_L07_query_cache_bust_001",
+        "level":  7,
+        "title":  "Creating a version query URL using f-strings",
+        "concepts":  [
+                         "f_string",
+                         "assignment",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read the process by which an f-string inserts the asset name and version value into a URL query string.",
+        "code":  "asset = \"app.js\"\nversion = \"20260529_v16\"\nurl = f\"{asset}?v={version}\"\nprint(url)",
+        "question_type":  "output_prediction",
+        "question":  "What is the string printed on the last line?",
+        "choices":  [
+                        "app.js?v=20260529_v16",
+                        "app.js",
+                        "{asset}?v={version}",
+                        "20260529_v16"
+                    ],
+        "answer":  "app.js?v=20260529_v16",
+        "explanation":  "The `asset` value is `app.js`, and the `version` value is `20260529_v16`. `app.js` is inserted into the first curly brace of the f-string, and the `version` value is inserted into the second curly brace following the fixed string `?v=`. The result is `app.js?v=20260529_v16`. This is because the f-string inserts the current values of the two variables as strings at the specified positions. Common Misconception: `{asset}?v={version}`—This is the surface form before the f-string is evaluated. Since it has the `f` prefix, the names inside the curly braces are substituted with their actual values. Common Misinterpretation: You must first check whether there is an `f` before the string. An f-string replaces `{expression}` with its actual value when combining fixed strings and variable values, such as in a URL.",
+        "side_card_ids":  [
+                              "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
+                          ],
+        "project_context":  "The context here is appending the deployment version to static JS/CSS asset URLs so that they are treated as distinct URLs.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "f_string",
+        "reading_goal_internal":  "f-string이 asset 이름과 version 값을 URL query 문자열 안에 삽입하는 과정을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "An f-string is a Python string syntax where an `f` is prepended to a string and calculated values are inserted in place of `{expression}`.",
+                                    "how_to_read":  "Let’s break down the string into its fixed parts and the `{...}` sections. Replace the names inside the curly braces with their current values, then read the entire string again.",
+                                    "key_point":  "Appending a query string to distinguish cache entries is a web-specific behavior; the focus of Python syntax here is on f-strings, which insert values into strings.",
+                                    "common_mistake":  "`{version}` It’s easy to assume that the text remains exactly as is. In an f-string, the expression inside the curly braces is evaluated and replaced with its actual value."
+                                },
+        "teaching_example":  {
+                                 "code":  "file_name = \"style.css\"\nrevision = \"r3\"\nurl = f\"{file_name}?rev={revision}\"\nprint(url)",
+                                 "walkthrough":  "`{file_name}` is replaced by `style.css` and `{revision}` by `r3`, producing `style.css?rev=r3`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The `asset` value is `app.js`, and the `version` value is `20260529_v16`. `app.js` goes inside the first curly brace of the f-string, and the `version` value goes inside the second curly brace following the literal string ``?v=``. The result is ``app.js?v=20260529_v16``.",
+                                   "why_correct":  "This is because an f-string inserts the current values of two variables as strings at specified positions.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "{asset}?v={version}",
+                                                               "why_wrong":  "This is the surface form prior to f-string evaluation. Because it includes the ``f`` prefix, the names inside the curly braces are substituted with actual values.",
+                                                               "misread_step":  "You must first check whether \"`f`\" appears at the beginning of the string."
+                                                           },
+                                   "takeaway":  "When an f-string combines fixed text such as a URL with variable values, it replaces `{expression}` with the evaluated value."
+                               },
+        "target_statement":  "url = f\"{asset}?v={version}\"",
+        "focus_span":  "f\"{asset}?v={version}\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "cache_bust",
+                                "query_string",
+                                "static_asset",
+                                "browser_cache"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY17_L08_app_data_version_001",
+        "level":  8,
+        "title":  "Selecting URL Query Separators Using Conditional Expressions",
+        "concepts":  [
+                         "conditional_expression",
+                         "membership_test",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the sequence where a conditional expression selects one of two candidate values based on the state of a URL string.",
+        "code":  "path = \"/lesson.json?lang=ko\"\nseparator = \"\u0026\" if \"?\" in path else \"?\"\nurl = f\"{path}{separator}v=20260529_v16\"",
+        "question_type":  "multiple_choice",
+        "question":  "In this code, what value is stored in ``separator``?",
+        "choices":  [
+                        "?",
+                        "\u0026",
+                        "v=",
+                        "None"
+                    ],
+        "answer":  "\u0026",
+        "explanation":  "There is already a `?` inside `path`. Therefore, `\"?\" in path` is true, and the conditional expression selects the left-hand value `\u0026`. This is because the conditional expression uses the value preceding `if` as the result when the condition is true. Commonly confusing incorrect answer: ? `?` is the value on the `else` side, which is selected when the condition is false. Common misinterpretation: This occurs when the reader reverses which value is selected based on whether the condition is true or false. `A if condition else B` **evaluates the `condition` first and then selects either A or B**.",
+        "side_card_ids":  [
+                              "PYV159_A1_FUNCTION_IO_FLOW"
+                          ],
+        "project_context":  "It is linked to the code that constructs a URL to refresh the cache by appending the data version to the JSON URL for the lesson side-card.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "conditional_expression",
+        "reading_goal_internal":  "조건 표현식이 URL 문자열 상태에 따라 두 후보 값 중 하나를 선택하는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`A if condition else B` is a conditional expression that chooses A when the condition is true and B when it is false.",
+                                    "how_to_read":  "It reads as: “First, check the condition in the middle; if it is true, select the value on the left; if it is false, select the value on the right.”",
+                                    "key_point":  "For a URL that already has a query, the domain context is appending the next parameter with `\u0026`; the Python syntax focus is the conditional expression that chooses one of two strings.",
+                                    "common_mistake":  "It is easier to read if you use ``\u0026`` in that order from left to right. The actual selection is determined by the result of the middle condition."
+                                },
+        "teaching_example":  {
+                                 "code":  "path = \"/cards.json\"\nseparator = \"\u0026\" if \"?\" in path else \"?\"",
+                                 "walkthrough":  "Since ``?`` is not present in `path`, the condition is false, and ``separator`` becomes ``?``."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The `path` already contains ``?``. Therefore, ``\"?\" in path`` is true, and the conditional expression selects the left-hand value ``\u0026``.",
+                                   "why_correct":  "Because a conditional expression uses the value before `if` as the result when the condition is true.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "?",
+                                                               "why_wrong":  "`?` is the value assigned to the `else` branch when the condition is false.",
+                                                               "misread_step":  "This is an example of reading the condition in reverse—where the value selected depends on whether the condition is true or false."
+                                                           },
+                                   "takeaway":  "`A if condition else B` **evaluates the condition first, then selects exactly one of A or B**."
+                               },
+        "target_statement":  "separator = \"\u0026\" if \"?\" in path else \"?\"",
+        "focus_span":  "\"\u0026\" if \"?\" in path else \"?\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "cache bust",
+                                "query string",
+                                "url",
+                                "data version"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY17_L08_fetch_log_sequence_001",
+        "level":  8,
+        "title":  "Reading the HTTP status from the last request dict",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "In a nested `subscription`, first select the last item, then track the order in which the dict key values are read.",
+        "code":  "requests = [\n    {\"path\": \"/src/pwa/index.html\", \"status\": 200},\n    {\"path\": \"/src/pwa/app.js?v=force1\", \"status\": 200},\n    {\"path\": \"/data/lessons/python_rag_kg_pipeline_review_v16.json?v=v16\", \"status\": 200},\n]\nstatus = requests[-1][\"status\"]",
+        "question_type":  "multiple_choice",
+        "question":  "`status` What value is stored in ?",
+        "choices":  [
+                        "16",
+                        "200",
+                        "404",
+                        "None"
+                    ],
+        "answer":  "200",
+        "explanation":  "First, we select the last request dictionary using the index ``-1``. Since the value of the ``status`` key in that dictionary is 200, the final result is also 200. This is because nested subscriptions apply the outer key lookup to the result of the inner container selection. Common mistake: 16. 16 is part of the URL version string, not the value of the ``status`` key. Source of confusion: Failing to distinguish between the contents of the path string and the `status` field. A nested subscription is read in the order of **inner selection → outer key lookup**.",
+        "side_card_ids":  [
+                              "PYV158_A1_JSON_FLOW"
+                          ],
+        "project_context":  "This connects to the code that checks the structured logs to see what HTTP status codes the server returned for the \"lesson\" and \"side-card\" requests.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "중첩 subscription에서 먼저 마지막 항목을 고르고 이어 dict key 값을 읽는 순서를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping[key]` is a subscription that reads the value associated with a key in a dictionary.",
+                                    "how_to_read":  "I interpret this expression as first selecting the last request using the inner `requests[-1]`, and then reading the status value of that request using the outer `[\u0027status\u0027]`.",
+                                    "key_point":  "Regardless of the meaning of the HTTP 200 status code, in Python, the key point is which container is selected first and which key is looked up next.",
+                                    "common_mistake":  "It’s easy to mistakenly assume that `requests[0]` reads the status of the first request. `-1` refers to the last item."
+                                },
+        "teaching_example":  {
+                                 "code":  "events = [{\"status\": 201}, {\"status\": 404}]\nlast_status = events[-1][\"status\"]",
+                                 "walkthrough":  "`events[-1]` selects the final dict, then reads its `status` value, 404."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "First, select the last request dict at index `-1`. Since the value of the `status` key in that dict is 200, the final result is also 200.",
+                                   "why_correct":  "Nested subscriptions work this way because they apply the outer key lookup immediately after the inner container selection result.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "16",
+                                                               "why_wrong":  "16 is part of the URL version string, not the value of the `status` key.",
+                                                               "misread_step":  "This is an example where the contents of the `path` string and the `status` field are not distinguished."
+                                                           },
+                                   "takeaway":  "Nested subscriptions are read in the order of **inner selection → outer key lookup**."
+                               },
+        "target_statement":  "status = requests[-1][\"status\"]",
+        "focus_span":  "requests[-1][\"status\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "http status",
+                                "request log",
+                                "static server",
+                                "lesson json"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY17_L08_json_parse_check_001",
+        "level":  8,
+        "title":  "Catching a JSONDecodeError with a typed except clause",
+        "concepts":  [
+                         "except_clause",
+                         "try_statement",
+                         "assignment",
+                         "call"
+                     ],
+        "reading_goal":  "Read the sequence in which execution flows to a `typed except` block of the same type when a specific exception occurs inside a `try` block.",
+        "code":  "import json\n\nraw = \u0027{\"id\": 1,}\u0027\ntry:\n    data = json.loads(raw)\n    status = \"OK\"\nexcept json.JSONDecodeError:\n    status = \"BAD\"",
+        "question_type":  "multiple_choice",
+        "question":  "What value is stored in ``status`` after this code is executed?",
+        "choices":  [
+                        "OK",
+                        "BAD",
+                        "JSONDecodeError",
+                        "None"
+                    ],
+        "answer":  "BAD",
+        "explanation":  "When `json.loads()` attempts to parse invalid JSON, it raises a `JSONDecodeError`. The `except` block matching this type is executed, and `status` is set to `BAD`. This is because a typed `except` block executes the corresponding handling block when the specified exception type occurs. Common Misconception: Since `status = \"OK\"` is on the line following `json.loads()`, the code will not reach that line if a parsing exception occurs. Common Misinterpretation: Assuming that the `try` code following the point where the exception occurred continues to execute. When an exception occurs, **the `try` code following that point is skipped, and execution proceeds to the matching `except` block**.",
+        "side_card_ids":  [
+                              "PYV158_A1_JSON_FLOW"
+                          ],
+        "project_context":  "When the lesson JSON is corrupted, it connects to a validation routine that catches parsing errors before the app loads and displays the file status.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "except_clause",
+        "reading_goal_internal":  "try 안에서 특정 예외가 발생했을 때 같은 타입의 typed except 블록으로 실행이 이동하는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`except SomeError:` is a typed except clause that executes when an exception of type `SomeError` occurs within the try block.",
+                                    "how_to_read":  "It reads as: “Check which calls within the `try` block can raise which exceptions, and if the actual exception type matches the type specified in the `except` clause, proceed to that block.”",
+                                    "key_point":  "A typed `except` clause does not catch all errors unconditionally; rather, it handles cases that match the specified exception types.",
+                                    "common_mistake":  "`except` It’s easy to assume that the code below always executes, even if the `try` block succeeds. If no exception occurs, this `except` block is skipped."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\n\nraw = \u0027{\"name\": \"kim\",}\u0027\ntry:\n    data = json.loads(raw)\n    status = \"OK\"\nexcept json.JSONDecodeError:\n    status = \"BAD\"",
+                                 "walkthrough":  "Invalid JSON makes `json.loads()` raise `JSONDecodeError`, so the typed `except` executes and `status` becomes `BAD`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "When ``json.loads()`` parses invalid JSON, it raises a ``JSONDecodeError``. The `except` block matching this type is executed, causing ``status`` to be replaced with ``BAD``.",
+                                   "why_correct":  "A `typed except` statement executes the corresponding handling block when a specified exception type occurs.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "OK",
+                                                               "why_wrong":  "Since `status = \"OK\"` is on the line following `json.loads()`, the program will not reach that line if a parsing exception occurs.",
+                                                               "misread_step":  "This is a case where the learner assumed that the code inside the `try` block would continue to execute even after an exception occurred."
+                                                           },
+                                   "takeaway":  "When an exception occurs, **the code in the `try` block after that point is skipped, and execution proceeds to the matching `except` block**."
+                               },
+        "target_statement":  "except json.JSONDecodeError:",
+        "focus_span":  "except json.JSONDecodeError:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "json",
+                                "parse validation",
+                                "JSONDecodeError",
+                                "error handling"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY17_L08_select_string_001",
+        "level":  8,
+        "title":  "Use `slice` to select the matching line and the three lines following it",
+        "concepts":  [
+                         "slice",
+                         "assignment",
+                         "arithmetic",
+                         "literal"
+                     ],
+        "reading_goal":  "The `slice` function calculates a range of the current line and the next three lines, following the rule that `start` is included and `stop` is excluded.",
+        "code":  "lines = [\"head\", \"APP_DATA_VERSION\", \"line1\", \"line2\", \"line3\", \"tail\"]\nindex = 1\ncontext = lines[index:index + 4]",
+        "question_type":  "multiple_choice",
+        "question":  "How many items are there in `context`?",
+        "choices":  [
+                        "2",
+                        "3",
+                        "4",
+                        "5"
+                    ],
+        "answer":  "4",
+        "explanation":  "`index` is 1 and `stop` is 5. Since the slice ranges from 1 to 4 (just before 5), four items are included in the result. This is because Python slices include the start but exclude the stop. Common mistake: The item at index 5 (stop) is not included in the slice result. Source of confusion: This occurs when the reader interprets the slice’s stop boundary as inclusive. `seq[start:stop]` means **start is included, stop is excluded**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to code where the learner locates a function name or setting name and then reads the surrounding implementation to identify the point where the replacement should be made.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "slice",
+        "reading_goal_internal":  "slice의 start는 포함되고 stop은 제외되는 규칙으로 현재 줄과 뒤 3줄 범위를 계산한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`seq[start:stop]` is a slice that retrieves the contiguous range from `start` to just before `stop`.",
+                                    "how_to_read":  "`lines[index:index + 4]` is read as selecting a total of four items starting from the current index—that is, the current line and the three lines following it.",
+                                    "key_point":  "Since the `stop` position is not included in the result, to obtain four lines, set the `stop` position to the value of `start` plus 4.",
+                                    "common_mistake":  "It’s easy to assume that five lines are produced, including the position `index + 4`. However, the stop in a Python slice is excluded."
+                                },
+        "teaching_example":  {
+                                 "code":  "lines = [\"a\", \"MATCH\", \"b\", \"c\", \"d\", \"e\"]\nindex = 1\ncontext = lines[index:index + 3]",
+                                 "walkthrough":  "Since it retrieves from index 1 up to just before 4, the three items `MATCH`, `b`, and `c` are selected."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`index` `is` is 1 and `stop` is 5. Since `slice` takes values from 1 up to 4 (just before 5), four items are included in the result.",
+                                   "why_correct":  "Because a Python slice includes `start` but does not include `stop`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "5",
+                                                               "why_wrong":  "The item at index 5 is not included in the slice result.",
+                                                               "misread_step":  "This is an instance where the text was interpreted as including the stop boundary of the `slice`."
+                                                           },
+                                   "takeaway":  "`seq[start:stop]` includes **start** but excludes **stop**."
+                               },
+        "target_statement":  "context = lines[index:index + 4]",
+        "focus_span":  "lines[index:index + 4]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "exceptions_debugging",
+        "coverage_topics":  [
+                                "code search",
+                                "context lines",
+                                "debugging",
+                                "source inspection"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY17_L09_regex_replace_block_001",
+        "level":  9,
+        "title":  "Replacing a Specific Function Block with `re.sub()`",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Understand the flow where the regular expression pattern, replacement, and source string are passed to `re.sub`, which returns a new source string.",
+        "code":  "import re\napp = \"function renderSideCards(card) { oldBody(); }\\nfunction markSeen() {}\"\npattern = r\"function renderSideCards\\(card\\) \\{.*?\\}\"\nnew_block = \"function renderSideCards(card) { newBody(); }\"\npatched = re.sub(pattern, new_block, app)",
+        "question_type":  "multiple_choice",
+        "question":  "What calls are included in `patched`?",
+        "choices":  [
+                        "newBody()",
+                        "oldBody()",
+                        "deleteAll()",
+                        "serve()"
+                    ],
+        "answer":  "newBody()",
+        "explanation":  "The pattern finds the existing string in the `renderSideCards` function and replaces it with ``new_block``. Therefore, the patched version includes a call to `newBody`, because the second argument of ``re.sub`` is used as the replacement string. A common mistake: `oldBody()`—the matching block containing `oldBody` is replaced with `replacement`. Point of misinterpretation: This occurs when you fail to account for the fact that the replacement is applied to the return value of `re.sub`. A regex patch follows the sequence: **pattern → replacement → source → return new string**.",
+        "side_card_ids":  [
+                              "PYV159_A1_FUNCTION_IO_FLOW"
+                          ],
+        "project_context":  "This connects to automated patching, which limits the scope of changes to individual functions within large source files and verifies the diff.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "정규식 pattern, replacement, source 문자열이 re.sub에 전달되어 새 source 문자열이 반환되는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`re.sub(pattern, replacement, text)` is a function call that returns a new string in which the parts matching the pattern have been replaced.",
+                                    "how_to_read":  "Distinguish that the three arguments are, respectively, `pattern`, `replacement string`, and `original text`.",
+                                    "key_point":  "Narrowing the pattern scope so that only specific function blocks are matched is crucial for patch safety.",
+                                    "common_mistake":  "`re.sub` It is easy to assume that `ga` modifies the original string object in place. However, strings are immutable and return a new string."
+                                },
+        "teaching_example":  {
+                                 "code":  "import re\ntext = \"BEGIN old END\"\nresult = re.sub(r\"BEGIN.*?END\", \"BEGIN new END\", text)",
+                                 "walkthrough":  "The new string, with the matched blocks replaced, is stored in `result`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The pattern searches for the string in the existing `renderSideCards` function and replaces it with ``new_block``. Therefore, the patched version includes a call to `newBody`.",
+                                   "why_correct":  "This is because the second argument to `re.sub` is used as the replacement string.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "oldBody()",
+                                                               "why_wrong":  "The matching block that contained `oldBody` is replaced with `replacement`.",
+                                                               "misread_step":  "This is an example where the fact that the replacement is applied to the return value of `re.sub` was not reflected."
+                                                           },
+                                   "takeaway":  "A regex patch is interpreted as **pattern → replacement → source → return new string**."
+                               },
+        "target_statement":  "patched = re.sub(pattern, new_block, app)",
+        "focus_span":  "re.sub(pattern, new_block, app)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "cli_and_automation",
+        "coverage_topics":  [
+                                "regex replace",
+                                "source patch",
+                                "function block",
+                                "verification"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY17_L09_git_status_001",
+        "level":  9,
+        "title":  "Checking for untracked files in a structured `git status`",
+        "concepts":  [
+                         "membership_test",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "In a Python dictionary representing Git status results, use a membership test to determine whether a specific file is listed as untracked.",
+        "code":  "status = {\n    \"modified\": [\"src/pwa/app.js\"],\n    \"untracked\": [\"run_local_server.ps1\"],\n}\nis_untracked = \"run_local_server.ps1\" in status[\"untracked\"]",
+        "question_type":  "multiple_choice",
+        "question":  "`is_untracked` What is the value of ?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "modified",
+                        "None"
+                    ],
+        "answer":  "True",
+        "explanation":  "`status[\u0027untracked\u0027]` is a list containing a single filename, and the test string matches that item. ``in`` returns `True` because the same value exists in the list. A common source of confusion: `False`—`run_local_server.ps1` is explicitly listed in the `untracked` list. Point of Misinterpretation: This is a case where the “modified” list and the “untracked” list were confused. Git status can be interpreted by following this structure: **file → status category → membership in the corresponding list**.",
+        "side_card_ids":  [
+                              "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
+                          ],
+        "project_context":  "This connects to the flow of reading the Git working tree’s state to determine whether to include it in a commit when a new script is created.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "Git status 결과를 나타내는 Python dict에서 특정 파일이 untracked 목록에 있는지 membership test로 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`value in container` is a membership test that checks whether `value` exists within `container`.",
+                                    "how_to_read":  "First, check the container on the right and see if the same string exists as an actual item.",
+                                    "key_point":  "In Git, “untracked” refers to the state of a new file that Git has not yet registered as a tracked item.",
+                                    "common_mistake":  "It’s easy to assume that “untracked” refers to files that have already been pushed to a remote repository. On the contrary, these are files that have not yet been tracked."
+                                },
+        "teaching_example":  {
+                                 "code":  "status = {\"untracked\": [\"notes.txt\"]}\nfound = \"notes.txt\" in status[\"untracked\"]",
+                                 "walkthrough":  "Since `notes.txt` is in the untracked list, `found` is `True`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`status[\u0027untracked\u0027]` is a list containing a single filename, and the test string matches that entry.",
+                                   "why_correct":  "`in` Since the same value exists in the list, it returns True.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "`run_local_server.ps1` is explicitly listed among the untracked files.",
+                                                               "misread_step":  "This is an instance where the \"modified\" list was confused with the \"untracked\" list."
+                                                           },
+                                   "takeaway":  "Git status can be read by structuring it as **File → Status Category → Membership in the relevant list**."
+                               },
+        "target_statement":  "is_untracked = \"run_local_server.ps1\" in status[\"untracked\"]",
+        "focus_span":  "\"run_local_server.ps1\" in status[\"untracked\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "git status",
+                                "untracked",
+                                "modified",
+                                "working tree"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY17_L09_git_add_commit_push_001",
+        "level":  9,
+        "title":  "Reading the first step of the \"stage → commit → push\" workflow",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "When the steps and roles of the Git workflow are presented as an ordered list, read the first step (index 0).",
+        "code":  "workflow = [\n    {\"step\": \"stage\", \"meaning\": \"prepare files for commit\"},\n    {\"step\": \"commit\", \"meaning\": \"record staged changes\"},\n    {\"step\": \"push\", \"meaning\": \"send commits to remote\"},\n]\nfirst_step = workflow[0]",
+        "question_type":  "multiple_choice",
+        "question":  "`first_step[\"step\"]` What is the value of ?",
+        "choices":  [
+                        "stage",
+                        "commit",
+                        "push",
+                        "remote"
+                    ],
+        "answer":  "stage",
+        "explanation":  "Index 0 of a Python list is the first item, and the `step` value of the first dict is `stage`. The workflow is defined in the order `stage`, `commit`, `push`. Common wrong answer: `commit`. `commit` is the second stage at index 1. Misreading point: This happens when a zero-based index is read as one-based. When reading a Git workflow, distinguish the order and role of **stage → commit → push**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This ties into the basic Git workflow of first staging only verified files, recording them as meaningful commits, and then pushing them to a remote branch.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "Git workflow의 단계와 역할을 순서 있는 list로 표현했을 때 index 0의 첫 단계를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`sequence[index]` Reads the item at the specified position in a sequence such as a list.",
+                                    "how_to_read":  "Calculate the actual step number by applying the fact that Python indices start at 0.",
+                                    "key_point":  "In the basic Git workflow, “staging”—which corresponds to “add”—comes before “commit,” followed by “push” to share the changes remotely.",
+                                    "common_mistake":  "It’s easy to interpret index 0 as the second item or to think that `push` is the first step."
+                                },
+        "teaching_example":  {
+                                 "code":  "steps = [\"prepare\", \"save\", \"share\"]\nfirst = steps[0]",
+                                 "walkthrough":  "Since index 0 is the first item, “first” refers to “prepare.”"
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "In a Python list, index 0 refers to the first item, and the `step` value in the first dict refers to the stage.",
+                                   "why_correct":  "This is because the workflow is defined in the order of stage, commit, and push.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "commit",
+                                                               "why_wrong":  "`commit` is the second step at index 1.",
+                                                               "misread_step":  "This is an example of interpreting a 0-based index as a 1-based index."
+                                                           },
+                                   "takeaway":  "When reading about the Git workflow, distinguish between **the order of “stage → commit → push” and the roles involved**."
+                               },
+        "target_statement":  "first_step = workflow[0]",
+        "focus_span":  "workflow[0]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "git add",
+                                "commit",
+                                "push",
+                                "staging",
+                                "workflow"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY17_L09_gitignore_reports_001",
+        "level":  9,
+        "title":  "Check the `reports/` exclusion rule in the gitignore list.",
+        "concepts":  [
+                         "membership_test",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "It uses a membership test to check whether the `reports/` rule exists in the structured list of `.gitignore` entries.",
+        "code":  "gitignore_entries = [\"__pycache__/\", \".venv/\", \"reports/\"]\nis_ignored = \"reports/\" in gitignore_entries",
+        "question_type":  "multiple_choice",
+        "question":  "`is_ignored` What is the value of ?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "reports/",
+                        "None"
+                    ],
+        "answer":  "True",
+        "explanation":  "Since `reports/` is an actual item in the `gitignore_entries` list, the membership test returns True. This is because `in` returns True when the same value is present in the container. A common source of confusion: False—`reports/` is explicitly included in the list in the question. Common misreading: This occurs when the items in the right-hand list are not checked all the way to the end. The Git ignore condition can also be interpreted as **rule string → list membership**.",
+        "side_card_ids":  [
+                              "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
+                          ],
+        "project_context":  "This connects to a flow that manages ignore rules so local files such as validation artifacts are not added to Git.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "구조화한 .gitignore 항목 목록에서 reports/ 규칙이 존재하는지 membership test로 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`value in container` is a membership test that checks whether the same value exists inside the container.",
+                                    "how_to_read":  "Compare the string on the left with the items in the list on the right.",
+                                    "key_point":  "The purpose of adding `reports/` to the ignore list is to exclude files such as local validation outputs from Git tracking.",
+                                    "common_mistake":  "It is easy to assume that the `ignore` rule actually deletes the folder. This rule affects whether the folder is tracked by Git."
+                                },
+        "teaching_example":  {
+                                 "code":  "ignore_entries = [\"tmp/\", \"logs/\"]\nis_ignored = \"logs/\" in ignore_entries",
+                                 "walkthrough":  "Since `logs/` is in the list, `is_ignored` is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`reports/` Since ``gitignore_entries`` is an actual item in the list, the membership test returns `True`.",
+                                   "why_correct":  "This is because `in` returns True when the same value is present in the container.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "The \"reports/\" directory is explicitly included in the list of problems.",
+                                                               "misread_step":  "This is a case where you haven’t checked all the items in the list on the right."
+                                                           },
+                                   "takeaway":  "The Git ignore status can also be interpreted as **\"rule string → list membership\"**."
+                               },
+        "target_statement":  "is_ignored = \"reports/\" in gitignore_entries",
+        "focus_span":  "\"reports/\" in gitignore_entries",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "gitignore",
+                                "reports",
+                                "untracked",
+                                "git"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY17_L10_loading_stuck_debug_001",
+        "level":  10,
+        "title":  "Evaluate `and` and `not` in order in the Loading diagnostic condition",
+        "concepts":  [
+                         "boolean_operation",
+                         "if_statement",
+                         "name_reference",
+                         "assignment"
+                     ],
+        "reading_goal":  "`A and not B` In terms of syntax, the left-hand condition is checked first, and if necessary, the right-hand expression ``not`` is evaluated to determine the overall truth value.",
+        "code":  "index_requested = True\napp_js_requested = False\ndata_json_failed = False\n\nif index_requested and not app_js_requested:\n    cause = \"check script loading path\"\nelif app_js_requested and data_json_failed:\n    cause = \"check data loading path\"\nelse:\n    cause = \"check console\"\n\nprint(cause)",
+        "question_type":  "output_prediction",
+        "question":  "What is the result of `index_requested and not app_js_requested`?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "index_requested",
+                        "app_js_requested"
+                    ],
+        "answer":  "True",
+        "explanation":  "1) `index_requested` is True. 2) Since the left side of `and` is true, the right side is evaluated. 3) `app_js_requested` is False. 4) ``not False`` is True. 5) Therefore, the result of ``True and True`` is True.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "When narrowing down the point where the loading screen froze to the request status, it connects to the flow of reading multiple Boolean diagnostic conditions together.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "boolean_operation",
+        "reading_goal_internal":  "`A and not B` 형태에서 왼쪽 조건을 먼저 확인하고 필요한 경우 오른쪽 `not` 표현식을 평가해 전체 참·거짓을 결정한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`and` is a logical operator that evaluates to true only when both conditions are true.",
+                                    "how_to_read":  "`A and B` evaluates A on the left first. If A is true, it then evaluates B on the right to verify that both results are true.",
+                                    "key_point":  "The right-hand side of this card is not a simple variable value but `not app_js_requested`. **The result of checking the value of app_js_requested and inverting it with `not`** becomes the value on the right side of `and`.",
+                                    "common_mistake":  "It’s easy to jump to the conclusion that the entire condition is False just because `app_js_requested` is False. However, since there is an ``not`` before it, the result on the right changes to True."
+                                },
+        "teaching_example":  {
+                                 "code":  "page_ok = True\nscript_ok = False\nready_to_debug = page_ok and not script_ok\nprint(ready_to_debug)",
+                                 "walkthrough":  "On the left, `page_ok` is True, and since `not script_ok` is `not False`, it is also True; therefore, the overall `and` result is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `index_requested` is True. 2) Since the left side of `and` is true, the right side is evaluated. 3) `app_js_requested` is False. 4) ``not False`` is True. 5) Therefore, the result of ``True and True`` is True.",
+                                   "why_correct":  "If the two logical operands are evaluated in the actual order of evaluation, both result in True, so the overall result is also True.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "The original value of `app_js_requested` is `False`, but the preceding ``not`` flips that value to `True`.",
+                                                               "misread_step":  "`and` We calculate separately what Boolean value each operand ultimately becomes."
+                                                           },
+                                   "takeaway":  "When reading `and`, follow the order: **left-hand side result → right-hand side expression result → combination of the two values**."
+                               },
+        "target_statement":  "index_requested and not app_js_requested",
+        "focus_span":  "index_requested and not app_js_requested",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "exceptions_debugging",
+        "coverage_topics":  [
+                                "loading_debug",
+                                "request_state",
+                                "browser_cache",
+                                "diagnostic_branch"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY17_L10_side_card_field_bug_001",
+        "level":  10,
+        "title":  "Predicting a KeyError when reading a non-existent side-card field using dict brackets",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Compare the actual keys in the dict with the key inside the square brackets to determine whether looking up a missing key leads to `KeyError`.",
+        "code":  "side_card = {\n    \"summary\": \"핵심 요약\",\n    \"detail\": \"자세한 설명\",\n}\n\nbody = side_card[\"body\"]\nprint(body)",
+        "question_type":  "meaning_choice",
+        "question":  "What is the result when this code evaluates ``side_card[\"body\"]``?",
+        "choices":  [
+                        "KeyError",
+                        "Key Summary",
+                        "Detailed Explanation",
+                        "Empty string"
+                    ],
+        "answer":  "KeyError",
+        "explanation":  "1) The keys of `side_card` are `summary` and `detail`. 2) On the right-hand side of the assignment statement, ``side_card[\"body\"]`` is evaluated first. 3) The system searches for the `body` key but finds that it does not exist. 4) In this case, accessing a dictionary using square brackets raises a `KeyError`. 5) Therefore, the value cannot be stored in the `body` variable, and the execution does not proceed to the `print` statement.",
+        "side_card_ids":  [
+                              "PYV102_A9_RUNTIME_PERFORMANCE_LIST"
+                          ],
+        "project_context":  "side-card This is connected to the workflow that detects data contract errors before the screen is displayed when the data schema and the renderer expect different field names.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "딕셔너리의 실제 key 목록과 대괄호 안의 key를 비교해 존재하지 않는 key 조회가 KeyError로 이어지는지 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The `mapping[key]` form of dictionary bracket access directly retrieves the value associated with the specified key.",
+                                    "how_to_read":  "First, check which keys are actually present in the dictionary, and find the entry that exactly matches the key inside the square brackets.",
+                                    "key_point":  "If you read a dict key that does not exist within square brackets, a **KeyError** will occur instead of the system automatically finding a similar field.",
+                                    "common_mistake":  "Since there are values in both `summary` and `detail`, it’s easy to assume that reading the `body` will automatically select one of them. However, a `dict` does not return the value of a different key."
+                                },
+        "teaching_example":  {
+                                 "code":  "profile = {\"name\": \"Mina\"}\ncity = profile[\"city\"]",
+                                 "walkthrough":  "Since the `profile` dictionary does not contain a \"city\" key, a KeyError occurs when `profile[\"city\"]` is evaluated."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The keys of `side_card` are `summary` and `detail`. 2) On the right-hand side of the assignment statement, ``side_card[\"body\"]`` is evaluated first. 3) The system searches for the `body` key but finds that it does not exist. 4) In this case, accessing a dictionary using square brackets raises a `KeyError`. 5) Therefore, the value cannot be stored in the `body` variable, and the execution does not proceed to the `print` statement.",
+                                   "why_correct":  "A `KeyError` occurs because the key, which is not found in the actual dictionary, is being looked up directly using square brackets.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Key Summary",
+                                                               "why_wrong":  "The summary key’s value is the core summary, and body lookups do not automatically fall back to the summary.",
+                                                               "misread_step":  "Directly compare the exact key strings inside the square brackets with the actual list of dict keys."
+                                                           },
+                                   "takeaway":  "A `dict` subscription may **find the exact key, and if it does not exist, a KeyError** may occur."
+                               },
+        "target_statement":  "body = side_card[\"body\"]",
+        "focus_span":  "side_card[\"body\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "side_card",
+                                "field_mismatch",
+                                "rendering_contract",
+                                "schema_bug"
+                            ],
+        "pedagogical_intent":  "predict_exception"
+    },
+    {
+        "id":  "PY17_L10_safe_render_fallback_001",
+        "level":  10,
+        "title":  "or Selecting the first truthy side-card field in the chain as the fallback value",
+        "concepts":  [
+                         "boolean_operation",
+                         "call",
+                         "attribute_access",
+                         "literal"
+                     ],
+        "reading_goal":  "or Read the flow where the operands in the chain are evaluated from left to right, skipping falsy values and selecting the first truthy value as the result of the entire expression.",
+        "code":  "side_card = {\n    \"body\": \"\",\n    \"summary\": \"핵심 요약\",\n    \"detail\": \"자세한 설명\",\n}\n\ntext = side_card.get(\"body\") or side_card.get(\"summary\") or side_card.get(\"detail\") or \"\"\nprint(text)",
+        "question_type":  "meaning_choice",
+        "question":  "What is the result of this `body` chain when `summary` is an empty string and `핵심 요약` is `or`?",
+        "choices":  [
+                        "Empty string",
+                        "Key Summary",
+                        "Detailed Explanation",
+                        "None"
+                    ],
+        "answer":  "Key Summary",
+        "explanation":  "1) The result of the `body` lookup is an empty string \"\". 2) Since an empty string is falsy, the `or` operator evaluates the next value. 3) The result of the `summary` lookup is \"Key Summary\". 4) A non-empty string is truthy, so this value becomes the result of the entire OR expression. 5) Therefore, the \"key summary\" is stored in `text`.",
+        "side_card_ids":  [
+                              "PYV102_A9_RUNTIME_PERFORMANCE_LIST"
+                          ],
+        "project_context":  "It is connected to a compatible rendering flow that selects the first displayable text—from “body,” “summary,” or “detail”—from multiple versions of side-card data.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "boolean_operation",
+        "reading_goal_internal":  "or 체인의 피연산자를 왼쪽부터 평가해 falsy 값은 건너뛰고 첫 truthy 값을 전체 표현식의 결과로 선택하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "In Python, the ``or`` evaluates values from left to right and uses the first truthy value it encounters as the result of the expression.",
+                                    "how_to_read":  "In `a or b or c`, the actual value of `a` is checked first; if it is falsy, the execution proceeds to `b`. If a truthy value is encountered, that value becomes the result, and the rest of the expression is not evaluated.",
+                                    "key_point":  "`or` The result of an expression is not always just True or False; it can be **one of the operands\u0027 actual values**.",
+                                    "common_mistake":  "It’s easy to assume that an empty string is returned immediately because it is a string. However, an empty string is falsy, so the program moves on to the next candidate."
+                                },
+        "teaching_example":  {
+                                 "code":  "record = {\"title\": \"\", \"summary\": \"요약\"}\ntext = record.get(\"title\") or record.get(\"summary\") or \"없음\"\nprint(text)",
+                                 "walkthrough":  "Since the `title` is an empty string, it is skipped, and the summary becomes the first truthy value and is stored in `text`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The result of the `body` lookup is an empty string \"\". 2) Since an empty string is falsy, the `or` operator evaluates the next value. 3) The result of the `summary` lookup is \"Key Summary\". 4) A non-empty string is truthy, so this value becomes the result of the entire OR expression. 5) Therefore, the \"key summary\" is stored in `text`.",
+                                   "why_correct":  "The summary value is selected according to the evaluation rule “`or`,” which finds the first truthy value from the left.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Empty string",
+                                                               "why_wrong":  "Since an empty string is falsy, the `or` operator does not stop there but proceeds to the next operand.",
+                                                               "misread_step":  "You must evaluate not only each candidate value, but also whether it is truthy or falsy."
+                                                           },
+                                   "takeaway":  "An `or` fallback **evaluates from the left, skips falsy values, and uses the first actual truthy value as the result**."
+                               },
+        "target_statement":  "side_card.get(\"body\") or side_card.get(\"summary\") or side_card.get(\"detail\") or \"\"",
+        "focus_span":  "side_card.get(\"body\") or side_card.get(\"summary\") or side_card.get(\"detail\") or \"\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "render_fallback",
+                                "side_card",
+                                "field_compatibility",
+                                "truthy_value"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY17_L10_pwa_deploy_address_001",
+        "level":  10,
+        "title":  "Choose between a public URL and a local URL depending on whether the app is deployed.",
+        "concepts":  [
+                         "conditional_expression",
+                         "name_reference",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "`A if condition else B` It first evaluates the condition and, based on the result, selects one of the two candidates—the value that represents the actual result.",
+        "code":  "public_url = \"https://example.github.io/python-reading-trainer/\"\nlocal_url = \"http://localhost:8790/src/pwa/index.html\"\ndeployed = True\n\nactive_url = public_url if deployed else local_url\nprint(active_url)",
+        "question_type":  "meaning_choice",
+        "question":  "What is the result of the conditional expression when `deployed` is True?",
+        "choices":  [
+                        "https://example.github.io/python-reading-trainer/",
+                        "http://localhost:8790/src/pwa/index.html",
+                        "True",
+                        "Both URLs"
+                    ],
+        "answer":  "https://example.github.io/python-reading-trainer/",
+        "explanation":  "1) `deployed` is set to `True`. 2) ``A if condition else B`` evaluates the conditions starting from the middle one. 3) Since the condition is `True`, it selects the `public_url` preceding the `if` statement. 4) The public Pages URL pointed to by `public_url` is stored in `active_url`. 5) Therefore, the final output is also a public URL.",
+        "side_card_ids":  [
+                              "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
+                          ],
+        "project_context":  "It links to configuration code that allows you to select either the published GitHub Pages URL or the local development server URL, depending on your environment.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "conditional_expression",
+        "reading_goal_internal":  "`A if condition else B`에서 조건을 먼저 평가하고 그 결과에 따라 두 후보 중 실제 결과가 되는 값 하나를 선택한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A conditional expression takes the form `A if condition else B` and selects either A (if the condition is true) or B (if the condition is false) as a single value.",
+                                    "how_to_read":  "First, check the current value of the middle condition; if it is True, the result is A on the left; if it is False, the result is B on the right.",
+                                    "key_point":  "Unlike an `if` statement, which executes a separate block, **the entire expression produces a single value.**",
+                                    "common_mistake":  "Since both URLs appear in the code, it’s easy to assume that both are used. However, only one is selected based on the condition’s result."
+                                },
+        "teaching_example":  {
+                                 "code":  "prod = \"https://example.com/app\"\nlocal = \"http://localhost:8000\"\nuse_prod = False\nurl = prod if use_prod else local\nprint(url)",
+                                 "walkthrough":  "Since `use_prod` is False, the `local` option following the `else` statement is selected, and the `localhost` URL is stored in `url`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `deployed` is set to `True`. 2) ``A if condition else B`` evaluates the conditions starting from the middle one. 3) Since the condition is `True`, it selects the `public_url` preceding the `if` statement. 4) The public Pages URL pointed to by `public_url` is stored in `active_url`. 5) Therefore, the final output is also a public URL.",
+                                   "why_correct":  "Since the condition is True, `public_url`, the first candidate in the conditional expression, becomes the result.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "http://localhost:8790/src/pwa/index.html",
+                                                               "why_wrong":  "`local_url` is the value selected in the `else` branch when `deployed` is `False`.",
+                                                               "misread_step":  "First, determine the conditional value, then check whether the code before the `if` statement or the code after the `else` statement is executed."
+                                                           },
+                                   "takeaway":  "Conditional expressions are read in the following order: **check the condition → select one of the values → that value becomes the result of the expression**."
+                               },
+        "target_statement":  "public_url if deployed else local_url",
+        "focus_span":  "public_url if deployed else local_url",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "github_pages",
+                                "deployment_url",
+                                "localhost",
+                                "environment_selection"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY17_L10_service_recovery_habit_001",
+        "level":  10,
+        "title":  "Read the first step at index 0 in the recovery procedure list",
+        "concepts":  [
+                         "subscription",
+                         "literal",
+                         "assignment"
+                     ],
+        "reading_goal":  "Using the fact that index 0 in a list refers to the first recovery step, read the result of the bracket access.",
+        "code":  "recovery_steps = [\n    \"inspect failed diff\",\n    \"revert experiment only\",\n    \"validate data\",\n    \"check browser\",\n    \"commit recovery\",\n]\n\nfirst_step = recovery_steps[0]\nprint(first_step)",
+        "question_type":  "output_prediction",
+        "question":  "What value does `recovery_steps[0]` return?",
+        "choices":  [
+                        "inspect failed diff",
+                        "revert experiment only",
+                        "validate data",
+                        "0"
+                    ],
+        "answer":  "inspect failed diff",
+        "explanation":  "1) `recovery_steps` contains five strings in order. 2) The first item in the list is at index 0. 3) ``recovery_steps[0]`` returns the first string, ``inspect failed diff``. 4) That value is stored in `first_step`. 5) `print` outputs the same string.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to the context of implementing a recovery checklist in code—which involves checking the diff, performing minimal recovery, and verifying the results—when an experimental patch fails.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "리스트의 0번 인덱스가 첫 번째 복구 단계를 가리킨다는 점을 이용해 대괄호 접근 결과를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`items[index]` in a list is a bracket access that retrieves a single item at the specified position.",
+                                    "how_to_read":  "First, check the order of the items in the list, and find the requested position using the rule that Python indices start at 0.",
+                                    "key_point":  "`[0]` \"0th item\" does not refer to \"the 0th item\" but rather to the **first item** as counted by a person.",
+                                    "common_mistake":  "It is easier to read the first item as `[1]`. In a Python list, `[1]` refers to the second item."
+                                },
+        "teaching_example":  {
+                                 "code":  "steps = [\"inspect\", \"repair\", \"verify\"]\nfirst = steps[0]\nprint(first)",
+                                 "walkthrough":  "Since index 0 is the first item in the list, `inspect` is stored in `first`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `recovery_steps` contains five strings in order. 2) The first item in the list is at index 0. 3) ``recovery_steps[0]`` returns the first string, ``inspect failed diff``. 4) That value is stored in `first_step`. 5) `print` outputs the same string.",
+                                   "why_correct":  "Since index 0 is the first item in the list, the correct answer is ``inspect failed diff``.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "revert experiment only",
+                                                               "why_wrong":  "Since that string is the second item, it is at index 1.",
+                                                               "misread_step":  "Distinguish between human counting order and Python indices, which start at 0."
+                                                           },
+                                   "takeaway":  "A sequence subscription **retrieves a single item using an index starting at 0.**"
+                               },
+        "target_statement":  "recovery_steps[0]",
+        "focus_span":  "recovery_steps[0]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "exceptions_debugging",
+        "coverage_topics":  [
+                                "rollback",
+                                "recovery",
+                                "git_diff",
+                                "debugging_sequence"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    }
 ]

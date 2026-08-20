@@ -1,437 +1,1005 @@
 [
-  {
-    "id": "PY23_L07_github_pages_url_001",
-    "level": 7,
-    "title": "Understanding GitHub Pages Fixed URLs",
-    "concepts": [
-      "comment",
-      "github_pages",
-      "deploy",
-      "static_site",
-      "url"
-    ],
-    "reading_goal": "I understand that the GitHub Pages URL is fixed and that only the content is updated after a push.",
-    "code": "# Example repository URL\nhttps://github.com/<account>/<repository>\n\n# Example project Pages URL\nhttps://<account>.github.io/<repository>/",
-    "question_type": "meaning_choice",
-    "question": "What happens to the URL after deploying a new commit while keeping the account, repository name, and Pages settings?",
-    "choices": [
-      "A completely new address appears every time",
-      "It changes to localhost",
-      "The deployed content normally updates at the same address",
-      "It is always deleted"
-    ],
-    "answer": "The deployed content normally updates at the same address",
-    "explanation": "With the same account, repository, and Pages settings, a normal new deployment updates content at the same public URL. Renaming the repository or account or changing the custom domain or Pages source can change it. A project site includes the repository base path, so verify root-relative and relative asset paths at the actual deployed URL.",
-    "side_card_ids": [
-      "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
-    ],
-    "project_context": "This card distinguishes a local development URL from a public GitHub Pages project URL."
-  },
-  {
-    "id": "PY23_L07_static_loading_order_001",
-    "level": 7,
-    "title": "Understanding the Loading Order of Static Apps",
-    "concepts": [
-      "html",
-      "css",
-      "javascript",
-      "static_loading"
-    ],
-    "reading_goal": "Understand the process by which the browser loads CSS and JavaScript from index.html.",
-    "code": "<link rel=\"stylesheet\" href=\"style.css?v=20260529_force1\" />\n<script src=\"app.js?v=20260529_force1\" defer></script>",
-    "question_type": "meaning_choice",
-    "question": "How is app.js loaded in this HTML snippet?",
-    "choices": [
-      "It is automatically generated within CSS",
-      "It loads from the Git commit message",
-      "It is loaded via the `src` attribute of the `script` tag",
-      "The browser always ignores it"
-    ],
-    "answer": "It is loaded via the `src` attribute of the `script` tag",
-    "explanation": "link requests the stylesheet, and the script src requests JavaScript. A defer script downloads in parallel with HTML parsing and executes in document order after parsing finishes but before DOMContentLoaded. A stylesheet can block rendering, and a deferred script may wait for a stylesheet needed for style calculation, so this does not guarantee that initial display is never delayed.",
-    "side_card_ids": [
-      "PYV161_A1_ROLLBACK_SEPARATION_UI_FLOW"
-    ],
-    "project_context": "This is why we check whether the index page has opened and whether app.js has been requested when \"Loading...\" stops."
-  },
-  {
-    "id": "PY23_L08_cache_bust_asset_001",
-    "level": 8,
-    "title": "Reading About Static Resource Cache Busting",
-    "concepts": [
-      "cache_bust",
-      "query_string",
-      "browser_cache",
-      "asset"
-    ],
-    "reading_goal": "Understand the mechanism of bypassing the cache by appending a version query to CSS/JS URLs.",
-    "code": "style.css?v=20260529_force1\napp.js?v=20260529_force1",
-    "question_type": "meaning_choice",
-    "question": "Why is “?v=20260529_force1” added?",
-    "choices": [
-      "To permanently change the file name",
-      "I want to change the server port",
-      "To make the browser recognize it as a different URL from the previous file",
-      "I want to delete the HTML"
-    ],
-    "answer": "To make the browser recognize it as a different URL from the previous file",
-    "explanation": "Changing the query changes the full URL, which ordinary browser and CDN caches may treat as a separate resource key. This can cause a new asset request, but it is not guaranteed if the server, CDN, or service worker ignores queries. A content hash or consistent version policy is easier to trace than arbitrary per-deployment text.",
-    "side_card_ids": [
-      "PYV102_A7_PWA_OFFLINE_UPDATE"
-    ],
-    "project_context": "This is a versioned-asset URL pattern for reducing reuse of stale JavaScript and CSS after deployment."
-  },
-  {
-    "id": "PY23_L08_data_version_fetch_001",
-    "level": 8,
-    "title": "Adding a version number to data fetches",
-    "concepts": [
-      "return",
-      "fetch",
-      "data_version",
-      "json",
-      "cache_bust"
-    ],
-    "reading_goal": "Read the function that appends APP_DATA_VERSION to the JSON requests for \"lesson\" and \"side card.\"",
-    "code": "const APP_DATA_VERSION = \"20260529_v22\";\nfunction withDataVersion(path) {\n  if (path.indexOf(\"?\") >= 0) return path + \"&v=\" + APP_DATA_VERSION;\n  return path + \"?v=\" + APP_DATA_VERSION;\n}",
-    "question_type": "meaning_choice",
-    "question": "If the path in the data fetch URL already contains a \"?\", why do we add \"&v=\"?",
-    "choices": [
-      "Just to trigger an error",
-      "To compress a file",
-      "Since the second query parameter and all subsequent ones must be separated by &,",
-      "To close the browser"
-    ],
-    "answer": "Since the second query parameter and all subsequent ones must be separated by &,",
-    "explanation": "The first query parameter in an ordinary URL starts with ?, and later parameters use &, so the function appends &v= when a query already exists. String concatenation can place a parameter after a #fragment or duplicate an existing v. URL and URLSearchParams.set(\"v\", APP_DATA_VERSION) preserve the URL structure and replace the value more safely.",
-    "side_card_ids": [
-      "PYV158_A1_JSON_FLOW"
-    ],
-    "project_context": "This cache-refresh structure adds a data version to lesson JSON requests."
-  },
-  {
-    "id": "PY23_L08_http_log_304_001",
-    "level": 8,
-    "title": "Interpreting the 304 Log",
-    "concepts": [
-      "http_status",
-      "304",
-      "cache",
-      "network_log"
-    ],
-    "reading_goal": "Understand that a 304 in the server logs is not an error but a cache-related response.",
-    "code": "127.0.0.1 \"GET /src/pwa/index.html HTTP/1.1\" 304 -\n127.0.0.1 \"GET /src/pwa/app.js?v=20260529_force1 HTTP/1.1\" 200 -",
-    "question_type": "meaning_choice",
-    "question": "What is a 304 in index.html?",
-    "choices": [
-      "A response indicating that the file was deleted",
-      "A response indicating that the server is down",
-      "Responses indicating that it is acceptable to use the browser cache",
-      "Response indicating lack of authority"
-    ],
-    "answer": "Responses indicating that it is acceptable to use the browser cache",
-    "explanation": "304 Not Modified follows a conditional request containing a validator; the server says the resource has not changed and omits the body. The browser can use its cached body. This is not an error, but the status alone does not prove that the cached body is the intended deployment or that a service worker did not supply another response.",
-    "side_card_ids": [
-      "PL_cache_001"
-    ],
-    "project_context": "This is a practical exercise in distinguishing between 304 and 200 errors in local server validation logs."
-  },
-  {
-    "id": "PY23_L09_fetch_json_fail_001",
-    "level": 9,
-    "title": "Reading About Handling JSON Fetch Failures",
-    "concepts": [
-      "if",
-      "return",
-      "fetch",
-      "json",
-      "error_handling",
-      "http_status"
-    ],
-    "reading_goal": "Read the code that throws a clear error if the fetch response fails.",
-    "code": "async function loadJson(path) {\n  const res = await fetch(withDataVersion(path));\n  if (!res.ok) throw new Error(\"failed to load \" + path + \": \" + res.status);\n  return await res.json();\n}",
-    "question_type": "meaning_choice",
-    "question": "What happens if `res.ok` is false?",
-    "choices": [
-      "Always returns an empty array",
-      "Automatically generates a file",
-      "It throws an error and does not proceed to JSON parsing",
-      "Clear the browser cache"
-    ],
-    "answer": "It throws an error and does not proceed to JSON parsing",
-    "explanation": "When res.ok is false, the function throws and does not run res.json. Even with a 2xx response, invalid JSON makes res.json reject, while a network error rejects fetch before a response exists. The caller should catch both categories, display safe path and error context, and avoid leaving the entire app on an endless Loading state.",
-    "side_card_ids": [
-      "PYV158_A1_JSON_FLOW"
-    ],
-    "project_context": "This is necessary to identify the cause of the entire app's loading process stopping when a single JSON file returns a 404 error."
-  },
-  {
-    "id": "PY23_L09_promise_all_001",
-    "level": 9,
-    "title": "Reading the \"Promise.all\" Lesson",
-    "concepts": [
-      "promise_all",
-      "fetch",
-      "async",
-      "json"
-    ],
-    "reading_goal": "Understand the structure for loading multiple lesson files in parallel and the characteristics of failures.",
-    "code": "const lessonArrays = await Promise.all(\n  lessonFiles.map((path) => loadJson(path))\n);\nconst cards = lessonArrays.flat();",
-    "question_type": "meaning_choice",
-    "question": "What are the features of `Promise.all`?",
-    "choices": [
-      "I always ignore failure",
-      "Commit the array to the auto-save",
-      "If even one of the requests fails, the entire process may fail.",
-      "Deletes files in no particular order"
-    ],
-    "answer": "If even one of the requests fails, the entire process may fail.",
-    "explanation": "map creates each loadJson promise, and Promise.all resolves with results in input order only after every promise fulfills. One rejection rejects the overall await, but it does not automatically cancel other fetches that have started. Use fail-fast behavior for required files and Promise.allSettled or per-item fallback for optional ones according to policy.",
-    "side_card_ids": [
-      "PYV158_A1_JSON_FLOW"
-    ],
-    "project_context": "This is why the app may get stuck on \"Loading\" if you add a file that isn't in `lessonFiles`."
-  },
-  {
-    "id": "PY23_L09_localstorage_progress_001",
-    "level": 9,
-    "title": "Saving and Reading Progress in localStorage",
-    "concepts": [
-      "localStorage",
-      "progress",
-      "json",
-      "browser_storage"
-    ],
-    "reading_goal": "Read the structure that saves learning progress in the browser.",
-    "code": "const progress = { seen: [\"PY1_001\"], unknown: [] };\nlocalStorage.setItem(\"ptr_progress\", JSON.stringify(progress));",
-    "question_type": "meaning_choice",
-    "question": "Why use `JSON.stringify(progress)`?",
-    "choices": [
-      "To compress an object into a file",
-      "To delete the progress",
-      "To convert an object into a string that can be stored in localStorage,",
-      "To install a new browser"
-    ],
-    "answer": "To convert an object into a string that can be stored in localStorage,",
-    "explanation": "localStorage stores strings, so JSON.stringify serializes the object to a JSON string. The data remains in origin-specific browser storage and is readable by scripts on that origin, so it is unsuitable for secrets or sensitive personal data. The synchronous API can block the UI for large frequent writes, and setItem may fail because of quota, private mode, or storage policy.",
-    "side_card_ids": [
-      "PYV158_A1_JSON_FLOW"
-    ],
-    "project_context": "This is how the \"Study,\" \"Don't Know,\" \"Note,\" and \"Today's Queue\" statuses are saved in the browser."
-  },
-  {
-    "id": "PY23_L09_localstorage_load_001",
-    "level": 9,
-    "title": "Loading localStorage: Fallback Reading",
-    "concepts": [
-      "localStorage",
-      "fallback",
-      "JSON.parse",
-      "browser_storage"
-    ],
-    "reading_goal": "Reads a structure that uses a default value when no value is stored.",
-    "code": "const raw = localStorage.getItem(\"ptr_progress\");\nconst progress = raw ? JSON.parse(raw) : { seen: [], unknown: [] };",
-    "question_type": "meaning_choice",
-    "question": "If there is no \"raw,\" what is \"progress\"?",
-    "choices": [
-      "null",
-      "\"ptr_progress\"",
-      "{ seen: [], unknown: [] }",
-      "Error"
-    ],
-    "answer": "{ seen: [], unknown: [] }",
-    "explanation": "When raw is null, the conditional expression selects the default object, matching the answer. If raw exists but contains invalid JSON, JSON.parse throws; this code has no fallback for corruption. A safe loader catches parse errors, validates the parsed schema, records the problem, and deliberately selects a default.",
-    "side_card_ids": [
-      "WEB_localstorage_001"
-    ],
-    "project_context": "This code ensures that even users opening the app for the first time start with an empty progress bar."
-  },
-  {
-    "id": "PY23_L10_manifest_json_001",
-    "level": 10,
-    "title": "Reading the PWA manifest.json File",
-    "concepts": [
-      "pwa",
-      "manifest",
-      "install",
-      "web_app"
-    ],
-    "reading_goal": "I understand that PWA installation information is contained in `manifest.json`.",
-    "code": "{\n  \"name\": \"Python Reading Trainer\",\n  \"short_name\": \"PyReader\",\n  \"start_url\": \"./index.html\",\n  \"display\": \"standalone\"\n}",
-    "question_type": "meaning_choice",
-    "question": "Which of the following most closely matches the meaning of \"display: standalone\"?",
-    "choices": [
-      "Always run it only on the server",
-      "Delete the JSON",
-      "Makes the browser run like an app with a less visible UI",
-      "Disable all caching"
-    ],
-    "answer": "Makes the browser run like an app with a less visible UI",
-    "explanation": "display=\"standalone\" requests a standalone presentation with reduced browser UI when an installed app opens and the platform supports it. It does not by itself guarantee installability or presentation mode and may fall back by browser or platform. Verify name, icons, start_url, scope, and installation criteria such as HTTPS and service-worker support too.",
-    "side_card_ids": [
-      "WEB_pwa_001"
-    ],
-    "project_context": "It’s designed to be pinned to the phone’s home screen just like a learning app."
-  },
-  {
-    "id": "PY23_L10_service_worker_concept_001",
-    "level": 10,
-    "title": "Understanding the Service Worker Cache Concept",
-    "concepts": [
-      "service_worker",
-      "cache",
-      "offline",
-      "pwa"
-    ],
-    "reading_goal": "I understand that a service worker can act as an intermediary between network requests and the cache.",
-    "code": "self.addEventListener(\"fetch\", (event) => {\n  event.respondWith(\n    caches.match(event.request).then((cached) => cached || fetch(event.request))\n  );\n});",
-    "question_type": "meaning_choice",
-    "question": "What happens if there is a cache?",
-    "choices": [
-      "It always returns a 404.",
-      "Clear all cache",
-      "It can return a cached response instead of accessing the network.",
-      "Shutting Down GitHub Pages"
-    ],
-    "answer": "It can return a cached response instead of accessing the network.",
-    "explanation": "If caches.match finds a response, this cache-first flow returns it without going to the network. The snippet does not populate the cache or implement versioning, deletion, or a network-failure fallback. Cache-first is fast and useful offline but can serve stale assets for a long time, so install/activate version migration and update messaging are needed.",
-    "side_card_ids": [
-      "PYV160_A1_PWA_STATE_STORAGE_FLOW"
-    ],
-    "project_context": "If the PWA cache is strong, you may still see the old code even after changing app.js."
-  },
-  {
-    "id": "PY23_L10_devtools_network_001",
-    "level": 10,
-    "title": "DevTools Network Checkpoints",
-    "concepts": [
-      "devtools",
-      "network",
-      "debugging",
-      "http_status"
-    ],
-    "reading_goal": "Learn how to use the browser's Network tab to see which files were actually loaded.",
-    "code": "Network tab check:\n- index.html status\n- app.js status and query version\n- style.css status\n- lesson JSON status\n- side_cards JSON status",
-    "question_type": "meaning_choice",
-    "question": "What should you inspect in Network when investigating a stuck Loading screen?",
-    "choices": [
-      "Monitor brightness",
-      "A GitHub profile photo",
-      "The status, response, and version of app.js and JSON requests",
-      "Keyboard input language"
-    ],
-    "answer": "The status, response, and version of app.js and JSON requests",
-    "explanation": "In Network, inspect the request URL, status, response body, initiator, and cache or service-worker indicators. A 200 does not prove that JavaScript ran or JSON parsed, and a 304 can be normal cache validation. Connect this evidence with Console errors and application state to locate the stalled stage.",
-    "side_card_ids": [],
-    "project_context": "By checking the server logs and the browser's Network tab at the same time, you can quickly narrow down the cause of cache, 404, and JavaScript errors."
-  },
-  {
-    "id": "PY23_L10_devtools_console_001",
-    "level": 10,
-    "title": "Reading Errors in the DevTools Console",
-    "concepts": [
-      "devtools",
-      "console",
-      "javascript_error",
-      "debugging"
-    ],
-    "reading_goal": "I understand that console errors provide the filename, line number, and message.",
-    "code": "Uncaught SyntaxError: Unexpected token '}'\n    at app.js?v=20260529_force1:312:5",
-    "question_type": "meaning_choice",
-    "question": "Where should I check first for this error?",
-    "choices": [
-      "The first line of style.css",
-      "GitHub README",
-      "Around line 312 in app.js",
-      "manifest icon"
-    ],
-    "answer": "Around line 312 in app.js",
-    "explanation": "The stack location makes line 312, column 5 of app.js the first place to inspect. A parser may detect a SyntaxError after the actual missing quote or brace, so the cause can be on an earlier line. For a generated or minified bundle, use source maps, and inspect the recent diff and syntax validation around the reported location.",
-    "side_card_ids": [],
-    "project_context": "It is important to check whether the parentheses are broken after replacing a function block."
-  },
-  {
-    "id": "PY23_L10_mobile_layout_001",
-    "level": 10,
-    "title": "Reading CSS for Mobile Screens",
-    "concepts": [
-      "responsive",
-      "css",
-      "media_query",
-      "mobile"
-    ],
-    "reading_goal": "I'm reading about CSS that changes the layout when the screen width is narrow.",
-    "code": "@media (max-width: 720px) {\n  .app-shell {\n    grid-template-columns: 1fr;\n  }\n}",
-    "question_type": "meaning_choice",
-    "question": "When is the `max-width: 720px` rule applied?",
-    "choices": [
-      "Always on the desktop only",
-      "When the server is on port 720",
-      "When the screen width is 720px or less",
-      "When there are 720 cards"
-    ],
-    "answer": "When the screen width is 720px or less",
-    "explanation": "A mobile layout is a way of arranging buttons and text so that they are clearly visible even on small screens. By using media queries, you can apply different CSS styles depending on the screen size. Therefore, the correct answer is “when the screen width is 720px or less.”",
-    "side_card_ids": [
-      "PYV161_A1_ROLLBACK_SEPARATION_UI_FLOW"
-    ],
-    "project_context": "This is a way to reduce the problem of the right panel or code block becoming too wide on a phone."
-  },
-  {
-    "id": "PY23_L10_static_api_connection_001",
-    "level": 10,
-    "title": "Architecture for Connecting Static Apps to an API Server",
-    "concepts": [
-      "comment",
-      "static_app",
-      "api_server",
-      "fetch",
-      "architecture"
-    ],
-    "reading_goal": "Understand the structure in which a static PWA calls a separate API server using the `fetch` method.",
-    "code": "# static app\nhttp://localhost:8790/src/pwa/index.html\n\n# API server\nhttp://127.0.0.1:8000/search?q=lidar\n\n# browser JS\nfetch(\"http://127.0.0.1:8000/search?q=\" + encodeURIComponent(q))",
-    "question_type": "meaning_choice",
-    "question": "What is the role of the 8790 server in this architecture?",
-    "choices": [
-      "Direct Query of the Search Database",
-      "Token Encryption",
-      "Serving static files such as HTML, CSS, and JS",
-      "Model Training"
-    ],
-    "answer": "Serving static files such as HTML, CSS, and JS",
-    "explanation": "In this example, the 8790 server provides frontend files such as HTML, CSS, and JavaScript, while the 8000 application creates search responses. The ports make them different origins, so CORS may be required. On a phone, 127.0.0.1 means the phone, not the PC, so use a public API host or the PC LAN address with correct bind and firewall settings.",
-    "side_card_ids": [
-      "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
-    ],
-    "project_context": "This structure distinguishes origin and host when connecting a static learning frontend to a separate search API."
-  },
-  {
-    "id": "PY23_L10_deploy_verify_checklist_001",
-    "level": 10,
-    "title": "Read the Post-Deployment Verification Checklist",
-    "concepts": [
-      "comment",
-      "deploy",
-      "verification",
-      "checklist",
-      "github_pages"
-    ],
-    "reading_goal": "Learn the steps to verify that the app is actually displaying the latest files after a push.",
-    "code": "# 1. Confirm the commit and pushed target branch\n# 2. Confirm CI/Pages success and source revision\n# 3. Inspect public HTML, JS, and JSON status/response\n# 4. Verify app.js and data content versions\n# 5. Check Console errors and service-worker/cache state",
-    "question_type": "order_choice",
-    "question": "If the latest changes aren't reflected after a push, what should you check in particular?",
-    "choices": [
-      "It only checks the keyboard battery status",
-      "Just check the monitor resolution settings",
-      "Browser/Pages cache and app.js/data version",
-      "Just check the GitHub username display"
-    ],
-    "answer": "Browser/Pages cache and app.js/data version",
-    "explanation": "A clean local git status or one 200 response does not prove that the intended commit is publicly deployed. Compare the remote branch and deployment revision with response content and versions at the public URL, then inspect Console and service-worker cache state. Preserve evidence of which layer is stale before clearing caches so the cause remains traceable.",
-    "side_card_ids": [
-      "PYV161_A1_DEPLOY_VERSION_URL_FLOW",
-      "PYV161_A1_ENV_MAIN_CHECKLIST_FLOW"
-    ],
-    "project_context": "This is a routine for verifying a structure in which only the content is updated on a GitHub Pages permalink."
-  }
+    {
+        "id":  "PY23_L07_github_pages_url_001",
+        "level":  7,
+        "title":  "Constructing a GitHub Pages URL using an f-string",
+        "concepts":  [
+                         "f_string",
+                         "assignment",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read the process of creating a fixed-format project Pages URL by substituting the account name and repository name into the f-string.",
+        "code":  "account = \"mina\"\nrepository = \"python-trainer\"\npages_url = f\"https://{account}.github.io/{repository}/\"\nprint(pages_url)",
+        "question_type":  "output_prediction",
+        "question":  "What is the URL printed on the last line?",
+        "choices":  [
+                        "https://mina.github.io/python-trainer/",
+                        "https://github.com/mina/python-trainer",
+                        "https://account.github.io/repository/",
+                        "http://localhost/python-trainer/"
+                    ],
+        "answer":  "https://mina.github.io/python-trainer/",
+        "explanation":  "The `account` is `mina`, and the `repository` is `python-trainer`. In the f-string, the first curly brace is replaced with `mina`, and the second with `python-trainer`. These are combined with the remaining fixed strings to form the final URL. This is because actual variable values are inserted into the two expression slots in the f-string. A common source of confusion: https://account.github.io/repository/ “account” and “repository” are not plain text but variable names inside the curly braces of the f-string. Point of confusion: You must examine both the ``f`` at the beginning of the string and the expression within the curly braces together. F-strings are used to assemble a single string from fixed text and values calculated at runtime.",
+        "side_card_ids":  [
+                              "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
+                          ],
+        "project_context":  "This is the context of constructing the public URL format for deploying project Pages while retaining the same account and repository names.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "f_string",
+        "reading_goal_internal":  "계정명과 저장소명을 f-string 자리에 대입해 고정 형식의 project Pages URL을 만드는 과정을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "An f-string is an expression that evaluates ``{expression}`` within a string and inserts the result into the string.",
+                                    "how_to_read":  "Separate the fixed parts of the string from the `{...}` sections, and substitute the variable values into each set of curly braces in order.",
+                                    "key_point":  "The GitHub Pages URL rule pertains to the service context, while the focus in Python is on f-strings, which insert multiple variable values into a single string.",
+                                    "common_mistake":  "It’s easy to assume that `{account}` and `{repository}` remain as-is. However, because they are preceded by `f`, they are replaced with variable values at runtime."
+                                },
+        "teaching_example":  {
+                                 "code":  "owner = \"team\"\nproject = \"docs\"\nurl = f\"https://{owner}.example.com/{project}/\"\nprint(url)",
+                                 "walkthrough":  "The `owner` and `project` values are inserted into the curly braces, respectively, to create ``https://team.example.com/docs/``."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The account is \"mina,\" and the repository is \"python-trainer.\" In the f-string, the first curly brace is replaced with \"mina,\" and the second with \"python-trainer.\" These are combined with the remaining fixed strings to form the final URL.",
+                                   "why_correct":  "This is because actual variable values are inserted into the two expression slots of the f-string.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "https://account.github.io/repository/",
+                                                               "why_wrong":  "\"account\" and \"repository\" are not ordinary text but variable names within the curly braces of an f-string.",
+                                                               "misread_step":  "You must check both the `f` preceding the string and the expression inside the curly braces."
+                                                           },
+                                   "takeaway":  "F-strings are used to concatenate fixed strings and values calculated at runtime into a single string."
+                               },
+        "target_statement":  "pages_url = f\"https://{account}.github.io/{repository}/\"",
+        "focus_span":  "f\"https://{account}.github.io/{repository}/\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "GitHub_Pages",
+                                "project_site",
+                                "URL",
+                                "deploy"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY23_L07_static_loading_order_001",
+        "level":  7,
+        "title":  "Selecting Static Asset Paths as Dict Keys",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "From a dictionary containing CSS/JS paths for a static app, accurately retrieve only the value of the `script` key.",
+        "code":  "assets = {\n    \"css\": \"style.css?v=20260529_force1\",\n    \"script\": \"app.js?v=20260529_force1\",\n}\nscript_src = assets[\"script\"]\nprint(script_src)",
+        "question_type":  "output_prediction",
+        "question":  "What value does the last line output?",
+        "choices":  [
+                        "app.js?v=20260529_force1",
+                        "style.css?v=20260529_force1",
+                        "script",
+                        "css"
+                    ],
+        "answer":  "app.js?v=20260529_force1",
+        "explanation":  "The `assets` dictionary has two keys: `css` and `script`. Since `script` is written inside the square brackets, it reads the path to `app.js`, which is the value associated with that key. That string is stored in `script_src` and printed. This is because a dictionary lookup returns the value associated with the specified key. Common mistake: `style.css?v=20260529_force1`—that value is associated with the `css` key, but the key currently being looked up is `script`. Point of Misinterpretation: You must verify what key is actually written inside the square brackets. `mapping[key]` selects the value of the entry in the dictionary whose key name matches the provided key.",
+        "side_card_ids":  [
+                              "PYV161_A1_ROLLBACK_SEPARATION_UI_FLOW"
+                          ],
+        "project_context":  "The context here is structuring and reviewing the paths to CSS and JavaScript assets referenced by `index` in a static app.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "정적 앱의 CSS/JS 경로를 담은 dict에서 `script` key의 value만 정확히 조회한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A `dict` subscription is an expression that reads the value associated with a specific key in the form ``mapping[key]``.",
+                                    "how_to_read":  "First, check the key inside the square brackets, then find the entry in the dictionary that exactly matches that key and retrieve its value.",
+                                    "key_point":  "Browser loading of CSS and JavaScript occurs in a web context, whereas the Python focus is on a dictionary lookup that selects the desired asset path using the `script` key.",
+                                    "common_mistake":  "It’s easy to assume that the first value in a dict is retrieved automatically. A dict lookup selects an item based on the key name inside the square brackets, not by position."
+                                },
+        "teaching_example":  {
+                                 "code":  "files = {\"style\": \"main.css\", \"script\": \"main.js\"}\nselected = files[\"style\"]\nprint(selected)",
+                                 "walkthrough":  "Since the key inside the brackets is “style,” it reads the value “main.css.” The “script” entry is not selected."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The `assets` object has two keys: `css` and `script`. Since `script` is listed inside the square brackets, it reads the path to `app.js`, which is the value of that key. That string is stored in `script_src` and outputted.",
+                                   "why_correct":  "This is because a dictionary subscription returns the value associated with the specified key.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "style.css?v=20260529_force1",
+                                                               "why_wrong":  "That value is linked to the CSS key, and the key currently being queried is “script.”",
+                                                               "misread_step":  "You must check what key is actually written inside the square brackets."
+                                                           },
+                                   "takeaway":  "`mapping[key]` selects the value of an item from a dict as long as the key name matches."
+                               },
+        "target_statement":  "script_src = assets[\"script\"]",
+        "focus_span":  "assets[\"script\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "static_app",
+                                "JavaScript",
+                                "asset_path",
+                                "loading"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY23_L08_cache_bust_asset_001",
+        "level":  8,
+        "title":  "Creating Versioned Asset URLs with List Comprehensions",
+        "concepts":  [
+                         "list_comprehension",
+                         "f_string",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the sequence that creates a new list of URLs by applying the same f-string structure to each recurring asset name.",
+        "code":  "assets = [\"style.css\", \"app.js\"]\nversion = \"20260529_force1\"\nversioned_assets = [f\"{asset}?v={version}\" for asset in assets]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the second string in `versioned_assets`?",
+        "choices":  [
+                        "app.js",
+                        "app.js?v=20260529_force1",
+                        "style.css?v=20260529_force1",
+                        "20260529_force1"
+                    ],
+        "answer":  "app.js?v=20260529_force1",
+        "explanation":  "The second asset is `app.js`. The f-string in the comprehension appends the `?v=` and version values to create the final string. This is because the comprehension applies the same f-string expression to each item in `assets`. A common source of confusion: “app.js” is the name of the original asset, while the comprehension result includes the version query. Point of Misinterpretation: This occurs when the reader fails to distinguish between the iterated input values and the output generated by the expression. A list comprehension is read in the following order: **each input item → expression result → new list item**.",
+        "side_card_ids":  [
+                              "PYV102_A7_PWA_OFFLINE_UPDATE"
+                          ],
+        "project_context":  "It connects to code that generates a list of versioned asset URLs to bypass outdated CSS and JavaScript caches after deployment.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "list_comprehension",
+        "reading_goal_internal":  "반복되는 asset 이름마다 같은 f-string 구조를 적용해 새 URL 리스트를 만드는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A basic list comprehension creates a new list by applying the same expression to each item in the iterable.",
+                                    "how_to_read":  "It reads as “for asset in assets” to retrieve items one by one, and “create a new string using the f-string on the left.”",
+                                    "key_point":  "\"Cache bust\" refers to a URL, while the focus of the Python syntax is on comprehension, which creates a new list from the results of an iteration.",
+                                    "common_mistake":  "It is easy to assume that the original `assets` string itself is being modified. Create a separate list of new strings."
+                                },
+        "teaching_example":  {
+                                 "code":  "files = [\"a.js\", \"b.js\"]\nversion = \"v2\"\nurls = [f\"{name}?v={version}\" for name in files]",
+                                 "walkthrough":  "Apply the same \"`?v=v2`\" format to each of the two file names to create a new list containing two URLs."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The second asset is `app.js`. The f-string in the comprehension appends `?v=` and the version value to create the final string.",
+                                   "why_correct":  "This is because `comprehension` applies the same f-string expression to each item in ``assets``.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "app.js",
+                                                               "why_wrong":  "That value is the original asset name, and the result of the comprehension includes a version query.",
+                                                               "misread_step":  "This is a case where the output generated by an expression was not distinguished from the input value."
+                                                           },
+                                   "takeaway":  "List comprehensions are read in the order of **each input item → expression result → new list item**."
+                               },
+        "target_statement":  "versioned_assets = [f\"{asset}?v={version}\" for asset in assets]",
+        "focus_span":  "[f\"{asset}?v={version}\" for asset in assets]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "cache bust",
+                                "asset url",
+                                "query string",
+                                "browser cache"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY23_L08_data_version_fetch_001",
+        "level":  8,
+        "title":  "Appending a data version to an existing query using an f-string",
+        "concepts":  [
+                         "f_string",
+                         "assignment",
+                         "name_reference",
+                         "literal"
+                     ],
+        "reading_goal":  "Read how the values in the curly-brace expressions and the fixed strings in the f-string are combined in what order to form the final URL.",
+        "code":  "APP_DATA_VERSION = \"20260529_v22\"\npath = \"/lesson.json?lang=ko\"\nurl = f\"{path}\u0026v={APP_DATA_VERSION}\"",
+        "question_type":  "multiple_choice",
+        "question":  "`url` What string is stored in *?*",
+        "choices":  [
+                        "/lesson.json?lang=ko",
+                        "/lesson.json?lang=ko\u0026v=20260529_v22",
+                        "/lesson.json?v=APP_DATA_VERSION",
+                        "20260529_v22"
+                    ],
+        "answer":  "/lesson.json?lang=ko\u0026v=20260529_v22",
+        "explanation":  "The first set of curly braces in the f-string contains the path value, and the second set contains the version value. The `\u0026v=` in between is left as is to form the final URL. This is because the f-string evaluates each expression within the curly braces as an actual value and inserts it into the string. Common misconception: In `/lesson.json?v=APP_DATA_VERSION`, the variable name is not included literally but is replaced with the value `20260529_v22`. Point of Misinterpretation: This occurs when you overlook the fact that the curly braces in an f-string evaluate expressions. An f-string **combines fixed strings and expression results into a single string**.",
+        "side_card_ids":  [
+                              "PYV158_A1_JSON_FLOW"
+                          ],
+        "project_context":  "It is linked to the code that generates URLs that include the data version in lesson JSON and side-card JSON requests to trigger cache updates.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "f_string",
+        "reading_goal_internal":  "f-string의 중괄호 표현식 값과 고정 문자열이 어떤 순서로 합쳐져 최종 URL이 되는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "An f-string evaluates `{expression}` within a string and inserts the result into the string.",
+                                    "how_to_read":  "It reads as: \"The final string is created by concatenating the fixed string and the variable values inside the curly braces from left to right.\"",
+                                    "key_point":  "In this example, it is assumed that `path` already contains `query`, so ``\u0026v=`` is included as a fixed string.",
+                                    "common_mistake":  "It’s easy to assume that the name of the curly brace itself remains in the URL. However, it is actually replaced with the actual variable value."
+                                },
+        "teaching_example":  {
+                                 "code":  "path = \"/cards.json?lang=en\"\nversion = \"v3\"\nurl = f\"{path}\u0026v={version}\"",
+                                 "walkthrough":  "The `path` and `version` values are inserted into an f-string to create the string `/cards.json?lang=en\u0026v=v3`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The first set of curly braces in the f-string contains the path value, and the second set contains the version value. The `\u0026v=` in between is left as is to form the final URL.",
+                                   "why_correct":  "This is because f-strings evaluate each expression within the curly braces as actual values and insert them into the string.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "/lesson.json?v=APP_DATA_VERSION",
+                                                               "why_wrong":  "Variable names are not used literally but are replaced with the value `20260529_v22`.",
+                                                               "misread_step":  "This is an example where the learner missed the fact that the curly braces in an f-string evaluate the expression."
+                                                           },
+                                   "takeaway":  "An f-string **combines fixed strings and the results of expressions into a single string**."
+                               },
+        "target_statement":  "url = f\"{path}\u0026v={APP_DATA_VERSION}\"",
+        "focus_span":  "f\"{path}\u0026v={APP_DATA_VERSION}\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "data version",
+                                "fetch url",
+                                "query parameter",
+                                "cache bust"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY23_L08_http_log_304_001",
+        "level":  8,
+        "title":  "Check if the HTTP status is 304",
+        "concepts":  [
+                         "comparison",
+                         "assignment",
+                         "subscription",
+                         "literal"
+                     ],
+        "reading_goal":  "After retrieving the `status` value from the response dictionary, it reads the result of the `== 304` comparison.",
+        "code":  "response = {\"path\": \"/src/pwa/index.html\", \"status\": 304}\nuse_cached_body = response[\"status\"] == 304",
+        "question_type":  "multiple_choice",
+        "question":  "`use_cached_body` What value is stored in ?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "304",
+                        "None"
+                    ],
+        "answer":  "True",
+        "explanation":  "Since `response[\"status\"]` returns 304 and compares that value to the 304 on the right, the result is True. This is because `==` returns True when the two values are equal. A common source of confusion: 304 304 is the value used in the comparison, and the result of the `==` expression itself is a boolean. Point of confusion: This occurs when the value before the comparison and the result of the comparison are not distinguished. A comparison expression produces a **True/False result, not the values of the operands**.",
+        "side_card_ids":  [
+                              "PL_cache_001"
+                          ],
+        "project_context":  "It relates to code that distinguishes between 200 and 304 responses in local server or browser network logs to interpret cache-related responses.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "응답 dict에서 status 값을 꺼낸 뒤 `== 304` 비교 결과를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left == right` compares whether two values are equal and returns True or False.",
+                                    "how_to_read":  "First, it retrieves the `status` value from the left-hand side of the subscription result and checks whether that value is equal to 304.",
+                                    "key_point":  "The meaning of HTTP 304 is in the context of caching, and the focus of the Python syntax is on ``==``, which compares the `status` integer with 304.",
+                                    "common_mistake":  "It is easy to assume the number `304` is an error. First separate what the code is comparing from the domain meaning of the status code."
+                                },
+        "teaching_example":  {
+                                 "code":  "response = {\"status\": 200}\nis_ok = response[\"status\"] == 200",
+                                 "walkthrough":  "Since the `status` value 200 is the same as the integer 200, the comparison result is `True`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`response[\"status\"]` It returns 304, and since it compares that value with the 304 on the right, the result is True.",
+                                   "why_correct":  "`==` returns True when two values are equal.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "304",
+                                                               "why_wrong":  "304 is the value used in the comparison, and the result of the `==` expression itself is a Boolean.",
+                                                               "misread_step":  "This is an example where the value before the comparison and the result of the comparison are not distinguished."
+                                                           },
+                                   "takeaway":  "Comparison expressions produce **a True/False result, not the values of the operands**."
+                               },
+        "target_statement":  "use_cached_body = response[\"status\"] == 304",
+        "focus_span":  "response[\"status\"] == 304",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "HTTP 304",
+                                "cache",
+                                "network log",
+                                "conditional response"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY23_L09_fetch_json_fail_001",
+        "level":  9,
+        "title":  "Raising a RuntimeError from a Failed JSON Response",
+        "concepts":  [
+                         "raise_statement",
+                         "if_statement",
+                         "call",
+                         "f_string",
+                         "subscription",
+                         "literal"
+                     ],
+        "reading_goal":  "Read how the normal JSON processing flow is interrupted by an explicit `raise` when the response success flag is `False`.",
+        "code":  "path = \"/data/lesson.json\"\nresponse = {\"ok\": False, \"status\": 404, \"json\": {}}\nif not response[\"ok\"]:\n    raise RuntimeError(f\"failed to load {path}: {response[\u0027status\u0027]}\")\ndata = response[\"json\"]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the result of this code?",
+        "choices":  [
+                        "A RuntimeError occurs",
+                        "`data` becomes an empty dictionary",
+                        "A 404 becomes a 200",
+                        "It finishes without an exception."
+                    ],
+        "answer":  "A RuntimeError occurs",
+        "explanation":  "Since `ok` is False, the `if` condition evaluates to True, and a `RuntimeError` is raised. Therefore, the code does not proceed normally to the assignment of `data` below, because the `raise` statement immediately interrupts the normal execution flow. A common source of confusion: the assumption that `data` becomes an empty dictionary. That assignment is located below the `raise` statement, so it is never reached during normal execution. Point of misinterpretation: This occurs when one assumes that the code continues to execute after an exception is raised. The HTTP loader operates as follows: **check status → raise if failed → parse/return only if successful**.",
+        "side_card_ids":  [
+                              "PYV158_A1_JSON_FLOW"
+                          ],
+        "project_context":  "lesson When the JSON fetch fails, the loading flow does not silently proceed with empty data but instead halts with an error message that includes the status.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "raise_statement",
+        "reading_goal_internal":  "응답 성공 여부가 False일 때 명시적 raise로 정상 JSON 처리 흐름이 중단되는 것을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`raise ExceptionType(...)` raises an exception object, interrupting the current normal flow of execution.",
+                                    "how_to_read":  "First, evaluate the `if` condition that leads to `raise`, and see what exception type and message are generated.",
+                                    "key_point":  "In failure responses, the process does not proceed with JSON parsing or return; instead, the error is first brought to the surface.",
+                                    "common_mistake":  "It’s easy to assume that the `return` statement below `raise` will still be executed. However, if an unhandled exception occurs, the normal flow of execution is interrupted."
+                                },
+        "teaching_example":  {
+                                 "code":  "response = {\"ok\": False, \"status\": 404}\nif not response[\"ok\"]:\n    raise RuntimeError(f\"status={response[\u0027status\u0027]}\")",
+                                 "walkthrough":  "Since `ok` is False, a `RuntimeError` occurs."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since `ok` is False, the `if` condition evaluates to True, and a `RuntimeError` is raised. Therefore, the program does not proceed normally to the data assignment below.",
+                                   "why_correct":  "This is because the `raise` statement immediately interrupts the normal flow of execution.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "`data` becomes an empty dictionary",
+                                                               "why_wrong":  "That assignment is located below the `raise` statement, so it is not reached during normal program flow.",
+                                                               "misread_step":  "This is a case where the code is assumed to continue executing after an exception occurs."
+                                                           },
+                                   "takeaway":  "The HTTP loader operates as follows: **check status → raise an exception on failure → parse and return only upon success**."
+                               },
+        "target_statement":  "raise RuntimeError(f\"failed to load {path}: {response[\u0027status\u0027]}\")",
+        "focus_span":  "raise RuntimeError(f\"failed to load {path}: {response[\u0027status\u0027]}\")",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "fetch",
+                                "JSON",
+                                "HTTP status",
+                                "error handling",
+                                "raise"
+                            ],
+        "pedagogical_intent":  "predict_exception"
+    },
+    {
+        "id":  "PY23_L09_promise_all_001",
+        "level":  9,
+        "title":  "Waiting for multiple lessons to load simultaneously using `asyncio.gather()`",
+        "concepts":  [
+                         "await_expression",
+                         "call",
+                         "argument_passing",
+                         "generator_expression",
+                         "async_function_definition"
+                     ],
+        "reading_goal":  "Read about how a single failure affects the overall result of `await` when multiple coroutines are passed to `gather` and `await` is called.",
+        "code":  "import asyncio\n\nasync def load_json(path):\n    if path == \"bad.json\":\n        raise RuntimeError(\"load failed\")\n    return [path]\n\nasync def main():\n    lesson_files = [\"a.json\", \"bad.json\", \"c.json\"]\n    lesson_arrays = await asyncio.gather(*(load_json(path) for path in lesson_files))\n    return lesson_arrays",
+        "question_type":  "multiple_choice",
+        "question":  "What is the most likely result when `await main()` is executed?",
+        "choices":  [
+                        "A RuntimeError may be propagated",
+                        "Three results are always returned normally.",
+                        "Only `bad.json` becomes an empty list",
+                        "All file names are deleted."
+                    ],
+        "answer":  "A RuntimeError may be propagated",
+        "explanation":  "Of the three coroutines, loading `bad.json` raises a `RuntimeError`. The default `asyncio.gather()` `await` may pass this exception to the caller because `gather` does not have a separate option such as `return_exceptions=True`. Common misconception: All three results are always returned successfully. In reality, one coroutine raises an exception. Point of confusion: This occurs when concurrent execution and error suppression are mistakenly treated as synonymous. Parallel loading involves reading not only **the results of each task but also how exceptions are propagated**.",
+        "side_card_ids":  [
+                              "PYV158_A1_JSON_FLOW"
+                          ],
+        "project_context":  "This relates to the PWA loading structure, where a failure in a single file can block the entire initial loading process when multiple lesson JSON files are loaded nearly in parallel.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "await_expression",
+        "reading_goal_internal":  "여러 coroutine을 gather에 넘기고 await했을 때 하나의 실패가 전체 await 결과에 어떻게 영향을 주는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`await expression` `await` suspends the execution of the current async function until the awaitable operation completes and returns its result.",
+                                    "how_to_read":  "Check what kind of awaitable is created on the right side of `await`, and see how the completion result or exception is propagated.",
+                                    "key_point":  "`asyncio.gather()` It can wait for multiple awaitables simultaneously, and by default, a single exception can be propagated to the caller.",
+                                    "common_mistake":  "It’s easy to assume that even if a single operation fails, only the remaining results are quietly returned. The default `gather` can propagate exceptions to the caller."
+                                },
+        "teaching_example":  {
+                                 "code":  "import asyncio\n\nasync def one():\n    return 1\n\nasync def two():\n    return 2\n\nasync def main():\n    values = await asyncio.gather(one(), two())\n    return values",
+                                 "walkthrough":  "We wait for both coroutines to complete and receive the result ``[1, 2]``."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Of the three coroutines, loading `bad.json` raises a `RuntimeError`. The default `asyncio.gather()` `await` statement can pass this exception to the caller.",
+                                   "why_correct":  "This is because `gather` does not have separate options like ``return_exceptions=True``.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Three results are always returned normally.",
+                                                               "why_wrong":  "One coroutine actually raises an exception.",
+                                                               "misread_step":  "This is an example where concurrent execution and error ignoring were mistakenly considered to have the same meaning."
+                                                           },
+                                   "takeaway":  "Parallel loading reads not only **the results of each operation but also the exception propagation path**."
+                               },
+        "target_statement":  "lesson_arrays = await asyncio.gather(*(load_json(path) for path in lesson_files))",
+        "focus_span":  "await asyncio.gather(*(load_json(path) for path in lesson_files))",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "async_and_concurrency",
+        "coverage_topics":  [
+                                "asyncio.gather",
+                                "parallel loading",
+                                "exception propagation",
+                                "lessons"
+                            ],
+        "pedagogical_intent":  "predict_exception"
+    },
+    {
+        "id":  "PY23_L09_localstorage_progress_001",
+        "level":  9,
+        "title":  "Convert the `progress` dictionary into a string for storage using `json.dumps()`",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "attribute_access",
+                         "import_statement"
+                     ],
+        "reading_goal":  "Read the flow in which a Python dict is converted into a JSON string that can be stored in storage via a call to `json.dumps`.",
+        "code":  "import json\nprogress = {\"seen\": [\"PY1_001\"], \"unknown\": []}\nraw = json.dumps(progress)",
+        "question_type":  "multiple_choice",
+        "question":  "`raw` Which of the following is the correct type?",
+        "choices":  [
+                        "str",
+                        "dict",
+                        "list",
+                        "set"
+                    ],
+        "answer":  "str",
+        "explanation":  "`json.dumps(progress)` does not return the dict itself, but rather a JSON string representing its contents. This is because the return value of `dumps` is a Python string. A common source of confusion: dict dict is the input type before serialization. Point of misinterpretation: This occurs when the type changes before and after the function call are not reflected. Serialization should be understood as the conversion from **structured object → string representation**.",
+        "side_card_ids":  [
+                              "PYV158_A1_JSON_FLOW"
+                          ],
+        "project_context":  "This ties into the concept of serializing the progress state into JSON text before storing it in a string-based storage system, such as the browser’s `localStorage`.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "Python dict가 json.dumps 호출을 거쳐 storage에 저장 가능한 JSON 문자열로 바뀌는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`json.dumps(value)` is a function call that serializes a Python object into a JSON-formatted string.",
+                                    "how_to_read":  "Let’s see how the type of the input object differs from the type of the return value.",
+                                    "key_point":  "The core concept of the original “`JSON.stringify(progress)`” is also to convert objects into strings and store them.",
+                                    "common_mistake":  "It’s easy to assume that `dumps` automatically creates a file. `json.dumps` returns a string."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\nsettings = {\"dark\": True}\nraw = json.dumps(settings)",
+                                 "walkthrough":  "The `settings` dictionary is converted to a JSON string and stored in `raw`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`json.dumps(progress)` does not return the dict itself; it returns a JSON string representing its contents.",
+                                   "why_correct":  "This is because the return value of `dumps` is a Python string.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "dict",
+                                                               "why_wrong":  "`dict` is the input type before serialization.",
+                                                               "misread_step":  "This is an example where type changes before and after a function call were not reflected."
+                                                           },
+                                   "takeaway":  "Serialization is understood as the conversion of **structured objects → string representations**."
+                               },
+        "target_statement":  "raw = json.dumps(progress)",
+        "focus_span":  "json.dumps(progress)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "JSON serialization",
+                                "progress",
+                                "storage",
+                                "string"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY23_L09_localstorage_load_001",
+        "level":  9,
+        "title":  "Using an empty progress bar as a conditional expression when no value is saved",
+        "concepts":  [
+                         "conditional_expression",
+                         "call",
+                         "assignment",
+                         "literal",
+                         "import_statement"
+                     ],
+        "reading_goal":  "Read the flow where, if `raw` is falsy, the conditional expression selects the default `progress` dictionary instead of `json.loads`.",
+        "code":  "import json\nraw = None\nprogress = json.loads(raw) if raw else {\"seen\": [], \"unknown\": []}",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `progress`?",
+        "choices":  [
+                        "{\"seen\": [], \"unknown\": []}",
+                        "None",
+                        "\"ptr_progress\"",
+                        "JSONDecodeError"
+                    ],
+        "answer":  "{\"seen\": [], \"unknown\": []}",
+        "explanation":  "Since `raw` is `None`, the condition is `False`. Therefore, the default dictionary in the `else` block is selected instead of ``json.loads(raw)``. This is because a conditional expression selects only one value based on the condition. A common source of confusion: JSONDecodeError—since `raw` is falsy, the call to ``json.loads(raw)`` itself is not selected. Common misinterpretation: Assuming that both sides of the conditional expression are evaluated. The fallback expression follows the pattern: **condition → selected branch → final value**.",
+        "side_card_ids":  [
+                              "WEB_localstorage_001"
+                          ],
+        "project_context":  "This connects to the fallback flow where the app starts in an empty initial state when there is no progress in the browser storage.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "conditional_expression",
+        "reading_goal_internal":  "raw가 falsy일 때 conditional expression이 json.loads 대신 기본 progress dict를 선택하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`a if condition else b` is a conditional expression that selects `a` if the condition is truthy and `b` if it is falsy.",
+                                    "how_to_read":  "It evaluates the middle condition first and then uses only the selected expression as the result.",
+                                    "key_point":  "If there is no saved value, it does not attempt to parse and uses an empty `progress` structure instead.",
+                                    "common_mistake":  "It’s easy to assume that both `a` and `b` are executed. Depending on the condition, only one is selected."
+                                },
+        "teaching_example":  {
+                                 "code":  "raw = None\nvalue = int(raw) if raw else 0",
+                                 "walkthrough":  "Since `raw` is falsy, `int(raw)` is not executed, and 0 is selected."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since `raw` is `None`, the condition is False. Therefore, the default dictionary in the `else` block is selected instead of `json.loads(raw)`.",
+                                   "why_correct":  "This is because a conditional expression selects only one value based on a condition.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "JSONDecodeError",
+                                                               "why_wrong":  "Since `raw` is falsy, the `json.loads(raw)` call itself is not selected.",
+                                                               "misread_step":  "This is a case where both sides of a conditional expression are evaluated."
+                                                           },
+                                   "takeaway":  "A fallback expression is read as **condition → selected branch → final value**."
+                               },
+        "target_statement":  "progress = json.loads(raw) if raw else {\"seen\": [], \"unknown\": []}",
+        "focus_span":  "json.loads(raw) if raw else {\"seen\": [], \"unknown\": []}",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "fallback",
+                                "JSON parse",
+                                "progress",
+                                "conditional expression"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY23_L10_manifest_json_001",
+        "level":  10,
+        "title":  "Retrieving the `display` setting from the `manifest` dictionary",
+        "concepts":  [
+                         "subscription",
+                         "literal",
+                         "assignment"
+                     ],
+        "reading_goal":  "In a Python dictionary, find the entry that exactly matches the key inside the square brackets and read its value.",
+        "code":  "manifest = {\n    \"name\": \"Python Reading Trainer\",\n    \"short_name\": \"PyReader\",\n    \"start_url\": \"./index.html\",\n    \"display\": \"standalone\",\n}\n\nmode = manifest[\"display\"]\nprint(mode)",
+        "question_type":  "output_prediction",
+        "question":  "What is the result of the `manifest[\"display\"]` lookup?",
+        "choices":  [
+                        "standalone",
+                        "display",
+                        "PyReader",
+                        "./index.html"
+                    ],
+        "answer":  "standalone",
+        "explanation":  "1) The `manifest` object contains a `display` key. 2) `manifest[\"display\"]` retrieves that specific key. 3) The value associated with `display` is the string \"standalone\". 4) Therefore, `mode` is set to \"standalone\". 5) The final `print` statement also outputs \"standalone\".",
+        "side_card_ids":  [
+                              "WEB_pwa_001"
+                          ],
+        "project_context":  "This is linked to the flow of reading specific field values when inspecting PWA installation settings with Python tools or validating manifest data.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "Python 딕셔너리에서 대괄호 안 key와 정확히 일치하는 항목을 찾아 그 value를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping[key]` This is a bracket lookup, which directly retrieves the value associated with a key in a dictionary.",
+                                    "how_to_read":  "First, look at the list of keys in the dictionary, find a key that matches the value inside the square brackets, and then read the value to the right of the colon as the result.",
+                                    "key_point":  "In this card, `display` is not a variable name but a **string key** enclosed in quotes.",
+                                    "common_mistake":  "It is easy to assume that `manifest[\u0027display\u0027]` returns the string “display.” What is actually returned is the value associated with that key: “standalone.”"
+                                },
+        "teaching_example":  {
+                                 "code":  "settings = {\"theme\": \"dark\", \"language\": \"ko\"}\nvalue = settings[\"theme\"]\nprint(value)",
+                                 "walkthrough":  "Since the value associated with the \"theme\" key is \"dark,\" the result of the bracket lookup is also \"dark.\""
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The `manifest` object contains a `display` key. 2) `manifest[\"display\"]` retrieves that specific key. 3) The value associated with `display` is the string \"standalone\". 4) Therefore, `mode` is set to \"standalone\". 5) The final `print` statement also outputs \"standalone\".",
+                                   "why_correct":  "Since the value associated with the `display` key in the dictionary is `standalone`, the lookup result is `standalone`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "display",
+                                                               "why_wrong":  "`display` is the key used for the lookup, and the result is the value associated with that key.",
+                                                               "misread_step":  "In a dictionary, distinguish between the key on the left of the colon and the value on the right, and map them to the key in square brackets."
+                                                           },
+                                   "takeaway":  "A **dict key lookup** is performed in the following order: **check the key → find the matching key → return the associated value**."
+                               },
+        "target_statement":  "manifest[\"display\"]",
+        "focus_span":  "manifest[\"display\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "pwa",
+                                "manifest",
+                                "display_mode",
+                                "standalone"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY23_L10_service_worker_concept_001",
+        "level":  10,
+        "title":  "Check if the cached response is not None",
+        "concepts":  [
+                         "identity_test",
+                         "if_statement",
+                         "return_statement",
+                         "call"
+                     ],
+        "reading_goal":  "In `cached is not None`, the program checks the object identity between the current value and `None` to determine whether the path with a cached response is selected.",
+        "code":  "def choose_response(cached, request):\n    if cached is not None:\n        return cached\n    return fetch(request)\n\ncached = \"cached app.js\"\nprint(choose_response(cached, \"/app.js\"))",
+        "question_type":  "meaning_choice",
+        "question":  "When `cached` is ``\"cached app.js\"``, what is the result of ``cached is not None``?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "None",
+                        "cached app.js"
+                    ],
+        "answer":  "True",
+        "explanation":  "1) When the function is called, the string \"cached app.js\" is passed to `cached`. 2) The ``cached is not None`` expression is evaluated in the `if` block. 3) Since `cached` is not a `None` object, the result is `True`. 4) Therefore, ``return cached`` is executed. 5) Since that return statement terminates the function, the ``fetch(request)`` below is not executed during this call.",
+        "side_card_ids":  [
+                              "PYV160_A1_PWA_STATE_STORAGE_FLOW"
+                          ],
+        "project_context":  "Modeling the “cache-first” approach of service workers in Python helps learners understand the flow where cached responses are used before network requests.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "identity_test",
+        "reading_goal_internal":  "`cached is not None`에서 현재 값과 None의 객체 동일성을 검사해 캐시 응답이 있는 경로가 선택되는지 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`is not``value is not None` checks whether two objects are the same.  is often used to verify that a value is not the None object.",
+                                    "how_to_read":  "First, it checks the current value of the name on the left, determines whether that value is the same object as `None` on the right, and—since ``is not`` indicates they are not the same—reads it as `True`.",
+                                    "key_point":  "Here, the purpose is not to compare the contents of the strings, but to check **whether the value is None or not**.",
+                                    "common_mistake":  "It is easy to mistake `is not` for a comparison that is exactly the same as the string `!=`. This syntax checks for object identity rather than value equality."
+                                },
+        "teaching_example":  {
+                                 "code":  "cached = \"saved page\"\nif cached is not None:\n    result = cached\nelse:\n    result = \"network\"\nprint(result)",
+                                 "walkthrough":  "Since `cached` points to a string that is not `None`, ``cached is not None`` is `True`, and the saved page is selected."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) When the function is called, the string \"cached app.js\" is passed to `cached`. 2) The ``cached is not None`` expression is evaluated in the `if` block. 3) Since `cached` is not a `None` object, the result is `True`. 4) Therefore, ``return cached`` is executed. 5) Since that return statement terminates the function, the ``fetch(request)`` below is not executed during this call.",
+                                   "why_correct":  "Since `cached` currently points to a string object that is not `None`, the result of `is not None` is `True`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "For the result to be `False`, `cached` must actually point to `None`.",
+                                                               "misread_step":  "First, check the current value of `cached`, then determine whether it is `None` or not."
+                                                           },
+                                   "takeaway":  "`is not None` It reads as **Check current value → Check if it is the same object as None → If not, return True**."
+                               },
+        "target_statement":  "cached is not None",
+        "focus_span":  "cached is not None",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "service_worker",
+                                "cache_first",
+                                "offline",
+                                "cached_response"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY23_L10_devtools_network_001",
+        "level":  10,
+        "title":  "Keep only requests with a status code of 400 or higher using a filtered list comprehension",
+        "concepts":  [
+                         "list_comprehension",
+                         "comparison",
+                         "subscription",
+                         "for_statement"
+                     ],
+        "reading_goal":  "Track the state changes by applying the if condition at the end of the list comprehension to each request, ensuring that only rows that pass the condition are added to the new list.",
+        "code":  "requests = [\n    {\"name\": \"app.js\", \"status\": 200},\n    {\"name\": \"lesson.json\", \"status\": 404},\n]\n\nfailed = [row for row in requests if row[\"status\"] \u003e= 400]\nprint([row[\"name\"] for row in failed])",
+        "question_type":  "output_prediction",
+        "question":  "`failed` What requests remain in the list?",
+        "choices":  [
+                        "app.js only",
+                        "lesson.json only",
+                        "Both requests",
+                        "No requests"
+                    ],
+        "answer":  "lesson.json only",
+        "explanation":  "1) The status of the first row is 200. 2) Since `200 \u003e= 400` is False, the first row is excluded. 3) The status of the second row is 404. 4) Since `404 \u003e= 400` is True, the second row is included in the results. 5) Therefore, only the lesson.json request remains in `failed`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "When organizing browser network logs in Python, this connects to a diagnostic workflow that quickly identifies only failed requests, such as 404 and 500 errors.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "list_comprehension",
+        "reading_goal_internal":  "리스트 컴프리헨션의 뒤쪽 if 조건을 각 요청에 적용해 조건을 통과한 row만 새 리스트에 들어가는 상태 변화를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A filtered list comprehension, such as `[expression for item in iterable if condition]`, iterates through the items and includes only those that satisfy the condition in the resulting list.",
+                                    "how_to_read":  "One item is removed from the iteration set, and the subsequent if condition is checked first. If the condition is true, the result of the preceding expression is added to the list; if false, that iteration is skipped.",
+                                    "key_point":  "The result list contains **only the rows that pass the if condition**, not all rows from the original.",
+                                    "common_mistake":  "Since `for` iterates through all requests, it is easy to assume that all requests remain in the result list. The subsequent `if` statement determines which ones are included."
+                                },
+        "teaching_example":  {
+                                 "code":  "jobs = [{\"id\": \"a\", \"code\": 200}, {\"id\": \"b\", \"code\": 500}]\nfailed = [job for job in jobs if job[\"code\"] \u003e= 400]\nprint(failed[0][\"id\"])",
+                                 "walkthrough":  "`a` with status 200 is excluded, while only `b` with status 500 satisfies the condition and remains in `failed`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The status of the first row is 200. 2) Since `200 \u003e= 400` is False, the first row is excluded. 3) The status of the second row is 404. 4) Since `404 \u003e= 400` is True, the second row is included in the results. 5) Therefore, only the lesson.json request remains in `failed`.",
+                                   "why_correct":  "Since there is only one request in `lesson.json` that satisfies the filter condition `status \u003e= 400`, only this request remains in the results list.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Both requests",
+                                                               "why_wrong":  "Even though the list comprehension iterates through both rows, it excludes the `app.js` file where the `status` condition is `False` from the result.",
+                                                               "misread_step":  "Calculate the if conditions for each iteration by distinguishing between whether the action has been repeated and whether it is included in the result list."
+                                                           },
+                                   "takeaway":  "A filtered list comprehension **iterates through the items → checks for conditions → includes only those that evaluate to True in the result**."
+                               },
+        "target_statement":  "[row for row in requests if row[\"status\"] \u003e= 400]",
+        "focus_span":  "[row for row in requests if row[\"status\"] \u003e= 400]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "exceptions_debugging",
+        "coverage_topics":  [
+                                "devtools",
+                                "network",
+                                "http_status",
+                                "failed_requests"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY23_L10_devtools_console_001",
+        "level":  10,
+        "title":  "Unpacking the console location string into three variables",
+        "concepts":  [
+                         "assignment",
+                         "call",
+                         "argument_passing"
+                     ],
+        "reading_goal":  "Track the unpacking assignment, which distributes the three values created by the method call on the right to the three variables on the left in the order they appear.",
+        "code":  "location = \"app.js?v=20260529_force1:312:5\"\nfile_name, line, column = location.rsplit(\":\", 2)\nprint(line)",
+        "question_type":  "output_prediction",
+        "question":  "What is the value of `line` after the unpacking assignment is complete?",
+        "choices":  [
+                        "app.js?v=20260529_force1",
+                        "312",
+                        "5",
+                        "None"
+                    ],
+        "answer":  "312",
+        "explanation":  "1) Split the `location` string using `rsplit` at the two colons on the right. 2) The result consists of three values: the file location string, `\"312\"`, and `\"5\"`. 3) The first value is assigned to the first variable, `file_name`, in the unpacking assignment. 4) The second variable, `file_name`, is assigned the second value, `\"312\"`. 5) Since `column` is assigned `\"5\"`, `print(line)` outputs 312.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It links to debugging tool code that identifies the most recent point of change by separating filename, line, and column information from the console stack.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "오른쪽 메서드 호출이 만든 세 값을 왼쪽의 세 변수에 위치 순서대로 나누어 저장하는 언패킹 대입을 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`a, b, c = values` As shown, an assignment with multiple operands on the left can distribute the multiple values from the right to each variable in the order they appear.",
+                                    "how_to_read":  "Always evaluate the expression on the right first to determine how many values are produced, and then assign them one by one to the variables on the left, starting with the first value.",
+                                    "key_point":  "This line does not arbitrarily change the three variables on the left at the same time; instead, it follows the sequence of **generating the result on the right → checking the three values → storing them in their respective positions**.",
+                                    "common_mistake":  "It’s easy to assume that the first value—the filename—goes on the `line`. You must align the positions of the left-hand variable and the right-hand value in the same order."
+                                },
+        "teaching_example":  {
+                                 "code":  "location = \"worker.py:44:9\"\nfile_name, line, column = location.rsplit(\":\", 2)\nprint(line)",
+                                 "walkthrough":  "`rsplit` produces `worker.py`, `44`, and `9` in that order, so the second value, `44`, is stored in `line`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Split the `location` string using `rsplit` at the two colons on the right. 2) The result consists of three values: the file location string, `\"312\"`, and `\"5\"`. 3) The first value is assigned to the first variable, `file_name`, in the unpacking assignment. 4) The second variable, `file_name`, is assigned the second value, `\"312\"`. 5) Since `column` is assigned `\"5\"`, `print(line)` outputs 312.",
+                                   "why_correct":  "Since the second value in the result on the right corresponds to the second variable \"line\" on the left, the correct answer is 312.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "5",
+                                                               "why_wrong":  "Since 5 is the third value in the right-hand result, it goes into the third variable column.",
+                                                               "misread_step":  "Match the positions of the right-hand side result and the left-hand side variable on a 1:1 basis."
+                                                           },
+                                   "takeaway":  "\"Unpacking assignment\" involves **evaluating the entire right-hand side → checking the number and order of values → storing them in the left-hand side targets in the correct order**."
+                               },
+        "target_statement":  "file_name, line, column = location.rsplit(\":\", 2)",
+        "focus_span":  "file_name, line, column = location.rsplit(\":\", 2)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "exceptions_debugging",
+        "coverage_topics":  [
+                                "devtools",
+                                "console",
+                                "syntax_error",
+                                "source_location"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY23_L10_mobile_layout_001",
+        "level":  10,
+        "title":  "Check if the viewport width is less than or equal to the mobile breakpoint",
+        "concepts":  [
+                         "comparison",
+                         "assignment",
+                         "name_reference"
+                     ],
+        "reading_goal":  "In `viewport_width \u003c= mobile_breakpoint`, it reads the two current values and determines whether the \"less than or equal to\" relationship is true or false.",
+        "code":  "viewport_width = 680\nmobile_breakpoint = 720\ncompact = viewport_width \u003c= mobile_breakpoint\nprint(compact)",
+        "question_type":  "meaning_choice",
+        "question":  "What is the result of `viewport_width \u003c= mobile_breakpoint`?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "680",
+                        "720"
+                    ],
+        "answer":  "True",
+        "explanation":  "1) `viewport_width` is 680. 2) `mobile_breakpoint` is 720. 3) Calculate ``680 \u003c= 720``. 4) Since 680 is less than 720, the result is `True`. 5) `True` is stored in `compact`.",
+        "side_card_ids":  [
+                              "PYV161_A1_ROLLBACK_SEPARATION_UI_FLOW"
+                          ],
+        "project_context":  "It is linked to responsive UI logic that determines whether to switch to a single-column layout when the screen width is narrow, such as on a phone.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "`viewport_width \u003c= mobile_breakpoint`에서 두 현재 값을 읽고 작거나 같은 관계가 맞는지 True/False로 판정한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`\u003c=` checks whether the left-hand side is less than or equal to the right-hand side, returning True or False.",
+                                    "how_to_read":  "First, check the current values of both sides and determine whether the relationship `left \u003c= right` holds true.",
+                                    "key_point":  "`\u003c=` is also True when it is exactly equal to the boundary value.",
+                                    "common_mistake":  "It’s easy to assume that `\u003c` is False when it’s read exactly as a breakpoint."
+                                },
+        "teaching_example":  {
+                                 "code":  "width = 640\nlimit = 640\ncompact = width \u003c= limit\nprint(compact)",
+                                 "walkthrough":  "640 equals the limit, so `640 \u003c= 640` is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `viewport_width` is 680. 2) `mobile_breakpoint` is 720. 3) Calculate ``680 \u003c= 720``. 4) Since 680 is less than 720, the result is `True`. 5) `True` is stored in `compact`.",
+                                   "why_correct":  "Since the current viewport width is 680, which is 720 or less, the comparison result is True.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "Since 680 is not greater than 720 but is a smaller value, it satisfies the condition \"`\u003c=`.\"",
+                                                               "misread_step":  "Compare the direction of the comparison operator and the actual values on both sides side by side."
+                                                           },
+                                   "takeaway":  "`\u003c=` produces True when the value on the left is less than or equal to the value on the right."
+                               },
+        "target_statement":  "viewport_width \u003c= mobile_breakpoint",
+        "focus_span":  "viewport_width \u003c= mobile_breakpoint",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "responsive",
+                                "mobile_layout",
+                                "viewport_width",
+                                "breakpoint"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY23_L10_static_api_connection_001",
+        "level":  10,
+        "title":  "Call the API URL generation function by passing the search term",
+        "concepts":  [
+                         "call",
+                         "function_definition",
+                         "return_statement",
+                         "f_string"
+                     ],
+        "reading_goal":  "Read the flow where the search term passed to the function is used as a parameter, and the API URL string generated by the function is returned as the result of the call.",
+        "code":  "def build_search_url(q):\n    return f\"http://127.0.0.1:8000/search?q={q}\"\n\napi_url = build_search_url(\"lidar\")\nprint(api_url)",
+        "question_type":  "meaning_choice",
+        "question":  "`build_search_url(\"lidar\")` What is the return value of the call?",
+        "choices":  [
+                        "http://127.0.0.1:8000/search?q=lidar",
+                        "http://localhost:8790/src/pwa/index.html",
+                        "lidar",
+                        "None"
+                    ],
+        "answer":  "http://127.0.0.1:8000/search?q=lidar",
+        "explanation":  "1) The call argument `lidar` is assigned to `q`. 2) The f-string in the `return` statement inserts `q` into the URL. 3) `http://127.0.0.1:8000/search?q=lidar` is created. 4) The `return` statement returns this string. 5) The same value is stored in `api_url`.",
+        "side_card_ids":  [
+                              "PYV160_A1_ARCHITECTURE_DOCUMENTATION_FLOW"
+                          ],
+        "project_context":  "This connects to an architecture where a static learning frontend communicates with a separate search API on port 8000.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "함수 호출에 전달한 검색어가 매개변수로 들어가고 함수가 만든 API URL 문자열이 호출 결과로 돌아오는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A function call passes arguments enclosed in parentheses and uses the value returned by the function as the result of the entire call expression.",
+                                    "how_to_read":  "After determining which parameter each call argument is assigned to, calculate the return value of the function body all the way to the end.",
+                                    "key_point":  "The result of a function call is not the argument itself, but the value returned by the function.",
+                                    "common_mistake":  "It is easy to think the argument `lidar` itself is the call result."
+                                },
+        "teaching_example":  {
+                                 "code":  "def build_url(term):\n    return f\"https://api.example.com/search?q={term}\"\n\nurl = build_url(\"uam\")\nprint(url)",
+                                 "walkthrough":  "The term \"uam\" is included, and the completed search URL is returned."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The call argument `lidar` is assigned to `q`. 2) The f-string in the `return` statement inserts `q` into the URL. 3) `http://127.0.0.1:8000/search?q=lidar` is created. 4) The `return` statement returns this string. 5) The same value is stored in `api_url`.",
+                                   "why_correct":  "When you calculate the return value of the function, the result is the search API URL on port 8000.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "lidar",
+                                                               "why_wrong":  "`lidar` is a function input, and the function uses that value to create and return a new URL string.",
+                                                               "misread_step":  "Don’t just look at the call arguments; follow the code all the way to the return statement of the called function."
+                                                           },
+                                   "takeaway":  "Function calls are read in the following order: argument passing → body execution → return value."
+                               },
+        "target_statement":  "build_search_url(\"lidar\")",
+        "focus_span":  "build_search_url(\"lidar\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "architecture_and_design",
+        "coverage_topics":  [
+                                "static_app",
+                                "api_server",
+                                "frontend_backend",
+                                "api_url"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY23_L10_deploy_verify_checklist_001",
+        "level":  10,
+        "title":  "Determine whether an exact SHA mismatch is more direct evidence of a deployment block than a smoke PASS.",
+        "concepts":  [
+                         "assert_statement",
+                         "comparison",
+                         "try_statement",
+                         "except_clause",
+                         "literal"
+                     ],
+        "reading_goal":  "Even if the local smoke test passes, if `deployed_sha` and `expected_sha` differ, the target assert fails. This is interpreted as negative evidence indicating that the current deployment is not the intended revision, which serves as grounds for blocking approval.",
+        "code":  "smoke_ok = True\nexpected_sha = \"abc123\"\ndeployed_sha = \"def456\"\n\ntry:\n    assert deployed_sha == expected_sha, \"wrong deployment revision\"\n    decision = \"APPROVE\" if smoke_ok else \"RECHECK\"\nexcept AssertionError:\n    decision = \"BLOCK\"\n\nprint(decision)",
+        "question_type":  "safety",
+        "question":  "\"local smoke\" passed, but the deployed SHA differs from the expected SHA. What is the most appropriate course of action for the review?",
+        "choices":  [
+                        "BLOCK — Since “smoke PASS” is evidence of local behavior and “exact-SHA mismatch” is direct evidence of a discrepancy in the actual deployment revision, these must be resolved first.",
+                        "APPROVE — Since there is one \"PASS\" entry, the SHA mismatch can be ignored.",
+                        "APPROVE — Since the length of the `deployed_sha` string matches that of `expected_sha`, this is the same revision.",
+                        "RECHECK Not necessary — an assert failure is merely a warning and has no bearing on deployment approval."
+                    ],
+        "answer":  "BLOCK — Since “smoke PASS” is evidence of local behavior and “exact-SHA mismatch” is direct evidence of a discrepancy in the actual deployment revision, these must be resolved first.",
+        "explanation":  "1) Since `smoke_ok` is True, the local smoke test has indeed passed. 2) Since `expected_sha` is `abc123` and `deployed_sha` is `def456`, the equality check returns False. 3) The target assert raises an AssertionError because the condition evaluates to False. 4) The `except` block is executed, so the decision is BLOCK. 5) Regarding the claim that the deployment revision was approved, the SHA match gate serves as direct evidence; therefore, the smoke PASS cannot override the mismatch.",
+        "side_card_ids":  [
+                              "PYV161_A1_DEPLOY_VERSION_URL_FLOW",
+                              "PYV161_A1_ENV_MAIN_CHECKLIST_FLOW"
+                          ],
+        "project_context":  "APEX goes beyond simply listing test results; it strengthens the ability to determine which evidence influences the actual approval decision.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assert_statement",
+        "reading_goal_internal":  "local smoke가 PASS여도 deployed_sha와 expected_sha가 다르면 target assert가 실패해 현재 배포가 의도한 revision이 아니라는 negative evidence가 승인 차단 사유가 됨을 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`assert condition, message` raises an AssertionError if condition is False. A gate that fails directly during verification cannot be overridden by other indirect PASS evidence.",
+                                    "how_to_read":  "First, identify what each piece of evidence directly verifies. “local smoke” verifies local behavior, while “SHA assert” verifies that the actual deployment revision matches. If the approval target is the deployment revision, a failure of the latter is decisive.",
+                                    "key_point":  "Even if `smoke_ok=True`, `deployed_sha=\u0027def456\u0027` differs from `expected_sha=\u0027abc123\u0027`, so the target assert fails.",
+                                    "common_mistake":  "You should not ignore direct evidence of failure simply because there are more PASS items. You should first examine the results of the gate most directly linked to the claim you are trying to validate."
+                                },
+        "teaching_example":  {
+                                 "code":  "expected = \"a1\"\nactual = \"b2\"\ntry:\n    assert actual == expected, \"revision mismatch\"\n    result = \"APPROVE\"\nexcept AssertionError:\n    result = \"BLOCK\"\nprint(result)",
+                                 "walkthrough":  "Even if other checks pass, the revision verification will fail if the actual and expected SHA values differ, so it will not be approved."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Since `smoke_ok` is True, the local smoke test has indeed passed. 2) Since `expected_sha` is `abc123` and `deployed_sha` is `def456`, the equality check returns False. 3) The target assert raises an AssertionError because the condition evaluates to False. 4) The `except` block is executed, so the decision is BLOCK. 5) Regarding the claim that the deployment revision was approved, the SHA match gate serves as direct evidence; therefore, the smoke PASS cannot override the mismatch.",
+                                   "why_correct":  "Since the target being verified is an actual deployment revision, a failed exact SHA comparison is the most direct negative evidence.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "APPROVE — Since there is one \"PASS\" entry, the SHA mismatch can be ignored.",
+                                                               "why_wrong":  "Different gates verify different claims. A local smoke PASS does not prove deployment revision matching.",
+                                                               "misread_step":  "Do not count the number of PASS/FAIL results; instead, explain how each gate directly verifies a specific claim."
+                                                           },
+                                   "takeaway":  "Review approval decisions follow this sequence: **claim → direct evidence gate → presence of negative evidence → approve/reject**."
+                               },
+        "target_statement":  "assert deployed_sha == expected_sha, \"wrong deployment revision\"",
+        "focus_span":  "assert deployed_sha == expected_sha, \"wrong deployment revision\"",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "deploy_verification",
+                                "revision_check",
+                                "negative_evidence",
+                                "approval_block",
+                                "release_evidence"
+                            ],
+        "pedagogical_intent":  "predict_exception",
+        "subtype":  "assert_with_message",
+        "secondary_concepts":  [
+                                   "comparison",
+                                   "try_statement",
+                                   "except_clause",
+                                   "literal"
+                               ],
+        "prerequisites":  [
+                              "comparison",
+                              "try_statement"
+                          ],
+        "semantic_operations":  [
+                                    "deployment_revision_validation",
+                                    "negative_evidence_gate",
+                                    "approval_block_decision"
+                                ],
+        "reading_steps":  [
+                              "Since `smoke_ok` is `True`, it is true that the local `smoke` passed.",
+                              "Since `expected_sha` is `abc123` and `deployed_sha` is `def456`, the equality result is `False`.",
+                              "The `target assert` raises an `AssertionError` because the condition evaluates to `False`.",
+                              "The `except` statement is executed, so `decision` becomes `BLOCK`.",
+                              "Regarding the claim of “deployment revision approval,” the SHA match gate serves as direct evidence, so a “smoke PASS” cannot override the mismatch."
+                          ],
+        "same_syntax_example":  "expected = \"a\"\nactual = \"b\"\ntry:\n    assert actual == expected, \"mismatch\"\n    print(\"OK\")\nexcept AssertionError:\n    print(\"BLOCK\")"
+    }
 ]

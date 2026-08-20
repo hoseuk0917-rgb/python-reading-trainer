@@ -1,393 +1,967 @@
 [
-  {
-    "id": "PY39_L06_state_001",
-    "level": 6,
-    "title": "Reading the state",
-    "concepts": [
-      "state",
-      "frontend",
-      "UI"
-    ],
-    "reading_goal": "Understand the concept of \"state,\" which describes the current condition of the screen.",
-    "code": "state = {\n  \"currentCardId\": \"PY39_L06_state_001\",\n  \"showAnswer\": false,\n  \"selectedChoice\": null\n}",
-    "question_type": "meaning_choice",
-    "question": "What does `showAnswer: false` mean?",
-    "choices": [
-      "The card has been deleted",
-      "The correct answers and explanations have not yet been shown",
-      "The server is turned off",
-      "The Git push is complete"
-    ],
-    "answer": "The correct answers and explanations have not yet been shown",
-    "explanation": "State is a collection of values that determine what the UI currently displays. It stores the screen’s state, such as the selected card, filters, and whether the screen is loading. If `showAnswer` is `false`, it means the answer area is still hidden, representing the screen flow before the user selects an answer.",
-    "side_card_ids": [
-      "WEB_frontend_backend_001"
-    ],
-    "project_context": "On the quiz screen, the answer choices, the correct answer indicator, and the list of recommended cards can all be understood as states."
-  },
-  {
-    "id": "PY39_L07_ui_state_server_state_001",
-    "level": 7,
-    "title": "Distinguishing Between UI State and Server State",
-    "concepts": [
-      "UI_state",
-      "server_state",
-      "frontend"
-    ],
-    "reading_goal": "Distinguish between the internal state of the screen and data received from the server.",
-    "code": "UI state:\n  isSettingsOpen = true\n\nserver state:\n  progress = await fetch(\"/api/progress\")",
-    "question_type": "meaning_choice",
-    "question": "What state is `isSettingsOpen` closest to?",
-    "choices": [
-      "server state",
-      "UI state",
-      "database index",
-      "access token"
-    ],
-    "answer": "UI state",
-    "explanation": "isSettingsOpen is UI state meaningful only to the current screen. progress is a local copy of data owned by the server, so it is server state. Server state needs loading, error, staleness, and revalidation policy; mixing the two can leave the screen inconsistent after a server update.",
-    "side_card_ids": [
-      "WEB_frontend_backend_001"
-    ],
-    "project_context": "The \"Top 10 Recommendations\" settings panel and the ability to collapse/expand mobile learning tools are UI states."
-  },
-  {
-    "id": "PY39_L07_localstorage_001",
-    "level": 7,
-    "title": "Reading localStorage",
-    "concepts": [
-      "localStorage",
-      "browser_storage",
-      "persistence"
-    ],
-    "reading_goal": "Understand localStorage, which stores small amounts of data in the browser for a long time.",
-    "code": "localStorage.setItem(\"studyMode\", \"review\")\nconst mode = localStorage.getItem(\"studyMode\")",
-    "question_type": "meaning_choice",
-    "question": "Which of the following is a characteristic of localStorage?",
-    "choices": [
-      "Automatically creates the server database",
-      "You can save values in the browser so they remain even after refreshing the page.",
-      "Push to GitHub",
-      "It always disappears one second later"
-    ],
-    "answer": "You can save values in the browser so they remain even after refreshing the page.",
-    "explanation": "localStorage stores strings for the same origin and can survive refreshes and browser restarts. JSON storage needs stringify, parse, corruption handling, and schema migration. Because same-origin JavaScript can read it, localStorage is risky for access tokens or secrets when XSS is possible.",
-    "side_card_ids": [
-      "WEB_localstorage_001"
-    ],
-    "project_context": "This can be used to save your personal settings, recommendation options, and last selected level before logging in."
-  },
-  {
-    "id": "PY39_L07_sessionstorage_001",
-    "level": 7,
-    "title": "Reading sessionStorage",
-    "concepts": [
-      "sessionStorage",
-      "browser_storage",
-      "session"
-    ],
-    "reading_goal": "Understand sessionStorage, which is retained only for the duration of a tab session.",
-    "code": "sessionStorage.setItem(\"temporaryFilter\", \"level10\")",
-    "question_type": "meaning_choice",
-    "question": "How does sessionStorage differ from localStorage?",
-    "choices": [
-      "It is stored only on the server",
-      "It may disappear when the tab/session ends",
-      "It is always encrypted",
-      "Included in a Git commit"
-    ],
-    "answer": "It may disappear when the tab/session ends",
-    "explanation": "sessionStorage is suitable for values that don’t need to be stored for long, such as temporary filters. sessionStorage is a storage mechanism that retains values only as long as the browser tab remains open. Unlike localStorage, values may be lost when the tab is closed, making it suitable for storing temporary state. Therefore, the correct answer is “It may be lost when the tab or session ends.”",
-    "side_card_ids": [
-      "WEB_auth_001"
-    ],
-    "project_context": "It works well with temporary search filters or the UI selections in the current session."
-  },
-  {
-    "id": "PY39_L08_cache_001",
-    "level": 8,
-    "title": "Read from cache",
-    "concepts": [
-      "cache",
-      "browser",
-      "performance"
-    ],
-    "reading_goal": "Understand the concept of a cache, which rewrites files that have already been received.",
-    "code": "first visit:\n  GET app.js 200\n\nsecond visit:\n  use cached app.js",
-    "question_type": "meaning_choice",
-    "question": "What are the advantages of a cache?",
-    "choices": [
-      "We always guarantee that you have the latest files.",
-      "You can reuse the same file more quickly",
-      "Delete the database",
-      "It automatically generates the correct answer"
-    ],
-    "answer": "You can reuse the same file more quickly",
-    "explanation": "A cache can reuse an earlier response to reduce transfer time and network use. Whether the second visit reuses it directly, revalidates with the server, or downloads it again depends on Cache-Control, validators, and any service-worker strategy. Design freshness rules together with speed.",
-    "side_card_ids": [
-      "PYV158_A1_PERFORMANCE_FLOW"
-    ],
-    "project_context": "In a PWA, the `app.js` file or the lesson JSON may remain in the cache, preventing updates from being displayed."
-  },
-  {
-    "id": "PY39_L08_stale_data_001",
-    "level": 8,
-    "title": "Reading stale data",
-    "concepts": [
-      "stale_data",
-      "cache",
-      "freshness"
-    ],
-    "reading_goal": "Understand the issue of stale data, where old data is displayed due to caching.",
-    "code": "server has:\n  APP_DATA_VERSION = v39\n\nbrowser still shows:\n  APP_DATA_VERSION = v38",
-    "question_type": "meaning_choice",
-    "question": "What is this situation most like?",
-    "choices": [
-      "The server always failed",
-      "The browser is using an old cache.",
-      "All the cards have been deleted.",
-      "My GitHub account has changed"
-    ],
-    "answer": "The browser is using an old cache.",
-    "explanation": "If the server file is a new version but the browser is still using the old file, this results in stale data. Stale data occurs when the data remaining on the screen or in the cache differs from the latest version. You need to check whether a refresh, a new request, or a version key change is required. Therefore, the correct answer is “The browser is viewing outdated cache data.”",
-    "side_card_ids": [
-      "PL_cache_001"
-    ],
-    "project_context": "If the new v39 isn't applied, you should try a hard refresh or check the version query."
-  },
-  {
-    "id": "PY39_L08_cache_busting_001",
-    "level": 8,
-    "title": "Read about cache busting",
-    "concepts": [
-      "return",
-      "cache_busting",
-      "version_query",
-      "APP_DATA_VERSION"
-    ],
-    "reading_goal": "Understand cache busting, which involves appending a version value to the URL to trigger a new file request.",
-    "code": "const APP_DATA_VERSION = \"20260529_v39\"\n\nfunction withDataVersion(path) {\n  return path + \"?v=\" + APP_DATA_VERSION\n}",
-    "question_type": "meaning_choice",
-    "question": "Why change APP_DATA_VERSION?",
-    "choices": [
-      "Make ordinary HTTP caches treat it as a different URL",
-      "Delete the server",
-      "Disable every service worker automatically",
-      "Guarantee valid JSON"
-    ],
-    "answer": "Make ordinary HTTP caches treat it as a different URL",
-    "explanation": "Changing a version query normally gives ordinary HTTP caches a different URL and separates it from the old response. It is not an absolute freshness guarantee if a service worker ignores the query in a custom cache key or an intermediary is misconfigured. Combine it with content-hashed names or explicit cache policy and verify the response version.",
-    "side_card_ids": [
-      "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
-    ],
-    "project_context": "That's why we're incrementing the version number in app.js, as seen with v38 and v39."
-  },
-  {
-    "id": "PY39_L09_service_worker_001",
-    "level": 9,
-    "title": "An Introduction to Service Workers",
-    "concepts": [
-      "service_worker",
-      "PWA",
-      "offline_cache"
-    ],
-    "reading_goal": "Understand service workers, which can handle network requests and caching in PWAs.",
-    "code": "self.addEventListener(\"fetch\", event => {\n  event.respondWith(cacheFirst(event.request))\n})",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best describes the role of a service worker?",
-    "choices": [
-      "Replaces a Git push",
-      "You can intercept a request and choose between a cached response or a network response.",
-      "Create a database password",
-      "Verify the correct answers on the card"
-    ],
-    "answer": "You can intercept a request and choose between a cached response or a network response.",
-    "explanation": "A service worker can intercept fetch events within its scope and provide the Response selected by a custom cacheFirst function. Cache-first improves offline use and speed but can keep serving stale responses. Understand install, activate, and control lifecycle, cache cleanup, and update strategy.",
-    "side_card_ids": [
-      "WEB_pwa_001"
-    ],
-    "project_context": "When deploying as a PWA, it is important to understand the issue of incorporating the latest lessons."
-  },
-  {
-    "id": "PY39_L09_offline_mode_001",
-    "level": 9,
-    "title": "Reading in Offline Mode",
-    "concepts": [
-      "if",
-      "else",
-      "try_except",
-      "offline_mode",
-      "PWA",
-      "cache"
-    ],
-    "reading_goal": "Understand offline mode, which provides some features even without a network connection.",
-    "code": "try:\n  fetch latest lessons\ncatch network error:\n  if cached lessons exist:\n    load cached lessons\n  else:\n    show offline unavailable",
-    "question_type": "meaning_choice",
-    "question": "What is the natural behavior when offline?",
-    "choices": [
-      "Delete all data",
-      "Loads cached lessons",
-      "Push to GitHub",
-      "Change the server port"
-    ],
-    "answer": "Loads cached lessons",
-    "explanation": "navigator.onLine is only a hint about a network interface and does not prove that the server is reachable. It is safer to attempt the request and fall back to cache on network failure. The cache may also be empty, so show an unavailable state and the last update time when appropriate.",
-    "side_card_ids": [
-      "PL_cache_001"
-    ],
-    "project_context": "Learning apps work well with offline review features, but they need to indicate when content is up to date."
-  },
-  {
-    "id": "PY39_L09_optimistic_update_001",
-    "level": 9,
-    "title": "Read \"Optimistic Update\"",
-    "concepts": [
-      "optimistic_update",
-      "UI",
-      "server_sync"
-    ],
-    "reading_goal": "Understand \"optimistic updates,\" where the screen is updated before the server responds, and reverted if the update fails.",
-    "code": "markCardCorrect(cardId); // update UI now\ntry {\n  await saveProgress(cardId);\n} catch (error) {\n  rollbackCardCorrect(cardId);\n}",
-    "question_type": "meaning_choice",
-    "question": "Why is `rollbackCardCorrect` needed?",
-    "choices": [
-      "Revert the early UI change when saving fails",
-      "Delete the account",
-      "Force the server to succeed",
-      "Clear every browser cache"
-    ],
-    "answer": "Revert the early UI change when saving fails",
-    "explanation": "An optimistic update changes the UI before the server responds. On failure, roll back or retry and tell the user. When multiple mutations overlap, track request IDs or mutation order so an older failure does not undo a newer successful UI state.",
-    "side_card_ids": [
-      "PYV102_A9_RUNTIME_STORAGE_STATE"
-    ],
-    "project_context": "Saving the progress after the user clicks the correct answer can improve the user experience when the API is slow."
-  },
-  {
-    "id": "PY39_L10_loading_error_empty_001",
-    "level": 10,
-    "title": "Reading \"loading,\" \"error,\" and \"empty state\"",
-    "concepts": [
-      "loading_state",
-      "error_state",
-      "empty_state",
-      "UX"
-    ],
-    "reading_goal": "Understand why you need to handle loading, error, and empty states separately on the data screen.",
-    "code": "if (loading) {\n  show(\"Loading\");\n} else if (error) {\n  show(\"Could not load\");\n} else if (items.length === 0) {\n  show(\"No cards to display\");\n} else {\n  render(items);\n}",
-    "question_type": "meaning_choice",
-    "question": "What is the state when `items.length == 0`?",
-    "choices": [
-      "loading state",
-      "empty state",
-      "server state",
-      "Git state"
-    ],
-    "answer": "empty state",
-    "explanation": "Separating loading, error, empty, and success tells the user why the screen has no content. In this order, empty is shown only after loading finishes, no error exists, and items is an empty array. If items could still be undefined, initialize it or guard before reading length.",
-    "side_card_ids": [],
-    "project_context": "This is a UI pattern used when there are no recommended cards or no search results."
-  },
-  {
-    "id": "PY39_L10_debounce_001",
-    "level": 10,
-    "title": "Read about debounce",
-    "concepts": [
-      "debounce",
-      "input",
-      "performance",
-      "search"
-    ],
-    "reading_goal": "Understand debouncing, which executes only once after a certain amount of time has passed since input stopped.",
-    "code": "onSearchInput(text):\n  cancelPreviousTimer()\n  setTimer(300ms, () => search(text))",
-    "question_type": "meaning_choice",
-    "question": "Why use debounce in a search box?",
-    "choices": [
-      "Avoid an API call for every keystroke",
-      "Run every old request after the new one",
-      "Store a password",
-      "Disable the keyboard"
-    ],
-    "answer": "Avoid an API call for every keystroke",
-    "explanation": "Debounce calls search only after 300 ms passes with no new input, reducing one-request-per-keystroke behavior. Canceling a timer does not stop a fetch already started, so use AbortController or request IDs to prevent a late old response from overwriting newer results.",
-    "side_card_ids": [],
-    "project_context": "This is important when integrating the card search, node search, and RAG search UIs."
-  },
-  {
-    "id": "PY39_L10_event_handler_001",
-    "level": 10,
-    "title": "Reading Event Handlers",
-    "concepts": [
-      "event_handler",
-      "click",
-      "UI"
-    ],
-    "reading_goal": "Understand the role of event handlers in responding to user actions.",
-    "code": "button.addEventListener(\"click\", () => {\n  showNextCard()\n})",
-    "question_type": "meaning_choice",
-    "question": "When does this event handler run?",
-    "choices": [
-      "When the server starts",
-      "When you click the button",
-      "When pushing to Git",
-      "When compressing files"
-    ],
-    "answer": "When you click the button",
-    "explanation": "An event handler is a function that responds to user events such as clicks, input, and scrolling. An event handler is a function that runs when events such as user clicks, input, or scrolling occur. You need to check which event it is attached to and how the state or screen changes after it runs. Therefore, the correct answer is “when the button is clicked.”",
-    "side_card_ids": [
-      "PYV161_A1_ROLLBACK_SEPARATION_UI_FLOW"
-    ],
-    "project_context": "The \"Next Card,\" \"View Answer,\" and \"Open Settings\" buttons are all linked to event handlers."
-  },
-  {
-    "id": "PY39_L10_render_flow_001",
-    "level": 10,
-    "title": "Reading the Render Flow",
-    "concepts": [
-      "render",
-      "state_change",
-      "UI_flow"
-    ],
-    "reading_goal": "Understand the render flow, in which the screen is redrawn when the state changes.",
-    "code": "const nextIndex = state.currentIndex + 1;\nif (nextIndex < state.cards.length) {\n  state.currentIndex = nextIndex;\n  renderCard(state.cards[state.currentIndex]);\n  updateProgressText();\n}",
-    "question_type": "meaning_choice",
-    "question": "What action is required after `state.currentIndex` changes?",
-    "choices": [
-      "Create a Git commit",
-      "Redraws the screen to match the new currentIndex",
-      "Shut down the server",
-      "Delete the database"
-    ],
-    "answer": "Redraws the screen to match the new currentIndex",
-    "explanation": "After confirming that the next index is below cards.length, the code updates state and renders the new card and progress text. Incrementing without the boundary check could pass undefined after the last card. State changes and DOM updates should use the same state snapshot.",
-    "side_card_ids": [],
-    "project_context": "It connects to the flow of moving on to the next card among the 10 recommended cards."
-  },
-  {
-    "id": "PY39_L10_pwa_update_check_001",
-    "level": 10,
-    "title": "PWA Update Check Process",
-    "concepts": [
-      "if",
-      "PWA_update",
-      "cache",
-      "version_check"
-    ],
-    "reading_goal": "I understand why version checks are necessary since PWAs can use old cache data.",
-    "code": "currentVersion = \"20260529_v38\"\nserverVersion = \"20260529_v39\"\n\nif currentVersion != serverVersion:\n  show(\"A new version is available\")",
-    "question_type": "meaning_choice",
-    "question": "What makes for a natural UI when versions differ?",
-    "choices": [
-      "Delete All Cards",
-      "Notification of a new version or prompt to refresh",
-      "Force Logout",
-      "Changing Your GitHub Account"
-    ],
-    "answer": "Notification of a new version or prompt to refresh",
-    "explanation": "If serverVersion comes from a trustworthy non-stale path and differs from the running version, the UI can announce an update. This alone does not mean a new service worker has installed and activated. Account for a waiting worker and preserve user work when offering a safe reload.",
-    "side_card_ids": [
-      "PYV160_A1_PWA_STATE_STORAGE_FLOW"
-    ],
-    "project_context": "This is an operational pattern for verifying the APP_DATA_VERSION and the version of the file actually being loaded."
-  }
+    {
+        "id":  "PY39_L06_state_001",
+        "level":  6,
+        "title":  "Reading the key:value pairs of a `dict` literal and linking them to the actual initial UI state",
+        "concepts":  [
+                         "literal",
+                         "assignment",
+                         "subscription"
+                     ],
+        "reading_goal":  "Read each key:value pair in the `dict` literal by associating it with the actual UI state—the current card, the correct answer display, and the selected value.",
+        "code":  "state = {\"current_card_id\": \"PY39_L06_state_001\", \"show_answer\": False, \"selected_choice\": None}\nprint(state[\"show_answer\"], state[\"selected_choice\"])",
+        "question_type":  "meaning_choice",
+        "question":  "Which of the following best represents the initial UI state described by this dict literal?",
+        "choices":  [
+                        "The current card is determined, but the correct answer is still hidden and no answer has been selected yet",
+                        "There is no current card, and the answer is already shown.",
+                        "The correct answer is shown, but the choice options are missing.",
+                        "The selected value is False, and the current card ID is None."
+                    ],
+        "answer":  "The current card is determined, but the correct answer is still hidden and no answer has been selected yet",
+        "explanation":  "`current_card_id` refers to the current card, `show_answer=False` means the answer is hidden, and `selected_choice=None` means no choice has been selected yet. These three key-value pairs are grouped into a single state dictionary.",
+        "side_card_ids":  [
+                              "WEB_frontend_backend_001"
+                          ],
+        "project_context":  "In the learning module, this connects to the flow that determines rendering by grouping the current card, whether the answer is revealed, and the selection status into a single object.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "literal",
+        "reading_goal_internal":  "dict 리터럴의 각 key:value가 현재 카드·정답 표시·선택값이라는 서로 다른 UI 상태를 한 mapping에 묶는다는 점을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A `dict` literal combines multiple ``key: value`` pairs into a single mapping.",
+                                    "how_to_read":  "First, look at each key name and match it with the associated initial value to determine which screen state it represents, one pair at a time.",
+                                    "key_point":  "`show_answer=False` and `selected_choice=None` do not represent simple memorization of values, but rather indicate the initial UI state: “the correct answer is still hidden, and no selection has been made yet.”",
+                                    "common_mistake":  "It’s easy to mistake `False` and `None` for strings, or to swap the values of different keys."
+                                },
+        "teaching_example":  {
+                                 "code":  "state = {\"page\": \"home\", \"loading\": True, \"error\": None}\nprint(state[\"loading\"])",
+                                 "walkthrough":  "Three key-value pairs are grouped into a single dictionary, and `loading=True` indicates that the program is currently loading."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `current_card_id` contains the current card ID. 2) `show_answer` is set to `False`, so the answer is hidden. 3) `selected_choice` is `None`, so no answer has been selected yet. 4) These three states are grouped together in a single dictionary literal.",
+                                   "why_correct":  "If you interpret the values associated with each key literally in terms of UI state, they become “Card currently present / Correct answer hidden / No selection.”",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "The correct answer is shown, but the choice options are missing.",
+                                                               "why_wrong":  "Since `show_answer` is set to `False`, the answer is not displayed.",
+                                                               "misread_step":  "Check the Boolean/None values associated with each key, one pair at a time."
+                                                           },
+                                   "takeaway":  "The `state` dictionary is read in the following order: **check the meaning of the key → check the associated value → interpret multiple states as a single snapshot**."
+                               },
+        "target_statement":  "{\"current_card_id\": \"PY39_L06_state_001\", \"show_answer\": False, \"selected_choice\": None}",
+        "focus_span":  "{\"current_card_id\": \"PY39_L06_state_001\", \"show_answer\": False, \"selected_choice\": None}",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "state",
+                                "current card",
+                                "show answer",
+                                "selected choice",
+                                "dict"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY39_L07_ui_state_server_state_001",
+        "level":  7,
+        "title":  "Read the mapping between UI state and server state as a dictionary literal",
+        "concepts":  [
+                         "literal",
+                         "assignment",
+                         "subscription"
+                     ],
+        "reading_goal":  "Read each key and value pair inside the curly braces to understand the structure, where `isSettingsOpen` represents the UI state and `progress` represents the server state.",
+        "code":  "state_kinds = {\"isSettingsOpen\": \"UI state\", \"progress\": \"server state\"}\nprint(state_kinds[\"isSettingsOpen\"])",
+        "question_type":  "output_prediction",
+        "question":  "What is the result of `state_kinds[\u0027isSettingsOpen\u0027]`?",
+        "choices":  [
+                        "UI state",
+                        "server state",
+                        "isSettingsOpen",
+                        "progress"
+                    ],
+        "answer":  "UI state",
+        "explanation":  "1) The dict literal contains two key-value pairs. 2) The value of the `isSettingsOpen` key is the UI state. 3) A square bracket lookup retrieves the value associated with that key. 4) Therefore, the UI state is printed.",
+        "side_card_ids":  [
+                              "WEB_frontend_backend_001"
+                          ],
+        "project_context":  "This connects to state design on the frontend that keeps the screen’s own state separate from data fetched from the server.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "literal",
+        "reading_goal_internal":  "중괄호 안 각 key와 value를 한 쌍씩 읽어 isSettingsOpen은 UI state, progress는 server state로 분류된 구조를 이해한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A dict literal, in the form `{key: value, ...}`, creates a single Python dict object containing multiple key-value pairs.",
+                                    "how_to_read":  "First, identify the scope of the curly braces, then match the key on the left of each colon with the value on the right, one pair at a time.",
+                                    "key_point":  "The `isSettingsOpen` key is associated with a UI state string.",
+                                    "common_mistake":  "It is easy to misread the two strings as merely ordered list items, or to treat `isSettingsOpen` itself as server state."
+                                },
+        "teaching_example":  {
+                                 "code":  "kinds = {\"menuOpen\": \"UI state\", \"profile\": \"server state\"}\nprint(kinds[\"menuOpen\"])",
+                                 "walkthrough":  "Since the value associated with the `menuOpen` key is the UI state, that string is printed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The dict literal contains two key-value pairs. 2) The value of the `isSettingsOpen` key is the UI state. 3) A square bracket lookup retrieves the value associated with that key. 4) Therefore, the UI state is printed.",
+                                   "why_correct":  "The `dict` contains `isSettingsOpen` and the UI state as a single key-value pair.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "server state",
+                                                               "why_wrong":  "The server state is another value associated with the progress key.",
+                                                               "misread_step":  "Check the correspondence between each key and the value immediately to its right, one pair at a time."
+                                                           },
+                                   "takeaway":  "A dict literal is read as **brace boundaries → check the key → connect the value to the right of the colon → match each entry**."
+                               },
+        "target_statement":  "{\"isSettingsOpen\": \"UI state\", \"progress\": \"server state\"}",
+        "focus_span":  "{\"isSettingsOpen\": \"UI state\", \"progress\": \"server state\"}",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "UI_state",
+                                "server_state",
+                                "frontend",
+                                "state_classification"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY39_L07_localstorage_001",
+        "level":  7,
+        "title":  "Read the stored `studyMode` value and assign it to `mode`",
+        "concepts":  [
+                         "assignment",
+                         "subscription",
+                         "literal"
+                     ],
+        "reading_goal":  "First, evaluate the storage lookup on the right side of the assignment to obtain a result, then read the sequence where that result is stored in the new variable `mode`.",
+        "code":  "storage = {\"studyMode\": \"review\"}\nmode = storage[\"studyMode\"]\nprint(mode)",
+        "question_type":  "output_prediction",
+        "question":  "What is the value of `mode` after the assignment is complete?",
+        "choices":  [
+                        "review",
+                        "studyMode",
+                        "storage",
+                        "None"
+                    ],
+        "answer":  "review",
+        "explanation":  "1) `storage` contains a `studyMode` key and a `review` value. 2) The right-hand side, `storage[\u0027studyMode\u0027]`, is evaluated first to retrieve `review`. 3) That result is stored in the new variable `mode` on the left-hand side. 4) `print(mode)` outputs `review`.",
+        "side_card_ids":  [
+                              "WEB_localstorage_001"
+                          ],
+        "project_context":  "This is a Python implementation that models the process of reloading previously saved settings—such as the learning mode—from the browser storage and applying them to the screen state.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "대입문 오른쪽 storage 조회를 먼저 평가해 review를 얻은 뒤 그 결과가 새 이름 mode에 저장되는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The `assignment` operator evaluates the expression on the right first and stores the result in the variable on the left.",
+                                    "how_to_read":  "Determine the lookup result on the right first, then determine the new value of the variable on the left.",
+                                    "key_point":  "Since `storage[\u0027studyMode\u0027]` returns `review`, `mode` refers to `review`.",
+                                    "common_mistake":  "You should not assume that this Python mapping example actually creates or permanently stores the browser’s localStorage itself."
+                                },
+        "teaching_example":  {
+                                 "code":  "saved = {\"theme\": \"dark\"}\ntheme = saved[\"theme\"]\nprint(theme)",
+                                 "walkthrough":  "After looking up \"dict\" on the right, \"dark\" is created, and its value is stored in \"theme.\""
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `storage` contains a `studyMode` key and a `review` value. 2) The right-hand side, `storage[\u0027studyMode\u0027]`, is evaluated first to retrieve `review`. 3) That result is stored in the new variable `mode` on the left-hand side. 4) `print(mode)` outputs `review`.",
+                                   "why_correct":  "The search result \"review\" on the right side of the query is stored as-is in `mode`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "studyMode",
+                                                               "why_wrong":  "`studyMode` is the key used for lookup; what is stored in `mode` is the value associated with that key.",
+                                                               "misread_step":  "Separate the \"key\" string from the \"value\" in the query result."
+                                                           },
+                                   "takeaway":  "\"assignment\" should be read as **right evaluation → result confirmation → save to left target**."
+                               },
+        "target_statement":  "mode = storage[\"studyMode\"]",
+        "focus_span":  "mode = storage[\"studyMode\"]",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "localStorage",
+                                "browser_storage",
+                                "persistence",
+                                "saved_setting"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY39_L07_sessionstorage_001",
+        "level":  7,
+        "title":  "Read the temporary settings for the current session using `session[\u0027temporaryFilter\u0027]`",
+        "concepts":  [
+                         "subscription",
+                         "literal",
+                         "assignment"
+                     ],
+        "reading_goal":  "Read the structure that uses the string inside the square brackets as a dict key to return the temporary setting value \"level10\" associated with that key.",
+        "code":  "session = {\"temporaryFilter\": \"level10\"}\ncurrent_filter = session[\"temporaryFilter\"]\nprint(current_filter)",
+        "question_type":  "output_prediction",
+        "question":  "What is the result of `session[\u0027temporaryFilter\u0027]`?",
+        "choices":  [
+                        "level10",
+                        "temporaryFilter",
+                        "session",
+                        "None"
+                    ],
+        "answer":  "level10",
+        "explanation":  "1) `session` is a dictionary with a key named `temporaryFilter`. 2) The key inside the square brackets is the string `temporaryFilter`. 3) The value associated with that key is `level10`. 4) The result of the lookup, `level10`, is stored in `current_filter` and printed.",
+        "side_card_ids":  [
+                              "WEB_auth_001"
+                          ],
+        "project_context":  "This safely expresses, using a Python mapping, the concept of retrieving session-based UI settings—such as temporary filters used only within a single tab.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "대괄호 안 문자열을 dict key로 사용해 그 key에 연결된 임시 설정값 level10을 반환받는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The `mapping[key]` in `dict` is a subscription expression that returns the value associated with the key.",
+                                    "how_to_read":  "Check the `dict` on the left side of the square brackets, and find the value associated with the actual string of the `key` inside the parentheses.",
+                                    "key_point":  "The `temporaryFilter` key is associated with the string \"level10\".",
+                                    "common_mistake":  "You should not confuse the concept of sessionStorage’s lifetime with that of a Python dict’s runtime lifetime. Here, we are modeling only the lookup syntax in Python."
+                                },
+        "teaching_example":  {
+                                 "code":  "session = {\"page\": \"search\"}\nprint(session[\"page\"])",
+                                 "walkthrough":  "The bracket lookup returns the string `search` associated with the `page` key."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `session` is a dictionary with a key named `temporaryFilter`. 2) The key inside the square brackets is the string `temporaryFilter`. 3) The value associated with that key is `level10`. 4) The result of the lookup, `level10`, is stored in `current_filter` and printed.",
+                                   "why_correct":  "This is because the value directly associated with the `temporaryFilter` key is `level10`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "temporaryFilter",
+                                                               "why_wrong":  "`temporaryFilter` is the lookup key, and the result is the value associated with that key.",
+                                                               "misread_step":  "Distinguish the key inside the brackets from the result of the entire bracket expression."
+                                                           },
+                                   "takeaway":  "A dict lookup is described as **target dict → evaluate key → find matching key → return value**."
+                               },
+        "target_statement":  "session[\"temporaryFilter\"]",
+        "focus_span":  "session[\"temporaryFilter\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "sessionStorage",
+                                "browser_storage",
+                                "session",
+                                "temporary_setting"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY39_L08_cache_001",
+        "level":  8,
+        "title":  "Selecting a Cache Reuse Path Using a Conditional Expression",
+        "concepts":  [
+                         "conditional_expression",
+                         "assignment",
+                         "name_reference",
+                         "literal"
+                     ],
+        "reading_goal":  "First, read the boolean indicating whether there is an asset in the cache, and understand the flow of the conditional expression that selects either `cache` or `network`.",
+        "code":  "cache_has_app = True\nsource = \"cache\" if cache_has_app else \"network\"",
+        "question_type":  "multiple_choice",
+        "question":  "What is the string stored in `source`?",
+        "choices":  [
+                        "cache",
+                        "network",
+                        "app.js",
+                        "True"
+                    ],
+        "answer":  "cache",
+        "explanation":  "`cache_has_app` Since this is True, the conditional expression selects the left candidate, “`cache`.” This is because a conditional expression returns the value preceding “if” when the condition is true. A common source of confusion: “network network” is the value selected by the “else” branch when the condition is False. Source of Misinterpretation: This occurs when the direction of the true/false selection in the conditional expression is read in reverse. The conditional expression follows the rule: **condition first → left if true, right if false**.",
+        "side_card_ids":  [
+                              "PYV158_A1_PERFORMANCE_FLOW"
+                          ],
+        "project_context":  "This ties into the PWA and browser cache workflow, which reuses static assets already received during the second visit to reduce network traffic.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "conditional_expression",
+        "reading_goal_internal":  "캐시에 asset이 있는지 나타내는 boolean을 먼저 읽고 조건 표현식이 cache 또는 network 중 하나를 선택하는 흐름을 이해한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`A if condition else B` is a conditional expression that chooses A when the condition is true and B when it is false.",
+                                    "how_to_read":  "First, check the condition in the middle; if it is True, select the left option (`cache`); if it is False, select the right option (`network`).",
+                                    "key_point":  "The advantage of a cache is its domain context, and the focus of the Python syntax is the conditional expression that selects one of the two data sources.",
+                                    "common_mistake":  "It’s easy to assume that `cache` is selected without fail when reading from left to right. In reality, the selection is determined by the value of `cache_has_app`."
+                                },
+        "teaching_example":  {
+                                 "code":  "has_cached_css = False\nsource = \"cache\" if has_cached_css else \"network\"",
+                                 "walkthrough":  "Since the condition is False, the right `network` is selected."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`cache_has_app` Since this is True, the conditional expression selects the left candidate: `cache`.",
+                                   "why_correct":  "This is because a conditional expression returns the value preceding the `if` statement when the condition is true.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "network",
+                                                               "why_wrong":  "`network` is the value selected in the `else` branch when the condition is `False`.",
+                                                               "misread_step":  "This is a case where the true/false selection direction in a conditional expression was read in reverse."
+                                                           },
+                                   "takeaway":  "A conditional expression follows the **condition-first pattern: if true, execute the left side; if false, execute the right side**."
+                               },
+        "target_statement":  "source = \"cache\" if cache_has_app else \"network\"",
+        "focus_span":  "\"cache\" if cache_has_app else \"network\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "browser cache",
+                                "asset reuse",
+                                "app.js",
+                                "network request"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY39_L08_stale_data_001",
+        "level":  8,
+        "title":  "Check if the browser and server versions differ using `!=`",
+        "concepts":  [
+                         "comparison",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Compare the two actual version strings and read the flow where the result of `!=` is stored as the stale-state decision value.",
+        "code":  "server_version = \"v39\"\nbrowser_version = \"v38\"\nis_stale = browser_version != server_version",
+        "question_type":  "multiple_choice",
+        "question":  "`is_stale` What value is stored in ?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "v38",
+                        "v39"
+                    ],
+        "answer":  "True",
+        "explanation":  "`browser_version` `v38` is v38 and ``server_version`` is v39. Since they are different strings, ``!=`` returns True. This is because the not-equal comparison returns True when the two values are different. A common mistake: False. The actual string values of the two variables are different—v38 and v39. Point of Misinterpretation: This occurs when a user mistakes the similarity of parts of the strings for equality of the entire values. When comparing versions, the comparison is based on **the entire actual string values on both sides, rather than just the variable names**.",
+        "side_card_ids":  [
+                              "PL_cache_001"
+                          ],
+        "project_context":  "After deployment, it connects to code that determines whether the learner is viewing an outdated screen due to a discrepancy between the server’s data version and the version held by the browser.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "두 버전 문자열을 실제 값으로 비교하고 `!=` 결과가 stale 상태 판정값으로 저장되는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left != right` is a comparison expression that returns True if the two values are different and False if they are equal.",
+                                    "how_to_read":  "First, check the actual strings stored in both variables, then compare whether they are the same or different.",
+                                    "key_point":  "\"stale cache\" refers to browser behavior, while the Python syntax focus is on the `!=` operator, which checks for discrepancies between two string versions.",
+                                    "common_mistake":  "Since both v38 and v39 start with “`v`,” it’s easy to assume they belong to the same family and return False. However, comparisons examine the entire string value."
+                                },
+        "teaching_example":  {
+                                 "code":  "server_version = \"v5\"\nbrowser_version = \"v5\"\nis_stale = browser_version != server_version",
+                                 "walkthrough":  "Since the two strings are equal, the result of `!=` is False."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`browser_version` is v38 and `server_version` is v39. Because the strings differ, `!=` evaluates to True.",
+                                   "why_correct":  "The \"not-equal\" comparison returns True when two values are different.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "The actual string values of the two variables differ: v38 and v39.",
+                                                               "misread_step":  "This is a case where a partial similarity in strings was mistaken for equivalence of the entire value."
+                                                           },
+                                   "takeaway":  "For version comparison, compare **the full actual string values on both sides rather than the variable names**."
+                               },
+        "target_statement":  "is_stale = browser_version != server_version",
+        "focus_span":  "browser_version != server_version",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "stale cache",
+                                "data version",
+                                "browser state",
+                                "server version"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY39_L08_cache_busting_001",
+        "level":  8,
+        "title":  "Create a new URL by inserting the data version into an f-string",
+        "concepts":  [
+                         "f_string",
+                         "return_statement",
+                         "name_reference",
+                         "literal"
+                     ],
+        "reading_goal":  "Read how the f-string combines the variable value with a fixed query string and returns a versioned URL.",
+        "code":  "APP_DATA_VERSION = \"20260529_v39\"\ndef with_data_version(path):\n    return f\"{path}?v={APP_DATA_VERSION}\"\n\nurl = with_data_version(\"/lesson.json\")",
+        "question_type":  "multiple_choice",
+        "question":  "`url` What string is stored in *?*",
+        "choices":  [
+                        "/lesson.json",
+                        "/lesson.json?v=20260529_v39",
+                        "APP_DATA_VERSION",
+                        "20260529_v39"
+                    ],
+        "answer":  "/lesson.json?v=20260529_v39",
+        "explanation":  "In an f-string, `{path}` is evaluated to `/lesson.json`, and `{APP_DATA_VERSION}` is evaluated to `20260529_v39`. Combined with the `?v=` in between, this forms the final URL. This is because f-strings insert the result of the curly-brace expression into the string. A common mistake: APP_DATA_VERSION is a variable name, and the actual URL contains the variable’s value. Point of misinterpretation: This occurs when the expression in the f-string is not evaluated. An f-string **creates a new string by inserting the **current** variable value into the string structure.**",
+        "side_card_ids":  [
+                              "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
+                          ],
+        "project_context":  "lesson·side-card This is linked to the code that appends a version query so that the browser recognizes a different URL when the data version changes.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "f_string",
+        "reading_goal_internal":  "f-string의 변수 값이 고정 query 문자열과 합쳐져 versioned URL로 반환되는 과정을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "An f-string evaluates ``{expression}`` and inserts the result into the string.",
+                                    "how_to_read":  "Replace `{path}` and `{APP_DATA_VERSION}` with their actual values, respectively, and leave the `?v=` in between as is.",
+                                    "key_point":  "The fact that version changes bypass the browser cache is a domain-specific effect, and the Python syntax focus is on f-strings, which insert values into URL strings.",
+                                    "common_mistake":  "`APP_DATA_VERSION` It’s easy to assume that the variable name “” is included in the URL as-is. Inside the curly braces, the variable’s value is used."
+                                },
+        "teaching_example":  {
+                                 "code":  "VERSION = \"v2\"\ndef versioned(path):\n    return f\"{path}?v={VERSION}\"\n\nurl = versioned(\"/cards.json\")",
+                                 "walkthrough":  "The `path` and `VERSION` values are inserted, returning `/cards.json?v=v2`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "In an f-string, ``{path}`` evaluates to ``/lesson.json``, and ``{APP_DATA_VERSION}`` evaluates to ``20260529_v39``. These are combined with ``?v=`` to form the final URL.",
+                                   "why_correct":  "This is because f-strings insert the results of block expressions into strings.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "APP_DATA_VERSION",
+                                                               "why_wrong":  "It is a variable name, and the actual URL contains the variable\u0027s value.",
+                                                               "misread_step":  "This is a case where the expression in an f-string has not been evaluated."
+                                                           },
+                                   "takeaway":  "An f-string **creates a new string by inserting the current variable values into the string structure.**"
+                               },
+        "target_statement":  "return f\"{path}?v={APP_DATA_VERSION}\"",
+        "focus_span":  "f\"{path}?v={APP_DATA_VERSION}\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "cache busting",
+                                "APP_DATA_VERSION",
+                                "query string",
+                                "versioned URL"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY39_L09_service_worker_001",
+        "level":  9,
+        "title":  "Select “or” for the “cache-first” response",
+        "concepts":  [
+                         "boolean_operation",
+                         "call",
+                         "assignment",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the short-circuit flow where the left-side cache lookup is truthy, skipping the network call and selecting the cached response.",
+        "code":  "network_calls = []\n\ndef network_fetch(request):\n    network_calls.append(request)\n    return \"network-response\"\n\ncache = {\"/lesson.json\": \"cached-response\"}\nrequest = \"/lesson.json\"\nresponse = cache.get(request) or network_fetch(request)",
+        "question_type":  "multiple_choice",
+        "question":  "What is the combination of values for `response` and `network_calls`?",
+        "choices":  [
+                        "cached-response / []",
+                        "network-response / [\"/lesson.json\"]",
+                        "cached-response / [\"/lesson.json\"]",
+                        "None / []"
+                    ],
+        "answer":  "cached-response / []",
+        "explanation":  "The left cache lookup returns `cached-response`, which is truthy. Therefore, the `or` operator selects that value immediately and does not call `network_fetch`. This is due to Python’s `or` operator’s short-circuit evaluation. A common source of confusion: `network-response / [\"/lesson.json\"]` is a cache hit, so the call to `network_fetch` on the right is not executed. Point of misinterpretation: This occurs when the short-circuit behavior of `or` is overlooked. The \"cache-first\" strategy is interpreted as: **cache lookup → return if a hit → fall back to the network if a miss**.",
+        "side_card_ids":  [
+                              "WEB_pwa_001"
+                          ],
+        "project_context":  "This ties into the “cache-first” strategy, where PWAs prioritize serving cached lessons to improve speed and offline usability.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "boolean_operation",
+        "reading_goal_internal":  "왼쪽 cache lookup이 truthy일 때 network 호출을 생략하고 cached response를 선택하는 short-circuit 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left or right` uses `left` as the result if `left` is truthy, and evaluates `right` if `left` is falsy.",
+                                    "how_to_read":  "The left-hand expression is evaluated first, and the decision to call the right-hand side is determined based on its truth value.",
+                                    "key_point":  "This Python example models the **meaning of the cache-first strategy** for service workers; the actual service worker code runs in JavaScript.",
+                                    "common_mistake":  "It’s easy to assume that `network_fetch` always runs, even on a cache hit. The ``or`` operator does not evaluate the right-hand side if the left-hand side is truthy."
+                                },
+        "teaching_example":  {
+                                 "code":  "calls = []\ndef fetch():\n    calls.append(\"network\")\n    return \"net\"\n\ncached = \"cached\"\nresult = cached or fetch()",
+                                 "walkthrough":  "Since `cached` is truthy, `fetch` is not called, and `result` is `cached`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The left cache lookup returns `cached-response`, which is truthy. Therefore, the `or` operator selects that value immediately and does not call `network_fetch`.",
+                                   "why_correct":  "This is due to the short-circuit evaluation of Python’`or`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "network-response / [\"/lesson.json\"]",
+                                                               "why_wrong":  "Since it’s a cache hit, it does not proceed to the network_fetch call on the right.",
+                                                               "misread_step":  "This is an example of overlooking the short-circuit behavior of `or`."
+                                                           },
+                                   "takeaway":  "The \"cache-first\" strategy works as follows: **cache lookup → if a hit, return; if a miss, use the network**."
+                               },
+        "target_statement":  "response = cache.get(request) or network_fetch(request)",
+        "focus_span":  "cache.get(request) or network_fetch(request)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "service worker",
+                                "PWA",
+                                "cache first",
+                                "offline"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY39_L09_offline_mode_001",
+        "level":  9,
+        "title":  "Fall back to cached lessons in the event of a network failure",
+        "concepts":  [
+                         "except_clause",
+                         "try_statement",
+                         "if_statement",
+                         "assignment",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the flow where, after a network exception is handled by a `typed except` statement, the lesson state is restored depending on whether the cache exists.",
+        "code":  "def fetch_latest_lessons():\n    raise ConnectionError(\"offline\")\n\ncached_lessons = [\"lesson-1\", \"lesson-2\"]\ntry:\n    lessons = fetch_latest_lessons()\nexcept ConnectionError:\n    if cached_lessons:\n        lessons = cached_lessons\n    else:\n        lessons = [\"offline unavailable\"]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `lessons`?",
+        "choices":  [
+                        "[\"lesson-1\", \"lesson-2\"]",
+                        "[\"offline unavailable\"]",
+                        "None",
+                        "[]"
+                    ],
+        "answer":  "[\"lesson-1\", \"lesson-2\"]",
+        "explanation":  "Since the network function raises a ConnectionError, control flows to the `except` block. Because `cached_lessons` contains two items and is truthy, that list becomes `lessons`. This is because the cache fallback condition following the `typed except` is true. Common incorrect answer: [\"offline unavailable\"] That branch executes only when `cached_lessons` is empty. Point of misinterpretation: This occurs when the condition for cache existence is read in reverse. The offline flow is interpreted as **attempt network → failure exception → check cache → fallback**.",
+        "side_card_ids":  [
+                              "PL_cache_001"
+                          ],
+        "project_context":  "This ties into the UX where, when the learning app is offline, it displays the last saved lesson and indicates the \"unavailable\" status only when there is no cache.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "except_clause",
+        "reading_goal_internal":  "네트워크 exception이 typed except로 넘어간 뒤 cache 존재 여부에 따라 lesson 상태가 복구되는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`except ConnectionError:` is a typed `except` statement that executes when the specified exception occurs within the `try` block.",
+                                    "how_to_read":  "Identify which call can raise the exception, then continue to the fallback condition in the `except` body.",
+                                    "key_point":  "In actual offline UX, rather than relying solely on the `navigator.onLine` value, it is more straightforward to check for request failures and fall back to the cache.",
+                                    "common_mistake":  "It’s easy to assume that the app should always close if a network request fails. However, if a usable cache is available, there may be a recovery path."
+                                },
+        "teaching_example":  {
+                                 "code":  "cached = [\"old\"]\ntry:\n    raise ConnectionError()\nexcept ConnectionError:\n    value = cached if cached else []",
+                                 "walkthrough":  "A `ConnectionError` is raised, and since `cached` is truthy, the `old` value is selected."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the network function raises a ConnectionError, the program proceeds to the `except` block. `cached_lessons` contains two items and is truthy, so that list becomes `lessons`.",
+                                   "why_correct":  "This is because the cache fallback condition following `typed except` is true.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\"offline unavailable\"]",
+                                                               "why_wrong":  "That branch is executed only when `cached_lessons` is empty.",
+                                                               "misread_step":  "This is an example of a condition where the cache presence is interpreted in the opposite way."
+                                                           },
+                                   "takeaway":  "The offline flow is interpreted as **network attempt → failure exception → cache check → fallback**."
+                               },
+        "target_statement":  "except ConnectionError:",
+        "focus_span":  "except ConnectionError:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "offline mode",
+                                "cache fallback",
+                                "network error",
+                                "PWA"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY39_L09_optimistic_update_001",
+        "level":  9,
+        "title":  "Rolling back the optimistic UI state after a save failure",
+        "concepts":  [
+                         "call",
+                         "except_clause",
+                         "try_statement",
+                         "function_definition"
+                     ],
+        "reading_goal":  "First, read the execution sequence where the changed UI state reverts to its original state after a server save failure triggers a call to the rollback function.",
+        "code":  "ui_state = {\"c1\": False}\n\ndef mark_card_correct(card_id):\n    ui_state[card_id] = True\n\ndef save_progress(card_id):\n    raise RuntimeError(\"save failed\")\n\ndef rollback_card_correct(card_id):\n    ui_state[card_id] = False\n\ncard_id = \"c1\"\nmark_card_correct(card_id)\ntry:\n    save_progress(card_id)\nexcept RuntimeError:\n    rollback_card_correct(card_id)\n\nfinal_state = ui_state[card_id]",
+        "question_type":  "multiple_choice",
+        "question":  "`final_state` What is the value of ?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "c1",
+                        "None"
+                    ],
+        "answer":  "False",
+        "explanation":  "The UI state first becomes True, but `save_progress` raises a `RuntimeError`, causing the flow to branch to the `except` block. The `rollback` function then sets the state back to False because the `rollback` function is actually called in the exception-handling branch. Common mistake: “True True” refers to an intermediate state immediately after the optimistic update, not the final state after the rollback. Point of confusion: This occurs when the recovery call following a failed server save is not accounted for. An optimistic update follows this sequence: **apply changes → save to server → rollback if failed**.",
+        "side_card_ids":  [
+                              "PYV102_A9_RUNTIME_STORAGE_STATE"
+                          ],
+        "project_context":  "The UI is updated immediately after clicking the correct answer, but if progress saving fails, it is linked to a UX flow that realigns the user’s screen with the server’s state.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "먼저 바꾼 UI 상태가 서버 저장 실패 후 rollback 함수 호출로 원래 상태로 돌아가는 실행 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`rollback_card_correct(card_id)` is a function call that restores the previous UI state by passing the card ID to the function.",
+                                    "how_to_read":  "We’ll look at the exception conditions that lead to the call, along with the changes in state before and after the call.",
+                                    "key_point":  "Optimistic updates provide a fast user experience, but if the server fails to save the data, the local UI and server state may differ, requiring a rollback or retry.",
+                                    "common_mistake":  "It’s easy to assume that once the UI has been changed, it should remain that way regardless of whether the server failed to save the data. Recovery processing may be necessary to maintain consistency."
+                                },
+        "teaching_example":  {
+                                 "code":  "state = {\"saved\": False}\ndef mark(): state[\"saved\"] = True\ndef rollback(): state[\"saved\"] = False\nmark()\ntry:\n    raise RuntimeError(\"fail\")\nexcept RuntimeError:\n    rollback()",
+                                 "walkthrough":  "The `mark` variable, which was set to `True`, is set to `False` following a rollback call triggered by a save failure exception."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The UI state first becomes True, but `save_progress` raises a `RuntimeError`, causing the program to jump to the `except` block. The `rollback` function then sets the state back to False.",
+                                   "why_correct":  "This is because the rollback function is actually called in the exception handling branch.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "True",
+                                                               "why_wrong":  "True is the intermediate state immediately after the optimistic update, not the final state after the rollback.",
+                                                               "misread_step":  "This is a case where the recovery call was not applied after a server storage failure."
+                                                           },
+                                   "takeaway":  "\"Optimistic update\" is read in the following order: **pre-commit → save to server → rollback if failed**."
+                               },
+        "target_statement":  "rollback_card_correct(card_id)",
+        "focus_span":  "rollback_card_correct(card_id)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "optimistic update",
+                                "rollback",
+                                "UI state",
+                                "server sync"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY39_L10_loading_error_empty_001",
+        "level":  10,
+        "title":  "Selecting the \"empty items\" condition in the `elif` block if the previous condition is not met",
+        "concepts":  [
+                         "elif_clause",
+                         "if_statement",
+                         "boolean_operation",
+                         "assignment"
+                     ],
+        "reading_goal":  "In an `if/elif` chain, when the preceding conditions are False, the `elif not items:` statement is evaluated, and the sequence in which the `empty` state is selected is described.",
+        "code":  "loading = False\nerror = False\nitems = []\n\nif loading:\n    state = \"loading\"\nelif error:\n    state = \"error\"\nelif not items:\n    state = \"empty\"\nelse:\n    state = \"ready\"\n\nprint(state)",
+        "question_type":  "output_prediction",
+        "question":  "If you execute the branching statement with these values, what will ``state`` be?",
+        "choices":  [
+                        "loading",
+                        "error",
+                        "empty",
+                        "ready"
+                    ],
+        "answer":  "empty",
+        "explanation":  "1) Since `loading` is False, the first `if` statement is not selected. 2) Since `error` is also False, the first `elif` statement is not selected. 3) An empty list `items` is falsy, so `not items` evaluates to True. 4) The body of that `elif` statement is executed, and the state becomes `empty`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This is linked to state management that displays an empty UI—distinct from loading/error screens—when there are no recommended cards or search results.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "elif_clause",
+        "reading_goal_internal":  "if/elif 체인에서 앞 조건들이 False인 뒤 `elif not items:`를 평가해 empty 상태가 선택되는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`elif` is a branching clause that checks the next condition only if the preceding if/elif condition is not selected.",
+                                    "how_to_read":  "It checks the conditions from the top down and evaluates the current `elif` condition only when all preceding branches are false.",
+                                    "key_point":  "Currently, since `elif` is not an independent `if` statement but part of a single chain with the preceding branch, the result of the preceding condition takes precedence.",
+                                    "common_mistake":  "It’s easy to assume that the `empty` branch is executed from the first line just by seeing that `items` is empty. However, if `loading` or `error` is True, the earlier branch is selected first."
+                                },
+        "teaching_example":  {
+                                 "code":  "loading = False\nerror = False\nrows = []\nif loading:\n    state = \"loading\"\nelif error:\n    state = \"error\"\nelif not rows:\n    state = \"empty\"\nprint(state)",
+                                 "walkthrough":  "Since the first two conditions are False and `rows` is an empty list, `not rows` evaluates to True, so `empty` is selected."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Since `loading` is False, the first `if` statement is not selected. 2) Since `error` is also False, the first `elif` statement is not selected. 3) An empty list `items` is falsy, so `not items` evaluates to True. 4) The body of that `elif` statement is executed, and the state becomes `empty`.",
+                                   "why_correct":  "Since neither of the first two branches was selected, `elif not items:` evaluates to True, so the empty state is selected.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "ready",
+                                                               "why_wrong":  "`ready` is the `else` path that executes when all preceding conditions are `False`, but currently the `empty` condition is `True`.",
+                                                               "misread_step":  "Do not treat `if`, `elif`, and `else` as separate conditions; instead, look for the first true branch starting from the top."
+                                                           },
+                                   "takeaway":  "`elif` It is read in the following order: **Check if the previous branch failed → Evaluate the current condition → If true, select the current block**."
+                               },
+        "target_statement":  "elif not items:",
+        "focus_span":  "elif not items:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "loading_state",
+                                "error_state",
+                                "empty_state",
+                                "ui_state"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY39_L10_debounce_001",
+        "level":  10,
+        "title":  "Update the generation value by += 1 for each search input",
+        "concepts":  [
+                         "augmented_assignment",
+                         "subscription",
+                         "assignment"
+                     ],
+        "reading_goal":  "The ``+= 1`` for a dictionary entry tracks state changes by reading the current generation, adding 1, and storing the result back under the same key.",
+        "code":  "state = {\"generation\": 4}\nquery = \"rag\"\n\nstate[\"generation\"] += 1\nscheduled_generation = state[\"generation\"]\n\nprint(scheduled_generation)",
+        "question_type":  "output_prediction",
+        "question":  "What value is stored in `scheduled_generation` after the `target` statement is executed?",
+        "choices":  [
+                        "4",
+                        "5",
+                        "1",
+                        "rag"
+                    ],
+        "answer":  "5",
+        "explanation":  "1) The current generation is 4. 2) `state[\u0027generation\u0027] += 1` calculates 4 + 1. 3) The result, 5, is stored in the same dictionary entry. 4) The next line reads that 5 and stores it in `scheduled_generation`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It is linked to a generation counter used to distinguish the latest input generation in search debouncing or stale-response prevention.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "augmented_assignment",
+        "reading_goal_internal":  "딕셔너리 항목에 대한 `+= 1`이 현재 generation을 읽고 1을 더해 같은 key에 다시 저장하는 상태 변화를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`target += value` is a compound assignment that performs an operation on the current value of the target and stores the result back into the same target.",
+                                    "how_to_read":  "If the target is a dict entry, it reads the current value of `state[\u0027generation\u0027]`, adds 1 to it, and then updates the value for the same key.",
+                                    "key_point":  "If the same line is executed for each new search query, the \"generation\" value will continue to increase, allowing it to be used as a way to distinguish which query is the most recent.",
+                                    "common_mistake":  "It’s easy to think that `+= 1` simply increments from the initial value of 0 to 1 each time. However, it increments based on the most recent value."
+                                },
+        "teaching_example":  {
+                                 "code":  "state = {\"version\": 7}\nstate[\"version\"] += 1\nprint(state[\"version\"])",
+                                 "walkthrough":  "It reads the existing value of 7, adds 1 to it, and stores the result (8) in the same key."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The current generation is 4. 2) `state[\u0027generation\u0027] += 1` calculates 4 + 1. 3) The result, 5, is stored in the same dictionary entry. 4) The next line reads that 5 and stores it in `scheduled_generation`.",
+                                   "why_correct":  "Since the compound assignment increments the existing value of 4 by 1, the new value is 5.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "1",
+                                                               "why_wrong":  "It is an increment of 1; it is not an assignment that always overwrites the existing value with 1.",
+                                                               "misread_step":  "`+=` Separate the number on the right from the entire current value after assignment."
+                                                           },
+                                   "takeaway":  "Compound assignment is read in the following order: **read current value → perform operation → store new value in the same object**."
+                               },
+        "target_statement":  "state[\"generation\"] += 1",
+        "focus_span":  "state[\"generation\"] += 1",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "debounce",
+                                "search_input",
+                                "generation",
+                                "stale_request"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY39_L10_event_handler_001",
+        "level":  10,
+        "title":  "Tracking the call path by separating callback registration from the actual call site",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "name_reference",
+                         "function_definition",
+                         "subscription"
+                     ],
+        "reading_goal":  "In `register_handler(show_next_card)`, only the function object is passed and stored; the callback is not yet executed and is first executed when the subsequent `handlers[0]()` is actually reached.",
+        "code":  "events = []\nhandlers = []\n\ndef show_next_card():\n    events.append(\"callback ran\")\n    return \"next\"\n\ndef register_handler(handler):\n    handlers.append(handler)\n\nregister_handler(show_next_card)\nevents.append(\"registered\")\nresult = handlers[0]()\nprint(events)",
+        "question_type":  "flow",
+        "question":  "Which of the following most accurately describes the path through which the callback is actually executed in the current code?",
+        "choices":  [
+                        "`register_handler(show_next_card)` It stores only the function object, and the callback is actually executed in the subsequent ``handlers[0]()``.",
+                        "The callback is executed once when `show_next_card` is defined.",
+                        "`register_handler(show_next_card)` It immediately executes the code up to the `show_next_card` body.",
+                        "The callback is never executed."
+                    ],
+        "answer":  "`register_handler(show_next_card)` It stores only the function object, and the callback is actually executed in the subsequent ``handlers[0]()``.",
+        "explanation":  "1) Although `show_next_card` is defined as a function, the definition itself does not execute the body. 2) ``register_handler(show_next_card)`` passes a function object without parentheses to the `handler` parameter as a positional argument. 3) `register_handler` stores that function object in `handlers` and returns it. 4) Since the subsequent ``handlers[0]()`` includes actual calling parentheses, `show_next_card` is executed at that point. 5) Therefore, `events` first contains `registered`, followed by `callback ran`.",
+        "side_card_ids":  [
+                              "PYV161_A1_ROLLBACK_SEPARATION_UI_FLOW"
+                          ],
+        "project_context":  "This directly addresses the issue in APEX where points are deducted for “failing to verify where the modified function is actually called.” This is particularly important in UI handler, plugin, callback, and dependency injection code.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "`register_handler(show_next_card)`에서는 함수 객체만 전달·저장되고 callback은 아직 실행되지 않으며, 뒤의 `handlers[0]()`에 실제로 도달할 때 처음 실행된다는 경로를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "Function names can be passed to other functions as values, even without being called. For a registered callback to be considered executed, the control flow must reach a separate call expression.",
+                                    "how_to_read":  "First, check whether the argument inside the parentheses in the `register` call is a function object or the result of the call, and then locate where the `()` is used to actually call the stored callback later.",
+                                    "key_point":  "Since `register_handler(show_next_card)` does not contain `show_next_card()`, it is not executed at the time of registration. The evidence of execution is the subsequent `handlers[0]()`.",
+                                    "common_mistake":  "You must not mistake the fact that a function has been defined or included in a handler list as evidence that it has “already been executed.” In an APEX-style review, you must verify the actual call site and the input/control flow leading up to that call site."
+                                },
+        "teaching_example":  {
+                                 "code":  "events = []\nhandlers = []\ndef save():\n    events.append(\"saved\")\ndef register(handler):\n    handlers.append(handler)\nregister(save)\nevents.append(\"registered\")\nhandlers[0]()\nprint(events)",
+                                 "walkthrough":  "`register(save)` only saves the `save` function object. `registered` is recorded first, and `saved` is added only after `handlers[0]()` is executed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Although `show_next_card` is defined as a function, the definition itself does not execute the body. 2) ``register_handler(show_next_card)`` passes a function object without parentheses to the `handler` parameter as a positional argument. 3) `register_handler` stores that function object in `handlers` and returns it. 4) Since the subsequent ``handlers[0]()`` includes actual calling parentheses, `show_next_card` is executed at that point. 5) Therefore, `events` first contains `registered`, followed by `callback ran`.",
+                                   "why_correct":  "This is because the `register` call does not include parentheses for the callback; instead, the actual execution site is ``handlers[0]()``, which is created by retrieving the stored function object and appending ``()``.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "`register_handler(show_next_card)` It immediately executes the code up to the `show_next_card` body.",
+                                                               "why_wrong":  "The call argument is `show_next_card()`, not `show_next_card`. Therefore, it simply passes the function object without executing its body.",
+                                                               "misread_step":  "Show the function definition, registration, and actual call as separate steps, and locate the actual call site where ``()`` appears."
+                                                           },
+                                   "takeaway":  "When reviewing call paths, distinguish between **defined → registered → reached the actual call site → executed**. Do not claim actual execution based solely on definition or registration."
+                               },
+        "target_statement":  "register_handler(show_next_card)",
+        "focus_span":  "show_next_card",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "event_handler",
+                                "callback",
+                                "handler_registration",
+                                "call_path",
+                                "reachability"
+                            ],
+        "pedagogical_intent":  "identify_meaning",
+        "subtype":  "positional_argument",
+        "secondary_concepts":  [
+                                   "call",
+                                   "name_reference",
+                                   "function_definition",
+                                   "subscription"
+                               ],
+        "prerequisites":  [
+                              "function_definition",
+                              "name_reference",
+                              "call"
+                          ],
+        "semantic_operations":  [
+                                    "callback_registration",
+                                    "call_path_trace",
+                                    "callback_invocation"
+                                ],
+        "reading_steps":  [
+                              "Although `show_next_card` is defined as a function, the definition itself does not execute the body.",
+                              "`register_handler(show_next_card)` passes a function object without parentheses to the `handler` parameter as a positional argument.",
+                              "`register_handler` stores the function object in `handlers` and returns it.",
+                              "Since there are actual calling parentheses following ``handlers[0]()``, `show_next_card` is executed at that point.",
+                              "Therefore, in `events`, `registered` comes first, followed by `callback ran`."
+                          ],
+        "same_syntax_example":  "callbacks = []\ndef run():\n    return \"done\"\ndef add(callback):\n    callbacks.append(callback)\nadd(run)\nprint(callbacks[0]())"
+    },
+    {
+        "id":  "PY39_L10_render_flow_001",
+        "level":  10,
+        "title":  "Compare how the actual rendering results change before and after state assignment",
+        "concepts":  [
+                         "assignment",
+                         "attribute_access",
+                         "name_reference",
+                         "call",
+                         "subscription"
+                     ],
+        "reading_goal":  "It tracks the Before→After change: before the assignment, `render_current(state)` returns B, and after the assignment sets `current_index` to 2, the same consumer returns C.",
+        "code":  "class State:\n    pass\n\ncards = [\"A\", \"B\", \"C\", \"D\"]\nstate = State()\nstate.current_index = 1\n\ndef render_current(state):\n    return cards[state.current_index]\n\nbefore = render_current(state)\nnext_index = state.current_index + 1\nstate.current_index = next_index\nafter = render_current(state)\nprint(before, after)",
+        "question_type":  "flow",
+        "question":  "Which of the following most accurately describes the actual Before→After behavior of the `target` assignment?",
+        "choices":  [
+                        "Before the assignment, the `render` result is `B`; after the assignment, `current_index` becomes 2, and the same `render` result changes to `C`.",
+                        "The moment `next_index` is calculated, `state.current_index` automatically becomes 2, so the assignment statement has no effect.",
+                        "Even after the assignment, `render_current` still returns only the previous value, B.",
+                        "The assignment modifies the `cards` list itself from B to C"
+                    ],
+        "answer":  "Before the assignment, the `render` result is `B`; after the assignment, `current_index` becomes 2, and the same `render` result changes to `C`.",
+        "explanation":  "1) Since `state.current_index` is initially 1, `before` is `cards[1]`, which is B. 2) `next_index = state.current_index + 1` produces the integer 2 but does not yet modify the `state` attribute. 3) The target `state.current_index = next_index` stores the value 2 on the right-hand side in the actual attribute. 4) In the “after” calculation, `render_current` reads the new `current_index` (2) and returns `C`, which is `cards[2]`. 5) Therefore, the observable result changes from `B` to `C`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This is a training exercise in which, when explaining patch details in APEX, you go beyond simply stating “the value was changed” to describe how actual user behavior or downstream results change from one state to another.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "target 대입 전에는 `render_current(state)`가 B를 반환하고, 대입으로 current_index가 2가 된 뒤에는 같은 consumer가 C를 반환한다는 Before→After 변화를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`object.attr = value` Modifies the state of an object’s attribute, which may also affect the results of other functions that read that attribute later. The effects of the modification must be observed not only in the line of code where the modification occurs but also in the code that uses that value.",
+                                    "how_to_read":  "Record the state value immediately before executing the target, check the consumer’s results, and then apply the same consumer again after executing the target to compare any observable differences.",
+                                    "key_point":  "Simply setting `next_index` to 2 does not change the screen; the result of `render_current`, which reads `state.current_index` after the `target` assignment is executed, changes to `C`.",
+                                    "common_mistake":  "If you only explain that a single line of code has changed without describing what the result is from the user’s perspective—what it was before and what it is now—the “Before→After” explanation is incomplete."
+                                },
+        "teaching_example":  {
+                                 "code":  "class State:\n    pass\nitems = [\"A\", \"B\"]\nstate = State()\nstate.index = 0\nbefore = items[state.index]\nnext_index = 1\nstate.index = next_index\nafter = items[state.index]\nprint(before, after)",
+                                 "walkthrough":  "Before the assignment, index 0 selects A, and after the assignment, index 1 selects B. The state change alters the consumer’s result from A to B."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Since `state.current_index` is initially 1, `before` is `cards[1]`, which is B. 2) `next_index = state.current_index + 1` produces the integer 2 but does not yet modify the `state` attribute. 3) The target `state.current_index = next_index` stores the value 2 on the right-hand side in the actual attribute. 4) In the “after” calculation, `render_current` reads the new `current_index` (2) and returns `C`, which is `cards[2]`. 5) Therefore, the observable result changes from `B` to `C`.",
+                                   "why_correct":  "This is because the `target` assignment changes the actual stored value of `state.current_index` from 1 to 2, and `render_current` consumes that attribute.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "The moment `next_index` is calculated, `state.current_index` automatically becomes 2, so the assignment statement has no effect.",
+                                                               "why_wrong":  "next_index is a separate local variable. The object’s attribute remains 1 until `state.current_index = next_index` is executed.",
+                                                               "misread_step":  "Describe the pre-modification value, the target execution, and the post-modification consumer result as three distinct time points."
+                                                           },
+                                   "takeaway":  "For the “Before→After” explanation to be accurate, it must connect **the pre-modification observation → the state changed by the target → the code that consumes that state → the post-modification observation**."
+                               },
+        "target_statement":  "state.current_index = next_index",
+        "focus_span":  "state.current_index = next_index",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "render_flow",
+                                "state_change",
+                                "current_index",
+                                "before_after",
+                                "consumer_effect"
+                            ],
+        "pedagogical_intent":  "trace_state",
+        "subtype":  "attribute_assignment",
+        "secondary_concepts":  [
+                                   "attribute_access",
+                                   "name_reference",
+                                   "call",
+                                   "subscription"
+                               ],
+        "prerequisites":  [
+                              "attribute_access",
+                              "assignment",
+                              "call"
+                          ],
+        "semantic_operations":  [
+                                    "ui_index_update",
+                                    "before_after_compare",
+                                    "consumer_effect_trace"
+                                ],
+        "reading_steps":  [
+                              "Since `state.current_index` is initially 1, `before` refers to `cards[1]`, which is B.",
+                              "`next_index = state.current_index + 1` produces the integer 2 but does not yet modify the `state` attribute.",
+                              "`state.current_index = next_index` stores the value 2 in the attribute on the right.",
+                              "In the calculation, `render_current` reads the new `current_index` (2) and returns `C`, which is `cards[2]`.",
+                              "Therefore, the observable result changes from B to C."
+                          ],
+        "same_syntax_example":  "class State:\n    pass\nitems = [\"old\", \"new\"]\nstate = State()\nstate.index = 0\nbefore = items[state.index]\nstate.index = 1\nafter = items[state.index]\nprint(before, after)"
+    },
+    {
+        "id":  "PY39_L10_pwa_update_check_001",
+        "level":  10,
+        "title":  "Check if the current version differs from the server version using the != operator",
+        "concepts":  [
+                         "comparison",
+                         "if_statement",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "`!=` Check the actual version strings on both sides; if they differ, the condition evaluates to True, triggering the flow to the update instruction branch.",
+        "code":  "current_version = \"20260529_v38\"\nserver_version = \"20260529_v39\"\n\nupdate_available = current_version != server_version\nprint(update_available)",
+        "question_type":  "output_prediction",
+        "question":  "What is the result of `current_version != server_version`?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "20260529_v39",
+                        "20260529_v38"
+                    ],
+        "answer":  "True",
+        "explanation":  "1) The string on the left is 20260529_v38. 2) The string on the right is 20260529_v39. 3) The two values are not the same. 4) Therefore, the result of ``!=`` is True.",
+        "side_card_ids":  [
+                              "PYV160_A1_PWA_STATE_STORAGE_FLOW"
+                          ],
+        "project_context":  "This connects to the workflow where the system compares actual data versions to determine whether outdated PWAs remain due to service workers or the HTTP cache, and then decides whether to provide update instructions.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "`!=` 양쪽의 실제 버전 문자열을 확인하고 서로 다르면 True가 되어 업데이트 안내 분기로 이어지는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`a != b` compares whether two values are equal to each other and returns a Boolean value.",
+                                    "how_to_read":  "Convert the current values of both variables into actual strings and check whether they are the same or different. If they are different, the `!=` result is True.",
+                                    "key_point":  "The result of a comparison is True or False, not the new version string itself.",
+                                    "common_mistake":  "It is easy to misunderstand this as an operation that automatically selects the larger version number. `!=` does not compare order; it simply checks whether the values are not equal."
+                                },
+        "teaching_example":  {
+                                 "code":  "local = \"v4\"\nremote = \"v5\"\nchanged = local != remote\nprint(changed)",
+                                 "walkthrough":  "Since v4 and v5 are different strings, `changed` is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The string on the left is 20260529_v38. 2) The string on the right is 20260529_v39. 3) The two values are not the same. 4) Therefore, the result of ``!=`` is True.",
+                                   "why_correct":  "Since the strings in the two versions are different, the not-equal comparison returns True.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "20260529_v39",
+                                                               "why_wrong":  "`server_version` is merely the right-hand operand in the comparison; the final result of the comparison is a Boolean.",
+                                                               "misread_step":  "Distinguish between the values of operands and the Boolean results produced by comparison expressions."
+                                                           },
+                                   "takeaway":  "`!=` is read as **check both values → determine if they are equal → True if they are not equal**."
+                               },
+        "target_statement":  "current_version != server_version",
+        "focus_span":  "current_version != server_version",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "pwa_update",
+                                "cache",
+                                "version_check",
+                                "deployment_version"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    }
 ]

@@ -1,450 +1,975 @@
 [
-  {
-    "id": "PY22_L07_env_api_key_001",
-    "level": 7,
-    "title": "Reading the API Key from Environment Variables",
-    "concepts": [
-      "if",
-      "import",
-      "env",
-      "api_key",
-      "secret",
-      "os.getenv"
-    ],
-    "reading_goal": "Understand the structure that reads API keys from environment variables rather than hard-coding them directly into the code.",
-    "code": "import os\n\napi_key = os.getenv(\"OPENAI_API_KEY\")\nif not api_key:\n    raise RuntimeError(\"missing OPENAI_API_KEY\")",
-    "question_type": "meaning_choice",
-    "question": "What happens if there is no api_key?",
-    "choices": [
-      "Continue running with an empty key",
-      "Automatically issues keys",
-      "Upload the key to GitHub",
-      "A RuntimeError occurs"
-    ],
-    "answer": "A RuntimeError occurs",
-    "explanation": "Environment variables are a way to inject sensitive values, such as API keys, from outside the code. If a key is missing, the process can fail early on, clearly indicating the cause. If the code proceeds silently when a secret is missing, it will result in an unexplained authentication error later on, so it is better to cause a failure early on. Therefore, the correct answer is “A RuntimeError occurs.”",
-    "side_card_ids": [
-      "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
-    ],
-    "project_context": "This is the standard security pattern for handling LLM APIs, Supabase, Cloudflare, and AWS keys."
-  },
-  {
-    "id": "PY22_L07_gitignore_env_001",
-    "level": 7,
-    "title": "Reading .env and .gitignore",
-    "concepts": [
-      "comment",
-      "env",
-      "gitignore",
-      "secret",
-      "security"
-    ],
-    "reading_goal": "Understand the settings that prevent secret files from being pushed to Git.",
-    "code": "# .gitignore\n.env\n.env.local\nsecrets.json",
-    "question_type": "meaning_choice",
-    "question": "Why is .env added to .gitignore?",
-    "choices": [
-      "To prevent the app from running",
-      "I'm trying to delete a Python file",
-      "To force the browser to use its cache",
-      "To prevent sensitive information, such as API keys, from being uploaded to Git,"
-    ],
-    "answer": "To prevent sensitive information, such as API keys, from being uploaded to Git,",
-    "explanation": ".gitignore helps keep untracked .env, .env.local, and secrets.json files out of new commits. Adding an ignore rule does not erase a secret that was already committed, so revoke or rotate it immediately and investigate exposure. Document required variable names without values in a file such as .env.example.",
-    "side_card_ids": [
-      "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
-    ],
-    "project_context": "Even a personal project can become vulnerable as soon as the key is uploaded to a public GitHub repository."
-  },
-  {
-    "id": "PY22_L08_bearer_header_001",
-    "level": 8,
-    "title": "Reading the Bearer Token Header",
-    "concepts": [
-      "bearer_token",
-      "authorization_header",
-      "api_auth"
-    ],
-    "reading_goal": "It reads the structure for sending a token in the Authorization header of an API request.",
-    "code": "headers = {\n    \"Authorization\": f\"Bearer {access_token}\",\n    \"Content-Type\": \"application/json\",\n}",
-    "question_type": "meaning_choice",
-    "question": "Authorization: Bearer ... What is the purpose of this header?",
-    "choices": [
-      "Convert the response to CSV",
-      "Secure the port",
-      "Initialize the database",
-      "Sends the access token held by the requester to the server"
-    ],
-    "answer": "Sends the access token held by the requester to the server",
-    "explanation": "Authorization: Bearer presents a token held by the client to the server. As the name implies, possession may grant authority, so transmit it over HTTPS and keep it out of URLs, logs, and error messages. The server must validate signature, issuer, audience, expiry, and required scopes; merely sending the header does not complete authentication.",
-    "side_card_ids": [
-      "PYV102_A7_AUTH_SECURITY"
-    ],
-    "project_context": "This often comes up when calling FastAPI or external APIs from the front end."
-  },
-  {
-    "id": "PY22_L08_fastapi_header_token_001",
-    "level": 8,
-    "title": "Reading the FastAPI Authorization Header",
-    "concepts": [
-      "if",
-      "def",
-      "function",
-      "return",
-      "import",
-      "fastapi",
-      "header",
-      "authorization",
-      "token"
-    ],
-    "reading_goal": "Understand the structure for reading the Authorization header in a FastAPI endpoint.",
-    "code": "from fastapi import Header, HTTPException\n\n@app.get(\"/me\")\ndef me(authorization: str | None = Header(default=None)):\n    if authorization is None:\n        raise HTTPException(status_code=401, detail=\"missing token\")\n    return {\"auth\": authorization}",
-    "question_type": "meaning_choice",
-    "question": "If `authorization` is `None`, what status code is returned?",
-    "choices": [
-      "200",
-      "304",
-      "404",
-      "401"
-    ],
-    "answer": "401",
-    "explanation": "When the authorization header is absent, this code raises 401. However, it checks only that a header exists; it does not validate the Bearer scheme, token signature, expiry, or permissions, and it returns the raw credential in the response. A real private endpoint must validate the token and never expose credentials in a response or log.",
-    "side_card_ids": [],
-    "project_context": "This is the basic structure for creating an API that is accessible only to logged-in users."
-  },
-  {
-    "id": "PY22_L08_jwt_parts_001",
-    "level": 8,
-    "title": "Reading an Example Token Split on Periods",
-    "concepts": [
-      "print",
-      "jwt",
-      "header",
-      "payload",
-      "signature"
-    ],
-    "reading_goal": "I understand that a JWT consists of three parts separated by periods (.).",
-    "code": "token = \"header.payload.signature\"\nparts = token.split(\".\")\nprint(len(parts))",
-    "question_type": "output_prediction",
-    "question": "What's the output?",
-    "choices": [
-      "2",
-      "1",
-      "header",
-      "3"
-    ],
-    "answer": "3",
-    "explanation": "The given string has three period-separated parts, so split returns a list of length 3. A signed compact JWT (JWS) commonly has protected header, payload, and signature parts, while compact JWE can have five, and any three-part string is not automatically a valid JWT. The payload is normally not encrypted, so do not place secrets there and validate signatures and claims with a trusted library.",
-    "side_card_ids": [
-      "WEB_auth_001"
-    ],
-    "project_context": "When looking at a token, this exercise focuses on understanding its structure first, rather than memorizing the entire original text."
-  },
-  {
-    "id": "PY22_L09_jwt_payload_claims_001",
-    "level": 9,
-    "title": "Reading JWT Payload Claims",
-    "concepts": [
-      "jwt",
-      "claim",
-      "exp",
-      "sub",
-      "payload"
-    ],
-    "reading_goal": "Understand the meaning of claims such as \"sub\" and \"exp\" within the token payload.",
-    "code": "payload = {\n    \"sub\": \"user_123\",\n    \"role\": \"admin\",\n    \"exp\": 1893456000\n}",
-    "question_type": "meaning_choice",
-    "question": "What does the sub claim usually represent?",
-    "choices": [
-      "A server port",
-      "A file size",
-      "A query result count",
-      "An identifier for the subject represented by the token"
-    ],
-    "answer": "An identifier for the subject represented by the token",
-    "explanation": "sub means subject and identifies the entity represented by the token in the issuer's context. That entity may be a user, service, or something else, so it is not always a user ID. Decoding a payload does not make it trustworthy; validate the signature and application-required claims such as exp, iss, and aud.",
-    "side_card_ids": [
-      "WEB_auth_001"
-    ],
-    "project_context": "This is linked to the storage and retrieval of API keys by user, as well as the separation and linking of individual learning records."
-  },
-  {
-    "id": "PY22_L09_permission_check_001",
-    "level": 9,
-    "title": "Reading the Authorization Check Code",
-    "concepts": [
-      "if",
-      "def",
-      "function",
-      "permission",
-      "role",
-      "authorization",
-      "403"
-    ],
-    "reading_goal": "I'm reading about a system that returns a 403 error when authentication is successful but the user lacks sufficient permissions.",
-    "code": "def require_admin(user):\n    if user[\"role\"] != \"admin\":\n        raise HTTPException(status_code=403, detail=\"forbidden\")",
-    "question_type": "meaning_choice",
-    "question": "If the role is not \"admin,\" what status code is returned?",
-    "choices": [
-      "401",
-      "200",
-      "304",
-      "403"
-    ],
-    "answer": "403",
-    "explanation": "For an authenticated user whose trusted role is not admin, this function raises 403 Forbidden. If user is merely a client-provided dictionary, its role can be forged; obtain it from a validated token claim or server-side authorization store. Fine-grained systems also check the resource and action, and the code should handle a missing role field.",
-    "side_card_ids": [],
-    "project_context": "This is necessary to distinguish between the data modification API for administrators and the API for general users."
-  },
-  {
-    "id": "PY22_L09_password_hash_001",
-    "level": 9,
-    "title": "Reading Password Hash Verification",
-    "concepts": [
-      "if",
-      "def",
-      "function",
-      "return",
-      "password_hash",
-      "verify",
-      "security"
-    ],
-    "reading_goal": "Understand the structure that verifies hashes without storing the plaintext passwords.",
-    "code": "def login(email, password):\n    user = repo.find_user_by_email(email)\n    if not verify_password(password, user.password_hash):\n        raise HTTPException(status_code=401, detail=\"invalid login\")\n    return create_access_token(user.id)",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best explains why `user.password_hash` is used?",
-    "choices": [
-      "To print the password to the log",
-      "To always allow login,",
-      "To delete an email",
-      "To store and verify hashes instead of plaintext passwords"
-    ],
-    "answer": "To store and verify hashes instead of plaintext passwords",
-    "explanation": "When the repository finds no user, return the same generic 401 and reduce timing differences so the response does not reveal whether an account exists. verify_password should use the salt and cost encoded in an Argon2id, bcrypt, scrypt, or PBKDF2 password-hashing scheme. A fast general hash or direct == comparison is unsuitable, and plaintext passwords must never be stored or logged.",
-    "side_card_ids": [],
-    "project_context": "This is an important security concept to keep in mind when implementing custom login functionality in educational services or API apps."
-  },
-  {
-    "id": "PY22_L09_refresh_token_001",
-    "level": 9,
-    "title": "Understanding the Access Token and Refresh Token Flow",
-    "concepts": [
-      "if",
-      "access_token",
-      "refresh_token",
-      "session",
-      "auth"
-    ],
-    "reading_goal": "Distinguish between short-lived access tokens and long-lived refresh tokens.",
-    "code": "if access_token_expired:\n    access_token = refresh_access_token(refresh_token)",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best describes the role of a refresh token?",
-    "choices": [
-      "All permissions will be made public permanently.",
-      "Create a database table",
-      "Renders the browser screen",
-      "Used to obtain a new access token to replace an expired one"
-    ],
-    "answer": "Used to obtain a new access token to replace an expired one",
-    "explanation": "A refresh token is a credential used to request a new access token while the authorization server's policy permits it. It often lives longer than an access token and therefore has greater theft impact. Use safe storage, server-side revocation, rotation and reuse detection, and revoke it when the session ends; the client does not mint a new token by itself.",
-    "side_card_ids": [],
-    "project_context": "This is linked to the app architecture that retrieves user API keys on a per-account basis."
-  },
-  {
-    "id": "PY22_L10_session_cookie_001",
-    "level": 10,
-    "title": "Reading Session Cookie Settings",
-    "concepts": [
-      "cookie",
-      "session",
-      "httponly",
-      "secure"
-    ],
-    "reading_goal": "When storing session values in browser cookies, it checks the security options.",
-    "code": "response.set_cookie(\n    key=\"session\",\n    value=session_id,\n    httponly=True,\n    secure=True,\n    samesite=\"lax\"\n)",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best describes the meaning of `httponly=True`?",
-    "choices": [
-      "Saves cookies as plaintext files",
-      "Always delete the session",
-      "Allow only HTTP and block HTTPS",
-      "Makes it difficult to read cookies directly in browser JavaScript"
-    ],
-    "answer": "Makes it difficult to read cookies directly in browser JavaScript",
-    "explanation": "HttpOnly prevents browser JavaScript APIs such as document.cookie from directly reading the session cookie, reducing one theft path. It does not stop XSS code from sending authenticated requests in the victim's browser. Secure requires HTTPS transport and SameSite=Lax limits some cross-site requests, while CSRF tokens, origin checks, short sessions, and rotation may still be required by the threat model.",
-    "side_card_ids": [
-      "WEB_auth_001"
-    ],
-    "project_context": "This is necessary to determine where to store the token when attaching the login session to the front end."
-  },
-  {
-    "id": "PY22_L10_oauth_callback_001",
-    "level": 10,
-    "title": "Understanding the OAuth Callback Flow",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "oauth",
-      "callback",
-      "code",
-      "token_exchange"
-    ],
-    "reading_goal": "Understand the process of exchanging a code for a token after logging in via OAuth.",
-    "code": "@app.get(\"/auth/callback\")\ndef callback(code: str):\n    token = exchange_code_for_token(code)\n    user = fetch_user_profile(token)\n    return create_session(user)",
-    "question_type": "order_choice",
-    "question": "Which of the following correctly describes the flow of this code?",
-    "choices": [
-      "Create session → Exchange code → Delete user",
-      "View Profile → Delete from Database → Session Expires",
-      "Exit without saving tokens",
-      "Code exchange → View user profile → Create session"
-    ],
-    "answer": "Code exchange → View user profile → Create session",
-    "explanation": "The visible order is authorization-code exchange, validated provider user information, then local session creation. A secure OAuth/OIDC callback validates state against the initiating request, uses PKCE for public clients, and checks redirect URI plus issuer, audience, and nonce where applicable. Do not trust a provider token blindly or log the code.",
-    "side_card_ids": [
-      "WEB_auth_001"
-    ],
-    "project_context": "This is the flow for validating an external identity in an OAuth/OIDC callback before creating a local session."
-  },
-  {
-    "id": "PY22_L10_rate_limit_001",
-    "level": 10,
-    "title": "Reading the Rate Limit Check",
-    "concepts": [
-      "if",
-      "def",
-      "function",
-      "rate_limit",
-      "quota",
-      "abuse_prevention",
-      "api"
-    ],
-    "reading_goal": "Read about the basic structure for limiting the number of requests per user.",
-    "code": "def check_rate_limit(user_id):\n    count = cache.incr(f\"rate:{user_id}\")\n    if count > 100:\n        raise HTTPException(status_code=429, detail=\"too many requests\")",
-    "question_type": "meaning_choice",
-    "question": "If `count` exceeds 100, what status code is returned?",
-    "choices": [
-      "200",
-      "401",
-      "404",
-      "429"
-    ],
-    "answer": "429",
-    "explanation": "When count reaches 101, the code raises 429. This example has no expiry or window reset, so its key can grow forever. A real limiter combines an atomic increment with a TTL or token/leaky bucket, a trusted user/IP/key identity, a common store for distributed servers, Retry-After behavior, and an explicit fail-open or fail-closed policy.",
-    "side_card_ids": [],
-    "project_context": "These are server defense patterns necessary to prevent skyrocketing costs or abuse of the LLM API."
-  },
-  {
-    "id": "PY22_L10_secret_rotation_001",
-    "level": 10,
-    "title": "Understanding the \"Secret Rotation\" Mindset",
-    "concepts": [
-      "if",
-      "secret_rotation",
-      "api_key",
-      "security",
-      "version"
-    ],
-    "reading_goal": "Understand the operational process for replacing keys when they are exposed or have become outdated.",
-    "code": "ACTIVE_KEY_VERSION = \"v2\"\n\nif request.key_version != ACTIVE_KEY_VERSION:\n    raise HTTPException(status_code=401, detail=\"old key disabled\")",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best describes what “old key disabled” means?",
-    "choices": [
-      "All keys are allowed",
-      "Ignore the key version",
-      "Initialize the database",
-      "Previous version keys are no longer accepted."
-    ],
-    "answer": "Previous version keys are no longer accepted.",
-    "explanation": "When the request-supplied key_version differs from the active version, this code returns 401. Comparing a client version string alone does not validate the actual secret. Rotation covers issuing and distributing the new key, an overlap or dual-read period, usage monitoring, old-key revocation, and inspection of logs and backups; after known exposure, immediate revocation takes priority.",
-    "side_card_ids": [
-      "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
-    ],
-    "project_context": "This is a concept that is necessary when designing a structure for storing, encrypting, and renewing API keys."
-  },
-  {
-    "id": "PY22_L10_prompt_injection_guard_001",
-    "level": 10,
-    "title": "Reading: Defending Against Prompt Injection",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "prompt_injection",
-      "input_validation",
-      "security",
-      "llm"
-    ],
-    "reading_goal": "I'm reading code that isolates user input so that it isn't treated as a system command.",
-    "code": "def build_prompt(user_query: str):\n    safe_query = user_query[:2000]\n    return {\n        \"system\": \"Answer only from retrieved evidence.\",\n        \"user\": safe_query,\n    }",
-    "question_type": "meaning_choice",
-    "question": "Which of the following best describes the purpose of `user_query[:2000]`?",
-    "choices": [
-      "Elevate user input to an administrator command",
-      "Delete all evidence.",
-      "Issue tokens",
-      "Limit the length of user input"
-    ],
-    "answer": "Limit the length of user input",
-    "explanation": "user_query[:2000] only limits input by Python characters. Separating system and user roles or saying \"evidence only\" is useful guidance but not a security boundary against prompt injection. Retrieved documents can contain attack instructions too, so use tool allowlists and least privilege, structured-output validation, sensitive-data separation, and human approval where needed.",
-    "side_card_ids": [],
-    "project_context": "This is an approach to safely handling user input in the Cross-Verified RAG/Evidence-first pipeline."
-  },
-  {
-    "id": "PY22_L10_encrypted_secret_storage_001",
-    "level": 10,
-    "title": "Reading the Encrypted Secret Storage Flow",
-    "concepts": [
-      "def",
-      "function",
-      "encryption",
-      "secret_storage",
-      "api_key",
-      "database"
-    ],
-    "reading_goal": "Understand the process of storing user API keys in the database in encrypted form rather than in plain text.",
-    "code": "def save_user_api_key(user_id, api_key):\n    encrypted = encrypt(api_key)\n    repo.upsert_secret(user_id=user_id, encrypted_value=encrypted)",
-    "question_type": "meaning_choice",
-    "question": "Why is `encrypted_value` stored?",
-    "choices": [
-      "To display the API key on the screen",
-      "To push the key to Git",
-      "To delete a user ID",
-      "To avoid storing API keys in plain text directly in the database,"
-    ],
-    "answer": "To avoid storing API keys in plain text directly in the database,",
-    "explanation": "Storing ciphertext instead of a plaintext API key can reduce direct exposure when only a database snapshot leaks. To be effective, manage the encryption key separately in a KMS or secret manager and use authenticated encryption with user/context binding, access control, auditing, and rotation. Compromise of both the application and key can still reveal the secret, and keys must stay out of logs and backups.",
-    "side_card_ids": [],
-    "project_context": "It is directly linked to a system that securely stores user API keys on the server side and retrieves them using OAuth accounts."
-  },
-  {
-    "id": "PY22_L10_auth_dependency_001",
-    "level": 10,
-    "title": "Reading the FastAPI Authentication Dependency",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "import",
-      "fastapi",
-      "depends",
-      "auth",
-      "current_user"
-    ],
-    "reading_goal": "I understand the structure that separates the authentication logic, which is repeated for each endpoint, into a dependency.",
-    "code": "from fastapi import Depends\nfrom fastapi.security import HTTPAuthorizationCredentials, HTTPBearer\n\nbearer = HTTPBearer()\n\ndef get_current_user(\n    credentials: HTTPAuthorizationCredentials = Depends(bearer),\n):\n    return verify_token(credentials.credentials)\n\n@app.get(\"/private\")\ndef private(user = Depends(get_current_user)):\n    return {\"user_id\": user.id}",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of `Depends(get_current_user)`?",
-    "choices": [
-      "Set all users as admins",
-      "Save the token as a file",
-      "Set the API to public",
-      "Verify the token before making the request and pass the user to the endpoint."
-    ],
-    "answer": "Verify the token before making the request and pass the user to the endpoint.",
-    "explanation": "The HTTPBearer dependency parses the Bearer scheme and credential from Authorization, then get_current_user uses verify_token to validate the signature and required claims and obtain a user. HTTPBearer itself does not validate a JWT. The endpoint dependency supplies the user only after that succeeds; resource-specific authorization remains a separate check.",
-    "side_card_ids": [],
-    "project_context": "This is the structure required for the private API, personal notes/study logs, and the user-specific key lookup API."
-  }
+    {
+        "id":  "PY22_L07_env_api_key_001",
+        "level":  7,
+        "title":  "Raise a RuntimeError if a required API key is missing",
+        "concepts":  [
+                         "raise_statement",
+                         "if_statement",
+                         "call"
+                     ],
+        "reading_goal":  "Read the flow where, in the absence of required environment variables, a `raise` statement following an `if` condition raises an exception and halts execution.",
+        "code":  "import os\n\napi_key = os.getenv(\"OPENAI_API_KEY\")\nif not api_key:\n    raise RuntimeError(\"missing OPENAI_API_KEY\")",
+        "question_type":  "predict_exception",
+        "question":  "What happens if `OPENAI_API_KEY` is not set?",
+        "choices":  [
+                        "A RuntimeError occurs",
+                        "An empty string is automatically saved.",
+                        "OPENAI_API_KEY is automatically generated",
+                        "It continues to run without any issues"
+                    ],
+        "answer":  "A RuntimeError occurs",
+        "explanation":  "If no environment variables exist, `os.getenv` returns `None`. ``not api_key`` returns `True`. Therefore, the `raise` statement in the `if` block is executed, causing a `RuntimeError`. This is because the `raise` statement actually raises an exception when the condition is `True`. Common misconception: Execution continues without incident. When `raise` is executed, the normal flow is interrupted at that point. Point of misinterpretation: Do not mistake `raise` for a regular function call or output. In the required configuration validation, ``if missing: raise ...`` is a pattern that immediately converts a missing state into an exception.",
+        "side_card_ids":  [
+                              "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
+                          ],
+        "project_context":  "This is a security pattern in which LLM APIs or external service keys are read from environment variables rather than written directly into the code, and the program fails immediately if any required keys are missing.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "raise_statement",
+        "reading_goal_internal":  "필수 환경변수가 없을 때 if 조건 뒤의 raise가 예외를 발생시켜 실행을 중단하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`raise ExceptionType(...)` is a statement that intentionally raises the specified exception.",
+                                    "how_to_read":  "If `raise` is inside a conditional statement, read it as: first check whether the condition is True, and the exception is raised only if it is True.",
+                                    "key_point":  "API key security is a domain-specific context, while the key point regarding Python is that a `raise` statement interrupts the normal execution flow when the missing condition is met.",
+                                    "common_mistake":  "It’s easy to assume that only the RuntimeError string is printed and that execution continues. `raise` does not simply print; it raises an exception."
+                                },
+        "teaching_example":  {
+                                 "code":  "token = None\nif not token:\n    raise ValueError(\"missing token\")",
+                                 "walkthrough":  "Since `token` is `None`, the condition evaluates to `True`, causing a `ValueError`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "If no environment variables exist, `os.getenv` returns `None`. `not api_key` evaluates to `True`. Therefore, the `raise` statement in the `if` block is executed, causing a `RuntimeError`.",
+                                   "why_correct":  "This is because the `raise` statement actually raises an exception when the condition is `True`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "It continues to run without any issues",
+                                                               "why_wrong":  "When `raise` is executed, normal flow is interrupted at that point.",
+                                                               "misread_step":  "Do not read `raise` as an ordinary function call or output statement."
+                                                           },
+                                   "takeaway":  "In the mandatory configuration validation, ``if missing: raise ...`` is a pattern that immediately raises an exception when a value is missing."
+                               },
+        "target_statement":  "raise RuntimeError(\"missing OPENAI_API_KEY\")",
+        "focus_span":  "raise RuntimeError(\"missing OPENAI_API_KEY\")",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "environment_variable",
+                                "api_key",
+                                "secret",
+                                "validation"
+                            ],
+        "pedagogical_intent":  "predict_exception"
+    },
+    {
+        "id":  "PY22_L07_gitignore_env_001",
+        "level":  7,
+        "title":  "Check if the secret file is on the ignore list",
+        "concepts":  [
+                         "membership_test",
+                         "assignment"
+                     ],
+        "reading_goal":  "Check whether a specific filename is included in the list using ``in`` and read the boolean result.",
+        "code":  "ignore_patterns = [\".env\", \".env.local\", \"secrets.json\"]\nignored = \".env\" in ignore_patterns\nprint(ignored)",
+        "question_type":  "output_prediction",
+        "question":  "What value does the last line output?",
+        "choices":  [
+                        "True",
+                        "False",
+                        ".env",
+                        "3"
+                    ],
+        "answer":  "True",
+        "explanation":  "The first item in the `ignore_patterns` list is `.env`. Therefore, `\".env\" in ignore_patterns` evaluates to True. The result is stored in `ignored` and printed. This is because the string being checked, `.env`, actually exists in the list. Common Misconception: `.env` is the value being checked, and the result of the `in` expression is a boolean. Point of Misunderstanding: You must distinguish between the operand and the result of the membership operator. `x in items` is not code that adds x to the list; it is an expression that evaluates whether x is included, returning True or False.",
+        "side_card_ids":  [
+                              "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
+                          ],
+        "project_context":  "This context involves checking exclusion rules to ensure that files like ``.env``, which may contain sensitive values such as API keys, are not uploaded to Git.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "목록에 특정 파일명이 포함되어 있는지 `in`으로 검사하고 bool 결과를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`value in container` checks whether a value is contained within a container and returns True or False.",
+                                    "how_to_read":  "Look at the `.env` file on the left and the `ignore_patterns` list on the right to see if the same value appears in either list.",
+                                    "key_point":  ".gitignore is a Git configuration context, and the focus of the Python grammar is the membership test.",
+                                    "common_mistake":  "`in` It’s easy to assume that this adds a value to the list. ``in`` does not modify the list; it only checks whether the element is present."
+                                },
+        "teaching_example":  {
+                                 "code":  "ignored = [\"cache.db\", \"local.env\"]\nprint(\"local.env\" in ignored)",
+                                 "walkthrough":  "Since `local.env` is in the list, `True` is printed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The first item in the `ignore_patterns` list is `.env`. Therefore, `\".env\" in ignore_patterns` is True. The result is stored in `ignored` and printed.",
+                                   "why_correct":  "This is because the string being checked, `.env`, actually exists within the list.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  ".env",
+                                                               "why_wrong":  "`.env` is the value being tested, and the result of the expression ``in`` is a boolean.",
+                                                               "misread_step":  "You must distinguish between the operands and the result of the `membership` operation."
+                                                           },
+                                   "takeaway":  "`x in items` This is not code that adds x, but an expression that determines whether x is included (True or False)."
+                               },
+        "target_statement":  "ignored = \".env\" in ignore_patterns",
+        "focus_span":  "\".env\" in ignore_patterns",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "gitignore",
+                                "env",
+                                "secret",
+                                "git"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY22_L08_bearer_header_001",
+        "level":  8,
+        "title":  "Creating a Bearer token string using an f-string",
+        "concepts":  [
+                         "f_string",
+                         "assignment",
+                         "literal",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read how variable values within an f-string are inserted into the Authorization header string.",
+        "code":  "access_token = \"abc123\"\nheaders = {\"Authorization\": f\"Bearer {access_token}\"}",
+        "question_type":  "output_prediction",
+        "question":  "`headers[\"Authorization\"]` What is the value of ?",
+        "choices":  [
+                        "Bearer abc123",
+                        "Bearer {access_token}",
+                        "abc123 Bearer",
+                        "None"
+                    ],
+        "answer":  "Bearer abc123",
+        "explanation":  "The f-string evaluates `access_token` inside the braces. Because its value is `\"abc123\"`, the resulting string is `\"Bearer abc123\"`, and that string becomes the value in the headers dict. An f-string inserts the result of `{expression}` into the surrounding string. Common wrong answer: Bearer {access_token}. Because the string has the `f` prefix, the variable inside the braces is evaluated instead of remaining literal text.",
+        "side_card_ids":  [
+                              "PYV102_A7_AUTH_SECURITY"
+                          ],
+        "project_context":  "This relates to reading the evaluation of values in Python code that places an access token in the Authorization header string when making an API request.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "f_string",
+        "reading_goal_internal":  "f-string 안의 변수 값이 Authorization 헤더 문자열에 어떻게 삽입되는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "An f-string is an expression that evaluates ``{expression}`` within a string and inserts the result into the string.",
+                                    "how_to_read":  "`f\"Bearer {access_token}\"` is interpreted as first reading the current value of `access_token` and then concatenating that value to `Bearer ` to create a new string.",
+                                    "key_point":  "It is not the curly braces themselves that remain in the final string, but rather **the value of the expression inside the curly braces**.",
+                                    "common_mistake":  "It’s easy to think that `Bearer {access_token}` is created literally. Because of the `f` at the beginning, the variable inside the curly braces is evaluated."
+                                },
+        "teaching_example":  {
+                                 "code":  "token = \"xyz\"\nvalue = f\"Token {token}\"",
+                                 "walkthrough":  "Since the current value `{token}` is inserted in place of `xyz`, `value` becomes `\"Token xyz\"`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The f-string evaluates `access_token` inside the curly braces. Since the value is `\"abc123\"`, the resulting string is `\"Bearer abc123\"`, and that string becomes the value in the headers dictionary.",
+                                   "why_correct":  "An f-string inserts the result of `{expression}` into the surrounding string.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Bearer {access_token}",
+                                                               "why_wrong":  "Since there is an `f` before the string, the variables inside the curly braces are not retained as-is but are replaced with their actual values.",
+                                                               "misread_step":  "This comes from failing to distinguish a plain string from an f-string."
+                                                           },
+                                   "takeaway":  "An f-string **evaluates the value inside braces and then inserts it into the string**."
+                               },
+        "target_statement":  "headers = {\"Authorization\": f\"Bearer {access_token}\"}",
+        "focus_span":  "f\"Bearer {access_token}\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "Bearer token",
+                                "Authorization header",
+                                "API auth",
+                                "f-string"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY22_L08_fastapi_header_token_001",
+        "level":  8,
+        "title":  "Raising a 401 exception using `raise HTTPException(...)`",
+        "concepts":  [
+                         "raise_statement",
+                         "call",
+                         "argument_passing",
+                         "if_statement"
+                     ],
+        "reading_goal":  "Read how a `raise` statement creates an exception object and interrupts the normal return flow when the condition is true.",
+        "code":  "from fastapi import Header, HTTPException\n\n@app.get(\"/me\")\ndef me(authorization: str | None = Header(default=None)):\n    if authorization is None:\n        raise HTTPException(status_code=401, detail=\"missing token\")\n    return {\"auth\": authorization}",
+        "question_type":  "multiple_choice",
+        "question":  "If `authorization` is `None` and this `raise` statement is executed, what is the specified HTTP status code?",
+        "choices":  [
+                        "200",
+                        "304",
+                        "404",
+                        "401"
+                    ],
+        "answer":  "401",
+        "explanation":  "If the condition is true, `status_code=401` is passed to the `HTTPException` constructor. The preceding `raise` statement triggers that exception, preventing the program from proceeding to a normal `return`. This is because the exception’s `status_code` is explicitly set to 401 in the code. Commonly Confused Incorrect Answer: 200. While 200 is a status code close to a normal response, `raise HTTPException(...)` is executed in this branch. Common Misreading: This occurs when the code is mistakenly interpreted as continuing through to a normal return after `raise` is executed in the `if` branch. When encountering `raise`, the sequence is: **evaluate the exception object → raise the exception → interrupt the normal flow**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This relates to reading FastAPI code that routes API requests missing an authentication header to an authentication error path rather than a normal response.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "raise_statement",
+        "reading_goal_internal":  "조건이 참일 때 raise 문장이 어떤 예외 객체를 만들고 정상 반환 흐름을 중단하는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`raise exception_object` This is a statement that explicitly raises an exception, interrupting the current normal execution flow.",
+                                    "how_to_read":  "`raise HTTPException(status_code=401, ...)` should be read as: first, an exception object is created, and then `raise` raises that exception.",
+                                    "key_point":  "When this line is executed, it does not proceed directly to the normal `return` below, but instead enters the exception handling flow.",
+                                    "common_mistake":  "It’s easy to view `HTTPException(...)` as simply a call that creates an object and assume that execution continues all the way to the `return` statement. The preceding `raise` actually raises the exception."
+                                },
+        "teaching_example":  {
+                                 "code":  "def require_name(name):\n    if name is None:\n        raise ValueError(\"missing name\")\n    return name",
+                                 "walkthrough":  "If `name is None` is true, it creates a `ValueError(...)`, and the `raise` statement raises the exception, preventing the program from proceeding to the `return` statement below."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "If the condition is true, `HTTPException` is passed to the `status_code=401` constructor. The preceding `raise` statement triggers that exception, preventing the program from proceeding to a normal `return`.",
+                                   "why_correct":  "This is because the exception’s `status_code` is explicitly specified as 401 in the code.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "200",
+                                                               "why_wrong":  "Although 200 is a status code close to a normal response, `raise HTTPException(...)` is executed in this branch.",
+                                                               "misread_step":  "`if` This is an example of a misinterpretation where the code was read as continuing to the normal return statement after `raise` was executed at the branch."
+                                                           },
+                                   "takeaway":  "When you encounter `raise`, read **evaluate the exception object → raise the exception → interrupt normal flow**."
+                               },
+        "target_statement":  "raise HTTPException(status_code=401, detail=\"missing token\")",
+        "focus_span":  "raise HTTPException(status_code=401, detail=\"missing token\")",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "FastAPI",
+                                "Authorization header",
+                                "HTTPException",
+                                "401"
+                            ],
+        "pedagogical_intent":  "predict_exception"
+    },
+    {
+        "id":  "PY22_L08_jwt_parts_001",
+        "level":  8,
+        "title":  "Split a string by the period using `token.split(\".\")`",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Track the input delimiters and the return list for string method calls.",
+        "code":  "token = \"header.payload.signature\"\nparts = token.split(\".\")",
+        "question_type":  "output_prediction",
+        "question":  "What is the list stored in `parts`?",
+        "choices":  [
+                        "[\"header\", \"payload\", \"signature\"]",
+                        "[\"header.payload.signature\"]",
+                        "[\"header\", \"signature\"]",
+                        "[]"
+                    ],
+        "answer":  "[\"header\", \"payload\", \"signature\"]",
+        "explanation":  "The string contains two periods. `split(\".\")` splits the string at each period, so it returns a list containing three strings. This is because the return value of `split()` is a list composed of string fragments separated by the delimiter. Common mistake: [\"header.payload.signature\"] Since the separator `.` is actually inside the string, it is not preserved as a single string. Common misinterpretation: This occurs when you fail to check the delimiter passed to `split()` and the position of the delimiter within the original string. `text.split(sep)` **returns a new list split by `sep`**.",
+        "side_card_ids":  [
+                              "WEB_auth_001"
+                          ],
+        "project_context":  "When examining the structure of a token string connected by dots, the focus shifts first to understanding what values the actual string-splitting code produces, rather than the domain meaning.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "문자열 메서드 호출의 입력 구분자와 반환 리스트를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The ``.split(separator)`` method of a string splits the string based on the specified delimiter and returns a list of new strings.",
+                                    "how_to_read":  "`token.split(\".\")` This reads as: “`token`” splits the string into parts using the period (`.`) as a delimiter and converts them into a list.",
+                                    "key_point":  "If there are two dots, this example creates three string fragments.",
+                                    "common_mistake":  "It’s easy to assume that `split()` directly modifies the original string. The string remains unchanged, and a **new list** containing the split elements is returned."
+                                },
+        "teaching_example":  {
+                                 "code":  "path = \"a/b/c\"\nparts = path.split(\"/\")",
+                                 "walkthrough":  "It splits the string based on double slashes to create a new list named `[\u0027a\u0027, \u0027b\u0027, \u0027c\u0027]`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The string contains two dots. `split(\".\")` separates the string at each dot and therefore returns a list containing three strings.",
+                                   "why_correct":  "This is because the return value of `split()` is a list consisting of string fragments separated by delimiters.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\"header.payload.signature\"]",
+                                                               "why_wrong":  "Since the separator `.` appears within an actual string, it is not left as a single string.",
+                                                               "misread_step":  "This is a case where the separator passed to `split()` and the position of the separator within the original string were not checked."
+                                                           },
+                                   "takeaway":  "`text.split(sep)` **returns a new list split by sep**."
+                               },
+        "target_statement":  "parts = token.split(\".\")",
+        "focus_span":  "token.split(\".\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "JWT",
+                                "token parts",
+                                "string split",
+                                "header payload signature"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY22_L09_jwt_payload_claims_001",
+        "level":  9,
+        "title":  "Reading the \"sub\" claim from the JWT payload dictionary",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Accurately retrieve the value associated with the `sub` key in the dictionary representing the JWT payload.",
+        "code":  "payload = {\n    \"sub\": \"user_123\",\n    \"role\": \"admin\",\n    \"exp\": 1893456000,\n}\nsubject = payload[\"sub\"]",
+        "question_type":  "multiple_choice",
+        "question":  "What value is stored in `subject`?",
+        "choices":  [
+                        "user_123",
+                        "admin",
+                        "1893456000",
+                        "sub"
+                    ],
+        "answer":  "user_123",
+        "explanation":  "`payload[\u0027sub\u0027]` retrieves the `sub` key and returns its value, `user_123`. This is because a dictionary subscription returns the value associated with the specified key. A common source of confusion: `admin` is the value of the `role` key. Point of confusion: This occurs when a different claim within the same payload is selected. When reading a claim, **make sure to correctly match the key name with its corresponding value**.",
+        "side_card_ids":  [
+                              "WEB_auth_001"
+                          ],
+        "project_context":  "This connects to an authentication data structure that separates per-user API keys and personal learning records by account.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "JWT payload를 나타내는 dict에서 `sub` key에 연결된 값을 정확히 조회한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping[key]` is a subscription that reads the value associated with a specific key in a dict.",
+                                    "how_to_read":  "First, check the key inside the square brackets, then find the value associated with that key.",
+                                    "key_point":  "This card focuses not on the full JWT validation procedure, but on the Python operation of reading the `sub` field from a payload dict.",
+                                    "common_mistake":  "`role` It’s easy to mistakenly select ``exp`` as the `sub` value. You must check the `key` first."
+                                },
+        "teaching_example":  {
+                                 "code":  "claims = {\"user\": \"u9\", \"scope\": \"read\"}\nuser = claims[\"user\"]",
+                                 "walkthrough":  "`user` The value of the key—`u9`—is stored in a variable."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`payload[\u0027sub\u0027]` retrieves the `sub` key and returns its value, `user_123`.",
+                                   "why_correct":  "This is because a `dict` subscription returns the value associated with the specified key.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "admin",
+                                                               "why_wrong":  "`admin` is the value of the `role` key.",
+                                                               "misread_step":  "This is the case where a different claim within the same payload was selected."
+                                                           },
+                                   "takeaway":  "When reading a claim, **make sure to accurately match the key name with its corresponding value**."
+                               },
+        "target_statement":  "subject = payload[\"sub\"]",
+        "focus_span":  "payload[\"sub\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "JWT",
+                                "claim",
+                                "sub",
+                                "payload"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY22_L09_permission_check_001",
+        "level":  9,
+        "title":  "Reading the `status_code` keyword argument of an authorization denied exception",
+        "concepts":  [
+                         "argument_passing",
+                         "raise_statement",
+                         "call",
+                         "if_statement",
+                         "class_definition"
+                     ],
+        "reading_goal":  "Read the structure where, upon a permission check failure, a 403 is passed as a named argument to the exception constructor.",
+        "code":  "class HTTPException(Exception):\n    def __init__(self, status_code, detail):\n        self.status_code = status_code\n        self.detail = detail\n\ndef require_admin(user):\n    if user[\"role\"] != \"admin\":\n        raise HTTPException(status_code=403, detail=\"forbidden\")\n\nuser = {\"role\": \"viewer\"}\ntry:\n    require_admin(user)\nexcept HTTPException as exc:\n    status = exc.status_code",
+        "question_type":  "multiple_choice",
+        "question":  "`status` What value is stored in ?",
+        "choices":  [
+                        "401",
+                        "403",
+                        "200",
+                        "304"
+                    ],
+        "answer":  "403",
+        "explanation":  "Since the `viewer` role is different from `admin`, an exception is raised. The `status_code` parameter of the constructor is passed the keyword argument 403, and that value is read in the `except` block. This is because the keyword argument is explicitly passed as `status_code=403`. A common source of confusion: 401: The `status_code` argument in the current source code is 403, not 401. Point of misinterpretation: This occurs when a different authentication error code is arbitrarily applied to the current code. The exception response code is read by checking the **value actually specified in the constructor argument**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This relates to code that separates the permission boundaries between the administrator data modification API and general user features.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "권한 검사 실패 시 예외 생성자에 403이 이름 있는 argument로 전달되는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`status_code=403` It is a keyword argument that passes a value by name in a call.",
+                                    "how_to_read":  "Check the parameter names on the left side of the equals sign and the values on the right to see what settings are passed to the constructor.",
+                                    "key_point":  "In the current permission check, the `status_code` of the exception raised when the user is not an admin is set to 403.",
+                                    "common_mistake":  "`403` It’s easy to mistake this number for a value used in the if statement. This number is the ``status_code`` argument of the exception constructor."
+                                },
+        "teaching_example":  {
+                                 "code":  "class AppError(Exception):\n    def __init__(self, code):\n        self.code = code\n\nerror = AppError(code=409)",
+                                 "walkthrough":  "`code=409` is passed as a keyword argument, so `error.code` becomes 409."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the `viewer` role is different from `admin`, an exception is raised. The `status_code` parameter of the constructor is passed the keyword argument 403, and that value is read in the `except` block.",
+                                   "why_correct":  "This is because the keyword argument is explicitly passed as `status_code=403`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "401",
+                                                               "why_wrong":  "In the current source code, the `status_code` argument is 403, not 401.",
+                                                               "misread_step":  "This is an example where other authentication error codes have been arbitrarily applied to the current code."
+                                                           },
+                                   "takeaway":  "The exception response code reads the **value written in the actual constructor argument**."
+                               },
+        "target_statement":  "raise HTTPException(status_code=403, detail=\"forbidden\")",
+        "focus_span":  "status_code=403",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "permission",
+                                "role",
+                                "authorization",
+                                "403"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY22_L09_password_hash_001",
+        "level":  9,
+        "title":  "Handling password validation failure with an `if not` statement",
+        "concepts":  [
+                         "if_statement",
+                         "call",
+                         "boolean_operation",
+                         "subscription",
+                         "raise_statement",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the login failure flow where the validation function returns False, causing the `not` operator to trigger the execution of the `if` block.",
+        "code":  "class HTTPException(Exception):\n    def __init__(self, status_code):\n        self.status_code = status_code\n\ndef verify_password(password, stored_hash):\n    return stored_hash == f\"hash::{password}\"\n\nuser = {\"password_hash\": \"hash::correct\"}\npassword = \"wrong\"\ntry:\n    if not verify_password(password, user[\"password_hash\"]):\n        raise HTTPException(status_code=401)\nexcept HTTPException as exc:\n    status = exc.status_code",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of the last ``status``?",
+        "choices":  [
+                        "200",
+                        "401",
+                        "403",
+                        "None"
+                    ],
+        "answer":  "401",
+        "explanation":  "`verify_password` returns `False`. The preceding `not` changes this to `True`, causing the `if` block to execute and a 401 exception to occur. This is because the final truth value of the `if` condition is `True`. A common source of confusion: Since the current password verification fails (200), the program does not proceed to the normal success flow. Point of misinterpretation: This is a case where the `not` operator is not taken into account. The authentication branch evaluates the following in order: **verification result → application of `not` → whether to enter the `if` statement**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to the flow where the self-service login compares the submitted password to the stored verification expression and rejects failed requests.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "검증 함수가 False를 반환했을 때 not을 거쳐 if 본문이 실행되는 로그인 실패 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if condition:` executes the body only when condition is truthy.",
+                                    "how_to_read":  "First, calculate the return value of the function call in the conditional statement, and if ``not`` is present, invert the boolean value before determining the final branch result.",
+                                    "key_point":  "If the validation fails (i.e., the result is False), `not False` evaluates to True, causing the program to enter the exception branch.",
+                                    "common_mistake":  "Since `verify_password` is False, it’s easy to assume that the `if` statement is also False. However, the presence of `not` at the beginning inverts the result."
+                                },
+        "teaching_example":  {
+                                 "code":  "def valid(code):\n    return code == \"ok\"\n\nresult = []\nif not valid(\"bad\"):\n    result.append(\"rejected\")",
+                                 "walkthrough":  "Since `valid` is `False` and `not False` is `True`, `rejected` is added."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`verify_password` returns `False`. The preceding `not` changes this to `True`, causing the `if` block to execute and a 401 exception to occur.",
+                                   "why_correct":  "This is because the final truth value of the if condition is True.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "200",
+                                                               "why_wrong":  "Since the current password verification has failed, it will not proceed to the normal success flow.",
+                                                               "misread_step":  "This is a case where the `not` operator is not applied."
+                                                           },
+                                   "takeaway":  "The validation branch calculates **the verification result → whether \"not applied\" applies → whether to enter the \"if\" statement** in that order."
+                               },
+        "target_statement":  "if not verify_password(password, user[\"password_hash\"]):",
+        "focus_span":  "if not verify_password(password, user[\"password_hash\"]):",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "password hash",
+                                "verify",
+                                "login",
+                                "401"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY22_L09_refresh_token_001",
+        "level":  9,
+        "title":  "Reassigning an expired access token as a function return value",
+        "concepts":  [
+                         "assignment",
+                         "call",
+                         "if_statement",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Track the flow of how the state changes by reassigning the return value of the `refresh` function to a variable that already has a value.",
+        "code":  "def refresh_access_token(refresh_token):\n    return \"new-access-token\"\n\naccess_token = \"expired-access-token\"\nrefresh_token = \"refresh-1\"\naccess_token_expired = True\nif access_token_expired:\n    access_token = refresh_access_token(refresh_token)",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `access_token` after the code executes?",
+        "choices":  [
+                        "new-access-token",
+                        "expired-access-token",
+                        "refresh-1",
+                        "None"
+                    ],
+        "answer":  "new-access-token",
+        "explanation":  "Since the `if` condition is True, the `refresh` function is called and returns `new-access-token`. That value replaces the existing `access_token`. This is because reassignment stores the new evaluation result in the same variable name. Common mistake: `expired-access-token`—that value is the initial value before the `if` block is executed. Point of confusion: This occurs when the state after reassignment is not reflected. The `refresh` flow is tracked as **existing value → expiration branch → new value returned → reassignment**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to code in an account-based app that distinguishes a short-lived access token from a separate refresh flow when updating session state.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "이미 값이 있는 변수에 refresh 함수 반환값을 다시 대입해 상태가 바뀌는 흐름을 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "Reassignment occurs when a new value is stored in a variable that already has a value.",
+                                    "how_to_read":  "Check the values before the assignment and the result of the expression on the right, and assume that the variable values are replaced with new values after execution.",
+                                    "key_point":  "The result of the `refresh` function replaces the existing `access_token` only when the expiration condition is true.",
+                                    "common_mistake":  "It’s easy to assume that even if a function call returns a new token, the value of the existing variable remains the same. However, when an assignment statement is executed, the value changes."
+                                },
+        "teaching_example":  {
+                                 "code":  "value = \"old\"\ndef renew():\n    return \"new\"\nvalue = renew()",
+                                 "walkthrough":  "After the final reassignment, the value is `new`, not `old`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Because the `if` condition is True, the refresh function is called and returns `new-access-token`. That value replaces the existing `access_token`.",
+                                   "why_correct":  "Because reassignment stores a newly evaluated result under the same variable name.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "expired-access-token",
+                                                               "why_wrong":  "That value is the initial value before the `if` block is executed.",
+                                                               "misread_step":  "This is a case where the state after reassignment has not been reflected."
+                                                           },
+                                   "takeaway":  "The refresh flow is tracked as **existing value → expiration check → return new value → reassignment**."
+                               },
+        "target_statement":  "access_token = refresh_access_token(refresh_token)",
+        "focus_span":  "refresh_access_token(refresh_token)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "access token",
+                                "refresh token",
+                                "session",
+                                "auth"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY22_L10_session_cookie_001",
+        "level":  10,
+        "title":  "Reading the httponly=True flag of a session cookie",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "class_definition"
+                     ],
+        "reading_goal":  "Read the structure where the `HttpOnly` security option is set as a named argument in the `set_cookie` call.",
+        "code":  "class Response:\n    def set_cookie(self, **options):\n        return options\n\nresponse = Response()\nsession_id = \"opaque\"\ncookie = response.set_cookie(key=\"session\", value=session_id, httponly=True, secure=True, samesite=\"lax\")",
+        "question_type":  "multiple_choice",
+        "question":  "Which of the following most closely matches the meaning of `httponly=True`?",
+        "choices":  [
+                        "Saves cookies to a plaintext file",
+                        "Always delete the session.",
+                        "Allow only HTTP and block HTTPS",
+                        "Make it difficult to read cookies directly in browser JavaScript"
+                    ],
+        "answer":  "Make it difficult to read cookies directly in browser JavaScript",
+        "explanation":  "Pass `httponly=True` to `set_cookie` to enable the `HttpOnly` option. This is because the primary purpose of `HttpOnly` is to restrict direct cookie access by client-side scripts. A common misconception: \"It allows only HTTP and blocks HTTPS.\" The option related to HTTPS-only transmission is `Secure`. Point of misinterpretation: This occurs when the roles of the HttpOnly and Secure flags are reversed. When discussing cookie security, **the roles of HttpOnly, Secure, and SameSite must be understood separately**.",
+        "side_card_ids":  [
+                              "WEB_auth_001"
+                          ],
+        "project_context":  "This relates to determining the storage location for tokens and sessions and the cookie options when attaching a login session to a PWA frontend.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "set_cookie 호출에서 HttpOnly security option이 이름 있는 argument로 설정되는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`httponly=True` is a keyword argument that enables the HttpOnly option in a call to `set_cookie`.",
+                                    "how_to_read":  "Distinguish the names of \"secure,\" \"samesite,\" and other cookie options.",
+                                    "key_point":  "HttpOnly is used to prevent browser JavaScript from directly reading that cookie.",
+                                    "common_mistake":  "It’s easy to think of `HttpOnly` as an option that allows only HTTPS and blocks HTTP. Its role differs from that of the `Secure` flag."
+                                },
+        "teaching_example":  {
+                                 "code":  "def make_cookie(*, httponly, secure):\n    return {\"httponly\":httponly,\"secure\":secure}\ncookie=make_cookie(httponly=True,secure=True)",
+                                 "walkthrough":  "Pass two different security options by name."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Pass `httponly=True` to `set_cookie` to enable the cookie option.",
+                                   "why_correct":  "This is because the primary purpose of `HttpOnly` is to restrict direct cookie access by client-side scripts.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Allow only HTTP and block HTTPS",
+                                                               "why_wrong":  "The option related to HTTPS-only transmission is \"Secure.\"",
+                                                               "misread_step":  "This is an example where the roles of the HttpOnly and Secure flags have been reversed."
+                                                           },
+                                   "takeaway":  "Cookie security is explained by **distinguishing the roles of HttpOnly, Secure, and SameSite**."
+                               },
+        "target_statement":  "response.set_cookie(key=\"session\", value=session_id, httponly=True, secure=True, samesite=\"lax\")",
+        "focus_span":  "httponly=True",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "cookie",
+                                "session",
+                                "HttpOnly",
+                                "Secure"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY22_L10_oauth_callback_001",
+        "level":  10,
+        "title":  "Reading the OAuth callback flow: code → token → profile → session",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "return_statement",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Trace the data dependencies of function calls inside the OAuth callback in order.",
+        "code":  "def callback(code: str):\n    token = exchange_code_for_token(code)\n    user = fetch_user_profile(token)\n    return create_session(user)",
+        "question_type":  "multiple_choice",
+        "question":  "Which of the following best describes the flow of this code?",
+        "choices":  [
+                        "Create session → Exchange code → Delete user",
+                        "View Profile → Delete from DB → Session Expires",
+                        "Exit without saving tokens",
+                        "code exchange → user profile lookup → session creation"
+                    ],
+        "answer":  "code exchange → user profile lookup → session creation",
+        "explanation":  "Data is passed sequentially: code → token, token → user, user → session. This is because each assignment and the final function call use the result of the immediately preceding step as input. A common source of confusion: “Create session → exchange code → delete user.” This sequence is the exact opposite of the actual execution order, and there is no delete call. Point of misinterpretation: This occurs when the top-to-bottom execution order is ignored. The OAuth callback is read as **temporary code → token → identity/profile → local session**.",
+        "side_card_ids":  [
+                              "WEB_auth_001"
+                          ],
+        "project_context":  "This connects to the structure where an external identity is verified via an OAuth/OIDC callback, after which a local login session is created.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "OAuth callback 안의 함수 호출 data dependency를 순서대로 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`create_session(user)` calls a function to create a local session using the verified/retrieved user information as an argument.",
+                                    "how_to_read":  "It traces back to the previous token exchange and profile call to determine where the `user` value was created.",
+                                    "key_point":  "Instead of using the authorization code directly for the local user session, it goes through a token/profile verification step.",
+                                    "common_mistake":  "It is easy to assume that the callback code is the access token."
+                                },
+        "teaching_example":  {
+                                 "code":  "def callback(code):\n    token=exchange(code)\n    profile=fetch(token)\n    return session(profile)",
+                                 "walkthrough":  "The return value of each call serves as the input for the next call."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Data is passed in a chain from `code` to `token`, from `token` to `user`, and from `user` to `session`.",
+                                   "why_correct":  "This is because each assignment and the final function call use the result of the immediately preceding operation as input.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Create session → Exchange code → Delete user",
+                                                               "why_wrong":  "This is the exact opposite of the code execution order, and there are no deletion calls.",
+                                                               "misread_step":  "This is an example where the top-to-bottom execution order is ignored."
+                                                           },
+                                   "takeaway":  "Read an OAuth callback as **temporary code → token → identity/profile → local session**."
+                               },
+        "target_statement":  "return create_session(user)",
+        "focus_span":  "create_session(user)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "OAuth",
+                                "callback",
+                                "authorization code",
+                                "token exchange",
+                                "session"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY22_L10_rate_limit_001",
+        "level":  10,
+        "title":  "Raise an HTTPException 429 when the rate limit is exceeded",
+        "concepts":  [
+                         "raise_statement",
+                         "if_statement",
+                         "call",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the sequence of events leading up to the HTTPException 429 caused by the quota counter threshold.",
+        "code":  "def check_rate_limit(user_id):\n    count = cache.incr(f\"rate:{user_id}\")\n    if count \u003e 100:\n        raise HTTPException(status_code=429, detail=\"too many requests\")",
+        "question_type":  "multiple_choice",
+        "question":  "What status code is returned when `count` exceeds 100?",
+        "choices":  [
+                        "200",
+                        "401",
+                        "404",
+                        "429"
+                    ],
+        "answer":  "429",
+        "explanation":  "When the threshold is exceeded, execution reaches the `raise` statement and the `HTTPException` is created with `status_code` set to 429. The rate-limit response code is explicitly written in the code. Common wrong answer: 401. 401 is commonly used for authentication failure, while this question is about quota excess. Misreading point: This happens when an authentication error is confused with a rate-limit error. Read the quota guard as **counter → threshold → explicit 429 exception**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It connects to a server-side quota guard designed to prevent skyrocketing LLM API costs or abuse.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "raise_statement",
+        "reading_goal_internal":  "quota counter threshold가 HTTPException 429 발생으로 이어지는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`raise HTTPException(...)` creates an exception object representing an HTTP error and interrupts the current normal flow.",
+                                    "how_to_read":  "Check the values of the `status_code` and `detail` keywords inside the `raise` block.",
+                                    "key_point":  "If you replace the \"rate-limit threshold exceeded\" message with an explicit 429 error, the client will be able to determine that the quota has been exceeded.",
+                                    "common_mistake":  "Even if `count` is exactly 100, it’s easy to assume that the condition ``\u003e 100`` is True."
+                                },
+        "teaching_example":  {
+                                 "code":  "class LimitError(Exception):\n    pass\ncount=11\nif count\u003e10:\n    raise LimitError(\"too many\")",
+                                 "walkthrough":  "An exception is raised because the threshold has been exceeded."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "If the threshold is exceeded, the code reaches the `raise` statement, and the `status_code` of the `HTTPException` is set to 429.",
+                                   "why_correct":  "This is because the code explicitly specifies a rate-limit response code.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "401",
+                                                               "why_wrong":  "401 is typically used for authentication failures, but in this case, the issue is a quota exceeded error.",
+                                                               "misread_step":  "This is an instance where an \"authentication error\" was confused with a \"rate-limit error.\""
+                                                           },
+                                   "takeaway":  "\"quota guard\" is interpreted as **counter → threshold → explicit 429 exception**."
+                               },
+        "target_statement":  "raise HTTPException(status_code=429, detail=\"too many requests\")",
+        "focus_span":  "raise HTTPException(status_code=429, detail=\"too many requests\")",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "rate limit",
+                                "quota",
+                                "429",
+                                "HTTPException"
+                            ],
+        "pedagogical_intent":  "predict_exception"
+    },
+    {
+        "id":  "PY22_L10_secret_rotation_001",
+        "level":  10,
+        "title":  "Reject old keys that differ from the active key version",
+        "concepts":  [
+                         "if_statement",
+                         "comparison",
+                         "subscription",
+                         "raise_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the guard that rejects credentials different from the active version after secret rotation.",
+        "code":  "ACTIVE_KEY_VERSION = \"v2\"\nrequest = {\"key_version\": \"v1\"}\nif request[\"key_version\"] != ACTIVE_KEY_VERSION:\n    status_code = 401\nelse:\n    status_code = 200",
+        "question_type":  "multiple_choice",
+        "question":  "`old key disabled` Which of the following most closely matches the meaning?",
+        "choices":  [
+                        "All keys are allowed.",
+                        "Ignore the key version",
+                        "Initialize the database",
+                        "Previous version keys are no longer accepted."
+                    ],
+        "answer":  "Previous version keys are no longer accepted.",
+        "explanation":  "Because `v1 != v2`, the old-key branch runs and the request is handled with status 401. The guard is written to reject any key other than the active version. A tempting wrong answer is “allow all keys,” but the not-equal condition explicitly rejects the old key. The mistake is missing the revocation purpose of rotation. Read secret rotation as **set the new active version → identify old credentials → revoke/reject them**.",
+        "side_card_ids":  [
+                              "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
+                          ],
+        "project_context":  "This is linked to the rotation policy for discarding previous credentials within the structure for storing, encrypting, and renewing API keys.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "secret rotation 후 active version과 다른 credential을 거부하는 guard를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if left != right:` executes the branch when the two values are different.",
+                                    "how_to_read":  "It compares the version submitted by the request with the currently active version.",
+                                    "key_point":  "Secret rotation requires a policy on whether to continue accepting the previous key or to discard it; in this case, the old version is deactivated.",
+                                    "common_mistake":  "It’s easy to assume that if the `version` string is different, it is automatically converted to a new key."
+                                },
+        "teaching_example":  {
+                                 "code":  "active=\"v3\"\nrequest={\"version\":\"v2\"}\nold=request[\"version\"]!=active",
+                                 "walkthrough":  "Since v2 and v3 are different, `old` is `True`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since v1 != v2, the \"old key\" branch is executed and a 401 status is returned.",
+                                   "why_correct":  "This is because the `guard` is written to disallow `key` other than `active version`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "All keys are allowed.",
+                                                               "why_wrong":  "Explicitly rejects the old key in a not-equal condition.",
+                                                               "misread_step":  "This is an example where the purpose of revoking a rotation was missed."
+                                                           },
+                                   "takeaway":  "\"secret rotation\" should be interpreted as **set new active version → verify old credentials → discard/reject**."
+                               },
+        "target_statement":  "if request[\"key_version\"] != ACTIVE_KEY_VERSION:",
+        "focus_span":  "request[\"key_version\"] != ACTIVE_KEY_VERSION",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "secret rotation",
+                                "API key",
+                                "version",
+                                "key revocation"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY22_L10_prompt_injection_guard_001",
+        "level":  10,
+        "title":  "Limiting input length using `user_query[:2000]`",
+        "concepts":  [
+                         "slice",
+                         "assignment",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the structure that limits user input to \"slices\" before feeding it into the LLM prompt.",
+        "code":  "def build_prompt(user_query: str):\n    safe_query = user_query[:2000]\n    return {\n        \"system\": \"Answer only from retrieved evidence.\",\n        \"user\": safe_query,\n    }",
+        "question_type":  "multiple_choice",
+        "question":  "`user_query[:2000]` Which of the following best matches its purpose?",
+        "choices":  [
+                        "Elevate user input to an administrator command",
+                        "Remove all evidence.",
+                        "Issue a token",
+                        "Limit the length of user input."
+                    ],
+        "answer":  "Limit the length of user input.",
+        "explanation":  "The `slice` operation creates `safe_query` by retaining only the first 2,000 characters of the string. This is because Python slice operations are exclusive, and the remaining characters are discarded. A common source of confusion: “Issues a token.” String slicing has nothing to do with issuing authentication tokens. Point of Misinterpretation: This occurs when the concepts of LLM tokens and auth tokens are confused. The prompt guard evaluates **a combination of multiple layers, such as input restrictions, system instructions, and retrieval policies**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This ties into the approach used in evidence-first RAG, which involves incorporating a validation layer rather than passing user input directly and without limitation.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "slice",
+        "reading_goal_internal":  "LLM prompt에 넣기 전 사용자 입력을 slice로 제한하는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`text[:2000]` This is a slice that extracts the string from the beginning up to just before index 2000.",
+                                    "how_to_read":  "Note that the `stop index` is not included, and verify the maximum length of the result.",
+                                    "key_point":  "Input length limits can serve as a basic safeguard to reduce excessive token usage and limit certain abuse vectors.",
+                                    "common_mistake":  "It is easy to assume that a length limit alone completely solves the problem of prompt injection."
+                                },
+        "teaching_example":  {
+                                 "code":  "text=\"abcdef\"\nshort=text[:3]",
+                                 "walkthrough":  "Only indices 0–2 remain; \"short\" is \"abc.\""
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`slice` creates `safe_query` by retaining only the first 2,000 characters of the string.",
+                                   "why_correct":  "This is because the Python slice stop is exclusive, and the remaining characters are discarded.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Issue a token",
+                                                               "why_wrong":  "String slicing is unrelated to the issuance of authentication tokens.",
+                                                               "misread_step":  "This is an example of confusion between the concepts of “LLM token” and “auth token.”"
+                                                           },
+                                   "takeaway":  "The prompt guard evaluates **a combination of multiple layers, such as input restrictions, system instructions, and retrieval policies**."
+                               },
+        "target_statement":  "safe_query = user_query[:2000]",
+        "focus_span":  "user_query[:2000]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "prompt injection",
+                                "input validation",
+                                "length limit",
+                                "LLM security"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY22_L10_encrypted_secret_storage_001",
+        "level":  10,
+        "title":  "Storing the API key after encrypting it",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the sequence in which the plaintext API key passes through the encryption function before the storage call.",
+        "code":  "def save_user_api_key(user_id, api_key):\n    encrypted = encrypt(api_key)\n    repo.upsert_secret(user_id=user_id, encrypted_value=encrypted)",
+        "question_type":  "multiple_choice",
+        "question":  "`encrypted_value` Why is it being saved?",
+        "choices":  [
+                        "To display the API key on the screen,",
+                        "To push the code to Git",
+                        "To delete a user ID,",
+                        "To avoid storing API keys in plain text directly in the database,"
+                    ],
+        "answer":  "To avoid storing API keys in plain text directly in the database,",
+        "explanation":  "Instead of passing the original `api_key` directly to the repository, the encrypted result is stored. This structure is designed to minimize the exposure of plaintext secrets in the repository. A common source of confusion: As a basic principle, secrets should not be placed under source control to prevent keys from being uploaded to Git. Point of misinterpretation: This is a case where “secure storage” and “source tracking” were confused. Secret storage follows the sequence: **plaintext secret → encrypt → restricted storage**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This is linked to a system where user-specific external API keys are stored on the server and decrypted for use only when necessary.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "평문 API key가 storage call 전에 encryption 함수를 거치는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`encrypt(api_key)` This is a function call that passes a sensitive value to an encryption function.",
+                                    "how_to_read":  "Distinguish between the original secret, the encryption result, and the value passed to the repository.",
+                                    "key_point":  "It is important not to store API keys in plain text in the database for long-term storage, but rather to implement an appropriate key management and encryption design.",
+                                    "common_mistake":  "It’s easy to assume that just because there’s a function named `encrypt`, issues like key management, access control, and rotation are automatically resolved."
+                                },
+        "teaching_example":  {
+                                 "code":  "def encrypt(value):\n    return \"enc:\"+value\nsecret=\"abc\"\nstored=encrypt(secret)",
+                                 "walkthrough":  "Use the format `enc:abc` as the output target instead of the original `abc`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Instead of passing the original api_key directly to the repository, it stores the encrypted result.",
+                                   "why_correct":  "This is because the structure is designed to minimize the exposure of plaintext secrets in the repository.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "To push the code to Git",
+                                                               "why_wrong":  "As a general rule, secrets should not be included in source control.",
+                                                               "misread_step":  "This is an instance where “secure storage” was confused with “source tracking.”"
+                                                           },
+                                   "takeaway":  "\"secret storage\" is read in the following order: **plaintext secret → encrypt → restricted storage**."
+                               },
+        "target_statement":  "encrypted = encrypt(api_key)",
+        "focus_span":  "encrypt(api_key)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "encryption",
+                                "secret storage",
+                                "API key",
+                                "database"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY22_L10_auth_dependency_001",
+        "level":  10,
+        "title":  "Declaring an authentication dependency using `Depends(get_current_user)`",
+        "concepts":  [
+                         "parameter_definition",
+                         "call",
+                         "function_definition",
+                         "from_import_statement"
+                     ],
+        "reading_goal":  "Read the structure where the default expression of a FastAPI endpoint parameter is used as dependency injection metadata.",
+        "code":  "from fastapi import Depends\n\ndef get_current_user(credentials = Depends(bearer)):\n    return verify_token(credentials.credentials)\n\ndef private(user = Depends(get_current_user)):\n    return {\"user_id\": user.id}",
+        "question_type":  "multiple_choice",
+        "question":  "`Depends(get_current_user)` What is the role of [X]?",
+        "choices":  [
+                        "Set all users as admins",
+                        "Save the tokens to a file.",
+                        "Set the API to public",
+                        "Verify the token before making the request and pass the `user` to the endpoint."
+                    ],
+        "answer":  "Verify the token before making the request and pass the `user` to the endpoint.",
+        "explanation":  "`Depends` registers `get_current_user` as a dependency, and FastAPI resolves it during request processing and supplies the result to the `user` parameter. Dependency injection separates endpoint logic from authentication logic. Common wrong answer: make the API public. This is instead a protected-endpoint pattern that requires an authentication dependency. Misreading point: This happens when a dependency is mistaken for an authentication bypass. Read FastAPI auth as **credential dependency → token verification → current-user injection**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This is connected to the structure that adds an authentication layer to the private API, personal notes/progress, and user-specific secret lookup endpoints.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "parameter_definition",
+        "reading_goal_internal":  "FastAPI endpoint parameter의 default expression이 dependency injection metadata로 쓰이는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`user = Depends(get_current_user)` is a parameter definition with a default value expression in Python syntax.",
+                                    "how_to_read":  "Although it may appear to be a general default value, we also consider the framework’s interpretation of the `Depends` object as dependency metadata.",
+                                    "key_point":  "The `get_current_user` dependency can be used in a pattern where it validates a token and provides the verified user to the endpoint.",
+                                    "common_mistake":  "It is easy to think that `Depends` automatically makes all users admins."
+                                },
+        "teaching_example":  {
+                                 "code":  "def provide_user():\n    return \"u1\"\nclass Depends:\n    def __init__(self,fn): self.fn=fn\ndef endpoint(user=Depends(provide_user)):\n    return user",
+                                 "walkthrough":  "From a Python perspective, this is a default expression, and the framework may interpret it as a dependency declaration."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Depends registers `get_current_user` as a dependency, and FastAPI resolves it while processing the request and provides it to the `user` parameter.",
+                                   "why_correct":  "This is because dependency injection allows us to separate the endpoint body from the authentication logic.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Set the API to public",
+                                                               "why_wrong":  "Rather, this is a pattern of a protected endpoint that requires authentication.",
+                                                               "misread_step":  "This is an example where “dependency” was incorrectly interpreted as “authentication bypass.”"
+                                                           },
+                                   "takeaway":  "FastAPI authentication follows the sequence: **credential dependency → token verification → current user injection**."
+                               },
+        "target_statement":  "def private(user = Depends(get_current_user)):",
+        "focus_span":  "user = Depends(get_current_user)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "web_http_api",
+        "coverage_topics":  [
+                                "FastAPI",
+                                "Depends",
+                                "authentication",
+                                "current user"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    }
 ]

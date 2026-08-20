@@ -1,429 +1,1001 @@
 [
-  {
-    "id": "PY42_L06_csv_tsv_001",
-    "level": 6,
-    "title": "Reading CSV vs. TSV",
-    "concepts": [
-      "CSV",
-      "TSV",
-      "delimiter"
-    ],
-    "reading_goal": "Understand that CSV and TSV are both table-format files that differ only in their delimiters.",
-    "code": "CSV: name,score\nTSV: name\\tscore",
-    "question_type": "meaning_choice",
-    "question": "What character is typically used to separate columns in TSV?",
-    "choices": [
-      "Comma",
-      "Braces",
-      "Slash",
-      "Tab character"
-    ],
-    "answer": "Tab character",
-    "explanation": "CSV and TSV store tabular records as text with comma and tab as their usual delimiters. Fields containing a delimiter, quote, or line break use quoting and escaping rules, so plain split(',') or split('\\t') is not a safe parser. Use a CSV parser with the file's dialect and encoding.",
-    "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
-    ],
-    "project_context": "This often comes up when reading files such as curriculum.graph, audit.tsv, and manifest.tsv."
-  },
-  {
-    "id": "PY42_L06_json_vs_jsonl_001",
-    "level": 6,
-    "title": "Reading JSON vs. JSONL",
-    "concepts": [
-      "JSON",
-      "JSONL",
-      "line_delimited_json"
-    ],
-    "reading_goal": "Distinguish between the storage formats of JSON and JSONL.",
-    "code": "JSON:\n[\n  {\"id\": 1},\n  {\"id\": 2}\n]\n\nJSONL:\n{\"id\": 1}\n{\"id\": 2}",
-    "question_type": "meaning_choice",
-    "question": "What are the features of JSONL?",
-    "choices": [
-      "Put one independently parseable JSON value on each line",
-      "Make the entire file one required JSON array",
-      "Put Python code on each line",
-      "Make only the last line valid JSON"
-    ],
-    "answer": "Put one independently parseable JSON value on each line",
-    "explanation": "A JSON document contains one JSON value, such as an array or object. JSONL stores one independently parseable JSON value on each non-blank line. Records are commonly objects, but other JSON values are syntactically possible. It supports line streaming and appending, while the whole file is not itself one ordinary JSON value.",
-    "side_card_ids": [
-      "PYV158_A1_JSON_FLOW"
-    ],
-    "project_context": "The `node_pass` output, LoRA dataset, and validation results are often in JSONL format."
-  },
-  {
-    "id": "PY42_L07_dictreader_001",
-    "level": 7,
-    "title": "Reading with csv.DictReader",
-    "concepts": [
-      "for",
-      "import",
-      "print",
-      "csv.DictReader",
-      "header",
-      "row_dict"
-    ],
-    "reading_goal": "Understand how to read CSV/TSV rows into a dictionary.",
-    "code": "import csv\n\nwith open('audit.tsv', encoding='utf-8') as f:\n    rows = csv.DictReader(f, delimiter='\\t')\n    for row in rows:\n        print(row['status'])",
-    "question_type": "meaning_choice",
-    "question": "When DictReader converts a row into a dictionary, where do the keys usually come from?",
-    "choices": [
-      "File extension",
-      "Folder Name",
-      "Git Commit Messages",
-      "The header on the first line"
-    ],
-    "answer": "The header on the first line",
-    "explanation": "When fieldnames is omitted, csv.DictReader reads the first row as header keys and does not return that row as data. If fieldnames is supplied explicitly, the first row is ordinary data instead. Also validate duplicate or empty headers and unexpected columns.",
-    "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
-    ],
-    "project_context": "This is useful when extracting columns such as `status`, `reason`, and `id` by name from `audit.tsv`."
-  },
-  {
-    "id": "PY42_L07_pandas_dataframe_001",
-    "level": 7,
-    "title": "Reading a pandas DataFrame",
-    "concepts": [
-      "import",
-      "print",
-      "pandas",
-      "DataFrame",
-      "table"
-    ],
-    "reading_goal": "A DataFrame is understood as a tabular data structure consisting of rows and columns.",
-    "code": "import pandas as pd\n\ndf = pd.read_csv('nodes.tsv', sep='\\t')\nprint(df.shape)\nprint(df.columns)",
-    "question_type": "meaning_choice",
-    "question": "What does `df.shape` tell us?",
-    "choices": [
-      "Number of Git branches",
-      "File Encoding Types",
-      "Server port number",
-      "Number of rows and columns"
-    ],
-    "answer": "Number of rows and columns",
-    "explanation": "A DataFrame is a data structure that can be treated like a table, and its shape allows you to quickly check its overall dimensions. A pandas DataFrame is a structure for handling tabular data organized into rows and columns. It is frequently used when performing operations such as filtering, sorting, and aggregation after reading a CSV file. Therefore, the output is the “number of rows and columns.”",
-    "side_card_ids": [
-      "DATA_rdb_001"
-    ],
-    "project_context": "These are the default check values when reviewing node candidates, edge candidates, submitted CSV files, and evaluation results."
-  },
-  {
-    "id": "PY42_L07_read_csv_sep_001",
-    "level": 7,
-    "title": "read_csv: Reading a CSV file with separators",
-    "concepts": [
-      "read_csv",
-      "sep",
-      "TSV"
-    ],
-    "reading_goal": "Understand the `sep` argument when reading CSV and TSV files in pandas.",
-    "code": "df_csv = pd.read_csv('items.csv')\ndf_tsv = pd.read_csv('audit.tsv', sep='\\t')",
-    "question_type": "meaning_choice",
-    "question": "Why do we specify `sep='\\t'` when reading a TSV file with pandas?",
-    "choices": [
-      "It's to delete the file.",
-      "This is only necessary for conversion to JSON",
-      "It's always to use the GPU.",
-      "This is because the column separator is a tab."
-    ],
-    "answer": "This is because the column separator is a tab.",
-    "explanation": "The `sep` parameter in `read_csv` specifies the character used to separate columns. Since TSV files are delimited by tab characters, use `sep='\\t'`. If the delimiter is specified incorrectly, an entire line may be treated as a single column, or the number of columns may be incorrect. Therefore, the correct answer is “Because the column delimiter is a tab.”",
-    "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
-    ],
-    "project_context": "I often use this when reading the `manifest.tsv`, `audit.tsv`, and `mapping.tsv` files in KG projects."
-  },
-  {
-    "id": "PY42_L08_chunksize_001",
-    "level": 8,
-    "title": "Reading the chunk size",
-    "concepts": [
-      "for",
-      "chunksize",
-      "large_file",
-      "memory"
-    ],
-    "reading_goal": "Understand the method of processing large files in chunks rather than reading them all at once.",
-    "code": "for chunk in pd.read_csv('large.csv', chunksize=10000):\n    process(chunk)",
-    "question_type": "meaning_choice",
-    "question": "What is the main reason for using `chunksize`?",
-    "choices": [
-      "To automatically rename files",
-      "To hide the correct answer",
-      "To clear your browser cache",
-      "To avoid loading large files into memory all at once"
-    ],
-    "answer": "To avoid loading large files into memory all at once",
-    "explanation": "pd.read_csv(..., chunksize=10000) returns a TextFileReader whose iteration reads DataFrames of up to about 10,000 rows, avoiding all rows in memory at once. Operations such as global sorting, deduplication, or grouping still need intermediate aggregation or external storage across chunk boundaries.",
-    "side_card_ids": [
-      "PYV161_A1_BATCH_MEMORY_FLOW"
-    ],
-    "project_context": "This is a method for reducing memory consumption when validating JSONL/CSV results containing hundreds of thousands of lines."
-  },
-  {
-    "id": "PY42_L08_streaming_jsonl_001",
-    "level": 8,
-    "title": "Reading Streaming JSONL",
-    "concepts": [
-      "for",
-      "import",
-      "streaming",
-      "JSONL",
-      "memory_safe"
-    ],
-    "reading_goal": "Understand the memory-safe pattern for reading JSONL one line at a time.",
-    "code": "import json\n\nwith open('output.jsonl', encoding='utf-8') as f:\n    for line in f:\n        row = json.loads(line)\n        process(row)",
-    "question_type": "meaning_choice",
-    "question": "Why is this code suitable for large JSONL files?",
-    "choices": [
-      "This is because it automatically deletes all lines.",
-      "This is because it ignores JSON syntax.",
-      "This is because pandas is required.",
-      "This is because the entire file is not loaded into memory all at once."
-    ],
-    "answer": "This is because the entire file is not loaded into memory all at once.",
-    "explanation": "File iteration reads one line at a time, so the whole JSONL file is not loaded into memory. Handle malformed or blank lines with line numbers, and atomically checkpoint only after process output is safely stored. Line-oriented input alone does not automatically provide resume behavior.",
-    "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
-    ],
-    "project_context": "Verifying the node_pass shard results and the LLM response logs is very important."
-  },
-  {
-    "id": "PY42_L08_schema_check_001",
-    "level": 8,
-    "title": "Read schema check",
-    "concepts": [
-      "if",
-      "schema",
-      "required_fields",
-      "validation"
-    ],
-    "reading_goal": "Understand schema checks, which verify that all required fields are present in the data.",
-    "code": "required = {'id', 'title', 'answer'}\nmissing = required - row.keys()\nif missing:\n    raise ValueError(f\"missing fields: {sorted(missing)}\")\nif not isinstance(row['id'], str):\n    raise TypeError(\"id must be a string\")",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of a schema check?",
-    "choices": [
-      "Shuffling the data without exception",
-      "Setting the file size to 0",
-      "Deleting the correct answer choice",
-      "Quickly identifying missing required columns or fields"
-    ],
-    "answer": "Quickly identifying missing required columns or fields",
-    "explanation": "The first check finds missing required keys, and the second validates the id type. Presence alone does not catch nulls, empty strings, or wrong types. A real schema also defines each field's type, allowed values, nested shape, and extra-field policy.",
-    "side_card_ids": [
-      "PYV158_A1_VALIDATION_FLOW",
-      "PYV158_A1_SCHEMA_FLOW"
-    ],
-    "project_context": "It works on the same principle as validating the `id`, `choices`, `answer`, and `concepts` fields in the lesson JSON."
-  },
-  {
-    "id": "PY42_L08_missing_value_001",
-    "level": 8,
-    "title": "Reading Missing Values",
-    "concepts": [
-      "print",
-      "missing_value",
-      "NaN",
-      "isna"
-    ],
-    "reading_goal": "Understand the basic methods for checking for null values and NaN.",
-    "code": "missing_count = df['label'].isna().sum()\nprint(missing_count)",
-    "question_type": "meaning_choice",
-    "question": "What does `df['label'].isna().sum()` count?",
-    "choices": [
-      "NaN, None, and similar missing values in label",
-      "Only empty strings",
-      "All rows",
-      "Duplicate IDs"
-    ],
-    "answer": "NaN, None, and similar missing values in label",
-    "explanation": "isna() marks values pandas recognizes as missing, such as NaN, None, and NaT, and sum() counts True values. An ordinary empty string may not be missing in this calculation, so define whitespace normalization and empty-string policy separately.",
-    "side_card_ids": [
-      "PYV160_A1_FLOAT_NUMERIC_NAN_FLOW"
-    ],
-    "project_context": "This is used to identify missing label, reason, or decision values in the labeling results."
-  },
-  {
-    "id": "PY42_L09_dedup_001",
-    "level": 9,
-    "title": "Read about deduplication",
-    "concepts": [
-      "dedup",
-      "drop_duplicates",
-      "unique_key"
-    ],
-    "reading_goal": "Understand how to remove duplicate rows based on a reference column.",
-    "code": "df = df.drop_duplicates(subset=['id'])",
-    "question_type": "meaning_choice",
-    "question": "What does `subset=['id']` mean?",
-    "choices": [
-      "Always delete the 'id' column",
-      "Randomly change the ID",
-      "Prevents the entire file from being sorted",
-      "Rows with the same 'id' column are treated as duplicates"
-    ],
-    "answer": "Rows with the same 'id' column are treated as duplicates",
-    "explanation": "drop_duplicates(subset=['id']) groups rows by equal id and keeps the first by default. It may silently discard conflicting values in other columns, and missing IDs can be treated as duplicates, so inspect duplicate groups and validate required IDs before removal.",
-    "side_card_ids": [
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "This is a key pattern in deduplicating node candidates, document candidates, and card IDs."
-  },
-  {
-    "id": "PY42_L09_groupby_001",
-    "level": 9,
-    "title": "Reading about GROUP BY",
-    "concepts": [
-      "groupby",
-      "aggregation",
-      "count"
-    ],
-    "reading_goal": "Understand the pattern of counting the number of rows grouped by specific columns.",
-    "code": "summary = df.groupby('status').size().reset_index(name='count')",
-    "question_type": "meaning_choice",
-    "question": "What is `groupby('status').size()` approximately equal to?",
-    "choices": [
-      "Delete the \"status\" column",
-      "Compress all values into JSON",
-      "Rename the file to \"status\"",
-      "Count the number of rows by `status` value"
-    ],
-    "answer": "Count the number of rows by `status` value",
-    "explanation": "groupby('status').size() groups rows by each non-missing status and counts group size. pandas excludes a NaN status group by default; use dropna=False or a separate count when missing statuses matter. reset_index(name='count') returns a DataFrame with status and count columns.",
-    "side_card_ids": [
-      "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
-    ],
-    "project_context": "It is used immediately when examining the distribution of PASS/FAIL, accept/reject, and error types."
-  },
-  {
-    "id": "PY42_L09_merge_join_001",
-    "level": 9,
-    "title": "Reading about merge and join",
-    "concepts": [
-      "merge",
-      "join",
-      "key"
-    ],
-    "reading_goal": "Understand the merge operation, which combines two tables based on a common key.",
-    "code": "merged = nodes.merge(edges, left_on='node_id', right_on='to_node_id', how='left')",
-    "question_type": "meaning_choice",
-    "question": "Why is the key important in a merge?",
-    "choices": [
-      "Because it encrypts the files",
-      "This is because it always randomizes the order of the rows.",
-      "This is because it locks the Python version.",
-      "This is because we need to decide which rows to link together."
-    ],
-    "answer": "This is because we need to decide which rows to link together.",
-    "explanation": "left_on and right_on determine which key values connect rows. A left join retains all nodes rows, but repeated matching keys in edges can increase the result count, while no match produces missing right-side values. Check key uniqueness, validate= policy, row counts, and unmatched rates to catch accidental many-to-many joins.",
-    "side_card_ids": [
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "This is important when linking files based on node_id, doc_id, chunk_id, and card_id."
-  },
-  {
-    "id": "PY42_L09_sort_filter_001",
-    "level": 9,
-    "title": "Reading about sort / filter",
-    "concepts": [
-      "sort_values",
-      "filter",
-      "boolean_mask"
-    ],
-    "reading_goal": "Read about the basic analysis pattern for filtering and sorting rows based on conditions.",
-    "code": "failed = df[df['status'] == 'FAIL']\nfailed = failed.sort_values('score')",
-    "question_type": "meaning_choice",
-    "question": "What does `df[df['status'] == 'FAIL']` mean?",
-    "choices": [
-      "Set the value of the \"status\" column to \"FAIL\" for all records",
-      "Delete the \"score\" column",
-      "Select only rows where the status is FAIL",
-      "Convert the entire file to JSONL"
-    ],
-    "answer": "Select only rows where the status is FAIL",
-    "explanation": "Sorting and filtering are basic operations used to sort data and retain only rows that meet certain conditions. A Boolean mask is a pattern frequently used in pandas to create conditional filters. Therefore, the correct answer is “Select only rows where the ‘status’ is FAIL.”",
-    "side_card_ids": [
-      "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
-    ],
-    "project_context": "Used to quickly identify cards that failed verification, failed shards, and low-scoring candidates."
-  },
-  {
-    "id": "PY42_L10_manifest_001",
-    "level": 10,
-    "title": "Reading the manifest file",
-    "concepts": [
-      "manifest",
-      "file_inventory",
-      "metadata"
-    ],
-    "reading_goal": "Understand that a manifest is a directory that records a list of files and their metadata.",
-    "code": "manifest.tsv\nfile_path\\trows\\tsha256\\tcreated_at\\tstatus",
-    "question_type": "meaning_choice",
-    "question": "What is the main purpose of a manifest file?",
-    "choices": [
-      "Renders all data on the screen",
-      "Install the Python package",
-      "Tracks which files exist and their status",
-      "Close the browser tab"
-    ],
-    "answer": "Tracks which files exist and their status",
-    "explanation": "A manifest is a table that manages the existence and status of input and output files in a data pipeline. A manifest file serves as a guide that contains a list of data files and their descriptions. It is used as a reference to determine which files to read and to verify that their paths and versions are correct. Therefore, the correct answer is “It tracks which files exist and their status.”",
-    "side_card_ids": [
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "KG collection packs, curriculum graphs, clean text, and shard output are crucial for management."
-  },
-  {
-    "id": "PY42_L10_audit_tsv_001",
-    "level": 10,
-    "title": "Read the audit TSV",
-    "concepts": [
-      "audit",
-      "TSV",
-      "validation_report"
-    ],
-    "reading_goal": "Understand the reason for recording verification results in the audit TSV.",
-    "code": "audit.tsv\nid\\tstatus\\treason\\tchecked_at\nPY41...\\tOK\\tanswer in choices\\t2026-05-30",
-    "question_type": "meaning_choice",
-    "question": "What are the benefits of having an audit TSV?",
-    "choices": [
-      "It can always be processed as successful without verification.",
-      "Automatically deletes the original data",
-      "You can track later which ones passed and which ones failed.",
-      "Always reduce the number of cards"
-    ],
-    "answer": "You can track later which ones passed and which ones failed.",
-    "explanation": "This audit.tsv structures each id's status, reason, and checked_at so pass/fail outcomes and reasons can be filtered and aggregated later. Length and source file are not shown, so add those columns or separate provenance if they must be traced. Tool version and input hash further improve reproducibility.",
-    "side_card_ids": [
-      "PYV102_A7_DATAFRAME_CSV_CLEANING"
-    ],
-    "project_context": "It is linked to node promotion, edge validation, lesson card validation, and submission file validation."
-  },
-  {
-    "id": "PY42_L10_pipeline_data_quality_001",
-    "level": 10,
-    "title": "Reading Pipeline Data Quality",
-    "concepts": [
-      "data_quality",
-      "pipeline",
-      "validation"
-    ],
-    "reading_goal": "Understand why quality checkpoints are included in a data pipeline.",
-    "code": "raw files\n  -> parse\n  -> schema check\n  -> dedup\n  -> merge\n  -> audit\n  -> final dataset",
-    "question_type": "meaning_choice",
-    "question": "Why are schema check and dedup inserted in the middle?",
-    "choices": [
-      "Always to replicate more data",
-      "To remove the verification log",
-      "To catch corrupted data before it spreads to later stages",
-      "To hide file extensions"
-    ],
-    "answer": "To catch corrupted data before it spreads to later stages",
-    "explanation": "Schema checks catch required fields and types early, and deduplication applies an explicit identity rule before bad data can multiply through a merge. Row counts do not need to remain constant at every transformation, so record expected changes, key uniqueness, rejected rows, and provenance separately.",
-    "side_card_ids": [
-      "PYV158_A1_PIPELINE_FLOW"
-    ],
-    "project_context": "KG, LoRA, and the education app all require the \"extract → validate → merge → audit\" workflow."
-  }
+    {
+        "id":  "PY42_L06_csv_tsv_001",
+        "level":  6,
+        "title":  "Reading TSV column delimiters using the `csv.reader`’s `delimiter` argument",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "literal"
+                     ],
+        "reading_goal":  "Explain that the keyword argument `delimiter=\u0027\\t\u0027` sets the TSV column delimiter to a tab.",
+        "code":  "import csv\nfrom io import StringIO\nstream = StringIO(\"name\\tscore\\nMina\\t90\\n\")\nreader = csv.reader(stream, delimiter=\"\\t\")\nrows = list(reader)\nprint(rows[1])",
+        "question_type":  "concept_reading",
+        "question":  "What is the role of `delimiter=\"\\t\"` when reading TSV?",
+        "choices":  [
+                        "Tell the reader to use the tab character as the column delimiter.",
+                        "Automatically add a tab at the end of each line.",
+                        "Convert the number 90 to an int.",
+                        "Change the name of the first column to “delimiter”"
+                    ],
+        "answer":  "Tell the reader to use the tab character as the column delimiter.",
+        "explanation":  "1) Verify that the `stream` text is a tab-separated value (TSV) file. 2) Find the `delimiter` keyword in the `csv.reader` call. 3) Interpret `\\t` as a tab character. 4) The reader splits the data into columns at each tab position to create `rows`.",
+        "side_card_ids":  [
+                              "PYV102_A7_DATAFRAME_CSV_CLEANING"
+                          ],
+        "project_context":  "This is important when processing data files with various delimiters—such as commas, tabs, and pipes—using the same CSV module.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "keyword argument `delimiter=\u0027\\t\u0027`가 TSV 열 구분자를 탭으로 설정하는 의미를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A keyword argument specifies the value of a particular parameter by name when the function is called.",
+                                    "how_to_read":  "I interpret this as a setting where the reader determines which character to use to delimit columns based on the name “delimiter” and the value `\\t`.",
+                                    "key_point":  "Since CSV and TSV use different delimiters, you must check the delimiter value when calling the parser to ensure accurate column separation.",
+                                    "common_mistake":  "Do not assume that Python automatically infers tab delimiters just because a file has a .tsv extension. You must check the parser settings."
+                                },
+        "teaching_example":  {
+                                 "code":  "import csv\nfrom io import StringIO\nstream = StringIO(\"a|b\\n1|2\\n\")\nreader = csv.reader(stream, delimiter=\"|\")\nprint(next(reader))",
+                                 "walkthrough":  "delimiter=\u0027|\u0027 specifies the pipe character as the separator, splitting the first line into [\u0027a\u0027, \u0027b\u0027]."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Verify that the `stream` text is a tab-separated value (TSV) file. 2) Find the `delimiter` keyword in the `csv.reader` call. 3) Interpret `\\t` as a tab character. 4) The reader splits the data into columns at each tab position to create `rows`.",
+                                   "why_correct":  "Since CSV and TSV use different delimiters, you must check the delimiter value when calling the parser to ensure accurate column separation.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "파일 확장자가 .tsv면 Python이 자동으로 탭을 추론한다",
+                                                               "why_wrong":  "This example is a memory stream, and the delimiter is explicitly specified in the `delimiter` argument.",
+                                                               "misread_step":  "It reads the parser settings, not the file names."
+                                                           },
+                                   "takeaway":  "To accurately determine row boundaries when parsing CSV/TSV files, you must examine both the **input text** and the **delimiter argument** together."
+                               },
+        "target_statement":  "delimiter=\"\\t\"",
+        "focus_span":  "delimiter=\"\\t\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "CSV",
+                                "TSV",
+                                "delimiter",
+                                "csv.reader"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY42_L06_json_vs_jsonl_001",
+        "level":  6,
+        "title":  "Read a list comprehension that parses JSONL one line at a time after `splitlines()`.",
+        "concepts":  [
+                         "list_comprehension",
+                         "call",
+                         "for_statement"
+                     ],
+        "reading_goal":  "The list comprehension reads the processing structure where each line of JSONL is loaded independently using `json.loads`.",
+        "code":  "import json\njsonl_text = \u0027{\"id\": 1}\\n{\"id\": 2}\u0027\nrows = [json.loads(line) for line in jsonl_text.splitlines()]\nprint(rows)",
+        "question_type":  "meaning_choice",
+        "question":  "In what ways does this list comprehension reflect the characteristics of JSONL?",
+        "choices":  [
+                        "Parse each line split by `splitlines` using `json.loads`.",
+                        "Assume the entire text is a single JSON array.",
+                        "Remove all line breaks and parse the text only once.",
+                        "Execute each line as Python code with `exec`."
+                    ],
+        "answer":  "Parse each line split by `splitlines` using `json.loads`.",
+        "explanation":  "1) The `jsonl_text` contains two JSON objects separated by line breaks. 2) `splitlines` creates a string consisting of two lines. 3) The comprehension applies `json.loads` to each line. 4) The two dictionaries are added to the `rows` list in order.",
+        "side_card_ids":  [
+                              "PYV158_A1_JSON_FLOW"
+                          ],
+        "project_context":  "JSONL is frequently used in pipelines that process large volumes of log, node, and card data line by line or isolate partial failures.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "list_comprehension",
+        "reading_goal_internal":  "list comprehension이 JSONL의 각 줄을 독립적으로 json.loads하는 처리 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "List comprehensions create a new list by applying an expression to each item in an iterable.",
+                                    "how_to_read":  "Noting that the iterable on the right is ``jsonl_text.splitlines()``, I interpret this to mean that ``json.loads(line)`` is executed once on each line.",
+                                    "key_point":  "The advantage of JSONL is that each line is an independent JSON value, allowing for line-by-line parsing and streaming.",
+                                    "common_mistake":  "You should not assume that the entire JSONL must be a JSON array enclosed in `[ ... ]`."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\ntext = \u0027{\"v\": 10}\\n{\"v\": 20}\u0027\nvalues = [json.loads(line) for line in text.splitlines()]\nprint(values[1][\"v\"])",
+                                 "walkthrough":  "`splitlines` splits the string into two JSON strings, and the comprehension loads each string independently to create a list of two dictionaries."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The `jsonl_text` contains two JSON objects separated by line breaks. 2) `splitlines` creates a string consisting of two lines. 3) The comprehension applies `json.loads` to each line. 4) The two dictionaries are added to the `rows` list in order.",
+                                   "why_correct":  "The advantage of JSONL is that each line is an independent JSON value, allowing for line-by-line parsing and streaming.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Assume the entire text is a single JSON array.",
+                                                               "why_wrong":  "The text has no bracketed array structure, and the code also splits the lines and calls `loads` separately.",
+                                                               "misread_step":  "The processing code distinguishes between the full JSON structure and the line-delimited structure."
+                                                           },
+                                   "takeaway":  "Distinguish JSONL processing as **split/iterate lines → parse each line independently**, while a normal JSON array is **parsed as one complete structure**."
+                               },
+        "target_statement":  "[json.loads(line) for line in jsonl_text.splitlines()]",
+        "focus_span":  "[json.loads(line) for line in jsonl_text.splitlines()]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "JSON",
+                                "JSONL",
+                                "splitlines",
+                                "line-delimited JSON"
+                            ],
+        "pedagogical_intent":  "compare_behavior"
+    },
+    {
+        "id":  "PY42_L07_dictreader_001",
+        "level":  7,
+        "title":  "DictReader creates a row dict from a header",
+        "concepts":  [
+                         "call",
+                         "attribute_access",
+                         "argument_passing"
+                     ],
+        "reading_goal":  "The `DictReader` constructor call reads the flow where subsequent lines are converted into a dictionary, starting from the header on the first line.",
+        "code":  "import csv\nfrom io import StringIO\n\nf = StringIO(\"status\\treason\\nPASS\\tok\\n\")\nrows = csv.DictReader(f, delimiter=\"\\t\")\nrow = next(rows)\nprint(row[\"status\"])",
+        "question_type":  "output_prediction",
+        "question":  "What value does the last line output?",
+        "choices":  [
+                        "PASS",
+                        "status",
+                        "reason",
+                        "ok"
+                    ],
+        "answer":  "PASS",
+        "explanation":  "The first line of `StringIO` contains `status` and `reason`. `DictReader` uses these as header keys. The next line, containing `PASS` and `ok`, becomes the `status` and `reason` values, respectively. ``row[\"status\"]`` reads `PASS`. This is because `DictReader` creates a dictionary by mapping the values in the first header line to the corresponding positions in the following data row. Common source of confusion: “status” is a key in the dictionary, and the result of the square bracket lookup is the value associated with that key. Point of misinterpretation: You must distinguish between the header names and the actual values in the data rows. A DictReader without specified fieldnames uses the first line as the header and reads each subsequent row as a dictionary.",
+        "side_card_ids":  [
+                              "PYV102_A7_DATAFRAME_CSV_CLEANING"
+                          ],
+        "project_context":  "This refers to the context of reading row data using column names from an audit TSV or evaluation results file as keys.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "DictReader constructor call이 첫 줄 header를 기준으로 이후 행을 dict로 만드는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A constructor call is a call that invokes a class to create a new object. ``csv.DictReader(...)`` creates a reader object that reads lines in CSV format into a dictionary.",
+                                    "how_to_read":  "After checking which file objects and delimiters are passed in parentheses, observe what kind of values the generated reader outputs in subsequent iterations.",
+                                    "key_point":  "Using the first row as the header is `DictReader` library behavior; the Python syntax focus is the constructor call that creates the object.",
+                                    "common_mistake":  "It’s easy to assume that calling `DictReader` itself immediately converts all rows into a list. This code creates a reader object and retrieves the first data row from the next line’s ``next(rows)``."
+                                },
+        "teaching_example":  {
+                                 "code":  "import csv\nfrom io import StringIO\n\nf = StringIO(\"name,score\\nMina,90\\n\")\nreader = csv.DictReader(f)\nitem = next(reader)\nprint(item[\"name\"])",
+                                 "walkthrough":  "In the first line, \"name\" and \"score\" become the keys, and in the next line, \"Mina\" and \"90\" become the dictionary entries, so \"Mina\" is read using the \"name\" key."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The first line of `StringIO` contains `status` and `reason`. `DictReader` uses these two as header keys. The next line, containing `PASS` and `ok`, becomes the `status` and `reason` values, respectively. `row[\"status\"]` reads `PASS`.",
+                                   "why_correct":  "Because `DictReader` pairs the first-line headers with values from the next data row by position to create a dict.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "status",
+                                                               "why_wrong":  "`status` is a key in a dictionary, and the result of the square bracket lookup is the value associated with that key.",
+                                                               "misread_step":  "You must distinguish between header names and the actual values in the data rows."
+                                                           },
+                                   "takeaway":  "If no fieldnames are specified, DictReader uses the first line as the header and reads each subsequent line as a dictionary."
+                               },
+        "target_statement":  "rows = csv.DictReader(f, delimiter=\"\\t\")",
+        "focus_span":  "csv.DictReader(f, delimiter=\"\\t\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "csv",
+                                "DictReader",
+                                "header",
+                                "TSV"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY42_L07_pandas_dataframe_001",
+        "level":  7,
+        "title":  "Reading the `shape` attribute of a DataFrame",
+        "concepts":  [
+                         "attribute_access",
+                         "assignment",
+                         "call"
+                     ],
+        "reading_goal":  "Read the ``shape`` attribute of the `DataFrame` object to determine the number of rows and columns.",
+        "code":  "import pandas as pd\n\ndf = pd.DataFrame([\n    {\"id\": \"n1\", \"score\": 0.9},\n    {\"id\": \"n2\", \"score\": 0.8},\n])\nshape = df.shape\nprint(shape)",
+        "question_type":  "output_prediction",
+        "question":  "What value does the last line output?",
+        "choices":  [
+                        "(2, 2)",
+                        "(1, 2)",
+                        "[\u0027id\u0027, \u0027score\u0027]",
+                        "2"
+                    ],
+        "answer":  "(2, 2)",
+        "explanation":  "A DataFrame has two rows, n1 and n2. Since each row has two keys—id and score—it also has two columns. `df.shape` groups the number of rows and columns in that order and returns `(2, 2)`. Since the `shape` attribute of a DataFrame has a `(rows, columns)` structure, the result for this table with 2 rows and 2 columns is `(2, 2)`. Common misconception: [\u0027id\u0027, \u0027score\u0027] represents column names, not the return format of the `shape`. Point of confusion: You must distinguish between the roles of the `shape` and `columns` attributes. In a DataFrame, `shape` is a property that returns `(number of rows, number of columns)`.",
+        "side_card_ids":  [
+                              "DATA_rdb_001"
+                          ],
+        "project_context":  "The context involves quickly checking the data size after reading node candidates or evaluation results into a DataFrame.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "attribute_access",
+        "reading_goal_internal":  "DataFrame 객체의 `shape` 속성을 읽어 행 수와 열 수를 해석한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "Attribute access uses a form such as `object.name` to read an attribute belonging to an object. For a pandas DataFrame, the `shape` attribute provides the table size as the tuple `(number of rows, number of columns)`.",
+                                    "how_to_read":  "First, check what kind of DataFrame `df` is, then note that `shape`, which follows the dot, is an attribute of that object. The two numbers returned represent the number of rows and the number of columns, respectively.",
+                                    "key_point":  "The two numbers in `df.shape` are not data values but represent the dimensions of the DataFrame.",
+                                    "common_mistake":  "`shape` It is easy to mistake this for a list of column names. The column names are ``df.columns``, and ``shape`` consists of two numbers representing the row and column counts."
+                                },
+        "teaching_example":  {
+                                 "code":  "import pandas as pd\n\nframe = pd.DataFrame([{\"name\": \"A\", \"score\": 90}, {\"name\": \"B\", \"score\": 80}, {\"name\": \"C\", \"score\": 70}])\nsize = frame.shape\nprint(size)",
+                                 "walkthrough":  "Since there are three rows and two columns (name and score), `frame.shape` is `(3, 2)`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "A DataFrame has two rows, n1 and n2. Since each row has two keys—id and score—it also has two columns. `df.shape` combines the number of rows and columns in that order and returns `(2, 2)`.",
+                                   "why_correct":  "Since the `shape` attribute of a DataFrame has a `(rows, columns)` structure, the result for this table—which has 2 rows and 2 columns—is `(2, 2)`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\u0027id\u0027, \u0027score\u0027]",
+                                                               "why_wrong":  "This value represents a column name, not the return type of `shape`.",
+                                                               "misread_step":  "Distinguish the roles of the `shape` and `columns` attributes."
+                                                           },
+                                   "takeaway":  "For a DataFrame, the `shape` attribute gives `(number of rows, number of columns)`."
+                               },
+        "target_statement":  "shape = df.shape",
+        "focus_span":  "df.shape",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "pandas",
+                                "DataFrame",
+                                "shape",
+                                "table"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY42_L07_read_csv_sep_001",
+        "level":  7,
+        "title":  "`sep=` Passing a TSV delimiter as a keyword argument",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "assignment"
+                     ],
+        "reading_goal":  "Read which parameter receives which value from `sep=\"\\t\"` in the function call.",
+        "code":  "from io import StringIO\nimport pandas as pd\n\nsource = StringIO(\"id\\tscore\\nn1\\t90\\n\")\ndf = pd.read_csv(source, sep=\"\\t\")\nprint(list(df.columns))",
+        "question_type":  "multiple_choice",
+        "question":  "From the perspective of Python call syntax, which description of `sep=\"\\t\"` is most accurate?",
+        "choices":  [
+                        "`sep` Pass a tab character to the parameter as a keyword argument.",
+                        "`sep` Creates a new global variable named `.",
+                        "Read the ``sep`` attribute of the DataFrame.",
+                        "Use tab characters as list indices."
+                    ],
+        "answer":  "`sep` Pass a tab character to the parameter as a keyword argument.",
+        "explanation":  "The function call begins with `pd.read_csv(`. The first positional argument is `source`. The following `sep=\"\\t\"` is a named argument that passes a tab character to the `sep` parameter. This is because the `name=value` form inside the function call parentheses is a keyword argument. A common source of confusion: creating a new global variable named `sep`. The `sep=` inside the call parentheses is not a variable assignment statement but syntax for specifying a function parameter name. Point of confusion: You must distinguish between assignment statements and keyword arguments within a function call. The `name=value` form in a function call is a keyword argument that passes a value to that parameter.",
+        "side_card_ids":  [
+                              "PYV102_A7_DATAFRAME_CSV_CLEANING"
+                          ],
+        "project_context":  "This refers to the context of specifying delimiters when reading `manifest.tsv` or `audit.tsv` using pandas.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "함수 호출에서 `sep=\"\\t\"`가 어떤 매개변수에 어떤 값을 전달하는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A keyword argument is syntax that passes a value to a specific parameter in a function call using the form `name=value`.",
+                                    "how_to_read":  "When looking at `sep=\"\\t\"`, the program first checks whether the parameter name is `sep` and then reads that the value on the right, `\"\\t\"`, is a tab character.",
+                                    "key_point":  "The feature that splits TSV files by tabs is a function of pandas, and the Python syntax focus is on the keyword argument `sep`, which is used to pass a value.",
+                                    "common_mistake":  "It is easy to mistake `sep` for an assignment that creates a new variable. However, `sep=\"\\t\"` inside the function call parentheses is not a local variable assignment but the passing of a call argument."
+                                },
+        "teaching_example":  {
+                                 "code":  "from io import StringIO\nimport pandas as pd\n\nsource = StringIO(\"name|score\\nMina|90\\n\")\nframe = pd.read_csv(source, sep=\"|\")\nprint(list(frame.columns))",
+                                 "walkthrough":  "`sep=\"|\"` Since ``sep`` is passed a vertical bar as a parameter, `name` and `score` become separate columns."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The function call begins with `pd.read_csv(`. The first positional argument is `source`. The following `sep=\"\\t\"` is a named argument that passes a tab character to the `sep` parameter.",
+                                   "why_correct":  "The `name=value` format inside function call parentheses is a keyword argument.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "`sep` Creates a new global variable named `.",
+                                                               "why_wrong":  "The `sep=` inside the call parentheses is not a variable assignment statement but a syntax used to specify a function parameter name.",
+                                                               "misread_step":  "You must distinguish between keyword arguments in assignment statements and those within function calls."
+                                                           },
+                                   "takeaway":  "`name=value`, which appears within a function call, is a keyword argument that passes a value to that parameter."
+                               },
+        "target_statement":  "df = pd.read_csv(source, sep=\"\\t\")",
+        "focus_span":  "sep=\"\\t\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "pandas",
+                                "read_csv",
+                                "TSV",
+                                "separator"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY42_L08_chunksize_001",
+        "level":  8,
+        "title":  "Read the keyword argument `chunksize=10000`.",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "In the pandas function call, read that ``chunksize=...`` is a keyword argument that passes a configuration value by name.",
+        "code":  "import pandas as pd\n\nreader = pd.read_csv(\"large.csv\", chunksize=10000)",
+        "question_type":  "multiple_choice",
+        "question":  "`chunksize=10000` To which parameter does ``10000`` get passed?",
+        "choices":  [
+                        "reader",
+                        "chunksize",
+                        "large",
+                        "csv"
+                    ],
+        "answer":  "chunksize",
+        "explanation":  "If you look at `pd.read_csv()` inside the `chunksize=10000` call, the left side of the equals sign is the parameter name, and the right side is the value passed to it. This is because, in keyword argument syntax, the `name=value` in `name` refers to the target parameter. Commonly Confused Incorrect Answer: `reader` is the variable used to store the function’s return value. Point of misinterpretation: This occurs when the reader confuses the variable name outside the call with the keyword argument name inside the call. The `chunksize=10000` inside the call **passes 10,000 to the chunksize parameter**.",
+        "side_card_ids":  [
+                              "PYV161_A1_BATCH_MEMORY_FLOW"
+                          ],
+        "project_context":  "This connects to code that sets the read size to process CSV files in blocks of a certain number of rows, rather than loading hundreds of thousands of lines into memory all at once.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "pandas 함수 호출에서 `chunksize=...`가 이름을 지정해 설정값을 전달하는 키워드 인자임을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The `name=value` form inside call parentheses is a keyword argument that passes a value to a specific parameter name.",
+                                    "how_to_read":  "`chunksize=10000` It reads as: \"`read_csv()`\" passes the integer ``10000`` to the ``chunksize`` parameter.",
+                                    "key_point":  "`10000` is a named configuration value, not a positional argument like a filename.",
+                                    "common_mistake":  "It is easier to view `chunksize=10000` as being assigned to a separate variable. Since it is inside parentheses in a function call, it is a keyword argument."
+                                },
+        "teaching_example":  {
+                                 "code":  "items = sorted([3, 1, 2], reverse=True)",
+                                 "walkthrough":  "`reverse=True` is the same keyword argument syntax as passing `sorted()` to the `reverse` parameter in a call to `True`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "If you look at `pd.read_csv()` inside the `chunksize=10000` call, the left side of the equals sign is the parameter name, and the right side is the value passed to it.",
+                                   "why_correct":  "This is because, in keyword argument syntax, the `name=value` in `name` refers to the target parameter.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "reader",
+                                                               "why_wrong":  "`reader` is a variable used to store the function’s return value.",
+                                                               "misread_step":  "This is an example of mixing the names of assignment expressions outside a call with the names of keyword arguments inside a call."
+                                                           },
+                                   "takeaway":  "The `chunksize=10000` inside the call **passes 10,000 to the chunksize parameter**."
+                               },
+        "target_statement":  "reader = pd.read_csv(\"large.csv\", chunksize=10000)",
+        "focus_span":  "chunksize=10000",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "pandas",
+                                "large CSV",
+                                "chunksize",
+                                "memory"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY42_L08_streaming_jsonl_001",
+        "level":  8,
+        "title":  "Iterating through a file line by line using `for line in f`",
+        "concepts":  [
+                         "for_statement",
+                         "call",
+                         "assignment",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read the flow of a `for` loop that iterates over a file object, executing the body of the code by inserting each line into the `line` variable one line at a time.",
+        "code":  "import json\n\nwith open(\"output.jsonl\", encoding=\"utf-8\") as f:\n    for line in f:\n        row = json.loads(line)\n        process(row)",
+        "question_type":  "multiple_choice",
+        "question":  "What is assigned to `for line in f:` in each iteration of `line`?",
+        "choices":  [
+                        "File path string",
+                        "The following line in the file",
+                        "A list of all JSON objects",
+                        "Always None"
+                    ],
+        "answer":  "The following line in the file",
+        "explanation":  "`for line in f:` The iterator here is a file object. Iterating over a file object returns one line at a time, so in each iteration, the current line is passed to ``line``. This is because Python file objects behave like line-based iterators. A common source of confusion: A list of all JSON objects. This code does not first convert the entire file into a list. Point of confusion: This occurs when you overlook how the loop retrieves values one by one. ``for line in file:`` **iterates through the file line by line**.",
+        "side_card_ids":  [
+                              "PYV102_A7_DATAFRAME_CSV_CLEANING"
+                          ],
+        "project_context":  "It relates to reading code that verifies and processes large JSONL logs or shard results line by line, rather than loading them all at once.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "for_statement",
+        "reading_goal_internal":  "파일 객체를 반복 대상으로 둔 for문이 한 번에 한 줄씩 line 이름에 넣어 본문을 실행하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`for item in iterable:` This is a syntax that retrieves values one by one from an iterable, places them in ``item``, and repeats the body.",
+                                    "how_to_read":  "`for line in f:` is read as “reading one line at a time from the file object `f` and assigning it to `line`.”",
+                                    "key_point":  "In each iteration of the loop, a single line is assigned to `line`. The entire file string is not assigned to `line` all at once.",
+                                    "common_mistake":  "Since `f` refers to the entire file, it is easy to assume that `line` also refers to the entire file. Iteration over a file object proceeds line by line."
+                                },
+        "teaching_example":  {
+                                 "code":  "from io import StringIO\n\nf = StringIO(\"alpha\\nbeta\\n\")\nfor line in f:\n    word = line.strip()",
+                                 "walkthrough":  "In the first iteration, `alpha\\n` is entered into `line`, and in the next iteration, `beta\\n` is entered into `line`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "In `for line in f:`, the iterable is a file object. Iterating over a file object returns the next line one at a time, so in each iteration, the current line is assigned to `line`.",
+                                   "why_correct":  "This is because Python file objects behave like line-by-line iterators.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "A list of all JSON objects",
+                                                               "why_wrong":  "This code does not first convert the entire file into a list.",
+                                                               "misread_step":  "This is an example of failing to understand how a loop retrieves values one by one."
+                                                           },
+                                   "takeaway":  "`for line in file:` **iterates through the file line by line**."
+                               },
+        "target_statement":  "for line in f:",
+        "focus_span":  "for line in f:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "JSONL",
+                                "streaming",
+                                "large file",
+                                "memory safe"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY42_L08_schema_check_001",
+        "level":  8,
+        "title":  "If any fields are missing, enter the if validation branch",
+        "concepts":  [
+                         "if_statement",
+                         "name_reference",
+                         "raise_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the flow where the truthiness of a non-empty set determines whether the if statement is executed.",
+        "code":  "required = {\"id\", \"title\", \"answer\"}\nrow = {\"id\": \"c1\", \"title\": \"len 읽기\"}\nmissing = required - row.keys()\nif missing:\n    raise ValueError(f\"missing fields: {sorted(missing)}\")",
+        "question_type":  "multiple_choice",
+        "question":  "If ``answer`` is currently stored in ``missing``, how is the condition ``if missing:`` evaluated?",
+        "choices":  [
+                        "Note",
+                        "False",
+                        "Always None",
+                        "Syntax error."
+                    ],
+        "answer":  "Note",
+        "explanation":  "Since the required key ``answer`` is missing, the ``missing`` set contains elements. Because a non-empty set is truthy, ``if missing:`` is true. This is because, in Python, a non-empty collection evaluates to true in a conditional expression. A common source of confusion: For the expression to evaluate to false (false × false), `missing` must be an empty set. A common misinterpretation: This occurs when the presence of elements in the set is not checked. The expression `if collection:` can be interpreted as **true if the collection is not empty**.",
+        "side_card_ids":  [
+                              "PYV158_A1_VALIDATION_FLOW",
+                              "PYV158_A1_SCHEMA_FLOW"
+                          ],
+        "project_context":  "It connects to validation code that triggers an early failure when required fields are missing from lesson JSON or card metadata.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "비어 있지 않은 set의 truthiness가 if 분기 실행 여부를 결정하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if value:` executes the block when the truth value of `value` is true.",
+                                    "how_to_read":  "Read `if missing:` as checking whether the `missing` set is non-empty and entering the missing-field handling block when it contains elements.",
+                                    "key_point":  "Even if a condition lacks a comparison operator, you can use the collection’s own truthiness as a condition.",
+                                    "common_mistake":  "It is easy to think of `if missing:` as merely a value comparison, such as `missing == True`. However, a non-empty set itself evaluates to True."
+                                },
+        "teaching_example":  {
+                                 "code":  "errors = {\"email\"}\nif errors:\n    status = \"invalid\"",
+                                 "walkthrough":  "`errors` Since the set contains one element, the condition is true, and ``invalid`` is stored in ``status``."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the required key ``answer`` is missing, elements are added to the ``missing`` set. Since a non-empty set is truthy, ``if missing:`` is true.",
+                                   "why_correct":  "This is because non-empty collections in Python evaluate to true in conditional expressions.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "For the statement to be false, `missing` must be an empty set.",
+                                                               "misread_step":  "This is a case of not checking whether the set contains the element."
+                                                           },
+                                   "takeaway":  "`if collection:` can be read as **true if the collection is not empty**."
+                               },
+        "target_statement":  "if missing:",
+        "focus_span":  "if missing:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "schema validation",
+                                "required fields",
+                                "missing keys",
+                                "lesson JSON"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY42_L08_missing_value_001",
+        "level":  8,
+        "title":  "Counting the number of missing values using the isna().sum() call chain",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "subscription",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read the sequence where the return value of the preceding method call becomes the target of the next method call.",
+        "code":  "import pandas as pd\n\ndf = pd.DataFrame({\"label\": [\"A\", None, \"B\", None]})\nmissing_count = df[\"label\"].isna().sum()",
+        "question_type":  "multiple_choice",
+        "question":  "What value is stored in `missing_count` in this code?",
+        "choices":  [
+                        "0",
+                        "1",
+                        "2",
+                        "4"
+                    ],
+        "answer":  "2",
+        "explanation":  "Two of the four values in the Series are `None`. `isna()` marks those two values as missing, and the following `sum()` counts the two True values, giving 2. Boolean True counts like 1 when summed, so two True values produce 2. Common wrong answer: 4. `sum()` does not count all rows; it counts only the True values produced by `isna()`. Misreading point: This happens when you miss which object the final method is called on. Read a method chain as **return value of the previous call → next call**.",
+        "side_card_ids":  [
+                              "PYV160_A1_FLOAT_NUMERIC_NAN_FLOW"
+                          ],
+        "project_context":  "It links to code that quickly checks the number of missing values in fields such as `label`, `reason`, and `decision` in the labeling results.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "연속된 메서드 호출에서 앞 호출의 반환값이 다음 호출의 대상이 되는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`obj.method1().method2()` is a chain that calls the second method immediately after the return value of the first method.",
+                                    "how_to_read":  "`isna()` I interpret this as first creating a Series to check for missing values, then calling ``sum()`` on the return value to count the number of true values.",
+                                    "key_point":  "Do not read the method names shown on the left all at once; instead, track the order in which the return values lead to the next call.",
+                                    "common_mistake":  "It is easy to assume that `sum()` adds up the entire original string or DataFrame. In reality, it is called based on the boolean result of the immediately preceding `isna()`."
+                                },
+        "teaching_example":  {
+                                 "code":  "import pandas as pd\n\ns = pd.Series([1, None, None])\ncount = s.isna().sum()",
+                                 "walkthrough":  "`isna()``[False, True, True]` generates a result of the \"\" type, and then `sum()` counts the two instances of \"True\" and returns `2`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Of the four values in the `Series`, ``None`` are the two values. ``isna()`` marks these two values as missing, and the subsequent ``sum()`` counts the number of `True` values as 2.",
+                                   "why_correct":  "This is because, in Boolean values, \"True\" is treated as 1 when added together, so two \"True\" values equal 2.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "4",
+                                                               "why_wrong":  "`sum()` It counts only the `True` values returned by ``isna()``, not the total number of lines.",
+                                                               "misread_step":  "This is a case where the learner missed which object the last method is being called on."
+                                                           },
+                                   "takeaway":  "A method chain is read in the order of **return value of the previous call → next call**."
+                               },
+        "target_statement":  "missing_count = df[\"label\"].isna().sum()",
+        "focus_span":  "df[\"label\"].isna().sum()",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "pandas",
+                                "missing value",
+                                "NaN",
+                                "isna"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY42_L09_dedup_001",
+        "level":  9,
+        "title":  "Reading the `subset` column in `drop_duplicates`",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "assignment",
+                         "class_definition"
+                     ],
+        "reading_goal":  "`subset=[\"id\"]` is interpreted as passing a list of fields to the method for determining duplicates.",
+        "code":  "class Frame:\n    def __init__(self, rows):\n        self.rows = rows\n    def drop_duplicates(self, subset):\n        key = subset[0]\n        seen = set()\n        result = []\n        for row in self.rows:\n            if row[key] in seen:\n                continue\n            seen.add(row[key])\n            result.append(row)\n        return result\n\nframe = Frame([{\"id\": 1, \"name\": \"A\"}, {\"id\": 1, \"name\": \"B\"}, {\"id\": 2, \"name\": \"C\"}])\ndeduped = frame.drop_duplicates(subset=[\"id\"])",
+        "question_type":  "multiple_choice",
+        "question":  "`deduped` How many items are there?",
+        "choices":  [
+                        "1",
+                        "2",
+                        "3",
+                        "0"
+                    ],
+        "answer":  "2",
+        "explanation":  "The subset is specified based on the id. The first id=1 remains, the second id=1 is removed, and id=2 remains. This is because the key used to determine duplicates is the id. A common source of confusion: Since there are three instances of id=1, one is removed. Point of misinterpretation: This occurs when the subset-based duplicate removal is not taken into account. The `dedup` code starts by checking **which field is used as the key**.",
+        "side_card_ids":  [
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "This connects to the data cleansing workflow that removes duplicate rows based on unique keys, such as IDs, in collection, KG, and card data.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "`subset=[\"id\"]`가 중복 판정에 사용할 field 목록을 메서드에 전달한다는 의미를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`subset=[\"id\"]` passes a list value as a named keyword argument.",
+                                    "how_to_read":  "Separate the keyword name from the value on the right to see which option is being set to which value.",
+                                    "key_point":  "Here, rather than checking whether the entire row is exactly the same, we use the `id` field as the criterion for duplicates.",
+                                    "common_mistake":  "It is easy to think of `subset` as a list of columns to include in the results. In this context, however, it is a list of columns used to determine duplicates."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Table:\n    def dedup(self, subset):\n        return subset\n\ntable = Table()\nkeys = table.dedup(subset=[\"email\"])",
+                                 "walkthrough":  "Emails are forwarded to the duplicate detection criteria list."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The subset is specified based on the id. The first id=1 remains, the second id=1 is removed, and id=2 remains.",
+                                   "why_correct":  "This is because the key used to determine duplicates is a single ID.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "3",
+                                                               "why_wrong":  "Since `id=1` appears twice, one instance is removed.",
+                                                               "misread_step":  "This is an example that does not reflect duplicate removal based on subsets."
+                                                           },
+                                   "takeaway":  "The dedup code starts by reading **which field is used as the key**."
+                               },
+        "target_statement":  "deduped = frame.drop_duplicates(subset=[\"id\"])",
+        "focus_span":  "subset=[\"id\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "deduplication",
+                                "unique key",
+                                "subset",
+                                "id"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY42_L09_groupby_001",
+        "level":  9,
+        "title":  "Grouping rows by status using the `groupby()` call",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "argument_passing",
+                         "class_definition"
+                     ],
+        "reading_goal":  "Pass the `status` field name to the method to determine how rows with the same value are grouped together.",
+        "code":  "class Table:\n    def __init__(self, rows):\n        self.rows = rows\n    def groupby(self, field):\n        result = {}\n        for row in self.rows:\n            result.setdefault(row[field], []).append(row)\n        return result\n\ntable = Table([{\"status\": \"PASS\"}, {\"status\": \"FAIL\"}, {\"status\": \"PASS\"}])\ngroups = table.groupby(\"status\")",
+        "question_type":  "multiple_choice",
+        "question":  "`groups[\"PASS\"]` How many items are there?",
+        "choices":  [
+                        "1",
+                        "2",
+                        "3",
+                        "0"
+                    ],
+        "answer":  "2",
+        "explanation":  "Of the three rows, the ones with a status of PASS are the first and third. `groupby` groups these two rows under the PASS key because `status` was passed as the grouping field. A common source of confusion: There is one PASS not only in the first row but also in the third row. Point of misinterpretation: This occurs when the grouping key for every row is not checked. “Group by” should be interpreted as **grouping field → values in each row → grouping rows with the same values**.",
+        "side_card_ids":  [
+                              "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
+                          ],
+        "project_context":  "It connects to an analysis flow that groups collection and verification results by status (such as PASS/FAIL) and calculates their counts and percentages.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "status field 이름을 메서드에 전달해 같은 값을 가진 row들이 어떤 그룹으로 묶이는지 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The `obj.groupby(field)` form is a method call that passes the grouping criterion `field` to the object’s `groupby` method.",
+                                    "how_to_read":  "It checks which field the `argument` string refers to and groups the values based on that field for each row.",
+                                    "key_point":  "The `.size()` that follows in the original pandas code is the step that counts the number of rows in each status group created in this way.",
+                                    "common_mistake":  "It’s easy to think of this call as simply sorting the `status` values. The key is to group values with the same `status` together."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Table:\n    def __init__(self, rows): self.rows = rows\n    def groupby(self, field):\n        result = {}\n        for row in self.rows:\n            result.setdefault(row[field], []).append(row)\n        return result\n\ntable = Table([{\"kind\": \"A\"}, {\"kind\": \"B\"}, {\"kind\": \"A\"}])\ngroups = table.groupby(\"kind\")",
+                                 "walkthrough":  "Two rows of type A and one row of type B are grouped together under the same key."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Of the three rows, the first and third have status PASS. `groupby` collects those two rows under the `PASS` key.",
+                                   "why_correct":  "This is because the status was passed via the grouping field.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "1",
+                                                               "why_wrong":  "`PASS` appears not only in the first row but also in the third row.",
+                                                               "misread_step":  "This is a case where the grouping key for all rows has not been checked."
+                                                           },
+                                   "takeaway":  "\"groupby\" is read as **\"group by field → values in each row → grouping rows with the same values\"**."
+                               },
+        "target_statement":  "groups = table.groupby(\"status\")",
+        "focus_span":  "table.groupby(\"status\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "groupby",
+                                "status",
+                                "aggregation",
+                                "count"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY42_L09_merge_join_001",
+        "level":  9,
+        "title":  "Reading the `left_on` key in a `merge` call",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "assignment",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the structure where different field names from the left and right data in a MERGE call are specified as join keys.",
+        "code":  "def merge_rows(left, right, left_on, right_on, how):\n    result = []\n    for left_row in left:\n        matches = [right_row for right_row in right if left_row[left_on] == right_row[right_on]]\n        result.append((left_row, matches))\n    return result\n\nnodes = [{\"node_id\": \"n1\"}, {\"node_id\": \"n2\"}]\nedges = [{\"to_node_id\": \"n2\", \"edge\": \"e1\"}]\nmerged = merge_rows(nodes, edges, left_on=\"node_id\", right_on=\"to_node_id\", how=\"left\")",
+        "question_type":  "multiple_choice",
+        "question":  "In the `nodes` on the left, which field is used for the join comparison?",
+        "choices":  [
+                        "node_id",
+                        "to_node_id",
+                        "edge",
+                        "how"
+                    ],
+        "answer":  "node_id",
+        "explanation":  "Since `left_on=\"node_id\"` is specified, the `node_id` field from the left dataset is used for the comparison. This is because the keyword `left_on` specifies the field name of the left join key. Common mistake: `to_node_id` is the field in the right data specified by `right_on`. Source of confusion: This occurs when the learner misreads `left_on` and `right_on` as each other. A MERGE join **checks the left key name and the right key name separately**.",
+        "side_card_ids":  [
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "It is connected to the analysis and refinement workflow that links data from different schemas—such as KG nodes and edges—based on keys.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "merge 호출에서 왼쪽과 오른쪽 데이터의 서로 다른 field 이름이 join key로 지정되는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left_on=\"node_id\"` is a keyword argument that specifies the key name for the data on the left side of the merge function.",
+                                    "how_to_read":  "Distinguish between the keyword name, which serves as the option name, and the string on the right, which is the actual field name.",
+                                    "key_point":  "Rows are connected when the `node_id` of the left nodes matches the `to_node_id` value of the right edges.",
+                                    "common_mistake":  "It’s easy to assume that `left_on` and `right_on` must have identical strings to be joined. Even if the field names are different, the fields can be joined if the actual values within them are the same."
+                                },
+        "teaching_example":  {
+                                 "code":  "def join(left_on, right_on):\n    return left_on, right_on\n\nkeys = join(left_on=\"user_id\", right_on=\"owner_id\")",
+                                 "walkthrough":  "The left side uses the field name `user_id`, while the right side uses the different field name `owner_id`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since `left_on=\"node_id\"` is specified, the `node_id` field from the left-hand data is used for comparison.",
+                                   "why_correct":  "The keyword `name` specifies the field name of the left join key.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "to_node_id",
+                                                               "why_wrong":  "`to_node_id` is the right-hand data field specified at `right_on`.",
+                                                               "misread_step":  "This is an example of where `left_on` and `right_on` were read in the wrong order."
+                                                           },
+                                   "takeaway":  "For a merge, **check the left key name and right key name separately**."
+                               },
+        "target_statement":  "merged = merge_rows(nodes, edges, left_on=\"node_id\", right_on=\"to_node_id\", how=\"left\")",
+        "focus_span":  "left_on=\"node_id\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "merge",
+                                "join",
+                                "left key",
+                                "right key"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY42_L09_sort_filter_001",
+        "level":  9,
+        "title":  "Select only the “FAIL” status row using filtered comprehension",
+        "concepts":  [
+                         "list_comprehension",
+                         "comparison",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the filtering flow that compares the status of each row and collects only the items marked as FAIL into a separate list.",
+        "code":  "rows = [\n    {\"id\": \"a\", \"status\": \"PASS\", \"score\": 0.9},\n    {\"id\": \"b\", \"status\": \"FAIL\", \"score\": 0.4},\n    {\"id\": \"c\", \"status\": \"FAIL\", \"score\": 0.2},\n]\nfailed = [row for row in rows if row[\"status\"] == \"FAIL\"]",
+        "question_type":  "multiple_choice",
+        "question":  "What are the combinations of IDs that remain in `failed`?",
+        "choices":  [
+                        "b and c",
+                        "a only",
+                        "`a` and `b`.",
+                        "All of `a`, `b`, and `c`."
+                    ],
+        "answer":  "b and c",
+        "explanation":  "The condition is ``row[\u0027status\u0027] == \u0027FAIL\u0027``. Only b and c satisfy this condition. This is because the filtered list comprehension collects only rows where the equality condition evaluates to True. A common source of confusion: a has a status of PASS, so the condition evaluates to False. Common misreading: This occurs when the comparison string is read in reverse. The filtering process should be understood as **field lookup → comparison → collecting rows where the condition is True**.",
+        "side_card_ids":  [
+                              "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
+                          ],
+        "project_context":  "It connects to the first step of the data analysis workflow, which involves extracting only the “FAIL” items from the verification results and conducting follow-up checks in order of the lowest scores.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "list_comprehension",
+        "reading_goal_internal":  "각 row의 status를 비교해 FAIL인 항목만 별도 리스트에 수집하는 filtering 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A filtered list comprehension places only iteration items whose `if` condition is true into the new list.",
+                                    "how_to_read":  "Check the field used for comparison and the comparison value in each row.",
+                                    "key_point":  "In Python lists, the same functionality as a pandas boolean mask can be expressed using a list comprehension.",
+                                    "common_mistake":  "It’s easy to assume that rows that are not “FAIL” are retained. The comparison operator is ``==``."
+                                },
+        "teaching_example":  {
+                                 "code":  "rows = [{\"state\": \"OK\"}, {\"state\": \"ERROR\"}]\nerrors = [row for row in rows if row[\"state\"] == \"ERROR\"]",
+                                 "walkthrough":  "Only the second row, where the `state` is `ERROR`, remains in `errors`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The condition is ``row[\u0027status\u0027] == \u0027FAIL\u0027``. Only `b` and `c` satisfy this condition.",
+                                   "why_correct":  "This is because a filtered list comprehension collects only the rows where the equality condition is True.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "a only",
+                                                               "why_wrong":  "Since `a`’s status is `PASS`, the condition is `False`.",
+                                                               "misread_step":  "This is an example of reading the comparison string backward."
+                                                           },
+                                   "takeaway":  "Filtering is described as **field lookup → comparison → collecting rows where the result is True**."
+                               },
+        "target_statement":  "failed = [row for row in rows if row[\"status\"] == \"FAIL\"]",
+        "focus_span":  "[row for row in rows if row[\"status\"] == \"FAIL\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "filter",
+                                "FAIL status",
+                                "boolean mask",
+                                "rows"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY42_L10_manifest_001",
+        "level":  10,
+        "title":  "Reading a comprehension that converts a list of file metadata into a manifest dictionary",
+        "concepts":  [
+                         "dict_comprehension",
+                         "subscription",
+                         "assignment"
+                     ],
+        "reading_goal":  "In dictionary comprehension, track how keys and values are generated from each item in the loop.",
+        "code":  "files = [\n    {\"name\": \"raw.jsonl\", \"rows\": 120},\n    {\"name\": \"clean.jsonl\", \"rows\": 95},\n]\nmanifest = {item[\"name\"]: item[\"rows\"] for item in files}\nprint(manifest[\"clean.jsonl\"])",
+        "question_type":  "output_prediction",
+        "question":  "What is the value output in the last line?",
+        "choices":  [
+                        "120",
+                        "95",
+                        "clean.jsonl",
+                        "2"
+                    ],
+        "answer":  "95",
+        "explanation":  "1) The first item creates `raw.jsonl: 120`. 2) The second item creates `clean.jsonl: 95`. 3) `manifest` becomes a dictionary containing these two key-value pairs. 4) The last line prints the value 95 for the `clean.jsonl` key. Following the key-value pairs created by the dictionary comprehension, the value of `manifest[\u0027clean.jsonl\u0027]` is 95. Common mistake: 120. 120 is the value of the `raw.jsonl` key, but the problem asks for the value of the `clean.jsonl` key. Point of Misinterpretation: You are re-mapping the values one pair at a time to determine which value becomes the key and which becomes the value in each iteration. The dictionary comprehension **creates one key and one value as a pair** in each iteration.",
+        "side_card_ids":  [
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "If you create a manifest for a data pipeline indexed by filename, you can quickly look up the number of rows or the status for each file.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "dict_comprehension",
+        "reading_goal_internal":  "딕셔너리 컴프리헨션에서 반복 항목으로부터 key와 value가 각각 어떻게 만들어지는지 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "Dictionary comprehension is a syntax that iterates over items, creates a `key: value` pair for each one, and adds them to a new dictionary.",
+                                    "how_to_read":  "`{key_expr: value_expr for item in items}` Reading this, I understand that it first retrieves an item, then uses that item to calculate a key expression and a value expression to form a pair.",
+                                    "key_point":  "Unlike list comprehensions, dictionary comprehensions begin with **two expressions: a key and a value**.",
+                                    "common_mistake":  "It is easy to think that `item[\u0027name\u0027]` and `item[\u0027rows\u0027]` create two separate lists. In reality, they form a pair that constitutes a single dictionary entry."
+                                },
+        "teaching_example":  {
+                                 "code":  "rows = [{\"id\": \"A\", \"count\": 3}, {\"id\": \"B\", \"count\": 5}]\ncounts = {row[\"id\"]: row[\"count\"] for row in rows}\nprint(counts[\"B\"])",
+                                 "walkthrough":  "`A: 3` is created in A, and `B: 5` is created in B. Therefore, `counts[\u0027B\u0027]` is 5."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The first item creates ``raw.jsonl: 120``. 2) The second item creates ``clean.jsonl: 95``. 3) `manifest` becomes a dictionary containing two key-value pairs. 4) The last line prints the value 95 for the key ``clean.jsonl``.",
+                                   "why_correct":  "If you follow the key-value pairs created by the dictionary comprehension, the value of ``manifest[\u0027clean.jsonl\u0027]`` is 95.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "120",
+                                                               "why_wrong":  "120 is the value for the `raw.jsonl` key, while the question looks up the `clean.jsonl` key.",
+                                                               "misread_step":  "In each iteration, we reassign the values, pairing which value becomes the key and which becomes the value."
+                                                           },
+                                   "takeaway":  "A dictionary comprehension **generates one key and one value as a pair** in each iteration."
+                               },
+        "target_statement":  "manifest = {item[\"name\"]: item[\"rows\"] for item in files}",
+        "focus_span":  "{item[\"name\"]: item[\"rows\"] for item in files}",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "data_processing_and_analysis",
+        "coverage_topics":  [
+                                "manifest",
+                                "file_inventory",
+                                "metadata",
+                                "dict_comprehension"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY42_L10_audit_tsv_001",
+        "level":  10,
+        "title":  "Open the TSV file with the `with` statement and clean up at the end of the block",
+        "concepts":  [
+                         "with_statement",
+                         "call",
+                         "attribute_access"
+                     ],
+        "reading_goal":  "Read the execution order where a `with` statement opens or acquires a resource for use inside the block and cleans it up when leaving the block.",
+        "code":  "from pathlib import Path\n\naudit_path = Path(\"audit.tsv\")\nwith audit_path.open(\"w\", encoding=\"utf-8\") as audit:\n    audit.write(\"id\\tstatus\\n\")\n    audit.write(\"PY42\\tOK\\n\")\n\nprint(audit.closed)",
+        "question_type":  "output_prediction",
+        "question":  "What value does the final `print(audit.closed)` output?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "audit.tsv",
+                        "OK"
+                    ],
+        "answer":  "True",
+        "explanation":  "1) The `Path` object points to the `audit.tsv` file. 2) The `with` statement opens the file and uses it under the name `audit`. 3) The two `write` calls are executed within the block. 4) When the block ends, the file object is closed. 5) Therefore, if you check `audit.closed` outside the block, it returns `True`. `with` If you follow the execution flow until the end of the `with` block, the file is already closed, so the correct answer is ``True``. A common misconception: `False`—after exiting the `with` block, the context manager cleans up the open file, so it does not remain open. Common Misinterpretation: Don’t just look at the moment the file is opened; you must also consider the cleanup actions performed when exiting the `with` block. The statement ``with`` should be interpreted as follows: **Open resource → Use within the block → Clean up upon block exit**.",
+        "side_card_ids":  [
+                              "PYV102_A7_DATAFRAME_CSV_CLEANING"
+                          ],
+        "project_context":  "When recording verification results in an audit TSV, this is linked to the code flow for safely opening and closing file resources.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "with_statement",
+        "reading_goal_internal":  "with 문이 자원을 열어 블록 안에서 사용하게 하고 블록을 벗어날 때 정리하는 실행 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The `with` statement is a syntax that entrusts resources—such as files—that require cleanup after use to a context manager, allowing them to be used within a block and cleaned up when the block is exited.",
+                                    "how_to_read":  "If the code is `with open(...) as f:`, it first opens the resource and uses it under the name `f`. It is interpreted such that the context manager’s termination behavior is executed after the indented body ends.",
+                                    "key_point":  "`with` The key point is not simply the call to open a file, but **grouping the resource’s initialization and cleanup scope into a block**.",
+                                    "common_mistake":  "It’s easy to assume that the file object disappears as soon as the last ``write()`` in the indented block ends. In reality, cleanup is performed when you exit the `with` block."
+                                },
+        "teaching_example":  {
+                                 "code":  "from pathlib import Path\npath = Path(\"result.txt\")\nwith path.open(\"w\", encoding=\"utf-8\") as out:\n    out.write(\"PASS\\n\")\nprint(out.closed)",
+                                 "walkthrough":  "Open the file, write one line inside the block, and then exit the block. Since the context manager has closed the file, ``out.closed`` is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The `Path` object points to the `audit.tsv` file. 2) The `with` block opens the file and uses it under the name `audit`. 3) The two `write` calls are executed within the block. 4) When the block ends, the file object is closed. 5) Therefore, if you check `audit.closed` outside the block, it returns `True`.",
+                                   "why_correct":  "If you follow the execution sequence until the end of the `with` block, the file will already be closed, so the correct answer is `True`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "After leaving the `with` block, the context manager cleans up the opened file, so it does not remain open.",
+                                                               "misread_step":  "Don’t just focus on when the file is opened; you must also read through the cleanup actions that occur when exiting the `with` block."
+                                                           },
+                                   "takeaway":  "The `with` statement follows the flow: **open a resource → use it within a block → clean up when the block ends**."
+                               },
+        "target_statement":  "with audit_path.open(\"w\", encoding=\"utf-8\") as audit:",
+        "focus_span":  "with audit_path.open(\"w\", encoding=\"utf-8\") as audit:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "audit_tsv",
+                                "file_write",
+                                "context_manager",
+                                "validation_report"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY42_L10_pipeline_data_quality_001",
+        "level":  10,
+        "title":  "Tracking the scope of a validator patch’s impact—including callers, shared state, audits, and tests—using an impact map",
+        "concepts":  [
+                         "for_statement",
+                         "call",
+                         "name_reference",
+                         "literal",
+                         "assignment"
+                     ],
+        "reading_goal":  "The `for` loop calls `schema` and `duplicate validator` in sequence, updates the `issues` status, and then reads the complete impact map where that status is consumed by `audit` and `accepted test`.",
+        "code":  "issues = []\n\ndef check_schema(dataset):\n    if any(\"id\" not in row for row in dataset):\n        issues.append(\"schema\")\n\ndef check_duplicates(dataset):\n    ids = [row[\"id\"] for row in dataset]\n    if len(ids) != len(set(ids)):\n        issues.append(\"duplicate\")\n\ndataset = [{\"id\": \"d1\"}, {\"id\": \"d2\"}, {\"id\": \"d2\"}]\nvalidators = [check_schema, check_duplicates]\nfor validate in validators:\n    validate(dataset)\naudit = list(issues)\naccepted = not issues\nprint(issues, audit, accepted)",
+        "question_type":  "flow",
+        "question":  "When modifying the decision logic of the duplicate validator, what is the most comprehensive impact map?",
+        "choices":  [
+                        "Verify the process from calling the validator → modifying the shared `issues` → changing the `audit` content → to updating the `accepted` test results.",
+                        "Based solely on the body of the `check_duplicates` function, I believe the other code is unaffected.",
+                        "Since the list of validators contains function names, we do not check whether they are actually called.",
+                        "Since `audit` is a list, I believe it is unrelated to the accepted Boolean."
+                    ],
+        "answer":  "Verify the process from calling the validator → modifying the shared `issues` → changing the `audit` content → to updating the `accepted` test results.",
+        "explanation":  "1) The first validator, `check_schema`, is called. Since there are no missing IDs in the current dataset, it does not modify `issues`. 2) The second validator, `check_duplicates`, is called. It finds duplicates in `d2` and adds `duplicate` to `issues`. 3) After the `for` loop ends, `audit` copies the current `issues`, resulting in `[\u0027duplicate\u0027]`. 4) ``accepted = not issues`` evaluates to `False` because `issues` is not empty. 5) Therefore, the scope of impact for the duplicate determination correction includes the shared state, `audit` output, and the acceptance test.",
+        "side_card_ids":  [
+                              "PYV158_A1_PIPELINE_FLOW"
+                          ],
+        "project_context":  "It addresses a weakness in APEX where the scope of impact was limited only to the vicinity of the modified function by extending it to include the caller, state, output, and test.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "for_statement",
+        "reading_goal_internal":  "for 문이 schema와 duplicate validator를 순서대로 호출하고 같은 issues 상태를 갱신한 뒤, 그 상태가 audit와 accepted test에 소비되는 전체 영향 지도를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`for validate in validators:` binds the function objects in the list one by one to `validate` and passes the same dataset to each. If a validator updates shared state, subsequent calls to `report` and `test` may also be affected by that change.",
+                                    "how_to_read":  "Check the execution order of the loop and the side effects of each call, and identify the downstream consumer that reads the updated state. Organize the impact map in the following order: caller → shared state → output → test.",
+                                    "key_point":  "If the duplicate validator adds `d2` to `issues`, then `audit` also becomes `[\u0027d2\u0027]` and `accepted` becomes False. Therefore, that validator patch is not limited in effect to the validator function alone.",
+                                    "common_mistake":  "If you focus only on a modification function’s return value or side effects, you’ll overlook downstream impacts such as reports, persisted audits, and acceptance gates."
+                                },
+        "teaching_example":  {
+                                 "code":  "issues=[]\ndef check_a(data):\n    issues.append(\"a\")\nvalidators=[check_a]\nfor validate in validators:\n    validate({})\nprint(issues)",
+                                 "walkthrough":  "Since `for` calls the validator and the validator fixes shared issues, the consumer also sees that state after the loop."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The first validator, `check_schema`, is called. Since there are no missing IDs in the current dataset, it does not modify `issues`. 2) The second validator, `check_duplicates`, is called. It finds duplicates in `d2` and adds `duplicate` to `issues`. 3) After the `for` loop ends, `audit` copies the current `issues`, resulting in `[\u0027duplicate\u0027]`. 4) ``accepted = not issues`` evaluates to `False` because `issues` is not empty. 5) Therefore, the scope of impact for the duplicate determination correction includes the shared state, `audit` output, and the acceptance test.",
+                                   "why_correct":  "This is because the validator fixes the shared issue as a side effect, and the two downstream consumers read that state directly.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Based solely on the body of the `check_duplicates` function, I believe the other code is unaffected.",
+                                                               "why_wrong":  "If you change “issues,” “audit” and “accepted” will read the same state, so the downstream results may change directly.",
+                                                               "misread_step":  "Starting from the modification point, connect the current state and all consumers that read that state with arrows."
+                                                           },
+                                   "takeaway":  "An impact map is created from **modified function → caller/reachability → shared state/return → I/O·report → tests/approval**."
+                               },
+        "target_statement":  "for validate in validators:",
+        "focus_span":  "for validate in validators:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "data_quality",
+                                "validation_pipeline",
+                                "impact_map",
+                                "shared_state",
+                                "audit",
+                                "tests"
+                            ],
+        "pedagogical_intent":  "read_execution_order",
+        "subtype":  "basic_for",
+        "secondary_concepts":  [
+                                   "call",
+                                   "name_reference",
+                                   "literal",
+                                   "assignment"
+                               ],
+        "prerequisites":  [
+                              "name_reference",
+                              "call"
+                          ],
+        "semantic_operations":  [
+                                    "validation_pipeline",
+                                    "shared_state_update",
+                                    "audit_output",
+                                    "impact_map_synthesis"
+                                ],
+        "reading_steps":  [
+                              "The first item in the validators, `check_schema`, is called, and since the current dataset has no missing IDs, it does not change the `issues`.",
+                              "Second, `check_duplicates` is called, and it finds duplicates in `d2` and adds a \"duplicate\" entry to the issues.",
+                              "After the `for` loop finishes, `audit` becomes a copy of the current `issues`, namely `[\u0027duplicate\u0027]`.",
+                              "`accepted = not issues` evaluates to False because there are non-empty issues.",
+                              "Therefore, the scope of the duplicate detection correction includes shared state, audit output, and acceptance tests."
+                          ],
+        "same_syntax_example":  "events=[]\ndef check(data):\n    events.append(\"checked\")\nvalidators=[check]\nfor validate in validators:\n    validate({})\nprint(events)"
+    }
 ]

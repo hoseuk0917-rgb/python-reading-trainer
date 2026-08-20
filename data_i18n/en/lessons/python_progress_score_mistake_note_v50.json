@@ -1,442 +1,1031 @@
 [
-  {
-    "id": "PY50_L06_progress_tracking_001",
-    "level": 6,
-    "title": "Read \"Progress Tracking\"",
-    "concepts": [
-      "progress_tracking",
-      "learning_progress",
-      "state"
-    ],
-    "reading_goal": "It tracks the learner's progress and resumes from where they left off.",
-    "code": "progress = {'current_card_id': card_id, 'solved_count': solved_count}",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of progress tracking?",
-    "choices": [
-      "To save the learner's progress",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "To save the learner's progress",
-    "explanation": "Progress tracking saves learning state so a session can resume. current_card_id and solved_count alone do not handle reordered or deleted cards and multi-device conflicts; keep stable per-card state, schema version, and updated_at as needed. Do not tell the user it was saved until storage succeeds.",
-    "side_card_ids": [
-      "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
-    ],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L06_progress_schema_001",
-    "level": 6,
-    "title": "Reading the Progress Schema",
-    "concepts": [
-      "progress_schema",
-      "data_model",
-      "learning_state"
-    ],
-    "reading_goal": "From a schema perspective, determine the field structure in which to store the progress data.",
-    "code": "progress_row = {'card_id': card_id, 'status': 'seen', 'updated_at': now}",
-    "question_type": "meaning_choice",
-    "question": "Why is a progress schema needed?",
-    "choices": [
-      "To store progress data in a consistent format,",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "To store progress data in a consistent format,",
-    "explanation": "A progress schema is a structure that defines which fields to use for storing progress data. Having a schema ensures that storage, loading, and migration processes are reliable. When field names and their meanings are clearly defined, it is easier to migrate existing progress data even when the version changes.",
-    "side_card_ids": [
-      "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
-    ],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L07_wrong_answer_log_001",
-    "level": 7,
-    "title": "Reading the wrong answer log",
-    "concepts": [
-      "if",
-      "wrong_answer_log",
-      "mistake",
-      "learning_feedback"
-    ],
-    "reading_goal": "Understand how the record of incorrect answers leads to reviewing weaknesses and the retake feature.",
-    "code": "if not correct:\n    wrong_log.append({'card_id': card_id, 'selected': selected, 'answer': answer})",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of the \"wrong answer log\"?",
-    "choices": [
-      "I make a note of the questions I got wrong so I can review them later.",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "I make a note of the questions I got wrong so I can review them later.",
-    "explanation": "A wrong-answer log stores card ID, selection, answer at that time, and timestamp for review and analysis. Because card content can change, link a card version or prompt snapshot to reproduce the decision. It is personal learning data, so minimize collection and define retention.",
-    "side_card_ids": [
-      "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
-    ],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L07_mistake_note_001",
-    "level": 7,
-    "title": "Read the \"Mistake Note\"",
-    "concepts": [
-      "mistake_note",
-      "wrong_answer",
-      "review"
-    ],
-    "reading_goal": "Understand the structure in which incorrect cards and explanations are displayed again in the error log.",
-    "code": "mistake_note = [\n    {**row, 'card': cards_by_id[row['card_id']]}\n    for row in history\n    if row.get('correct') is False and row['card_id'] in cards_by_id\n]",
-    "question_type": "meaning_choice",
-    "question": "Which data is most appropriate for the \"mistake note\"?",
-    "choices": [
-      "Wrong Card, Selected Answer, Correct Answer, Explanation",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "Wrong Card, Selected Answer, Correct Answer, Explanation",
-    "explanation": "The comprehension selects explicitly incorrect history and joins current card metadata by card_id so the UI can show selection, answer, and explanation. Filtering alone cannot create an explanation absent from history. Handle deleted or version-changed cards with a fallback.",
-    "side_card_ids": [
-      "PYV159_A1_LEARNING_UX_FLOW"
-    ],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L07_retry_wrong_card_001",
-    "level": 7,
-    "title": "\"Retry: Incorrect Card\" message",
-    "concepts": [
-      "retry",
-      "wrong_card",
-      "review_queue"
-    ],
-    "reading_goal": "Read about the method of creating a review queue that only includes the cards you got wrong.",
-    "code": "retry_queue = [card_id for card_id, row in progress.items() if row['last_correct'] == False]",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of the \"retry wrong card\" feature?",
-    "choices": [
-      "Recently, to make sure students only retake the questions they got wrong,",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "Recently, to make sure students only retake the questions they got wrong,",
-    "explanation": "Collecting cards whose last_correct is false creates a recent-error queue. Immediate repetition can produce an illusion from memorizing answer position, so offer explanation or a related item and spaced retry. Handle missing last_correct and duplicate IDs.",
-    "side_card_ids": [
-      "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
-    ],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L08_score_history_001",
-    "level": 8,
-    "title": "Read score history",
-    "concepts": [
-      "score_history",
-      "learning_metric",
-      "progress"
-    ],
-    "reading_goal": "I am reading about a method that tracks changes in learning progress by recording scores for each session.",
-    "code": "score_history.append({'date': today, 'solved': 20, 'correct': 16, 'accuracy': 0.8})",
-    "question_type": "meaning_choice",
-    "question": "What are the benefits of having a score history?",
-    "choices": [
-      "You can see how learning outcomes change over time.",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "You can see how learning outcomes change over time.",
-    "explanation": "Score history is a record of scores and trends by session. It allows you to see not only today’s score but also whether you’ve improved compared to previous study sessions. Rather than looking at a single score, tracking your progress over time lets you see if you’re gradually improving on difficult topics.",
-    "side_card_ids": [
-      "PYV159_A1_LEARNING_UX_FLOW"
-    ],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L08_concept_mastery_001",
-    "level": 8,
-    "title": "Reading: Concept Mastery",
-    "concepts": [
-      "concept_mastery",
-      "concept_score",
-      "weak_concept"
-    ],
-    "reading_goal": "Read the explanation of why we calculate proficiency by concept rather than the correct answer rate on the flashcards.",
-    "code": "attempts = total_dict_cards\nconcept_score['dict'] = (correct_dict_cards / attempts\n                         if attempts else None)",
-    "question_type": "meaning_choice",
-    "question": "How does \"concept mastery\" differ from card scores?",
-    "choices": [
-      "We compile the results from multiple cards to assess proficiency by conceptual unit.",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "We compile the results from multiple cards to assess proficiency by conceptual unit.",
-    "explanation": "This aggregates accuracy across dict-related attempts and uses None for no evidence. Card difficulty, multiple concept tags, and repeated exposure differ, so a simple ratio is not complete understanding. Display sample size and recency too.",
-    "side_card_ids": [
-      "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
-    ],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L08_attempt_count_001",
-    "level": 8,
-    "title": "Reading the attempt count",
-    "concepts": [
-      "attempt_count",
-      "answer_attempt",
-      "learning_state"
-    ],
-    "reading_goal": "It tracks how many times you've solved the puzzle and uses that data to assess your skill level.",
-    "code": "row = progress.setdefault(card_id, {'attempts': 0})\nrow['attempts'] += 1",
-    "question_type": "meaning_choice",
-    "question": "Why is the \"attempt count\" needed?",
-    "choices": [
-      "To find out how many times I've tried using the card",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "To find out how many times I've tried using the card",
-    "explanation": "setdefault creates a row and zero count before incrementing once per real submission. Avoid counting refreshes or duplicate network events by using an event ID. Server-side concurrent updates need an atomic increment or transaction.",
-    "side_card_ids": [
-      "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
-    ],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L08_last_answered_at_001",
-    "level": 8,
-    "title": "Last answered at Read",
-    "concepts": [
-      "last_answered_at",
-      "timestamp",
-      "review_schedule"
-    ],
-    "reading_goal": "Understand how the time of the last solution is used to calculate the review interval.",
-    "code": "progress[card_id]['last_answered_at'] = now_iso",
-    "question_type": "meaning_choice",
-    "question": "Why is `last_answered_at` needed?",
-    "choices": [
-      "To calculate the next review date based on the time of the last solution,",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "To calculate the next review date based on the time of the last solution,",
-    "explanation": "last_answered_at stores the latest submission time for elapsed-time and next-review calculations. Define now_iso as a timezone-aware UTC timestamp and prefer a server clock. Handle device clock changes and late multi-device updates.",
-    "side_card_ids": [
-      "AI_sensor_fusion_001"
-    ],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L09_localstorage_progress_save_001",
-    "level": 9,
-    "title": "Reading localStorage, progress, and save",
-    "concepts": [
-      "localStorage",
-      "progress_save",
-      "browser_storage"
-    ],
-    "reading_goal": "Saves progress data to the browser's localStorage.",
-    "code": "localStorage.setItem('pythonReadingProgress', JSON.stringify(progress))",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of `localStorage.setItem`?",
-    "choices": [
-      "Stores string data in the browser",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "Stores string data in the browser",
-    "explanation": "JSON.stringify stores progress as a string in localStorage for the current origin. It survives refresh but does not sync devices, and quota, private mode, or storage errors can make setItem fail. Same-origin scripts can read it, so it is unsuitable for secrets or highly sensitive detail.",
-    "side_card_ids": [
-      "WEB_localstorage_001"
-    ],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L09_localstorage_progress_load_001",
-    "level": 9,
-    "title": "Reading localStorage, progress, and load",
-    "concepts": [
-      "localStorage",
-      "progress_load",
-      "JSON_parse"
-    ],
-    "reading_goal": "Read the process for converting the progress string stored in localStorage back into an object.",
-    "code": "const raw = localStorage.getItem('pythonReadingProgress');\nlet progress = {};\nif (raw) {\n  try {\n    progress = validateProgress(JSON.parse(raw));\n  } catch (error) {\n    showRecoveryOption(error);\n  }\n}",
-    "question_type": "meaning_choice",
-    "question": "Why is JSON.parse needed?",
-    "choices": [
-      "To convert the saved JSON string back into an object,",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "To convert the saved JSON string back into an object,",
-    "explanation": "JSON.parse converts stored text but throws for malformed JSON. Use try/catch and schema validation to handle corruption and old versions. Do not silently overwrite the only copy with an empty object; offer backup or recovery.",
-    "side_card_ids": [
-      "PYV160_A1_PWA_STATE_STORAGE_FLOW"
-    ],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L09_progress_migration_001",
-    "level": 9,
-    "title": "Read \"progress migration\"",
-    "concepts": [
-      "if",
-      "progress_migration",
-      "schema_version",
-      "compatibility"
-    ],
-    "reading_goal": "When the Jindo storage structure changes, existing data is migrated to the new structure.",
-    "code": "version = progress.get('schema_version', 1)\nif version == 1:\n    progress = migrate_v1_to_v2(progress)\nvalidate_v2(progress)",
-    "question_type": "meaning_choice",
-    "question": "When is a progress migration necessary?",
-    "choices": [
-      "When you've changed the Jindo storage structure but need to preserve existing user data",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "When you've changed the Jindo storage structure but need to preserve existing user data",
-    "explanation": "Treat missing schema_version as legacy v1, run an explicit migration, and validate v2. Back up first, make migration idempotent, and stop rather than guessing when the file has an unknown future version.",
-    "side_card_ids": [
-      "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
-    ],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L09_reset_progress_guard_001",
-    "level": 9,
-    "title": "Read \"reset progress guard\"",
-    "concepts": [
-      "if",
-      "reset_progress",
-      "guard",
-      "user_data"
-    ],
-    "reading_goal": "The progress reset feature requires a verification process to prevent errors.",
-    "code": "if confirm('Reset progress?'):\n    localStorage.removeItem('pythonReadingProgress')",
-    "question_type": "meaning_choice",
-    "question": "Why is a confirmation dialog needed for \"reset progress\"?",
-    "choices": [
-      "To prevent user learning records from being accidentally deleted,",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "To prevent user learning records from being accidentally deleted,",
-    "explanation": "A confirmation reduces accidental clicks but does not make deletion recoverable. State exactly what will be removed, offer export or a short undo window, and delete only the exact key. Confirm separately whether synchronized server data is included.",
-    "side_card_ids": [],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L10_export_progress_001",
-    "level": 10,
-    "title": "Read export progress",
-    "concepts": [
-      "export_progress",
-      "backup",
-      "user_data"
-    ],
-    "reading_goal": "Review the process of exporting progress data to a file for backup and transfer.",
-    "code": "blob = new Blob([JSON.stringify(progress)], {type: 'application/json'})\ndownload(blob, 'progress_backup.json')",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of \"export progress\"?",
-    "choices": [
-      "To back up your learning history or transfer it to another device",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "To back up your learning history or transfer it to another device",
-    "explanation": "Export supports backup and transfer when no account sync exists. Include schema version, exported_at, app version, and an integrity check, and assess whether user IDs or notes are necessary. Test successful download and later import before calling it a backup.",
-    "side_card_ids": [],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L10_import_progress_001",
-    "level": 10,
-    "title": "Reading the import progress",
-    "concepts": [
-      "import_progress",
-      "restore",
-      "validation"
-    ],
-    "reading_goal": "The system verifies the file when a backed-up progress file is reloaded.",
-    "code": "data = JSON.parse(file_text)\nclean = validateAndMigrateProgress(data)\nbackupCurrentProgress()\nlocalStorage.setItem('pythonReadingProgress', JSON.stringify(clean))",
-    "question_type": "meaning_choice",
-    "question": "Why is `validateProgress` required before `import progress`?",
-    "choices": [
-      "To prevent corrupted files or data in other formats,",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "To prevent corrupted files or data in other formats,",
-    "explanation": "Treat the file as untrusted: validate size, schema, types, allowed keys, and version and store only migrated clean data. Back up current progress first and explain overwrite versus merge policy. Successful JSON parsing alone does not make data safe or compatible.",
-    "side_card_ids": [],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L10_progress_dashboard_001",
-    "level": 10,
-    "title": "Reading the Progress Dashboard",
-    "concepts": [
-      "progress_dashboard",
-      "learning_report",
-      "score_history"
-    ],
-    "reading_goal": "I’m reading about how to summarize the concepts of progress, scores, and weaknesses on a dashboard.",
-    "code": "dashboard = {'total_cards': 973, 'seen_cards': 120, 'accuracy': 0.78, 'weak_concepts': ['validation', 'dict']}",
-    "question_type": "meaning_choice",
-    "question": "What information should the progress dashboard display?",
-    "choices": [
-      "Number of cards studied, accuracy rate, weak concepts",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "Number of cards studied, accuracy rate, weak concepts",
-    "explanation": "The progress dashboard is a screen that displays progress, scores, and areas of weakness at a glance. It helps users quickly understand their learning status. When it also shows the date of the last study session, consecutive study days, and trends in incorrect answers, it makes it easier for users to decide what to do next. Therefore, the key metrics are “number of cards studied, accuracy rate, and areas of weakness.”",
-    "side_card_ids": [
-      "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
-    ],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  },
-  {
-    "id": "PY50_L10_privacy_of_progress_001",
-    "level": 10,
-    "title": "Read about progress and privacy",
-    "concepts": [
-      "comment",
-      "privacy",
-      "progress_data",
-      "local_storage"
-    ],
-    "reading_goal": "Since learning records are also user data, we pay close attention to where they are stored and who has access to them.",
-    "code": "localStorage.setItem('progress', JSON.stringify(progress))\n# do not upload without consent",
-    "question_type": "meaning_choice",
-    "question": "What are the key principles of \"progress privacy\"?",
-    "choices": [
-      "We do not send learning records to external parties without the user's consent.",
-      "To save your GitHub password",
-      "Just to change the browser port number",
-      "To hide the verification results"
-    ],
-    "answer": "We do not send learning records to external parties without the user's consent.",
-    "explanation": "Errors, scores, and study patterns can be personal data. For external transfer, establish purpose and required consent or other lawful basis, and provide minimization, access control, retention, deletion, and export. Even localStorage can be read by same-origin scripts and device users, so assess sensitivity.",
-    "side_card_ids": [
-      "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
-    ],
-    "project_context": "As the next step in the v49 review algorithm, this connects to the design of a feature that tracks actual learning progress and records incorrect answers."
-  }
+    {
+        "id":  "PY50_L06_progress_tracking_001",
+        "level":  6,
+        "title":  "Group the current learning status into a single `progress` dictionary",
+        "concepts":  [
+                         "literal",
+                         "assignment",
+                         "name_reference"
+                     ],
+        "reading_goal":  "The text describes the purpose of progress tracking, which involves structuring, saving, and continuing the learner’s progress status—such as the current card and the number of solutions.",
+        "code":  "card_id = \"L06-124\"\nsolved_count = 18\nprogress = {\"current_card_id\": card_id, \"solved_count\": solved_count}\nprint(progress[\"solved_count\"])",
+        "question_type":  "meaning_choice",
+        "question":  "`progress = {\"current_card_id\": ..., \"solved_count\": ...}` What is the purpose of storing two values together like this?",
+        "choices":  [
+                        "To allow learners to save their current position and the number of solutions so they can continue from where they left off in the next run,",
+                        "To sort the keys in a dictionary alphabetically",
+                        "Trying to mark all cards as correct at once",
+                        "I want to convert `solved_count` to a string"
+                    ],
+        "answer":  "To allow learners to save their current position and the number of solutions so they can continue from where they left off in the next run,",
+        "explanation":  "1) `current_card_id` is the current learning position. 2) `solved_count` is the cumulative number of solutions. 3) By grouping these two values in the `progress` dictionary, you can save the progress state and restore it during the next run. This explanation interprets the Python target for this card in relation to legacy/domain objectives, with the goal of allowing learners to save their current position and solution count so they can resume their progress during the next run. A common source of confusion: In an attempt to sort the dict keys alphabetically, this option focuses only on specific syntax or context within the code and misses the card’s core meaning. Point of Misinterpretation: If you only count the numbers in `progress[\"solved_count\"]`, you miss the purpose of progress tracking—which is to **store the current position and cumulative status in a structured format → and restore them on the next run**.",
+        "side_card_ids":  [
+                              "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
+                          ],
+        "project_context":  "This is the context of progress data that structures and stores the learner’s current location and the number of solutions.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "literal",
+        "reading_goal_internal":  "현재 카드와 해결 수 같은 진도 상태를 구조화해 저장하고 이어가는 progress tracking 목적을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A dict literal is syntax for grouping multiple names and values into one dict in the form `{key: value, ...}`.",
+                                    "how_to_read":  "The left side of each colon is the key, and the right side is the value to be stored under that key. If a variable appears in place of the value, insert the variable’s current value.",
+                                    "key_point":  "The key point is **which progress state is saved and used for resuming**, rather than the syntax of the dict literal.",
+                                    "common_mistake":  "If you calculate only the number in `progress[\"solved_count\"]`, you miss the storage/recovery purpose of progress tracking."
+                                },
+        "teaching_example":  {
+                                 "code":  "name = \"Mina\"\nscore = 92\nrecord = {\"name\": name, \"score\": score}\nprint(record[\"score\"])",
+                                 "walkthrough":  "The key ``score`` in the `dict` stores the current value of the variable `score`, which is 92."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `current_card_id` is the current learning position. 2) `solved_count` is the cumulative number of solved problems. 3) By storing these two values in the `progress` dictionary, you can save your progress and restore it the next time you run the program.",
+                                   "why_correct":  "This explanation interprets the Python target on this card in relation to legacy/domain objectives to enable learners to save their current position and the number of solutions, allowing them to resume their progress in the next run.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "To sort the keys in a dictionary alphabetically",
+                                                               "why_wrong":  "This option focuses only on certain aspects of the code’s syntax or context and misses the core meaning of the card.",
+                                                               "misread_step":  "If you calculate only the number in `progress[\"solved_count\"]`, you miss the storage/recovery purpose of progress tracking."
+                                                           },
+                                   "takeaway":  "\"Progress tracking\" is a process that **structures and stores the current position and cumulative state → restores them during the next execution**."
+                               },
+        "target_statement":  "progress = {\"current_card_id\": card_id, \"solved_count\": solved_count}",
+        "focus_span":  "{\"current_card_id\": card_id, \"solved_count\": solved_count}",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "learning_product_context",
+        "coverage_topics":  [
+                                "progress_tracking",
+                                "dict",
+                                "learning_state"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY50_L06_progress_schema_001",
+        "level":  6,
+        "title":  "Extracting the ``status`` value from the `jin-do` schema dictionary",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Understand the schema purpose of storing progress data in a consistent field structure so it can be read and updated consistently.",
+        "code":  "progress_row = {\n    \"card_id\": \"L06-125\",\n    \"status\": \"seen\",\n    \"updated_at\": \"2026-08-16T10:00:00+09:00\",\n}\nstatus = progress_row[\"status\"]\nprint(status)",
+        "question_type":  "meaning_choice",
+        "question":  "Why is a progress schema used so that values can be read using specific keys, such as `progress_row[\"status\"]`?",
+        "choices":  [
+                        "To ensure that progress data is always stored and read using the same field structure,",
+                        "To set all values in the `dict` to the same string,",
+                        "To change the name of the `status` key with each execution,",
+                        "To prevent `updated_at` from being saved"
+                    ],
+        "answer":  "To ensure that progress data is always stored and read using the same field structure,",
+        "explanation":  "1) `progress_row` contains defined fields such as `card_id`, `status`, and `updated_at`. 2) The consuming code reads values using the same key names. 3) The schema must remain consistent for the storage, retrieval, and update code to function reliably. This explanation interprets the Python target for this card in the context of legacy/domain purposes to ensure that progress data is always stored and read with the same field structure. A common source of confusion: To make all values in the dict the same string, this option focuses only on parts of the code’s syntax or surrounding context, missing the card’s core meaning. Point of misinterpretation: If you focus solely on correctly identifying the value “`seen`,” you overlook the structural consistency—the very reason a schema is necessary. The progress schema **fixes field names and meanings to ensure consistent storage and retrieval of progress data**.",
+        "side_card_ids":  [
+                              "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
+                          ],
+        "project_context":  "This is the context for saving the \"Learning Progress\" row under a specific field name and reading the required state.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "progress 데이터를 일정한 필드 구조로 저장해 일관되게 읽고 갱신하는 schema 목적을 이해한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The `data[\"key\"]` dictionary key lookup is a syntax that retrieves the value associated with a specified key name.",
+                                    "how_to_read":  "First, check which keys are in the dict, and find the key that exactly matches the string inside the square brackets.",
+                                    "key_point":  "`status` For lookups to work reliably, the data must follow a **consistent field contract**.",
+                                    "common_mistake":  "If you focus solely on getting the single value `seen` correct, you’ll miss the structural consistency that is the very reason a schema is needed."
+                                },
+        "teaching_example":  {
+                                 "code":  "row = {\"id\": 7, \"state\": \"done\"}\nstate = row[\"state\"]\nprint(state)",
+                                 "walkthrough":  "`row[\"state\"]` retrieves the string `done` associated with the `state` key."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `progress_row` contains defined fields such as `card_id`, `status`, and `updated_at`. 2) The consuming code reads values using the same key names. 3) The schema must remain consistent for the storage, retrieval, and update code to function reliably.",
+                                   "why_correct":  "This is an explanation of how to interpret the Python target on this card in relation to legacy/domain purposes, so that progress data is always stored and read using the same field structure.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "To set all values in the `dict` to the same string,",
+                                                               "why_wrong":  "This option focuses only on certain aspects of the code’s syntax or context and misses the core meaning of the card.",
+                                                               "misread_step":  "If you focus solely on getting the single value `seen` correct, you’ll miss the structural consistency that is the very reason a schema is needed."
+                                                           },
+                                   "takeaway":  "The **progress schema** **ensures that progress data is stored and retrieved consistently by fixing field names and their meanings**."
+                               },
+        "target_statement":  "status = progress_row[\"status\"]",
+        "focus_span":  "progress_row[\"status\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "learning_product_context",
+        "coverage_topics":  [
+                                "progress_schema",
+                                "dict",
+                                "status",
+                                "updated_at"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY50_L07_wrong_answer_log_001",
+        "level":  7,
+        "title":  "Use “not” to invert the correct answer and create a branch for incorrect answers",
+        "concepts":  [
+                         "boolean_operation",
+                         "if_statement",
+                         "call"
+                     ],
+        "reading_goal":  "Boolean`not`: Read the process of inverting the value of `correct` to create the condition for the `if` branch that records an incorrect answer.",
+        "code":  "correct = False\ncard_id = \"A1\"\nselected = \"B\"\nanswer = \"A\"\nwrong_log = []\nif not correct:\n    wrong_log.append({\"card_id\": card_id, \"selected\": selected, \"answer\": answer})\nprint(len(wrong_log))",
+        "question_type":  "output_prediction",
+        "question":  "What is the final output when `correct` is False?",
+        "choices":  [
+                        "1",
+                        "0",
+                        "False",
+                        "A1"
+                    ],
+        "answer":  "1",
+        "explanation":  "`correct` is False. Since `not correct` evaluates to True, it enters the `if` block. `append` adds one dictionary to `wrong_log`, making its length 1. This is because `not` inverts `False` to `True`, causing the wrong-answer log branch to execute. A common source of confusion: 0. This value was interpreted as skipping the block because `correct` is False. However, the actual condition is `not correct`, so it is True. Point of Misreading: You must calculate the final Boolean value after applying the `not` before the `if`. `if not flag:` is a branch that executes when `flag` is false.",
+        "side_card_ids":  [
+                              "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
+                          ],
+        "project_context":  "This learning process involves recording only incorrect cards in the error log to review weaknesses and attempt them again later.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "boolean_operation",
+        "reading_goal_internal":  "Boolean `not`이 correct 값을 반전시켜 오답 기록 if 분기의 조건값을 만드는 과정을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`not value` is a logical operator that inverts the Boolean value. True becomes False, and False becomes True.",
+                                    "how_to_read":  "First, check the current true/false status of the value on the right, and then use the result of inverting that value as the condition for the if statement.",
+                                    "key_point":  "`if not correct:` is a pattern that enters the block when `correct` is False.",
+                                    "common_mistake":  "Since the variable name is “correct,” it’s easy to read as “executed when the answer is correct.” The preceding `not` reverses the meaning."
+                                },
+        "teaching_example":  {
+                                 "code":  "saved = False\nif not saved:\n    message = \"save needed\"\nprint(message)",
+                                 "walkthrough":  "Since `saved` is False and `not False` is True, the `if` block is executed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`correct` is False. Since ``not correct`` evaluates to True, the code enters the `if` block. `append` adds one dictionary to `wrong_log`, so its length becomes 1.",
+                                   "why_correct":  "This is because `not` inverts `False` to `True`, causing the branch for incorrect answers to be executed.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "0",
+                                                               "why_wrong":  "This is the value read as \"skipping the block because `correct` is False.\" The actual condition is `not correct`, so it is True.",
+                                                               "misread_step":  "You must calculate the final Boolean value by applying the ``not`` operator before `if`."
+                                                           },
+                                   "takeaway":  "`if not flag:` is a branch that executes when `flag` is false."
+                               },
+        "target_statement":  "if not correct:",
+        "focus_span":  "not correct",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "learning_product_context",
+        "coverage_topics":  [
+                                "wrong answer log",
+                                "mistake",
+                                "review",
+                                "conditional logging"
+                            ],
+        "pedagogical_intent":  "predict_output"
+    },
+    {
+        "id":  "PY50_L07_mistake_note_001",
+        "level":  7,
+        "title":  "Create a \"mistake note\" list containing only incorrect answers",
+        "concepts":  [
+                         "list_comprehension",
+                         "subscription",
+                         "identity_test"
+                     ],
+        "reading_goal":  "Read the iterable, filter condition, and result expression of the filtered list comprehension in order to calculate the remaining `card_id`.",
+        "code":  "history = [\n    {\"card_id\": \"A1\", \"correct\": False},\n    {\"card_id\": \"A2\", \"correct\": True},\n    {\"card_id\": \"A3\", \"correct\": False},\n]\nmistake_note = [row[\"card_id\"] for row in history if row[\"correct\"] is False]\nprint(mistake_note)",
+        "question_type":  "output_prediction",
+        "question":  "What does the \"`mistake_note`\" printed at the end mean?",
+        "choices":  [
+                        "[\u0027A1\u0027, \u0027A3\u0027]",
+                        "[\u0027A2\u0027]",
+                        "[\u0027A1\u0027, \u0027A2\u0027, \u0027A3\u0027]",
+                        "[]"
+                    ],
+        "answer":  "[\u0027A1\u0027, \u0027A3\u0027]",
+        "explanation":  "A1 passes because `correct = False`, so A1 is included. A2 is excluded because it is True. A3 passes because it is False, so A3 is included. The result is [\u0027A1\u0027, \u0027A3\u0027]. This is because only the `card_id`s of the two rows that satisfy the `if` condition in the comprehension are selected as the result. Common mistake: This is the result of ignoring the `if row[\"correct\"] is False` filter following [\u0027A1\u0027, \u0027A2\u0027, \u0027A3\u0027]. Common Misinterpretation: Do not add all items immediately after the `for` loop; instead, verify whether they satisfy the `if` condition. A filtered comprehension is read in the following order: iteration → condition check → addition to the result expression.",
+        "side_card_ids":  [
+                              "PYV159_A1_LEARNING_UX_FLOW"
+                          ],
+        "project_context":  "I expressed the filtering logic that collects and re-displays only recently missed cards on the \"Wrong Answers\" screen using a concise Python comprehension.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "list_comprehension",
+        "reading_goal_internal":  "filtered list comprehension의 반복 대상, 필터 조건, 결과 표현식을 순서대로 읽어 남는 card_id를 계산한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A filtered list comprehension, in the form `result_expression for item in iterable if condition`, adds only items that satisfy the condition to a new list.",
+                                    "how_to_read":  "First, follow the iteration target, apply the if condition to each item, and then calculate the result expression for the items that pass the condition.",
+                                    "key_point":  "Here the result list contains only the `card_id` value from each passing row, not the whole row.",
+                                    "common_mistake":  "It’s easy to assume that all `card_ids` in `history` are included. However, only the rows that pass the subsequent `if` condition are included in the result."
+                                },
+        "teaching_example":  {
+                                 "code":  "scores = [{\"id\": \"A\", \"pass\": True}, {\"id\": \"B\", \"pass\": False}]\nfailed = [row[\"id\"] for row in scores if row[\"pass\"] is False]\nprint(failed)",
+                                 "walkthrough":  "Since only B passes the condition because `pass` is False, `failed` is [\u0027B\u0027]."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "A1 passes because `correct=False`, so A1 is included. A2 is excluded because it is `True`. A3 passes because it is `False`, so A3 is included. The result is [\u0027A1\u0027, \u0027A3\u0027].",
+                                   "why_correct":  "This is because only the `card_id`s of the two rows that satisfy the `if` condition in the `comprehension` are selected as the result.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\u0027A1\u0027, \u0027A2\u0027, \u0027A3\u0027]",
+                                                               "why_wrong":  "This is the result obtained by ignoring the `if row[\"correct\"] is False` filter.",
+                                                               "misread_step":  "After iterating with `for`, do not insert all items immediately; you must first check whether they pass the `if` condition."
+                                                           },
+                                   "takeaway":  "Filtered comprehension is read in the following order: loop → condition check → addition of the result expression."
+                               },
+        "target_statement":  "mistake_note = [row[\"card_id\"] for row in history if row[\"correct\"] is False]",
+        "focus_span":  "[row[\"card_id\"] for row in history if row[\"correct\"] is False]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "learning_product_context",
+        "coverage_topics":  [
+                                "mistake note",
+                                "wrong answers",
+                                "filtered list comprehension",
+                                "review"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY50_L07_retry_wrong_card_001",
+        "level":  7,
+        "title":  "is False: Add only the most recent incorrect answer cards to the retry queue",
+        "concepts":  [
+                         "identity_test",
+                         "subscription",
+                         "if_statement",
+                         "call"
+                     ],
+        "reading_goal":  "Read the flow where the result of the identity test with a Boolean singleton determines whether to add an item to the retry queue.",
+        "code":  "progress = {\n    \"A1\": {\"last_correct\": False},\n    \"A2\": {\"last_correct\": True},\n}\nretry_queue = []\nfor card_id, row in progress.items():\n    if row[\"last_correct\"] is False:\n        retry_queue.append(card_id)\nprint(retry_queue)",
+        "question_type":  "output_prediction",
+        "question":  "What is the `retry_queue` that is printed at the end?",
+        "choices":  [
+                        "[\u0027A1\u0027]",
+                        "[\u0027A2\u0027]",
+                        "[\u0027A1\u0027, \u0027A2\u0027]",
+                        "[]"
+                    ],
+        "answer":  "[\u0027A1\u0027]",
+        "explanation":  "Because A1 has `last_correct` set to False, `is False` becomes True and A1 is appended. A2 is True, so its condition is false. Therefore, `retry_queue` is `[\u0027A1\u0027]`. The code is written to enqueue only rows whose condition is the Boolean False itself. Common wrong answer: `[\u0027A2\u0027]`. A2’s latest correctness value is True, so it does not satisfy the retry condition. Misreading point: Check whether the value required by the `if` is True or False by looking at the right side of the comparison. `is False` is an identity test that explicitly selects only Boolean False.",
+        "side_card_ids":  [
+                              "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
+                          ],
+        "project_context":  "In a recent attempt, I expressed the review feature—which places only incorrect cards into a separate retry queue—using an explicit for/if flow.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "identity_test",
+        "reading_goal_internal":  "Boolean singleton과의 identity test 결과가 retry queue 추가 여부를 결정하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`is` is an identity test that checks whether two objects are the same. ``is False`` directly checks whether the value is the Boolean singleton `False`.",
+                                    "how_to_read":  "It reads the actual value of the expression on the left, determines whether it is the same object as the singleton on the right, and then uses that Boolean result in the `if` statement.",
+                                    "key_point":  "Here, we select only those cards where `last_correct` is exactly `False` for retry.",
+                                    "common_mistake":  "It is easy to think the string `\"False\"` or the number 0 also satisfy `is False`. This code checks for the Boolean False object itself."
+                                },
+        "teaching_example":  {
+                                 "code":  "records = [{\"id\": 1, \"ok\": False}, {\"id\": 2, \"ok\": True}]\nretry = []\nfor row in records:\n    if row[\"ok\"] is False:\n        retry.append(row[\"id\"])\nprint(retry)",
+                                 "walkthrough":  "Since only the \"ok\" in the first row evaluates to Boolean False, only 1 is entered into the \"retry\" variable."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since A1’s `last_correct` is False, `is False` evaluates to True, so A1 is appended. A2 is True, so the condition is false. Therefore, `retry_queue` is [\u0027A1\u0027].",
+                                   "why_correct":  "Because the code is written to enqueue only rows whose condition is the Boolean False itself.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\u0027A2\u0027]",
+                                                               "why_wrong":  "A2 does not pass the retry condition because the value of the last answer is True.",
+                                                               "misread_step":  "You must check the value on the right side of the `if` statement to determine whether it is True or False."
+                                                           },
+                                   "takeaway":  "`is False` is an identity test that explicitly filters out only cases where the value is Boolean False."
+                               },
+        "target_statement":  "if row[\"last_correct\"] is False:",
+        "focus_span":  "row[\"last_correct\"] is False",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "learning_product_context",
+        "coverage_topics":  [
+                                "retry queue",
+                                "wrong card",
+                                "identity test",
+                                "review"
+                            ],
+        "pedagogical_intent":  "predict_output"
+    },
+    {
+        "id":  "PY50_L08_score_history_001",
+        "level":  8,
+        "title":  "Add one score-history entry with `append()`.",
+        "concepts":  [
+                         "call",
+                         "attribute_access",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Track the before-and-after states to see how the `list.append()` call updates the existing score history list.",
+        "code":  "score_history = [{\"date\": \"2026-08-15\", \"accuracy\": 0.75}]\nrecord = {\"date\": \"2026-08-16\", \"solved\": 20, \"correct\": 16, \"accuracy\": 0.8}\nscore_history.append(record)",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of ``len(score_history)`` immediately after the call?",
+        "choices":  [
+                        "0",
+                        "1",
+                        "2",
+                        "20"
+                    ],
+        "answer":  "2",
+        "explanation":  "The initial list length is 1. `append(record)` adds one new dict, so the length increases by 1 to 2. This is because `append` adds the passed value as one new item at the end of the list. Common wrong answer: 1. That is the list length before `append` executes. Misreading point: This happens when the state change to the original list caused by the method call is not reflected. `append()` **adds one item to the original list**.",
+        "side_card_ids":  [
+                              "PYV159_A1_LEARNING_UX_FLOW"
+                          ],
+        "project_context":  "Instead of just looking at today’s score, this connects to a feature that tracks cumulative accuracy rates by session to compare trends in learning progress.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "list.append() 호출이 기존 점수 이력 리스트를 어떻게 갱신하는지 전후 상태를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`list.append(value)` This is a method call that adds ``value`` as a single item to the end of the list.",
+                                    "how_to_read":  "It checks the number of items in the list and the value of ``record`` before the call, and reads that after the call, that value becomes the new last item.",
+                                    "key_point":  "`append` directly modifies the original list by adding the entire passed dictionary as a single item.",
+                                    "common_mistake":  "It’s easy to think that each key in a `dict` is added separately to the list. `record` A single `dict` becomes one item in the list."
+                                },
+        "teaching_example":  {
+                                 "code":  "history = [{\"accuracy\": 0.6}]\nrecord = {\"accuracy\": 0.7}\nhistory.append(record)",
+                                 "walkthrough":  "One “record dict” is added after the existing entry, so there will be two entries in the history."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The initial length of the list is 1. Since ``append(record)`` adds a new dictionary, the length increases by 1 to 2.",
+                                   "why_correct":  "This is because `append` adds the passed value as a new item to the end of the list.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "1",
+                                                               "why_wrong":  "That value is the length of the list before `append` executes.",
+                                                               "misread_step":  "This is a case where the changes to the original list resulting from the method call were not reflected."
+                                                           },
+                                   "takeaway":  "`append()` **Adds one item to the original list**."
+                               },
+        "target_statement":  "score_history.append(record)",
+        "focus_span":  "score_history.append(record)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "learning_product_context",
+        "coverage_topics":  [
+                                "score history",
+                                "learning metric",
+                                "progress",
+                                "append"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY50_L08_concept_mastery_001",
+        "level":  8,
+        "title":  "Use a conditional expression to choose either concept mastery or `None`.",
+        "concepts":  [
+                         "conditional_expression",
+                         "arithmetic",
+                         "assignment",
+                         "name_reference",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the evaluation order of the conditional expression, which first checks the number of attempts; if there are attempts, it calculates the ratio, and if not, it selects `None`.",
+        "code":  "attempts = 4\ncorrect = 3\nscore = correct / attempts if attempts else None",
+        "question_type":  "multiple_choice",
+        "question":  "What value is stored in `score`?",
+        "choices":  [
+                        "0.75",
+                        "3",
+                        "4",
+                        "None"
+                    ],
+        "answer":  "0.75",
+        "explanation":  "Since `attempts` is 4, the condition is true. Therefore, the left-hand expression `3 / 4` is evaluated, and 0.75 is used as the result. This is because a conditional expression selects the expression preceding the `if` statement when the condition is true. Common source of confusion: `None`. `None` is the value selected by the `else` branch when `attempts` is falsy (e.g., 0). Point of misinterpretation: Failing to verify the actual value of 4 in the middle condition. In a conditional expression, **the condition is evaluated first → only the selected side is used as the result**.",
+        "side_card_ids":  [
+                              "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
+                          ],
+        "project_context":  "This is linked to learning analytics that aggregates the results of multiple dict cards to calculate proficiency by concept unit and sets the status to “unknown” if no attempts have been made yet.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "conditional_expression",
+        "reading_goal_internal":  "시도 수를 조건으로 먼저 판단하고, 시도가 있으면 비율을 계산하고 없으면 None을 선택하는 조건 표현식의 평가 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`A if condition else B` is a conditional expression that chooses A when the condition is true and B when it is false.",
+                                    "how_to_read":  "First, evaluate ``attempts`` in the middle; if it is not 0, perform the left division; if it is 0, select the right option, ``None``.",
+                                    "key_point":  "Since division is not performed when the number of attempts is 0, this avoids the problem of division by zero and represents “no data” as `None`.",
+                                    "common_mistake":  "It’s easy to assume that the left-hand side `correct / attempts` is always evaluated first. However, if the condition is false, the left-hand expression is not evaluated."
+                                },
+        "teaching_example":  {
+                                 "code":  "attempts = 0\ncorrect = 0\nscore = correct / attempts if attempts else None",
+                                 "walkthrough":  "Since `attempts` is 0, the condition is false, so `None` is selected instead of division."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since there are 4 attempts, the condition is true. Therefore, the left-hand expression ``3 / 4`` is evaluated, and 0.75 is used as the result.",
+                                   "why_correct":  "This is because a conditional expression selects the expression preceding the `if` statement when the condition is true.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "None",
+                                                               "why_wrong":  "`None` is the value selected in the `else` branch when `attempts` is falsy (e.g., 0).",
+                                                               "misread_step":  "This is a case where the actual value of 4 in the middle condition was not verified."
+                                                           },
+                                   "takeaway":  "Conditional expressions **evaluate the condition first → and use only the selected side as the result**."
+                               },
+        "target_statement":  "score = correct / attempts if attempts else None",
+        "focus_span":  "correct / attempts if attempts else None",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "learning_product_context",
+        "coverage_topics":  [
+                                "concept mastery",
+                                "accuracy",
+                                "weak concept",
+                                "unknown state"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY50_L08_attempt_count_001",
+        "level":  8,
+        "title":  "Use += to increase the number of attempts by 1",
+        "concepts":  [
+                         "augmented_assignment",
+                         "subscription",
+                         "arithmetic",
+                         "literal"
+                     ],
+        "reading_goal":  "The `+=` operator with a subscription target tracks the state change where it reads the existing dict value, adds to it, and stores the result back under the same key.",
+        "code":  "progress = {}\ncard_id = \"PY50_001\"\nrow = progress.setdefault(card_id, {\"attempts\": 0})\nrow[\"attempts\"] += 1",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of ``row[\"attempts\"]`` after executing the last line?",
+        "choices":  [
+                        "0",
+                        "1",
+                        "2",
+                        "None"
+                    ],
+        "answer":  "1",
+        "explanation":  "The value of `row` is initially 0. Since `+= 1` adds 1 to the existing value and stores it back under the same key, the final value is 1. This is because augmented assignment (`+=`) stores the result of adding the right-hand value to the existing value back into the target. Common source of confusion: 0. 0 is the value before the compound assignment is executed. Point of misinterpretation: This occurs when the learner fails to recognize that `+=` updates the state. `x += 1` **reads the existing value of x, adds 1 to it, and stores the result back in x**.",
+        "side_card_ids":  [
+                              "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
+                          ],
+        "project_context":  "It is linked to the learner’s progress, which calculates proficiency and review priorities by increasing the number of card attempts with each correct submission.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "augmented_assignment",
+        "reading_goal_internal":  "subscription 대상을 가진 `+=`가 기존 dict 값을 읽고 더한 결과를 같은 key에 다시 저장하는 상태 변화를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`target += value` is a compound assignment that adds `value` to the existing `target` value and stores the result back in the same `target`.",
+                                    "how_to_read":  "Read the current value of `row[\"attempts\"]` first, add 1, and then store the result back under the same key.",
+                                    "key_point":  "Since reading, calculation, and storage are combined into a single sentence, you must track the values before and after execution separately.",
+                                    "common_mistake":  "It is easy to think `+= 1` always sets a value to 1. It adds 1 to the existing value."
+                                },
+        "teaching_example":  {
+                                 "code":  "state = {\"retries\": 2}\nstate[\"retries\"] += 1",
+                                 "walkthrough":  "Add 1 to the existing \"retries\" value of 2 to store 3 for the same key."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The value of `row` is initially 0. Since `+= 1` adds 1 to the existing value and stores it back under the same key, the final value is 1.",
+                                   "why_correct":  "\"Augmented assignment\" is used because it stores the existing value plus the value on the right-hand side back into the target variable.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "0",
+                                                               "why_wrong":  "0 is the value prior to the execution of a compound assignment.",
+                                                               "misread_step":  "This is an example where the fact that `+=` updates the state was not reflected."
+                                                           },
+                                   "takeaway":  "`x += 1` It **reads the existing x, adds 1 to it, and stores the result back in x**."
+                               },
+        "target_statement":  "row[\"attempts\"] += 1",
+        "focus_span":  "row[\"attempts\"] += 1",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "learning_product_context",
+        "coverage_topics":  [
+                                "attempt count",
+                                "learning state",
+                                "progress",
+                                "increment"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY50_L08_last_answered_at_001",
+        "level":  8,
+        "title":  "Updating the Last Solution Time Using Nested Dict Assignment",
+        "concepts":  [
+                         "assignment",
+                         "subscription",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read the state changes in the assignment statement that stores the value on the right at the specific dict location pointed to by the nested `subscription`.",
+        "code":  "progress = {\"PY50_001\": {\"last_answered_at\": \"2026-08-15T09:00:00+09:00\"}}\ncard_id = \"PY50_001\"\nnow_iso = \"2026-08-16T21:30:00+09:00\"\nprogress[card_id][\"last_answered_at\"] = now_iso",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of ``progress[card_id][\"last_answered_at\"]`` after the assignment?",
+        "choices":  [
+                        "2026-08-15T09:00:00+09:00",
+                        "2026-08-16T21:30:00+09:00",
+                        "PY50_001",
+                        "None"
+                    ],
+        "answer":  "2026-08-16T21:30:00+09:00",
+        "explanation":  "The left-hand nested `subscription` points to the `last_answered_at` position on the PY50_001 card. Since the assignment statement stores the right-hand `now_iso` string at that position, the existing value is replaced with the new timestamp. This is because the `subscription` assignment updates the value of the specified dictionary key to the value on the right. Common mistake: 2026-08-15T09:00:00+09:00. This value is the existing timestamp before the assignment is executed. Point of Misinterpretation: This occurs when the state change after the assignment is not taken into account. Nested dictionary assignments are interpreted in the following order: **find the inner dictionary → select the key position → store the value on the right**.",
+        "side_card_ids":  [
+                              "AI_sensor_fusion_001"
+                          ],
+        "project_context":  "This is linked to a feature that tracks learning progress by calculating the elapsed time and the next review time based on the last solution time.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "중첩 subscription이 가리키는 특정 dict 위치에 오른쪽 값을 저장하는 대입문의 상태 변화를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping[key] = value` is a subscription assignment that stores a value under a specific key in a dictionary. In the case of nested dictionaries, the target dictionary is first located through an inner lookup.",
+                                    "how_to_read":  "Read `progress[card_id]` as locating the card state and then storing `now_iso` under its `last_answered_at` key.",
+                                    "key_point":  "If a value already exists, a new key is not created; instead, the value associated with that key is overwritten.",
+                                    "common_mistake":  "It is easy to assume that the string `card_id` itself is converted into a timestamp. What actually changes is the `last_answered_at` value inside the card’s dictionary."
+                                },
+        "teaching_example":  {
+                                 "code":  "state = {\"c1\": {\"updated_at\": \"old\"}}\ncard_id = \"c1\"\nnow = \"new\"\nstate[card_id][\"updated_at\"] = now",
+                                 "walkthrough":  "First, find the internal dict in c1, and replace the `updated_at` value inside it from `old` to `new`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The left-hand nested `subscription` points to the `last_answered_at` position on the PY50_001 card. Since the assignment statement stores the right-hand `now_iso` string at that position, the existing value is replaced with the new timestamp.",
+                                   "why_correct":  "Because subscription assignment updates the value of the specified dict key to the right-hand value.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "2026-08-15T09:00:00+09:00",
+                                                               "why_wrong":  "That value is the existing timestamp before the assignment is executed.",
+                                                               "misread_step":  "This is a case where state changes were not reflected after the function call."
+                                                           },
+                                   "takeaway":  "Read nested dict assignment as **find target inner dict → select key position → store right-hand value**."
+                               },
+        "target_statement":  "progress[card_id][\"last_answered_at\"] = now_iso",
+        "focus_span":  "progress[card_id][\"last_answered_at\"] = now_iso",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "learning_product_context",
+        "coverage_topics":  [
+                                "last answered at",
+                                "timestamp",
+                                "review schedule",
+                                "progress"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY50_L09_localstorage_progress_save_001",
+        "level":  9,
+        "title":  "Save \"progress\" as a JSON string to storage",
+        "concepts":  [
+                         "assignment",
+                         "call",
+                         "subscription",
+                         "import_statement"
+                     ],
+        "reading_goal":  "Read the state change where the serialized “progress” string is stored under a specific key in the storage mapping.",
+        "code":  "import json\nlocal_storage = {}\nprogress = {\"seen\": [\"c1\"], \"correct\": [\"c1\"]}\nlocal_storage[\"pythonReadingProgress\"] = json.dumps(progress)\nsaved = local_storage[\"pythonReadingProgress\"]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the data type of `saved`?",
+        "choices":  [
+                        "str",
+                        "dict",
+                        "list",
+                        "set"
+                    ],
+        "answer":  "str",
+        "explanation":  "`json.dumps(progress)` creates a string, and that value is stored under the `pythonReadingProgress` key. This is because the result of JSON serialization is a string. A common source of confusion: `dict` refers to the type of `progress` before serialization. Point of misinterpretation: This occurs when the return type of the function call on the right side of the assignment is not reflected. The storage of `progress` is interpreted as **object → JSON string → storage key**.",
+        "side_card_ids":  [
+                              "WEB_localstorage_001"
+                          ],
+        "project_context":  "It connects to the \"progress\" saving feature, which stores learning progress and a record of incorrect answers in the browser.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "직렬화된 progress 문자열이 storage mapping의 특정 key에 저장되는 상태 변화를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping[key] = value` is a subscription assignment that stores a new value for a specific key.",
+                                    "how_to_read":  "I believe the value on the right is calculated first and then stored at the storage location on the left.",
+                                    "key_point":  "In string-based storage systems, such as the browser’s `localStorage`, it is common to convert objects into JSON strings before storing them.",
+                                    "common_mistake":  "It’s easy to assume that `json.dumps` automatically saves the data to storage. However, string creation and the actual storage assignment are separate operations."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\nstore = {}\nstate = {\"count\": 2}\nstore[\"state\"] = json.dumps(state)",
+                                 "walkthrough":  "After the `state` dictionary is converted to a JSON string, it is stored under the `state` key in `store`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`json.dumps(progress)` creates a `str`, and that value is stored under the `pythonReadingProgress` key.",
+                                   "why_correct":  "This is because the result of JSON serialization is a string.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "dict",
+                                                               "why_wrong":  "`dict` is the type of `progress` before serialization.",
+                                                               "misread_step":  "assignment: This is a case where the return type of the function call on the right side is not specified."
+                                                           },
+                                   "takeaway":  "\"Saving progress\" is interpreted as **object → JSON string → storage key**."
+                               },
+        "target_statement":  "local_storage[\"pythonReadingProgress\"] = json.dumps(progress)",
+        "focus_span":  "local_storage[\"pythonReadingProgress\"] = json.dumps(progress)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "progress save",
+                                "browser storage",
+                                "JSON serialization",
+                                "local storage"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY50_L09_localstorage_progress_load_001",
+        "level":  9,
+        "title":  "Parse the saved progress JSON string back into a dictionary",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "import_statement"
+                     ],
+        "reading_goal":  "Read the flow in which a string read from `storage` is parsed by a `json.loads` call and restored as the `progress` value.",
+        "code":  "import json\nraw = \u0027{\"seen\": [\"c1\"], \"schema_version\": 2}\u0027\nprogress = {}\nif raw:\n    try:\n        progress = json.loads(raw)\n    except json.JSONDecodeError:\n        progress = {\"recovery\": True}\nschema_version = progress[\"schema_version\"]",
+        "question_type":  "multiple_choice",
+        "question":  "`schema_version` What is the value of ?",
+        "choices":  [
+                        "2",
+                        "1",
+                        "None",
+                        "recovery"
+                    ],
+        "answer":  "2",
+        "explanation":  "Because the string is valid JSON, `loads` succeeds inside `try` and creates the `progress` dict. The `schema_version` in that dict is 2. Parsing the JSON object string restores the same key/value structure. Common wrong answer: `recovery`. The recovery branch executes only when a `JSONDecodeError` occurs. Misreading point: This happens when a normal parse path is confused with the exception-recovery path. Read progress loading as **raw string → parse → structure validation/recovery**.",
+        "side_card_ids":  [
+                              "PYV160_A1_PWA_STATE_STORAGE_FLOW"
+                          ],
+        "project_context":  "This connects to the workflow of restoring the progress saved in the browser when the app starts and then proceeding to schema validation.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "storage에서 읽은 문자열이 json.loads 호출로 구조화 progress 값으로 복원되는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`json.loads(text)` is a function call that converts a JSON-formatted string into a structured Python value.",
+                                    "how_to_read":  "Let’s distinguish between the type of the input `raw` and the type of the return value `progress`.",
+                                    "key_point":  "If you used `stringify` or `dumps` when saving, you’ll need to use `parse` or `loads` when loading.",
+                                    "common_mistake":  "It is easy to think you can immediately use dict-key subscription on the raw string. You must parse it first."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\nraw = \u0027{\"level\": 3}\u0027\ndata = json.loads(raw)",
+                                 "walkthrough":  "A JSON string is converted to a Python dict `{\u0027level\u0027: 3}`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since it is a valid JSON string, the `loads` function inside the `try` block succeeds and creates a `progress` dictionary. The `schema_version` of that dictionary is 2.",
+                                   "why_correct":  "This is because the JSON object string is parsed to restore the same key-value structure.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "recovery",
+                                                               "why_wrong":  "The recovery branch executes only when a `JSONDecodeError` occurs.",
+                                                               "misread_step":  "This is an instance where the normal parse path and the exception recovery path were confused."
+                                                           },
+                                   "takeaway":  "The `progress` load is read in the following order: **raw string → parse → structure validation/recovery**."
+                               },
+        "target_statement":  "progress = json.loads(raw)",
+        "focus_span":  "json.loads(raw)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "progress load",
+                                "JSON parse",
+                                "browser storage",
+                                "validation"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY50_L09_progress_migration_001",
+        "level":  9,
+        "title":  "Run the progress migration only on schema_version 1",
+        "concepts":  [
+                         "if_statement",
+                         "comparison",
+                         "call",
+                         "assignment",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the branch that compares the existing schema version and calls the migration function only if necessary.",
+        "code":  "def migrate_v1_to_v2(progress):\n    migrated = dict(progress)\n    migrated[\"schema_version\"] = 2\n    migrated[\"confused\"] = []\n    return migrated\n\nprogress = {\"schema_version\": 1, \"seen\": [\"c1\"]}\nversion = progress.get(\"schema_version\", 1)\nif version == 1:\n    progress = migrate_v1_to_v2(progress)\nfinal_version = progress[\"schema_version\"]",
+        "question_type":  "multiple_choice",
+        "question":  "`final_version` What is the value of ?",
+        "choices":  [
+                        "2",
+                        "1",
+                        "0",
+                        "None"
+                    ],
+        "answer":  "2",
+        "explanation":  "Since `version == 1` is True, the migration function is called, and the `schema_version` of the new dictionary becomes 2. This is because the migration branch changes the existing v1 structure to the v2 structure. A common source of confusion: 1. 1 is the schema version saved before the migration is executed. Point of misinterpretation: This occurs when the state after the `if branch` is not taken into account. The migration code should be read as **check current schema → conditional branch → convert to new schema**.",
+        "side_card_ids":  [
+                              "PYV102_A7_CODE_DESIGN_MAINTAINABILITY"
+                          ],
+        "project_context":  "This is linked to compatibility handling that preserves existing users’ “seen” and “correct” records while expanding the progress-saving structure.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "기존 schema version을 비교해 필요한 경우에만 migration 함수를 호출하는 분기를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if condition:` executes the body of the statement when the condition is True.",
+                                    "how_to_read":  "First, check the `version` value and use the result of the equality comparison to determine whether to execute the migration.",
+                                    "key_point":  "If you want to retain existing user data even after the storage structure changes, you may need to perform a migration to transfer the old schema to the new one.",
+                                    "common_mistake":  "It’s easy to assume that all progress must be migrated whenever the app version changes. Decisions are based on the currently saved schema version."
+                                },
+        "teaching_example":  {
+                                 "code":  "version = 1\nsteps = []\nif version == 1:\n    steps.append(\"migrate\")",
+                                 "walkthrough":  "Since the version is 1, the condition is True, and the string \"migrate\" is added."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`version == 1` Since this is True, the migration function is called, and the `schema_version` of the new dict becomes 2.",
+                                   "why_correct":  "This is because the migration branch changes the existing v1 structure to the v2 structure.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "1",
+                                                               "why_wrong":  "1 is the schema version saved before running the migration.",
+                                                               "misread_step":  "This is a case where the state after the `if` branch has not been updated."
+                                                           },
+                                   "takeaway":  "The migration code reads as **Check current schema → conditional branch → convert to new schema**."
+                               },
+        "target_statement":  "if version == 1:",
+        "focus_span":  "if version == 1:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "learning_product_context",
+        "coverage_topics":  [
+                                "progress migration",
+                                "schema version",
+                                "backward compatibility",
+                                "user data"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY50_L09_reset_progress_guard_001",
+        "level":  9,
+        "title":  "Execute \"progress reset\" only when confirmed",
+        "concepts":  [
+                         "if_statement",
+                         "call",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the guard branch that performs the delete operation only when the confirmation result is True.",
+        "code":  "local_storage = {\"pythonReadingProgress\": \"saved-progress\"}\nconfirmed = False\nif confirmed:\n    local_storage.pop(\"pythonReadingProgress\", None)\nprogress_exists = \"pythonReadingProgress\" in local_storage",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `progress_exists`?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "saved-progress",
+                        "None"
+                    ],
+        "answer":  "True",
+        "explanation":  "If the condition is False, the deletion branch is skipped. Therefore, the ``pythonReadingProgress`` key remains unchanged, and the membership result is True. This is because the delete call is inside the confirmation guard. A common source of confusion: Since `False confirmed` evaluates to False, the deletion is not executed. Point of misinterpretation: Assuming that the `if` body always executes. Dangerous changes to user data follow the sequence: **confirmation state → guard → actual deletion**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This ties into the UX design that includes a confirmation step for the reset action to prevent accidentally deleting long-term learning records.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "confirmation 결과가 True일 때만 삭제 작업을 실행하는 guard 분기를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if confirmed:` is an if statement that executes the body only when `confirmed` is truthy.",
+                                    "how_to_read":  "Currently, the program first checks the boolean value and then determines whether to call the delete function.",
+                                    "key_point":  "For user data changes that are difficult to recover, such as a \"progress reset,\" it is safer to include a confirmation guard.",
+                                    "common_mistake":  "It’s easy to assume that simply displaying a confirmation dialog automatically cancels the deletion. The actual deletion code must use the result of the confirmation as a condition."
+                                },
+        "teaching_example":  {
+                                 "code":  "items = [1, 2]\nconfirmed = False\nif confirmed:\n    items.clear()",
+                                 "walkthrough":  "Since `confirmed` is `False`, `clear` is not executed, and the items remain as they are."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "If the condition is False, the delete branch is skipped. Therefore, the `pythonReadingProgress` key remains unchanged, and the membership result is True.",
+                                   "why_correct":  "This is because the delete call is inside the confirmation guard.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "Since `confirmed` is False, the deletion is not executed.",
+                                                               "misread_step":  "This is the case where the `if` body is assumed to always execute."
+                                                           },
+                                   "takeaway":  "Dangerous changes to user data are described as **verified status → guard → actual deletion**."
+                               },
+        "target_statement":  "if confirmed:",
+        "focus_span":  "if confirmed:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "reset progress",
+                                "confirmation",
+                                "guard",
+                                "user data"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY50_L10_export_progress_001",
+        "level":  10,
+        "title":  "Use `json.dumps` to create a backup JSON string from the `progress` dict.",
+        "concepts":  [
+                         "call",
+                         "attribute_access",
+                         "argument_passing",
+                         "import_statement"
+                     ],
+        "reading_goal":  "Read that the `progress` dictionary is passed as an argument to `dumps` and that the result of the call is a new string, not a file.",
+        "code":  "import json\n\nprogress = {\"solved\": 12, \"correct\": 9}\nbackup_text = json.dumps(progress, ensure_ascii=False)\nprint(type(backup_text).__name__)",
+        "question_type":  "output_prediction",
+        "question":  "What is the data type of the return value for the `target` function call?",
+        "choices":  [
+                        "str",
+                        "dict",
+                        "list",
+                        "NoneType"
+                    ],
+        "answer":  "str",
+        "explanation":  "1) `progress` is a Python dictionary. 2) That dictionary is passed to the `json.dumps` call. 3) `dumps` returns a Python string containing JSON text. 4) That string is stored in `backup_text`, and its data type is `str`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This is linked to the export step, which serializes progress data into a JSON string before backing up learning records to a file or transferring them to another device.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "progress dict가 dumps의 인자로 전달되고 호출 결과가 파일이 아닌 새 문자열이라는 점을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`json.dumps` is a function that serializes a Python value into a string in JSON format and returns it.",
+                                    "how_to_read":  "Distinguish between the data type of the `progress` input and the data type returned by `dumps`.",
+                                    "key_point":  "`dumps` only creates a string; it does not automatically generate or download a file.",
+                                    "common_mistake":  "It’s easy to assume that the file is automatically saved because of the function name."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\nrow = {\"id\": \"c1\"}\ntext = json.dumps(row)\nprint(type(text).__name__)",
+                                 "walkthrough":  "The return value of serializing a `dict` is a Python `str`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `progress` is a Python dictionary. 2) That dictionary is passed to the `json.dumps` call. 3) `dumps` returns a Python string containing JSON text. 4) That string is stored in `backup_text`, and its data type is `str`.",
+                                   "why_correct":  "The return value of `json.dumps` is a Python string in JSON format.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "dict",
+                                                               "why_wrong":  "`dict` is the data type of a function’s input, not the data type of its return value.",
+                                                               "misread_step":  "It’s easy to assume that the file is automatically saved because of the function name."
+                                                           },
+                                   "takeaway":  "Read a function call in the following order: passing arguments, function behavior, and checking the return value."
+                               },
+        "target_statement":  "json.dumps(progress, ensure_ascii=False)",
+        "focus_span":  "json.dumps(progress, ensure_ascii=False)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "export_progress",
+                                "backup",
+                                "json",
+                                "user_data"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY50_L10_import_progress_001",
+        "level":  10,
+        "title":  "Execute the parsing and validation of `import` in the `try` block",
+        "concepts":  [
+                         "try_statement",
+                         "except_clause",
+                         "call",
+                         "assignment"
+                     ],
+        "reading_goal":  "Try executing the code from the top. If an exception occurs, skip the remaining normal paths and read the scope leading to the `except` block.",
+        "code":  "import json\n\ndef validate_progress(data):\n    if \"solved\" not in data:\n        raise ValueError(\"missing solved\")\n    return data\n\nfile_text = \u0027{\"correct\": 8}\u0027\ntry:\n    data = json.loads(file_text)\n    clean = validate_progress(data)\n    import_status = \"ready\"\nexcept (json.JSONDecodeError, ValueError):\n    import_status = \"rejected\"\n\nprint(import_status)",
+        "question_type":  "output_prediction",
+        "question":  "What is the final `import_status` when importing `file_text`?",
+        "choices":  [
+                        "ready",
+                        "rejected",
+                        "correct",
+                        "None"
+                    ],
+        "answer":  "rejected",
+        "explanation":  "1) `json.loads` converts valid JSON into a dictionary. 2) `validate_progress` checks for the `solved` key. 3) Since `solved` does not exist, a `ValueError` is raised. 4) The assignment to `ready` is skipped, and the `except` block stores `rejected`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This relates to import safety, which ensures that only clean data—validated for schema, type, and version—is restored, without relying on external progress files.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "try_statement",
+        "reading_goal_internal":  "try 본문을 위에서부터 실행하다 예외가 발생하면 남은 정상 경로를 건너뛰고 except로 이동하는 범위를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The `try` statement groups statements that may raise exceptions into a protected execution block.",
+                                    "how_to_read":  "Try reading the code below in order. If an exception occurs at any point, skip the rest of the code and look for the `except` clause.",
+                                    "key_point":  "Simply passing the parse step does not mean the import is ready; it must also pass validation.",
+                                    "common_mistake":  "It is easy to think that simply placing code inside `try` automatically corrects invalid data."
+                                },
+        "teaching_example":  {
+                                 "code":  "try:\n    value = int(\"12\")\n    status = \"ready\"\nexcept ValueError:\n    status = \"rejected\"\nprint(status)",
+                                 "walkthrough":  "Since the conversion was successful and no exceptions occurred, `ready` is retained."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `json.loads` converts valid JSON into a dictionary. 2) `validate_progress` checks for the `solved` key. 3) Since `solved` does not exist, a `ValueError` is raised. 4) The assignment to `ready` is skipped, and the `except` block stores `rejected`.",
+                                   "why_correct":  "Since the `except` clause catches the `ValueError` during the validation phase, the final status is “rejected.”",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "ready",
+                                                               "why_wrong":  "`ready` is executed only when both parsing and validation have completed without any exceptions.",
+                                                               "misread_step":  "It is easy to think that simply placing code inside `try` automatically corrects invalid data."
+                                                           },
+                                   "takeaway":  "If an exception occurs while executing a protected block, `try` stops the rest of the code and jumps to the appropriate `except` block."
+                               },
+        "target_statement":  "try:",
+        "focus_span":  "try:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "import_progress",
+                                "restore",
+                                "validation",
+                                "untrusted_input"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY50_L10_progress_dashboard_001",
+        "level":  10,
+        "title":  "Checking the `weak_concepts` value on the progress dashboard",
+        "concepts":  [
+                         "subscription",
+                         "literal",
+                         "assignment"
+                     ],
+        "reading_goal":  "Read the flow that finds a dict item, such as the key inside the brackets, and returns the list of values associated with that key.",
+        "code":  "dashboard = {\n    \"total_cards\": 973,\n    \"seen_cards\": 120,\n    \"accuracy\": 0.78,\n    \"weak_concepts\": [\"validation\", \"dict\"],\n}\nprint(dashboard[\"weak_concepts\"])",
+        "question_type":  "output_prediction",
+        "question":  "What are the results of querying the `weak_concepts` key in the dashboard?",
+        "choices":  [
+                        "[\"validation\", \"dict\"]",
+                        "\"weak_concepts\"",
+                        "0.78",
+                        "120"
+                    ],
+        "answer":  "[\"validation\", \"dict\"]",
+        "explanation":  "1) Find the `weak_concepts` key in the dashboard. 2) The associated value is a list containing the strings “validation” and “dict.” 3) A dictionary key lookup returns the entire value. 4) Therefore, the output is also a list of two strings.",
+        "side_card_ids":  [
+                              "PYV102_A9_RUNTIME_PROGRESS_DASHBOARD"
+                          ],
+        "project_context":  "It links to a progress dashboard that summarizes the number of cards studied, the accuracy rate, and areas needing improvement on a single screen to help the learner decide on their next learning steps.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "대괄호 안 key와 같은 dict 항목을 찾아 그 key에 연결된 value 리스트를 반환하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping[key]` returns the value associated with the specified key in a dict.",
+                                    "how_to_read":  "Find the `weak_concepts` key among the key-value pairs in the dashboard and read the value to the right of the colon.",
+                                    "key_point":  "The result is not the key string itself inside the square brackets, but rather the value that the key points to.",
+                                    "common_mistake":  "It is easy to assume that the lookup expression returns the string `weak_concepts` itself."
+                                },
+        "teaching_example":  {
+                                 "code":  "report = {\"weak\": [\"dict\", \"json\"]}\nprint(report[\"weak\"])",
+                                 "walkthrough":  "A list of two strings, which are the values of the weak key, is returned."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Find the `weak_concepts` key in the dashboard. 2) The associated value is a list containing the strings “validation” and “dict.” 3) A dictionary key lookup returns the entire value. 4) Therefore, the output is also a list of two strings.",
+                                   "why_correct":  "The value associated with the `weak_concepts` key is that list.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "\"weak_concepts\"",
+                                                               "why_wrong":  "That string is the key used for lookup, and the result is the associated value.",
+                                                               "misread_step":  "It is easy to assume that the lookup expression returns the string `weak_concepts` itself."
+                                                           },
+                                   "takeaway":  "Read dict lookup in the order **identify key → find matching entry → return value**."
+                               },
+        "target_statement":  "dashboard[\"weak_concepts\"]",
+        "focus_span":  "dashboard[\"weak_concepts\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "learning_product_context",
+        "coverage_topics":  [
+                                "progress_dashboard",
+                                "learning_report",
+                                "weak_concepts",
+                                "score_history"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY50_L10_privacy_of_progress_001",
+        "level":  10,
+        "title":  "Enter the progress transmission branch only when the user consents.",
+        "concepts":  [
+                         "if_statement",
+                         "call",
+                         "assignment",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read the flow: first evaluate `consent_given`, and if it is False, skip the entire indented upload body.",
+        "code":  "uploaded = []\nconsent_given = False\nprogress = {\"wrong_answers\": 4}\n\nif consent_given:\n    uploaded.append(progress)\n\nprint(len(uploaded))",
+        "question_type":  "output_prediction",
+        "question":  "What is the final output when `consent_given` is False?",
+        "choices":  [
+                        "0",
+                        "1",
+                        "4",
+                        "False"
+                    ],
+        "answer":  "0",
+        "explanation":  "1) The current value of `consent_given` is `False`. 2) The `if` condition evaluates to `falsy`. 3) `uploaded.append` is not executed. 4) `uploaded` is an empty list, so the result of `len` is 0.",
+        "side_card_ids":  [
+                              "PYV159_A1_SECURITY_SETTINGS_SECRET_FLOW"
+                          ],
+        "project_context":  "This ties into a privacy design that ensures explicit consent and adherence to the principle of data minimization before sending personal data—such as incorrect answers, scores, and learning patterns—to external parties.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "consent_given을 먼저 평가하고 False이면 들여쓴 업로드 본문 전체를 건너뛰는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "An `if` statement executes the indented body only when the condition is truthy.",
+                                    "how_to_read":  "Check both the current value of `consent_given` and the indentation scope of the upload call.",
+                                    "key_point":  "In `privacy guard`, checking the consent status occurs before external transmission in the execution sequence.",
+                                    "common_mistake":  "It’s easy to assume that the `append` statement below will eventually execute even if the condition is `False`."
+                                },
+        "teaching_example":  {
+                                 "code":  "sent = []\nallowed = False\nif allowed:\n    sent.append(\"record\")\nprint(len(sent))",
+                                 "walkthrough":  "Since `allowed` is False, the `if` block is skipped, so the length is 0."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The current value of `consent_given` is `False`. 2) The `if` condition evaluates to `falsy`. 3) `uploaded.append` is not executed. 4) `uploaded` is an empty list, so the result of `len` is 0.",
+                                   "why_correct":  "Since the consent condition is False, the `append` statement, which represents an upload, is not executed.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "1",
+                                                               "why_wrong":  "For the value to become 1, the `if` body must execute and actually add progress.",
+                                                               "misread_step":  "It’s easy to assume that the `append` statement below will eventually execute even if the condition is `False`."
+                                                           },
+                                   "takeaway":  "An `if guard` evaluates the condition first and executes the protected action only if it is True."
+                               },
+        "target_statement":  "if consent_given:",
+        "focus_span":  "if consent_given:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "security_and_auth",
+        "coverage_topics":  [
+                                "privacy",
+                                "progress_data",
+                                "consent",
+                                "data_minimization"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    }
 ]

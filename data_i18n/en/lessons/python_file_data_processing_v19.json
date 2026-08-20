@@ -1,472 +1,979 @@
 [
-  {
-    "id": "PY19_L06_csv_dictreader_001",
-    "level": 6,
-    "title": "Reading with CSV DictReader",
-    "concepts": [
-      "for",
-      "import",
-      "print",
-      "csv",
-      "DictReader",
-      "file",
-      "row"
-    ],
-    "reading_goal": "Understand the code that reads a CSV file as a row-based dictionary.",
-    "code": "import csv\n\nwith open(\"items.csv\", \"r\", encoding=\"utf-8\", newline=\"\") as f:\n    reader = csv.DictReader(f)\n    for row in reader:\n        print(row[\"title\"])",
-    "question_type": "meaning_choice",
-    "question": "What are the features of `csv.DictReader`?",
-    "choices": [
-      "Compress the file into a ZIP file",
-      "Reads only JSONL",
-      "Reads each row as if it were a dictionary based on column names",
-      "Convert images to text"
-    ],
-    "answer": "Reads each row as if it were a dictionary based on column names",
-    "explanation": "DictReader reads each line as a dictionary, using the header in the first row as the key. CSV DictReader is a tool that reads each line of a CSV file as a dictionary. Since the column names serve as the keys and the values in each cell serve as the values, you must verify which column you are referring to in your code.",
-    "side_card_ids": [
-      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
-    ],
-    "project_context": "This is the default pattern used when reading doc_master.csv, registry, and audit TSV/CSV files."
-  },
-  {
-    "id": "PY19_L06_tsv_delimiter_001",
-    "level": 6,
-    "title": "Reading the TSV Delimiter",
-    "concepts": [
-      "import",
-      "print",
-      "tsv",
-      "delimiter",
-      "csv",
-      "file"
-    ],
-    "reading_goal": "Understand how to read a tab-delimited TSV file using the csv module.",
-    "code": "import csv\n\nwith open(\"nodes.tsv\", \"r\", encoding=\"utf-8\", newline=\"\") as f:\n    reader = csv.DictReader(f, delimiter=\"\\t\")\n    rows = list(reader)\n\nprint(len(rows))",
-    "question_type": "meaning_choice",
-    "question": "What does `delimiter='\\t'` mean?",
-    "choices": [
-      "Use a comma as the column separator.",
-      "Delete the file",
-      "Use a tab character as the column separator",
-      "Remove all tabs"
-    ],
-    "answer": "Use a tab character as the column separator",
-    "explanation": "TSV stands for tab-separated values. With delimiter=\"\\t\", DictReader uses a tab as the column boundary and reads the first line as headers. A comma inside a value does not split a column because it is not the delimiter, but a value containing a tab or line break still needs correct CSV quoting rules.",
-    "side_card_ids": [
-      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
-    ],
-    "project_context": "This is a piece of code that frequently appears when reading KG candidate/review/mapping TSV files."
-  },
-  {
-    "id": "PY19_L07_jsonl_stream_001",
-    "level": 7,
-    "title": "Reading JSONL Line by Line",
-    "concepts": [
-      "if",
-      "for",
-      "import",
-      "print",
-      "continue",
-      "jsonl",
-      "streaming",
-      "json",
-      "large_file"
-    ],
-    "reading_goal": "I'm reading some code that processes large JSONL files without loading them all into memory at once.",
-    "code": "import json\n\nwith open(\"chunks.jsonl\", \"r\", encoding=\"utf-8\") as f:\n    for line in f:\n        if not line.strip():\n            continue\n        item = json.loads(line)\n        print(item[\"chunk_id\"])",
-    "question_type": "meaning_choice",
-    "question": "What are the advantages of the \"for line in f\" approach?",
-    "choices": [
-      "Always reads the entire file at once",
-      "Automatically corrects JSON",
-      "Reads the file line by line to reduce memory usage",
-      "Block the network"
-    ],
-    "answer": "Reads the file line by line to reduce memory usage",
-    "explanation": "Iterating over the file object reads one line at a time instead of creating one string for the entire file as read_text would. The code skips blank lines and parses each other line with json.loads. However, one invalid JSON line stops this entire loop; continuing or resuming requires a try/except that records the line number and error.",
-    "side_card_ids": [
-      "PYV158_A1_JSON_FLOW"
-    ],
-    "project_context": "These are practical patterns needed when processing JSONL files containing 70k+ chunks or node/edge candidates."
-  },
-  {
-    "id": "PY19_L07_write_jsonl_001",
-    "level": 7,
-    "title": "Reading a JSONL Storage Loop",
-    "concepts": [
-      "for",
-      "import",
-      "jsonl",
-      "write",
-      "ensure_ascii",
-      "file"
-    ],
-    "reading_goal": "Read the code that saves a list of dictionaries to a JSONL file.",
-    "code": "import json\n\nrows = [{\"id\": \"a1\", \"label\": \"LiDAR\"}, {\"id\": \"a2\", \"label\": \"Radar\"}]\n\nwith open(\"nodes.jsonl\", \"w\", encoding=\"utf-8\") as f:\n    for row in rows:\n        f.write(json.dumps(row, ensure_ascii=False) + \"\\n\")",
-    "question_type": "meaning_choice",
-    "question": "Which of the following is the closest reason for using `ensure_ascii=False`?",
-    "choices": [
-      "I want to compress a file",
-      "I always try to translate into English",
-      "To store non-ASCII characters, such as Hangul, in a way that is easy to read,",
-      "To remove line breaks"
-    ],
-    "answer": "To store non-ASCII characters, such as Hangul, in a way that is easy to read,",
-    "explanation": "ensure_ascii=False writes non-ASCII characters directly instead of representing them with \\uXXXX escapes. Together with UTF-8 encoding, Korean remains human-readable. A newline after each row completes one JSONL record. Because \"w\" mode truncates an existing nodes.jsonl first, confirm the overwrite policy when a job is supposed to append or resume.",
-    "side_card_ids": [
-      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
-    ],
-    "project_context": "When saving Korean technical documents, the \"chunk,\" \"node label,\" and \"evidence snippet\" are important."
-  },
-  {
-    "id": "PY19_L08_encoding_fallback_001",
-    "level": 8,
-    "title": "Reading Encoding Fallback",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "encoding",
-      "utf8",
-      "cp949",
-      "try_except"
-    ],
-    "reading_goal": "Understand the code that re-reads the data in CP949 if the UTF-8 conversion fails.",
-    "code": "def read_text_fallback(path):\n    try:\n        return path.read_text(encoding=\"utf-8\")\n    except UnicodeDecodeError:\n        return path.read_text(encoding=\"cp949\")",
-    "question_type": "meaning_choice",
-    "question": "What should you do if a UnicodeDecodeError occurs?",
-    "choices": [
-      "Delete the file",
-      "It always returns an empty string.",
-      "Reread using CP949 encoding",
-      "Start the server"
-    ],
-    "answer": "Reread using CP949 encoding",
-    "explanation": "The code retries with cp949 only after UTF-8 decoding fails. This can help with older Korean Windows files, but a file in another encoding may decode as incorrect characters under cp949 without raising an error. Prefer encoding metadata or a verified detection result, and record whenever fallback is used to avoid silent data corruption.",
-    "side_card_ids": [
-      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
-    ],
-    "project_context": "Encoding issues frequently occur in data from public institutions, as well as in text extracted from CSV, HWP, and PDF files."
-  },
-  {
-    "id": "PY19_L08_path_join_mkdir_001",
-    "level": 8,
-    "title": "Reading About Path Concatenation and Folder Creation",
-    "concepts": [
-      "import",
-      "pathlib",
-      "mkdir",
-      "path_join",
-      "directory"
-    ],
-    "reading_goal": "Read the code that creates an output folder and constructs the file path.",
-    "code": "from pathlib import Path\n\nout_dir = Path(\"derived\") / \"clean\" / \"inbox\"\nout_dir.mkdir(parents=True, exist_ok=True)\nout_file = out_dir / \"manifest.jsonl\"",
-    "question_type": "meaning_choice",
-    "question": "What does \"parents=True\" mean?",
-    "choices": [
-      "Delete the parent folder",
-      "Set the file to read-only",
-      "They are created together even without an intermediate folder",
-      "Convert the path to a string only"
-    ],
-    "answer": "They are created together even without an intermediate folder",
-    "explanation": "The / operator on Path combines path components for the current operating system. parents=True creates missing parents such as derived and clean, while exist_ok=True suppresses FileExistsError when the target directory already exists. It still fails if an ordinary file occupies that path, and assigning out_file creates only a path object, not the file.",
-    "side_card_ids": [
-      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
-    ],
-    "project_context": "It is often used when automatically creating output folders such as \"derived,\" \"tmp,\" and \"reports.\""
-  },
-  {
-    "id": "PY19_L08_glob_sort_001",
-    "level": 8,
-    "title": "Reading and Sorting the Results of `glob`",
-    "concepts": [
-      "for",
-      "import",
-      "print",
-      "glob",
-      "sort",
-      "pathlib",
-      "deterministic"
-    ],
-    "reading_goal": "I'm reading some code that sorts a list of files so that they are always processed in the same order.",
-    "code": "from pathlib import Path\n\nfiles = sorted(Path(\"data/lessons\").glob(\"*.json\"))\nfor path in files:\n    print(path.name)",
-    "question_type": "meaning_choice",
-    "question": "Why add \"sorted\"?",
-    "choices": [
-      "To sort and modify the contents of the file",
-      "To delete the JSON",
-      "To ensure a consistent processing order,",
-      "To change the file extension"
-    ],
-    "answer": "To ensure a consistent processing order,",
-    "explanation": "Since the order provided by the file system is not always guaranteed to be as intended, sorting can be useful. `glob` finds a list of files that match a pattern, and `sort` fixes the order of that list. Because the results of file-processing code can vary depending on the order, whether or not to sort is important.",
-    "side_card_ids": [
-      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
-    ],
-    "project_context": "It is important to standardize the sequence of verifying lesson files, merging chunk parts, and performing clean pack processing."
-  },
-  {
-    "id": "PY19_L09_sha256_file_001",
-    "level": 9,
-    "title": "Reading a File's SHA256 Hash",
-    "concepts": [
-      "for",
-      "import",
-      "print",
-      "sha256",
-      "hash",
-      "file",
-      "integrity"
-    ],
-    "reading_goal": "Understand the code that reads a file in chunks and calculates its hash.",
-    "code": "import hashlib\n\nh = hashlib.sha256()\nwith open(\"pack.zip\", \"rb\") as f:\n    for block in iter(lambda: f.read(1024 * 1024), b\"\"):\n        h.update(block)\n\nprint(h.hexdigest())",
-    "question_type": "meaning_choice",
-    "question": "Why open the file with rb?",
-    "choices": [
-      "To automatically translate Korean",
-      "I want to read the file as text only",
-      "I'm trying to read it in binary mode to calculate the exact byte hash",
-      "I want to convert it to JSON"
-    ],
-    "answer": "I'm trying to read it in binary mode to calculate the exact byte hash",
-    "explanation": "SHA-256 consumes bytes, so rb mode lets the loop feed the file's actual bytes to h in blocks without newline conversion or character decoding. Matching digests are strong evidence against accidental changes. A hash alone does not authenticate a source, however, because an attacker may replace both the file and an untrusted digest; use a signature or trusted digest channel for authenticity.",
-    "side_card_ids": [
-      "PYV160_A1_FILE_PATH_ENCODING_FLOW",
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "It is used to verify file integrity when splitting, moving, or removing duplicates from ZIP files."
-  },
-  {
-    "id": "PY19_L09_zip_extract_001",
-    "level": 9,
-    "title": "Reading the ZIP extraction code",
-    "concepts": [
-      "import",
-      "zipfile",
-      "extract",
-      "archive",
-      "path"
-    ],
-    "reading_goal": "Read the code that extracts a ZIP file to a specified folder.",
-    "code": "from pathlib import Path\nfrom zipfile import ZipFile\n\nzip_path = Path(\"pack.clean.zip\")\nout_dir = Path(\"tmp/unpacked\")\nout_dir.mkdir(parents=True, exist_ok=True)\n\nwith ZipFile(zip_path) as zf:\n    zf.extractall(out_dir)",
-    "question_type": "meaning_choice",
-    "question": "What does `extractall(out_dir)` mean?",
-    "choices": [
-      "Compress the `out_dir` directory into a ZIP file",
-      "Delete the zip file",
-      "Extract the files in the zip file to out_dir",
-      "Change the file name to a hash"
-    ],
-    "answer": "Extract the files in the zip file to out_dir",
-    "explanation": "extractall(out_dir) extracts every archive member under out_dir. Before extracting an untrusted zip, inspect names, expanded sizes, item counts, and links for path traversal, absolute paths, symlinks, or decompression abuse, and use a new isolated directory. Also check for collisions with existing files.",
-    "side_card_ids": [
-      "PYF95_A4_PATHLIB_PATH"
-    ],
-    "project_context": "This is the basic code needed to check the clean pack, upload pack, and split archives."
-  },
-  {
-    "id": "PY19_L09_manifest_create_001",
-    "level": 9,
-    "title": "Reading the Manifest File",
-    "concepts": [
-      "for",
-      "import",
-      "manifest",
-      "metadata",
-      "file",
-      "jsonl"
-    ],
-    "reading_goal": "Read the workflow for saving the list of files in a folder as JSONL metadata.",
-    "code": "import json\nfrom pathlib import Path\n\nroot = Path(\"data/raw\")\nwith open(\"manifest.jsonl\", \"w\", encoding=\"utf-8\") as out:\n    for path in sorted(root.rglob(\"*.pdf\")):\n        row = {\"path\": str(path), \"name\": path.name, \"size\": path.stat().st_size}\n        out.write(json.dumps(row, ensure_ascii=False) + \"\\n\")",
-    "question_type": "meaning_choice",
-    "question": "What does `path.stat().st_size` return?",
-    "choices": [
-      "Entire file contents",
-      "File extension",
-      "File size",
-      "Parent Folder Name"
-    ],
-    "answer": "File size",
-    "explanation": "`stat()` provides file metadata, and `st_size` represents the file size in bytes. The manifest can be viewed as a table that records the list of files and their metadata. Checking which files are included and how their paths and statuses are stored makes reprocessing easier.",
-    "side_card_ids": [
-      "PYV160_A1_FILE_PATH_ENCODING_FLOW",
-      "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
-    ],
-    "project_context": "This is a basic manifest pattern for cataloging collected files so they can be reprocessed later."
-  },
-  {
-    "id": "PY19_L09_safe_filename_001",
-    "level": 9,
-    "title": "Reading the File Name Normalization Function",
-    "concepts": [
-      "def",
-      "function",
-      "return",
-      "import",
-      "filename",
-      "normalization",
-      "regex",
-      "safe_path"
-    ],
-    "reading_goal": "Read the code that replaces dangerous characters in filenames with safe ones.",
-    "code": "import re\n\ndef safe_name(name):\n    name = name.strip()\n    name = re.sub(r\"[\\\\/:*?\\\"<>|]\", \"_\", name)\n    return name[:120]",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of `return name[:120]`?",
-    "choices": [
-      "Delete the first 120 files",
-      "Convert a string to a number",
-      "Prevents file names from becoming too long",
-      "Remove the file extension"
-    ],
-    "answer": "Prevents file names from becoming too long",
-    "explanation": "The first line removes surrounding whitespace, and re.sub replaces several characters forbidden by Windows with underscores. [:120] limits the number of Python characters, not the byte length or full path length. A complete policy must also handle empty names, reserved names such as CON, trailing dots or spaces, Unicode normalization, collisions after normalization, and extension preservation.",
-    "side_card_ids": [],
-    "project_context": "This is the defense code required when changing the PDF title, web title, or institutional resource name to a file name."
-  },
-  {
-    "id": "PY19_L10_resume_done_set_001",
-    "level": 10,
-    "title": "Reading a processing loop that can be resumed",
-    "concepts": [
-      "if",
-      "for",
-      "continue",
-      "resume",
-      "checkpoint",
-      "set",
-      "batch"
-    ],
-    "reading_goal": "I read the code that skips over IDs that have already been processed and continues from the breakpoint.",
-    "code": "done_ids = set(load_done_ids(\"done.txt\"))\n\nfor row in rows:\n    if row[\"id\"] in done_ids:\n        continue\n    process(row)\n    append_done_id(\"done.txt\", row[\"id\"])",
-    "question_type": "meaning_choice",
-    "question": "What does \"if row['id'] in done_ids: continue\" mean?",
-    "choices": [
-      "Only reprocess items that have already been processed",
-      "Delete all items",
-      "Skip items that have already been processed",
-      "Clear the contents of done.txt"
-    ],
-    "answer": "Skip items that have already been processed",
-    "explanation": "An ID already in done_ids is skipped with continue; otherwise process runs and the ID is recorded after success. Set membership is fast on average. If an external effect succeeds but writing the completion marker fails, a resumed job can repeat the effect. Make processing idempotent or commit results and completion state in one transaction, and control duplicate execution by concurrent workers.",
-    "side_card_ids": [
-      "PYV159_A1_CHECKPOINT_RESUME_FLOW"
-    ],
-    "project_context": "This pattern is necessary for time-consuming routines such as sharding, node passing, and file extraction."
-  },
-  {
-    "id": "PY19_L10_failed_list_001",
-    "level": 10,
-    "title": "Reading the Failure List Collection Pattern",
-    "concepts": [
-      "for",
-      "print",
-      "error_handling",
-      "failed_list",
-      "try_except",
-      "batch"
-    ],
-    "reading_goal": "I'm reading some code that collects only the files that failed during batch processing.",
-    "code": "failed = []\n\nfor path in files:\n    try:\n        convert(path)\n    except Exception as e:\n        failed.append({\"path\": str(path), \"error\": str(e)})\n\nprint(\"failed\", len(failed))",
-    "question_type": "meaning_choice",
-    "question": "Why can the entire loop continue even if this code fails?",
-    "choices": [
-      "Since errors never occur,",
-      "Since the \"files\" field is always empty,",
-      "Since we use try/except to catch errors in each file,",
-      "Since `convert` does not run,"
-    ],
-    "answer": "Since we use try/except to catch errors in each file,",
-    "explanation": "Each convert call is inside try/except, so an Exception records the path and error string in failed and then the loop continues. Catching every Exception identically can make the job repeat after systemic failures such as a full disk or invalid configuration. Catch expected per-item errors, stop on fatal conditions, and sanitize sensitive information from stored error strings.",
-    "side_card_ids": [
-      "PYV161_A1_BATCH_MEMORY_FLOW"
-    ],
-    "project_context": "These are essential operational patterns for PDF extraction, ZIP extraction, JSON parsing, and processing collected files."
-  },
-  {
-    "id": "PY19_L10_atomic_write_001",
-    "level": 10,
-    "title": "Read, Save, and Replace Temporary File",
-    "concepts": [
-      "import",
-      "atomic_write",
-      "temp_file",
-      "replace",
-      "safe_write"
-    ],
-    "reading_goal": "Understand the approach that minimizes damage to the original file even if a save operation fails.",
-    "code": "from pathlib import Path\n\npath = Path(\"result.json\")\ntmp = path.with_suffix(\".tmp\")\n\ntmp.write_text(\"{\\\"ok\\\": true}\", encoding=\"utf-8\")\ntmp.replace(path)",
-    "question_type": "meaning_choice",
-    "question": "What does `tmp.replace(path)` mean?",
-    "choices": [
-      "Delete the final file and finish up.",
-      "Just print the contents of tmp",
-      "Replace the temporary file with the final file location",
-      "Change the file extension to .jsonl"
-    ],
-    "answer": "Replace the temporary file with the final file location",
-    "explanation": "The code writes result.tmp completely, then replace renames it to the result.json location in the same directory. If the operating system and filesystem provide atomic rename, readers are less likely to observe a partial target file. Durable storage may still require flush/fsync and a directory fsync policy, and replace can fail because of permissions, filesystem behavior, or another process.",
-    "side_card_ids": [],
-    "project_context": "It can be used to securely store important manifests, progress reports, and verification results."
-  },
-  {
-    "id": "PY19_L10_large_file_count_001",
-    "level": 10,
-    "title": "Counting Lines in Large Files",
-    "concepts": [
-      "for",
-      "print",
-      "large_file",
-      "streaming",
-      "count",
-      "memory"
-    ],
-    "reading_goal": "I'm reading some code that counts the number of lines without loading the entire large file.",
-    "code": "count = 0\nwith open(\"chunks.jsonl\", \"r\", encoding=\"utf-8\") as f:\n    for _ in f:\n        count += 1\n\nprint(count)",
-    "question_type": "meaning_choice",
-    "question": "What is the advantage of this approach over `read_text().splitlines()`?",
-    "choices": [
-      "It always produces smaller results",
-      "Automatically compresses files",
-      "Do not load the entire file into memory",
-      "No encoding is required"
-    ],
-    "answer": "Do not load the entire file into memory",
-    "explanation": "Reading a large file all at once can consume a lot of memory. Processing it line by line, such as with `for _ in f`, allows you to count the number of lines more reliably. The streaming method keeps memory usage relatively constant even as the file size increases, making it suitable for batch processing. Therefore, the conclusion is: “Do not load the entire file into memory.”",
-    "side_card_ids": [
-      "PYV161_A1_BATCH_MEMORY_FLOW",
-      "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
-    ],
-    "project_context": "This is the kind of reading comprehension you need when reviewing large files, such as JSONL chunks that are several GB in size."
-  },
-  {
-    "id": "PY19_L10_file_exists_guard_001",
-    "level": 10,
-    "title": "Checking if a file exists (read)",
-    "concepts": [
-      "if",
-      "import",
-      "exists",
-      "guard",
-      "file",
-      "error_handling"
-    ],
-    "reading_goal": "Read the code that returns a clear error when there is no input file.",
-    "code": "from pathlib import Path\n\ninput_path = Path(\"input.jsonl\")\nif not input_path.exists():\n    raise FileNotFoundError(f\"missing input: {input_path}\")",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of this guard?",
-    "choices": [
-      "If the file does not exist, create it automatically",
-      "Always Mark as Successful",
-      "Fail early and clearly when there is no input file",
-      "Changing the File Extension"
-    ],
-    "answer": "Fail early and clearly when there is no input file",
-    "explanation": "If exists is false, the function stops early with a FileNotFoundError containing the path. However, exists is also true for a directory with that name, so use input_path.is_file() when a regular file is required. The file can also disappear after the check, so the actual open error still needs handling.",
-    "side_card_ids": [
-      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
-    ],
-    "project_context": "It's a habit of quickly identifying incorrect paths in a long pipeline."
-  }
+    {
+        "id":  "PY19_L06_csv_dictreader_001",
+        "level":  6,
+        "title":  "Reading the Process by Which CSV Headers Become Keys in a DictReader Row",
+        "concepts":  [
+                         "call",
+                         "with_statement",
+                         "for_statement",
+                         "subscription"
+                     ],
+        "reading_goal":  "`csv.DictReader` reads the resulting structure created by the header-based dict row.",
+        "code":  "import csv\nfrom io import StringIO\nf = StringIO(\u0027title,level\\nJSONL,6\\n\u0027)\nreader = csv.DictReader(f)\nrow = next(reader)\nprint(row[\u0027title\u0027])",
+        "question_type":  "meaning_choice",
+        "question":  "What are the characteristics of `csv.DictReader(f)`, which was read using `row`?",
+        "choices":  [
+                        "A line like a dictionary where you can look up values by header name",
+                        "A tuple that is always accessed only by integer indices",
+                        "Return the entire CSV as a single string",
+                        "Automatically convert all values to numbers"
+                    ],
+        "answer":  "A line like a dictionary where you can look up values by header name",
+        "explanation":  "1) The first line of `StringIO`, ``title,level``, is the header. 2) ``csv.DictReader(f)`` creates a reader that uses the header as the key name. 3) The next line, ``JSONL,6``, reads as ``{\u0027title\u0027:\u0027JSONL\u0027,\u0027level\u0027:\u00276\u0027}``. 4) ``row[\u0027title\u0027]`` retrieves the value using the column name.",
+        "side_card_ids":  [
+                              "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+                          ],
+        "project_context":  "This relates to safely reading specific columns in the learning log CSV by name rather than by column number.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "`csv.DictReader`가 헤더 기반 dict row를 만드는 결과 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`csv.DictReader` provides CSV rows not as a list containing only positions, but as a mapping with header names as keys.",
+                                    "how_to_read":  "Before creating a `reader`, check whether the first line is a header, and then see which value the subsequent `row[\u0027column_name\u0027]` access refers to.",
+                                    "key_point":  "Using `csv.DictReader(f)` lets you read values by column name, such as `row[\u0027title\u0027]`, which makes the meaning clearer than relying on column order.",
+                                    "common_mistake":  "Do not assume that DictReader automatically converts numeric strings to integers. By default, CSV field values are strings."
+                                },
+        "teaching_example":  {
+                                 "code":  "import csv\nfrom io import StringIO\nf = StringIO(\u0027name,score\\nA,9\\n\u0027)\nreader = csv.DictReader(f)\nrow = next(reader)\nprint(row[\u0027name\u0027])",
+                                 "walkthrough":  "The header `name` serves as a dictionary key, allowing you to look up the `A` in the first data row by name."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The first line of `StringIO`, ``title,level``, is the header. 2) ``csv.DictReader(f)`` creates a reader that uses the header as the key name. 3) The next line, ``JSONL,6``, reads as ``{\u0027title\u0027:\u0027JSONL\u0027,\u0027level\u0027:\u00276\u0027}``. 4) ``row[\u0027title\u0027]`` retrieves the value using the column name.",
+                                   "why_correct":  "Using `csv.DictReader(f)` lets you read values by column name, such as `row[\u0027title\u0027]`, which makes the meaning clearer than relying on column order.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Automatically convert all values to numbers",
+                                                               "why_wrong":  "DictReader provides column name mapping but does not automatically infer data types and convert them to numbers.",
+                                                               "misread_step":  "Check the correspondence between the header and the row key."
+                                                           },
+                                   "takeaway":  "`DictReader` reads CSV files as a **header name → value in each row** relationship, making the code’s meaning clear."
+                               },
+        "target_statement":  "csv.DictReader(f)",
+        "focus_span":  "csv.DictReader(f)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "CSV",
+                                "DictReader",
+                                "header",
+                                "dict row"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY19_L06_tsv_delimiter_001",
+        "level":  6,
+        "title":  "Reading the argument that specifies the TSV delimiter in the CSV module",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "literal"
+                     ],
+        "reading_goal":  "Explain that the `delimiter=\u0027\\t\u0027` keyword argument passes the tab delimiter of the TSV input to the reader.",
+        "code":  "import csv\nfrom io import StringIO\nf = StringIO(\u0027id\\ttitle\\n1\\tJSONL\\n2\\tCSV\\n\u0027)\nreader = csv.DictReader(f, delimiter=\u0027\\t\u0027)\nrows = list(reader)\nprint(len(rows))",
+        "question_type":  "concept_reading",
+        "question":  "`delimiter=\u0027\\t\u0027` Why is it difficult to read the TSV file as intended if [this] is removed?",
+        "choices":  [
+                        "Since DictReader uses commas as its default delimiters, you must explicitly specify tab delimiters, so",
+                        "Since TSV is a format that Python cannot read,",
+                        "Tabs are always handled as line breaks, so",
+                        "Since `delimiter` is an argument that limits the number of lines,"
+                    ],
+        "answer":  "Since DictReader uses commas as its default delimiters, you must explicitly specify tab delimiters, so",
+        "explanation":  "1) TSV text has columns separated by tab characters. 2) Specify `delimiter=\u0027\\t\u0027` in the DictReader call. 3) The reader splits fields using tabs instead of commas. 4) `list(reader)` materializes the parsed rows.",
+        "side_card_ids":  [
+                              "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+                          ],
+        "project_context":  "This relates to accurately reading reader settings for each format in a pipeline that mixes CSV and TSV training data.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "`delimiter=\u0027\\t\u0027` keyword argument가 TSV 입력의 탭 경계를 reader에 전달하는 의미를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A keyword argument passes a value to a specific option of a function by name.",
+                                    "how_to_read":  "Read this by comparing `DictReader`’s default comma-separated format with the tab-separated format specified in this code.",
+                                    "key_point":  "`delimiter=\u0027\\t\u0027` This reflects the fact that the input is TSV in the reader settings, causing it to split columns by tabs.",
+                                    "common_mistake":  "Do not assume that DictReader automatically detects tabs simply because the file extension is ``.tsv``. You must specify the delimiter."
+                                },
+        "teaching_example":  {
+                                 "code":  "import csv\nfrom io import StringIO\nf = StringIO(\u0027a\\tb\\n1\\t2\\n\u0027)\nrows = list(csv.DictReader(f, delimiter=\u0027\\t\u0027))\nprint(rows[0][\u0027b\u0027])",
+                                 "walkthrough":  "Since tabs are used as column delimiters, the second field becomes the value of the ``b`` key."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) TSV text has columns separated by tab characters. 2) Specify `delimiter=\u0027\\t\u0027` in the DictReader call. 3) The reader splits fields using tabs instead of commas. 4) `list(reader)` materializes the parsed rows.",
+                                   "why_correct":  "`delimiter=\u0027\\t\u0027` This reflects the fact that the input is TSV in the reader settings, causing it to split columns by tabs.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Since `delimiter` is an argument that limits the number of lines,",
+                                                               "why_wrong":  "The delimiter is a setting that defines field boundaries; it is not an option that limits the number of lines.",
+                                                               "misread_step":  "Align the actual delimiters in the input format with the reader settings."
+                                                           },
+                                   "takeaway":  "The CSV module can also read TSV files, but **the delimiter setting must match the input format**."
+                               },
+        "target_statement":  "delimiter=\u0027\\t\u0027",
+        "focus_span":  "delimiter=\u0027\\t\u0027",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "TSV",
+                                "delimiter",
+                                "DictReader",
+                                "tab"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY19_L07_jsonl_stream_001",
+        "level":  7,
+        "title":  "Read a JSONL file one line at a time with `for line in f`",
+        "concepts":  [
+                         "for_statement",
+                         "with_statement",
+                         "continue_statement"
+                     ],
+        "reading_goal":  "Read the execution flow that processes JSONL line by line by iterating directly over the file object.",
+        "code":  "import json\nfrom io import StringIO\n\nf = StringIO(\"{\\\"chunk_id\\\": 10}\\n\\n{\\\"chunk_id\\\": 11}\\n\")\nfor line in f:\n    if not line.strip():\n        continue\n    item = json.loads(line)\n    print(item[\"chunk_id\"])",
+        "question_type":  "multiple_choice",
+        "question":  "Which of the following is the most accurate way to read `for line in f:`?",
+        "choices":  [
+                        "Read one line at a time from `f` and store it in `line`, then repeat the process.",
+                        "Create a list from the entire file at once.",
+                        "Automatically corrects JSON errors.",
+                        "It always stops after reading just the first line."
+                    ],
+        "answer":  "Read one line at a time from `f` and store it in `line`, then repeat the process.",
+        "explanation":  "`f` behaves like a file object containing multiple lines. The `for` loop reads the next line from `f` one by one and assigns it to `line`. If the line is empty, it skips it using `continue`; otherwise, it converts the rest into a dictionary using `json.loads`. This is because the file object is an iterable, so `for` receives values line by line. A common source of confusion: creating a list of the entire file at once. The `for line in f` statement itself does not include a call that materializes the entire file into a list. Common misinterpretation: You must distinguish whether the iteration target is an iterator or whether a separate function is called to collect the entire contents. Iterating directly over a file object using a `for` loop allows you to process lines in order, making it well-suited for handling large text files in a streaming manner.",
+        "side_card_ids":  [
+                              "PYV158_A1_JSON_FLOW"
+                          ],
+        "project_context":  "The context involves sequentially processing large JSONL chunks, nodes, and edges without loading them all into memory at once.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "for_statement",
+        "reading_goal_internal":  "파일 객체를 직접 반복해 JSONL을 한 줄씩 처리하는 실행 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The `for` statement iterates over an iterable object, retrieving values one by one and assigning them to a variable, while repeatedly executing the body. When iterating over a file object, you typically receive strings one line at a time.",
+                                    "how_to_read":  "`in` Check what the right-hand side of the loop is outputting one by one, and follow through to the body to see what values are assigned to the variables in each cycle.",
+                                    "key_point":  "Memory optimization for large JSONL files refers to file processing, and the focus of the Python syntax is on the `for` statement that directly iterates over file objects.",
+                                    "common_mistake":  "It’s easy to assume that `for line in f` first converts the entire file into a list. However, the code does not include `list(f)` or `read()`; instead, it retrieves lines sequentially from the file iterator."
+                                },
+        "teaching_example":  {
+                                 "code":  "from io import StringIO\n\nf = StringIO(\"a\\nb\\n\")\nfor line in f:\n    print(line.strip())",
+                                 "walkthrough":  "It reads line a and line b sequentially from a StringIO object (such as a file) and prints them in each cycle."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`f` behaves like a file object containing multiple lines. The `for` loop reads lines from `f` one at a time and assigns them to `line`. If a line is empty, it skips it using `continue`; otherwise, it converts the rest into a dictionary using `json.loads`.",
+                                   "why_correct":  "This is because the file object is an iterable, so the `for` loop retrieves values one line at a time.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Create a list from the entire file at once.",
+                                                               "why_wrong":  "`for line in f` itself does not involve a call that materializes the entire expression as a list.",
+                                                               "misread_step":  "You must distinguish whether the iteration target is an iterator or whether the collection function is called separately."
+                                                           },
+                                   "takeaway":  "Iterating directly over a file object processes lines in order, which is useful for handling large text files in a streaming manner."
+                               },
+        "target_statement":  "for line in f:",
+        "focus_span":  "for line in f:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "JSONL",
+                                "streaming",
+                                "large_file",
+                                "line_iteration"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY19_L07_write_jsonl_001",
+        "level":  7,
+        "title":  "Pass `ensure_ascii=False` as a keyword argument to `json.dumps`",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "literal",
+                         "for_statement"
+                     ],
+        "reading_goal":  "Note that the named `ensure_ascii=False`s within the call brackets are keyword arguments of `json.dumps`, not separate variable assignments.",
+        "code":  "import json\nfrom io import StringIO\n\nrows = [{\"id\": \"n1\", \"label\": \"한글\"}]\nbuffer = StringIO()\nfor row in rows:\n    line = json.dumps(row, ensure_ascii=False)\n    buffer.write(line + \"\\n\")\nprint(\"한글\" in buffer.getvalue())",
+        "question_type":  "meaning_choice",
+        "question":  "`ensure_ascii=False` Which explanation reads this most accurately?",
+        "choices":  [
+                        "Pass the Boolean value \"False\" as the name of the `ensure_ascii` parameter in `json.dumps`.",
+                        "Create a new global variable called `ensure_ascii`",
+                        "Pass the string \u0027False\u0027 as a positional argument",
+                        "Automatically saves the JSONL file to disk"
+                    ],
+        "answer":  "Pass the Boolean value \"False\" as the name of the `ensure_ascii` parameter in `json.dumps`.",
+        "explanation":  "1) Check the list of arguments inside the parentheses of the `json.dumps` call. 2) After the first positional argument, `row`, comes ``ensure_ascii=False``. 3) On the left side of the equals sign is the parameter name `ensure_ascii`, and on the right is the Boolean value `False`. 4) Therefore, `False` is passed to that parameter as a keyword argument.",
+        "side_card_ids":  [
+                              "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+                          ],
+        "project_context":  "It connects to the data storage flow that serializes records containing Korean text into human-readable JSONL.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "호출 괄호 안에서 이름이 붙은 `ensure_ascii=False`가 별도 변수 대입이 아니라 json.dumps의 keyword argument라는 점을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A keyword argument is a syntax in which you explicitly specify the names of the parameters to be passed to a function and provide their values.",
+                                    "how_to_read":  "Separate the name on the left side of the equals sign from the value on the right, and verify that the entire expression is enclosed within the function call parentheses.",
+                                    "key_point":  "A `False` without quotes is passed to the `ensure_ascii` parameter to preserve Korean characters as readable text.",
+                                    "common_mistake":  "It is easier to read the assignment of a new variable outside the call as ``ensure_ascii=False``."
+                                },
+        "teaching_example":  {
+                                 "code":  "import json\nrow = {\"name\": \"서울\"}\ntext = json.dumps(row, ensure_ascii=False)\nprint(\"서울\" in text)",
+                                 "walkthrough":  "Since `False` is passed as a name to `ensure_ascii`, the character for “Seoul” remains unchanged within the JSON string."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Check the list of arguments inside the parentheses of the `json.dumps` call. 2) After the first positional argument, `row`, comes ``ensure_ascii=False``. 3) On the left side of the equals sign is the parameter name `ensure_ascii`, and on the right is the Boolean value `False`. 4) Therefore, `False` is passed to that parameter as a keyword argument.",
+                                   "why_correct":  "Since it appears in the form `name=value` within function call parentheses, it is a keyword argument, and the value is the Boolean `False`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Create a new global variable called `ensure_ascii`",
+                                                               "why_wrong":  "Since this equals sign is within the argument list of a call, it is not an independent assignment statement.",
+                                                               "misread_step":  "First, check where the equals sign is located—specifically, whether it is inside the parentheses of a function call."
+                                                           },
+                                   "takeaway":  "Read a keyword argument in the order **identify the call → identify the parameter name → evaluate the value on the right → pass it by name**."
+                               },
+        "target_statement":  "ensure_ascii=False",
+        "focus_span":  "ensure_ascii=False",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "jsonl",
+                                "json.dumps",
+                                "ensure_ascii",
+                                "unicode",
+                                "line_output"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY19_L08_encoding_fallback_001",
+        "level":  8,
+        "title":  "Reading the cp949 fallback after a UnicodeDecodeError",
+        "concepts":  [
+                         "except_clause",
+                         "try_statement",
+                         "call",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "If the first call to `decode` raises a specific exception, execution moves to `typed except` and reads the sequence of decoding again with a different encoding.",
+        "code":  "raw = \"한글\".encode(\"cp949\")\ntry:\n    text = raw.decode(\"utf-8\")\nexcept UnicodeDecodeError:\n    text = raw.decode(\"cp949\")",
+        "question_type":  "multiple_choice",
+        "question":  "If the first `raw.decode(\"utf-8\")` raises a `UnicodeDecodeError`, what happens next?",
+        "choices":  [
+                        "`raw.decode(\"cp949\")`",
+                        "The program must terminate immediately.",
+                        "`raw.encode(\"utf-8\")`",
+                        "`text = None`"
+                    ],
+        "answer":  "`raw.decode(\"cp949\")`",
+        "explanation":  "If a `UnicodeDecodeError` occurs during the first call to `decode`, the normal flow of the `try` block is interrupted. The `except` clause with the same type is selected, and the `raw.decode(\"cp949\")` inside it is executed. This is because a typed `except` clause redirects execution to the corresponding handling block when the specified exception type occurs. Commonly Confused Incorrect Answer: “The program must terminate immediately.” Since this exception is handled by the typed `except` clause immediately below, a handling path exists. Point of misinterpretation: This occurs when the occurrence of an exception and an unhandled exception are treated as the same situation. The fallback code is read in the following order: **first attempt → specific exception occurs → matching `except` → second attempt**.",
+        "side_card_ids":  [
+                              "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+                          ],
+        "project_context":  "This connects to code that checks the encoding fallback process when reading Korean data—such as CSV files or extracted text from public institutions—that is not in UTF-8.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "except_clause",
+        "reading_goal_internal":  "첫 decode 호출이 특정 예외를 만들면 실행이 typed except로 이동하고 다른 인코딩으로 다시 decode하는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`except UnicodeDecodeError:` is a typed except clause that executes only when a `UnicodeDecodeError` occurs within the try block.",
+                                    "how_to_read":  "It reads as follows: First, check whether the first decode inside the `try` block succeeds; if it fails and the corresponding exception is raised, skip the rest of the normal flow of the `try` block and proceed to this `except` block.",
+                                    "key_point":  "The key to fallback is not “always use cp949,” but rather the execution order: a second interpretation is attempted **only when the first interpretation fails**.",
+                                    "common_mistake":  "It is easy to assume that the two `decode` statements are always executed in sequence. If the first `decode` succeeds, the `except` block is not executed."
+                                },
+        "teaching_example":  {
+                                 "code":  "raw = \"문서\".encode(\"cp949\")\ntry:\n    text = raw.decode(\"utf-8\")\nexcept UnicodeDecodeError:\n    text = raw.decode(\"cp949\")",
+                                 "walkthrough":  "The first UTF-8 decode fails, causing a `UnicodeDecodeError`, and the typed `except` clause catches this and executes the cp949 decode."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "If a ``UnicodeDecodeError`` error occurs during the first `decode` call, the normal flow of the `try` block is interrupted. The `except` clause with the same type is selected, and the ``raw.decode(\"cp949\")`` inside it is executed.",
+                                   "why_correct":  "This is because a `typed except` statement redirects execution to the corresponding handling block when the specified exception type occurs.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "The program must terminate immediately.",
+                                                               "why_wrong":  "Since this exception is handled in the `typed except` block immediately below, a handling path exists.",
+                                                               "misread_step":  "This is an example where an exception occurrence and an unhandled exception are treated as the same situation."
+                                                           },
+                                   "takeaway":  "The fallback code is executed in the following order: **first attempt → specific exception occurs → matching except clause → second attempt**."
+                               },
+        "target_statement":  "except UnicodeDecodeError:",
+        "focus_span":  "except UnicodeDecodeError:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "encoding fallback",
+                                "utf-8",
+                                "cp949",
+                                "UnicodeDecodeError"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY19_L08_path_join_mkdir_001",
+        "level":  8,
+        "title":  "Reading the `parents=True` keyword argument in `mkdir()`",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "attribute_access",
+                         "literal"
+                     ],
+        "reading_goal":  "The method call ``parents=True`` should be interpreted not as a simple assignment, but as a keyword argument passing `True` to the ``parents`` parameter.",
+        "code":  "from pathlib import Path\n\nout_dir = Path(\"derived\") / \"clean\" / \"inbox\"\nout_dir.mkdir(parents=True, exist_ok=True)\nout_file = out_dir / \"manifest.jsonl\"",
+        "question_type":  "multiple_choice",
+        "question":  "What does `parents=True` mean when passed to the `mkdir()` call?",
+        "choices":  [
+                        "Delete the parent folder",
+                        "Allow the creation of any necessary parent folders as well.",
+                        "Convert the target path to a string",
+                        "Set the file to read-only"
+                    ],
+        "answer":  "Allow the creation of any necessary parent folders as well.",
+        "explanation":  "The expression ``parents=True`` inside the call parentheses passes `True` to the ``parents`` parameter of ``mkdir()``. This option allows the necessary parent directories to be created as well. This is because ``parents`` is a keyword parameter in `pathlib`’s ``mkdir()`` that determines whether parent directories are created. A common source of confusion: Converting the target path to a string. This is not a call or parameter related to string conversion. Source of Misinterpretation: This occurs when the roles of the Path object and the mkdir options are confused. The ``name=value`` in the call is a **keyword argument that specifies a parameter name and passes a value**.",
+        "side_card_ids":  [
+                              "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+                          ],
+        "project_context":  "It is linked to code that automatically prepares directories for various stages of output, such as `derived`, `tmp`, and `reports`.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "메서드 호출 안 `parents=True`를 일반 대입이 아니라 `parents` parameter에 True를 전달하는 keyword argument로 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The `name=value` format inside the parentheses of a function or method call is a keyword argument, which allows you to specify a parameter name directly and pass a value to it.",
+                                    "how_to_read":  "Distinguish between the parameter name on the left side of the equals sign (`parents`) and the value to be passed on the right side (`True`).",
+                                    "key_point":  "`parents=True` specifies the behavior option for the `mkdir()` call; it is not a statement that assigns a value to a separate variable named `parents`.",
+                                    "common_mistake":  "It is easy to misread ``=`` inside the call parentheses as a regular assignment statement. In this context, it is a keyword argument."
+                                },
+        "teaching_example":  {
+                                 "code":  "from pathlib import Path\n\ncache_dir = Path(\"build\") / \"cache\" / \"images\"\ncache_dir.mkdir(parents=True, exist_ok=True)",
+                                 "walkthrough":  "`parents=True` passes `True` to the `parents` parameter of `mkdir()`, allowing the creation of any necessary parent directories."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The code inside the call parentheses `parents=True` passes `True` to the ``parents`` parameter of ``mkdir()``. This option allows the necessary parent directories to be created as well.",
+                                   "why_correct":  "This is because `parents` is a keyword parameter in pathlib’s `mkdir()` that determines whether to create the parent directory as well.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Convert the target path to a string",
+                                                               "why_wrong":  "This does not refer to calls or parameters related to string conversion.",
+                                                               "misread_step":  "This is an example of misinterpreting the roles of the Path object and the mkdir option."
+                                                           },
+                                   "takeaway":  "The ``name=value`` call is a **keyword argument that specifies parameter names to pass values**."
+                               },
+        "target_statement":  "out_dir.mkdir(parents=True, exist_ok=True)",
+        "focus_span":  "parents=True",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "pathlib",
+                                "mkdir",
+                                "parents",
+                                "output directory"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY19_L08_glob_sort_001",
+        "level":  8,
+        "title":  "Stabilizing the Order of Glob Processing with `sorted()`",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the sequence in which, during a nested call, the `glob` result is first created, then passed to `sorted()` to produce a new, sorted list.",
+        "code":  "from pathlib import Path\n\nfiles = sorted(Path(\"data/lessons\").glob(\"*.json\"))\nfor path in files:\n    print(path.name)",
+        "question_type":  "multiple_choice",
+        "question":  "What does the outer ``sorted(...)`` call directly do in this code?",
+        "choices":  [
+                        "Modify the contents of the JSON file",
+                        "Create a new list containing the sorted path entries obtained using `glob`.",
+                        "Delete all JSON files.",
+                        "Change the path extension"
+                    ],
+        "answer":  "Create a new list containing the sorted path entries obtained using `glob`.",
+        "explanation":  "The inner `glob` call creates a path iterable, and the outer ``sorted()`` returns a new list containing those items in sorted order. It does not modify the file contents themselves. This is because ``sorted()`` is a built-in function that takes an iterable and returns a new, sorted list. A common source of confusion: It modifies the contents of the JSON file. What is passed to ``sorted()`` is not the file contents, but an iterable of `Path` objects. Source of misinterpretation: This occurs when the expression inside the parentheses—which specifies what is being sorted—is not checked. Nested calls are read in the following order: **inner result → outer function input → outer return value**.",
+        "side_card_ids":  [
+                              "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+                          ],
+        "project_context":  "This relates to the code that ensures the order of input files remains consistent each time during lesson validation, chunk merging, and clean pack processing.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "중첩 호출에서 glob 결과가 먼저 만들어지고 그 iterable이 `sorted()`에 들어가 정렬된 새 리스트가 되는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`sorted(iterable)` is a function call that returns a **new list** with the items of the iterable sorted.",
+                                    "how_to_read":  "First, check what the iterable inside the parentheses is, and then read that the list resulting from applying the sort operation to those items becomes the value at the call site.",
+                                    "key_point":  "The purpose of using `sorted()` here is not to modify the file’s contents, but to **reliably determine the order in which the file is processed**.",
+                                    "common_mistake":  "`sorted()` It is easy to assume that this modifies the source file itself or even reorders the file’s contents. What this call actually handles is the order of the path entries."
+                                },
+        "teaching_example":  {
+                                 "code":  "from pathlib import Path\n\npaths = [Path(\"b.json\"), Path(\"a.json\")]\nordered = sorted(paths)",
+                                 "walkthrough":  "A new list is created that sorts the two `Path` objects by name, so `a.json` appears before `b.json`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The inner `glob` call creates an iterable of paths, and the outer `sorted()` returns a new list with those items sorted. It does not modify the file contents themselves.",
+                                   "why_correct":  "This is because `sorted()` is a built-in function that takes an iterable and returns a new, sorted list.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Modify the contents of the JSON file",
+                                                               "why_wrong":  "What is passed to `sorted()` is not the contents of a file, but an iterable of `Path` objects.",
+                                                               "misread_step":  "This is a case where the expression in parentheses was not checked to determine what was being sorted."
+                                                           },
+                                   "takeaway":  "Read nested calls in the order **inner result → input to outer function → outer return value**."
+                               },
+        "target_statement":  "files = sorted(Path(\"data/lessons\").glob(\"*.json\"))",
+        "focus_span":  "sorted(Path(\"data/lessons\").glob(\"*.json\"))",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "glob",
+                                "sorted",
+                                "deterministic order",
+                                "lesson files"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY19_L09_sha256_file_001",
+        "level":  9,
+        "title":  "Interpreting the rb mode for reading SHA-256 files",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "with_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the structure where the second positional argument of the `open` call specifies binary read mode.",
+        "code":  "import hashlib\n\nh = hashlib.sha256()\nwith open(\"pack.zip\", \"rb\") as f:\n    for block in iter(lambda: f.read(1024 * 1024), b\"\"):\n        h.update(block)\ndigest = h.hexdigest()",
+        "question_type":  "multiple_choice",
+        "question":  "What is the main reason for passing `\"rb\"`?",
+        "choices":  [
+                        "I want to read the file in binary mode to use the actual bytes for hashing",
+                        "I want to automatically translate the file names",
+                        "I want to convert ZIP to JSON",
+                        "To reduce the hash length to 8 characters"
+                    ],
+        "answer":  "I want to read the file in binary mode to use the actual bytes for hashing",
+        "explanation":  "In `open(\u0027pack.zip\u0027, \u0027rb\u0027)`, the second positional argument selects binary read mode. Then `f.read(...)` returns bytes that are passed to the hash update. SHA-256 is calculated from a byte sequence. Common wrong answer: to convert the ZIP to JSON. The open mode does not convert a serialization format. Misreading point: This happens when file read mode is confused with data conversion. Read file-hashing code as **path → binary mode → read bytes → accumulate digest**.",
+        "side_card_ids":  [
+                              "PYV160_A1_FILE_PATH_ENCODING_FLOW",
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "This is linked to an integrity check that uses SHA-256 to verify that the file contents have not changed before and after moving, splitting, or uploading a ZIP file.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "open 호출의 두 번째 positional argument가 binary read mode를 지정한다는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "Values passed by position—without a name—inside the parentheses of a function call are called positional arguments.",
+                                    "how_to_read":  "In `open(path, mode)`, let’s look at which parameters the first and second values correspond to, in order.",
+                                    "key_point":  "`rb` is a binary read mode that reads file bytes without decoding the text.",
+                                    "common_mistake":  "`b` It’s easy to assume that “backup” refers to a backup. Here, it refers to a binary."
+                                },
+        "teaching_example":  {
+                                 "code":  "with open(\"image.bin\", \"rb\") as f:\n    chunk = f.read(4)",
+                                 "walkthrough":  "Because of the second positional argument ``rb``, `image.bin` is read as bytes."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "In `open(\u0027pack.zip\u0027, \u0027rb\u0027)`, the second positional argument selects binary read mode. Subsequently, `f.read(...)` returns bytes, which are then used to update the hash.",
+                                   "why_correct":  "This is because SHA-256 is calculated using a byte sequence as input.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "I want to convert ZIP to JSON",
+                                                               "why_wrong":  "\"open mode\" does not convert the serialization format.",
+                                                               "misread_step":  "This is a case where the file-reading mode and data conversion were confused."
+                                                           },
+                                   "takeaway":  "Read file-hashing code as **path → binary mode → read bytes → accumulate digest**."
+                               },
+        "target_statement":  "with open(\"pack.zip\", \"rb\") as f:",
+        "focus_span":  "\"rb\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "SHA-256",
+                                "binary mode",
+                                "file hash",
+                                "integrity"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY19_L09_zip_extract_001",
+        "level":  9,
+        "title":  "Reading the target directory for `ZipFile.extractall()`",
+        "concepts":  [
+                         "call",
+                         "argument_passing",
+                         "with_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the call where the `extractall` method of the `ZipFile` instance takes `out_dir` as an argument and extracts the entire archive to that location.",
+        "code":  "from pathlib import Path\nfrom zipfile import ZipFile\n\nzip_path = Path(\"pack.clean.zip\")\nout_dir = Path(\"tmp/unpacked\")\nout_dir.mkdir(parents=True, exist_ok=True)\nwith ZipFile(zip_path) as zf:\n    zf.extractall(out_dir)",
+        "question_type":  "multiple_choice",
+        "question":  "What does `zf.extractall(out_dir)` mean?",
+        "choices":  [
+                        "Extract the items from the ZIP file into the out_dir directory",
+                        "Compress the `out_dir` into a ZIP file",
+                        "Delete the ZIP file",
+                        "Replace all filenames with hash values"
+                    ],
+        "answer":  "Extract the items from the ZIP file into the out_dir directory",
+        "explanation":  "`zf` refers to a ZIP archive, and `extractall(out_dir)` extracts all items from the archive to the specified path. This is because the `extractall` method is responsible for archive extraction. Common misconception: “Compressing out_dir into a ZIP file.” That function is for creating an archive, whereas the current method name is `extract`. Point of confusion: This occurs when compression and decompression are interpreted in reverse. When working with `archive` code, first verify **which object’s method it is**.",
+        "side_card_ids":  [
+                              "PYF95_A4_PATHLIB_PATH"
+                          ],
+        "project_context":  "This connects to a flow that extracts a clean pack or upload pack into a separate directory and validates its contents and manifest.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "ZipFile instance의 extractall 메서드가 out_dir을 받아 archive 전체를 해당 위치에 추출하는 호출을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`obj.method(arg)` is an expression that calls an object’s method while passing an argument.",
+                                    "how_to_read":  "Check the object to the left of the dot, the method name, and the role of the argument inside the parentheses, in that order.",
+                                    "key_point":  "`extractall(out_dir)` The `out_dir` is the destination directory where the extracted files will be placed.",
+                                    "common_mistake":  "It’s easy to assume that `extractall` compresses `out_dir` itself. On the contrary, it extracts the contents of the ZIP file into `out_dir`."
+                                },
+        "teaching_example":  {
+                                 "code":  "from zipfile import ZipFile\nfrom pathlib import Path\n\nwith ZipFile(\"sample.zip\") as archive:\n    archive.extractall(Path(\"unpacked\"))",
+                                 "walkthrough":  "Extract the contents of `sample.zip` into the `unpacked` directory."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`zf` refers to a ZIP archive, and `extractall(out_dir)` extracts all items from the archive to the specified directory.",
+                                   "why_correct":  "This is because the role of the `extractall` method is archive extraction.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Compress the `out_dir` into a ZIP file",
+                                                               "why_wrong":  "Its role is related to archive creation, and the current method name is `extract`.",
+                                                               "misread_step":  "This is an example of reading “compression” and “decompression” in reverse."
+                                                           },
+                                   "takeaway":  "The `archive` code first checks **which method of which object** it is."
+                               },
+        "target_statement":  "zf.extractall(out_dir)",
+        "focus_span":  "zf.extractall(out_dir)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "zipfile",
+                                "extractall",
+                                "archive",
+                                "path"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY19_L09_manifest_create_001",
+        "level":  9,
+        "title":  "Reading file size metadata with `Path.stat().st_size`",
+        "concepts":  [
+                         "attribute_access",
+                         "call",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Interpret the nested expression that reads the `st_size` attribute from the `stat result` object obtained via a method call.",
+        "code":  "from pathlib import Path\n\npath = Path(\"manifest.jsonl\")\nsize = path.stat().st_size",
+        "question_type":  "multiple_choice",
+        "question":  "What value does `st_size` represent?",
+        "choices":  [
+                        "File size",
+                        "Entire file content",
+                        "File extension",
+                        "Parent folder name"
+                    ],
+        "answer":  "File size",
+        "explanation":  "Read the `.st_size` attribute from the result of `path.stat()`. This value is an integer representing file size because `st_size` is the size-metadata field of the stat result. Common wrong answer: the full file contents. Contents require a separate read operation; `st_size` is a metadata number. Misreading point: This happens when file metadata is confused with file contents. Read manifest code as **create metadata object → look up the required attribute**.",
+        "side_card_ids":  [
+                              "PYV160_A1_FILE_PATH_ENCODING_FLOW",
+                              "PYV160_A1_DATA_INTEGRITY_JOIN_FLOW"
+                          ],
+        "project_context":  "This connects to the workflow of leaving metadata such as path, name, and size in the collected file manifest for use in reprocessing and integrity verification.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "attribute_access",
+        "reading_goal_internal":  "method call로 얻은 stat result 객체에서 st_size attribute를 읽는 중첩 표현식을 해석한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`obj.attr` is attribute access that reads the value of an object attribute.",
+                                    "how_to_read":  "First, evaluate the expression to the left of the dot to determine what kind of object it is, and then read that object’s attribute.",
+                                    "key_point":  "`path.stat()` This metadata object is created, and ``.st_size`` reads the file size value from that object.",
+                                    "common_mistake":  "It’s easy to assume that `st_size` returns the entire contents of the file. It is metadata for the file’s size."
+                                },
+        "teaching_example":  {
+                                 "code":  "from pathlib import Path\npath = Path(\"note.txt\")\nsize = path.stat().st_size",
+                                 "walkthrough":  "Read the `st_size` attribute from the `stat` result object to obtain the file size."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Read the `path.stat()` attribute from the result of `.st_size`. This value is an integer representing the file size.",
+                                   "why_correct":  "This is because `st_size` is the size metadata field in the stat result.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Entire file content",
+                                                               "why_wrong":  "The content is read via a separate read operation, and st_size is a metadata value.",
+                                                               "misread_step":  "This is an instance where file metadata and file contents were confused."
+                                                           },
+                                   "takeaway":  "The manifest code is read as **creating a metadata object → retrieving the required attributes**."
+                               },
+        "target_statement":  "size = path.stat().st_size",
+        "focus_span":  "path.stat().st_size",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "manifest",
+                                "metadata",
+                                "file size",
+                                "Path.stat"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY19_L09_safe_filename_001",
+        "level":  9,
+        "title":  "Limit the filename length with the slice `name[:120]`.",
+        "concepts":  [
+                         "slice",
+                         "return_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "Interpret the structure that limits the length of the returned string by reading the meaning of the omitted start value and the stop value of 120 in the string slice.",
+        "code":  "import re\n\ndef safe_name(name):\n    name = name.strip()\n    name = re.sub(r\"[\\\\/:*?\\\"\u003c\u003e|]\", \"_\", name)\n    return name[:120]\n\nresult = safe_name(\"  report?.pdf  \")",
+        "question_type":  "multiple_choice",
+        "question":  "`name[:120]` What is the main purpose of using [it]?",
+        "choices":  [
+                        "Prevent file names from becoming too long.",
+                        "Delete the first 120 files.",
+                        "Convert a string to a number",
+                        "Always remove file extensions."
+                    ],
+        "answer":  "Prevent file names from becoming too long.",
+        "explanation":  "`[:120]` It selects and returns only the first 120 characters of the string. This is because `slice stop 120` limits the return range. A common source of confusion: “Delete the first 120 files.” The target of the `slice` operation is the `name` string, not a list of files. Point of Misinterpretation: This occurs when the string slice is mistakenly interpreted as a file deletion operation. The slice operator first checks the **target sequence and the start/stop range**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This relates to the safeguard that limits excessively long names when converting web titles and PDF titles to local filenames.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "slice",
+        "reading_goal_internal":  "문자열 slice에서 시작 생략과 stop 120의 의미를 읽어 반환 문자열 길이를 제한하는 구조를 해석한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`sequence[start:stop]` is a slice from `start` up to, but not including, `stop`.",
+                                    "how_to_read":  "If “start” is omitted, it is understood to mean “from the beginning,” and “stop” is interpreted as excluding the end.",
+                                    "key_point":  "`name[:120]` It retains only the first 120 characters of the string.",
+                                    "common_mistake":  "It is easy to assume that `index` returns 121 characters, including the 120th character. However, the `stop` index is not included."
+                                },
+        "teaching_example":  {
+                                 "code":  "text = \"abcdef\"\nshort = text[:3]",
+                                 "walkthrough":  "Only the \"abc\" elements at indices 0, 1, and 2 are selected; index 3 is not included."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`[:120]` selects and returns up to 120 characters from the beginning of a string.",
+                                   "why_correct":  "This is because `slice stop 120` limits the return range.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Delete the first 120 files.",
+                                                               "why_wrong":  "The `slice` operation operates on a string representing a name, not a list of files.",
+                                                               "misread_step":  "This is an example of a string slice being misinterpreted as a file deletion operation."
+                                                           },
+                                   "takeaway":  "`slice` first checks the **target sequence and the start/stop range**."
+                               },
+        "target_statement":  "return name[:120]",
+        "focus_span":  "name[:120]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "filename",
+                                "slice",
+                                "normalization",
+                                "length limit"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY19_L10_resume_done_set_001",
+        "level":  10,
+        "title":  "Skip only the current iteration using `continue` on a row that has already been processed",
+        "concepts":  [
+                         "continue_statement",
+                         "for_statement",
+                         "if_statement",
+                         "membership_test"
+                     ],
+        "reading_goal":  "Track the execution order by skipping the statement below the current iteration where `continue` is executed and moving to the next item in the loop.",
+        "code":  "done_ids = {\"a\"}\nrows = [{\"id\": \"a\"}, {\"id\": \"b\"}]\nprocessed = []\n\nfor row in rows:\n    if row[\"id\"] in done_ids:\n        continue\n    processed.append(row[\"id\"])\n\nprint(processed)",
+        "question_type":  "meaning_choice",
+        "question":  "When the first row has id `\"a\"`, what happens immediately after `continue` executes?",
+        "choices":  [
+                        "Skip the `processed.append` in the first row and move on to the next row.",
+                        "Immediately terminates the entire `for` loop",
+                        "Add the first row to `processed`, then move on to the next row.",
+                        "Clear the `done_ids`"
+                    ],
+        "answer":  "Skip the `processed.append` in the first row and move on to the next row.",
+        "explanation":  "1) The first row is {\"id\": \"a\"}. 2) Since \"a\" is in `done_ids`, the `if` condition is True. 3) `continue` is executed. 4) The `processed.append(...)` statement in the same `for` block is not executed on the first iteration. 5) The `for` loop does not terminate and moves on to the second row.",
+        "side_card_ids":  [
+                              "PYV159_A1_CHECKPOINT_RESUME_FLOW"
+                          ],
+        "project_context":  "In time-consuming shard, node, and file processing, it is connected to a resume loop that skips IDs that have already been processed and continues processing from the next item.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "continue_statement",
+        "reading_goal_internal":  "continue가 실행된 현재 반복 회차의 아래 문장을 생략하고 반복문의 다음 항목으로 이동하는 실행 순서를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`continue` This sentence skips the remaining body of the current iteration and moves directly to the next iteration.",
+                                    "how_to_read":  "First, check the condition under which `continue` is executed; if the condition is true, the statements below `continue` in the same indented block are skipped in this iteration.",
+                                    "key_point":  "`continue` is different from `break`, which terminates the entire `for` loop. **It skips only the current iteration and continues processing the next item.**",
+                                    "common_mistake":  "It’s easy to assume that encountering `continue` ends the loop entirely. However, if there are subsequent items, the loop continues."
+                                },
+        "teaching_example":  {
+                                 "code":  "values = [1, 2, 3]\nseen = []\nfor value in values:\n    if value == 2:\n        continue\n    seen.append(value)\nprint(seen)",
+                                 "walkthrough":  "In the iteration where `value` is 2, `continue` skips `append`, so only 1 and 3 remain in `seen`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The first row is {\"id\": \"a\"}. 2) Since \"a\" is in `done_ids`, the `if` condition is True. 3) `continue` is executed. 4) The `processed.append(...)` statement in the same `for` block is not executed on the first iteration. 5) The `for` loop does not terminate and moves on to the second row.",
+                                   "why_correct":  "Since `continue` skips only the remaining body of the current iteration, it continues processing the next row without adding the first row.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Immediately terminates the entire `for` loop",
+                                                               "why_wrong":  "The statement that immediately terminates the entire loop is `break`, while `continue` moves to the next iteration.",
+                                                               "misread_step":  "Distinguish the scope of `continue` and `break` within loop control flow."
+                                                           },
+                                   "takeaway":  "`continue` is read as **\"Skip the code below in the current iteration → Continue the loop to the next item\"**."
+                               },
+        "target_statement":  "continue",
+        "focus_span":  "continue",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "resume",
+                                "checkpoint",
+                                "done_ids",
+                                "batch_processing"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY19_L10_failed_list_001",
+        "level":  10,
+        "title":  "Using the exception object caught in `except Exception as e` as `e`",
+        "concepts":  [
+                         "except_clause",
+                         "try_statement",
+                         "call",
+                         "assignment"
+                     ],
+        "reading_goal":  "The `as e` part of the `except` clause assigns a name to the currently caught exception object, and the flow reads how that name is used within the `except` block.",
+        "code":  "def convert(path):\n    if path == \"bad.pdf\":\n        raise ValueError(\"broken file\")\n    return \"ok\"\n\nfailed = []\nfor path in [\"good.pdf\", \"bad.pdf\"]:\n    try:\n        convert(path)\n    except Exception as e:\n        failed.append({\"path\": path, \"error\": str(e)})\n\nprint(failed[0][\"error\"])",
+        "question_type":  "meaning_choice",
+        "question":  "`except Exception as e:` What does the name ``e`` refer to?",
+        "choices":  [
+                        "Currently caught exception object",
+                        "Invalid file path string",
+                        "Entire list of \"failed\" entries",
+                        "Always a string Exception"
+                    ],
+        "answer":  "Currently caught exception object",
+        "explanation":  "1) good.pdf is processed normally. 2) bad.pdf raises a ValueError (\"broken file\"). 3) `except Exception as e:` catches this exception. 4) `as e` assigns the caught ValueError object to e. 5) The body of the code calls `str(e)` to retrieve the string \"broken file\".",
+        "side_card_ids":  [
+                              "PYV161_A1_BATCH_MEMORY_FLOW"
+                          ],
+        "project_context":  "This ties into the pattern of collecting predictable, item-by-item failures—along with their paths and error information—in batch processing tasks such as PDF extraction and JSON parsing.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "except_clause",
+        "reading_goal_internal":  "except의 `as e` 부분이 잡힌 현재 예외 객체에 이름을 붙이고 그 이름이 except 본문에서 사용되는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`except SomeError as e:` is a clause that catches the specified exception and binds the resulting exception object to the temporary name `e`.",
+                                    "how_to_read":  "Check what exception occurred in the `try` block, and if its type matches the `except` clause, proceed to the `except` block. If `as e` is present, the exception object can be referenced within the `except` block under the name `e`.",
+                                    "key_point":  "`e` is not a fixed string or an error code, but rather **the name of the exception object that was actually caught in this instance**.",
+                                    "common_mistake":  "It is easy to assume that `as e` automatically converts exceptions to strings. If a string is needed, a separate call such as `str(e)` is required."
+                                },
+        "teaching_example":  {
+                                 "code":  "try:\n    int(\"bad\")\nexcept ValueError as err:\n    message = str(err)\n    print(type(err).__name__)",
+                                 "walkthrough":  "The ValueError object created by `int()` is bound to `err` and can be used with `str(err)` and `type(err)` in the `except` block."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) good.pdf is processed normally. 2) bad.pdf raises a ValueError (\"broken file\"). 3) `except Exception as e:` catches this exception. 4) `as e` assigns the caught ValueError object to e. 5) The body of the code calls `str(e)` to retrieve the string \"broken file\".",
+                                   "why_correct":  "`as e` Since `` is a syntax used to name the exception object currently being handled, `e` refers to that object.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Invalid file path string",
+                                                               "why_wrong":  "The file path is pointed to by the loop variable `path`, and `e` points to the exception object caught by the `except` clause.",
+                                                               "misread_step":  "Read the loop variable `path` and the exception binding name `e` in the `except` clause separately."
+                                                           },
+                                   "takeaway":  "`except ... as name` The sequence is **catch the exception → bind the exception object to `name` → use `name` in the body**."
+                               },
+        "target_statement":  "except Exception as e:",
+        "focus_span":  "except Exception as e:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "exceptions_debugging",
+        "coverage_topics":  [
+                                "failed_list",
+                                "batch_processing",
+                                "error_capture",
+                                "conversion"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY19_L10_atomic_write_001",
+        "level":  10,
+        "title":  "Reading the call target and destination path in `tmp.replace(path)`",
+        "concepts":  [
+                         "call",
+                         "attribute_access",
+                         "argument_passing",
+                         "assignment"
+                     ],
+        "reading_goal":  "In `object.method(arg)`, separate the `tmp` Path object, its `replace` method, and the final path passed as the argument.",
+        "code":  "from pathlib import Path\n\npath = Path(\"result.json\")\ntmp = path.with_suffix(\".tmp\")\n\ntmp.write_text(\u0027{\"ok\": true}\u0027, encoding=\"utf-8\")\ntmp.replace(path)",
+        "question_type":  "meaning_choice",
+        "question":  "In `tmp.replace(path)`, what is the object on which the `replace` method is called?",
+        "choices":  [
+                        "tmp",
+                        "path",
+                        "Path Class",
+                        "String result.json"
+                    ],
+        "answer":  "tmp",
+        "explanation":  "1) `path` is the final `result.json` path. 2) `tmp` is the `result.tmp` path. 3) In `tmp.replace`, the `tmp` to the left of the dot is the method receiver. 4) The path inside the parentheses is the argument passed to `replace`. 5) Therefore, the object calling the `replace` method is `tmp`.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It is linked to a safe storage pattern in which manifests, progress, and verification results are first written to a temporary file and then moved to the final destination.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "`object.method(arg)` 형태에서 tmp Path 객체의 replace 메서드에 최종 path가 인자로 전달되는 구조를 분리해 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A method call, in the form `object.method(arguments)`, invokes a specific action provided by an object.",
+                                    "how_to_read":  "In `tmp.replace(path)`, read the expression by separating it as follows: `tmp` (to the left of the dot) is the called object, `replace` (to the right of the dot) is the method name, and `path` (inside the parentheses) is the argument passed to the method.",
+                                    "key_point":  "In this line, ``path`` is not the object calling the method, but rather **the destination argument passed to `replace`**.",
+                                    "common_mistake":  "`path.replace(tmp)` It’s easy to read the call direction in reverse. The object immediately to the left of the dot is the subject of the method call."
+                                },
+        "teaching_example":  {
+                                 "code":  "from pathlib import Path\nsource = Path(\"draft.tmp\")\ntarget = Path(\"draft.txt\")\nsource.replace(target)",
+                                 "walkthrough":  "The call target is `source`, and the target is the destination `Path` argument passed to `replace`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `path` is the final `result.json` path. 2) `tmp` is the `result.tmp` path. 3) In `tmp.replace`, the `tmp` to the left of the dot is the method receiver. 4) The path inside the parentheses is the argument passed to `replace`. 5) Therefore, the object calling the `replace` method is `tmp`.",
+                                   "why_correct":  "In the `object.method(...)` syntax, the `object` to the left of the dot is the target of the call, so the correct answer is `tmp`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "path",
+                                                               "why_wrong":  "A path is a destination argument placed inside the call parentheses, and the target of the method call is `tmp`, located to the left of the dot.",
+                                                               "misread_step":  "Read the code by separating the receiver to the left of the dot from the argument inside the parentheses."
+                                                           },
+                                   "takeaway":  "When reading a method call, break down the structure as follows: **target object → method name → arguments in parentheses**."
+                               },
+        "target_statement":  "tmp.replace(path)",
+        "focus_span":  "tmp.replace(path)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "atomic_write",
+                                "temp_file",
+                                "replace",
+                                "safe_write"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY19_L10_large_file_count_001",
+        "level":  10,
+        "title":  "Update the current count with `count += 1` on every line of the file",
+        "concepts":  [
+                         "augmented_assignment",
+                         "for_statement",
+                         "with_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "`count += 1` tracks the state change—reading the current value of `count`, adding 1, and storing the new value under the same name—at each iteration.",
+        "code":  "from io import StringIO\n\ncount = 0\nstream = StringIO(\"a\\nb\\nc\\n\")\nfor _ in stream:\n    count += 1\n\nprint(count)",
+        "question_type":  "output_prediction",
+        "question":  "When there are three lines in `stream`, what is the value of `count` after the loop ends?",
+        "choices":  [
+                        "0",
+                        "1",
+                        "2",
+                        "3"
+                    ],
+        "answer":  "3",
+        "explanation":  "1) Before the loop, `count` is 0. 2) In the first iteration, `0 + 1` results in 1, which is stored in `count`. 3) In the second iteration, `count` becomes 2. 4) In the third iteration, `count` becomes 3. 5) After the loop ends, `count` is 3.",
+        "side_card_ids":  [
+                              "PYV161_A1_BATCH_MEMORY_FLOW",
+                              "PYV161_A1_COUNT_FILTER_AGGREGATION_FLOW"
+                          ],
+        "project_context":  "This relates to a pattern where, while sequentially reading files—such as several GB of JSONL—that are too large to load entirely into memory, only the number of records is counted.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "augmented_assignment",
+        "reading_goal_internal":  "`count += 1`이 현재 count 값을 읽어 1을 더한 뒤 같은 이름에 새 값을 저장하는 상태 변화를 반복 회차마다 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`count += 1` is a compound assignment that adds 1 to the current value of `count` and stores the result back in `count`.",
+                                    "how_to_read":  "It reads: \"Each time this statement is executed, it first checks the **current value** of `count` and then stores the new value—which is the original value plus 1—under the same name.\"",
+                                    "key_point":  "Since it is inside a loop, it does not increase just once, but increases by 1 **each time the body is executed**.",
+                                    "common_mistake":  "It is easy to assume that `+= 1` simply adds 1 to the initial value of 0 repeatedly. However, it recalculates the value based on the most recent `count` value from the previous iteration."
+                                },
+        "teaching_example":  {
+                                 "code":  "count = 0\nfor _ in [10, 20]:\n    count += 1\nprint(count)",
+                                 "walkthrough":  "After the first iteration, `count` is 1; after the second iteration, it becomes 2; and finally, 2 is printed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) Before the loop, `count` is 0. 2) In the first iteration, `0 + 1` results in 1, which is stored in `count`. 3) In the second iteration, `count` becomes 2. 4) In the third iteration, `count` becomes 3. 5) After the loop ends, `count` is 3.",
+                                   "why_correct":  "Because of these three lines, the main body is executed three times, and since `count` increases by 1 each time, the final value is 3.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "1",
+                                                               "why_wrong":  "Since `count += 1` is inside the loop, it is executed not only on the first iteration but on all three iterations.",
+                                                               "misread_step":  "Look at where the lines are indented to connect the number of executions to the number of iterations."
+                                                           },
+                                   "takeaway":  "Compound assignment repeats the process of **reading the current value → performing an operation → storing a new value in the same object** with each execution."
+                               },
+        "target_statement":  "count += 1",
+        "focus_span":  "count += 1",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "large_file",
+                                "streaming",
+                                "line_count",
+                                "memory"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY19_L10_file_exists_guard_001",
+        "level":  10,
+        "title":  "Understanding the flow of the `if` guard selecting the `raise` path when a file is missing",
+        "concepts":  [
+                         "if_statement",
+                         "boolean_operation",
+                         "call",
+                         "raise_statement"
+                     ],
+        "reading_goal":  "First apply `not` to the result of `exists()` to obtain the final condition value, then read the execution order where the exception path in the `if` body is selected when that value is True.",
+        "code":  "from pathlib import Path\n\ninput_path = Path(\"input.jsonl\")\ninput_exists = False\n\nif not input_exists:\n    raise FileNotFoundError(f\"missing input: {input_path}\")",
+        "question_type":  "meaning_choice",
+        "question":  "`input_exists` When ``if not input_exists:`` is False, which flow is selected?",
+        "choices":  [
+                        "if it proceeds to the main body, it raises a FileNotFoundError",
+                        "if Skip the body text and process normally",
+                        "Automatically change `input_exists` to True.",
+                        "Automatically generate the `input_path` file"
+                    ],
+        "answer":  "if it proceeds to the main body, it raises a FileNotFoundError",
+        "explanation":  "1) `input_exists` is False. 2) Evaluating `not input_exists` within the condition yields True. 3) Since the `if` condition is True, the program enters the body of the statement. 4) A `FileNotFoundError` object is created and raised. 5) Therefore, the absence of a file is handled as an early failure.",
+        "side_card_ids":  [
+                              "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+                          ],
+        "project_context":  "Before starting a long data pipeline, if a required input path is missing, it triggers a guard pattern that halts the process early with a clear error.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "exists() 결과에 not을 적용한 최종 조건값을 먼저 구하고, 그 값이 True일 때 if 본문의 예외 경로가 선택되는 실행 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if condition:` evaluates `condition` first and executes the indented body only if the result is truthy.",
+                                    "how_to_read":  "`if not input_path.exists():` When a call and `not` appear together within a condition, the program first evaluates the return value of `exists()`, inverts it using `not`, and then uses that final Boolean value to determine the `if` branch.",
+                                    "key_point":  "The role of the `if` statement itself is **to determine whether to execute the body based on the evaluated condition**.",
+                                    "common_mistake":  "It’s easier to read the other way around—that it raises an exception when the file exists. Because of the `not`, the `if` condition evaluates to True when `exists()` returns False."
+                                },
+        "teaching_example":  {
+                                 "code":  "exists = False\nif not exists:\n    result = \"missing\"\nelse:\n    result = \"ready\"\nprint(result)",
+                                 "walkthrough":  "If `exists` is False, `not False` becomes True, and the `missing` path—which is the `if` statement’s body—is selected."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `input_exists` is False. 2) Evaluating `not input_exists` within the condition yields True. 3) Since the `if` condition is True, the program enters the body of the statement. 4) A `FileNotFoundError` object is created and raised. 5) Therefore, the absence of a file is handled as an early failure.",
+                                   "why_correct":  "Since `not False` is True, the `if` block is executed and the `raise` statement within it is executed.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "if Skip the body text and process normally",
+                                                               "why_wrong":  "That flow is possible only if the final if condition is False, but currently `not input_exists` is True.",
+                                                               "misread_step":  "Do not stop at the original value of `input_exists`; instead, calculate the final condition by applying the ``not`` operation."
+                                                           },
+                                   "takeaway":  "An `if` statement is read in the following order: **evaluate the entire conditional expression first → if True, execute the body**."
+                               },
+        "target_statement":  "if not input_exists:",
+        "focus_span":  "if not input_exists:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "file_exists",
+                                "guard_clause",
+                                "input_validation",
+                                "file_error"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    }
 ]

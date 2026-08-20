@@ -1,415 +1,966 @@
 [
-  {
-    "id": "PY61_L06_offline_first_001",
-    "level": 6,
-    "title": "Offline-First Reading",
-    "concepts": [
-      "offline_first",
-      "PWA",
-      "resilience"
-    ],
-    "reading_goal": "Understand the \"offline-first\" concept, which enables basic learning even without a network connection.",
-    "code": "cards = loadLocalCards()\nrender(cards)\nsyncWhenOnline()",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of \"offline-first\"?",
-    "choices": [
-      "To keep the app's core features usable without an internet connection",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "To keep the app's core features usable without an internet connection",
-    "explanation": "Offline-first designs locally available core features to work without a network. Calling syncWhenOnline does not prove that the server is reachable, so the app must handle real request failures and retries. Store offline changes in a durable queue, then prevent duplicate application and resolve conflicts after connectivity returns.",
-    "side_card_ids": [],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L06_local_first_001",
-    "level": 6,
-    "title": "Read \"Local-First\"",
-    "concepts": [
-      "local_first",
-      "localStorage",
-      "user_data"
-    ],
-    "reading_goal": "Understand the \"local-first\" approach, in which user history is first saved locally and then synchronized later.",
-    "code": "saveToLocal(progress)\nqueueForSync(progress)",
-    "question_type": "meaning_choice",
-    "question": "What are the benefits of \"local-first\"?",
-    "choices": [
-      "User data can be saved immediately even if the network is slow.",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "User data can be saved immediately even if the network is slow.",
-    "explanation": "Local-first applies a change to device storage first for an immediate response, then synchronizes it with the server. Local storage can still fail because of quota limits or browser cleanup, so confirm the write. If multiple devices can edit the same record, use a durable queue, version information, and conflict rules together.",
-    "side_card_ids": [
-      "PYV160_A1_PWA_STATE_STORAGE_FLOW"
-    ],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L07_service_worker_cache_001",
-    "level": 7,
-    "title": "Reading the Service Worker Cache",
-    "concepts": [
-      "service_worker",
-      "cache",
-      "offline"
-    ],
-    "reading_goal": "Understand how service workers store app files and data files in the cache to support offline functionality.",
-    "code": "cache.addAll(['/src/pwa/index.html', '/src/pwa/app.js'])",
-    "question_type": "meaning_choice",
-    "question": "What is the role of the service worker cache?",
-    "choices": [
-      "Saves app files to the cache so they can be opened quickly again",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "Saves app files to the cache so they can be opened quickly again",
-    "explanation": "A service worker's Cache API stores request responses such as the app shell to support offline reopening. cache.addAll can reject the whole operation if one item fails, so handle installation failure. A cache is neither guaranteed permanent storage nor automatically fresh; define version replacement and stale-cache cleanup.",
-    "side_card_ids": [
-      "PYV160_A1_PWA_STATE_STORAGE_FLOW"
-    ],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L07_cache_strategy_001",
-    "level": 7,
-    "title": "Reading the Cache Strategy",
-    "concepts": [
-      "cache_strategy",
-      "network_first",
-      "cache_first"
-    ],
-    "reading_goal": "Understand how to choose between cache-first and network-first strategies based on the nature of the data.",
-    "code": "strategy = isStaticFile ? 'cache-first' : 'network-first'",
-    "question_type": "meaning_choice",
-    "question": "Why are there different cache strategies?",
-    "choices": [
-      "Because freshness and speed requirements differ by resource",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "Because freshness and speed requirements differ by resource",
-    "explanation": "Cache-first may suit a rarely changing app shell, while network-first with a timeout and fallback may suit freshness-sensitive data. Choose by update frequency and offline requirements rather than file extension alone. Every strategy still needs behavior for stale data, expiration, and request failure.",
-    "side_card_ids": [
-      "PYV102_A7_PWA_OFFLINE_UPDATE"
-    ],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L07_sync_queue_001",
-    "level": 7,
-    "title": "Reading the sync queue",
-    "concepts": [
-      "sync_queue",
-      "offline",
-      "retry"
-    ],
-    "reading_goal": "Understand the sync queue, which stores changes made while offline and sends them when the system comes back online.",
-    "code": "syncQueue.push({ type: 'progress_update', payload })",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of the sync queue?",
-    "choices": [
-      "To synchronize changes made while offline with the server later",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "To synchronize changes made while offline with the server later",
-    "explanation": "A sync queue holds offline changes for later delivery. The in-memory array in the example can disappear on reload, so a durable store such as IndexedDB may be required. Give each item a stable operation ID and order, remove it only after confirmed success, and retry failures with bounded backoff.",
-    "side_card_ids": [
-      "AI_cost_001"
-    ],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L08_dirty_record_001",
-    "level": 8,
-    "title": "Reading \"Dirty Record\"",
-    "concepts": [
-      "dirty_record",
-      "sync",
-      "state"
-    ],
-    "reading_goal": "Understand what a \"dirty record\" is—a record that has been modified locally but has not yet been reflected on the server.",
-    "code": "record.dirty = true",
-    "question_type": "meaning_choice",
-    "question": "What does “dirty record” mean?",
-    "choices": [
-      "Data that has been modified locally but has not yet been synchronized",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "Data that has been modified locally but has not yet been synchronized",
-    "explanation": "A dirty record was changed locally but has not yet been acknowledged by the server. Persist the flag with the change so a restart does not lose pending work. Clear it only after a successful response, and compare versions so a record edited again during upload is not incorrectly marked clean.",
-    "side_card_ids": [
-      "PYV102_A7_PWA_OFFLINE_UPDATE"
-    ],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L08_updated_at_001",
-    "level": 8,
-    "title": "Read updated_at",
-    "concepts": [
-      "updated_at",
-      "timestamp",
-      "sync"
-    ],
-    "reading_goal": "Understand the `updatedAt` timestamp required for determining synchronization conflicts.",
-    "code": "note.updatedAt = new Date().toISOString()",
-    "question_type": "meaning_choice",
-    "question": "Why is `updatedAt` important?",
-    "choices": [
-      "To provide useful context about when each copy was modified",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "To provide useful context about when each copy was modified",
-    "explanation": "updatedAt is useful metadata, but it cannot by itself prove which change is correct or newer. Device clocks may disagree, and two edits can share a timestamp. Use a server-managed revision or ETag for conflict detection and treat time as supporting information for the user.",
-    "side_card_ids": [],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L08_cloud_sync_001",
-    "level": 8,
-    "title": "Read about cloud sync",
-    "concepts": [
-      "cloud_sync",
-      "account",
-      "multi_device"
-    ],
-    "reading_goal": "Understand cloud sync, which allows you to continue the same learning progress across multiple devices.",
-    "code": "await uploadProgress(localProgress)",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of cloud sync?",
-    "choices": [
-      "To continue your learning progress across multiple devices",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "To continue your learning progress across multiple devices",
-    "explanation": "Cloud sync aligns local records from multiple devices with the same server account. One upload is not the whole workflow. Authentication, download, server acknowledgement, deduplication, deletion propagation, and conflict rules are all needed so one device does not silently overwrite another.",
-    "side_card_ids": [
-      "PYV102_A7_PWA_OFFLINE_UPDATE"
-    ],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L08_sync_status_badge_001",
-    "level": 8,
-    "title": "Reading the sync status badge",
-    "concepts": [
-      "sync_status",
-      "UI",
-      "offline"
-    ],
-    "reading_goal": "Understand the sync status badge, which shows users the current save/sync status.",
-    "code": "status = 'Saved / Waiting for sync / Sync complete'",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of the sync status badge?",
-    "choices": [
-      "Informs the user of the current status of the saved record",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "Informs the user of the current status of the saved record",
-    "explanation": "Since users may worry whether their notes or progress have been saved, status indicators are important. The sync status badge is a small indicator that shows whether the data has been saved, is currently syncing, or has failed. It is a UX feature that allows users to check the status with peace of mind.",
-    "side_card_ids": [
-      "PYV102_A7_PWA_OFFLINE_UPDATE"
-    ],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L09_sync_conflict_001",
-    "level": 9,
-    "title": "Read about sync conflicts",
-    "concepts": [
-      "if",
-      "sync_conflict",
-      "cloud_sync",
-      "data_integrity"
-    ],
-    "reading_goal": "Understand sync conflicts that occur when the same data is edited differently on two devices.",
-    "code": "if local.baseVersion != remote.version:\n  detectConflict(local, remote)",
-    "question_type": "meaning_choice",
-    "question": "In what situations do sync conflicts occur?",
-    "choices": [
-      "When the same data is edited differently on multiple devices",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "When the same data is edited differently on multiple devices",
-    "explanation": "A sync conflict occurs when the server's copy changes after local editing began. Merely seeing different updatedAt values does not reliably prove concurrent editing. Comparing the edit's baseVersion with the current server version, as shown here, detects a change built on an outdated base.",
-    "side_card_ids": [
-      "PYV102_A7_PWA_OFFLINE_UPDATE"
-    ],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L09_last_write_wins_001",
-    "level": 9,
-    "title": "\"Last Write Wins\" reading",
-    "concepts": [
-      "last_write_wins",
-      "conflict_resolution",
-      "sync"
-    ],
-    "reading_goal": "Understand the \"last write wins\" strategy, which adopts the most recent revision.",
-    "code": "winner = max(local, remote, key=lambda x: x.updatedAt)",
-    "question_type": "meaning_choice",
-    "question": "What is the key to \"last write wins\"?",
-    "choices": [
-      "Selecting the most recently updated data as the final value",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "Selecting the most recently updated data as the final value",
-    "explanation": "Last-write-wins chooses the final write according to a defined order. Comparing client updatedAt values can produce the wrong order when device clocks disagree, so a server timestamp or monotonic revision is safer. Any version can still discard earlier content, so important notes need history or user choice.",
-    "side_card_ids": [
-      "PYV102_A7_PWA_OFFLINE_UPDATE"
-    ],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L09_merge_strategy_001",
-    "level": 9,
-    "title": "Reading the Merge Strategy",
-    "concepts": [
-      "merge_strategy",
-      "conflict_resolution",
-      "data_model"
-    ],
-    "reading_goal": "Understand that a merge strategy can be used for data that is easy to combine, such as bookmarks.",
-    "code": "mergedBookmarks = union(localBookmarks, remoteBookmarks)",
-    "question_type": "meaning_choice",
-    "question": "What kind of data is the merge strategy useful for?",
-    "choices": [
-      "Data that blends together naturally, like a list of bookmarks",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "Data that blends together naturally, like a list of bookmarks",
-    "explanation": "A merge strategy combines conflicts according to the data's meaning. Set union is natural when two devices add different bookmarks, but a deletion can reappear unless deletions are represented separately. Free-form notes may be harmed by automatic merging, and progress also needs domain-specific rules rather than simply taking the latest value.",
-    "side_card_ids": [
-      "PYV102_A7_PWA_OFFLINE_UPDATE"
-    ],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L09_conflict_resolution_ui_001",
-    "level": 9,
-    "title": "Reading the Conflict Resolution UI",
-    "concepts": [
-      "conflict_resolution_UI",
-      "UX",
-      "sync_conflict"
-    ],
-    "reading_goal": "Understand the UI that prompts the user to resolve conflicts that are difficult to resolve automatically.",
-    "code": "showConflictChoices(localNote, remoteNote)",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of the conflict resolution UI?",
-    "choices": [
-      "To allow users to choose in cases where automatic merging is difficult",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "To allow users to choose in cases where automatic merging is difficult",
-    "explanation": "For notes that cannot be merged safely, show local and server versions side by side and offer keep-one, keep-both, or manual-merge choices. Device and changed-section details can help more than timestamps alone. Do not delete either version before the user decides.",
-    "side_card_ids": [
-      "PYV102_A7_PWA_OFFLINE_UPDATE"
-    ],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L10_idempotent_sync_001",
-    "level": 10,
-    "title": "Idempotent sync read",
-    "concepts": [
-      "idempotent",
-      "sync",
-      "retry"
-    ],
-    "reading_goal": "Understand idempotent synchronization, which ensures that results remain intact even if the same synchronization request is sent multiple times.",
-    "code": "upsertProgress(record.id, record, operationId)",
-    "question_type": "meaning_choice",
-    "question": "Why is idempotent sync necessary?",
-    "choices": [
-      "Because retries may deliver the same request more than once",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "Because retries may deliver the same request more than once",
-    "explanation": "Retries can deliver the same request multiple times, so the server should use a stable operationId to recognize work already processed. Upserting an absolute state by ID helps, but it is not sufficient if the operation also increments a score or sends a notification. Duplicate delivery must leave the same state and side effects as one delivery.",
-    "side_card_ids": [
-      "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
-    ],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L10_sync_quality_gate_001",
-    "level": 10,
-    "title": "Reading the sync quality gate",
-    "concepts": [
-      "quality_gate",
-      "sync",
-      "test_case"
-    ],
-    "reading_goal": "Understand the quality criteria for testing offline storage, online recovery, and conflict resolution.",
-    "code": "assert saveOffline()\nassert syncWhenOnline()\nassert conflictDetected()",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of the sync quality gate?",
-    "choices": [
-      "To verify that records remain safe through offline use and synchronization",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "To verify that records remain safe through offline use and synchronization",
-    "explanation": "A sync quality gate tests offline writes, queue recovery after restart, duplicate requests, reconnection, and real conflicts. Checking only field presence is not enough. Also test closing immediately after failure, simultaneous device edits, and delete-versus-edit conflicts so records do not disappear silently.",
-    "side_card_ids": [
-      "PYV102_A7_PWA_OFFLINE_UPDATE"
-    ],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  },
-  {
-    "id": "PY61_L10_offline_sync_flow_001",
-    "level": 10,
-    "title": "Read the offline sync flow",
-    "concepts": [
-      "offline_sync_flow",
-      "offline_first",
-      "cloud_sync"
-    ],
-    "reading_goal": "Understand the entire workflow, from local storage and queue loading to online detection, server synchronization, and conflict resolution.",
-    "code": "saveLocal()\nmarkDirty()\nqueueSync()\nflushOnline()\nresolveConflict()",
-    "question_type": "meaning_choice",
-    "question": "What is the natural sequence of the offline sync flow?",
-    "choices": [
-      "Local storage → Mark as dirty → Add to sync queue → Transfer when online → Resolve conflicts",
-      "To save your GitHub password",
-      "To delete all cards",
-      "To hide the verification results"
-    ],
-    "answer": "Local storage → Mark as dirty → Add to sync queue → Transfer when online → Resolve conflicts",
-    "explanation": "Persist the change locally, then store its dirty flag and stable operation ID in a queue. Do not trust an online signal alone; attempt delivery and confirm server acknowledgement. If versions conflict, resolve them and store the new version, then remove only queue items whose success is confirmed.",
-    "side_card_ids": [
-      "PYV102_A7_PWA_OFFLINE_UPDATE"
-    ],
-    "project_context": "Since OFFLINE_FIRST_CONFLICT_SYNC had 0 hits in v2, v61 enhances the concepts of offline-first saving, the synchronization queue, conflict resolution, and cloud synchronization."
-  }
+    {
+        "id":  "PY61_L06_offline_first_001",
+        "level":  6,
+        "title":  "Read the call order that loads offline data first.",
+        "concepts":  [
+                         "call",
+                         "assignment"
+                     ],
+        "reading_goal":  "Read the flow where multiple function calls are executed in the order they appear, and the return value from the previous call is used in the next call.",
+        "code":  "call_order = []\n\ndef load_local_cards():\n    call_order.append(\"load_local_cards\")\n    return [\"card-1\"]\n\ndef render(cards):\n    call_order.append(\"render\")\n\ndef sync_when_online():\n    call_order.append(\"sync_when_online\")\n\ncards = load_local_cards()\nrender(cards)\nsync_when_online()\nprint(call_order)",
+        "question_type":  "order_choice",
+        "question":  "What is the first function called in this code?",
+        "choices":  [
+                        "load_local_cards()",
+                        "render(cards)",
+                        "sync_when_online()",
+                        "Three functions are called simultaneously"
+                    ],
+        "answer":  "load_local_cards()",
+        "explanation":  "The `load_local_cards()` function on the first line is executed, and its return value is stored in `cards`. On the next line, `render(cards)` is executed. sync_when_online() is called only after reaching the last line. Since the code executes from top to bottom, the first call is to `load_local_cards()`. A common source of confusion: The call to sync_when_online() is on the third line, so it is reached only after the first two lines have been executed. Point of Misinterpretation: You must distinguish between the importance of product features and the actual execution order of code lines. When reading multiple lines of code, read from top to bottom; the result of the right-hand side is assigned before proceeding to the next line.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This is the context of an offline-first flow in which the learning app starts with local cards even without a network connection and then attempts synchronization.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "여러 함수 호출이 줄 순서대로 실행되고 앞 호출의 반환값이 다음 호출에 사용되는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A function call is an expression in the form `name(...)` that executes a function. When calls appear on multiple lines, they generally execute from top to bottom.",
+                                    "how_to_read":  "Start by checking the right-hand call on the first line; once its return value is stored in the left-hand variable, move on to the next line.",
+                                    "key_point":  "The “offline-first” product concept and Python execution order should be read separately. The Python focus of this card is the order in which the local load function is called first.",
+                                    "common_mistake":  "`sync_when_online()` Don’t assume that just because something looks important, it will be executed first. The code is executed from top to bottom, not in the order listed below."
+                                },
+        "teaching_example":  {
+                                 "code":  "settings = load_local_settings()\nshow(settings)\nrefresh_later()",
+                                 "walkthrough":  "`load_local_settings()` is executed first to create the settings, followed by `show` and then `refresh_later`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The `load_local_cards()` function on the first line is executed, and its return value is stored in `cards`. On the next line, `render(cards)` is executed. `sync_when_online()` is called only after reaching the last line.",
+                                   "why_correct":  "Because the code executes from top to bottom, the first call is `load_local_cards()`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "sync_when_online()",
+                                                               "why_wrong":  "Since this call is on the third line, it is reached after the first two lines have been executed.",
+                                                               "misread_step":  "Be sure to distinguish between the importance of product features and the actual order in which lines of code are executed."
+                                                           },
+                                   "takeaway":  "Multi-line calls are read from top to bottom; the result of the rightmost call is assigned before proceeding to the next line."
+                               },
+        "target_statement":  "cards = load_local_cards()",
+        "focus_span":  "load_local_cards()",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "offline_first",
+                                "local_data",
+                                "sync",
+                                "execution_order"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY61_L06_local_first_001",
+        "level":  6,
+        "title":  "Reading the order in which data is saved locally and placed in the synchronization queue",
+        "concepts":  [
+                         "call"
+                     ],
+        "reading_goal":  "Read that consecutive function calls are executed in the order they appear on the line, and distinguish the order of `local save` and `sync queue`.",
+        "code":  "call_order = []\n\ndef save_to_local(progress):\n    call_order.append(\"save_to_local\")\n\ndef queue_for_sync(progress):\n    call_order.append(\"queue_for_sync\")\n\nprogress = {\"card_id\": 18, \"solved\": True}\nsave_to_local(progress)\nqueue_for_sync(progress)\nprint(call_order)",
+        "question_type":  "order_choice",
+        "question":  "Which of the two functions is called first on `progress`?",
+        "choices":  [
+                        "save_to_local(progress)",
+                        "queue_for_sync(progress)",
+                        "The two functions run simultaneously.",
+                        "No functions are called"
+                    ],
+        "answer":  "save_to_local(progress)",
+        "explanation":  "A `progress` dictionary is created. On the next line, `save_to_local(progress)` is called first. After that call completes, `queue_for_sync(progress)` on the last line is called. Since the code contains no parallel execution syntax, the first function is executed first in top-to-bottom order. Common mistake: Since the call to `queue_for_sync(progress)` is on the line following `save_to_local`, it does not execute first. Point of confusion: Check the line order before examining the role of the function names. Typically, sequential calls execute from top to bottom.",
+        "side_card_ids":  [
+                              "PYV160_A1_PWA_STATE_STORAGE_FLOW"
+                          ],
+        "project_context":  "This is the context of reading a local-first processing order where learning progress is first reflected on the device and then placed in a server-sync queue.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "연속된 함수 호출이 줄 순서대로 실행됨을 읽고 local save와 sync queue의 순서를 구분한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "If there is a sequence of function calls, the program proceeds to the next call after the first one completes.",
+                                    "how_to_read":  "Even if the same `progress` is passed to both functions, check the call name and line number for each. The first line is for saving, and the second line is for processing the synchronization queue.",
+                                    "key_point":  "The design meaning of local-first is connected to an execution order of “local first,” but in Python you should determine the behavior from the actual line order.",
+                                    "common_mistake":  "It’s easy to assume that two functions will execute simultaneously just because they take the same `progress` argument. Since this code does not include `async` or parallel execution syntax, it executes sequentially."
+                                },
+        "teaching_example":  {
+                                 "code":  "draft = {\"text\": \"hello\"}\nsave_draft(draft)\nqueue_upload(draft)",
+                                 "walkthrough":  "First, ``save_draft`` is called, and after that call completes, ``queue_upload`` is executed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The `progress` dictionary is created. On the next line, ``save_to_local(progress)`` is called first. After that call completes, ``queue_for_sync(progress)`` on the last line is called.",
+                                   "why_correct":  "Since the code does not contain any parallel execution constructs, the first function is executed first, in top-to-bottom order.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "queue_for_sync(progress)",
+                                                               "why_wrong":  "Since this call is on the line following `save_to_local`, it will not be executed first.",
+                                                               "misread_step":  "Before examining the role of the function name, first check the order of the lines."
+                                                           },
+                                   "takeaway":  "Typical sequential calls are executed in top-to-bottom order."
+                               },
+        "target_statement":  "save_to_local(progress)",
+        "focus_span":  "save_to_local(progress)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "local_first",
+                                "progress",
+                                "sync_queue",
+                                "execution_order"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY61_L07_service_worker_cache_001",
+        "level":  7,
+        "title":  "Adding Multiple Files to the Cache List Using the `extend` Call",
+        "concepts":  [
+                         "call",
+                         "literal",
+                         "assignment"
+                     ],
+        "reading_goal":  "The `extend(iterable)` method call on a list describes a state change in which multiple elements are added sequentially to the end of the existing list via various paths.",
+        "code":  "cache = []\nfiles = [\"/src/pwa/index.html\", \"/src/pwa/app.js\"]\ncache.extend(files)\nprint(cache)",
+        "question_type":  "multiple_choice",
+        "question":  "`cache.extend(files)` What is the value of ``cache`` after execution?",
+        "choices":  [
+                        "[\"/src/pwa/index.html\", \"/src/pwa/app.js\"]",
+                        "[[\"/src/pwa/index.html\", \"/src/pwa/app.js\"]]",
+                        "[]",
+                        "[\"/src/pwa/app.js\"]"
+                    ],
+        "answer":  "[\"/src/pwa/index.html\", \"/src/pwa/app.js\"]",
+        "explanation":  "`cache` is initially an empty list. `files` contains two strings. `extend` appends each of these strings to the end of `cache`, so the result is a flat list containing both paths. This is because `list.extend` adds each element of the iterable passed to it to the existing list. Common source of confusion: [[\"/src/pwa/index.html\", \"/src/pwa/app.js\"]] This format is similar to appending the `files` list itself as a single element. Point of Misunderstanding: You must distinguish how `extend` and `append` handle list arguments. `list.extend(items)` adds the elements in `items` one after another to the end of the existing list.",
+        "side_card_ids":  [
+                              "PYV160_A1_PWA_STATE_STORAGE_FLOW"
+                          ],
+        "project_context":  "This example illustrates how the concept of caching a list of app files required for offline execution is represented as a state change in a Python list.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "list의 `extend(iterable)` method call이 여러 경로를 기존 리스트 뒤에 순서대로 추가하는 상태 변화를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A method call is an expression that appends `.method(...)` to an object to perform an operation associated with that object.",
+                                    "how_to_read":  "First, check the state of the list before the call and the elements of the iterable passed as an argument, then track how the method modifies the list.",
+                                    "key_point":  "`extend(files)` It does not pass the `files` list itself as a single element, but rather adds each element within `files` one by one.",
+                                    "common_mistake":  "It is easy to mistake this for adding one nested list as in `append(files)`. `extend` expands the inner elements and adds them individually."
+                                },
+        "teaching_example":  {
+                                 "code":  "queue = [\"a\"]\nitems = [\"b\", \"c\"]\nqueue.extend(items)\nprint(queue)",
+                                 "walkthrough":  "Since `extend` adds `b` and `c` to `items`, the queue becomes `[\"a\", \"b\", \"c\"]`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`cache` is initially an empty list. `files` contains two strings. `extend` appends each string to the end of `cache`, so the result is a flat list containing two paths.",
+                                   "why_correct":  "This is because `list.extend` adds each element of the passed iterable to the existing list.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[[\"/src/pwa/index.html\", \"/src/pwa/app.js\"]]",
+                                                               "why_wrong":  "This shape is closer to what you would get if the `files` list itself had been appended as a single element.",
+                                                               "misread_step":  "You must distinguish between how `extend` and `append` handle list arguments."
+                                                           },
+                                   "takeaway":  "`list.extend(items)` appends the elements in `items` to the end of the existing list one by one."
+                               },
+        "target_statement":  "cache.extend(files)",
+        "focus_span":  "cache.extend(files)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "service worker cache",
+                                "app shell",
+                                "offline files",
+                                "bulk add"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY61_L07_cache_strategy_001",
+        "level":  7,
+        "title":  "Selecting a Cache Strategy Using Conditional Expressions",
+        "concepts":  [
+                         "conditional_expression",
+                         "assignment"
+                     ],
+        "reading_goal":  "In `A if condition else B`, the flow selects and assigns one of two strings based on the condition value.",
+        "code":  "is_static_file = False\nstrategy = \"cache-first\" if is_static_file else \"network-first\"\nprint(strategy)",
+        "question_type":  "multiple_choice",
+        "question":  "`is_static_file` When this is False, what value is stored in ``strategy``?",
+        "choices":  [
+                        "\"network-first\"",
+                        "\"cache-first\"",
+                        "False",
+                        "None"
+                    ],
+        "answer":  "\"network-first\"",
+        "explanation":  "`is_static_file` is False. When the conditional expression evaluates to False, it selects `network-first`, which follows the `else` clause. That string is assigned to `strategy` because the condition in the conditional expression is False, so the value on the `else` side becomes the result. Common mistake: “cache-first”—that value is selected only when the condition is True. Point of confusion: You must first check the current value of the middle condition. A Python conditional expression produces one result—either the value before the `if` or the value after the `else`—depending on the middle condition.",
+        "side_card_ids":  [
+                              "PYV102_A7_PWA_OFFLINE_UPDATE"
+                          ],
+        "project_context":  "I have converted the flow for selecting a strategy string when the requirements of a static app file and the latest data differ into a Python conditional expression.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "conditional_expression",
+        "reading_goal_internal":  "`A if condition else B`에서 조건값에 따라 두 문자열 중 하나를 선택해 대입하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A conditional expression takes the form `value_if_true if condition else value_if_false` and selects one of two values.",
+                                    "how_to_read":  "The condition in the middle is evaluated first. If it is True, the value before the `if` statement is selected; if it is False, the value after the `else` statement is selected.",
+                                    "key_point":  "Unlike a standard `if` statement, which executes a block of code, the expression itself returns a single selected value.",
+                                    "common_mistake":  "If you read from left to right, it’s easy to instinctively choose “`cache-first`” first. The True/False condition in the middle comes first."
+                                },
+        "teaching_example":  {
+                                 "code":  "is_local = True\nmode = \"local\" if is_local else \"remote\"\nprint(mode)",
+                                 "walkthrough":  "Since the condition is True, the string “`local`” preceding the `if` statement is selected."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`is_static_file` is False. When the conditional expression evaluates to False, the ``network-first`` following `else` is selected. That string is assigned to `strategy`.",
+                                   "why_correct":  "This is because the condition in the conditional expression evaluates to False, so the value on the else side becomes the result.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "\"cache-first\"",
+                                                               "why_wrong":  "That value is selected only when the condition is True.",
+                                                               "misread_step":  "You must first check the current value of the middle condition."
+                                                           },
+                                   "takeaway":  "A Python conditional expression evaluates to either the value before the `if` or the value after the `else`, depending on the condition in the middle."
+                               },
+        "target_statement":  "strategy = \"cache-first\" if is_static_file else \"network-first\"",
+        "focus_span":  "\"cache-first\" if is_static_file else \"network-first\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "cache strategy",
+                                "cache-first",
+                                "network-first",
+                                "static file"
+                            ],
+        "pedagogical_intent":  "predict_output"
+    },
+    {
+        "id":  "PY61_L07_sync_queue_001",
+        "level":  7,
+        "title":  "Add a task to the sync queue by calling `append`",
+        "concepts":  [
+                         "call",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the state changes resulting from a method call that appends a dictionary to an empty list, and track the changes in the queue length.",
+        "code":  "sync_queue = []\npayload = {\"card_id\": \"A1\", \"score\": 1}\nsync_queue.append({\"type\": \"progress_update\", \"payload\": payload})\nprint(len(sync_queue))",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `len(sync_queue)` after the `append` call?",
+        "choices":  [
+                        "1",
+                        "0",
+                        "2",
+                        "3"
+                    ],
+        "answer":  "1",
+        "explanation":  "`sync_queue` is initially an empty list. Since one dictionary is passed to `append`, a single element is added to the end of the list. Therefore, its length is 1. This is because `append` adds the object passed as an argument as a single list element. Common source of confusion: Even if the dict passed to `append` contains two keys, only one dict is added to the list. Point of misunderstanding: You must distinguish between the number of items inside the dict and the number of elements in the outer list. ``append(value)`` adds the entire value as a single new element to the list.",
+        "side_card_ids":  [
+                              "AI_cost_001"
+                          ],
+        "project_context":  "I translated the scenario of queuing a single task to later send changes made to learning progress while offline to the server using a Python list.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "빈 리스트에 dict 한 개를 append하는 method call의 상태 변화를 읽고 큐 길이 변화를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`list.append(value)` is a method call that adds a single value as the last element of a list.",
+                                    "how_to_read":  "It reads that the length of the list is checked before the call, along with the single value passed inside the `append` parentheses, and that the number of elements increases by one after the call.",
+                                    "key_point":  "If the `append` argument is a dict, the entire dict is included as a single list element. The key-value pairs in the dict do not become separate elements.",
+                                    "common_mistake":  "It’s easy to mistakenly assume that because there are two keys in the `dict`, the length of the list becomes 2. The `append` method adds a single object as an argument."
+                                },
+        "teaching_example":  {
+                                 "code":  "tasks = []\ntask = {\"kind\": \"upload\", \"id\": 7}\ntasks.append(task)\nprint(len(tasks))",
+                                 "walkthrough":  "Since one `dict` was appended, the length of `tasks` is 1."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`sync_queue` is initially an empty list. Since a dictionary is passed to `append`, one element is added to the end of the list. Therefore, its length is 1.",
+                                   "why_correct":  "This is because `append` adds a single object passed as an argument to the list as a single element.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "2",
+                                                               "why_wrong":  "Even if the added dict contains two keys, only one dict is added to the list.",
+                                                               "misread_step":  "You must distinguish between the number of items inside the `dict` and the number of elements in the outer list."
+                                                           },
+                                   "takeaway":  "`append(value)` adds the entire value as a new element in the list."
+                               },
+        "target_statement":  "sync_queue.append({\"type\": \"progress_update\", \"payload\": payload})",
+        "focus_span":  "sync_queue.append({\"type\": \"progress_update\", \"payload\": payload})",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "sync queue",
+                                "offline changes",
+                                "progress update",
+                                "enqueue"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY61_L08_dirty_record_001",
+        "level":  8,
+        "title":  "Marking a record as \"dirty\" via attribute assignment",
+        "concepts":  [
+                         "assignment",
+                         "attribute_access",
+                         "class_definition"
+                     ],
+        "reading_goal":  "Understand the process by which an object’s attribute is updated with a new value when it is assigned a new value.",
+        "code":  "class Record:\n    pass\n\nrecord = Record()\nrecord.dirty = False\nrecord.dirty = True",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `record.dirty` after the last assignment?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "dirty",
+                        "None"
+                    ],
+        "answer":  "True",
+        "explanation":  "After creating the `Record` object, set the `dirty` attribute to `False`, and then set it back to `True` on the last line. This is because attribute assignment can replace the existing attribute value with a new one. A common source of confusion: `False` is the value before the final assignment. Point of misinterpretation: This occurs when the final state update in the code is not reflected. Tracking an object’s state involves checking **the value last assigned to that attribute**.",
+        "side_card_ids":  [
+                              "PYV102_A7_PWA_OFFLINE_UPDATE"
+                          ],
+        "project_context":  "It is linked to state management code that indicates when local modifications to study notes or progress have been made but not yet synchronized with the server.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assignment",
+        "reading_goal_internal":  "객체 속성이 대입 대상일 때 기존 속성값이 새 값으로 갱신되는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`object.attr = value` is an attribute assignment that stores a new value in a specific attribute of an object.",
+                                    "how_to_read":  "Read it as: “Check which attribute of which object is being changed on the left, and store the value on the right in that location.”",
+                                    "key_point":  "The meaning of `dirty` is sync-domain context; the Python focus is changing the state of an object attribute.",
+                                    "common_mistake":  "It’s easy to think that a new local variable `dirty` is being created. Instead, it updates the attribute of the `record` object preceding the dot."
+                                },
+        "teaching_example":  {
+                                 "code":  "class Note:\n    pass\n\nnote = Note()\nnote.saved = False\nnote.saved = True",
+                                 "walkthrough":  "The final attribute assignment updates the `saved` attribute of the `note` object to `True`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "After creating a `Record` object, set the `dirty` attribute to `False`, and then set it back to `True` on the last line.",
+                                   "why_correct":  "This is because attribute assignment allows the existing attribute value to be replaced with a new value.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "False is the value before the final assignment.",
+                                                               "misread_step":  "This is a case where the final state update in the code has not been reflected."
+                                                           },
+                                   "takeaway":  "Object state tracking checks the **last value assigned to the same attribute**."
+                               },
+        "target_statement":  "record.dirty = True",
+        "focus_span":  "record.dirty = True",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "dirty record",
+                                "local change",
+                                "sync pending",
+                                "state"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY61_L08_updated_at_001",
+        "level":  8,
+        "title":  "Creating an `updated_at` string using `datetime.isoformat()`",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "attribute_access",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read the process in which a method call on a `datetime` object returns a string and an assignment statement stores that return value.",
+        "code":  "from datetime import datetime, timezone\n\nedited_at = datetime(2026, 5, 29, 12, 30, tzinfo=timezone.utc)\nupdated_at = edited_at.isoformat()",
+        "question_type":  "multiple_choice",
+        "question":  "What value is stored in `updated_at`?",
+        "choices":  [
+                        "2026-05-29T12:30:00+00:00",
+                        "2026/05/29 12:30",
+                        "datetime",
+                        "None"
+                    ],
+        "answer":  "2026-05-29T12:30:00+00:00",
+        "explanation":  "`edited_at` is a fixed datetime with a UTC timezone. `isoformat()` returns a string with `T` between the date and time and the UTC offset `+00:00`, because that is the standard string representation produced by `datetime.isoformat()`. Common wrong answer: datetime. `datetime` is the type of the original object, while the method returns a string. Misreading point: This happens when the call target and call result are confused. For a method call, **read the original object and trace the type and contents of the new return value**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "It is linked to code that stores the modification time so that when the same record is modified on multiple devices, it is possible to determine which modification is more recent.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "datetime 객체의 method call이 문자열을 반환하고 대입문이 그 반환값을 저장하는 과정을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`datetime_obj.isoformat()` is a method call that converts a datetime value into an ISO 8601 formatted string.",
+                                    "how_to_read":  "First, check the current date and time of the called object, and reflect the fact that the return value is a string.",
+                                    "key_point":  "Regardless of the domain objective of comparing timestamps, the focus in Python is on calling the method that creates a string from a `datetime` object.",
+                                    "common_mistake":  "It’s easy to think that `isoformat()` converts the original `datetime` object itself into a string. It actually returns a new string."
+                                },
+        "teaching_example":  {
+                                 "code":  "from datetime import datetime, timezone\n\ncreated = datetime(2026, 1, 2, 3, 4, tzinfo=timezone.utc)\ntext = created.isoformat()",
+                                 "walkthrough":  "The ``2026-01-02T03:04:00+00:00`` format string is returned from a fixed `datetime`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`edited_at` is a fixed datetime with the UTC time zone. `isoformat()` inserts a `T` between the date and time and returns a string that includes the UTC offset +00:00.",
+                                   "why_correct":  "This is because the standard string representation of `datetime.isoformat()` is that format.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "datetime",
+                                                               "why_wrong":  "`datetime` is the type of the original object, while the method\u0027s return value is a string.",
+                                                               "misread_step":  "This is a case where the called object and the call result are not distinguished."
+                                                           },
+                                   "takeaway":  "A method call **reads the original object and tracks the data type and contents of the new return value**."
+                               },
+        "target_statement":  "updated_at = edited_at.isoformat()",
+        "focus_span":  "edited_at.isoformat()",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "updated_at",
+                                "timestamp",
+                                "sync conflict",
+                                "ISO 8601"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY61_L08_cloud_sync_001",
+        "level":  8,
+        "title":  "Waiting for cloud sync results using `await`",
+        "concepts":  [
+                         "await_expression",
+                         "call",
+                         "assignment",
+                         "async_function_definition",
+                         "name_reference"
+                     ],
+        "reading_goal":  "Read the sequence in which `await` within an `async` function receives the result of a coroutine\u0027s completion and uses it as the value for the assignment statement.",
+        "code":  "import asyncio\n\nasync def upload_progress(progress):\n    return \"synced\"\n\nasync def sync():\n    local_progress = {\"correct\": 12}\n    result = await upload_progress(local_progress)\n    return result\n\nfinal_status = asyncio.run(sync())",
+        "question_type":  "multiple_choice",
+        "question":  "What value is stored in `final_status`?",
+        "choices":  [
+                        "synced",
+                        "12",
+                        "local_progress",
+                        "None"
+                    ],
+        "answer":  "synced",
+        "explanation":  "Since `upload_progress()` is an async function, it runs as a coroutine, and `await` receives the completion result `synced`. `sync()` returns the same value, and `asyncio.run()` returns the final string. This is because the value of an `await` expression is the value returned by the completed `awaitable`. Common misconception: None upload_progress() explicitly executes `return \"synced\"`. Point of Misinterpretation: This occurs when you overlook the fact that an `async` function can have a return value. `await` **waits for an asynchronous operation to complete and uses its return value as the result of the expression**.",
+        "side_card_ids":  [
+                              "PYV102_A7_PWA_OFFLINE_UPDATE"
+                          ],
+        "project_context":  "It is linked to code that waits for asynchronous results so that the \"synchronization complete\" status is not displayed before the local progress upload is finished.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "await_expression",
+        "reading_goal_internal":  "async 함수 안에서 await가 coroutine 완료 결과를 받아 대입문 값으로 사용하는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`await expression` yields the current coroutine until the awaitable operation is complete and uses the result of that operation as the value of the expression.",
+                                    "how_to_read":  "First read the call to the right of `await` as creating an awaitable; after it completes, its return value becomes the value of the `await` expression.",
+                                    "key_point":  "\"Cloud sync\" is the domain context, and the Python focus is on the flow of using `await` to assign the result of an asynchronous call.",
+                                    "common_mistake":  "It is easy to think `await` always makes the result `None`. The value returned by the awaitable becomes the result of the `await` expression directly."
+                                },
+        "teaching_example":  {
+                                 "code":  "import asyncio\n\nasync def fetch_count():\n    return 3\n\nasync def main():\n    count = await fetch_count()\n    return count\n\nresult = asyncio.run(main())",
+                                 "walkthrough":  "`await` retrieves the return value 3 from `fetch_count()` and stores it in `count`, and the final `result` also becomes 3."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since `upload_progress()` is an async function, it runs as a coroutine, and `await` receives its completion result, `synced`. `sync()` returns the same value, and `asyncio.run()` returns the final string.",
+                                   "why_correct":  "This is because the value of an `await` expression is the value returned by the completed `awaitable`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "None",
+                                                               "why_wrong":  "`upload_progress()` explicitly calls ``return \"synced\"``.",
+                                                               "misread_step":  "This is an example of overlooking the fact that async functions can have return values."
+                                                           },
+                                   "takeaway":  "`await` **waits for an asynchronous operation to complete and uses its return value as the result of an expression**."
+                               },
+        "target_statement":  "result = await upload_progress(local_progress)",
+        "focus_span":  "await upload_progress(local_progress)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "async_and_concurrency",
+        "coverage_topics":  [
+                                "cloud sync",
+                                "await",
+                                "upload progress",
+                                "multi-device"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY61_L08_sync_status_badge_001",
+        "level":  8,
+        "title":  "Selecting a \"sync badge\" phrase using a dictionary key lookup",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "It tracks the order in which user-defined strings are read from a dictionary using the value of the `state` variable as the key.",
+        "code":  "labels = {\"saved\": \"저장됨\", \"pending\": \"동기화 대기\", \"synced\": \"동기화 완료\"}\nsync_state = \"pending\"\nbadge = labels[sync_state]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the string stored in the `badge`?",
+        "choices":  [
+                        "Saved.",
+                        "Waiting for synchronization",
+                        "Synchronization complete",
+                        "pending"
+                    ],
+        "answer":  "Waiting for synchronization",
+        "explanation":  "The `sync_state` inside the brackets is first evaluated as `pending`. When you look up the value of the `pending` key in the `labels` dictionary, it returns `동기화 대기`. This is because a dictionary subscription returns the value associated with the evaluated key. Common source of confusion: “pending pending.” “pending” is the key used for lookup, while what is stored in the badge is the value associated with that key. Point of confusion: This occurs when dict keys and values are confused. `dict[variable]` **uses the current value of `variable` as the key to read the associated value.**",
+        "side_card_ids":  [
+                              "PYV102_A7_PWA_OFFLINE_UPDATE"
+                          ],
+        "project_context":  "This connects to a status indicator that allows the user to immediately see whether the current record has been saved locally, is awaiting upload, or has completed cloud synchronization.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "상태 code 변수의 값을 key로 사용해 dict에서 사용자 표시 문자열을 읽는 순서를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping[key]` is a subscription that reads the value associated with the key in a dict.",
+                                    "how_to_read":  "First, check the actual value of the key expression `sync_state`, then find the same key in `labels` and read its value.",
+                                    "key_point":  "The badge UX is domain-specific, and the focus in Python is on lookups that use variable values as dictionary keys.",
+                                    "common_mistake":  "It’s easy to assume that the string is searching for a key named `sync_state`. However, the expression inside the square brackets is evaluated first, so the current value, `pending`, becomes the key."
+                                },
+        "teaching_example":  {
+                                 "code":  "labels = {\"saved\": \"저장됨\", \"failed\": \"실패\"}\nstate = \"failed\"\nbadge = labels[state]",
+                                 "walkthrough":  "The `failed` state value is used as the key to store the failure in the badge."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The `sync_state` inside the brackets is first evaluated as `pending`. When you look up the value of the `pending` key in the `labels` dictionary, it returns `동기화 대기`.",
+                                   "why_correct":  "This is because a `dict` subscription returns the value associated with the evaluated key.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "pending",
+                                                               "why_wrong":  "\"pending\" is the key used for lookups, and what is stored in \"badge\" is the value of that key.",
+                                                               "misread_step":  "This is an example of confusing a dictionary key with a value."
+                                                           },
+                                   "takeaway":  "`dict[variable]` It **reads the value associated with the variable using its current value as the key.**"
+                               },
+        "target_statement":  "badge = labels[sync_state]",
+        "focus_span":  "labels[sync_state]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "sync status badge",
+                                "pending",
+                                "synced",
+                                "user feedback"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY61_L09_sync_conflict_001",
+        "level":  9,
+        "title":  "Detecting conflicts based on differences between the local base version and the remote version",
+        "concepts":  [
+                         "comparison",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the structure that compares two version values for inequality and turns the possibility of a sync conflict into a Boolean.",
+        "code":  "local = {\"base_version\": 3, \"value\": \"local edit\"}\nremote = {\"version\": 4, \"value\": \"remote edit\"}\nhas_conflict = local[\"base_version\"] != remote[\"version\"]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `has_conflict`?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "3",
+                        "4"
+                    ],
+        "answer":  "True",
+        "explanation":  "`local[\u0027base_version\u0027]` is 3 and `remote[\u0027version\u0027]` is 4. `3 != 4` is True because the not-equal comparison accurately detects that these are two different versions. A common source of confusion: False—3 and 4 are not the same value. Source of misreading: This occurs when `!=` is read as if it were `==`. Sync conflict detection follows the logic: **local base version → current remote version → check for mismatch**.",
+        "side_card_ids":  [
+                              "PYV102_A7_PWA_OFFLINE_UPDATE"
+                          ],
+        "project_context":  "This ties into the workflow where version mismatches are first detected when progress is modified offline on multiple devices and then synced to the cloud.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "두 version 값을 not-equal comparison해 동기화 충돌 가능성을 boolean으로 만드는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left != right` is a comparison that returns True if the two values are different.",
+                                    "how_to_read":  "After checking the actual values of `version` on both sides, determine whether they are the same or different.",
+                                    "key_point":  "If the base version where the local change began differs from the current remote version, changes may have been made on another device or server in the meantime.",
+                                    "common_mistake":  "It’s easy to assume that if the versions differ, you must immediately delete the data from one side. First, you must detect the conflict and apply a resolution policy."
+                                },
+        "teaching_example":  {
+                                 "code":  "local_version = 2\nremote_version = 2\nconflict = local_version != remote_version",
+                                 "walkthrough":  "Since the two values are equal, the conflict is False."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`local[\u0027base_version\u0027]` is 3 and `remote[\u0027version\u0027]` is 4. `3 != 4` is True.",
+                                   "why_correct":  "This is because the “not-equal” comparison accurately detects these two different versions.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "False",
+                                                               "why_wrong":  "3 and 4 are not the same value.",
+                                                               "misread_step":  "`!=` This is an example of reading it as “`==`.”"
+                                                           },
+                                   "takeaway":  "Sync conflict detection is interpreted as **local base version → current remote version → check for mismatch**."
+                               },
+        "target_statement":  "has_conflict = local[\"base_version\"] != remote[\"version\"]",
+        "focus_span":  "local[\"base_version\"] != remote[\"version\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "sync conflict",
+                                "cloud sync",
+                                "version",
+                                "data integrity"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY61_L09_last_write_wins_001",
+        "level":  9,
+        "title":  "updated_at Selecting the most recent sync record using lambda",
+        "concepts":  [
+                         "lambda_expression",
+                         "call",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the structure where the `key` lambda for `max` extracts `timestamp` from each record and selects the record with the largest, most recent value.",
+        "code":  "local = {\"id\": \"local\", \"updated_at\": 100, \"value\": \"A\"}\nremote = {\"id\": \"remote\", \"updated_at\": 120, \"value\": \"B\"}\nwinner = max(local, remote, key=lambda item: item[\"updated_at\"])\nwinner_id = winner[\"id\"]",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `winner_id`?",
+        "choices":  [
+                        "remote",
+                        "local",
+                        "120",
+                        "None"
+                    ],
+        "answer":  "remote",
+        "explanation":  "The `lambda` function returns 100 in `local` and 120 in `remote`. `max` returns the `remote` dictionary with the larger `key` because the `lambda` function specified `updated_at` as the comparison criterion. Common source of confusion: The `updated_at` value of 100 in `local` is older than the 120 in `remote`. Point of misinterpretation: This occurs when the comparison of lambda return values is read in the opposite order. “Last-write-wins” should be interpreted as **each record’s timestamp → key lambda → selection of the latest record**.",
+        "side_card_ids":  [
+                              "PYV102_A7_PWA_OFFLINE_UPDATE"
+                          ],
+        "project_context":  "This is linked to a simple policy that automatically selects based on timestamps when offline progress and cloud progress conflict.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "lambda_expression",
+        "reading_goal_internal":  "max의 key lambda가 각 record에서 timestamp를 꺼내 가장 큰 최신값을 가진 record를 선택하는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`lambda item: item[\u0027updated_at\u0027]` is an anonymous function that takes a single item and returns its `updated_at` value.",
+                                    "how_to_read":  "Assuming that `local` and `remote` are passed as parameters, respectively, we compare the returned key values.",
+                                    "key_point":  "\"Last-write-wins\" is a simple conflict-resolution policy that selects the value with the most recent modification timestamp as the final value.",
+                                    "common_mistake":  "It’s easy to assume that `remote` always wins. However, it is chosen not because it’s `remote`, but because the `key` function returns the larger `updated_at` value."
+                                },
+        "teaching_example":  {
+                                 "code":  "a = {\"id\": \"a\", \"time\": 5}\nb = {\"id\": \"b\", \"time\": 8}\nlatest = max(a, b, key=lambda item: item[\"time\"])",
+                                 "walkthrough":  "Since `lambda` returns 5 for `a` and 8 for `b`, `b` is selected."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`lambda` returns 100 in the local context and 120 in the remote context. `max` returns the remote dictionary with the larger key.",
+                                   "why_correct":  "Because the key lambda specifies `updated_at` as the comparison criterion.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "local",
+                                                               "why_wrong":  "The `updated_at` value of 100 on the local is older than the value of 120 on the remote.",
+                                                               "misread_step":  "This is an example of misreading the comparison of lambda return values."
+                                                           },
+                                   "takeaway":  "\"last-write-wins\" is interpreted as **each record’s timestamp → key lambda → selection of the latest record**."
+                               },
+        "target_statement":  "winner = max(local, remote, key=lambda item: item[\"updated_at\"])",
+        "focus_span":  "lambda item: item[\"updated_at\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "last write wins",
+                                "conflict resolution",
+                                "sync",
+                                "updated time"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY61_L09_merge_strategy_001",
+        "level":  9,
+        "title":  "Create a sync result by taking the union of the bookmark sets",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the structure that merges bookmark data—which remains natural even when combined—using a set union.",
+        "code":  "local_bookmarks = {\"a\", \"b\"}\nremote_bookmarks = {\"b\", \"c\"}\nmerged_bookmarks = local_bookmarks.union(remote_bookmarks)\nmerged_count = len(merged_bookmarks)",
+        "question_type":  "multiple_choice",
+        "question":  "What is the value of `merged_count`?",
+        "choices":  [
+                        "2",
+                        "3",
+                        "4",
+                        "1"
+                    ],
+        "answer":  "3",
+        "explanation":  "When you perform a set union on the two sets, a, b, and c remain, and duplicate b is merged into a single instance. This is because a set union includes all unique elements from both sets. A common source of confusion: Option 4 counts the duplicate b twice. Point of misinterpretation: This occurs when the reader overlooks the fact that a set retains duplicate elements as a single instance. Data suitable for merging should be interpreted as **items from both sides → union → final set with duplicates removed**.",
+        "side_card_ids":  [
+                              "PYV102_A7_PWA_OFFLINE_UPDATE"
+                          ],
+        "project_context":  "This is linked to the “sync merge” policy, which combines bookmarks added offline and in the cloud without discarding either set.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "서로 합쳐도 자연스러운 bookmark 데이터를 set union으로 병합하는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left.union(right)` It calls the `union` method of the `set` object to return a new `set` that combines all unique elements from the two sets.",
+                                    "how_to_read":  "I believe we should combine the items from the left and right sets and retain only one instance of each duplicate.",
+                                    "key_point":  "For data that remains natural even when changes on both sides are preserved together—such as bookmarks—the merge strategy may work well.",
+                                    "common_mistake":  "It’s easy to assume that `union` discards one of the two and selects only the most recent one. It preserves all unique elements from both sides."
+                                },
+        "teaching_example":  {
+                                 "code":  "left = {\"x\", \"y\"}\nright = {\"y\", \"z\"}\nmerged = left.union(right)",
+                                 "walkthrough":  "`y` is duplicated, so it remains only once and `merged` contains three items: `x`, `y`, and `z`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "When you take the union of the two sets, a, b, and c remain, and the duplicate b is merged into a single instance.",
+                                   "why_correct":  "This is because the set union contains all unique elements from both sets.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "4",
+                                                               "why_wrong":  "This is the value where duplicate \u0027b\u0027 was counted twice.",
+                                                               "misread_step":  "This is an example of overlooking the fact that a set retains duplicate elements as a single entry."
+                                                           },
+                                   "takeaway":  "Data that can be merged is interpreted as **both items → union → final set with duplicates removed**."
+                               },
+        "target_statement":  "merged_bookmarks = local_bookmarks.union(remote_bookmarks)",
+        "focus_span":  "local_bookmarks.union(remote_bookmarks)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "merge strategy",
+                                "conflict resolution",
+                                "bookmarks",
+                                "sync"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY61_L09_conflict_resolution_ui_001",
+        "level":  9,
+        "title":  "Turn the \"local·remote\" conflict details into user options",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "argument_passing",
+                         "function_definition"
+                     ],
+        "reading_goal":  "Read the flow that takes two versions that are difficult to merge automatically and passes them to a function call to generate UI data for user selection.",
+        "code":  "def show_conflict_choices(local_note, remote_note):\n    return [local_note, remote_note]\n\nlocal_note = \"내 기기 수정본\"\nremote_note = \"다른 기기 수정본\"\nchoices = show_conflict_choices(local_note, remote_note)",
+        "question_type":  "multiple_choice",
+        "question":  "`choices` What is the value that goes into this?",
+        "choices":  [
+                        "[\"My Device Modification,\" \"Other Device Modification\"]",
+                        "[\"My Device Revision\"]",
+                        "[\"Modified version for other devices\"]",
+                        "[]"
+                    ],
+        "answer":  "[\"My Device Modification,\" \"Other Device Modification\"]",
+        "explanation":  "The function returns the received `local_note` and `remote_note` as a list in the same order. This is because the function body directly returns `[local_note, remote_note]`. Common Confusing Incorrect Answer: [\"My device revision\"] remote_note is also passed as the second argument and included in the returned list. Point of Misinterpretation: This occurs when the second positional argument is overlooked. The conflict UI follows the flow: **enter two versions → generate options → user decision**.",
+        "side_card_ids":  [
+                              "PYV102_A7_PWA_OFFLINE_UPDATE"
+                          ],
+        "project_context":  "This ties into the sync UX, which displays both versions to the user when the same note has been edited differently on multiple devices, making automatic merging difficult.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "자동 merge가 어려운 두 version을 function call에 전달해 사용자 선택 UI 데이터로 만드는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`show_conflict_choices(a, b)` is a function call that passes two arguments to a function.",
+                                    "how_to_read":  "It checks each positional argument in order to determine whether it is the local or remote version.",
+                                    "key_point":  "For note conflicts where automatic merging is not safe, a UI that displays both versions to the user and allows them to choose may be necessary.",
+                                    "common_mistake":  "It’s easy to assume that the conflict UI automatically merges the two values. This example merely presents the options."
+                                },
+        "teaching_example":  {
+                                 "code":  "def choose_versions(left, right):\n    return [left, right]\noptions = choose_versions(\"old\", \"new\")",
+                                 "walkthrough":  "Two strings are passed to the function in order, leaving two options in `options`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The function returns the received `local_note` and `remote_note` as a list in the same order.",
+                                   "why_correct":  "This is because the function body directly returns `[local_note, remote_note]`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\"My Device Revision\"]",
+                                                               "why_wrong":  "remote_note is also passed as the second argument and included in the returned list.",
+                                                               "misread_step":  "This is a case where the second positional argument was omitted."
+                                                           },
+                                   "takeaway":  "The conflict UI follows the flow: **enter two versions → generate options → user decision**."
+                               },
+        "target_statement":  "choices = show_conflict_choices(local_note, remote_note)",
+        "focus_span":  "show_conflict_choices(local_note, remote_note)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "conflict resolution UI",
+                                "sync conflict",
+                                "user choice",
+                                "notes"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY61_L10_idempotent_sync_001",
+        "level":  10,
+        "title":  "Passing the `operation_id` as a keyword argument to an idempotent sync call",
+        "concepts":  [
+                         "argument_passing",
+                         "call",
+                         "name_reference",
+                         "dict_key_lookup"
+                     ],
+        "reading_goal":  "Read the structure where a call argument in the form `name=value` directly specifies a parameter with the same name and passes the current value on the right.",
+        "code":  "def upsert_progress(record, operation_id=None):\n    return operation_id\n\nrecord = {\"id\": \"card-7\", \"mastery\": 0.8}\noperation_id = \"op-42\"\nused_id = upsert_progress(record, operation_id=operation_id)\nprint(used_id)",
+        "question_type":  "output_prediction",
+        "question":  "`operation_id=operation_id` Therefore, what value is passed to the function’s `operation_id` parameter?",
+        "choices":  [
+                        "op-42",
+                        "operation_id",
+                        "card-7",
+                        "0.8"
+                    ],
+        "answer":  "op-42",
+        "explanation":  "1) The current value of `operation_id` is `op-42`. 2) The ``operation_id=`` in the call specifies the target parameter. 3) `op-42`, which evaluates the expression on the right, is passed to that parameter. 4) Since the function returns that value, the output is also `op-42`.",
+        "side_card_ids":  [
+                              "PYV159_A1_RETRY_TIMEOUT_RESILIENCE_FLOW"
+                          ],
+        "project_context":  "\"offline retry\" relates to an idempotency design that passes a stable operation ID to the server\u0027s upsert when duplicate requests may be generated.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "argument_passing",
+        "reading_goal_internal":  "`name=value` 형태의 호출 인자가 같은 이름의 매개변수를 직접 지정하고 오른쪽 현재 값을 전달하는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A keyword argument in a function call explicitly names the receiving parameter in the form `parameter=value`.",
+                                    "how_to_read":  "The `operation_id` on the left is the parameter name of the called function, and the `operation_id` on the right is the actual value in the current scope.",
+                                    "key_point":  "Even if the same word appears on both sides, there is a difference in their roles: the left side specifies a parameter, while the right side is the evaluated value.",
+                                    "common_mistake":  "Since `operation_id=operation_id` is a separate assignment outside the function, it is easy to assume that it modifies the original variable."
+                                },
+        "teaching_example":  {
+                                 "code":  "def submit(data, request_id=None):\n    return request_id\nrequest_id = \"req-7\"\nprint(submit({}, request_id=request_id))",
+                                 "walkthrough":  "The value `req-7` in `request_id` on the right is passed to the parameter with the same name."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The current value of `operation_id` is `op-42`. 2) The ``operation_id=`` in the call specifies the target parameter. 3) `op-42`, which evaluates the expression on the right, is passed to that parameter. 4) Since the function returns that value, the output is also `op-42`.",
+                                   "why_correct":  "The current value of the variable on the right, op-42, is passed as a keyword argument to the parameter of the same name.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "operation_id",
+                                                               "why_wrong":  "That is the name written in the source code, and the actual runtime value passed is op-42.",
+                                                               "misread_step":  "Read the name on the left side of a keyword argument and the value expression on the right side, separating them by their respective roles."
+                                                           },
+                                   "takeaway":  "Read a keyword argument as **name the parameter → evaluate the expression on the right → pass the value to that parameter**."
+                               },
+        "target_statement":  "upsert_progress(record, operation_id=operation_id)",
+        "focus_span":  "operation_id=operation_id",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "idempotent_sync",
+                                "retry",
+                                "operation_id",
+                                "offline_sync"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY61_L10_sync_quality_gate_001",
+        "level":  10,
+        "title":  "Use `assert` to apply the verification results of offline storage to a quality gate",
+        "concepts":  [
+                         "assert_statement",
+                         "call",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the flow where the function call following `assert` is evaluated first, its return value is checked to see if it is truthy, and if it is False, an `AssertionError` is immediately raised.",
+        "code":  "def save_offline():\n    return False\n\ndef sync_when_online():\n    return True\n\ndef conflict_detected():\n    return True\n\nassert save_offline()\nassert sync_when_online()\nassert conflict_detected()",
+        "question_type":  "meaning_choice",
+        "question":  "What happens when the first `target` `assert` statement is executed in this code?",
+        "choices":  [
+                        "An AssertionError occurs",
+                        "All three `assert` statements pass.",
+                        "False automatically becomes True",
+                        "Returns None and continues"
+                    ],
+        "answer":  "An AssertionError occurs",
+        "explanation":  "1) The result of the `save_offline()` call is `False`. 2) `assert` checks the truthiness of that result. 3) Since the condition is `False`, an `AssertionError` is raised. 4) Since there is no code to catch the exception, the two `assert` statements below are not executed in the normal flow.",
+        "side_card_ids":  [
+                              "PYV102_A7_PWA_OFFLINE_UPDATE"
+                          ],
+        "project_context":  "It is connected to a sync quality gate that automatically verifies there is no data loss during offline storage, reconnection synchronization, and conflict resolution.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assert_statement",
+        "reading_goal_internal":  "assert 뒤 함수 호출을 먼저 평가하고 그 반환값이 truthy인지 검사해 False이면 즉시 AssertionError를 발생시키는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`assert condition` is a validation statement that evaluates `condition` and raises an `AssertionError` if it is falsy.",
+                                    "how_to_read":  "Since what follows `assert` is a function call, it first retrieves the return value of `save_offline()` and then checks that Boolean value.",
+                                    "key_point":  "If the first assert fails, the subsequent sync/conflict verification in the same execution flow will not proceed normally.",
+                                    "common_mistake":  "It is easy to think of `assert` as a construct that sets `save_offline` to `True` or ignores failures."
+                                },
+        "teaching_example":  {
+                                 "code":  "def check_cache():\n    return False\nassert check_cache()",
+                                 "walkthrough":  "Since `check_cache()` returns `False`, the `assert` statement raises an `AssertionError`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The result of the `save_offline()` call is `False`. 2) `assert` checks the truthiness of that result. 3) Since the condition is `False`, an `AssertionError` is raised. 4) Since there is no code to catch the exception, the two `assert` statements below are not executed in the normal flow.",
+                                   "why_correct":  "Since the first validation function returns False, the assert condition fails, resulting in an AssertionError.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "All three `assert` statements pass.",
+                                                               "why_wrong":  "Even if the subsequent functions return True, the first `assert` has already failed, so the normal flow is interrupted at that point.",
+                                                               "misread_step":  "Do not treat each `assert` as an independent statement; instead, follow the actual top-to-bottom execution order."
+                                                           },
+                                   "takeaway":  "\"assert\" is read as **\"evaluate a conditional expression → passes if truthy / raises AssertionError if falsy\"**."
+                               },
+        "target_statement":  "assert save_offline()",
+        "focus_span":  "assert save_offline()",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "sync_quality_gate",
+                                "offline_storage",
+                                "online_recovery",
+                                "conflict"
+                            ],
+        "pedagogical_intent":  "predict_exception"
+    },
+    {
+        "id":  "PY61_L10_offline_sync_flow_001",
+        "level":  10,
+        "title":  "Execute the five steps of the \"offline sync\" in the order specified by the `for` loop",
+        "concepts":  [
+                         "for_statement",
+                         "call",
+                         "name_reference",
+                         "literal"
+                     ],
+        "reading_goal":  "Bind the elements of the list of function objects one by one to `step`, starting from the first item, and track in order which ``step()`` calls actually execute which steps.",
+        "code":  "trace = []\n\ndef save_local(): trace.append(\"save\")\ndef mark_dirty(): trace.append(\"dirty\")\ndef queue_sync(): trace.append(\"queue\")\ndef flush_online(): trace.append(\"flush\")\ndef resolve_conflict(): trace.append(\"resolve\")\n\nsync_steps = [save_local, mark_dirty, queue_sync, flush_online, resolve_conflict]\nfor step in sync_steps:\n    step()\n\nprint(trace[3])",
+        "question_type":  "output_prediction",
+        "question":  "What is the value of `trace[3]` immediately after the fourth iteration ends?",
+        "choices":  [
+                        "save",
+                        "dirty",
+                        "queue",
+                        "flush"
+                    ],
+        "answer":  "flush",
+        "explanation":  "1) The `for` loop starts reading from the first function in `sync_steps`. 2) `save`, `dirty`, and `queue` are added to the trace in that order. 3) The fourth function, `flush_online`, is executed. 4) Since Python index 3 corresponds to the fourth item, ``trace[3]`` is `flush`.",
+        "side_card_ids":  [
+                              "PYV102_A7_PWA_OFFLINE_UPDATE"
+                          ],
+        "project_context":  "It is part of the overall sync workflow, which first saves offline changes locally and then synchronizes them with the server after network recovery to resolve conflicts.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "for_statement",
+        "reading_goal_internal":  "함수 객체 리스트의 첫 항목부터 하나씩 step에 바인딩하고 같은 `step()` 호출이 실제로 어떤 단계를 실행하는지 순서대로 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`for step in sync_steps:` retrieves values one by one from the iterable, assigns them to `step`, and then executes the indented body of the loop.",
+                                    "how_to_read":  "First, check the storage order of `sync_steps`, then determine which function object each `step` corresponds to in each iteration.",
+                                    "key_point":  "Since we are iterating through a regular list, the execution order is maintained as follows: local storage → dirty → queue → flush → conflict.",
+                                    "common_mistake":  "Since the functions are all contained within the list, it’s easy to assume they execute simultaneously, but a standard `for` loop proceeds one iteration at a time."
+                                },
+        "teaching_example":  {
+                                 "code":  "trace = []\ndef first(): trace.append(\"first\")\ndef second(): trace.append(\"second\")\nfor step in [first, second]:\n    step()\nprint(trace)",
+                                 "walkthrough":  "The functions are called from the first item in the list onward, preserving the order `first`, then `second`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The `for` loop starts reading from the first function in `sync_steps`. 2) `save`, `dirty`, and `queue` are added to the trace in that order. 3) The fourth function, `flush_online`, is executed. 4) Since Python index 3 corresponds to the fourth item, ``trace[3]`` is `flush`.",
+                                   "why_correct":  "Since the `flush_online` function is executed in the fourth iteration, the fourth trace entry is `flush`.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "queue",
+                                                               "why_wrong":  "The queue is added during the third iteration and is located at index 2.",
+                                                               "misread_step":  "Let’s practice aligning the loop iteration count with the list index, which starts at 0."
+                                                           },
+                                   "takeaway":  "A `for` loop is read in the following order: **select the next item → bind the loop variable → execute the body → move to the next item**."
+                               },
+        "target_statement":  "for step in sync_steps:",
+        "focus_span":  "for step in sync_steps:",
+        "focus_mode":  "compound_header",
+        "coverage_domain":  "frontend_pwa_and_ux",
+        "coverage_topics":  [
+                                "offline_first",
+                                "sync_queue",
+                                "dirty_record",
+                                "conflict_resolution"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    }
 ]

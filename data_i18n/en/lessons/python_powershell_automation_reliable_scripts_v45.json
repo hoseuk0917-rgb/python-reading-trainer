@@ -1,418 +1,966 @@
 [
-  {
-    "id": "PY45_L06_set_location_001",
-    "level": 6,
-    "title": "Reading Set-Location",
-    "concepts": [
-      "PowerShell",
-      "Set-Location",
-      "working_directory"
-    ],
-    "reading_goal": "Understand why you should pin the working folder first in a PowerShell script.",
-    "code": "$projectRoot = Split-Path -Parent $PSScriptRoot\nSet-Location $projectRoot\nGet-Location",
-    "question_type": "meaning_choice",
-    "question": "Why is `Set-Location` used first?",
-    "choices": [
-      "Set and verify the correct base directory",
-      "Delete the project",
-      "Push to GitHub",
-      "Disable relative paths"
-    ],
-    "answer": "Set and verify the correct base directory",
-    "explanation": "$PSScriptRoot is the folder containing the running script, so taking its parent avoids hard-coding a D: path for one computer. Set-Location changes the base and Get-Location confirms it. Stop on failure so relative paths cannot target an unintended location.",
-    "side_card_ids": [
-      "PYV102_A7_FILE_SAFE_WRITE"
-    ],
-    "project_context": "To be on the safe side, you should run the commands to generate the lesson JSON, modify app.js, and use Git from the project root directory."
-  },
-  {
-    "id": "PY45_L06_git_status_clean_001",
-    "level": 6,
-    "title": "Reading \"git status clean\"",
-    "concepts": [
-      "git_status",
-      "working_tree",
-      "clean_state"
-    ],
-    "reading_goal": "Get into the habit of checking the status of your working tree with `git status` before and after making changes.",
-    "code": "git status --short",
-    "question_type": "meaning_choice",
-    "question": "What does it mean when the output of `git status --short` is empty?",
-    "choices": [
-      "No staged, tracked-working-tree, or shown untracked changes exist",
-      "The remote is synchronized",
-      "No ignored files exist",
-      "Every test passed"
-    ],
-    "answer": "No staged, tracked-working-tree, or shown untracked changes exist",
-    "explanation": "Empty default git status --short output means there are no staged changes, tracked working-tree changes, or untracked files that status would show. Ignored files may remain, and this says nothing about remote synchronization. A dirty tree may contain user work, so inspect scope instead of deleting it automatically.",
-    "side_card_ids": [
-      "PYV107_A1_ENV_GIT_FLOW_BEGINNER"
-    ],
-    "project_context": "During the v41–v44 expansion as well, we always checked that the system was in a \"clean\" state before moving on to the next version."
-  },
-  {
-    "id": "PY45_L06_no_pager_log_001",
-    "level": 6,
-    "title": "Reading `git --no-pager log`",
-    "concepts": [
-      "git_log",
-      "pager",
-      "no_pager"
-    ],
-    "reading_goal": "Understand how to prevent `git log` from getting stuck in a pager in PowerShell.",
-    "code": "git --no-pager log --oneline -5",
-    "question_type": "meaning_choice",
-    "question": "Why add \"--no-pager\"?",
-    "choices": [
-      "To prevent log output from being trapped on the `less` screen,",
-      "To automatically delete commits",
-      "To change the remote repository",
-      "To skip JSON validation"
-    ],
-    "answer": "To prevent log output from being trapped on the `less` screen,",
-    "explanation": "\"no-pager log\" is a method of outputting Git logs directly without using a pager. When the output is sent to a pager, an (END) screen may appear, making it seem as though the command has stopped. Therefore, the correct answer is “to prevent the log output from being trapped in the less screen.”",
-    "side_card_ids": [
-      "PYV102_A7_FILE_SAFE_WRITE"
-    ],
-    "project_context": "This is a habit I’ve adopted to avoid the issue where “git log” repeatedly displays the (END) screen."
-  },
-  {
-    "id": "PY45_L07_here_string_001",
-    "level": 7,
-    "title": "Reading a Here-String in PowerShell",
-    "concepts": [
-      "here_string",
-      "PowerShell",
-      "multiline_text"
-    ],
-    "reading_goal": "Understand how to use here-strings in PowerShell to save multi-line text to a file.",
-    "code": "@'\nhello\nworld\n'@ | Set-Content -Path out.txt -Encoding UTF8",
-    "question_type": "meaning_choice",
-    "question": "Why use `here-string`?",
-    "choices": [
-      "Pass a multiline literal string to a file or pipeline",
-      "Execute untrusted text safely",
-      "Encrypt the content",
-      "Remove every newline"
-    ],
-    "answer": "Pass a multiline literal string to a file or pipeline",
-    "explanation": "@' ... '@ is a single-quoted here-string, so it does not interpolate variables and passes multiline text nearly literally. Newlines after the opening and before the closing marker matter, and the closing '@ must begin its own line. This syntax does not make untrusted text safe to execute as code.",
-    "side_card_ids": [
-      "PYV102_A7_FILE_SAFE_WRITE"
-    ],
-    "project_context": "Starting with v41, I used here-strings when creating temporary Python files."
-  },
-  {
-    "id": "PY45_L07_avoid_nested_herestring_001",
-    "level": 7,
-    "title": "Avoiding nested here-strings",
-    "concepts": [
-      "comment",
-      "here_string",
-      "nesting_bug",
-      "script_safety"
-    ],
-    "reading_goal": "I understand that nesting `here-string`s can cause the content to become garbled.",
-    "code": "# safer\n@'\npython code here\n'@ | Set-Content script.py -Encoding UTF8\npython script.py",
-    "question_type": "meaning_choice",
-    "question": "Why should you avoid nested here-strings in long scripts?",
-    "choices": [
-      "This is because if the terminating boundary is misaligned, unexpected code may be executed.",
-      "Because PowerShell can never run Python",
-      "Because Git commits always fail",
-      "Because it cannot be saved in UTF-8"
-    ],
-    "answer": "This is because if the terminating boundary is misaligned, unexpected code may be executed.",
-    "explanation": "If a line matching the here-string delimiter appears in content, the block can end early or cause a parse error. Multiple quoting layers make boundaries hard to review. Prefer maintained source files or unique temporary files with explicit arguments when practical.",
-    "side_card_ids": [
-      "PYV102_A7_FILE_SAFE_WRITE"
-    ],
-    "project_context": "In the early stages of v41, this type of mistake was the cause of other project code being executed."
-  },
-  {
-    "id": "PY45_L07_remove_variable_001",
-    "level": 7,
-    "title": "Reading \"Remove-Variable\"",
-    "concepts": [
-      "Remove-Variable",
-      "stale_variable",
-      "PowerShell_state"
-    ],
-    "reading_goal": "Understand why you should clear variables remaining in a PowerShell session.",
-    "code": "Remove-Variable py -ErrorAction SilentlyContinue\nRemove-Variable cards -ErrorAction SilentlyContinue",
-    "question_type": "meaning_choice",
-    "question": "Why are stale variables dangerous?",
-    "choices": [
-      "This is because values from previous operations may remain, which could cause unexpected code to be executed",
-      "This is because GitHub access is blocked if there are any variables",
-      "Because PowerShell always closes",
-      "Because the JSON file is automatically deleted"
-    ],
-    "answer": "This is because values from previous operations may remain, which could cause unexpected code to be executed",
-    "explanation": "Remove-Variable removes a name from the current scope, but SilentlyContinue hides failure and it does not reset values in other scopes or environment state. Reliable automation should not depend on cleaning an interactive session; use a fresh process or script scope, Set-StrictMode, and explicit initialization.",
-    "side_card_ids": [
-      "PYV102_A7_FILE_SAFE_WRITE"
-    ],
-    "project_context": "When checking Problem v41, I first removed the `py` and `cards` variables and then checked the state."
-  },
-  {
-    "id": "PY45_L08_temp_python_script_001",
-    "level": 8,
-    "title": "Reading Temporary Python Scripts",
-    "concepts": [
-      "print",
-      "temp_script",
-      "Python",
-      "automation"
-    ],
-    "reading_goal": "Understand how to save long Python code to a temporary file instead of a PowerShell variable and execute it.",
-    "code": "$script = Join-Path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName() + '.py')\ntry {\n  @'\nprint('hello')\n'@ | Set-Content -Path $script -Encoding UTF8\n  python $script\n  if ($LASTEXITCODE -ne 0) { throw \"Python failed\" }\n} finally {\n  Remove-Item -LiteralPath $script -ErrorAction SilentlyContinue\n}",
-    "question_type": "meaning_choice",
-    "question": "What are the advantages of the temporary Python file method?",
-    "choices": [
-      "Long code is less susceptible to changes in the state of PowerShell variables",
-      "Verification is not required",
-      "You can push without Git",
-      "Files are always automatically committed"
-    ],
-    "answer": "Long code is less susceptible to changes in the state of PowerShell variables",
-    "explanation": "A unique temporary Python file makes long code and indentation reviewable outside command-line quoting. try/finally removes the exact literal path on success or failure, and the Python exit code is checked. If the automation should be maintained, keep a reviewed script in the repository instead.",
-    "side_card_ids": [
-      "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
-    ],
-    "project_context": "This is the stability pattern used in the v42–v44 extensions."
-  },
-  {
-    "id": "PY45_L08_utf8_set_content_001",
-    "level": 8,
-    "title": "Reading \"Set-Content -Encoding UTF8\"",
-    "concepts": [
-      "UTF8",
-      "Set-Content",
-      "encoding"
-    ],
-    "reading_goal": "Understand why UTF-8 encoding is specified to safely store Hangul and JSON.",
-    "code": "Set-Content -Path $script -Value $text -Encoding UTF8",
-    "question_type": "meaning_choice",
-    "question": "Why specify UTF-8 encoding?",
-    "choices": [
-      "Reduce text corruption from encoding mismatch",
-      "Validate JSON syntax",
-      "Run Python faster",
-      "Remove all BOMs"
-    ],
-    "answer": "Reduce text corruption from encoding mismatch",
-    "explanation": "-Encoding UTF8 reduces corruption caused by mismatched default encodings. Windows PowerShell 5.1 writes a BOM for UTF8, while PowerShell 7's utf8 is BOM-less by default, so check the consumer and runtime version. Encoding does not validate JSON syntax.",
-    "side_card_ids": [
-      "PYV160_A1_FILE_PATH_ENCODING_FLOW"
-    ],
-    "project_context": "Since the lesson JSON contains a lot of text in Korean, it must be saved in UTF-8."
-  },
-  {
-    "id": "PY45_L08_prevent_overwrite_001",
-    "level": 8,
-    "title": "Read-only to prevent overwriting",
-    "concepts": [
-      "if",
-      "overwrite_guard",
-      "idempotent_script",
-      "safety_check"
-    ],
-    "reading_goal": "Understand the safety mechanism that stops the process if a file or a link to `app.js` already exists.",
-    "code": "if lesson_path.exists():\n    raise SystemExit('already exists')\n\nif 'v45.json' in app:\n    raise SystemExit('already linked')",
-    "question_type": "meaning_choice",
-    "question": "What is the purpose of the overwrite guard?",
-    "choices": [
-      "Avoid overwriting or duplicating an already applied change",
-      "Prove the existing result is correct",
-      "Delete every prior version",
-      "Ignore concurrent edits"
-    ],
-    "answer": "Avoid overwriting or duplicating an already applied change",
-    "explanation": "The first guard refuses to overwrite an existing target; the second avoids a duplicate link when the app text contains v45.json. A substring can match a comment or another path, so parse structure or validate an exact anchor and match count. On rerun, also verify that existing output has the intended content.",
-    "side_card_ids": [
-      "PYV102_A7_FILE_SAFE_WRITE"
-    ],
-    "project_context": "I added guards such as \"lesson file exists\" and \"app already contains\" to scripts v42 through v44."
-  },
-  {
-    "id": "PY45_L08_expected_version_guard_001",
-    "level": 8,
-    "title": "Reading the \"expected version guard\"",
-    "concepts": [
-      "if",
-      "version_guard",
-      "APP_DATA_VERSION",
-      "precondition"
-    ],
-    "reading_goal": "Understand why we check whether the app.js file before modification is the expected version.",
-    "code": "if 'const APP_DATA_VERSION = \"20260531_v44\";' not in app:\n    raise SystemExit('unexpected version')",
-    "question_type": "meaning_choice",
-    "question": "Why is an \"expected version guard\" necessary?",
-    "choices": [
-      "To stop when someone else has already made changes or when the current standards are different",
-      "To always force an update to the latest version",
-      "To hide the Git log",
-      "To skip JSON parsing"
-    ],
-    "answer": "To stop when someone else has already made changes or when the current standards are different",
-    "explanation": "An exact baseline string prevents a simple replacement on an unexpected version. It is also formatting-sensitive, and matching the version alone does not prove surrounding structure is unchanged. Require exactly one target anchor and inspect the diff; a mismatch is not evidence of a cache problem.",
-    "side_card_ids": [
-      "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
-    ],
-    "project_context": "Since v45 should only be applied when the system is in v44, an APP_DATA_VERSION guard is required."
-  },
-  {
-    "id": "PY45_L09_validation_expectation_001",
-    "level": 9,
-    "title": "Read \"Managing Expected Values in Validation\"",
-    "concepts": [
-      "if",
-      "validation",
-      "expected_count",
-      "test_assertion"
-    ],
-    "reading_goal": "Understand that the expected value of the verification code must match the actual number generated.",
-    "code": "if len(cards) != 16:\n    raise SystemExit('wrong card count')",
-    "question_type": "meaning_choice",
-    "question": "What could happen if `expected_count` is incorrect?",
-    "choices": [
-      "The actual data may be correct, but the validation may still fail.",
-      "My Git repository always breaks",
-      "The browser cannot connect to the server",
-      "All JSON is automatically deleted"
-    ],
-    "answer": "The actual data may be correct, but the validation may still fail.",
-    "explanation": "This check fails when cards differs from the independently specified count of 16. Deriving expected from len(cards) would make it meaningless, while a wrong specification can reject good data or accept bad data. Version the expectation with requirements and report actual and expected values on failure.",
-    "side_card_ids": [],
-    "project_context": "When changing the number of cards, you must also update the expected total."
-  },
-  {
-    "id": "PY45_L09_full_validation_001",
-    "level": 9,
-    "title": "Read the Entire Verification Routine",
-    "concepts": [
-      "for",
-      "full_validation",
-      "side_cards",
-      "lesson_cards"
-    ],
-    "reading_goal": "Understand the process of verifying references, including not only lesson cards but also side cards.",
-    "code": "for card in lessons:\n    for sid in card.get('side_card_ids', []):\n        assert sid in side_ids, (card['id'], sid)",
-    "question_type": "meaning_choice",
-    "question": "Why do we need to verify the `side_cards` as well?",
-    "choices": [
-      "Because lesson cards can reference side card IDs",
-      "because you always have to delete the side card file",
-      "To reduce the number of lesson cards",
-      "To speed up Git pushes"
-    ],
-    "answer": "Because lesson cards can reference side card IDs",
-    "explanation": "side_card_ids must reference real side-card IDs, so validate only against side_ids. Unioning lesson_ids could let an accidental lesson ID pass as a side-card reference. Treat a missing optional list as empty and report both source card and bad sid.",
-    "side_card_ids": [
-      "PYV102_A7_FILE_SAFE_WRITE"
-    ],
-    "project_context": "In the early stages of v41, the `side_card_ids` validation triggered a false positive, so it was later fixed by including `side_cards`."
-  },
-  {
-    "id": "PY45_L09_server_log_200_001",
-    "level": 9,
-    "title": "Reading 200 Server Logs",
-    "concepts": [
-      "server_log",
-      "HTTP_200",
-      "local_server"
-    ],
-    "reading_goal": "Understand how to check whether a file has loaded correctly in the local server logs.",
-    "code": "GET /data/lessons/python_xxx_v45.json?v=... HTTP/1.1\" 200",
-    "question_type": "meaning_choice",
-    "question": "What does a 200 in the server log mean?",
-    "choices": [
-      "This means that the requested file was successfully provided.",
-      "This means the file could not be found.",
-      "Means \"Python syntax error\"",
-      "This means the Git push failed"
-    ],
-    "answer": "This means that the requested file was successfully provided.",
-    "explanation": "200 means the server returned a success status and response for that URL. It checks one part of the connection, but not that the body is expected JSON, matches the schema, or was parsed and rendered by the browser. Continue with content type, body validation, and browser error checks.",
-    "side_card_ids": [],
-    "project_context": "In v41–v44, I verified that 200 new lesson files were loaded in the local server logs."
-  },
-  {
-    "id": "PY45_L09_favicon_404_ignore_001",
-    "level": 9,
-    "title": "Read \"favicon 404\"",
-    "concepts": [
-      "HTTP_404",
-      "favicon",
-      "noise_log"
-    ],
-    "reading_goal": "Distinguish between 404 errors in server logs that can be ignored and those that are important.",
-    "code": "GET /favicon.ico HTTP/1.1\" 404",
-    "question_type": "meaning_choice",
-    "question": "Why isn't a 404 error for \"favicon.ico\" usually a big deal?",
-    "choices": [
-      "Because the request for the browser icon failed and it is not directly related to loading the lesson",
-      "Because that means all the lesson files are corrupted",
-      "Because it means the GitHub push failed",
-      "Because that means Python isn't installed"
-    ],
-    "answer": "Because the request for the browser icon failed and it is not directly related to loading the lesson",
-    "explanation": "The important thing is whether the new lesson JSON and data files are loading with a 200 status code. A 404 error for the favicon often occurs when the browser automatically requests the icon file but fails to retrieve it. Distinguishing this from a failure in the core data request can help reduce unnecessary debugging.",
-    "side_card_ids": [
-      "PYV102_A7_FILE_SAFE_WRITE"
-    ],
-    "project_context": "When checking the local server, a 404 error for the favicon appeared repeatedly, but it did not affect the app's functionality."
-  },
-  {
-    "id": "PY45_L10_rollback_with_git_001",
-    "level": 10,
-    "title": "Reading about `git rollback`",
-    "concepts": [
-      "rollback",
-      "git_restore",
-      "recovery"
-    ],
-    "reading_goal": "Understand how to revert changes using Git when automation goes wrong.",
-    "code": "git restore src/pwa/app.js\nRemove-Item data/lessons/bad_v45.json",
-    "question_type": "meaning_choice",
-    "question": "When is `git restore` needed?",
-    "choices": [
-      "Discard a verified target's unstaged working-tree changes when that is intended",
-      "Delete the remote repository",
-      "Undo every committed change automatically",
-      "Preserve all untracked files"
-    ],
-    "answer": "Discard a verified target's unstaged working-tree changes when that is intended",
-    "explanation": "Default git restore app.js can overwrite unstaged working-tree edits with the index version while leaving staged changes, and Remove-Item irreversibly deletes an untracked file. Verify exact targets, status, git diff, and git diff --cached first, preserving needed work as a patch or backup.",
-    "side_card_ids": [
-      "PYV102_A7_FILE_SAFE_WRITE"
-    ],
-    "project_context": "In the early stages of v41, after checking the status, it was possible to separate app.js from the generated files and restore them if necessary."
-  },
-  {
-    "id": "PY45_L10_atomic_commit_001",
-    "level": 10,
-    "title": "Reading about atomic commits",
-    "concepts": [
-      "atomic_commit",
-      "git_commit",
-      "change_set"
-    ],
-    "reading_goal": "I understand why a single version increment is grouped into a single small commit.",
-    "code": "git add data/lessons/v45.json src/pwa/app.js\ngit commit -m \"Add PowerShell automation reading cards\"",
-    "question_type": "meaning_choice",
-    "question": "What are the advantages of an atomic commit?",
-    "choices": [
-      "When a problem arises, it's easy to identify which change caused it",
-      "Ensure that all features are included in a single commit",
-      "Allows pushing without verification",
-      "Automatically hides file names"
-    ],
-    "answer": "When a problem arises, it's easy to identify which change caused it",
-    "explanation": "If you put the version-specific lesson JSON and the connection to app.js into a single commit, it makes it easier to track the history. An atomic commit is the practice of grouping only one meaningful change into a single commit. Including only the results of the validation and the related files makes it easy to roll back or trace changes later. Therefore, the correct answer is “It’s easy to find which change caused the problem when an issue arises.”",
-    "side_card_ids": [],
-    "project_context": "v41, v42, v43, and v44 each remain as a single feature commit."
-  }
+    {
+        "id":  "PY45_L06_set_location_001",
+        "level":  6,
+        "title":  "Change the working directory using `os.chdir(project_root)`",
+        "concepts":  [
+                         "call",
+                         "attribute_access",
+                         "assignment"
+                     ],
+        "reading_goal":  "Explain how the path passed as an argument in a module function call is used to change the current working directory.",
+        "code":  "import os\nfrom pathlib import Path\n\nproject_root = Path(\"demo_project\")\nproject_root.mkdir(exist_ok=True)\nos.chdir(project_root)\nprint(Path.cwd().name)",
+        "question_type":  "meaning_choice",
+        "question":  "Which of the following best describes the role of the `os.chdir(project_root)` call?",
+        "choices":  [
+                        "Change the current working directory to the project_root path",
+                        "Delete the `project_root` folder.",
+                        "Change the current Python version",
+                        "Automatically generates Git commits"
+                    ],
+        "answer":  "Change the current working directory to the project_root path",
+        "explanation":  "`project_root` stores the path string to navigate to. ``os.chdir(project_root)`` calls the `chdir` function from the `os` module and passes that path as an argument. As a result, the current working directory changes to that path. `chdir` is a function that changes the working directory; it stands for \"change directory.\" Common source of confusion: Deletes the `project_root` folder. This is not a deletion function but a function to change the working directory. Point of misinterpretation: Distinguish between the function name `chdir` and the role played by the path passed as an argument. ``os.chdir(path)`` does not delete a file but changes the current working directory to `path`.",
+        "side_card_ids":  [
+                              "PYV102_A7_FILE_SAFE_WRITE"
+                          ],
+        "project_context":  "This refers to the context of setting the working directory to the project root before executing a relative path command in an automation script.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "module function call에서 인자로 전달된 경로가 현재 작업 디렉터리 변경에 쓰이는 의미를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`os.chdir(path)` is a function call that changes the working directory of the current Python process to the specified path.",
+                                    "how_to_read":  "After noting that `os` is the module name and `chdir` is a function within that module, check what path value is passed in the parentheses.",
+                                    "key_point":  "Changing the working directory is different from moving or deleting a file. Afterward, the base location used to interpret relative paths changes.",
+                                    "common_mistake":  "It is easy to assume that `chdir` changes the name or contents of the `project_root` folder itself. In reality, it changes the working directory from which the current process operates."
+                                },
+        "teaching_example":  {
+                                 "code":  "import os\n\nfolder = \"/tmp/demo\"\nos.chdir(folder)",
+                                 "walkthrough":  "`os.chdir(folder)` instructs the system to change the current working directory to `/tmp/demo`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "project_root stores the path string to be navigated to. `os.chdir(project_root)` calls the chdir function from the os module and passes that path as an argument. As a result, the current working directory changes to that path.",
+                                   "why_correct":  "`chdir` is a function that changes the working directory, as the name “change directory” implies.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Delete the `project_root` folder.",
+                                                               "why_wrong":  "It is a function that changes the directory, not a delete function.",
+                                                               "misread_step":  "Distinguish between the role of the function name `chdir` and that of the passed path."
+                                                           },
+                                   "takeaway":  "`os.chdir(path)` does not delete a file; rather, it changes the current working directory to `path`."
+                               },
+        "target_statement":  "os.chdir(project_root)",
+        "focus_span":  "os.chdir(project_root)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "cli_and_automation",
+        "coverage_topics":  [
+                                "working_directory",
+                                "project_root",
+                                "path",
+                                "automation"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY45_L06_git_status_clean_001",
+        "level":  6,
+        "title":  "Check if the change log is empty at `== []`",
+        "concepts":  [
+                         "comparison",
+                         "assignment"
+                     ],
+        "reading_goal":  "Read the meaning of `git status --short` in a clean working tree (which shows no changes) in conjunction with the Python comparison results.",
+        "code":  "changes = []\nis_clean = changes == []\nprint(is_clean)",
+        "question_type":  "meaning_choice",
+        "question":  "If `changes`, which models the Git change list, is empty and `is_clean` is True, what does that mean from the perspective of `git status --short`?",
+        "choices":  [
+                        "This means there are no tracked or untracked changes to report in the current working tree.",
+                        "This means there are no commits in the remote repository.",
+                        "This means that the Git program is not installed.",
+                        "This means that all files have been deleted."
+                    ],
+        "answer":  "This means there are no tracked or untracked changes to report in the current working tree.",
+        "explanation":  "1) `changes` is an empty list. 2) Since it is equal to an empty list, `is_clean` is True. 3) In this model, “True” means there are no changes to report to `git status --short`. This explanation interprets the Python target of this card by linking it to the legacy/domain context, stating that it means there are no tracked or untracked changes in the current working tree to report. Confusing wrong answer: “It means there are no commits in the remote repository.” This option focuses only on specific syntax or context in the code and misses the core meaning of the card. Point of misinterpretation: If you view `changes == []` merely as a general list comparison, you lose the Git habit of checking the state of the working tree before and after modifications. Before and after performing Git operations, you check the **status of changes in the working tree** by seeing whether `git status --short` produces any output.",
+        "side_card_ids":  [
+                              "PYV107_A1_ENV_GIT_FLOW_BEGINNER"
+                          ],
+        "project_context":  "`git status --short` The context involves structuring the results to determine whether they are in a \"clean\" state with no changes.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "`git status --short`가 비어 있는 clean working tree의 의미를 Python 비교 결과와 연결해 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`==` is an operator that compares whether two values are equal and returns True or False.",
+                                    "how_to_read":  "After checking the current value of the variable on the left, compare it to the value on the right to see if they have the same structure and content.",
+                                    "key_point":  "The key point is the working tree meaning of **\"No changes to show in git status\"**, rather than the `bool` value itself from the empty list comparison.",
+                                    "common_mistake":  "`changes == []` If you view this solely as a standard list comparison, the habit of checking the before-and-after states in Git will disappear."
+                                },
+        "teaching_example":  {
+                                 "code":  "errors = []\nno_errors = errors == []\nprint(no_errors)",
+                                 "walkthrough":  "Since `errors` is an empty list, the equality check with an empty list returns `True`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `changes` is an empty list. 2) Since it is an empty list, `is_clean` is True. 3) In this model, True means there are no changes to report to `git status --short`.",
+                                   "why_correct":  "This explanation interprets the Python target of this card—which means “There are no tracked or untracked changes to report in the current working tree”—in the context of legacy/domain objectives.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "This means there are no commits in the remote repository.",
+                                                               "why_wrong":  "This option focuses only on certain aspects of the code’s syntax or context and misses the core meaning of the card.",
+                                                               "misread_step":  "`changes == []` If you view this solely as a standard list comparison, the habit of checking the before-and-after states in Git will disappear."
+                                                           },
+                                   "takeaway":  "Before and after performing Git operations, check the **status of changes in the working tree** by verifying whether `git status --short` produces output."
+                               },
+        "target_statement":  "is_clean = changes == []",
+        "focus_span":  "changes == []",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "git_status",
+                                "clean_worktree",
+                                "changes",
+                                "comparison"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY45_L06_no_pager_log_001",
+        "level":  6,
+        "title":  "Check if ``--no-pager`` is in the Git argument list using ``in``",
+        "concepts":  [
+                         "membership_test",
+                         "assignment"
+                     ],
+        "reading_goal":  "In `git --no-pager log ...`, the \"no-pager\" option is intended to display the log output directly without using a pager.",
+        "code":  "git_args = [\"git\", \"--no-pager\", \"log\", \"--oneline\", \"-5\"]\nno_pager = \"--no-pager\" in git_args\nprint(no_pager)",
+        "question_type":  "meaning_choice",
+        "question":  "Why does the Git argument include `--no-pager`?",
+        "choices":  [
+                        "To prevent the `git log` output from getting stuck in the pager and instead display it directly in the terminal,",
+                        "To automatically delete the commit.",
+                        "I want to send Git logs over the network",
+                        "I want to replace PowerShell with Bash"
+                    ],
+        "answer":  "To prevent the `git log` output from getting stuck in the pager and instead display it directly in the terminal,",
+        "explanation":  "1) `git_args` includes `--no-pager`. 2) This option prevents Git from sending log output to a pager. 3) This prevents the log from getting stuck in the pager screen during automation or PowerShell use. This explanation interprets the Python target on this card by linking it to the “legacy/domain” purpose, with the goal of ensuring that `git log` output appears directly in the terminal without getting stuck in the pager screen. Common Misconception: When attempting to automatically delete a commit, this option focuses only on specific syntax or context within the code, overlooking the card’s core meaning. Point of Misinterpretation: If you only focus on the fact that a string exists in the list, you’ll miss the role of the option that actually solves the terminal problem. To read Git logs directly in an automation script, you can use the format **`git --no-pager log ...`**.",
+        "side_card_ids":  [
+                              "PYV102_A7_FILE_SAFE_WRITE"
+                          ],
+        "project_context":  "The context is checking whether the necessary options have been included in the command argument list so that the automation code outputs Git logs without a pager.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "`git --no-pager log ...`에서 no-pager 옵션이 로그 출력을 pager 없이 바로 보여주는 목적임을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`value in container` Checks whether a value is contained within a container such as a list, string, or set.",
+                                    "how_to_read":  "First, identify the value to be found, then compare it with the actual items in the container on the right.",
+                                    "key_point":  "It is more important to convey that `--no-pager` is a **Git global option that bypasses the pager** than to mention that `membership True`.",
+                                    "common_mistake":  "If you only identify that a string exists in the list, you miss the role of the option that actually solves the terminal problem."
+                                },
+        "teaching_example":  {
+                                 "code":  "args = [\"python\", \"-m\", \"pip\", \"--version\"]\nhas_module_flag = \"-m\" in args\nprint(has_module_flag)",
+                                 "walkthrough":  "`-m` Since the string is inside the `args` list, the membership result is `True`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) `--no-pager` is included in `git_args`. 2) This option prevents Git from sending log output to a pager. 3) This avoids the issue of logs getting stuck on the pager screen in automation and PowerShell.",
+                                   "why_correct":  "`git log` This explanation interprets the Python target on this card in the context of legacy/domain purposes to ensure that output appears directly in the terminal without being funneled through the pager and stopping there.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "To automatically delete the commit.",
+                                                               "why_wrong":  "This option focuses only on certain aspects of the code’s syntax or context and misses the core meaning of the card.",
+                                                               "misread_step":  "If you only identify that a string exists in the list, you miss the role of the option that actually solves the terminal problem."
+                                                           },
+                                   "takeaway":  "To view the Git log directly in Automation, you can use the format **`git --no-pager log ...`**."
+                               },
+        "target_statement":  "no_pager = \"--no-pager\" in git_args",
+        "focus_span":  "\"--no-pager\" in git_args",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "git_log",
+                                "no_pager",
+                                "command_arguments",
+                                "membership"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY45_L07_here_string_001",
+        "level":  7,
+        "title":  "Creating multi-line strings with triple quotes",
+        "concepts":  [
+                         "literal",
+                         "assignment"
+                     ],
+        "reading_goal":  "A line break within a triple-quoted string literal is treated as part of a single string value.",
+        "code":  "text = \"\"\"hello\nworld\"\"\"\nprint(text.splitlines())",
+        "question_type":  "output_prediction",
+        "question":  "What is the result of `text.splitlines()`?",
+        "choices":  [
+                        "[\u0027hello\u0027, \u0027world\u0027]",
+                        "[\u0027helloworld\u0027]",
+                        "\u0027hello world\u0027",
+                        "2"
+                    ],
+        "answer":  "[\u0027hello\u0027, \u0027world\u0027]",
+        "explanation":  "Inside the triple quotes, the word “hello” on the first line and “world” on the second line are separated by an actual line break. `splitlines()` splits the string into two items based on this line boundary. This is because triple-quoted strings preserve internal line breaks as part of the string data. A common source of confusion: [\u0027helloworld\u0027]—there is no code that removes the line break between the two words. Point of Misinterpretation: You must verify that the line break inside the triple quotes is part of the string value. Multiple lines inside triple quotes form a single string, and the line break is included in the data.",
+        "side_card_ids":  [
+                              "PYV102_A7_FILE_SAFE_WRITE"
+                          ],
+        "project_context":  "The requirement to treat multi-line text as a single value, similar to PowerShell `here-strings`, has been adapted to Python’s actual multi-line string syntax.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "literal",
+        "reading_goal_internal":  "triple-quoted string literal 안의 줄바꿈을 포함해 하나의 문자열 값으로 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "Python’s triple-quote strings allow you to write text spanning multiple lines as a single string literal.",
+                                    "how_to_read":  "The text is interpreted as a single string from the opening triple quotation mark to the closing triple quotation mark, and line breaks within that range are also included in the value.",
+                                    "key_point":  "Even if the code spans multiple physical lines, it may be a single string literal.",
+                                    "common_mistake":  "It is easy to mistake the `world` on the second line for a separate Python statement. Everything up to the closing triple quotes is part of the string."
+                                },
+        "teaching_example":  {
+                                 "code":  "note = \"\"\"first\nsecond\"\"\"\nprint(note.splitlines())",
+                                 "walkthrough":  "Since there are two lines inside the triple quotes, the result of `splitlines` is `[\u0027first\u0027, \u0027second\u0027]`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Inside the triple quotes, the word \"hello\" on the first line and \"world\" on the second line are separated by an actual line break. The `splitlines()` function splits the string into two elements based on these line boundaries.",
+                                   "why_correct":  "This is because triple-quoted strings preserve internal line breaks as part of the string data.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "[\u0027helloworld\u0027]",
+                                                               "why_wrong":  "There is no code where line breaks between words are removed.",
+                                                               "misread_step":  "You must also verify whether line breaks within triple quotes are part of the string value."
+                                                           },
+                                   "takeaway":  "Multiple lines enclosed in triple quotes form a single string, and line breaks are included in the data."
+                               },
+        "target_statement":  "text = \"\"\"hello\nworld\"\"\"",
+        "focus_span":  "\"\"\"hello\nworld\"\"\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "cli_and_automation",
+        "coverage_topics":  [
+                                "multiline text",
+                                "triple-quoted string",
+                                "script generation",
+                                "PowerShell here-string analogy"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY45_L07_avoid_nested_herestring_001",
+        "level":  7,
+        "title":  "Safely concatenate script lines into a single string using `join`",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the flow of the `join` method call on a string, which inserts the `separator` between multiple string elements to form a single string.",
+        "code":  "script_lines = [\"print(\u0027hello\u0027)\", \"print(\u0027world\u0027)\"]\nscript = \"\\n\".join(script_lines)\nprint(script.count(\"\\n\"))",
+        "question_type":  "output_prediction",
+        "question":  "What is the value output by the last line, ``print(script.count(\"\\n\"))``?",
+        "choices":  [
+                        "1",
+                        "0",
+                        "2",
+                        "3"
+                    ],
+        "answer":  "1",
+        "explanation":  "`script_lines` contains two elements. ``\"\\n\".join(...)`` inserts a line break at only one point between the two elements. Therefore, the number of ``\\n`` within the script is 1, and the result of the `count` operation is also 1. Since the `join` function’s `separator` is inserted between adjacent elements, if there are two elements, the `separator` appears once. A common source of confusion: This answer assumes the number of `separators` equals the number of string elements. There is only one boundary between the two elements. Point of Misinterpretation: You must distinguish whether the separator in `join` is attached to the element itself or inserted only between elements. ``separator.join(items)`` inserts the separator once at each boundary between items to form a single string.",
+        "side_card_ids":  [
+                              "PYV102_A7_FILE_SAFE_WRITE"
+                          ],
+        "project_context":  "This moves into a safer automation context where code lines are separated into a data structure and assembled with `join`, instead of manually managing nested multiline delimiters.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "separator 문자열의 join method call이 여러 문자열 원소 사이에 separator를 넣어 하나의 문자열을 만드는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`separator.join(strings)` is a method call that combines multiple strings into a single string, separated by `separator`.",
+                                    "how_to_read":  "First, identify what the separator on the left is, and then read the text as if that separator were inserted between each element in the list of strings inside the parentheses.",
+                                    "key_point":  "Using `\"\\n\"` as a separator allows you to treat each line of code as a separate string while still including line breaks in the final script.",
+                                    "common_mistake":  "It’s easy to assume that `join` automatically adds an extra line break at the end of a list. The `separator` is only inserted between elements."
+                                },
+        "teaching_example":  {
+                                 "code":  "lines = [\"alpha\", \"beta\", \"gamma\"]\ntext = \" | \".join(lines)\nprint(text)",
+                                 "walkthrough":  "The separator \"` | `\" appears twice between the three strings, resulting in \"`alpha | beta | gamma`\"."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`script_lines` contains two elements. `\"\\n\".join(...)` inserts a newline at only one boundary between them. Therefore, `script` contains one `\\n`, and the count result is also 1.",
+                                   "why_correct":  "Since the separator in `join` is inserted between adjacent elements, if there are two elements, the separator is inserted once.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "2",
+                                                               "why_wrong":  "This value treats the number of string elements as equal to the number of separators. With two elements, there is only one boundary between them.",
+                                                               "misread_step":  "You must distinguish whether the separator in `join` is attached to the elements themselves or only appears between them."
+                                                           },
+                                   "takeaway":  "`separator.join(items)` It inserts a separator once at each boundary between items to form a single string."
+                               },
+        "target_statement":  "script = \"\\n\".join(script_lines)",
+        "focus_span":  "\"\\n\".join(script_lines)",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "cli_and_automation",
+        "coverage_topics":  [
+                                "script generation",
+                                "multiline text",
+                                "join",
+                                "delimiter safety"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY45_L07_remove_variable_001",
+        "level":  7,
+        "title":  "Safely removing the previous session’s state using `pop`",
+        "concepts":  [
+                         "call",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the `key` and `default` arguments of `dict.pop` and track the state change where the corresponding item is removed from the dictionary after the call.",
+        "code":  "state = {\"py\": \"3.11\", \"cards\": 35}\nstate.pop(\"py\", None)\nprint(\"py\" in state, state[\"cards\"])",
+        "question_type":  "output_prediction",
+        "question":  "`state.pop(\"py\", None)` What is the result of ``\"py\" in state`` after execution?",
+        "choices":  [
+                        "False",
+                        "True",
+                        "None",
+                        "\"3.11\""
+                    ],
+        "answer":  "False",
+        "explanation":  "The initial `state` contains a `py` key. `pop` removes that key-value pair from the dictionary. Therefore, in the next membership test, `\"py\" in state` evaluates to False, because `dict.pop` actually removes the specified key. Common mistake: True—this answer overlooks the removal operation by only considering the state before the `pop` call. Point of confusion: You must verify whether the state of the original dictionary changes after the method call. `pop(key, default)` is a state-changing method that removes a key from the dictionary.",
+        "side_card_ids":  [
+                              "PYV102_A7_FILE_SAFE_WRITE"
+                          ],
+        "project_context":  "I’ve translated the scenario where session state is explicitly cleared so that values from previous automation steps do not carry over to the next execution into a Python dictionary.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "dict.pop의 key와 default 인자를 읽고 호출 뒤 dict에서 해당 항목이 제거되는 상태 변화를 추적한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`dict.pop(key, default)` is a method call that removes the entry and returns its value if the key exists, and returns `default` if the key does not exist.",
+                                    "how_to_read":  "First, check the key to be removed; if there is a second argument, it is interpreted as the default value to use when the key is absent.",
+                                    "key_point":  "When clearing an old state, specifying `default` allows the cleanup code to continue executing without raising a `KeyError`, even if the key no longer exists.",
+                                    "common_mistake":  "It’s easy to think that `pop` simply reads the value and leaves the dictionary unchanged. However, `pop` removes the key at the same time it returns the value."
+                                },
+        "teaching_example":  {
+                                 "code":  "cache = {\"old\": 10, \"new\": 20}\ncache.pop(\"old\", None)\nprint(cache)",
+                                 "walkthrough":  "The `old` item is removed, so only the `new` item remains in the cache."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The initial state contains the key ``py``. `pop` removes that key-value pair from the dictionary. Therefore, in the next membership test, ``\"py\" in state`` will evaluate to `False`.",
+                                   "why_correct":  "This is because `dict.pop` actually removes the specified key.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "True",
+                                                               "why_wrong":  "This is a value for which the removal operation was missed because only the state before the `pop` call was examined.",
+                                                               "misread_step":  "You must also verify whether the state of the original dictionary changes after the method call."
+                                                           },
+                                   "takeaway":  "`pop(key, default)` is a state-changing method that removes a key from a dictionary."
+                               },
+        "target_statement":  "state.pop(\"py\", None)",
+        "focus_span":  "state.pop(\"py\", None)",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "cli_and_automation",
+        "coverage_topics":  [
+                                "stale state",
+                                "session cleanup",
+                                "dict pop",
+                                "safe cleanup"
+                            ],
+        "pedagogical_intent":  "trace_state"
+    },
+    {
+        "id":  "PY45_L08_temp_python_script_001",
+        "level":  8,
+        "title":  "Managing the Lifecycle of Temporary Work Paths Using the `with` Statement",
+        "concepts":  [
+                         "with_statement",
+                         "call",
+                         "assignment",
+                         "import_statement"
+                     ],
+        "reading_goal":  "Read the structure in which the context manager manages the lifecycle of temporary resources in accordance with the entry and exit of the `with` block.",
+        "code":  "import tempfile\nfrom pathlib import Path\n\nwith tempfile.TemporaryDirectory() as tmp:\n    script = Path(tmp) / \"job.py\"\n    suffix = script.suffix",
+        "question_type":  "multiple_choice",
+        "question":  "What does `with` directly refer to in this `tmp` statement?",
+        "choices":  [
+                        "Temporary directory path string",
+                        "Full Python Source Code",
+                        "Process exit code",
+                        "List of Requirements"
+                    ],
+        "answer":  "Temporary directory path string",
+        "explanation":  "`TemporaryDirectory()` is a context manager, and when entered with `with ... as tmp`, the path to the temporary directory to be used is bound to `tmp`. This is because the `as` target of the `TemporaryDirectory` context manager holds the name (path) of the created temporary directory. Commonly Confusing Incorrect Answer: The entire Python source code is the value to be written to a separate file, while `tmp` itself is the directory path. Point of misunderstanding: This occurs when the temporary workspace and the contents of the files to be placed within it are confused. `with ... as name` is **syntax that defines both the resource’s lifetime and the binding to be used within the block**.",
+        "side_card_ids":  [
+                              "PYV160_A1_AUTOMATION_WORKFLOW_GIT_FLOW"
+                          ],
+        "project_context":  "This ties into a structure that manages temporary Python files and paths with clear lifecycles, rather than forcing long automation code into shell variables.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "with_statement",
+        "reading_goal_internal":  "context manager가 with 블록의 진입과 종료에 맞춰 임시 자원의 수명을 관리하는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`with context_manager() as name:` This sentence describes how the context is entered and ensures that the context manager’s cleanup is performed when the block ends.",
+                                    "how_to_read":  "Read in the following order: create a context manager → enter → bind to the `as` target → execute the body → handle block exit.",
+                                    "key_point":  "A temporary Python script operates in an automation context, and the key point of this card is the structure that entrusts the lifetime of temporary resources to the ``with`` statement.",
+                                    "common_mistake":  "`as tmp` It’s easy to assume that ``tmp`` is a permanent directory. However, `` is a path used within the `with` block and will be cleaned up after the block ends."
+                                },
+        "teaching_example":  {
+                                 "code":  "import tempfile\n\nwith tempfile.TemporaryDirectory() as tmp:\n    active_inside = isinstance(tmp, str)",
+                                 "walkthrough":  "Within the ``tmp`` block, `` can be used as a string representing a temporary directory path, and the context manager cleans it up upon exit."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`TemporaryDirectory()` is a context manager; when entered with `with ... as tmp`, the temporary directory path to be used is bound to `tmp`.",
+                                   "why_correct":  "The ``as`` method of the `TemporaryDirectory` context manager is used to retrieve the name (path) of the temporary directory that was created.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Full Python Source Code",
+                                                               "why_wrong":  "The source content refers to values to be written to a separate file, and ``tmp`` itself is a directory path.",
+                                                               "misread_step":  "This is a case where the temporary workspace and the contents of the file within it were confused."
+                                                           },
+                                   "takeaway":  "`with ... as name` It is **a syntax that reads resource lifetimes and bindings to be used within blocks together**."
+                               },
+        "target_statement":  "with tempfile.TemporaryDirectory() as tmp:",
+        "focus_span":  "with tempfile.TemporaryDirectory() as tmp:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "cli_and_automation",
+        "coverage_topics":  [
+                                "temporary script",
+                                "automation",
+                                "TemporaryDirectory",
+                                "cleanup"
+                            ],
+        "pedagogical_intent":  "identify_meaning"
+    },
+    {
+        "id":  "PY45_L08_utf8_set_content_001",
+        "level":  8,
+        "title":  "Convert a string to UTF-8 bytes using `encode(\"utf-8\")`",
+        "concepts":  [
+                         "call",
+                         "assignment",
+                         "argument_passing",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the process by which the `encode` string method returns bytes according to the specified encoding rules.",
+        "code":  "text = \"한글 OK\"\nraw = text.encode(\"utf-8\")",
+        "question_type":  "multiple_choice",
+        "question":  "`raw` What is the data type of ?",
+        "choices":  [
+                        "bytes",
+                        "str",
+                        "list",
+                        "dict"
+                    ],
+        "answer":  "bytes",
+        "explanation":  "`text.encode(\"utf-8\")` encodes a `str` into UTF-8 and returns `bytes`. The assignment statement stores those `bytes` in `raw`. This is because the return value of `str.encode()` is a `bytes` object represented in the specified encoding. A common source of confusion: Although the object passed to `str.encode()` is a `str`, the return value after encoding is a `bytes` object. Point of Misinterpretation: This occurs when the object type and the return type are mistakenly assumed to be the same before the method is called. `encode()` converts **strings to bytes**, while `decode()` converts **bytes to strings**.",
+        "side_card_ids":  [
+                              "PYV160_A1_FILE_PATH_ENCODING_FLOW"
+                          ],
+        "project_context":  "It is linked to code that explicitly handles encoding when saving Korean lesson JSON, scripts, and configuration text.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "call",
+        "reading_goal_internal":  "문자열 메서드 encode가 지정한 인코딩 규칙으로 bytes를 반환하는 과정을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`text.encode(encoding)` is a method call that converts a string into bytes according to the specified character-encoding rules.",
+                                    "how_to_read":  "Check whether the call target is `str`, look at the encoding name inside the parentheses, and connect that to the fact that the return value is `bytes`.",
+                                    "key_point":  "Even if the file-saving tool changes, the core of encoding is the conversion rules between text and bytes.",
+                                    "common_mistake":  "`encode()` It’s easy to assume that it returns a `str`. The result is a `bytes` object."
+                                },
+        "teaching_example":  {
+                                 "code":  "text = \"hello\"\nraw = text.encode(\"utf-8\")",
+                                 "walkthrough":  "Convert the string `hello` to UTF-8 bytes and store them in `raw`."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`text.encode(\"utf-8\")` encodes a `str` into UTF-8 and returns a `bytes` object. The assignment statement stores that `bytes` object in `raw`.",
+                                   "why_correct":  "This is because the return value of `str.encode()` is bytes represented in the specified encoding.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "str",
+                                                               "why_wrong":  "Although the call target is a `str`, the return value changes to `bytes` after encoding.",
+                                                               "misread_step":  "This is a case where the object type and the return type were assumed to be the same before the method call."
+                                                           },
+                                   "takeaway":  "`encode()` converts **strings to bytes**, while `decode()` converts **bytes to strings**."
+                               },
+        "target_statement":  "raw = text.encode(\"utf-8\")",
+        "focus_span":  "text.encode(\"utf-8\")",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "files_paths_serialization",
+        "coverage_topics":  [
+                                "UTF-8",
+                                "encoding",
+                                "text",
+                                "bytes"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY45_L08_prevent_overwrite_001",
+        "level":  8,
+        "title":  "Interrupting an existing object using an `if membership guard`",
+        "concepts":  [
+                         "if_statement",
+                         "membership_test",
+                         "raise_statement",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the sequence where a guard `if` immediately raises an exception when the membership condition is true, blocking the later modification flow.",
+        "code":  "existing_files = {\"lesson_v45.json\", \"app.js\"}\ntarget = \"lesson_v45.json\"\nif target in existing_files:\n    raise SystemExit(\"already exists\")\nstatus = \"write allowed\"",
+        "question_type":  "multiple_choice",
+        "question":  "Does this code reach `status = \"write allowed\"`?",
+        "choices":  [
+                        "Does not reach",
+                        "It is reached.",
+                        "It is reached only when `target` is `None`.",
+                        "It always runs twice."
+                    ],
+        "answer":  "Does not reach",
+        "explanation":  "Since the membership test evaluates to True, the `raise SystemExit(...)` in the if body is executed. Since the normal execution path is interrupted after the `raise`, the subsequent assignment of `status` is not executed. This is because `raise` immediately terminates normal execution and switches to the exception flow. A common source of confusion: Since the `if` body contains a `raise` rather than a simple log statement, the normal code below does not continue. Point of misinterpretation: This occurs when the reader focuses only on the guard condition and fails to verify the control flow behavior of the body. The `overwrite` guard should be interpreted as following this flow: **check status → condition true → immediately terminate with `raise`.**",
+        "side_card_ids":  [
+                              "PYV102_A7_FILE_SAFE_WRITE"
+                          ],
+        "project_context":  "It connects to an idempotent automation guard that prevents accidentally overwriting lesson files or app connections that have already been applied.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "if_statement",
+        "reading_goal_internal":  "membership 조건이 참일 때 guard if가 즉시 예외를 발생시켜 이후 변경 흐름을 차단하는 순서를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`if condition:` is a conditional statement that allows a specific block of code, such as protective logic, to be executed when the condition is true.",
+                                    "how_to_read":  "First, determine whether the membership condition is actually true or false, and if it is true, trace whether the `raise` statement is executed and the subsequent code is terminated.",
+                                    "key_point":  "Overwrite prevention serves an operational purpose, and the core of Python syntax is the **guard if**, which checks for an existing condition and **stops execution if true**.",
+                                    "common_mistake":  "It is easy to think the `if` only gives a warning and then continues with the code below. If the body contains `raise`, the normal flow stops."
+                                },
+        "teaching_example":  {
+                                 "code":  "existing = {\"config.json\"}\ntarget = \"config.json\"\nif target in existing:\n    raise SystemExit(\"already exists\")",
+                                 "walkthrough":  "Since `target` is in the set, the `if` block executes and a `SystemExit` is raised."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the `membership test` evaluates to `True`, the ``raise SystemExit(...)`` in the `if` block is executed. Since the normal flow is interrupted after the `raise`, the subsequent assignment to `status` is not executed.",
+                                   "why_correct":  "This is because `raise` immediately halts normal execution and switches to the exception handling flow.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "It is reached.",
+                                                               "why_wrong":  "Since the `if` body contains a `raise` statement rather than a simple log, the normal code below does not continue executing.",
+                                                               "misread_step":  "This comes from looking only at the guard condition without checking its control-flow effect on the body."
+                                                           },
+                                   "takeaway":  "\"overwrite guard\" should be interpreted as a flow where **the state is checked → the condition is true → the program stops immediately with a raise**."
+                               },
+        "target_statement":  "if target in existing_files:",
+        "focus_span":  "if target in existing_files:",
+        "focus_mode":  "whole_statement",
+        "coverage_domain":  "cli_and_automation",
+        "coverage_topics":  [
+                                "overwrite guard",
+                                "idempotent script",
+                                "safety check",
+                                "duplicate application"
+                            ],
+        "pedagogical_intent":  "read_execution_order"
+    },
+    {
+        "id":  "PY45_L08_expected_version_guard_001",
+        "level":  8,
+        "title":  "Check for missing \"not in\" version markers",
+        "concepts":  [
+                         "membership_test",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the result of `not in`—which returns True only when the expected marker is not present in the constant string `source`—in the context of a version guard.",
+        "code":  "app = \u0027const APP_DATA_VERSION = \"20260531_v44\";\u0027\nexpected_marker = \u0027const APP_DATA_VERSION = \"20260531_v44\";\u0027\nversion_mismatch = expected_marker not in app",
+        "question_type":  "multiple_choice",
+        "question":  "`version_mismatch` What value is stored in [this]?",
+        "choices":  [
+                        "True",
+                        "False",
+                        "20260531_v44",
+                        "None"
+                    ],
+        "answer":  "False",
+        "explanation":  "`expected_marker` is identical to the entire `app` string. Therefore, `marker` exists within `app`, and the result of ``not in`` is `False`. This is because ``x not in y`` is `True` only when `x` is not present in `y`. A common source of confusion: `True`—since the current `marker` actually exists within `app`, the absence condition does not hold. Point of misinterpretation: This occurs when the condition for `not in` is read in reverse. The ``not in`` in the version guard results in `mismatch=True` **only when the expected marker is absent**.",
+        "side_card_ids":  [
+                              "PYV161_A1_DEPLOY_VERSION_URL_FLOW"
+                          ],
+        "project_context":  "This connects to a safeguard that checks whether the current file is at the expected baseline version before an automatic patch and stops if it differs.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "membership_test",
+        "reading_goal_internal":  "고정 문자열 source 안에 expected marker가 없을 때만 True가 되는 `not in`의 결과를 version guard 맥락에서 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`value not in collection` It is a membership test that returns True if the collection does not contain the same value, and False if it does.",
+                                    "how_to_read":  "Check the marker and target string against their actual values; if they are included, the `not in` result is False.",
+                                    "key_point":  "The purpose of a version guard is to prevent inadvertently modifying source code whose standards have changed, and the Python syntax focus here is the `not in` operator, which checks for the absence of a marker.",
+                                    "common_mistake":  "`not` It’s easy to assume that the value is True just by seeing the word “marker,” even if there is one. ``not in`` is True **only when there is no marker**."
+                                },
+        "teaching_example":  {
+                                 "code":  "source = \"VERSION = \u0027v3\u0027\"\nexpected = \"VERSION = \u0027v3\u0027\"\nmismatch = expected not in source",
+                                 "walkthrough":  "Since the expected string is present exactly as is in the source, the result of `not in` is False."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`expected_marker` is identical to the entire `app` string. Therefore, `marker` exists in `app`, and the result of `not in` is `False`.",
+                                   "why_correct":  "`x not in y` This is because it is True only when x is not inside y.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "True",
+                                                               "why_wrong":  "Since the marker actually exists within the app, the condition of its absence does not hold.",
+                                                               "misread_step":  "This is a case of reading the true condition of `not in` backward."
+                                                           },
+                                   "takeaway":  "The `not in` in the version guard makes `mismatch=True` **only when the expected marker is absent**."
+                               },
+        "target_statement":  "version_mismatch = expected_marker not in app",
+        "focus_span":  "expected_marker not in app",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "cli_and_automation",
+        "coverage_topics":  [
+                                "version guard",
+                                "precondition",
+                                "APP_DATA_VERSION",
+                                "safe automation"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY45_L09_validation_expectation_001",
+        "level":  9,
+        "title":  "Detecting Discrepancies Between Actual `card_count` and `expected_count`",
+        "concepts":  [
+                         "comparison",
+                         "call",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Determine the possibility of stale expectations by performing a not-equal comparison between the actual data count and the expected value.",
+        "code":  "cards = list(range(17))\nexpected_count = 16\ncount_mismatch = len(cards) != expected_count",
+        "question_type":  "multiple_choice",
+        "question":  "`count_mismatch` When is True, what should you check first?",
+        "choices":  [
+                        "Whether `expected_count` has been updated to reflect changes in the actual data",
+                        "Should I delete the Git repository?",
+                        "Whether to change the browser color",
+                        "Should all JSON be removed?"
+                    ],
+        "answer":  "Whether `expected_count` has been updated to reflect changes in the actual data",
+        "explanation":  "Since `len(cards)` is 17 and `expected_count` is 16, the comparison result is True. This is because the same mismatch can occur if the expected verification value becomes stale after the actual data is modified. A common source of confusion: There is no justification for deleting all data based solely on a count mismatch, even if all JSON data is to be cleared. Point of misinterpretation: This is a case where a destructive measure was chosen before diagnosing the cause of the validation failure. To resolve a validation failure, you must separate and verify the **actual value → expected value → cause of the mismatch**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This connects to the QA workflow that identifies situations where the verification fails simply because the `expected total` was not updated after increasing the number of cards.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "comparison",
+        "reading_goal_internal":  "실제 데이터 수와 검증 기대값을 not-equal comparison해 stale expectation 가능성을 판단한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left != right` is a comparison that returns True if the two values are different.",
+                                    "how_to_read":  "Calculate the actual count and the expected count separately and compare them.",
+                                    "key_point":  "If you add data but do not update the validator’s “expected total,” even valid data may be flagged as a failure.",
+                                    "common_mistake":  "It is easy to assume that a validation failure always means data corruption. The validation expectation itself may be outdated."
+                                },
+        "teaching_example":  {
+                                 "code":  "items = [1, 2, 3]\nexpected = 2\nmismatch = len(items) != expected",
+                                 "walkthrough":  "The actual value is 3 and the expected value is 2, so `mismatch` is True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "`len(cards)` is 17 and `expected_count` is 16, so the comparison result is True.",
+                                   "why_correct":  "This is because the same mismatch can occur if the expected value becomes stale after the actual data is modified.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Should all JSON be removed?",
+                                                               "why_wrong":  "A count mismatch alone does not justify deleting the entire dataset.",
+                                                               "misread_step":  "This is a case where a destructive action was chosen before diagnosing the cause of the validation failure."
+                                                           },
+                                   "takeaway":  "When a validation fails, verify it by separating **actual value → expected value → cause of discrepancy**."
+                               },
+        "target_statement":  "count_mismatch = len(cards) != expected_count",
+        "focus_span":  "len(cards) != expected_count",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "validation",
+                                "expected count",
+                                "test assertion",
+                                "stale expectation"
+                            ],
+        "pedagogical_intent":  "diagnose_error"
+    },
+    {
+        "id":  "PY45_L09_full_validation_001",
+        "level":  9,
+        "title":  "Verifying a side-card reference in a “lesson” using `assert`",
+        "concepts":  [
+                         "assert_statement",
+                         "membership_test",
+                         "for_statement",
+                         "subscription",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the structure where the presence of each side-card reference in a nested loop is verified using an assert condition.",
+        "code":  "lessons = [{\"id\": \"l1\", \"side_card_ids\": [\"s1\", \"s2\"]}]\nside_ids = {\"s1\", \"s2\"}\nfor card in lessons:\n    for sid in card.get(\"side_card_ids\", []):\n        assert sid in side_ids, (card[\"id\"], sid)\nvalidation_passed = True",
+        "question_type":  "multiple_choice",
+        "question":  "Why does this code terminate without an AssertionError?",
+        "choices":  [
+                        "Since all side_card_ids are present in side_ids,",
+                        "Since `assert` always evaluates to `True`,",
+                        "Since the `side_cards` were removed,",
+                        "Because the `for` loop is not executed,"
+                    ],
+        "answer":  "Since all side_card_ids are present in side_ids,",
+        "explanation":  "The nested loop checks s1 and s2, and since both are in the set side_ids, the assert does not fail. This is because each membership condition is True. A common source of confusion: Since the for loop does not execute, there is one lesson and two side IDs, so both loops actually run. Point of misinterpretation: This occurs when the number of items in the input collection is not verified. Read reference integrity as **reference traversal → membership check → assert failure**.",
+        "side_card_ids":  [
+                              "PYV102_A7_FILE_SAFE_WRITE"
+                          ],
+        "project_context":  "In a structure where lesson cards can reference separate side cards, this is linked to comprehensive validation to prevent dangling references.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "assert_statement",
+        "reading_goal_internal":  "nested loop에서 각 side-card reference의 존재 여부를 assert condition으로 검증하는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`assert condition, message` raises an AssertionError if `condition` is falsy and provides the `message` information along with it.",
+                                    "how_to_read":  "I believe the condition following `assert` is evaluated first, and an exception is raised only if it evaluates to `False`.",
+                                    "key_point":  "If a `lesson` references a side card ID, the verification must examine not only the `lesson` file but also the set of side card IDs.",
+                                    "common_mistake":  "It’s easy to think that `assert` changes a condition to `True`. It only verifies the condition; it does not modify the data."
+                                },
+        "teaching_example":  {
+                                 "code":  "valid = {\"s1\"}\nsid = \"s2\"\n# assert sid in valid, sid",
+                                 "walkthrough":  "Since `s2` is not in `valid`, an `AssertionError` will occur when the actual `assert` is executed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "The nested loop checks s1 and s2, and since both are in the set side_ids, the assert does not fail.",
+                                   "why_correct":  "This is because each membership condition is True.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "Because the `for` loop is not executed,",
+                                                               "why_wrong":  "There is one lesson and two side IDs, so both loops are actually executed.",
+                                                               "misread_step":  "This is a case where the number of items in the `collection` input was not checked."
+                                                           },
+                                   "takeaway":  "Reference integrity is read as **reference traversal → existence (membership) → assert failure**."
+                               },
+        "target_statement":  "assert sid in side_ids, (card[\"id\"], sid)",
+        "focus_span":  "sid in side_ids",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "testing_and_quality",
+        "coverage_topics":  [
+                                "full validation",
+                                "side cards",
+                                "references",
+                                "assert"
+                            ],
+        "pedagogical_intent":  "predict_exception"
+    },
+    {
+        "id":  "PY45_L09_server_log_200_001",
+        "level":  9,
+        "title":  "Reading a status 200 from the lesson request log",
+        "concepts":  [
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Look up the HTTP status code in the structured server log mapping and interpret the meaning of 200.",
+        "code":  "request_log = {\"method\": \"GET\", \"path\": \"/data/lessons/python_xxx_v45.json\", \"status\": 200}\nstatus = request_log[\"status\"]",
+        "question_type":  "multiple_choice",
+        "question":  "Which of the following is the closest meaning of “`status` 200”?",
+        "choices":  [
+                        "The requested file has been successfully provided.",
+                        "The file could not be found.",
+                        "This is a Python syntax error.",
+                        "Git push failed"
+                    ],
+        "answer":  "The requested file has been successfully provided.",
+        "explanation":  "Since the dict lookup result is 200 and the path is \"lesson\" JSON, we interpret this as a record of the request being processed normally. This is because HTTP 200 is the status code for a successful response. A common source of confusion: The situation where a file cannot be found is generally distinguished from a 404. Point of misinterpretation: This occurs when the meanings of the 200 and 404 status codes are reversed. Server logs are interpreted as **request path → status code → success/failure meaning**.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "This is linked to runtime validation that checks whether the new lesson JSON is actually loaded with a 200 response on the local server.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "subscription",
+        "reading_goal_internal":  "구조화한 server log mapping에서 HTTP status code를 조회하고 200의 의미를 해석한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`mapping[key]` is a dict subscription that reads the value of a specific key.",
+                                    "how_to_read":  "Check how the request path and status are grouped together in the same record.",
+                                    "key_point":  "In this context, HTTP 200 indicates a successful status, meaning the server successfully processed and served the request for the lesson file.",
+                                    "common_mistake":  "It’s easy to mistake 200 for a “file not found” error. A “file not found” error is typically distinguished from a 404 error."
+                                },
+        "teaching_example":  {
+                                 "code":  "log = {\"path\": \"/data.json\", \"status\": 200}\nstatus = log[\"status\"]",
+                                 "walkthrough":  "Reads the value 200 from the `status` key."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since the `dict lookup` result is 200 and the path is `lesson JSON`, this request is interpreted as having been processed successfully.",
+                                   "why_correct":  "This is because HTTP 200 is a success status code.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "The file could not be found.",
+                                                               "why_wrong":  "That situation is generally distinguished from a 404.",
+                                                               "misread_step":  "This is a case where the meanings of the 200 and 404 status codes have been reversed."
+                                                           },
+                                   "takeaway":  "Server logs are read in the order of **request path → status code → success/failure meaning**."
+                               },
+        "target_statement":  "status = request_log[\"status\"]",
+        "focus_span":  "request_log[\"status\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "server log",
+                                "HTTP 200",
+                                "lesson file",
+                                "local server"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY45_L09_favicon_404_ignore_001",
+        "level":  9,
+        "title":  "Distinguishing \"favicon.ico 404\" as a noise log",
+        "concepts":  [
+                         "boolean_operation",
+                         "comparison",
+                         "subscription",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "Read the flow that uses the \"and\" operator to combine the two conditions—path and status—to distinguish a 404 favicon error from a lesson loading failure.",
+        "code":  "request = {\"path\": \"/favicon.ico\", \"status\": 404}\nis_favicon_noise = request[\"path\"] == \"/favicon.ico\" and request[\"status\"] == 404",
+        "question_type":  "multiple_choice",
+        "question":  "When `is_favicon_noise` is True, which of the following is the most appropriate interpretation?",
+        "choices":  [
+                        "The browser icon request failed, which may not be directly related to lesson loading.",
+                        "All lesson files are corrupted.",
+                        "The GitHub push failed.",
+                        "Python is not installed"
+                    ],
+        "answer":  "The browser icon request failed, which may not be directly related to lesson loading.",
+        "explanation":  "Since both the path comparison and status comparison are True, it is classified as a 404 for the favicon. This is because it is a 404 for the browser icon path, not the core lesson path. A common source of confusion: All lesson files are corrupted. The current failure path is /favicon.ico, not the lesson JSON. Point of misinterpretation: This occurs when you look only at the status and fail to check the request path. When reviewing log errors, you must consider **not only the status but also which resource was requested**.",
+        "side_card_ids":  [
+                              "PYV102_A7_FILE_SAFE_WRITE"
+                          ],
+        "project_context":  "This ties into log triage, which distinguishes between the recurring “favicon 404” error seen during local server checks and actual lesson file loading errors.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "boolean_operation",
+        "reading_goal_internal":  "path와 status 두 조건을 and로 결합해 favicon 404를 lesson 로딩 실패와 구분하는 흐름을 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "`left and right` is a Boolean operation whose overall condition is true only when both conditions are truthy.",
+                                    "how_to_read":  "It calculates the path comparison and status comparison separately and then evaluates the result using the “and” operator.",
+                                    "key_point":  "A \"favicon 404\" may indicate a failed browser icon request, so it should be considered separately from the app’s core lesson data requests.",
+                                    "common_mistake":  "It’s easy to assume that all lesson files have failed if you see a single 404 error in the log. First, you need to check which path the 404 error is associated with."
+                                },
+        "teaching_example":  {
+                                 "code":  "request = {\"path\": \"/icon.png\", \"status\": 404}\nis_icon_error = request[\"path\"] == \"/icon.png\" and request[\"status\"] == 404",
+                                 "walkthrough":  "Since both comparisons are True, is_icon_error is also True."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "Since both the path comparison and status comparison are True, it is classified as a favicon 404.",
+                                   "why_correct":  "This is because it is a 404 error related to the browser icon path, not the core lesson path.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "All lesson files are corrupted.",
+                                                               "why_wrong":  "The current failure path is /favicon.ico, not the lesson JSON.",
+                                                               "misread_step":  "This is a case where the request path was not checked, relying solely on the status."
+                                                           },
+                                   "takeaway":  "When reviewing log errors, you must examine **not only the status but also which resource was requested**."
+                               },
+        "target_statement":  "is_favicon_noise = request[\"path\"] == \"/favicon.ico\" and request[\"status\"] == 404",
+        "focus_span":  "request[\"path\"] == \"/favicon.ico\" and request[\"status\"] == 404",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "logging_monitoring_operations",
+        "coverage_topics":  [
+                                "favicon",
+                                "HTTP 404",
+                                "noise log",
+                                "triage"
+                            ],
+        "pedagogical_intent":  "diagnose_error"
+    },
+    {
+        "id":  "PY45_L10_rollback_with_git_001",
+        "level":  10,
+        "title":  "Select one rollback action based on whether it is tracked",
+        "concepts":  [
+                         "conditional_expression",
+                         "assignment",
+                         "literal"
+                     ],
+        "reading_goal":  "In the conditional expression, \"tracked\" is evaluated first, and one of the two recovery candidates—the string that represents the actual result—is selected.",
+        "code":  "tracked = True\naction = \"git restore\" if tracked else \"remove generated file\"\nprint(action)",
+        "question_type":  "output_prediction",
+        "question":  "What value is stored in `action` when `tracked` is True?",
+        "choices":  [
+                        "git restore",
+                        "remove generated file",
+                        "True",
+                        "tracked"
+                    ],
+        "answer":  "git restore",
+        "explanation":  "1) The current value of `tracked` is `True`. 2) The conditional expression selects the `True` path. 3) The string `git restore` preceding the `if` statement becomes the result of the entire expression. 4) That string is stored in `action`.",
+        "side_card_ids":  [
+                              "PYV102_A7_FILE_SAFE_WRITE"
+                          ],
+        "project_context":  "This ties into the habit of, when automation changes go awry, identifying the target without mixing up the recovery methods for the trace file and the newly generated file, and then rolling back to the minimum necessary scope.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "conditional_expression",
+        "reading_goal_internal":  "조건 표현식에서 tracked를 먼저 평가하고 두 복구 후보 중 실제 결과가 되는 문자열 하나를 선택한다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "The conditional expression `A if condition else B` selects `A` as the result if the condition is true, and `B` if it is false.",
+                                    "how_to_read":  "First, check the tracked value in the middle; if it is True, read the value before the `if` statement, and if it is False, read the value after the `else` statement.",
+                                    "key_point":  "The result is not both recovery actions being executed, but rather just the one value that meets the condition.",
+                                    "common_mistake":  "It’s easy to assume that “git restore” is always selected when reading from left to right."
+                                },
+        "teaching_example":  {
+                                 "code":  "is_config = False\naction = \"restore config\" if is_config else \"remove temp\"\nprint(action)",
+                                 "walkthrough":  "Since `is_config` is False, the `remove temp` statement following the `else` block is executed."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The current value of `tracked` is `True`. 2) The conditional expression selects the `True` path. 3) The string `git restore` preceding the `if` statement becomes the result of the entire expression. 4) That string is stored in `action`.",
+                                   "why_correct":  "Since the condition is True, the option “git restore,” which precedes the “if” statement, is selected.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "remove generated file",
+                                                               "why_wrong":  "That value is the else path selected when `tracked` is False.",
+                                                               "misread_step":  "It’s easy to assume that “git restore” is always selected when reading from left to right."
+                                                           },
+                                   "takeaway":  "A conditional expression evaluates a condition, selects one path, and returns a single value as the result."
+                               },
+        "target_statement":  "\"git restore\" if tracked else \"remove generated file\"",
+        "focus_span":  "\"git restore\" if tracked else \"remove generated file\"",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "rollback",
+                                "git_restore",
+                                "recovery",
+                                "tracked_file"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    },
+    {
+        "id":  "PY45_L10_atomic_commit_001",
+        "level":  10,
+        "title":  "Combining the two files targeted for an atomic commit into a list literal",
+        "concepts":  [
+                         "literal",
+                         "assignment",
+                         "subscription"
+                     ],
+        "reading_goal":  "Read the structure where the two path strings inside the square brackets are combined into a single list value that preserves the order in which they were written.",
+        "code":  "commit_files = [\"data/lessons/v45.json\", \"src/pwa/app.js\"]\nprint(len(commit_files))",
+        "question_type":  "output_prediction",
+        "question":  "How many items are in the `commit_files` list?",
+        "choices":  [
+                        "1",
+                        "2",
+                        "3",
+                        "4"
+                    ],
+        "answer":  "2",
+        "explanation":  "1) The entire \"data/lessons/v45.json\" is the first string entry. 2) The entire \"src/pwa/app.js\" is the second string entry. 3) A comma separates the two value expressions. 4) Therefore, the length of the list is 2.",
+        "side_card_ids":  [
+
+                          ],
+        "project_context":  "Only files directly related to a single meaningful feature change are included in the commit scope, linking to a structure that facilitates review, root cause analysis, and rollback.",
+        "authoring_version":  "V2.3",
+        "primary_concept":  "literal",
+        "reading_goal_internal":  "대괄호 안 두 경로 문자열이 작성 순서를 유지하는 하나의 list 값으로 만들어지는 구조를 읽는다.",
+        "concept_explanation":  {
+                                    "what_it_is":  "A list literal creates a new list object directly by enclosing multiple values within square brackets, separated by commas.",
+                                    "how_to_read":  "Treat the entire path string enclosed in quotes as a single value and count the actual number of value expressions.",
+                                    "key_point":  "A slash within a path is part of the string and is not a list element boundary.",
+                                    "common_mistake":  "It’s easy to count even folder fragments as separate items."
+                                },
+        "teaching_example":  {
+                                 "code":  "files = [\"data/cards.json\", \"src/app.py\"]\nprint(len(files))",
+                                 "walkthrough":  "Since there are two string values, the length of the list is 2."
+                             },
+        "answer_explanation":  {
+                                   "step_by_step":  "1) The entire \"data/lessons/v45.json\" is the first string entry. 2) The entire \"src/pwa/app.js\" is the second string entry. 3) A comma separates the two value expressions. 4) Therefore, the length of the list is 2.",
+                                   "why_correct":  "Since there are two actual list value expressions, the number of items is 2.",
+                                   "common_wrong_choice":  {
+                                                               "choice":  "4",
+                                                               "why_wrong":  "Folder segments within a path string are not separate list items.",
+                                                               "misread_step":  "It’s easy to count even folder fragments as separate items."
+                                                           },
+                                   "takeaway":  "A list literal stores each value expression in a single list in the order in which they are written."
+                               },
+        "target_statement":  "commit_files = [\"data/lessons/v45.json\", \"src/pwa/app.js\"]",
+        "focus_span":  "[\"data/lessons/v45.json\", \"src/pwa/app.js\"]",
+        "focus_mode":  "subexpression",
+        "coverage_domain":  "git_github_cicd",
+        "coverage_topics":  [
+                                "atomic_commit",
+                                "commit_scope",
+                                "change_set",
+                                "review"
+                            ],
+        "pedagogical_intent":  "interpret_result"
+    }
 ]
