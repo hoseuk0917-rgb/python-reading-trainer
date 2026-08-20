@@ -23,4 +23,12 @@
         document.head.appendChild(script);
     }
 
+    if (!document.querySelector('script[data-v400-mobile-admin-route]')) {
+        const adminRoute = document.createElement("script");
+        adminRoute.src = "./v400_mobile_admin_route.js?v=20260821_v400_2_admin_route1";
+        adminRoute.defer = true;
+        adminRoute.setAttribute("data-v400-mobile-admin-route", "1");
+        document.head.appendChild(adminRoute);
+    }
+
 })();
