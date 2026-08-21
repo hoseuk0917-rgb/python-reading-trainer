@@ -1,0 +1,58 @@
+name: V400.5 apply runtime release wiring
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - tools/apply_v400_5_runtime_release.py
+      - .github/workflows/v400-5-apply-release.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Apply V400.5 wiring
+        run: python tools/apply_v400_5_runtime_release.py
+
+      - name: Validate generated runtime content
+        run: |
+          python tools/build_runtime_lesson_bundle_v400_5.py
+          python tools/validate_lessons.py
+          node --check src/pwa/runtime_lesson_bundle_v400_5.js
+          node --check src/pwa/release_polish_v400_1.js
+          node --check src/pwa/sw_v400_1.js
+          node --check tools/audit_v400_release_polish.js
+          node tools/audit_v400_release_polish.js
+          git diff --exit-code -- data/runtime/lesson_bundle_v400_5.json data_i18n/en/runtime/lesson_bundle_v400_5.json data/runtime/support_bundle_v400_5.json data_i18n/en/runtime/support_bundle_v400_5.json
+          git diff --check
+
+      - name: Commit V400.5 release wiring
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- README.md index.html src/pwa/index.html src/pwa/release_polish_v400_1.js src/pwa/sw_v400_1.js src/pwa/manifest.json tools/audit_v400_release_polish.js .github/workflows/v400-release.yml
+          git rm -- .github/workflows/v400-runtime-bundle-generate.yml .github/workflows/v400-5-apply-release.yml tools/apply_v400_5_runtime_release.py
+          git diff --cached --check
+          git commit -m "V400.5: wire runtime content bundles"
+          git push origin HEAD:main
