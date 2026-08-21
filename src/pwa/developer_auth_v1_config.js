@@ -81,7 +81,9 @@
     }
 
     function ensureDeveloperEntryFallback() {
-        const menu = document.getElementById("consumerMoreMenuV349");
+        const menu = document.getElementById(ENTRY_ID)
+            ? document.getElementById(ENTRY_ID).parentElement
+            : document.getElementById("consumerMoreMenuV349");
         if (!menu) return false;
 
         let entry = document.getElementById(ENTRY_ID);
@@ -156,7 +158,7 @@
 
     if (!document.querySelector('script[data-v400-developer-exit-mobile-fix]')) {
         const script = document.createElement("script");
-        script.src = "./developer_exit_mobile_fix_v400_6_3.js?v=20260821_v400_7_hardening1";
+        script.src = "./developer_exit_mobile_fix_v400_6_3.js?v=20260821_v400_7_1_advanced_return1";
         script.async = false;
         script.setAttribute("data-v400-developer-exit-mobile-fix", "1");
         document.head.appendChild(script);
