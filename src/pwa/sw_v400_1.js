@@ -20,6 +20,7 @@ const SHELL_ASSETS = [
   "./developer_remote_entry_v400_6_1.js",
   "./developer_workbench_v400_6_2.js",
   "./developer_exit_mobile_fix_v400_6_3.js",
+  "./admin_local_loader_v400_7.js",
   "./icon-v400-192.png",
   "./icon-v400-512.png",
   "./icon-maskable-v400-192.png",
@@ -47,7 +48,8 @@ const CRITICAL_UI_FILES = new Set([
   "developer_auth_v1.js",
   "developer_remote_entry_v400_6_1.js",
   "developer_workbench_v400_6_2.js",
-  "developer_exit_mobile_fix_v400_6_3.js"
+  "developer_exit_mobile_fix_v400_6_3.js",
+  "admin_local_loader_v400_7.js"
 ]);
 
 function isDataUrl(url) {
