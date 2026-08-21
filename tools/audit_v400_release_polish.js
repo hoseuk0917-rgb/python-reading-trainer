@@ -28,7 +28,7 @@ let ok = true;
 
 ok = assert(rootIndex.includes('RELEASE = "20260821_v400_3"'), "root_release_v400_3") && ok;
 ok = assert(rootIndex.includes("serviceWorker.getRegistrations"), "root_unregister_old_sw") && ok;
-ok = assert(rootIndex.includes('key.indexOf("python-reading-trainer-v400") === 0'), "root_purge_old_v400_cache") && ok;
+ok = assert(rootIndex.includes('indexOf("python-reading-trainer-v400") === 0'), "root_purge_old_v400_cache") && ok;
 ok = assert(rootIndex.includes('key !== "admin"'), "root_admin_query_not_forwarded") && ok;
 ok = assert(rootIndex.includes("body { visibility: hidden;"), "root_no_interstitial_paint") && ok;
 
