@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "V400.6.2_DEVELOPER_REMOTE_ENTRY2";
+  const VERSION = "V400.7_DEVELOPER_REMOTE_ENTRY_HARDENED1";
   const ENTRY_ID = "consumerDeveloperV40061";
   const INTENT_KEY = "python-reading-trainer-dev-workbench-intent";
 
@@ -9,6 +9,14 @@
     return String(document.documentElement.lang || "")
       .toLowerCase()
       .startsWith("en") ? en : ko;
+  }
+
+  function setText(node, value) {
+    if (node && node.textContent !== value) node.textContent = value;
+  }
+
+  function setData(node, key, value) {
+    if (node && node.dataset[key] !== value) node.dataset[key] = value;
   }
 
   function isLocalHost() {
@@ -154,28 +162,28 @@
     const state = authState();
     const authenticated = Boolean(state && state.authenticated === true);
 
-    if (strong) strong.textContent = "Developer";
+    setText(strong, "Developer");
 
-    if (help) {
-      if (isLocalHost()) {
-        help.textContent = text(
-          "콘텐츠 워크벤치를 엽니다.",
-          "Open the content workbench."
-        );
-      } else if (authenticated) {
-        help.textContent = text(
-          "GitHub 인증됨 · 문항 찾기와 편집",
-          "GitHub verified · Find and edit content"
-        );
-      } else {
-        help.textContent = text(
-          "GitHub 본인 인증 후 문항을 찾고 수정합니다.",
-          "Verify with GitHub, then find and edit content."
-        );
-      }
+    let helpText;
+    if (isLocalHost()) {
+      helpText = text(
+        "콘텐츠 워크벤치를 엽니다.",
+        "Open the content workbench."
+      );
+    } else if (authenticated) {
+      helpText = text(
+        "GitHub 인증됨 · 문항 찾기와 편집",
+        "GitHub verified · Find and edit content"
+      );
+    } else {
+      helpText = text(
+        "GitHub 본인 인증 후 문항을 찾고 수정합니다.",
+        "Verify with GitHub, then find and edit content."
+      );
     }
 
-    entry.dataset.authenticated = authenticated ? "true" : "false";
+    setText(help, helpText);
+    setData(entry, "authenticated", authenticated ? "true" : "false");
     resumeWorkbenchAfterAuth();
     return true;
   }
@@ -201,21 +209,10 @@
     return syncEntry();
   }
 
-  let refreshQueued = false;
-
-  function scheduleRefresh() {
-    if (refreshQueued) return;
-    refreshQueued = true;
-    window.requestAnimationFrame(function () {
-      refreshQueued = false;
-      ensureEntry();
-    });
-  }
-
   function boot() {
     ensureEntry();
 
-    [80, 180, 400, 800, 1600, 3200].forEach(function (delay) {
+    [80, 180, 400, 800, 1600, 3200, 6000].forEach(function (delay) {
       window.setTimeout(ensureEntry, delay);
     });
 
@@ -226,13 +223,13 @@
       if (target) window.setTimeout(ensureEntry, 0);
     }, true);
 
-    const observer = new MutationObserver(scheduleRefresh);
-    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener("pageshow", function () {
+      window.setTimeout(ensureEntry, 0);
+    });
 
-    window.setInterval(function () {
-      syncEntry();
-      resumeWorkbenchAfterAuth();
-    }, 1200);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) window.setTimeout(ensureEntry, 0);
+    });
 
     window.PRTDeveloperRemoteEntryV40061 = Object.freeze({
       version: VERSION,
