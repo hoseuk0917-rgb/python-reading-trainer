@@ -27,8 +27,18 @@ def load_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
-def extract_paths(text: str, kind: str) -> list[str]:
-    return re.findall(rf'"(\.\./\.\./data/{kind}/[^\"]+\.json)"', text)
+def extract_runtime_paths(text: str, variable_name: str, next_marker: str) -> list[str]:
+    pattern = re.compile(
+        rf"const {re.escape(variable_name)} = \[(.*?)\];\s*\n\s*{re.escape(next_marker)}",
+        re.S,
+    )
+    match = pattern.search(text)
+    if not match:
+        raise SystemExit(f"FAIL={variable_name.upper()}_BLOCK_NOT_FOUND")
+    paths = re.findall(r'"(\.\./\.\./data/[^\"]+\.json)"', match.group(1))
+    if not paths:
+        raise SystemExit(f"FAIL={variable_name.upper()}_PATHS_EMPTY")
+    return paths
 
 
 def relative_source(runtime_path: str) -> Path:
@@ -120,11 +130,9 @@ def validate_language(language: str, source_root: Path, lesson_paths: list[str],
 
 def main() -> None:
     app_text = APP.read_text(encoding="utf-8-sig")
-    lesson_paths = extract_paths(app_text, "lessons")
-    side_paths = extract_paths(app_text, "side_cards")
+    lesson_paths = extract_runtime_paths(app_text, "lessonFiles", "const lessonResults")
+    side_paths = extract_runtime_paths(app_text, "sideFiles", "const sideResults")
 
-    if not lesson_paths or not side_paths:
-        raise SystemExit("FAIL=APP_SOURCE_PATH_EXTRACTION")
     if len(lesson_paths) != len(set(lesson_paths)) or len(side_paths) != len(set(side_paths)):
         raise SystemExit("FAIL=DUPLICATE_APP_SOURCE_PATH")
 
