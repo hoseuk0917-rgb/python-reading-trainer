@@ -4,9 +4,8 @@
   if (window.__PRTV400ReleasePolishV3Booted) return;
   window.__PRTV400ReleasePolishV3Booted = true;
 
-  const VERSION = "V400.3_RELEASE_POLISH";
+  const VERSION = "V400.7_RELEASE_POLISH_HARDENED";
   const DIAGNOSTIC_KEY = "python-reading-trainer-diagnostic-v400-2";
-  let refreshQueued = false;
 
   function isEnglish() {
     return String(document.documentElement.lang || "")
@@ -30,7 +29,7 @@
     link = document.createElement("link");
     link.id = "prtV400PolishCssV3";
     link.rel = "stylesheet";
-    link.href = "./release_polish_v400_1.css?v=20260821_v400_3";
+    link.href = "./release_polish_v400_1.css?v=20260821_v400_7_hardening1";
     document.head.appendChild(link);
     return true;
   }
@@ -79,11 +78,20 @@
       box.id = "prtDiagnosticEntryV4001";
     }
 
+    const state = diagnosticState();
+    const language = isEnglish() ? "en" : "ko";
+    if (
+      box.dataset.v4007State === state
+      && box.dataset.v4007Language === language
+      && box.parentElement === shell
+    ) {
+      return true;
+    }
+
     box.removeAttribute("style");
     box.className = "prt-diagnostic-entry-v4003";
     box.innerHTML = "";
 
-    const state = diagnosticState();
     const copy = document.createElement("div");
     copy.className = "prt-diagnostic-entry-copy-v4003";
 
@@ -132,6 +140,8 @@
     action.addEventListener("click", openDiagnostic);
     box.appendChild(copy);
     box.appendChild(action);
+    box.dataset.v4007State = state;
+    box.dataset.v4007Language = language;
 
     const subtitle = shell.querySelector(".home-v343-sub");
     const next = shell.querySelector(".home-v343-next");
@@ -237,20 +247,11 @@
     removePublicAdminArtifacts();
   }
 
-  function scheduleRefresh() {
-    if (refreshQueued) return;
-    refreshQueued = true;
-    window.requestAnimationFrame(function () {
-      refreshQueued = false;
-      refresh();
-    });
-  }
-
   function boot() {
     ensureFreshCss();
     refresh();
 
-    [80, 180, 400, 800, 1600].forEach(function (delay) {
+    [80, 180, 400, 800, 1600, 3200].forEach(function (delay) {
       window.setTimeout(refresh, delay);
     });
 
@@ -261,15 +262,16 @@
       if (target) window.setTimeout(refresh, 30);
     }, true);
 
-    const bodyObserver = new MutationObserver(scheduleRefresh);
-    bodyObserver.observe(document.body, { childList: true, subtree: true });
-
     const langObserver = new MutationObserver(function () {
       window.setTimeout(refresh, 20);
     });
     langObserver.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["lang"]
+    });
+
+    window.addEventListener("pageshow", function () {
+      window.setTimeout(refresh, 0);
     });
 
     window.PRTV400ReleasePolish = Object.freeze({
