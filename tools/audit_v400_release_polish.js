@@ -63,7 +63,7 @@ ok = assert(css.includes("background: transparent !important"), "bottom_nav_no_l
 ok = assert(css.includes("#consumerAdminDeviceV4002"), "stale_public_admin_css_hidden") && ok;
 
 ok = assert(Array.isArray(manifest.icons) && manifest.icons.length >= 2, "manifest_icons_present") && ok;
-ok = assert(manifest.start_url === "./" && manifest.scope === "./", "manifest_scope_start") && ok;
+ok = assert(manifest.start_url === "./?release=20260821_v400_3" && manifest.scope === "./", "manifest_release_start_scope") && ok;
 ok = assert(manifest.icons.some((row) => row.purpose === "maskable"), "manifest_maskable_icon") && ok;
 
 ok = assert(sw.includes('CACHE_NAME = "python-reading-trainer-v400-3-20260821"'), "service_worker_cache_v400_3") && ok;
