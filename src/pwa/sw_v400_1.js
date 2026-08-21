@@ -1,6 +1,6 @@
 const CACHE_PREFIX = "python-reading-trainer-v400";
-const RELEASE = "20260821_v400_6_brand1";
-const CACHE_NAME = "python-reading-trainer-v400-6-brand1-20260821";
+const RELEASE = "20260821_v400_6_splash1";
+const CACHE_NAME = "python-reading-trainer-v400-6-splash1-20260821";
 
 const SHELL_ASSETS = [
   "./",
@@ -15,6 +15,10 @@ const SHELL_ASSETS = [
   "./consumer_ux_v349.js",
   "./release_polish_v400_1.js",
   "./v400_release_polish.js",
+  "./icon-v400-192.png",
+  "./icon-v400-512.png",
+  "./icon-maskable-v400-192.png",
+  "./icon-maskable-v400-512.png",
   "./icon-v400.svg",
   "./icon-maskable-v400.svg"
 ];
@@ -28,6 +32,10 @@ const CRITICAL_UI_FILES = new Set([
   "release_polish_v400_1.js",
   "v400_release_polish.js",
   "content_quality_semantics.js",
+  "icon-v400-192.png",
+  "icon-v400-512.png",
+  "icon-maskable-v400-192.png",
+  "icon-maskable-v400-512.png",
   "icon-v400.svg",
   "icon-maskable-v400.svg",
   "developer_auth_v1_config.js"
