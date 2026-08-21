@@ -15,7 +15,7 @@ GitHub Pages: https://hoseuk0917-rgb.github.io/python-reading-trainer/
 
 모바일 브라우저에서 열어 그대로 학습하거나 홈 화면에 추가할 수 있습니다.
 
-## 현재 릴리즈: V400.4
+## 현재 릴리즈: V400.5
 
 V400 계열의 핵심 기능:
 
@@ -33,14 +33,15 @@ V400 계열의 핵심 기능:
 - 학습 / 실전 / 진행 / 더보기의 4개 primary navigation
 - Developer Mode / Admin Mode는 로컬 개발 환경에서 사용
 
-V400.4에서는 모바일 로딩 체감과 PWA 갱신 동작을 정리했습니다.
+V400.5에서는 실제 초기 데이터 요청 수를 줄였습니다.
 
-- service worker 교체 시 강제 reload/navigation 제거
-- 새 service worker 설치 때 대용량 도구 파일 전체를 다시 선캐시하지 않도록 shell 최소화
-- 이전 V400 cache를 새 cache로 로컬 마이그레이션한 뒤 정리
-- 학습 JSON은 저장본을 먼저 보여주고 백그라운드에서 최신본을 갱신
-- 첫 학습 데이터가 준비되기 전 legacy `Loading...` 카드 대신 compact 로딩 카드 표시
-- 상단 KO/EN과 하단 navigation은 로딩 중에도 최종 UI를 유지
+- 98개 lesson JSON을 KO/EN별 runtime lesson bundle 1개로 통합
+- side-card/reference/resource JSON도 KO/EN별 support bundle 1개로 통합
+- `app.js` 바로 직전의 `content_quality_semantics.js`에서 lesson/support bundle을 동시에 다운로드 시작
+- 기존 `app.js`의 파일별 응답 계약은 유지하고 개별 네트워크 요청을 memory bundle 응답으로 대체
+- bundle이 없거나 검증에 실패하면 기존 개별 JSON fetch로 자동 fallback
+- lesson bundle은 KO/EN 각각 1,785장 전체를 담아 총량·정렬·진도 계약 유지
+- V400.4의 강제 reload/navigation 제거와 compact 로더 정책 유지
 - 공개 Pages의 Admin/Developer 진입은 계속 비활성화
 
 ## 진단 시작
@@ -96,15 +97,15 @@ Developer Mode는 로컬 authority 계약을 사용하고, Admin은 해당 Devel
 
 ## PWA / 캐시
 
-V400.4의 배포 정책:
+V400.5의 배포 정책:
 
-- HTML navigation과 핵심 consumer UI는 network-first
-- 이미 받은 학습 JSON은 stale-while-revalidate로 즉시 재사용
-- 나머지 정적 자산도 stale-while-revalidate
+- HTML navigation과 핵심 consumer UI/runtime preloader는 network-first
+- runtime lesson/support bundle은 service worker의 데이터 cache로 재사용
+- 나머지 학습 JSON도 stale-while-revalidate fallback 유지
 - 오프라인에서는 설치된 cache를 fallback으로 사용
 - release가 바뀌면 이전 V400 cache 내용을 새 cache로 마이그레이션한 뒤 정리
 - service worker 갱신을 위해 사용 중인 화면을 강제 reload하지 않음
-- 설치형 PWA의 start URL에 V400.4 release key 포함
+- 설치형 PWA의 start URL에 V400.5 release key 포함
 
 Mermaid는 외부 CDN을 사용하므로 완전 오프라인 상태에서는 일부 흐름도 기능이 제한될 수 있습니다.
 
@@ -129,6 +130,7 @@ Admin/Developer 기능이 production lesson JSON을 브라우저에서 직접 �
 
 - 핵심 JavaScript syntax
 - JSON/릴리즈 wiring
+- KO/EN runtime bundle 원본 일치
 - 1,785 lesson validation
 - V400 release polish 계약
 - diff integrity
