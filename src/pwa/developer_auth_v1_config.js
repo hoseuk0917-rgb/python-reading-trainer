@@ -81,9 +81,7 @@
     }
 
     function ensureDeveloperEntryFallback() {
-        const menu = document.getElementById(ENTRY_ID)
-            ? document.getElementById(ENTRY_ID).parentElement
-            : document.getElementById("consumerMoreMenuV349");
+        const menu = document.getElementById("consumerMoreMenuV349");
         if (!menu) return false;
 
         let entry = document.getElementById(ENTRY_ID);
