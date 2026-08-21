@@ -23,6 +23,7 @@ const auth = read("src/pwa/developer_auth_v1_config.js");
 const remoteEntry = read("src/pwa/developer_remote_entry_v400_6_1.js");
 const workbench = read("src/pwa/developer_workbench_v400_6_2.js");
 const exitFix = read("src/pwa/developer_exit_mobile_fix_v400_6_3.js");
+const adminLoader = read("src/pwa/admin_local_loader_v400_7.js");
 const css = read("src/pwa/release_polish_v400_1.css");
 const sw = read("src/pwa/sw_v400_1.js");
 const icon = read("src/pwa/icon-v400.svg");
@@ -62,6 +63,10 @@ ok = pass("brand_replaces_legacy_loader", boot.includes("window.PRTBrandSplashV4
 ok = pass("no_forced_reload", !boot.includes("window.location.reload") && !boot.includes("controllerchange")) && ok;
 ok = pass("remote_admin_disabled", boot.includes("remoteAdminEnabled: false") && polish.includes("remoteAdminEnabled: false")) && ok;
 ok = pass("mobile_admin_route_absent", !auth.includes("v400_mobile_admin_route.js")) && ok;
+ok = pass("admin_static_css_absent", !appIndex.includes("admin_mode_v1.css?")) && ok;
+ok = pass("admin_static_js_absent", !appIndex.includes('<script src="./admin_mode_v1.js?')) && ok;
+ok = pass("admin_local_loader_wired", appIndex.includes("admin_local_loader_v400_7.js")) && ok;
+ok = pass("admin_local_loader_guarded", adminLoader.includes("isLocalHost") && adminLoader.includes("admin_mode_v1.js") && adminLoader.includes("admin_mode_v1.css")) && ok;
 
 ok = pass("developer_config_v400_7", auth.includes('V400.7_DEVELOPER_HARDENING1')) && ok;
 ok = pass("developer_runtime_cache_key", auth.includes("20260821_v400_7_hardening1")) && ok;
