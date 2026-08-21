@@ -1,6 +1,151 @@
 (function () {
   "use strict";
 
+  if (typeof window === "undefined" || window.PRTBrandSplashV4006) return;
+
+  const VERSION = "V400.6_BRAND_SPLASH";
+  const SPLASH_ID = "prtBrandSplashV4006";
+  const STYLE_ID = "prtBrandSplashStyleV4006";
+  const LANGUAGE_STORAGE_KEY = "pythonReadingTrainer.language";
+
+  function selectedLanguage() {
+    try {
+      const params = new URLSearchParams(window.location.search || "");
+      const query = params.get("lang");
+      if (query === "ko" || query === "en") return query;
+      const stored = window.localStorage && window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      if (stored === "ko" || stored === "en") return stored;
+    } catch (_) {}
+    return "ko";
+  }
+
+  function installStyle() {
+    if (document.getElementById(STYLE_ID)) return;
+
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = [
+      "#" + SPLASH_ID + " { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: center; justify-content: center; box-sizing: border-box; overflow: hidden; background: radial-gradient(circle at 50% 38%, #ffffff 0%, #f7faff 44%, #eef4ff 100%); color: #0f172a; opacity: 1; transition: opacity 180ms ease; font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; }",
+      "#" + SPLASH_ID + ".is-leaving { opacity: 0; pointer-events: none; }",
+      "#" + SPLASH_ID + " .prt-brand-core-v4006 { display: flex; flex-direction: column; align-items: center; width: min(86vw, 360px); margin-top: -42px; text-align: center; }",
+      "#" + SPLASH_ID + " .prt-brand-mark-v4006 { display: grid; place-items: center; width: 92px; height: 92px; border-radius: 26px; background: linear-gradient(145deg, #2563eb 0%, #1d4ed8 100%); box-shadow: 0 18px 38px rgba(37, 99, 235, .22); }",
+      "#" + SPLASH_ID + " .prt-brand-mark-v4006 svg { width: 66px; height: 66px; display: block; }",
+      "#" + SPLASH_ID + " .prt-brand-title-v4006 { margin-top: 22px; font-size: 24px; line-height: 1.18; font-weight: 850; letter-spacing: -.035em; }",
+      "#" + SPLASH_ID + " .prt-brand-tagline-v4006 { margin-top: 8px; color: #64748b; font-size: 13px; line-height: 1.5; font-weight: 620; }",
+      "#" + SPLASH_ID + " .prt-brand-loading-v4006 { position: absolute; left: 50%; bottom: calc(34px + env(safe-area-inset-bottom)); width: min(72vw, 220px); transform: translateX(-50%); text-align: center; }",
+      "#" + SPLASH_ID + " .prt-brand-loading-label-v4006 { color: #7b8798; font-size: 10.5px; line-height: 1.35; font-weight: 650; }",
+      "#" + SPLASH_ID + " .prt-brand-loading-track-v4006 { position: relative; width: 118px; height: 3px; margin: 10px auto 0; overflow: hidden; border-radius: 999px; background: #dfe8f7; }",
+      "#" + SPLASH_ID + " .prt-brand-loading-track-v4006::after { content: \"\"; position: absolute; inset: 0 auto 0 0; width: 42%; border-radius: inherit; background: linear-gradient(90deg, #60a5fa, #2563eb); animation: prt-brand-loading-v4006 .9s ease-in-out infinite alternate; }",
+      "@keyframes prt-brand-loading-v4006 { from { transform: translateX(-8%); } to { transform: translateX(150%); } }",
+      "@media (max-width: 520px) { #" + SPLASH_ID + " .prt-brand-core-v4006 { margin-top: -30px; } #" + SPLASH_ID + " .prt-brand-mark-v4006 { width: 84px; height: 84px; border-radius: 24px; } #" + SPLASH_ID + " .prt-brand-mark-v4006 svg { width: 60px; height: 60px; } #" + SPLASH_ID + " .prt-brand-title-v4006 { margin-top: 19px; font-size: 22px; } #" + SPLASH_ID + " .prt-brand-tagline-v4006 { font-size: 12.5px; } }",
+      "@media (prefers-reduced-motion: reduce) { #" + SPLASH_ID + " { transition: none; } #" + SPLASH_ID + " .prt-brand-loading-track-v4006::after { animation: none; width: 64%; } }"
+    ].join("\n");
+    document.head.appendChild(style);
+  }
+
+  function coreReady() {
+    const title = document.getElementById("cardTitle");
+    const home = document.querySelector("#learningHomeV343 .home-v343-shell");
+    const value = String(title && title.textContent || "").trim();
+    const cardReady = Boolean(value && value !== "Loading..." && value !== "loading...");
+    return cardReady && Boolean(home);
+  }
+
+  function render() {
+    if (!document.body || document.getElementById(SPLASH_ID)) return;
+
+    installStyle();
+
+    const language = selectedLanguage();
+    const isEnglish = language === "en";
+    const tagline = isEnglish
+      ? "Read code first. Write with confidence."
+      : "코드를 쓰기 전에, 읽는 힘부터.";
+    const loading = isEnglish
+      ? "Preparing your study session"
+      : "학습 데이터를 준비하고 있어요";
+
+    const splash = document.createElement("div");
+    splash.id = SPLASH_ID;
+    splash.setAttribute("role", "status");
+    splash.setAttribute("aria-live", "polite");
+    splash.innerHTML = [
+      '<div class="prt-brand-core-v4006">',
+      '  <div class="prt-brand-mark-v4006" aria-hidden="true">',
+      '    <svg viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">',
+      '      <path d="M15 27.5c11.8-4.5 21.9-3.4 30.2 2.9V72c-8.9-6-19-7.1-30.2-3.2V27.5Z" fill="#fff"/>',
+      '      <path d="M81 27.5c-11.8-4.5-21.9-3.4-30.2 2.9V72c8.9-6 19-7.1 30.2-3.2V27.5Z" fill="#fff"/>',
+      '      <path d="M48 31v41" stroke="#bfdbfe" stroke-width="3" stroke-linecap="round"/>',
+      '      <path d="m34 42-9 7 9 7M62 42l9 7-9 7" fill="none" stroke="#2563eb" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>',
+      '      <path d="M40 39 34.5 59" stroke="#60a5fa" stroke-width="3.5" stroke-linecap="round"/>',
+      '    </svg>',
+      '  </div>',
+      '  <div class="prt-brand-title-v4006">Python Reading Trainer</div>',
+      '  <div class="prt-brand-tagline-v4006">' + tagline + '</div>',
+      '</div>',
+      '<div class="prt-brand-loading-v4006">',
+      '  <div class="prt-brand-loading-label-v4006">' + loading + '</div>',
+      '  <div class="prt-brand-loading-track-v4006" aria-hidden="true"></div>',
+      '</div>'
+    ].join("");
+
+    document.body.appendChild(splash);
+    document.documentElement.classList.add("prt-brand-splash-active-v4006");
+
+    let finished = false;
+    let observer = null;
+
+    function finish(reason) {
+      if (finished) return;
+      finished = true;
+      document.documentElement.classList.remove("prt-brand-splash-active-v4006");
+      document.documentElement.classList.add("prt-brand-splash-done-v4006");
+      splash.dataset.finishReason = String(reason || "ready");
+      splash.classList.add("is-leaving");
+      if (observer) observer.disconnect();
+      window.setTimeout(function () {
+        if (splash.parentNode) splash.remove();
+      }, 190);
+    }
+
+    function sync() {
+      if (coreReady()) finish("core-ready");
+    }
+
+    observer = new MutationObserver(sync);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+
+    [0, 80, 180, 350, 700, 1200, 2000, 4000].forEach(function (delay) {
+      window.setTimeout(sync, delay);
+    });
+    window.setTimeout(function () { finish("failsafe"); }, 12000);
+
+    window.PRTBrandSplashV4006 = Object.freeze({
+      version: VERSION,
+      language: language,
+      finish: finish,
+      isReady: coreReady,
+      getState: function () {
+        return {
+          active: !finished,
+          coreReady: coreReady(),
+          language: language
+        };
+      }
+    });
+  }
+
+  if (document.body) render();
+  else document.addEventListener("DOMContentLoaded", render, { once: true });
+})();
+
+(function () {
+  "use strict";
+
   if (typeof window === "undefined" || window.PRTRuntimeLessonBundleV4005) return;
 
   const VERSION = "V400.5_RUNTIME_CONTENT_BUNDLES_INLINE";
@@ -35,7 +180,7 @@
   function loadBundle(url, schema, validate) {
     return nativeFetch(url)
       .then(function (response) {
-        if (!response.ok) throw new Error(url + " HTTP " + response.status);
+        if (!response.ok) throw new Error("bundle HTTP " + response.status);
         return response.json();
       })
       .then(function (payload) {
@@ -122,6 +267,7 @@
         misses += 1;
         return nativeFetch(input, init);
       }
+
       if (isLesson) lessonHits += 1;
       else supportHits += 1;
       return responseFromRows(rows);

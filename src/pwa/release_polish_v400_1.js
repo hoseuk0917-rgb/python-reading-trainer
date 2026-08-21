@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const VERSION = "V400.5_RELEASE_POLISH_BOOT";
-  const SW_URL = "./sw_v400_1.js?v=20260821_v400_5_runtime1";
+  const VERSION = "V400.6_RELEASE_POLISH_BOOT";
+  const SW_URL = "./sw_v400_1.js?v=20260821_v400_6_brand1";
   const CORE_LOADER_ID = "prtCoreLoaderV4004";
   const CORE_LOADER_STYLE_ID = "prtCoreLoaderStyleV4004";
 
@@ -93,6 +93,13 @@
   function installCoreLoadingState() {
     if (!document.body) return;
 
+    if (window.PRTBrandSplashV4006) {
+      const oldLoader = document.getElementById(CORE_LOADER_ID);
+      if (oldLoader) oldLoader.remove();
+      document.body.classList.remove("prt-core-loading-v4004");
+      return;
+    }
+
     installCoreLoaderStyle();
     document.body.classList.add("prt-core-loading-v4004");
     ensureCoreLoader();
@@ -138,7 +145,7 @@
           try { registration.update(); } catch (_) {}
         })
         .catch(function (error) {
-          console.warn("V400.5 service worker registration failed", error);
+          console.warn("V400.6 service worker registration failed", error);
         });
     }, { once: true });
   }
@@ -153,7 +160,8 @@
       version: VERSION,
       openDiagnostic: openDiagnostic,
       remoteAdminEnabled: false,
-      forcedReloadEnabled: false
+      forcedReloadEnabled: false,
+      brandSplashEnabled: Boolean(window.PRTBrandSplashV4006)
     });
   }
 
