@@ -2,7 +2,7 @@
     "use strict";
 
     window.PRTDeveloperAuthV1Config = Object.freeze({
-        version: "V400.6.4_DEVELOPER_CLOSE_STABILITY1",
+        version: "V400.7_DEVELOPER_HARDENING1",
         authBase: "https://veriautonomy.com/api/prt-developer",
         ownerGithubId: "238496232"
     });
@@ -10,14 +10,14 @@
     if (!document.querySelector('link[data-v400-release-polish-v3]')) {
         const style = document.createElement("link");
         style.rel = "stylesheet";
-        style.href = "./release_polish_v400_1.css?v=20260821_v400_3";
+        style.href = "./release_polish_v400_1.css?v=20260821_v400_7_hardening1";
         style.setAttribute("data-v400-release-polish-v3", "1");
         document.head.appendChild(style);
     }
 
     if (!document.querySelector('script[data-v400-release-polish-v3]')) {
         const script = document.createElement("script");
-        script.src = "./v400_release_polish.js?v=20260821_v400_3_release_polish";
+        script.src = "./v400_release_polish.js?v=20260821_v400_7_hardening1";
         script.async = false;
         script.setAttribute("data-v400-release-polish-v3", "1");
         document.head.appendChild(script);
@@ -25,7 +25,7 @@
 
     if (!document.querySelector('script[data-v400-developer-workbench]')) {
         const script = document.createElement("script");
-        script.src = "./developer_workbench_v400_6_2.js?v=20260821_v400_6_2_workbench1";
+        script.src = "./developer_workbench_v400_6_2.js?v=20260821_v400_7_hardening1";
         script.async = false;
         script.setAttribute("data-v400-developer-workbench", "1");
         document.head.appendChild(script);
@@ -33,7 +33,7 @@
 
     if (!document.querySelector('script[data-v400-developer-exit-mobile-fix]')) {
         const script = document.createElement("script");
-        script.src = "./developer_exit_mobile_fix_v400_6_3.js?v=20260821_v400_6_4_close_stability1";
+        script.src = "./developer_exit_mobile_fix_v400_6_3.js?v=20260821_v400_7_hardening1";
         script.async = false;
         script.setAttribute("data-v400-developer-exit-mobile-fix", "1");
         document.head.appendChild(script);
@@ -41,7 +41,7 @@
 
     if (!document.querySelector('script[data-v400-developer-remote-entry]')) {
         const script = document.createElement("script");
-        script.src = "./developer_remote_entry_v400_6_1.js?v=20260821_v400_6_2_dev_entry2";
+        script.src = "./developer_remote_entry_v400_6_1.js?v=20260821_v400_7_hardening1";
         script.async = false;
         script.setAttribute("data-v400-developer-remote-entry", "1");
         document.head.appendChild(script);
