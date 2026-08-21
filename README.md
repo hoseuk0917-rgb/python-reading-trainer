@@ -15,7 +15,7 @@ GitHub Pages: https://hoseuk0917-rgb.github.io/python-reading-trainer/
 
 모바일 브라우저에서 열어 그대로 학습하거나 홈 화면에 추가할 수 있습니다.
 
-## 현재 릴리즈: V400.5
+## 현재 릴리즈: V400.6
 
 V400 계열의 핵심 기능:
 
@@ -33,7 +33,17 @@ V400 계열의 핵심 기능:
 - 학습 / 실전 / 진행 / 더보기의 4개 primary navigation
 - Developer Mode / Admin Mode는 로컬 개발 환경에서 사용
 
-V400.5에서는 실제 초기 데이터 요청 수를 줄였습니다.
+V400.6에서는 앱 첫 인상을 브랜드 splash로 정리했습니다.
+
+- 브랜드 문구: **코드를 쓰기 전에, 읽는 힘부터.**
+- EN 문구: **Read code first. Write with confidence.**
+- 열린 책 + 코드 괄호를 결합한 Python Reading Trainer 전용 심볼
+- 학습 데이터가 준비되는 동안 브랜드 화면과 짧은 progress line 표시
+- 데이터가 준비되는 즉시 splash 종료: 별도 최소 노출시간 없음
+- splash와 PWA 일반/마스커블 아이콘을 같은 브랜드 심볼로 통일
+- 기존 compact loader는 brand splash가 동작하는 경우 중복 표시하지 않음
+
+V400.5의 로딩 최적화도 그대로 유지합니다.
 
 - 98개 lesson JSON을 KO/EN별 runtime lesson bundle 1개로 통합
 - side-card/reference/resource JSON도 KO/EN별 support bundle 1개로 통합
@@ -41,7 +51,6 @@ V400.5에서는 실제 초기 데이터 요청 수를 줄였습니다.
 - 기존 `app.js`의 파일별 응답 계약은 유지하고 개별 네트워크 요청을 memory bundle 응답으로 대체
 - bundle이 없거나 검증에 실패하면 기존 개별 JSON fetch로 자동 fallback
 - lesson bundle은 KO/EN 각각 1,785장 전체를 담아 총량·정렬·진도 계약 유지
-- V400.4의 강제 reload/navigation 제거와 compact 로더 정책 유지
 - 공개 Pages의 Admin/Developer 진입은 계속 비활성화
 
 ## 진단 시작
@@ -97,15 +106,16 @@ Developer Mode는 로컬 authority 계약을 사용하고, Admin은 해당 Devel
 
 ## PWA / 캐시
 
-V400.5의 배포 정책:
+V400.6의 배포 정책:
 
 - HTML navigation과 핵심 consumer UI/runtime preloader는 network-first
+- 브랜드 splash와 아이콘은 V400.6 cache key로 갱신
 - runtime lesson/support bundle은 service worker의 데이터 cache로 재사용
 - 나머지 학습 JSON도 stale-while-revalidate fallback 유지
 - 오프라인에서는 설치된 cache를 fallback으로 사용
 - release가 바뀌면 이전 V400 cache 내용을 새 cache로 마이그레이션한 뒤 정리
 - service worker 갱신을 위해 사용 중인 화면을 강제 reload하지 않음
-- 설치형 PWA의 start URL에 V400.5 release key 포함
+- 설치형 PWA의 start URL에 V400.6 release key 포함
 
 Mermaid는 외부 CDN을 사용하므로 완전 오프라인 상태에서는 일부 흐름도 기능이 제한될 수 있습니다.
 
@@ -132,5 +142,6 @@ Admin/Developer 기능이 production lesson JSON을 브라우저에서 직접 �
 - JSON/릴리즈 wiring
 - KO/EN runtime bundle 원본 일치
 - 1,785 lesson validation
-- V400 release polish 계약
+- 브랜드 splash / PWA icon / cache 계약
+- 공개 Admin 차단
 - diff integrity
