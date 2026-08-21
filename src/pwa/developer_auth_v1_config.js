@@ -2,7 +2,7 @@
     "use strict";
 
     window.PRTDeveloperAuthV1Config = Object.freeze({
-        version: "V400.6.3_DEVELOPER_EXIT_MOBILE_FIX1",
+        version: "V400.6.4_DEVELOPER_CLOSE_STABILITY1",
         authBase: "https://veriautonomy.com/api/prt-developer",
         ownerGithubId: "238496232"
     });
@@ -33,7 +33,7 @@
 
     if (!document.querySelector('script[data-v400-developer-exit-mobile-fix]')) {
         const script = document.createElement("script");
-        script.src = "./developer_exit_mobile_fix_v400_6_3.js?v=20260821_v400_6_3_exit_mobile1";
+        script.src = "./developer_exit_mobile_fix_v400_6_3.js?v=20260821_v400_6_4_close_stability1";
         script.async = false;
         script.setAttribute("data-v400-developer-exit-mobile-fix", "1");
         document.head.appendChild(script);
