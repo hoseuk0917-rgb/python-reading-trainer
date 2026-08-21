@@ -156,7 +156,7 @@
 
     if (!document.querySelector('script[data-v400-developer-exit-mobile-fix]')) {
         const script = document.createElement("script");
-        script.src = "./developer_exit_mobile_fix_v400_6_3.js?v=20260821_v400_7_hardening1";
+        script.src = "./developer_exit_mobile_fix_v400_6_3.js?v=20260821_v400_7_1_advanced_return1";
         script.async = false;
         script.setAttribute("data-v400-developer-exit-mobile-fix", "1");
         document.head.appendChild(script);

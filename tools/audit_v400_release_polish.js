@@ -72,6 +72,7 @@ ok = pass("developer_config_v400_7", auth.includes('V400.7_DEVELOPER_ENTRY_HARDE
 ok = pass("developer_fallback_preserved", auth.includes("beginDeveloperFallback") && auth.includes('ENTRY_ID = "consumerDeveloperV40061"')) && ok;
 ok = pass("developer_auth_no_body_observer", !auth.includes("new MutationObserver") && !auth.includes("setInterval")) && ok;
 ok = pass("developer_runtime_cache_key", auth.includes("20260821_v400_7_hardening1")) && ok;
+ok = pass("developer_exit_return_cache_key", auth.includes("20260821_v400_7_1_advanced_return1")) && ok;
 ok = pass("developer_workbench_loader", auth.includes("developer_workbench_v400_6_2.js")) && ok;
 ok = pass("developer_exit_loader", auth.includes("developer_exit_mobile_fix_v400_6_3.js")) && ok;
 ok = pass("developer_remote_entry_loader", auth.includes("developer_remote_entry_v400_6_1.js")) && ok;
@@ -81,6 +82,9 @@ ok = pass("release_polish_hardened", polish.includes("V400.7_RELEASE_POLISH_HARD
 ok = pass("release_polish_no_body_observer", !polish.includes("bodyObserver") && !polish.includes("observe(document.body")) && ok;
 ok = pass("developer_workbench_present", workbench.includes("PRTDeveloperWorkbenchV40062")) && ok;
 ok = pass("developer_exit_fix_present", exitFix.includes("PRTDeveloperExitMobileFixV40064")) && ok;
+ok = pass("developer_advanced_return_version", exitFix.includes("V400.7.1_DEVELOPER_CLOSE_HIERARCHY1")) && ok;
+ok = pass("developer_advanced_return_hierarchy", exitFix.includes("returnToWorkbench") && exitFix.includes("markAdvancedReturn") && exitFix.includes("resumeWorkbenchAfterAdvanced") && exitFix.includes("#prtWbLegacyV40062")) && ok;
+ok = pass("developer_advanced_close_routes", exitFix.includes("#prtDevCloseV1, #prtDevOverlayV1") && exitFix.includes("cancelAdvancedReturn")) && ok;
 
 ok = pass("bottom_nav_preserved", css.includes(".consumer-nav-button-v349.active::before")) && ok;
 ok = pass("manifest_release_v400_7", manifest.start_url === "./?release=20260821_v400_7_hardening1") && ok;
