@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  const VERSION = "V400.6_RELEASE_POLISH_BOOT";
-  const SW_URL = "./sw_v400_1.js?v=20260821_v400_6_splash1";
+  const VERSION = "V400.7_RELEASE_POLISH_BOOT";
+  const SW_URL = "./sw_v400_1.js?v=20260821_v400_7_hardening1";
   const CORE_LOADER_ID = "prtCoreLoaderV4004";
   const CORE_LOADER_STYLE_ID = "prtCoreLoaderStyleV4004";
 
@@ -145,7 +145,7 @@
           try { registration.update(); } catch (_) {}
         })
         .catch(function (error) {
-          console.warn("V400.6 service worker registration failed", error);
+          console.warn("V400.7 service worker registration failed", error);
         });
     }, { once: true });
   }
