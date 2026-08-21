@@ -1,8 +1,9 @@
 (function () {
   "use strict";
 
-  const VERSION = "V400.6.1_DEVELOPER_REMOTE_ENTRY1";
+  const VERSION = "V400.6.2_DEVELOPER_REMOTE_ENTRY2";
   const ENTRY_ID = "consumerDeveloperV40061";
+  const INTENT_KEY = "python-reading-trainer-dev-workbench-intent";
 
   function text(ko, en) {
     return String(document.documentElement.lang || "")
@@ -20,6 +21,10 @@
 
   function developerApi() {
     return window.PRTDeveloperModeV1 || null;
+  }
+
+  function workbenchApi() {
+    return window.PRTDeveloperWorkbenchV40062 || null;
   }
 
   function authApi() {
@@ -65,7 +70,30 @@
       + encodeURIComponent(currentReturnTo());
   }
 
+  function rememberWorkbenchIntent() {
+    try {
+      sessionStorage.setItem(INTENT_KEY, "1");
+    } catch (_) {}
+  }
+
+  function consumeWorkbenchIntent() {
+    try {
+      const value = sessionStorage.getItem(INTENT_KEY) === "1";
+      if (value) sessionStorage.removeItem(INTENT_KEY);
+      return value;
+    } catch (_) {
+      return false;
+    }
+  }
+
   function openDeveloper() {
+    const workbench = workbenchApi();
+    if (workbench && typeof workbench.open === "function") {
+      try {
+        if (workbench.open() !== false) return true;
+      } catch (_) {}
+    }
+
     const api = developerApi();
     if (!api || typeof api.open !== "function") return false;
     try {
@@ -89,6 +117,8 @@
       return;
     }
 
+    rememberWorkbenchIntent();
+
     const existing = document.getElementById("prtDeveloperAuthPrimaryV12");
     if (existing && !existing.disabled) {
       existing.click();
@@ -97,6 +127,22 @@
 
     const url = loginUrl();
     if (url) window.location.assign(url);
+  }
+
+  function resumeWorkbenchAfterAuth() {
+    if (isLocalHost()) return false;
+    const state = authState();
+    if (!state || state.authenticated !== true) return false;
+
+    let pending = false;
+    try {
+      pending = sessionStorage.getItem(INTENT_KEY) === "1";
+    } catch (_) {}
+
+    if (!pending) return false;
+    consumeWorkbenchIntent();
+    window.setTimeout(openDeveloper, 20);
+    return true;
   }
 
   function syncEntry() {
@@ -113,23 +159,24 @@
     if (help) {
       if (isLocalHost()) {
         help.textContent = text(
-          "로컬 Developer Mode를 엽니다.",
-          "Open local Developer Mode."
+          "콘텐츠 워크벤치를 엽니다.",
+          "Open the content workbench."
         );
       } else if (authenticated) {
         help.textContent = text(
-          "GitHub 인증됨 · Developer Mode 열기",
-          "GitHub verified · Open Developer Mode"
+          "GitHub 인증됨 · 문항 찾기와 편집",
+          "GitHub verified · Find and edit content"
         );
       } else {
         help.textContent = text(
-          "GitHub 본인 인증 후 Developer Mode를 엽니다.",
-          "Verify with GitHub, then open Developer Mode."
+          "GitHub 본인 인증 후 문항을 찾고 수정합니다.",
+          "Verify with GitHub, then find and edit content."
         );
       }
     }
 
     entry.dataset.authenticated = authenticated ? "true" : "false";
+    resumeWorkbenchAfterAuth();
     return true;
   }
 
@@ -182,7 +229,10 @@
     const observer = new MutationObserver(scheduleRefresh);
     observer.observe(document.body, { childList: true, subtree: true });
 
-    window.setInterval(syncEntry, 1500);
+    window.setInterval(function () {
+      syncEntry();
+      resumeWorkbenchAfterAuth();
+    }, 1200);
 
     window.PRTDeveloperRemoteEntryV40061 = Object.freeze({
       version: VERSION,
