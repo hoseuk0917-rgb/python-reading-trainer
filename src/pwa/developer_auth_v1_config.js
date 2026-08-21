@@ -2,8 +2,8 @@
     "use strict";
 
     window.PRTDeveloperAuthV1Config = Object.freeze({
-        version: "V400.3_DEVELOPER_AUTH_V1_2",
-        authBase: "",
+        version: "V400.6.1_DEVELOPER_AUTH_GITHUB_OAUTH1",
+        authBase: "https://veriautonomy.com/api/prt-developer",
         ownerGithubId: "238496232"
     });
 
