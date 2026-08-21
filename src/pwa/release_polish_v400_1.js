@@ -2,7 +2,7 @@
   "use strict";
 
   const VERSION = "V400.5_RELEASE_POLISH_BOOT";
-  const SW_URL = "./sw_v400_1.js?v=20260821_v400_5";
+  const SW_URL = "./sw_v400_1.js?v=20260821_v400_5_runtime1";
   const CORE_LOADER_ID = "prtCoreLoaderV4004";
   const CORE_LOADER_STYLE_ID = "prtCoreLoaderStyleV4004";
 
