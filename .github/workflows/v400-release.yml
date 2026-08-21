@@ -45,6 +45,10 @@ jobs:
           node --check src/pwa/developer_mode_v1.js
           node --check src/pwa/developer_auth_v1_config.js
           node --check src/pwa/developer_auth_v1.js
+          node --check src/pwa/developer_remote_entry_v400_6_1.js
+          node --check src/pwa/developer_workbench_v400_6_2.js
+          node --check src/pwa/developer_exit_mobile_fix_v400_6_3.js
+          node --check src/pwa/admin_local_loader_v400_7.js
           node --check src/pwa/admin_mode_v1.js
           node --check src/pwa/v400_release_polish.js
           node --check src/pwa/release_polish_v400_1.js
@@ -66,6 +70,9 @@ jobs:
           from pathlib import Path
           text = Path('src/pwa/index.html').read_text(encoding='utf-8-sig')
           assert text.index('content_quality_semantics.js') < text.index('./app.js?')
+          assert 'admin_mode_v1.css?' not in text
+          assert '<script src="./admin_mode_v1.js?' not in text
+          assert 'admin_local_loader_v400_7.js' in text
           PY
           test ! -e src/pwa/v400_mobile_admin_route.js
 
@@ -74,10 +81,15 @@ jobs:
           python tools/build_runtime_lesson_bundle_v400_5.py
           git diff --exit-code -- data/runtime/lesson_bundle_v400_5.json data_i18n/en/runtime/lesson_bundle_v400_5.json data/runtime/support_bundle_v400_5.json data_i18n/en/runtime/support_bundle_v400_5.json
 
-      - name: Existing lesson validation
-        run: python tools/validate_lessons.py
+      - name: Lesson validation
+        run: |
+          python tools/validate_lessons.py
+          python tools/validate_bilingual_lessons_v400_7.py
 
-      - name: V400.6 release polish audit
+      - name: Diagnostic validation
+        run: python tools/validate_diagnostic_v400_7.py
+
+      - name: V400.7 release polish audit
         run: node tools/audit_v400_release_polish.js
 
       - name: Diff integrity
