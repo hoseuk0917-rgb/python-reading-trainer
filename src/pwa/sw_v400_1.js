@@ -1,6 +1,6 @@
 const CACHE_PREFIX = "python-reading-trainer-v400";
-const RELEASE = "20260821_v400_6_splash1";
-const CACHE_NAME = "python-reading-trainer-v400-6-splash1-20260821";
+const RELEASE = "20260821_v400_7_hardening1";
+const CACHE_NAME = "python-reading-trainer-v400-7-hardening1-20260821";
 
 const SHELL_ASSETS = [
   "./",
@@ -15,6 +15,12 @@ const SHELL_ASSETS = [
   "./consumer_ux_v349.js",
   "./release_polish_v400_1.js",
   "./v400_release_polish.js",
+  "./developer_auth_v1_config.js",
+  "./developer_auth_v1.js",
+  "./developer_remote_entry_v400_6_1.js",
+  "./developer_workbench_v400_6_2.js",
+  "./developer_exit_mobile_fix_v400_6_3.js",
+  "./admin_local_loader_v400_7.js",
   "./icon-v400-192.png",
   "./icon-v400-512.png",
   "./icon-maskable-v400-192.png",
@@ -38,7 +44,12 @@ const CRITICAL_UI_FILES = new Set([
   "icon-maskable-v400-512.png",
   "icon-v400.svg",
   "icon-maskable-v400.svg",
-  "developer_auth_v1_config.js"
+  "developer_auth_v1_config.js",
+  "developer_auth_v1.js",
+  "developer_remote_entry_v400_6_1.js",
+  "developer_workbench_v400_6_2.js",
+  "developer_exit_mobile_fix_v400_6_3.js",
+  "admin_local_loader_v400_7.js"
 ]);
 
 function isDataUrl(url) {

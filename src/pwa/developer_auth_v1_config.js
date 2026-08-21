@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    const VERSION = "V400.6.5_DEVELOPER_ENTRY_FALLBACK1";
+    const VERSION = "V400.7_DEVELOPER_ENTRY_HARDENED1";
     const AUTH_BASE = "https://veriautonomy.com/api/prt-developer";
     const ENTRY_ID = "consumerDeveloperV40061";
 
@@ -61,6 +61,11 @@
             try {
                 const state = auth.getState();
                 if (state && state.authenticated === true) {
+                    const workbench = window.PRTDeveloperWorkbenchV40062;
+                    if (workbench && typeof workbench.open === "function") {
+                        workbench.open();
+                        return;
+                    }
                     const api = window.PRTDeveloperModeV1;
                     if (api && typeof api.open === "function") api.open();
                     return;
@@ -98,17 +103,25 @@
 
     function bootDeveloperEntryFallback() {
         ensureDeveloperEntryFallback();
+
         [80, 180, 400, 800, 1600, 3200, 6400].forEach(function (delay) {
             window.setTimeout(ensureDeveloperEntryFallback, delay);
         });
 
-        const observer = new MutationObserver(function () {
-            if (!document.getElementById(ENTRY_ID)) {
-                ensureDeveloperEntryFallback();
-            }
+        document.addEventListener("click", function (event) {
+            const target = event.target && event.target.closest
+                ? event.target.closest("#consumerMoreV349")
+                : null;
+            if (target) window.setTimeout(ensureDeveloperEntryFallback, 0);
+        }, true);
+
+        window.addEventListener("pageshow", function () {
+            window.setTimeout(ensureDeveloperEntryFallback, 0);
         });
 
-        observer.observe(document.body, { childList: true, subtree: true });
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) window.setTimeout(ensureDeveloperEntryFallback, 0);
+        });
     }
 
     if (document.readyState === "loading") {
@@ -120,14 +133,14 @@
     if (!document.querySelector('link[data-v400-release-polish-v3]')) {
         const style = document.createElement("link");
         style.rel = "stylesheet";
-        style.href = "./release_polish_v400_1.css?v=20260821_v400_3";
+        style.href = "./release_polish_v400_1.css?v=20260821_v400_7_hardening1";
         style.setAttribute("data-v400-release-polish-v3", "1");
         document.head.appendChild(style);
     }
 
     if (!document.querySelector('script[data-v400-release-polish-v3]')) {
         const script = document.createElement("script");
-        script.src = "./v400_release_polish.js?v=20260821_v400_3_release_polish";
+        script.src = "./v400_release_polish.js?v=20260821_v400_7_hardening1";
         script.async = false;
         script.setAttribute("data-v400-release-polish-v3", "1");
         document.head.appendChild(script);
@@ -135,7 +148,7 @@
 
     if (!document.querySelector('script[data-v400-developer-workbench]')) {
         const script = document.createElement("script");
-        script.src = "./developer_workbench_v400_6_2.js?v=20260821_v400_6_2_workbench1";
+        script.src = "./developer_workbench_v400_6_2.js?v=20260821_v400_7_hardening1";
         script.async = false;
         script.setAttribute("data-v400-developer-workbench", "1");
         document.head.appendChild(script);
@@ -143,7 +156,7 @@
 
     if (!document.querySelector('script[data-v400-developer-exit-mobile-fix]')) {
         const script = document.createElement("script");
-        script.src = "./developer_exit_mobile_fix_v400_6_3.js?v=20260821_v400_6_4_close_stability1";
+        script.src = "./developer_exit_mobile_fix_v400_6_3.js?v=20260821_v400_7_hardening1";
         script.async = false;
         script.setAttribute("data-v400-developer-exit-mobile-fix", "1");
         document.head.appendChild(script);
@@ -151,7 +164,7 @@
 
     if (!document.querySelector('script[data-v400-developer-remote-entry]')) {
         const script = document.createElement("script");
-        script.src = "./developer_remote_entry_v400_6_1.js?v=20260821_v400_6_2_dev_entry2";
+        script.src = "./developer_remote_entry_v400_6_1.js?v=20260821_v400_7_hardening1";
         script.async = false;
         script.setAttribute("data-v400-developer-remote-entry", "1");
         document.head.appendChild(script);
