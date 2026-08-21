@@ -1,6 +1,6 @@
 const CACHE_PREFIX = "python-reading-trainer-v400";
-const RELEASE = "20260821_v400_5_runtime1";
-const CACHE_NAME = "python-reading-trainer-v400-5-runtime1-20260821";
+const RELEASE = "20260821_v400_6_brand1";
+const CACHE_NAME = "python-reading-trainer-v400-6-brand1-20260821";
 
 const SHELL_ASSETS = [
   "./",
@@ -21,12 +21,15 @@ const SHELL_ASSETS = [
 
 const CRITICAL_UI_FILES = new Set([
   "index.html",
+  "manifest.json",
   "consumer_ui_v349.css",
   "consumer_ux_v349.js",
   "release_polish_v400_1.css",
   "release_polish_v400_1.js",
   "v400_release_polish.js",
   "content_quality_semantics.js",
+  "icon-v400.svg",
+  "icon-maskable-v400.svg",
   "developer_auth_v1_config.js"
 ]);
 
