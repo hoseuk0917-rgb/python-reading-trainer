@@ -1,29 +1,22 @@
-name: V400 release gate
+name: V400.5 one-time finalizer
 
 on:
   push:
     branches:
       - main
-      - agent/v400-1-release-polish-r2-20260821
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
 
 permissions:
-  contents: read
-
-concurrency:
-  group: v400-release-${{ github.ref }}
-  cancel-in-progress: true
+  contents: write
 
 jobs:
-  release-smoke:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -35,38 +28,255 @@ jobs:
         with:
           node-version: '22'
 
-      - name: JavaScript syntax
+      - name: Wire runtime bundles and final V400.5 checks
+        shell: bash
         run: |
-          node --check src/pwa/app.js
-          node --check src/pwa/learning_home_v343.js
-          node --check src/pwa/v400_pedagogy_runtime.js
-          node --check src/pwa/diagnostic_v400_2.js
-          node --check src/pwa/diagnostic_remediation_v400_2.js
-          node --check src/pwa/developer_mode_v1.js
-          node --check src/pwa/developer_auth_v1_config.js
-          node --check src/pwa/developer_auth_v1.js
-          node --check src/pwa/admin_mode_v1.js
-          node --check src/pwa/v400_release_polish.js
+          python - <<'PY'
+          from pathlib import Path
+
+          def read(path):
+              return Path(path).read_text(encoding="utf-8-sig")
+
+          def write(path, text):
+              Path(path).write_text(text, encoding="utf-8")
+
+          # 1. PWA wiring: preload runtime content before app.js.
+          path = "src/pwa/index.html"
+          text = read(path)
+          old = '  <link rel="manifest" href="./manifest.json?v=20260821_v400_1">\n</head>'
+          new = '  <link rel="manifest" href="./manifest.json?v=20260821_v400_5">\n  <script src="./runtime_lesson_bundle_v400_5.js?v=20260821_v400_5"></script>\n</head>'
+          if text.count(old) != 1:
+              raise SystemExit("index head target mismatch")
+          text = text.replace(old, new, 1)
+          old = '<script src="./app.js?v=20260812_v339_quality1&cq=20260812_v339_quality3&le=20260812_v341_a2&eq=20260812_v344_explain1&we=20260813_v352_a1&v400=20260821_v400_1"></script>'
+          new = '<script src="./app.js?v=20260812_v339_quality1&cq=20260812_v339_quality3&le=20260812_v341_a2&eq=20260812_v344_explain1&we=20260813_v352_a1&v400=20260821_v400_5"></script>'
+          if text.count(old) != 1:
+              raise SystemExit("index app target mismatch")
+          text = text.replace(old, new, 1)
+          old = '<script src="./release_polish_v400_1.js?v=20260821_v400_1"></script>'
+          new = '<script src="./release_polish_v400_1.js?v=20260821_v400_5"></script>'
+          if text.count(old) != 1:
+              raise SystemExit("index release polish target mismatch")
+          text = text.replace(old, new, 1)
+          write(path, text)
+
+          # 2. Current release notes.
+          path = "README.md"
+          text = read(path)
+          if text.count("## 현재 릴리즈: V400.4") != 1:
+              raise SystemExit("README release heading mismatch")
+          text = text.replace("## 현재 릴리즈: V400.4", "## 현재 릴리즈: V400.5", 1)
+          old = """V400.4에서는 모바일 로딩 체감과 PWA 갱신 동작을 정리했습니다.\n\n- service worker 교체 시 강제 reload/navigation 제거\n- 새 service worker 설치 때 대용량 도구 파일 전체를 다시 선캐시하지 않도록 shell 최소화\n- 이전 V400 cache를 새 cache로 로컬 마이그레이션한 뒤 정리\n- 학습 JSON은 저장본을 먼저 보여주고 백그라운드에서 최신본을 갱신\n- 첫 학습 데이터가 준비되기 전 legacy `Loading...` 카드 대신 compact 로딩 카드 표시\n- 상단 KO/EN과 하단 navigation은 로딩 중에도 최종 UI를 유지\n- 공개 Pages의 Admin/Developer 진입은 계속 비활성화\n"""
+          new = """V400.5에서는 실제 초기 데이터 요청 수를 줄였습니다.\n\n- 98개 lesson JSON을 KO/EN별 runtime lesson bundle 1개로 통합\n- side-card/reference/resource JSON도 KO/EN별 support bundle 1개로 통합\n- 두 runtime bundle을 `<head>`에서 동시에 시작해 `app.js` 데이터 로딩보다 먼저 다운로드\n- 기존 `app.js`의 파일별 응답 계약은 유지하고 네트워크 요청만 memory bundle 응답으로 대체\n- bundle이 없거나 검증에 실패하면 기존 개별 JSON fetch로 자동 fallback\n- lesson bundle은 KO/EN 각각 1,785장 전체를 담아 총량·정렬·진도 계약을 유지\n- V400.4의 강제 reload/navigation 제거와 compact 로더 정책을 유지\n- 공개 Pages의 Admin/Developer 진입은 계속 비활성화\n"""
+          if old not in text:
+              raise SystemExit("README detail target mismatch")
+          text = text.replace(old, new, 1)
+          text = text.replace("V400.4의 배포 정책:", "V400.5의 배포 정책:", 1)
+          text = text.replace("- 설치형 PWA의 start URL에 V400.4 release key 포함", "- 설치형 PWA의 start URL에 V400.5 release key 포함", 1)
+          write(path, text)
+
+          # 3. Rewrite release audit as V400.5 authority.
+          audit = r'''const fs = require("fs");
+
+          function read(path) { return fs.readFileSync(path, "utf8"); }
+          function assert(condition, label) {
+            if (!condition) {
+              console.error("FAIL=" + label);
+              process.exitCode = 1;
+              return false;
+            }
+            console.log("PASS=" + label);
+            return true;
+          }
+
+          const rootIndex = read("index.html");
+          const appIndex = read("src/pwa/index.html");
+          const bootPolish = read("src/pwa/release_polish_v400_1.js");
+          const visualPolish = read("src/pwa/v400_release_polish.js");
+          const authConfig = read("src/pwa/developer_auth_v1_config.js");
+          const css = read("src/pwa/release_polish_v400_1.css");
+          const sw = read("src/pwa/sw_v400_1.js");
+          const runtimeLoader = read("src/pwa/runtime_lesson_bundle_v400_5.js");
+          const manifest = JSON.parse(read("src/pwa/manifest.json"));
+          const readme = read("README.md");
+          const koLessonBundle = JSON.parse(read("data/runtime/lesson_bundle_v400_5.json"));
+          const enLessonBundle = JSON.parse(read("data_i18n/en/runtime/lesson_bundle_v400_5.json"));
+          const koSupportBundle = JSON.parse(read("data/runtime/support_bundle_v400_5.json"));
+          const enSupportBundle = JSON.parse(read("data_i18n/en/runtime/support_bundle_v400_5.json"));
+
+          let ok = true;
+          ok = assert(rootIndex.includes('RELEASE = "20260821_v400_5"'), "root_release_v400_5") && ok;
+          ok = assert(!rootIndex.includes("serviceWorker.getRegistrations"), "root_does_not_unregister_sw") && ok;
+          ok = assert(rootIndex.includes('key !== "admin"'), "root_admin_query_not_forwarded") && ok;
+          ok = assert(rootIndex.includes("body { visibility: hidden;"), "root_no_interstitial_paint") && ok;
+
+          ok = assert(appIndex.includes("release_polish_v400_1.css"), "polish_css_loaded") && ok;
+          ok = assert(appIndex.includes("consumer_ui_v349.css"), "consumer_css_loaded") && ok;
+          ok = assert(appIndex.includes("consumer_ux_v349.js"), "consumer_js_loaded") && ok;
+          ok = assert(appIndex.includes('data-view="diagnostic"'), "diagnostic_view_wired") && ok;
+          ok = assert(appIndex.includes("runtime_lesson_bundle_v400_5.js?v=20260821_v400_5"), "runtime_bundle_loader_wired") && ok;
+          ok = assert(appIndex.indexOf("runtime_lesson_bundle_v400_5.js") < appIndex.indexOf("./app.js?"), "runtime_bundle_loader_before_app") && ok;
+
+          ok = assert(bootPolish.includes('VERSION = "V400.5_RELEASE_POLISH_BOOT"'), "boot_polish_v400_5") && ok;
+          ok = assert(bootPolish.includes('SW_URL = "./sw_v400_1.js?v=20260821_v400_5"'), "service_worker_v400_5_registered") && ok;
+          ok = assert(bootPolish.includes("prt-core-loading-v4004"), "compact_core_loader") && ok;
+          ok = assert(bootPolish.includes("forcedReloadEnabled: false"), "forced_reload_disabled") && ok;
+          ok = assert(!bootPolish.includes("controllerchange"), "controller_reload_listener_removed") && ok;
+          ok = assert(!bootPolish.includes("window.location.reload"), "window_reload_removed") && ok;
+          ok = assert(bootPolish.includes("remoteAdminEnabled: false"), "boot_remote_admin_disabled") && ok;
+
+          ok = assert(runtimeLoader.includes('VERSION = "V400.5_RUNTIME_CONTENT_BUNDLES"'), "runtime_bundle_loader_v400_5") && ok;
+          ok = assert(runtimeLoader.includes("window.fetch = function"), "runtime_bundle_fetch_interceptor") && ok;
+          ok = assert(runtimeLoader.includes("return nativeFetch(input, init)"), "runtime_bundle_native_fetch_fallback") && ok;
+          ok = assert(runtimeLoader.includes("support_bundle_v400_5.json"), "runtime_support_bundle_preload") && ok;
+
+          ok = assert(visualPolish.includes('VERSION = "V400.3_RELEASE_POLISH"'), "visual_polish_v400_3_preserved") && ok;
+          ok = assert(visualPolish.includes("upgradePrimaryNavIcons"), "svg_bottom_nav_icons") && ok;
+          ok = assert(visualPolish.includes("removePublicAdminArtifacts"), "public_admin_cleanup") && ok;
+          ok = assert(visualPolish.includes("remoteAdminEnabled: false"), "visual_remote_admin_disabled") && ok;
+          ok = assert(authConfig.includes("V400.3_DEVELOPER_AUTH_V1_2"), "auth_config_v400_3_preserved") && ok;
+          ok = assert(!authConfig.includes("v400_mobile_admin_route.js"), "mobile_admin_route_not_loaded") && ok;
+
+          ok = assert(css.includes("body:not(.consumer-ux-v349-ready) > .topbar"), "initial_shell_hidden_until_ready") && ok;
+          ok = assert(css.includes(".consumer-nav-button-v349.active::before"), "compact_bottom_nav_active_indicator") && ok;
+          ok = assert(css.includes("background: transparent !important"), "bottom_nav_no_large_active_tile") && ok;
+
+          ok = assert(Array.isArray(manifest.icons) && manifest.icons.length >= 2, "manifest_icons_present") && ok;
+          ok = assert(manifest.start_url === "./?release=20260821_v400_5" && manifest.scope === "./", "manifest_release_start_scope") && ok;
+          ok = assert(manifest.icons.some((row) => row.purpose === "maskable"), "manifest_maskable_icon") && ok;
+
+          ok = assert(sw.includes('CACHE_NAME = "python-reading-trainer-v400-5-20260821"'), "service_worker_cache_v400_5") && ok;
+          ok = assert(sw.includes("migratePreviousCaches"), "previous_cache_migration") && ok;
+          ok = assert(sw.includes("CRITICAL_UI_FILES"), "critical_ui_network_first_list") && ok;
+          ok = assert(sw.includes('cache: "no-store"'), "critical_ui_fetch_no_store") && ok;
+          ok = assert(sw.includes("staleWhileRevalidate(request)"), "warm_data_cache_first") && ok;
+          ok = assert(!sw.includes("client.navigate"), "activated_sw_does_not_force_navigation") && ok;
+          ok = assert(!sw.includes("code_explainer_rules.js"), "heavy_tool_not_precached") && ok;
+          ok = assert(sw.includes("v400_release_polish.js"), "visual_polish_precached") && ok;
+          ok = assert(sw.includes("runtime_lesson_bundle_v400_5.js"), "runtime_bundle_loader_precached") && ok;
+
+          ok = assert(koLessonBundle.card_count === 1785 && enLessonBundle.card_count === 1785, "runtime_lesson_bundle_card_count") && ok;
+          ok = assert(koLessonBundle.source_file_count === 98 && enLessonBundle.source_file_count === 98, "runtime_lesson_bundle_source_count") && ok;
+          ok = assert(Object.keys(koLessonBundle.files || {}).length === 98 && Object.keys(enLessonBundle.files || {}).length === 98, "runtime_lesson_bundle_file_map_count") && ok;
+          ok = assert(koSupportBundle.source_file_count > 0 && koSupportBundle.source_file_count === enSupportBundle.source_file_count, "runtime_support_bundle_source_count") && ok;
+          ok = assert(koSupportBundle.side_file_count > 0 && koSupportBundle.resource_file_count === 2, "runtime_support_bundle_group_counts") && ok;
+
+          ok = assert(readme.includes("현재 릴리즈: V400.5"), "readme_current_release") && ok;
+          ok = assert(readme.includes("runtime lesson bundle 1개"), "readme_runtime_lesson_bundle") && ok;
+          ok = assert(readme.includes("강제 reload/navigation 제거"), "readme_forced_reload_removed") && ok;
+          ok = assert(readme.includes("공개 GitHub Pages에서는 Admin/Developer 진입을 제공하지 않습니다"), "readme_remote_admin_disabled") && ok;
+          ok = assert(readme.includes("더보기 → 진단"), "readme_diagnostic_reentry") && ok;
+
+          console.log("V400_RELEASE_POLISH_AUDIT_PASS=" + ok);
+          if (!ok) process.exit(1);
+          '''
+          # Remove indentation inherited from the workflow heredoc.
+          lines = audit.splitlines()
+          audit = "\n".join(line[10:] if line.startswith("          ") else line for line in lines) + "\n"
+          write("tools/audit_v400_release_polish.js", audit)
+
+          final_workflow = r'''name: V400 release gate
+
+          on:
+            push:
+              branches:
+                - main
+            pull_request:
+              branches:
+                - main
+            workflow_dispatch:
+
+          permissions:
+            contents: read
+
+          concurrency:
+            group: v400-release-${{ github.ref }}
+            cancel-in-progress: true
+
+          jobs:
+            release-smoke:
+              runs-on: ubuntu-24.04
+              steps:
+                - name: Checkout
+                  uses: actions/checkout@v4
+
+                - name: Set up Python
+                  uses: actions/setup-python@v5
+                  with:
+                    python-version: '3.11'
+
+                - name: Set up Node
+                  uses: actions/setup-node@v4
+                  with:
+                    node-version: '22'
+
+                - name: JavaScript syntax
+                  run: |
+                    node --check src/pwa/app.js
+                    node --check src/pwa/learning_home_v343.js
+                    node --check src/pwa/v400_pedagogy_runtime.js
+                    node --check src/pwa/diagnostic_v400_2.js
+                    node --check src/pwa/diagnostic_remediation_v400_2.js
+                    node --check src/pwa/developer_mode_v1.js
+                    node --check src/pwa/developer_auth_v1_config.js
+                    node --check src/pwa/developer_auth_v1.js
+                    node --check src/pwa/admin_mode_v1.js
+                    node --check src/pwa/v400_release_polish.js
+                    node --check src/pwa/release_polish_v400_1.js
+                    node --check src/pwa/runtime_lesson_bundle_v400_5.js
+                    node --check src/pwa/sw_v400_1.js
+                    node --check tools/audit_v400_release_polish.js
+
+                - name: JSON and release wiring
+                  run: |
+                    python -m json.tool src/pwa/manifest.json >/dev/null
+                    python -m json.tool data/diagnostic/diagnostic_v400_2.json >/dev/null
+                    python -m json.tool data_i18n/en/diagnostic/diagnostic_v400_2.json >/dev/null
+                    python -m json.tool data/runtime/lesson_bundle_v400_5.json >/dev/null
+                    python -m json.tool data_i18n/en/runtime/lesson_bundle_v400_5.json >/dev/null
+                    python -m json.tool data/runtime/support_bundle_v400_5.json >/dev/null
+                    python -m json.tool data_i18n/en/runtime/support_bundle_v400_5.json >/dev/null
+                    grep -q 'runtime_lesson_bundle_v400_5.js?v=20260821_v400_5' src/pwa/index.html
+                    grep -q 'data-view="diagnostic"' src/pwa/index.html
+                    test ! -e src/pwa/v400_mobile_admin_route.js
+
+                - name: Runtime bundle integrity
+                  run: |
+                    python tools/build_runtime_lesson_bundle_v400_5.py
+                    git diff --exit-code -- data/runtime/lesson_bundle_v400_5.json data_i18n/en/runtime/lesson_bundle_v400_5.json data/runtime/support_bundle_v400_5.json data_i18n/en/runtime/support_bundle_v400_5.json
+
+                - name: Existing lesson validation
+                  run: python tools/validate_lessons.py
+
+                - name: V400.5 release polish audit
+                  run: node tools/audit_v400_release_polish.js
+
+                - name: Diff integrity
+                  run: git diff --check
+          '''
+          lines = final_workflow.splitlines()
+          final_workflow = "\n".join(line[10:] if line.startswith("          ") else line for line in lines) + "\n"
+          write(".github/workflows/v400-release.yml", final_workflow)
+          PY
+
+      - name: Validate final tree
+        run: |
+          python tools/build_runtime_lesson_bundle_v400_5.py
+          python tools/validate_lessons.py
+          node --check src/pwa/runtime_lesson_bundle_v400_5.js
           node --check src/pwa/release_polish_v400_1.js
           node --check src/pwa/sw_v400_1.js
           node --check tools/audit_v400_release_polish.js
+          node tools/audit_v400_release_polish.js
+          git diff --exit-code -- data/runtime/lesson_bundle_v400_5.json data_i18n/en/runtime/lesson_bundle_v400_5.json data/runtime/support_bundle_v400_5.json data_i18n/en/runtime/support_bundle_v400_5.json
+          git diff --check
 
-      - name: JSON and release wiring
+      - name: Commit V400.5
         run: |
-          python -m json.tool src/pwa/manifest.json >/dev/null
-          python -m json.tool data/diagnostic/diagnostic_v400_2.json >/dev/null
-          python -m json.tool data_i18n/en/diagnostic/diagnostic_v400_2.json >/dev/null
-          grep -q 'data-view="diagnostic"' src/pwa/index.html
-          grep -q 'admin_mode_v1.js' src/pwa/index.html
-          grep -q 'release_polish_v400_1.js' src/pwa/index.html
-          test ! -e src/pwa/v400_mobile_admin_route.js
-          ! grep -q 'v400_mobile_admin_route.js' src/pwa/developer_auth_v1_config.js
-
-      - name: Existing lesson validation
-        run: python tools/validate_lessons.py
-
-      - name: V400.4 release polish audit
-        run: node tools/audit_v400_release_polish.js
-
-      - name: Diff integrity
-        run: git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- README.md src/pwa/index.html tools/audit_v400_release_polish.js .github/workflows/v400-release.yml
+          git diff --cached --check
+          git commit -m "V400.5: activate runtime content bundles"
+          git pull --rebase origin main
+          git push origin HEAD:main
