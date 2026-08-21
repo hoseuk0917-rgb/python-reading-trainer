@@ -1,11 +1,12 @@
 (function () {
   "use strict";
 
-  const VERSION = "V400.6.4_DEVELOPER_CLOSE_STABILITY1";
+  const VERSION = "V400.7.1_DEVELOPER_CLOSE_HIERARCHY1";
   const STYLE_ID = "prtDeveloperExitMobileFixStyleV40064";
   const EXIT_ID = "prtWbDisableV40064";
   let observer = null;
   let refreshQueued = false;
+  let returnToWorkbench = false;
 
   function t(ko, en) {
     return String(document.documentElement.lang || "")
@@ -80,7 +81,48 @@
     return false;
   }
 
+  function markAdvancedReturn() {
+    returnToWorkbench = true;
+    window.setTimeout(updateLegacyCloseHint, 0);
+    window.setTimeout(updateLegacyCloseHint, 40);
+  }
+
+  function cancelAdvancedReturn() {
+    returnToWorkbench = false;
+    updateLegacyCloseHint();
+  }
+
+  function resumeWorkbenchAfterAdvanced() {
+    if (!returnToWorkbench) return false;
+
+    returnToWorkbench = false;
+    const api = workbenchApi();
+    if (!api || typeof api.open !== "function") return false;
+
+    try {
+      api.open();
+      updateLegacyCloseHint();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function updateLegacyCloseHint() {
+    const close = document.getElementById("prtDevCloseV1");
+    if (!close) return false;
+
+    close.setAttribute(
+      "title",
+      returnToWorkbench
+        ? t("일반 Developer 화면으로 돌아갑니다.", "Return to the Developer workbench.")
+        : t("고급 편집기를 닫습니다.", "Close the advanced editor.")
+    );
+    return true;
+  }
+
   function disableDeveloper() {
+    cancelAdvancedReturn();
     closeWorkbench();
     closeLegacy();
 
@@ -172,6 +214,7 @@
       try {
         const state = wb.getState();
         if (state && state.open === true) {
+          cancelAdvancedReturn();
           event.preventDefault();
           closeWorkbench();
           return;
@@ -179,16 +222,40 @@
       } catch (_) {}
     }
 
+    const shouldReturn = returnToWorkbench;
     closeLegacy();
+
+    if (shouldReturn) {
+      event.preventDefault();
+      window.setTimeout(resumeWorkbenchAfterAdvanced, 0);
+    }
   }
 
   function onClickCapture(event) {
     const target = event.target && event.target.closest
-      ? event.target.closest("#prtDevCloseV1")
+      ? event.target.closest(
+          "#prtWbLegacyV40062, #prtWbCloseV40062, #" + EXIT_ID + ", #prtDevCloseV1, #prtDevOverlayV1"
+        )
       : null;
 
     if (!target) return;
+
+    if (target.id === "prtWbLegacyV40062") {
+      markAdvancedReturn();
+      return;
+    }
+
+    if (target.id === "prtWbCloseV40062" || target.id === EXIT_ID) {
+      cancelAdvancedReturn();
+      return;
+    }
+
+    const shouldReturn = returnToWorkbench;
     closeLegacy();
+
+    if (shouldReturn) {
+      window.setTimeout(resumeWorkbenchAfterAdvanced, 0);
+    }
   }
 
   function boot() {
@@ -214,6 +281,9 @@
       enhance: stopObserverIfReady,
       closeWorkbench: closeWorkbench,
       closeLegacy: closeLegacy,
+      markAdvancedReturn: markAdvancedReturn,
+      resumeWorkbenchAfterAdvanced: resumeWorkbenchAfterAdvanced,
+      cancelAdvancedReturn: cancelAdvancedReturn,
       disable: disableDeveloper
     });
   }
