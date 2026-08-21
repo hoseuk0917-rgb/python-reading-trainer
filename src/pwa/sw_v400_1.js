@@ -1,5 +1,6 @@
 const CACHE_PREFIX = "python-reading-trainer-v400";
-const CACHE_NAME = "python-reading-trainer-v400-1-20260821";
+const RELEASE = "20260821_v400_3";
+const CACHE_NAME = "python-reading-trainer-v400-3-20260821";
 
 const SHELL_ASSETS = [
   "./",
@@ -54,10 +55,21 @@ const SHELL_ASSETS = [
   "./developer_auth_v1.js",
   "./admin_mode_v1.js",
   "./release_polish_v400_1.js",
+  "./v400_release_polish.js",
   "./developer_mode_v1_catalog.json",
   "./icon-v400.svg",
   "./icon-maskable-v400.svg"
 ];
+
+const CRITICAL_UI_FILES = new Set([
+  "index.html",
+  "consumer_ui_v349.css",
+  "consumer_ux_v349.js",
+  "release_polish_v400_1.css",
+  "release_polish_v400_1.js",
+  "v400_release_polish.js",
+  "developer_auth_v1_config.js"
+]);
 
 self.addEventListener("install", function (event) {
   event.waitUntil(
@@ -92,11 +104,32 @@ self.addEventListener("activate", function (event) {
       .then(function () {
         return self.clients.claim();
       })
+      .then(function () {
+        return self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      })
+      .then(function (clients) {
+        return Promise.allSettled(
+          clients.map(function (client) {
+            try {
+              const url = new URL(client.url);
+              if (url.searchParams.get("ui_release") === RELEASE) return null;
+              url.searchParams.set("ui_release", RELEASE);
+              return client.navigate(url.href);
+            } catch (_) {
+              return null;
+            }
+          })
+        );
+      })
   );
 });
 
+function freshRequest(request) {
+  return new Request(request, { cache: "no-store" });
+}
+
 function networkFirst(request) {
-  return fetch(request)
+  return fetch(freshRequest(request))
     .then(function (response) {
       if (response && response.ok) {
         const copy = response.clone();
@@ -109,9 +142,7 @@ function networkFirst(request) {
     .catch(function () {
       return caches.match(request).then(function (cached) {
         if (cached) return cached;
-        if (request.mode === "navigate") {
-          return caches.match("./index.html");
-        }
+        if (request.mode === "navigate") return caches.match("./index.html");
         throw new Error("OFFLINE_RESOURCE_MISSING");
       });
     });
@@ -144,13 +175,15 @@ self.addEventListener("fetch", function (event) {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  const fileName = url.pathname.split("/").pop() || "";
+  const isCriticalUi = CRITICAL_UI_FILES.has(fileName);
   const isData = (
     url.pathname.includes("/data/")
     || url.pathname.includes("/data_i18n/")
     || url.pathname.endsWith(".json")
   );
 
-  if (request.mode === "navigate" || isData) {
+  if (request.mode === "navigate" || isData || isCriticalUi) {
     event.respondWith(networkFirst(request));
     return;
   }
