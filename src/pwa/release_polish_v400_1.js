@@ -5,14 +5,19 @@
   const SW_URL = "./sw_v400_1.js?v=20260821_v400_7_hardening1";
   const CORE_LOADER_ID = "prtCoreLoaderV4004";
   const CORE_LOADER_STYLE_ID = "prtCoreLoaderStyleV4004";
+  const INPUT_BEGINNER_CARD_ID = "PYF94_A1_L01_INPUT_001";
 
   function isLocalHost() {
     const host = String(window.location.hostname || "").toLowerCase();
     return host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
   }
 
+  function isEnglish() {
+    return String(document.documentElement.lang || "").toLowerCase().startsWith("en");
+  }
+
   function text(ko, en) {
-    return String(document.documentElement.lang || "").toLowerCase().startsWith("en") ? en : ko;
+    return isEnglish() ? en : ko;
   }
 
   function openDiagnostic() {
@@ -186,6 +191,149 @@
     return true;
   }
 
+  function learnerPlainText(value) {
+    return String(value == null ? "" : value)
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .trim();
+  }
+
+  function cleanRichCardLearnerText(card) {
+    if (!card || card.authoring_version !== "V2.3") return card;
+
+    ["title", "question", "explanation"].forEach(function (key) {
+      if (typeof card[key] === "string") card[key] = learnerPlainText(card[key]);
+    });
+
+    const ce = card.concept_explanation;
+    if (ce && typeof ce === "object") {
+      ["what_it_is", "how_to_read", "key_point", "common_mistake"].forEach(function (key) {
+        if (typeof ce[key] === "string") ce[key] = learnerPlainText(ce[key]);
+      });
+    }
+
+    const example = card.teaching_example;
+    if (example && typeof example === "object" && typeof example.walkthrough === "string") {
+      example.walkthrough = learnerPlainText(example.walkthrough);
+    }
+
+    const ae = card.answer_explanation;
+    if (ae && typeof ae === "object") {
+      ["step_by_step", "why_correct", "takeaway"].forEach(function (key) {
+        if (typeof ae[key] === "string") ae[key] = learnerPlainText(ae[key]);
+      });
+      if (ae.common_wrong_choice && typeof ae.common_wrong_choice === "object") {
+        ["choice", "why_wrong", "misread_step"].forEach(function (key) {
+          if (typeof ae.common_wrong_choice[key] === "string") {
+            ae.common_wrong_choice[key] = learnerPlainText(ae.common_wrong_choice[key]);
+          }
+        });
+      }
+    }
+
+    return card;
+  }
+
+  function applyInputBeginnerClarity(card) {
+    if (!card || card.id !== INPUT_BEGINNER_CARD_ID || isEnglish()) return card;
+
+    card.title = "input()으로 입력받은 값을 변수에 저장하기";
+    card.question = "사용자가 Python을 입력하고 Enter를 눌렀습니다. 변수 name에 저장되는 값은 무엇인가요?";
+
+    card.concept_explanation = {
+      what_it_is: "input()은 사용자가 키보드로 입력할 때까지 기다렸다가, 입력한 글자를 문자열로 가져오는 함수입니다.",
+      how_to_read: "input(\"이름: \")의 \"이름: \"은 화면에 보여 주는 안내문입니다. 사용자가 Python을 입력하면 실제 결과는 문자열 \"Python\"이고, 그 값이 name에 저장됩니다.",
+      key_point: "안내문 \"이름: \"과 사용자가 입력한 값 \"Python\"은 서로 다릅니다. 변수에 저장되는 것은 사용자가 입력한 값입니다.",
+      common_mistake: "\"이름: \"이 name에 저장된다고 생각하기 쉽지만, 그것은 입력을 부탁하기 위해 화면에 보여 주는 문구일 뿐입니다."
+    };
+
+    card.teaching_example = {
+      code: "city = input(\"도시: \")\nprint(city)",
+      walkthrough: "먼저 화면에 \"도시: \"가 보입니다. 사용자가 Busan을 입력하고 Enter를 누르면 city에 문자열 \"Busan\"이 저장됩니다. 다음 줄 print(city)는 Busan을 출력합니다."
+    };
+
+    card.answer_explanation = {
+      step_by_step: "1. 화면에 \"이름: \"이 보입니다. 2. 사용자가 Python을 입력하고 Enter를 누릅니다. 3. input()의 결과인 문자열 \"Python\"이 name에 저장됩니다. 4. print(name)은 Python을 출력합니다.",
+      why_correct: "name에 저장되는 값은 안내문이 아니라 사용자가 실제로 입력한 \"Python\"이기 때문입니다.",
+      common_wrong_choice: {
+        choice: "이름:",
+        why_wrong: "\"이름: \"은 사용자가 무엇을 입력해야 하는지 알려 주는 안내문입니다. name에 저장되는 값이 아닙니다.",
+        misread_step: "input() 괄호 안의 안내문과 사용자가 키보드로 입력한 값을 따로 구분해서 보세요."
+      },
+      takeaway: "input(\"안내문\")에서는 안내문을 먼저 보여 주고, 사용자가 실제로 입력한 글자를 문자열로 가져옵니다."
+    };
+
+    card.explanation = card.answer_explanation.step_by_step;
+    return card;
+  }
+
+  function learnerConceptLabel(card) {
+    if (!card) return "";
+    if (card.id === INPUT_BEGINNER_CARD_ID && !isEnglish()) return "input()";
+
+    const raw = String(card.primary_concept || "").trim();
+    if (!raw) return "";
+
+    const koLabels = {
+      call: "함수 사용",
+      assignment: "변수에 값 저장하기",
+      arithmetic: "숫자 계산",
+      sequence_operation: "값을 순서대로 계산하기"
+    };
+    const enLabels = {
+      call: "Function call",
+      assignment: "Assignment",
+      arithmetic: "Arithmetic",
+      sequence_operation: "Sequence operation"
+    };
+    const labels = isEnglish() ? enLabels : koLabels;
+
+    if (labels[raw]) return labels[raw];
+    if (/^[a-z0-9_]+$/i.test(raw) && raw.indexOf("_") >= 0) {
+      return text("핵심 개념", "Core concept");
+    }
+    return raw;
+  }
+
+  function repairRenderedConceptTitle(card) {
+    const intro = document.getElementById("conceptIntro");
+    if (!intro || !card) return;
+    const title = intro.querySelector(".concept-intro-title-v306");
+    if (!title) return;
+
+    const raw = String(card.primary_concept || "").trim();
+    const shown = String(title.textContent || "").trim();
+    if (raw && shown === raw) {
+      title.textContent = learnerConceptLabel(card) || text("핵심 개념", "Core concept");
+    }
+  }
+
+  function installLearnerClarityGuard() {
+    const baseRenderCard = window.renderCard;
+    if (typeof baseRenderCard !== "function") return false;
+    if (baseRenderCard.__prtLearnerClarityV400) return true;
+
+    function guardedRenderCard() {
+      let card = null;
+      try {
+        if (typeof window.getCurrentCard === "function") {
+          card = window.getCurrentCard();
+        }
+      } catch (_) {}
+
+      cleanRichCardLearnerText(card);
+      applyInputBeginnerClarity(card);
+
+      const result = baseRenderCard.apply(this, arguments);
+      repairRenderedConceptTitle(card);
+      return result;
+    }
+
+    guardedRenderCard.__prtLearnerClarityV400 = true;
+    window.renderCard = guardedRenderCard;
+    return true;
+  }
+
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (window.location.protocol !== "https:" && !isLocalHost()) return;
@@ -207,6 +355,7 @@
     stripRemoteAdminQuery();
     installCoreLoadingState();
     installLearningNextScroll();
+    installLearnerClarityGuard();
     registerServiceWorker();
 
     window.PRTReleasePolishV4001 = Object.freeze({
