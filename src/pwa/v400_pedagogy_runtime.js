@@ -9,6 +9,10 @@
   const oldCheckAnswer = window.checkAnswer;
   const oldJumpToConfusedOrNext = window.jumpToConfusedOrNext;
 
+  function t(ko, en) {
+    return String(document.documentElement.lang || "").toLowerCase().startsWith("en") ? en : ko;
+  }
+
   function isV400RichCard(card) {
     return Boolean(
       card &&
@@ -46,12 +50,12 @@
 
     const label = document.createElement("div");
     label.className = "concept-intro-label-v306";
-    label.textContent = "개념 설명";
+    label.textContent = t("개념 설명", "Concept explanation");
     box.appendChild(label);
 
     const title = document.createElement("div");
     title.className = "concept-intro-title-v306";
-    title.textContent = card.primary_concept || card.title || "Python 개념";
+    title.textContent = card.primary_concept || card.title || t("Python 개념", "Python concept");
     box.appendChild(title);
 
     const ce = card.concept_explanation || {};
@@ -62,19 +66,19 @@
     );
     appendTextBlock(
       box,
-      ce.how_to_read ? "읽는 순서: " + ce.how_to_read : "",
+      ce.how_to_read ? t("읽는 순서: ", "How to read: ") + ce.how_to_read : "",
       "concept-intro-note-v306",
       "8px"
     );
     appendTextBlock(
       box,
-      ce.key_point ? "핵심: " + ce.key_point : "",
+      ce.key_point ? t("핵심: ", "Key point: ") + ce.key_point : "",
       "concept-intro-note-v306",
       "6px"
     );
     appendTextBlock(
       box,
-      ce.common_mistake ? "주의: " + ce.common_mistake : "",
+      ce.common_mistake ? t("주의: ", "Common mistake: ") + ce.common_mistake : "",
       "concept-intro-note-v306",
       "6px"
     );
@@ -86,7 +90,7 @@
       const exampleTitle = document.createElement("div");
       exampleTitle.className = "concept-intro-title-v306";
       exampleTitle.style.marginTop = "14px";
-      exampleTitle.textContent = "다른 예제로 먼저 보기";
+      exampleTitle.textContent = t("다른 예제로 먼저 보기", "See another example first");
       box.appendChild(exampleTitle);
 
       const pre = document.createElement("pre");
@@ -136,10 +140,10 @@
     const head = document.createElement("div");
     head.style.fontWeight = "800";
     head.textContent = prefix === "correct"
-      ? "정답."
+      ? t("정답.", "Correct.")
       : prefix === "confused"
-        ? "모르겠음 처리. 정답: " + expected
-        : "오답. 정답: " + expected;
+        ? t("모르겠음 처리. 정답: ", "Marked as unsure. Answer: ") + expected
+        : t("오답. 정답: ", "Incorrect. Answer: ") + expected;
     resultBox.appendChild(head);
 
     const ae = card.answer_explanation || {};
@@ -152,7 +156,7 @@
     );
     appendTextBlock(
       resultBox,
-      ae.why_correct ? "왜 맞는가: " + ae.why_correct : "",
+      ae.why_correct ? t("왜 맞는가: ", "Why this is correct: ") + ae.why_correct : "",
       "",
       "8px"
     );
@@ -161,13 +165,13 @@
     if (wrong && typeof wrong === "object") {
       const wrongParts = [];
       if (wrong.choice) {
-        wrongParts.push("헷갈리기 쉬운 오답: " + wrong.choice);
+        wrongParts.push(t("헷갈리기 쉬운 오답: ", "Common wrong answer: ") + wrong.choice);
       }
       if (wrong.why_wrong) {
         wrongParts.push(wrong.why_wrong);
       }
       if (wrong.misread_step) {
-        wrongParts.push("오독 지점: " + wrong.misread_step);
+        wrongParts.push(t("오독 지점: ", "Where the reading went wrong: ") + wrong.misread_step);
       }
       appendTextBlock(
         resultBox,
@@ -179,7 +183,7 @@
 
     appendTextBlock(
       resultBox,
-      ae.takeaway ? "다음에도 쓰는 규칙: " + ae.takeaway : "",
+      ae.takeaway ? t("다음에도 쓰는 규칙: ", "Rule to reuse: ") + ae.takeaway : "",
       "",
       "8px"
     );

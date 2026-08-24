@@ -235,33 +235,67 @@
   }
 
   function applyInputBeginnerClarity(card) {
-    if (!card || card.id !== INPUT_BEGINNER_CARD_ID || isEnglish()) return card;
+    if (!card || card.id !== INPUT_BEGINNER_CARD_ID) return card;
 
-    card.title = "input()으로 입력받은 값을 변수에 저장하기";
-    card.question = "사용자가 Python을 입력하고 Enter를 눌렀습니다. 변수 name에 저장되는 값은 무엇인가요?";
+    if (isEnglish()) {
+      card.title = "Store the value from input() in a variable";
+      card.code = "name = input(\"Name: \")\nprint(name)";
+      card.question = "The user types Python and presses Enter. What value is stored in name?";
+      card.choices = ["name", "Name:", "Python", "None"];
+      card.answer = "Python";
 
-    card.concept_explanation = {
-      what_it_is: "input()은 사용자가 키보드로 입력할 때까지 기다렸다가, 입력한 글자를 문자열로 가져오는 함수입니다.",
-      how_to_read: "input(\"이름: \")의 \"이름: \"은 화면에 보여 주는 안내문입니다. 사용자가 Python을 입력하면 실제 결과는 문자열 \"Python\"이고, 그 값이 name에 저장됩니다.",
-      key_point: "안내문 \"이름: \"과 사용자가 입력한 값 \"Python\"은 서로 다릅니다. 변수에 저장되는 것은 사용자가 입력한 값입니다.",
-      common_mistake: "\"이름: \"이 name에 저장된다고 생각하기 쉽지만, 그것은 입력을 부탁하기 위해 화면에 보여 주는 문구일 뿐입니다."
-    };
+      card.concept_explanation = {
+        what_it_is: "input() waits for the user to type something, then gives the typed text back as a string.",
+        how_to_read: "In input(\"Name: \"), \"Name: \" is only a prompt shown on the screen. If the user types Python, input() produces the string \"Python\", and that value is stored in name.",
+        key_point: "The prompt \"Name: \" and the user's input \"Python\" are different. The value stored in the variable is what the user actually typed.",
+        common_mistake: "It is easy to think that \"Name: \" is stored in name, but it is only a prompt telling the user what to enter."
+      };
 
-    card.teaching_example = {
-      code: "city = input(\"도시: \")\nprint(city)",
-      walkthrough: "먼저 화면에 \"도시: \"가 보입니다. 사용자가 Busan을 입력하고 Enter를 누르면 city에 문자열 \"Busan\"이 저장됩니다. 다음 줄 print(city)는 Busan을 출력합니다."
-    };
+      card.teaching_example = {
+        code: "city = input(\"City: \")\nprint(city)",
+        walkthrough: "First, the screen shows \"City: \". If the user types Busan and presses Enter, the string \"Busan\" is stored in city. The next line, print(city), prints Busan."
+      };
 
-    card.answer_explanation = {
-      step_by_step: "1. 화면에 \"이름: \"이 보입니다. 2. 사용자가 Python을 입력하고 Enter를 누릅니다. 3. input()의 결과인 문자열 \"Python\"이 name에 저장됩니다. 4. print(name)은 Python을 출력합니다.",
-      why_correct: "name에 저장되는 값은 안내문이 아니라 사용자가 실제로 입력한 \"Python\"이기 때문입니다.",
-      common_wrong_choice: {
-        choice: "이름:",
-        why_wrong: "\"이름: \"은 사용자가 무엇을 입력해야 하는지 알려 주는 안내문입니다. name에 저장되는 값이 아닙니다.",
-        misread_step: "input() 괄호 안의 안내문과 사용자가 키보드로 입력한 값을 따로 구분해서 보세요."
-      },
-      takeaway: "input(\"안내문\")에서는 안내문을 먼저 보여 주고, 사용자가 실제로 입력한 글자를 문자열로 가져옵니다."
-    };
+      card.answer_explanation = {
+        step_by_step: "1. The screen shows \"Name: \". 2. The user types Python and presses Enter. 3. input() produces the string \"Python\", which is stored in name. 4. print(name) prints Python.",
+        why_correct: "The value stored in name is what the user actually typed, not the prompt shown on the screen.",
+        common_wrong_choice: {
+          choice: "Name:",
+          why_wrong: "\"Name: \" is only a prompt telling the user what to enter. It is not the value stored in name.",
+          misread_step: "Separate the prompt inside input() from the text that the user types on the keyboard."
+        },
+        takeaway: "With input(\"prompt\"), Python shows the prompt first, then returns the text the user actually types as a string."
+      };
+    } else {
+      card.title = "input()으로 입력받은 값을 변수에 저장하기";
+      card.code = "name = input(\"이름: \")\nprint(name)";
+      card.question = "사용자가 Python을 입력하고 Enter를 눌렀습니다. 변수 name에 저장되는 값은 무엇인가요?";
+      card.choices = ["name", "이름:", "Python", "None"];
+      card.answer = "Python";
+
+      card.concept_explanation = {
+        what_it_is: "input()은 사용자가 키보드로 입력할 때까지 기다렸다가, 입력한 글자를 문자열로 가져오는 함수입니다.",
+        how_to_read: "input(\"이름: \")의 \"이름: \"은 화면에 보여 주는 안내문입니다. 사용자가 Python을 입력하면 실제 결과는 문자열 \"Python\"이고, 그 값이 name에 저장됩니다.",
+        key_point: "안내문 \"이름: \"과 사용자가 입력한 값 \"Python\"은 서로 다릅니다. 변수에 저장되는 것은 사용자가 입력한 값입니다.",
+        common_mistake: "\"이름: \"이 name에 저장된다고 생각하기 쉽지만, 그것은 입력을 부탁하기 위해 화면에 보여 주는 문구일 뿐입니다."
+      };
+
+      card.teaching_example = {
+        code: "city = input(\"도시: \")\nprint(city)",
+        walkthrough: "먼저 화면에 \"도시: \"가 보입니다. 사용자가 Busan을 입력하고 Enter를 누르면 city에 문자열 \"Busan\"이 저장됩니다. 다음 줄 print(city)는 Busan을 출력합니다."
+      };
+
+      card.answer_explanation = {
+        step_by_step: "1. 화면에 \"이름: \"이 보입니다. 2. 사용자가 Python을 입력하고 Enter를 누릅니다. 3. input()의 결과인 문자열 \"Python\"이 name에 저장됩니다. 4. print(name)은 Python을 출력합니다.",
+        why_correct: "name에 저장되는 값은 안내문이 아니라 사용자가 실제로 입력한 \"Python\"이기 때문입니다.",
+        common_wrong_choice: {
+          choice: "이름:",
+          why_wrong: "\"이름: \"은 사용자가 무엇을 입력해야 하는지 알려 주는 안내문입니다. name에 저장되는 값이 아닙니다.",
+          misread_step: "input() 괄호 안의 안내문과 사용자가 키보드로 입력한 값을 따로 구분해서 보세요."
+        },
+        takeaway: "input(\"안내문\")에서는 안내문을 먼저 보여 주고, 사용자가 실제로 입력한 글자를 문자열로 가져옵니다."
+      };
+    }
 
     card.explanation = card.answer_explanation.step_by_step;
     return card;
@@ -269,7 +303,7 @@
 
   function learnerConceptLabel(card) {
     if (!card) return "";
-    if (card.id === INPUT_BEGINNER_CARD_ID && !isEnglish()) return "input()";
+    if (card.id === INPUT_BEGINNER_CARD_ID) return "input()";
 
     const raw = String(card.primary_concept || "").trim();
     if (!raw) return "";
