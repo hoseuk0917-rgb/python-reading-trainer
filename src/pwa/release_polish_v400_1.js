@@ -134,6 +134,58 @@
     window.setTimeout(finish, 12000);
   }
 
+  function prefersReducedMotion() {
+    try {
+      return Boolean(
+        window.matchMedia
+        && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function installLearningNextScroll() {
+    const nextButton = document.getElementById("nextBtn");
+    const progressText = document.getElementById("progressText");
+    const learnPanel = document.querySelector("#learnView > section.panel");
+
+    if (!nextButton || !progressText || !learnPanel) return false;
+
+    let progressBeforeClick = "";
+
+    nextButton.addEventListener("click", function () {
+      progressBeforeClick = String(progressText.textContent || "").trim();
+    }, true);
+
+    nextButton.addEventListener("click", function () {
+      const previousProgress = progressBeforeClick;
+
+      window.requestAnimationFrame(function () {
+        const currentProgress = String(progressText.textContent || "").trim();
+        if (!previousProgress || !currentProgress || previousProgress === currentProgress) {
+          return;
+        }
+
+        const topbar = document.querySelector(".topbar");
+        const stickyOffset = topbar
+          ? topbar.getBoundingClientRect().height + 12
+          : 12;
+        const targetTop = Math.max(
+          0,
+          window.scrollY + learnPanel.getBoundingClientRect().top - stickyOffset
+        );
+
+        window.scrollTo({
+          top: targetTop,
+          behavior: prefersReducedMotion() ? "auto" : "smooth"
+        });
+      });
+    });
+
+    return true;
+  }
+
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (window.location.protocol !== "https:" && !isLocalHost()) return;
@@ -154,6 +206,7 @@
     document.documentElement.dataset.releasePolishV4001 = VERSION;
     stripRemoteAdminQuery();
     installCoreLoadingState();
+    installLearningNextScroll();
     registerServiceWorker();
 
     window.PRTReleasePolishV4001 = Object.freeze({
