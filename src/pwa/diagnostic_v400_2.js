@@ -157,14 +157,20 @@
     return [
       {
         id: "vibe_coding",
-        ko: "AI를 이용한 바이브코딩을 어느 정도 해봤나요?",
-        en: "How much AI-assisted vibe coding have you done?",
+        multiple: true,
+        none_value: "none",
+        ko: "바이브코딩으로 해본 경험을 모두 골라주세요.",
+        en: "Select all of the vibe-coding experiences you have tried.",
         options: [
-          [0, "해본 적 없음", "Never"],
-          [1, "AI에게 간단한 코드만 요청해봄", "Asked AI for small code snippets"],
-          [2, "AI로 작은 프로그램을 만들어봄", "Built a small program with AI"],
-          [3, "여러 파일로 된 프로젝트를 만들어봄", "Built a multi-file project"],
-          [4, "AI와 함께 수정·디버깅하며 프로젝트를 진행함", "Built and debugged projects with AI"]
+          ["none", "해본 경험 없음", "No experience"],
+          ["snippet_request", "AI에게 간단한 코드나 명령을 요청해봄", "Asked AI for small code snippets or commands"],
+          ["small_program", "AI로 한 파일짜리 작은 프로그램을 만들어봄", "Built a small single-file program with AI"],
+          ["multi_file_project", "AI로 여러 파일로 된 프로젝트를 만들어봄", "Built a multi-file project with AI"],
+          ["feature_addition", "기존 프로젝트에 AI와 함께 기능을 추가해봄", "Added features to an existing project with AI"],
+          ["debug_with_ai", "오류 원인을 AI와 찾아 수정·디버깅해봄", "Found and fixed errors with AI"],
+          ["redirect_ai", "AI가 제안한 코드를 거절하거나 다른 방향으로 수정시켜봄", "Rejected or redirected an AI coding suggestion"],
+          ["version_control", "Git/GitHub 등으로 변경사항을 관리하며 작업해봄", "Managed changes with Git or GitHub while working"],
+          ["deployment", "배포하거나 실제 사용할 수 있는 형태까지 만들어봄", "Deployed or produced something usable"]
         ]
       },
       {
@@ -173,7 +179,7 @@
         en: "How much code can you write without AI assistance?",
         options: [
           [0, "직접 작성해본 적 없음", "I have not written code myself"],
-          [1, "예제를 보고 따라 쓸 수 있음", "I can copy and adapt examples"],
+          [1, "예제를 보고 따라 쓰거나 조금 바꿀 수 있음", "I can copy and lightly adapt examples"],
           [2, "간단한 코드는 혼자 작성할 수 있음", "I can write simple code myself"],
           [3, "함수와 여러 단계 로직을 직접 작성할 수 있음", "I can write functions and multi-step logic"],
           [4, "프로그램 구조를 잡고 구현할 수 있음", "I can structure and implement a program"]
@@ -181,26 +187,40 @@
       },
       {
         id: "python_use",
-        ko: "Python을 실제로 사용해본 정도는 어느 정도인가요?",
-        en: "How much have you actually used Python?",
+        multiple: true,
+        none_value: "none",
+        ko: "Python으로 직접 해본 경험을 모두 골라주세요.",
+        en: "Select all of the things you have actually done with Python.",
         options: [
-          [0, "써본 적 없음", "Never used it"],
-          [1, "예제를 실행하거나 조금 고쳐본 적 있음", "Ran or lightly edited examples"],
-          [2, "간단한 스크립트를 만들어봄", "Built simple scripts"],
-          [3, "함수·파일·라이브러리를 사용해봄", "Used functions, files, and libraries"],
-          [4, "Python 프로젝트를 직접 진행해봄", "Built a Python project"]
+          ["none", "Python을 써본 적 없음", "I have not used Python"],
+          ["run_code", "Python 코드를 실행해봄", "Ran Python code"],
+          ["edit_code", "기존 Python 코드를 조금 수정해봄", "Lightly edited existing Python code"],
+          ["short_script", "짧은 스크립트를 직접 작성해봄", "Wrote a short script"],
+          ["function", "함수(def)를 직접 작성해봄", "Wrote a function with def"],
+          ["file_io", "파일을 읽거나 저장하는 코드를 사용해봄", "Read or wrote files"],
+          ["library", "외부 라이브러리를 설치하거나 사용해봄", "Installed or used external libraries"],
+          ["debug", "Python 오류를 직접 찾아 수정해봄", "Debugged Python errors"],
+          ["multi_file_project", "여러 파일로 된 Python 프로젝트를 다뤄봄", "Worked on a multi-file Python project"],
+          ["test", "테스트 코드를 작성하거나 실행해봄", "Wrote or ran tests"]
         ]
       },
       {
         id: "development_planning",
-        ko: "개발 기획이나 기능 설계를 해본 정도는 어느 정도인가요?",
-        en: "How much development planning or feature design have you done?",
+        multiple: true,
+        none_value: "none",
+        ko: "개발기획이나 기능 설계에서 해본 일을 모두 골라주세요.",
+        en: "Select all of the development-planning or feature-design tasks you have done.",
         options: [
-          [0, "해본 적 없음", "Never"],
-          [1, "만들고 싶은 기능을 설명해본 정도", "Described features I wanted"],
-          [2, "필요한 기능을 목록으로 나눠봄", "Broken work into feature lists"],
-          [3, "화면·데이터·기능 흐름을 설계해봄", "Designed UI, data, and feature flows"],
-          [4, "요구사항을 구현 작업 단위까지 나눠봄", "Turned requirements into implementation tasks"]
+          ["none", "해본 경험 없음", "No experience"],
+          ["feature_definition", "만들 기능이나 해결할 문제를 정의해봄", "Defined a feature or problem to solve"],
+          ["requirements", "요구사항을 정리해봄", "Documented requirements"],
+          ["ui_flow", "화면이나 사용자 흐름을 설계해봄", "Designed UI or user flows"],
+          ["data_design", "필요한 데이터나 데이터 구조를 설계해봄", "Designed data or data structures"],
+          ["component_connection", "API나 기능 간 연결 방식을 설계해봄", "Designed API or component connections"],
+          ["task_breakdown", "큰 기능을 작은 개발 작업으로 나눠봄", "Broke a feature into implementation tasks"],
+          ["acceptance_criteria", "테스트나 완료 조건을 정해봄", "Defined tests or completion criteria"],
+          ["implementation_brief", "개발자나 AI에게 구현 요구사항을 전달해봄", "Gave implementation requirements to a developer or AI"],
+          ["review_direction", "개발 결과를 검토하고 수정 방향을 결정해봄", "Reviewed results and decided what to change"]
         ]
       },
       {
@@ -302,12 +322,42 @@
     };
   }
 
+  function multiExperienceSignal(value, legacyMinimum, acceptedValues) {
+    if (Array.isArray(value)) {
+      return value.some(function (item) {
+        return acceptedValues.indexOf(String(item)) >= 0;
+      });
+    }
+
+    return Number(value || 0) >= legacyMinimum;
+  }
+
   function profileHasDeepSignal(profile) {
     const answers = profile && profile.answers ? profile.answers : {};
+    const pythonSignal = Array.isArray(answers.python_use)
+      ? answers.python_use.some(function (item) {
+          return String(item) !== "none";
+        })
+      : Number(answers.python_use || 0) >= 1;
+
+    const vibeSignal = multiExperienceSignal(
+      answers.vibe_coding,
+      2,
+      [
+        "small_program",
+        "multi_file_project",
+        "feature_addition",
+        "debug_with_ai",
+        "redirect_ai",
+        "version_control",
+        "deployment"
+      ]
+    );
+
     return (
-      Number(answers.python_use || 0) >= 1
+      pythonSignal
       || Number(answers.direct_coding || 0) >= 2
-      || Number(answers.vibe_coding || 0) >= 2
+      || vibeSignal
       || Number(answers.ai_code_control || 0) >= 3
     );
   }
@@ -442,8 +492,8 @@
         "First, tell us briefly about your development experience"
       );
       body = text(
-        "바이브코딩, 직접 코딩, Python 사용, 개발기획, AI 코드 통제 경험을 확인합니다. 이 응답 자체를 Python 실력 점수에 더하지는 않습니다.",
-        "We check vibe coding, direct coding, Python use, planning, and AI-code control. These answers are not added directly to your Python skill score."
+        "바이브코딩, 직접 코딩, Python 사용, 개발기획, AI 코드 통제 경험을 확인합니다. 여러 경험이 함께 있는 항목은 복수선택할 수 있으며, 이 응답 자체를 Python 실력 점수에 더하지는 않습니다.",
+        "We check vibe coding, direct coding, Python use, planning, and AI-code control. Experience questions allow multiple selections where appropriate, and these answers are not added directly to your Python skill score."
       );
       action = text("경험 프로필 시작", "Start experience profile");
     } else if (stage === "screening") {
@@ -596,30 +646,104 @@
     `;
 
     el.querySelector("h2").textContent = text(question.ko, question.en);
-    el.querySelector(".diagnostic-question-v4002").textContent = text(
-      "가장 가까운 항목 하나를 골라주세요. 정답이 있는 질문이 아닙니다.",
-      "Choose the closest option. There is no correct answer here."
-    );
+    el.querySelector(".diagnostic-question-v4002").textContent = question.multiple
+      ? text(
+          "해당하는 항목을 모두 선택한 뒤 ‘다음’을 눌러주세요. ‘경험 없음’은 다른 항목과 함께 선택되지 않습니다.",
+          "Select every item that applies, then choose Next. ‘No experience’ cannot be combined with other items."
+        )
+      : text(
+          "현재 수준과 가장 가까운 항목 하나를 골라주세요. 정답이 있는 질문이 아닙니다.",
+          "Choose the one option closest to your current level. There is no correct answer here."
+        );
 
     const choices = document.getElementById("diagnosticChoicesV4002");
+
+    if (!question.multiple) {
+      question.options.forEach(function (option) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "diagnostic-choice-v4002";
+        button.textContent = text(option[1], option[2]);
+        button.addEventListener("click", function () {
+          profileResponses[question.id] = Number(option[0]);
+          profileIndex += 1;
+          renderProfileQuestion();
+        });
+        choices.appendChild(button);
+      });
+      return;
+    }
+
+    const selected = new Set(
+      Array.isArray(profileResponses[question.id])
+        ? profileResponses[question.id].map(String)
+        : []
+    );
+    const rows = [];
+
+    function syncMultiSelection() {
+      profileResponses[question.id] = Array.from(selected);
+
+      rows.forEach(function (row) {
+        const active = selected.has(row.value);
+        row.button.setAttribute("aria-pressed", active ? "true" : "false");
+        row.button.textContent = (active ? "✓ " : "") + row.label;
+      });
+
+      nextButton.disabled = selected.size === 0;
+    }
+
     question.options.forEach(function (option) {
+      const value = String(option[0]);
+      const label = text(option[1], option[2]);
       const button = document.createElement("button");
       button.type = "button";
       button.className = "diagnostic-choice-v4002";
-      button.textContent = text(option[1], option[2]);
+      button.setAttribute("aria-pressed", "false");
       button.addEventListener("click", function () {
-        profileResponses[question.id] = Number(option[0]);
-        profileIndex += 1;
-        renderProfileQuestion();
+        if (value === String(question.none_value)) {
+          if (selected.has(value)) {
+            selected.delete(value);
+          } else {
+            selected.clear();
+            selected.add(value);
+          }
+        } else {
+          selected.delete(String(question.none_value));
+          if (selected.has(value)) selected.delete(value);
+          else selected.add(value);
+        }
+
+        syncMultiSelection();
+      });
+      rows.push({
+        button: button,
+        value: value,
+        label: label
       });
       choices.appendChild(button);
     });
+
+    const nextButton = document.createElement("button");
+    nextButton.type = "button";
+    nextButton.className = "diagnostic-choice-v4002 secondary";
+    nextButton.textContent = text("선택 완료 · 다음", "Done selecting · Next");
+    nextButton.disabled = true;
+    nextButton.addEventListener("click", function () {
+      if (selected.size === 0) return;
+      profileResponses[question.id] = Array.from(selected);
+      profileIndex += 1;
+      renderProfileQuestion();
+    });
+    choices.appendChild(nextButton);
+    syncMultiSelection();
   }
 
   function finishProfile() {
     const cycle = loadCycle();
     cycle.profile = {
       completed_at: new Date().toISOString(),
+      format: "mixed_multiselect_v2",
       answers: Object.assign({}, profileResponses)
     };
     cycle.screening = null;
