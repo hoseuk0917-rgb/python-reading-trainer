@@ -1,0 +1,61 @@
+name: One-off V400.8 code parity repair
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "tools/repair_v4008_code_parity.py"
+      - ".github/workflows/oneoff-v4008-code-parity-repair.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Repair exact bilingual code parity failures
+        run: python tools/repair_v4008_code_parity.py
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check src/pwa/app.js
+          node --check src/pwa/v400_pedagogy_runtime.js
+          node --check src/pwa/sw_v400_1.js
+
+      - name: Rebuild runtime bundles again
+        run: python tools/build_runtime_lesson_bundle_v400_5.py
+
+      - name: Revalidate bilingual corpus
+        run: |
+          python tools/validate_lessons.py
+          python tools/validate_bilingual_lessons_v400_7.py
+
+      - name: Check patch integrity
+        run: git diff --check
+
+      - name: Commit parity repair
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "V4008_CODE_PARITY_ALREADY_CLEAN=True"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Restore bilingual code parity after learner-text repair"
+          git push origin HEAD:main
+          echo "V4008_CODE_PARITY_COMMIT_PUSHED=True"
