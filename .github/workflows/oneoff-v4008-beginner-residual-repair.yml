@@ -1,0 +1,59 @@
+name: One-off V400.8 beginner residual repair
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "tools/repair_v4008_beginner_residuals.py"
+      - ".github/workflows/oneoff-v4008-beginner-residual-repair.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Repair beginner learner text and rebuild bundles
+        run: python tools/repair_v4008_beginner_residuals.py
+
+      - name: Validate lesson corpus
+        run: python tools/validate_lessons.py
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check src/pwa/app.js
+          node --check src/pwa/v400_pedagogy_runtime.js
+          node --check src/pwa/sw_v400_1.js
+
+      - name: Rebuild once more for idempotent bundle contract
+        run: python tools/build_runtime_lesson_bundle_v400_5.py
+
+      - name: Check patch integrity
+        run: git diff --check
+
+      - name: Commit repaired corpus
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "V4008_BEGINNER_REPAIR_ALREADY_CLEAN=True"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Repair remaining beginner learner-text defects"
+          git push origin HEAD:main
+          echo "V4008_BEGINNER_REPAIR_COMMIT_PUSHED=True"
