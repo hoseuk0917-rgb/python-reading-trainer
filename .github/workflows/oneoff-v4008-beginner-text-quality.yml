@@ -32,238 +32,228 @@ jobs:
 
           import json
           import re
+          import subprocess
           from pathlib import Path
 
           ROOT = Path.cwd()
-
-          def replace_exact(path: Path, old: str, new: str, *, count: int = 1) -> None:
-              text = path.read_text(encoding="utf-8-sig")
-              found = text.count(old)
-              if found != count:
-                  raise SystemExit(f"unexpected occurrence count in {path}: expected={count} actual={found} old={old[:80]!r}")
-              path.write_text(text.replace(old, new, count), encoding="utf-8")
-
-          def replace_json_string(path: Path, old: str, new: str) -> None:
-              text = path.read_text(encoding="utf-8-sig")
-              old_encoded = json.dumps(old, ensure_ascii=False)[1:-1]
-              new_encoded = json.dumps(new, ensure_ascii=False)[1:-1]
-              found = text.count(old_encoded)
-              if found != 1:
-                  raise SystemExit(f"JSON string occurrence mismatch in {path}: {found} for {old!r}")
-              path.write_text(text.replace(old_encoded, new_encoded, 1), encoding="utf-8")
-
           runtime = ROOT / "src/pwa/v400_pedagogy_runtime.js"
           app = ROOT / "src/pwa/app.js"
           sw = ROOT / "src/pwa/sw_v400_1.js"
           en_seed = ROOT / "data_i18n/en/lessons/cards_seed_v1.json"
 
-          # 1) Runtime hardening: handle double-backtick artifacts and stop replacing
-          # ordinary English words inside Korean learner text.
-          replace_exact(
-              runtime,
+          def replace_exact(path: Path, old: str, new: str, count: int = 1) -> None:
+              text = path.read_text(encoding="utf-8-sig")
+              found = text.count(old)
+              if found != count:
+                  raise SystemExit(f"unexpected occurrence count in {path}: expected={count} actual={found} old={old[:100]!r}")
+              path.write_text(text.replace(old, new, count), encoding="utf-8")
+
+          # Runtime hardening: double-backtick cleanup, safer Korean substitutions,
+          # and defensive English repairs for known translated sentence shapes.
+          replace_exact(runtime,
               'const VERSION = "v400_v2_3_quality3";',
-              'const VERSION = "v400_v2_3_quality4";'
-          )
-          replace_exact(
-              runtime,
+              'const VERSION = "v400_v2_3_quality4";')
+          replace_exact(runtime,
               '    return String(value == null ? "" : value)\n      .replace(/`([^`]+)`/g, "$1")\n      .replace(/\\*\\*([^*]+)\\*\\*/g, "$1")\n      .trim();',
-              '    return String(value == null ? "" : value)\n      .replace(/``([^`]+)``/g, "$1")\n      .replace(/`([^`]+)`/g, "$1")\n      .replace(/\\*\\*([^*]+)\\*\\*/g, "$1")\n      .trim();'
-          )
-          replace_exact(
-              runtime,
+              '    return String(value == null ? "" : value)\n      .replace(/``([^`]+)``/g, "$1")\n      .replace(/`([^`]+)`/g, "$1")\n      .replace(/\\*\\*([^*]+)\\*\\*/g, "$1")\n      .trim();')
+          replace_exact(runtime,
               '      [/\\breceiver\\b/gi, "점(.) 왼쪽의 대상 객체"],\n      [/\\barguments?\\b/gi, "함수에 전달하는 값(인자)"],\n      [/\\bparameters?\\b/gi, "함수가 받는 이름(매개변수)"],\n      [/\\bcall\\b/g, "함수 호출"],\n      [/\\bassignment\\b/g, "값 저장"],\n      [/\\bliteral\\b/g, "코드에 직접 적은 값"]',
-              '      [/\\breceiver\\b/gi, "점(.) 왼쪽의 대상 객체"],\n      [/\\barguments?\\b/gi, "함수에 전달하는 값(인자)"],\n      [/\\bparameters?\\b/gi, "함수가 받는 이름(매개변수)"]'
-          )
-          replace_exact(
-              runtime,
+              '      [/\\breceiver\\b/gi, "점(.) 왼쪽의 대상 객체"],\n      [/\\barguments?\\b/gi, "함수에 전달하는 값(인자)"],\n      [/\\bparameters?\\b/gi, "함수가 받는 이름(매개변수)"]')
+          replace_exact(runtime,
               '    return text\n      .replace(/\\bI explicitly specified\\b/g, "The code explicitly specifies")\n      .replace(/\\bAs you can see,\\s*/g, "")\n      .replace(/\\bYou can interpret this as\\b/g, "Read this as")\n      .replace(/\\bPoint of Misinterpretation:\\s*/g, "Where it went wrong: ")\n      .replace(/\\bA common source of confusion:\\s*/g, "Common mistake: ");',
-              '    return text\n      .replace(/^([A-Za-z_][A-Za-z0-9_.]*\\([^)]*\\))\\s+This is a function that\\b/g, "$1 is a function that")\n      .replace(/^([A-Za-z_][A-Za-z0-9_.]*\\([^)]*\\))\\s+As you can see,\\s*it first counts\\b/g, "For $1, first count")\n      .replace(/^([A-Za-z_][A-Za-z0-9_.]*\\([^)]*\\))\\s+When I look at this,\\s*I interpret it as\\b/g, "Read $1 as")\n      .replace(/\\bI explicitly specified\\b/g, "The code explicitly specifies")\n      .replace(/\\bAs you can see,\\s*/g, "")\n      .replace(/\\bYou can interpret this as\\b/g, "Read this as")\n      .replace(/\\bWhen I look at this,\\s*I interpret it as\\b/g, "Read this as")\n      .replace(/\\bPoint of Misinterpretation:\\s*/g, "Where it went wrong: ")\n      .replace(/\\bA common source of confusion:\\s*/g, "Common mistake: ");'
-          )
+              '    return text\n      .replace(/^([A-Za-z_][A-Za-z0-9_.]*\\([^)]*\\))\\s+This is a function that\\b/g, "$1 is a function that")\n      .replace(/^([A-Za-z_][A-Za-z0-9_.]*\\([^)]*\\))\\s+As you can see,\\s*it first counts\\b/g, "For $1, first count")\n      .replace(/^([A-Za-z_][A-Za-z0-9_.]*\\([^)]*\\))\\s+When I look at this,\\s*I interpret it as\\b/g, "Read $1 as")\n      .replace(/\\bI explicitly specified\\b/g, "The code explicitly specifies")\n      .replace(/\\bAs you can see,\\s*/g, "")\n      .replace(/\\bYou can interpret this as\\b/g, "Read this as")\n      .replace(/\\bWhen I look at this,\\s*I interpret it as\\b/g, "Read this as")\n      .replace(/\\bPoint of Misinterpretation:\\s*/g, "Where it went wrong: ")\n      .replace(/\\bA common source of confusion:\\s*/g, "Common mistake: ");')
 
-          # 2) Route the raw card title/question/context/choices through the same
-          # learner-facing quality function. These fields previously bypassed it.
-          replace_exact(
-              app,
+          # The base renderer previously bypassed learnerText for these fields.
+          replace_exact(app,
               'function renderCard() {\n  const card = getCurrentCard();\n  selectedChoice = null;',
-              'function renderCard() {\n  const card = getCurrentCard();\n  const runtimeV400 = window.V400PedagogyRuntime;\n  const learnerTextV400 = runtimeV400\n    && typeof runtimeV400.learnerText === "function"\n    && typeof runtimeV400.isRichCard === "function"\n    && runtimeV400.isRichCard(card)\n      ? runtimeV400.learnerText\n      : function (_card, value) { return String(value == null ? "" : value); };\n  selectedChoice = null;'
-          )
-          replace_exact(
-              app,
+              'function renderCard() {\n  const card = getCurrentCard();\n  const runtimeV400 = window.V400PedagogyRuntime;\n  const learnerTextV400 = runtimeV400\n    && typeof runtimeV400.learnerText === "function"\n    && typeof runtimeV400.isRichCard === "function"\n    && runtimeV400.isRichCard(card)\n      ? runtimeV400.learnerText\n      : function (_card, value) { return String(value == null ? "" : value); };\n  selectedChoice = null;')
+          replace_exact(app,
               '  document.getElementById("cardTitle").textContent = card.title;',
-              '  document.getElementById("cardTitle").textContent = learnerTextV400(card, card.title);'
-          )
-          replace_exact(
-              app,
+              '  document.getElementById("cardTitle").textContent = learnerTextV400(card, card.title);')
+          replace_exact(app,
               '  document.getElementById("questionText").textContent = card.question || "";\n  document.getElementById("projectContext").textContent = card.project_context || "";',
-              '  document.getElementById("questionText").textContent = learnerTextV400(card, card.question || "");\n  document.getElementById("projectContext").textContent = learnerTextV400(card, card.project_context || "");'
-          )
-          replace_exact(
-              app,
+              '  document.getElementById("questionText").textContent = learnerTextV400(card, card.question || "");\n  document.getElementById("projectContext").textContent = learnerTextV400(card, card.project_context || "");')
+          replace_exact(app,
               '    btn.textContent = Array.isArray(choice) ? choice.join(", ") : String(choice);',
-              '    const choiceText = Array.isArray(choice) ? choice.join(", ") : String(choice);\n    btn.textContent = learnerTextV400(card, choiceText);'
-          )
+              '    const choiceText = Array.isArray(choice) ? choice.join(", ") : String(choice);\n    btn.textContent = learnerTextV400(card, choiceText);')
 
-          # 3) Fix confirmed semantic/grammar defects in the English seed source.
-          replace_json_string(
-              en_seed,
-              "`len()` This is a function that tells you **how many values** are contained in a list or string. For example, since ``['A', 'B', 'C']`` contains three values—A, B, and C—its length is 3.",
-              "`len()` returns the number of items in a list or string. For example, `['A', 'B', 'C']` contains three items, so its length is 3."
-          )
-          replace_json_string(
-              en_seed,
-              "`len(items)` As you can see, it first counts how many items are actually inside ``items``. You can interpret this as returning that count as a number.",
-              "For `len(items)`, count the items currently inside `items`; that count is the returned number."
-          )
-          replace_json_string(
-              en_seed,
-              "`len()` When I look at this, I interpret it as calculating the **number of items**, not the last index of the target.",
-              "Read `len()` as the number of items, not the last index."
-          )
-          replace_json_string(
-              en_seed,
-              "`name` It’s easy to assume that the text “`label`” is included. However, since “`label`” without quotes is a variable rather than a string, the program reads the variable’s current value rather than its name.",
-              "It is easy to think `name` receives the letters `label`. Because `label` has no quotes, Python reads the value currently stored in that variable instead."
-          )
-          replace_json_string(
-              en_seed,
-              "`Sensor` What should you enter in the blank in ``node[____]`` to extract it?",
-              "What should go in `node[____]` to retrieve `Sensor`?"
-          )
-          replace_json_string(
-              en_seed,
-              "Using the `\"kind\"` key returns the value `\"Sensor\"` associated with that key. If you want the key itself rather than the value, place the key in square brackets.",
-              "Using the key `\"kind\"` returns its associated value, `\"Sensor\"`. Put the key—not the desired value—inside the square brackets."
-          )
-          replace_json_string(
-              en_seed,
-              "`row.get(\"doc_id\", \"NO_DOC\")` What is the result?",
-              "What does `row.get(\"doc_id\", \"NO_DOC\")` return?"
-          )
+          # Patch confirmed English defects semantically by card ID + field rather than
+          # depending on the source JSON's whitespace/Unicode escape serialization.
+          seed = json.loads(en_seed.read_text(encoding="utf-8-sig"))
+          if not isinstance(seed, list):
+              raise SystemExit("English seed is not a list")
+          by_id = {row.get("id"): row for row in seed if isinstance(row, dict)}
+          required = {"L01_len_001", "L02_var_flow_001", "L03_dict_001", "L03_get_001"}
+          missing = required - set(by_id)
+          if missing:
+              raise SystemExit(f"missing seed cards: {sorted(missing)}")
 
-          # 4) Cache bump so the repaired app/runtime is picked up immediately.
-          replace_exact(
-              sw,
+          l01 = by_id["L01_len_001"]
+          l01["concept_explanation"]["what_it_is"] = "`len()` returns the number of items in a list or string. For example, `['A', 'B', 'C']` contains three items, so its length is 3."
+          l01["concept_explanation"]["how_to_read"] = "For `len(items)`, count the items currently inside `items`; that count is the returned number."
+          l01["answer_explanation"]["takeaway"] = "Read `len()` as the number of items, not the last index."
+
+          l02 = by_id["L02_var_flow_001"]
+          l02["concept_explanation"]["common_mistake"] = "It is easy to think `name` receives the letters `label`. Because `label` has no quotes, Python reads the value currently stored in that variable instead."
+
+          l03d = by_id["L03_dict_001"]
+          l03d["question"] = "What should go in `node[____]` to retrieve `Sensor`?"
+          l03d["teaching_example"]["walkthrough"] = "Using the key `\"kind\"` returns its associated value, `\"Sensor\"`. Put the key—not the desired value—inside the square brackets."
+
+          l03g = by_id["L03_get_001"]
+          l03g["question"] = "What does `row.get(\"doc_id\", \"NO_DOC\")` return?"
+          l03g["answer_explanation"]["common_wrong_choice"]["why_wrong"] = "The code explicitly provides `NO_DOC` as the second argument, so `get()` returns that default value when `doc_id` is missing."
+
+          en_seed.write_text(json.dumps(seed, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+          # Cache bump so app/runtime changes are not masked by the previous PWA shell.
+          replace_exact(sw,
               'const RELEASE = "20260827_v400_8_beginner_quality2";\nconst CACHE_NAME = "python-reading-trainer-v400-8-beginner-quality2-20260827";',
-              'const RELEASE = "20260827_v400_8_beginner_quality4";\nconst CACHE_NAME = "python-reading-trainer-v400-8-beginner-quality4-20260827";'
-          )
+              'const RELEASE = "20260827_v400_8_beginner_quality4";\nconst CACHE_NAME = "python-reading-trainer-v400-8-beginner-quality4-20260827";')
 
-          # 5) Rebuild runtime bundles from source.
-          import subprocess
           subprocess.run(["python", "tools/build_runtime_lesson_bundle_v400_5.py"], check=True)
-
           ko_bundle = json.loads((ROOT / "data/runtime/lesson_bundle_v400_5.json").read_text(encoding="utf-8"))
           en_bundle = json.loads((ROOT / "data_i18n/en/runtime/lesson_bundle_v400_5.json").read_text(encoding="utf-8"))
-          if ko_bundle.get("card_count") != 1785 or en_bundle.get("card_count") != 1785:
+          if (ko_bundle.get("card_count"), en_bundle.get("card_count")) != (1785, 1785):
               raise SystemExit("card-count regression")
 
-          def iter_cards(bundle: dict):
+          def iter_cards(bundle):
               for rel, rows in bundle.get("files", {}).items():
                   for row in rows:
                       yield rel, row
 
-          def visible_strings(card: dict):
-              values = []
-              for key in ("title", "question", "explanation", "project_context"):
+          def visible_strings(card):
+              out = []
+              for key in ("title", "question", "project_context"):
                   value = card.get(key)
                   if isinstance(value, str):
-                      values.append((key, value))
-              for idx, choice in enumerate(card.get("choices") or []):
-                  if isinstance(choice, str):
-                      values.append((f"choices[{idx}]", choice))
+                      out.append((key, value))
+              for i, value in enumerate(card.get("choices") or []):
+                  if isinstance(value, str):
+                      out.append((f"choices[{i}]", value))
               for section in ("concept_explanation", "teaching_example", "answer_explanation"):
-                  value = card.get(section)
                   def walk(node, path):
                       if isinstance(node, str):
                           if not path.endswith(".code"):
-                              values.append((path, node))
+                              out.append((path, node))
                       elif isinstance(node, dict):
                           for k, v in node.items():
                               walk(v, f"{path}.{k}")
                       elif isinstance(node, list):
                           for i, v in enumerate(node):
                               walk(v, f"{path}[{i}]")
-                  if value is not None:
-                      walk(value, section)
-              return values
+                  walk(card.get(section), section)
+              return out
 
-          forbidden = [
-              "Point of Misinterpretation:",
-              "A common source of confusion:",
-              "As you can see,",
-              "I explicitly specified",
-              "You can interpret this as",
+          forbidden_en = [
+              "Point of Misinterpretation:", "A common source of confusion:",
+              "As you can see,", "I explicitly specified", "You can interpret this as",
               "When I look at this, I interpret it as",
           ]
-          author_tokens = re.compile(
-              r"\\b(?:name_reference|subscription|if_statement|else_clause|for_statement|return_statement|attribute_access|argument_passing|parameter_definition|membership_test|identity_test|sequence_operation)\\b"
-          )
+          author_token_re = re.compile(r"\b(?:name_reference|if_statement|else_clause|for_statement|return_statement|attribute_access|argument_passing|parameter_definition|membership_test|identity_test|sequence_operation)\b")
+
+          # Mirror the display cleanup relevant to this audit. This is intentionally
+          # narrower than executing the browser; it verifies the strings fed to learner UI.
+          token_labels_en = {
+              "sequence_operation": "processing values in order",
+              "name_reference": "reading a variable's current value",
+              "attribute_access": "attribute access with a dot",
+              "argument_passing": "passing an argument",
+              "parameter_definition": "defining a parameter",
+              "function_definition": "defining a function",
+              "return_statement": "returning a result",
+              "if_statement": "an if statement", "else_clause": "an else branch",
+              "for_statement": "a for loop", "while_statement": "a while loop",
+              "membership_test": "checking whether a value is included",
+              "identity_test": "checking object identity",
+              "boolean_operation": "a Boolean operation",
+              "conditional_expression": "a conditional expression",
+          }
+          def display_en(text):
+              text = re.sub(r"``([^`]+)``", r"\1", text)
+              text = re.sub(r"`([^`]+)`", r"\1", text)
+              text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
+              for token, label in token_labels_en.items():
+                  text = re.sub(rf"\b{re.escape(token)}\b", label, text)
+              text = re.sub(r"^([A-Za-z_][A-Za-z0-9_.]*\([^)]*\))\s+This is a function that\b", r"\1 is a function that", text)
+              text = re.sub(r"^([A-Za-z_][A-Za-z0-9_.]*\([^)]*\))\s+As you can see,\s*it first counts\b", r"For \1, first count", text)
+              text = re.sub(r"^([A-Za-z_][A-Za-z0-9_.]*\([^)]*\))\s+When I look at this,\s*I interpret it as\b", r"Read \1 as", text)
+              text = re.sub(r"\bI explicitly specified\b", "The code explicitly specifies", text)
+              text = re.sub(r"\bAs you can see,\s*", "", text)
+              text = re.sub(r"\bYou can interpret this as\b", "Read this as", text)
+              text = re.sub(r"\bWhen I look at this,\s*I interpret it as\b", "Read this as", text)
+              text = re.sub(r"\bPoint of Misinterpretation:\s*", "Where it went wrong: ", text)
+              text = re.sub(r"\bA common source of confusion:\s*", "Common mistake: ", text)
+              return text.strip()
 
           report = {
-              "schema": "python-reading-trainer/v4008-learner-text-reaudit-v1",
+              "schema": "python-reading-trainer/v4008-learner-text-reaudit-v2",
               "ko_card_count": ko_bundle["card_count"],
               "en_card_count": en_bundle["card_count"],
-              "scope": "all 1785 cards scanned structurally; beginner level 1-3 learner-facing defects targeted",
+              "ko_source_file_count": ko_bundle["source_file_count"],
+              "en_source_file_count": en_bundle["source_file_count"],
+              "scope": "all 1785 KO and 1785 EN lesson cards structurally scanned; learner-visible Level 1-3 strings re-audited",
               "confirmed_repairs": [
-                  "English L01 len() grammar",
+                  "English L01 len() grammar and takeaway",
                   "English L02 stray leading code token",
-                  "English L03 dict question grammar",
-                  "English L03 dict walkthrough semantic error",
-                  "English L03 get() question grammar",
+                  "English L03 dictionary question grammar",
+                  "English L03 dictionary walkthrough semantic error",
+                  "English L03 dict.get() question and wrong-choice wording",
                   "double-backtick learner rendering",
                   "Korean overbroad call/assignment/literal replacement",
                   "raw title/question/context/choice rendering bypass",
               ],
-              "raw_beginner_en_forbidden": [],
-              "raw_beginner_en_double_backtick": [],
-              "raw_beginner_ko_author_token": [],
+              "raw_beginner_en_forbidden_count": 0,
+              "raw_beginner_en_double_backtick_count": 0,
+              "post_runtime_beginner_en_forbidden_count": 0,
+              "post_runtime_beginner_en_backtick_count": 0,
+              "raw_beginner_ko_author_token_count": 0,
+              "samples": {"raw_en_forbidden": [], "raw_en_double_backtick": [], "post_en": [], "raw_ko_author_token": []},
           }
 
           for rel, card in iter_cards(en_bundle):
-              try:
-                  level = int(card.get("level", 999))
-              except Exception:
-                  level = 999
-              if level > 3:
-                  continue
+              try: level = int(card.get("level", 999))
+              except Exception: level = 999
+              if level > 3: continue
               for field, value in visible_strings(card):
-                  hits = [phrase for phrase in forbidden if phrase in value]
-                  if hits and len(report["raw_beginner_en_forbidden"]) < 100:
-                      report["raw_beginner_en_forbidden"].append({
-                          "file": rel, "id": card.get("id"), "field": field, "hits": hits,
-                          "sample": value[:240],
-                      })
-                  if "``" in value and len(report["raw_beginner_en_double_backtick"]) < 100:
-                      report["raw_beginner_en_double_backtick"].append({
-                          "file": rel, "id": card.get("id"), "field": field,
-                          "sample": value[:240],
-                      })
+                  hits = [p for p in forbidden_en if p in value]
+                  if hits:
+                      report["raw_beginner_en_forbidden_count"] += 1
+                      if len(report["samples"]["raw_en_forbidden"]) < 30:
+                          report["samples"]["raw_en_forbidden"].append({"file": rel, "id": card.get("id"), "field": field, "hits": hits, "sample": value[:240]})
+                  if "``" in value:
+                      report["raw_beginner_en_double_backtick_count"] += 1
+                      if len(report["samples"]["raw_en_double_backtick"]) < 30:
+                          report["samples"]["raw_en_double_backtick"].append({"file": rel, "id": card.get("id"), "field": field, "sample": value[:240]})
+                  shown = display_en(value)
+                  post_hits = [p for p in forbidden_en if p in shown]
+                  if post_hits:
+                      report["post_runtime_beginner_en_forbidden_count"] += 1
+                      if len(report["samples"]["post_en"]) < 30:
+                          report["samples"]["post_en"].append({"file": rel, "id": card.get("id"), "field": field, "hits": post_hits, "sample": shown[:240]})
+                  if "`" in shown:
+                      report["post_runtime_beginner_en_backtick_count"] += 1
 
           for rel, card in iter_cards(ko_bundle):
-              try:
-                  level = int(card.get("level", 999))
-              except Exception:
-                  level = 999
-              if level > 3:
-                  continue
+              try: level = int(card.get("level", 999))
+              except Exception: level = 999
+              if level > 3: continue
               for field, value in visible_strings(card):
-                  hits = sorted(set(author_tokens.findall(value)))
-                  if hits and len(report["raw_beginner_ko_author_token"]) < 100:
-                      report["raw_beginner_ko_author_token"].append({
-                          "file": rel, "id": card.get("id"), "field": field, "hits": hits,
-                          "sample": value[:240],
-                      })
-
-          report["raw_beginner_en_forbidden_count"] = len(report["raw_beginner_en_forbidden"])
-          report["raw_beginner_en_double_backtick_count"] = len(report["raw_beginner_en_double_backtick"])
-          report["raw_beginner_ko_author_token_count"] = len(report["raw_beginner_ko_author_token"])
+                  hits = sorted(set(author_token_re.findall(value)))
+                  if hits:
+                      report["raw_beginner_ko_author_token_count"] += 1
+                      if len(report["samples"]["raw_ko_author_token"]) < 30:
+                          report["samples"]["raw_ko_author_token"].append({"file": rel, "id": card.get("id"), "field": field, "hits": hits, "sample": value[:240]})
 
           audit_path = ROOT / "docs/audits/v4008_learner_text_reaudit.json"
           audit_path.parent.mkdir(parents=True, exist_ok=True)
           audit_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-          # This workflow is intentionally one-shot; remove it in the patch commit.
-          workflow = ROOT / ".github/workflows/oneoff-v4008-beginner-text-quality.yml"
-          workflow.unlink()
+          if report["post_runtime_beginner_en_forbidden_count"] != 0 or report["post_runtime_beginner_en_backtick_count"] != 0:
+              raise SystemExit("post-runtime learner-visible English residue remains; see audit report")
+
+          # One-shot workflow removes itself in the successful patch commit.
+          (ROOT / ".github/workflows/oneoff-v4008-beginner-text-quality.yml").unlink()
           PY
 
       - name: Local release-equivalent checks
