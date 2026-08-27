@@ -13,9 +13,14 @@ ORIGINAL_REPAIR = ROOT / "tools/repair_v4008_beginner_residuals.py"
 # literals. Translate the literals consistently in code, choices, answers, and
 # prose rather than hiding them at render time.
 EXTRA_EN_REPLACEMENTS = (
+    ("label()은 text를 채울 값이 없어 정상 호출이 아니다.", "label() is not a valid call here because no value is provided for text."),
+    ("out.txt 기존 내용:", "existing out.txt contents:"),
+    ("memo.txt 내용:", "memo.txt contents:"),
+    ("config.json 내용:", "config.json contents:"),
     ("비어 있음", "empty"),
     ("이 줄은 설명이다", "this line is a comment"),
     ("준비 단계", "preparation step"),
+    ("민아", "Mina"),
     ("있음", "present"),
     ("없음", "empty"),
 )
