@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "v400_v2_3_quality3";
+  const VERSION = "v400_v2_3_quality4";
   const INPUT_BEGINNER_CARD_ID = "PYF94_A1_L01_INPUT_001";
   const oldRenderConceptIntro = window.renderConceptIntroV306;
   const oldRenderReadingGoal = window.renderReadingGoalV306;
@@ -181,6 +181,7 @@
 
   function stripLearnerMarkdown(value) {
     return String(value == null ? "" : value)
+      .replace(/``([^`]+)``/g, "$1")
       .replace(/`([^`]+)`/g, "$1")
       .replace(/\*\*([^*]+)\*\*/g, "$1")
       .trim();
@@ -205,10 +206,7 @@
       [/\bnamespace\b/gi, "현재 코드에서 이름을 사용하는 범위"],
       [/\breceiver\b/gi, "점(.) 왼쪽의 대상 객체"],
       [/\barguments?\b/gi, "함수에 전달하는 값(인자)"],
-      [/\bparameters?\b/gi, "함수가 받는 이름(매개변수)"],
-      [/\bcall\b/g, "함수 호출"],
-      [/\bassignment\b/g, "값 저장"],
-      [/\bliteral\b/g, "코드에 직접 적은 값"]
+      [/\bparameters?\b/gi, "함수가 받는 이름(매개변수)"]
     ];
 
     replacements.forEach(function (pair) {
@@ -274,9 +272,13 @@
     });
 
     return text
+      .replace(/^([A-Za-z_][A-Za-z0-9_.]*\([^)]*\))\s+This is a function that\b/g, "$1 is a function that")
+      .replace(/^([A-Za-z_][A-Za-z0-9_.]*\([^)]*\))\s+As you can see,\s*it first counts\b/g, "For $1, first count")
+      .replace(/^([A-Za-z_][A-Za-z0-9_.]*\([^)]*\))\s+When I look at this,\s*I interpret it as\b/g, "Read $1 as")
       .replace(/\bI explicitly specified\b/g, "The code explicitly specifies")
       .replace(/\bAs you can see,\s*/g, "")
       .replace(/\bYou can interpret this as\b/g, "Read this as")
+      .replace(/\bWhen I look at this,\s*I interpret it as\b/g, "Read this as")
       .replace(/\bPoint of Misinterpretation:\s*/g, "Where it went wrong: ")
       .replace(/\bA common source of confusion:\s*/g, "Common mistake: ");
   }

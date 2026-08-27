@@ -950,17 +950,24 @@ function setView(viewName) {
 
 function renderCard() {
   const card = getCurrentCard();
+  const runtimeV400 = window.V400PedagogyRuntime;
+  const learnerTextV400 = runtimeV400
+    && typeof runtimeV400.learnerText === "function"
+    && typeof runtimeV400.isRichCard === "function"
+    && runtimeV400.isRichCard(card)
+      ? runtimeV400.learnerText
+      : function (_card, value) { return String(value == null ? "" : value); };
   selectedChoice = null;
   document.getElementById("nextBtn").classList.remove("primary-next");
 
   document.getElementById("levelBadge").textContent = "Level " + card.level;
   document.getElementById("progressText").textContent = (currentIndex + 1) + " / " + cards.length;
-  document.getElementById("cardTitle").textContent = card.title;
+  document.getElementById("cardTitle").textContent = learnerTextV400(card, card.title);
   const conceptIntroSideCardIdV306 = renderConceptIntroV306(card);
   renderReadingGoalV306(card);
   document.getElementById("codeBlock").textContent = card.code || "(코드 없음: 기능 선택형 문제)";
-  document.getElementById("questionText").textContent = card.question || "";
-  document.getElementById("projectContext").textContent = card.project_context || "";
+  document.getElementById("questionText").textContent = learnerTextV400(card, card.question || "");
+  document.getElementById("projectContext").textContent = learnerTextV400(card, card.project_context || "");
 
   const resultBox = document.getElementById("resultBox");
   resultBox.className = "result-box hidden";
@@ -973,7 +980,8 @@ function renderCard() {
   choices.forEach(function(choice) {
     const btn = document.createElement("button");
     btn.className = "choice-btn";
-    btn.textContent = Array.isArray(choice) ? choice.join(", ") : String(choice);
+    const choiceText = Array.isArray(choice) ? choice.join(", ") : String(choice);
+    btn.textContent = learnerTextV400(card, choiceText);
     btn.onclick = function() {
       checkAnswer(choice, btn);
     };
