@@ -1,8 +1,8 @@
 const CACHE_PREFIX = "python-reading-trainer-v400";
 // Kept as an explicit compatibility marker for the sealed V400.7 release audit.
 const V400_7_RELEASE_CACHE_MARKER = "python-reading-trainer-v400-7-hardening1-20260821";
-const RELEASE = "20260827_v400_8_beginner_quality4";
-const CACHE_NAME = "python-reading-trainer-v400-8-beginner-quality4-20260827";
+const RELEASE = "20260827_v400_8_beginner_quality5";
+const CACHE_NAME = "python-reading-trainer-v400-8-beginner-quality5-20260827";
 
 const SHELL_ASSETS = [
   "./",
