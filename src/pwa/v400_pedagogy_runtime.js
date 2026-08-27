@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "v400_v2_3_quality2";
+  const VERSION = "v400_v2_3_quality3";
   const INPUT_BEGINNER_CARD_ID = "PYF94_A1_L01_INPUT_001";
   const oldRenderConceptIntro = window.renderConceptIntroV306;
   const oldRenderReadingGoal = window.renderReadingGoalV306;
@@ -219,17 +219,58 @@
 
   function polishBeginnerEnglish(value) {
     let text = value;
-    const tokenLabels = Object.assign({}, CONCEPT_LABELS_EN, {
+    // Only replace unmistakable internal authoring tokens. Do not replace ordinary
+    // English words such as call, assignment, comparison, literal, or slice.
+    const tokenLabels = {
+      sequence_operation: "processing values in order",
       name_reference: "reading a variable's current value",
-      subscription: "square-bracket lookup",
       attribute_access: "attribute access with a dot",
       argument_passing: "passing an argument",
-      parameter_definition: "defining a parameter"
-    });
+      parameter_definition: "defining a parameter",
+      function_definition: "defining a function",
+      return_statement: "returning a result",
+      if_statement: "an if statement",
+      else_clause: "an else branch",
+      for_statement: "a for loop",
+      while_statement: "a while loop",
+      break_statement: "stopping a loop",
+      continue_statement: "skipping the rest of one loop iteration",
+      membership_test: "checking whether a value is included",
+      identity_test: "checking object identity",
+      boolean_operation: "a Boolean operation",
+      unary_operation: "a unary operation",
+      conditional_expression: "a conditional expression",
+      f_string: "an f-string",
+      tuple_literal: "a tuple value",
+      list_literal: "a list value",
+      dict_literal: "a dictionary value",
+      set_literal: "a set value",
+      list_comprehension: "a list comprehension",
+      dict_comprehension: "a dictionary comprehension",
+      set_comprehension: "a set comprehension",
+      generator_expression: "a generator expression",
+      yield_expression: "a yield expression",
+      import_statement: "an import statement",
+      from_import_statement: "a from-import statement",
+      try_statement: "a try statement",
+      except_clause: "an except clause",
+      finally_clause: "a finally clause",
+      raise_statement: "a raise statement",
+      assert_statement: "an assert statement",
+      class_definition: "a class definition",
+      type_annotation: "a type hint",
+      lambda_expression: "a lambda expression",
+      with_statement: "a with statement",
+      await_expression: "an await expression",
+      async_function_definition: "an async function definition",
+      augmented_assignment: "an augmented assignment",
+      match_statement: "a match statement",
+      case_clause: "a match case"
+    };
 
     Object.keys(tokenLabels).forEach(function (token) {
       const pattern = new RegExp("\\b" + token + "\\b", "g");
-      text = text.replace(pattern, tokenLabels[token].toLowerCase());
+      text = text.replace(pattern, tokenLabels[token]);
     });
 
     return text
