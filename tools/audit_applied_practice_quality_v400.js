@@ -39,10 +39,16 @@ const engine = {
     { id: "valid_basic", moduleId: "basics", requires: [["print", "output"]] }
   ],
   _mode: "bad",
-  familyOf(value) { return String(value || "").toLowerCase(); },
+  familyOf(value) {
+    const key = String(value || "").toLowerCase();
+    return key === "call" ? "function" : key;
+  },
   missionForPracticeModule() {
     if (this._mode === "valid") {
       return { id: "valid_basic", kind: "output_prediction", code: 'print("ok")', question: "무엇이 출력될까요?", choices: ["ok", "no"], answerIndex: 0, explanation: "ok" };
+    }
+    if (this._mode === "family") {
+      return { id: "family_func", kind: "call_trace", code: "helper()", question: "무엇이 실행될까요?", choices: ["helper", "none"], answerIndex: 0, explanation: "helper" };
     }
     return { id: "fallback_recent_concept", kind: "concept_trace", code: current.code, question: "이 코드를 읽을 때 먼저 추적할 학습 개념은 무엇일까요?", choices: ["assignment", "call", "comment"], answerIndex: 0, explanation: "assignment" };
   },
@@ -105,9 +111,24 @@ engine._mode = "valid";
 const valid = engine.missionForPracticeModule("basics", 2, "ko", cards, resolver);
 check("VALID_LEARNED_TEMPLATE_RETAINED", valid.id === "valid_basic", valid.id);
 
-check("OVERLAY_EXPOSES_AUDIT_API", win.AppliedPracticeQualityV400 && win.AppliedPracticeQualityV400.version === "v400_applied_practice_r1", win.AppliedPracticeQualityV400 && win.AppliedPracticeQualityV400.version);
+engine.PRACTICE_TEMPLATES.push({ id: "family_func", moduleId: "functions", requires: [["@function"]] });
+engine._mode = "family";
+const callOnlyCards = [{ id: "X1", concepts: ["call"], primary_concept: "call", code: "helper()" }];
+win.localStorage.setItem("python-reading-trainer-progress-v1", JSON.stringify({ correct: { X1: 1 }, seen: { X1: 1 }, confused: {} }));
+const callOnlyMission = engine.missionForPracticeModule("functions", 1, "ko", callOnlyCards, resolver);
+check("FUNCTION_FAMILY_REQUIRES_FUNCTION_SPECIFIC_LEARNING", callOnlyMission.id === "practice_unavailable" && callOnlyMission.unavailable === true, callOnlyMission.id + ":" + callOnlyMission.kind);
+check("NO_SAFE_PROBLEM_MEANS_NO_FAKE_QUESTION", Array.isArray(callOnlyMission.choices) && callOnlyMission.choices.length === 0 && !/학습 개념은 무엇일까요/.test(callOnlyMission.question), callOnlyMission.question);
+const callOnlyModules = engine.unlockedPracticeModules(1, callOnlyCards, resolver);
+const callOnlyFunctionModule = callOnlyModules.find(row => row.id === "functions");
+check("CALL_ONLY_FUNCTION_MODULE_LOCKED", callOnlyFunctionModule && callOnlyFunctionModule.unlocked === false, JSON.stringify(callOnlyFunctionModule));
+const callOnlyCheckpoint = engine.missionForCheckpoint(1, "ko", callOnlyCards, resolver);
+check("UNSAFE_CHECKPOINT_BECOMES_UNAVAILABLE", callOnlyCheckpoint.id === "practice_unavailable" && callOnlyCheckpoint.unavailable === true, callOnlyCheckpoint.id + ":" + callOnlyCheckpoint.kind);
+
+check("OVERLAY_EXPOSES_AUDIT_API", win.AppliedPracticeQualityV400 && win.AppliedPracticeQualityV400.version === "v400_applied_practice_r2", win.AppliedPracticeQualityV400 && win.AppliedPracticeQualityV400.version);
 check("CALL_NOT_ALIASED_TO_FUNCTION", !/call\s*:\s*\[\s*["']function["']/.test(overlaySource), "generic call remains separate");
-check("RUNTIME_LOADER_PRESENT", loaderSource.includes("applied_practice_quality_v400.js?v=20260911_v400_applied_practice_r1"), "admin loader references overlay");
+check("FUNCTION_FAMILY_GUARD_PRESENT", overlaySource.includes('if (family === "function") return functionKnown(set);'), "@function cannot be satisfied by generic call");
+check("BAD_FALLBACK_NOT_RETURNED", !/return\s+original;\s*\n\s*};/.test(overlaySource), "bad fallback is replaced by unavailable state");
+check("RUNTIME_LOADER_PRESENT", loaderSource.includes("applied_practice_quality_v400.js?v=20260911_v400_applied_practice_r2"), "admin loader references hardened overlay");
 check("RUNTIME_LOADER_GLOBAL_NOT_LOCAL_ONLY", loaderSource.indexOf("applied_practice_quality_v400.js") > loaderSource.lastIndexOf("})();", loaderSource.indexOf("applied_practice_quality_v400.js") - 1), "overlay loader is outside local-admin IIFE");
 
 console.log("ERRORS=" + failures);
