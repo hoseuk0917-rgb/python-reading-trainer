@@ -83,6 +83,7 @@ def main():
     required_fields = ["id", "level", "title", "concepts", "reading_goal", "code", "question_type", "question", "choices", "answer", "explanation"]
     missing_required = []
     answer_not_in_choices = []
+    duplicate_choices = []
     empty_concepts = []
     bad_levels = []
     missing_side_refs = []
@@ -97,6 +98,16 @@ def main():
         if card.get("question_type") in ("meaning_choice", "order_choice"):
             if card.get("answer") not in card.get("choices", []):
                 answer_not_in_choices.append(cid)
+
+        choices = card.get("choices", [])
+        if isinstance(choices, list):
+            repeated = [
+                choice
+                for choice, count in Counter(str(choice) for choice in choices).items()
+                if count > 1
+            ]
+            if repeated:
+                duplicate_choices.append((cid, repeated))
 
         if not card.get("concepts"):
             empty_concepts.append(cid)
@@ -124,6 +135,7 @@ def main():
         "DUPLICATE SIDE IDS": duplicate_side_ids,
         "MISSING REQUIRED FIELDS": missing_required,
         "ANSWER NOT IN CHOICES": answer_not_in_choices,
+        "DUPLICATE CHOICES": duplicate_choices,
         "EMPTY CONCEPTS": empty_concepts,
         "BAD LEVELS": bad_levels,
         "MISSING SIDE CARD REFERENCES": missing_side_refs,
