@@ -21,6 +21,17 @@ def collect_side_cards(data):
     return cards
 
 
+def choice_issue_context(card, source, extra):
+    return {
+        "id": card.get("id"),
+        "source": source,
+        "question": card.get("question"),
+        "choices": card.get("choices", []),
+        "answer": card.get("answer"),
+        **extra,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description="Validate python-reading-trainer lesson and side card data.")
     parser.add_argument("--root", default=".", help="Project root directory")
@@ -96,6 +107,7 @@ def main():
 
     for card in lesson_cards:
         cid = card.get("id")
+        source = lesson_card_sources.get(cid)
 
         for field in required_fields:
             if field not in card:
@@ -113,7 +125,9 @@ def main():
                 if count > 1
             ]
             if repeated:
-                duplicate_choices.append((cid, lesson_card_sources.get(cid), repeated))
+                duplicate_choices.append(
+                    choice_issue_context(card, source, {"duplicates": repeated})
+                )
 
             blank_positions = [
                 index
@@ -121,7 +135,9 @@ def main():
                 if not str(choice).strip()
             ]
             if blank_positions:
-                empty_choices.append((cid, lesson_card_sources.get(cid), blank_positions))
+                empty_choices.append(
+                    choice_issue_context(card, source, {"blank_positions": blank_positions})
+                )
 
         if not card.get("concepts"):
             empty_concepts.append(cid)
