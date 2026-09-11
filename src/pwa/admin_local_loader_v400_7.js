@@ -47,8 +47,8 @@
   "use strict";
   if (document.querySelector('script[data-applied-practice-quality-v400]')) return;
   const script = document.createElement("script");
-  script.src = "./applied_practice_quality_v400.js?v=20260911_v400_applied_practice_r1";
+  script.src = "./applied_practice_quality_v400.js?v=20260911_v400_applied_practice_r2";
   script.async = false;
-  script.setAttribute("data-applied-practice-quality-v400", "v400_applied_practice_r1");
+  script.setAttribute("data-applied-practice-quality-v400", "v400_applied_practice_r2");
   document.head.appendChild(script);
 })();
