@@ -2,7 +2,7 @@
   "use strict";
   if (!root) return;
 
-  const VERSION = "v400_applied_practice_r1";
+  const VERSION = "v400_applied_practice_r2";
   const SESSION_KEY = "python-reading-trainer-contextual-practice-session-v351";
   const PROGRESS_KEY = "python-reading-trainer-progress-v1";
   const FUNCTION_SPECIFIC = new Set(["def", "function", "parameter", "argument", "return", "scope"]);
@@ -65,10 +65,13 @@
     if (source) concepts(source, resolver).forEach(function (x) { add(out, x); });
     return expand(out);
   }
+  function functionKnown(set) { return Array.from(FUNCTION_SPECIFIC).some(function (x) { return set.has(x); }); }
   function groupOk(group, set, engine) {
     return (group || []).some(function (token) {
       const key = norm(token); if (key[0] !== "@") return set.has(key);
-      const family = key.slice(1); return Array.from(set).some(function (x) { try { return engine.familyOf(x) === family; } catch (_) { return false; } });
+      const family = key.slice(1);
+      if (family === "function") return functionKnown(set);
+      return Array.from(set).some(function (x) { try { return engine.familyOf(x) === family; } catch (_) { return false; } });
     });
   }
   function requirementsOk(req, set, engine) { return (req || []).every(function (group) { return groupOk(group, set, engine); }); }
@@ -93,6 +96,24 @@
     const en = locale === "en", choices = (en ? v.cen : v.cko).slice();
     return { id:v.id, kind:v.kind, moduleId:v.moduleId, code:v.code, question:en?v.qen:v.qko, choices:choices, answerIndex:v.a, explanation:en?v.een:v.eko, quality:VERSION };
   }
+  function unavailableMission(locale, moduleId, boundary) {
+    const en = locale === "en";
+    return {
+      id: "practice_unavailable",
+      kind: "unavailable",
+      moduleId: moduleId || "",
+      code: "",
+      question: en
+        ? "There is not yet a reliable applied problem that uses only what you have learned. Continue learning and try again later."
+        : "현재까지 배운 내용만으로 안전하게 만들 수 있는 응용 문제가 아직 없습니다. 학습을 조금 더 진행한 뒤 다시 풀어보세요.",
+      choices: [],
+      answerIndex: -1,
+      explanation: "",
+      boundary: Number(boundary || 0),
+      unavailable: true,
+      quality: VERSION
+    };
+  }
   function bad(m) {
     if (!m || !Array.isArray(m.choices) || m.choices.length < 2) return true;
     if (m.id === "fallback_recent_concept" || m.kind === "concept_trace") return true;
@@ -104,13 +125,19 @@
     const t = (engine.PRACTICE_TEMPLATES || []).find(function (x) { return x.id === m.id; });
     return !t || requirementsOk(t.requires || [], learnedSet, engine);
   }
+  function moduleHasSafePractice(engine, moduleId, learnedSet) {
+    const custom = VARIANTS.some(function (v) { return v.moduleId === moduleId && requirementsOk(v.requires, learnedSet, engine); });
+    if (custom) return true;
+    return (engine.PRACTICE_TEMPLATES || []).some(function (t) {
+      return t.moduleId === moduleId && requirementsOk(t.requires || [], learnedSet, engine);
+    });
+  }
   function primary(card, resolver) {
     try { if (typeof resolver === "function") { const p = norm(resolver(card)); if (p && p !== "call") return p; } } catch (_) {}
     const set = concepts(card, resolver), order = ["input","print","assignment","type","comment","if","for","while","list","dict","def","function","return"];
     for (let i=0;i<order.length;i+=1) if (set.has(order[i])) return order[i];
     return norm(card && card.primary_concept);
   }
-  function functionKnown(set) { return Array.from(FUNCTION_SPECIFIC).some(function (x) { return set.has(x); }); }
 
   function install(win) {
     const engine = win.LearningEngineV341;
@@ -129,9 +156,9 @@
       }
       const original = basePractice(moduleId, count, locale, rows, resolver);
       if (safeOriginal(engine, original, known)) return original;
-      let v = pick(known, new Set(), moduleId, "", "learned", engine) || pick(known, new Set(), "", "", "learned", engine);
+      const v = pick(known, new Set(), moduleId, "", "learned", engine) || pick(known, new Set(), "", "", "learned", engine);
       if (v) { const m = mission(v, locale); m.checkpoint=0; m.boundary=Number(count||0); m.moduleId=moduleId; m.sourceMode="learned_combination"; return m; }
-      return original;
+      return unavailableMission(locale, moduleId, count);
     };
 
     engine.missionForCheckpoint = function (n, locale, cardsValue, resolver) {
@@ -139,16 +166,25 @@
       const known = learned(win, rows, boundary, resolver, null), original = baseCheckpoint(n, locale, rows, resolver);
       if (safeOriginal(engine, original, known)) return original;
       const v = pick(known, new Set(), "", "", "checkpoint", engine);
-      if (!v) return original;
+      if (!v) return unavailableMission(locale, "checkpoint", boundary);
       const m = mission(v, locale); m.checkpoint=Number(n||1); m.boundary=boundary; m.sourceMode="learned_combination"; return m;
     };
 
     if (baseUnlocked) engine.unlockedPracticeModules = function (count, cardsValue, resolver) {
-      const rows = baseUnlocked(count, cardsValue, resolver), known = learned(win, cardsValue||[], count, resolver, null);
-      if (functionKnown(known)) return rows;
-      let first = -1;
-      for (let i=0;i<(cardsValue||[]).length;i+=1) if (functionKnown(concepts(cardsValue[i], resolver))) { first=i; break; }
-      return rows.map(function (mod) { if (!mod || mod.id !== "functions") return mod; const at=first>=0?first+1:null; return Object.assign({}, mod, {unlockAt:at, unlocked:false, remaining:at==null?null:Math.max(0,at-Number(count||0))}); });
+      const baseRows = baseUnlocked(count, cardsValue, resolver), known = learned(win, cardsValue||[], count, resolver, null);
+      return baseRows.map(function (mod) {
+        if (!mod || !mod.unlocked) return mod;
+        if (mod.id === "functions" && !functionKnown(known)) {
+          let first = -1;
+          for (let i=0;i<(cardsValue||[]).length;i+=1) if (functionKnown(concepts(cardsValue[i], resolver))) { first=i; break; }
+          const at=first>=0?first+1:null;
+          return Object.assign({}, mod, {unlockAt:at, unlocked:false, remaining:at==null?null:Math.max(0,at-Number(count||0))});
+        }
+        if (!moduleHasSafePractice(engine, mod.id, known)) {
+          return Object.assign({}, mod, {unlocked:false, remaining:null});
+        }
+        return mod;
+      });
     };
 
     engine.__appliedPracticeQualityV400 = VERSION;
