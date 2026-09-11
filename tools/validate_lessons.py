@@ -42,6 +42,7 @@ def main():
     side_files = re.findall(r'"(\.\./\.\./data/side_cards/[^"]+\.json)"', app)
 
     lesson_cards = []
+    lesson_card_sources = {}
     side_cards = []
     missing_files = []
     json_errors = []
@@ -60,6 +61,10 @@ def main():
             json_errors.append((rel, "top-level JSON is not a list"))
             continue
         lesson_cards.extend(data)
+        for card in data:
+            cid = card.get("id")
+            if cid:
+                lesson_card_sources[cid] = rel
 
     for rel in side_files:
         path = (app_path.parent / rel).resolve()
@@ -107,7 +112,7 @@ def main():
                 if count > 1
             ]
             if repeated:
-                duplicate_choices.append((cid, repeated))
+                duplicate_choices.append((cid, lesson_card_sources.get(cid), repeated))
 
         if not card.get("concepts"):
             empty_concepts.append(cid)
