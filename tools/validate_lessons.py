@@ -89,6 +89,7 @@ def main():
     missing_required = []
     answer_not_in_choices = []
     duplicate_choices = []
+    empty_choices = []
     empty_concepts = []
     bad_levels = []
     missing_side_refs = []
@@ -113,6 +114,14 @@ def main():
             ]
             if repeated:
                 duplicate_choices.append((cid, lesson_card_sources.get(cid), repeated))
+
+            blank_positions = [
+                index
+                for index, choice in enumerate(choices)
+                if not str(choice).strip()
+            ]
+            if blank_positions:
+                empty_choices.append((cid, lesson_card_sources.get(cid), blank_positions))
 
         if not card.get("concepts"):
             empty_concepts.append(cid)
@@ -141,6 +150,7 @@ def main():
         "MISSING REQUIRED FIELDS": missing_required,
         "ANSWER NOT IN CHOICES": answer_not_in_choices,
         "DUPLICATE CHOICES": duplicate_choices,
+        "EMPTY CHOICES": empty_choices,
         "EMPTY CONCEPTS": empty_concepts,
         "BAD LEVELS": bad_levels,
         "MISSING SIDE CARD REFERENCES": missing_side_refs,
