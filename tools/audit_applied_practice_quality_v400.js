@@ -6,9 +6,15 @@ const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
 const overlayPath = path.join(ROOT, "src", "pwa", "applied_practice_quality_v400.js");
+const contextualPath = path.join(ROOT, "src", "pwa", "contextual_practice_v351.js");
 const loaderPath = path.join(ROOT, "src", "pwa", "admin_local_loader_v400_7.js");
+const pwaIndexPath = path.join(ROOT, "src", "pwa", "index.html");
+const rootIndexPath = path.join(ROOT, "index.html");
 const overlaySource = fs.readFileSync(overlayPath, "utf8");
+const contextualSource = fs.readFileSync(contextualPath, "utf8");
 const loaderSource = fs.readFileSync(loaderPath, "utf8");
+const pwaIndexSource = fs.readFileSync(pwaIndexPath, "utf8");
+const rootIndexSource = fs.readFileSync(rootIndexPath, "utf8");
 let failures = 0;
 function check(name, ok, detail) {
   const pass = Boolean(ok);
@@ -29,9 +35,10 @@ const cards = [
   { id: "P1", concepts: ["print"], primary_concept: "print", code: 'print("hello")' },
   { id: "I1", concepts: ["call", "assignment"], primary_concept: "call", code: 'age = input("Age: ")\nprint(age)' }
 ];
-const current = cards[1];
+const current = cards[0];
+const source = cards[1];
 const progress = { correct: { P1: 1, I1: 1 }, seen: { P1: 1, I1: 1 }, confused: {} };
-const sessionValue = { moduleId: "basics", reason: "milestone", returnIndex: 2, completed: false };
+const sessionValue = { moduleId: "basics", reason: "milestone", sourceCardId: "I1", returnIndex: 2, completed: false };
 
 const engine = {
   CHECKPOINT_INTERVAL: 30,
@@ -50,10 +57,10 @@ const engine = {
     if (this._mode === "family") {
       return { id: "family_func", kind: "call_trace", code: "helper()", question: "무엇이 실행될까요?", choices: ["helper", "none"], answerIndex: 0, explanation: "helper" };
     }
-    return { id: "fallback_recent_concept", kind: "concept_trace", code: current.code, question: "이 코드를 읽을 때 먼저 추적할 학습 개념은 무엇일까요?", choices: ["assignment", "call", "comment"], answerIndex: 0, explanation: "assignment" };
+    return { id: "fallback_recent_concept", kind: "concept_trace", code: source.code, question: "이 코드를 읽을 때 먼저 추적할 학습 개념은 무엇일까요?", choices: ["assignment", "call", "comment"], answerIndex: 0, explanation: "assignment" };
   },
   missionForCheckpoint() {
-    return { id: "fallback_recent_concept", kind: "concept_trace", code: current.code, question: "이 코드를 읽을 때 먼저 추적할 학습 개념은 무엇일까요?", choices: ["assignment", "call", "comment"], answerIndex: 0, explanation: "assignment" };
+    return { id: "fallback_recent_concept", kind: "concept_trace", code: source.code, question: "이 코드를 읽을 때 먼저 추적할 학습 개념은 무엇일까요?", choices: ["assignment", "call", "comment"], answerIndex: 0, explanation: "assignment" };
   },
   unlockedPracticeModules() {
     return [
@@ -94,7 +101,7 @@ vm.runInContext(overlaySource, context, { filename: "applied_practice_quality_v4
 const resolver = card => card.primary_concept || (card.concepts && card.concepts[0]) || "";
 const mission = engine.missionForPracticeModule("basics", 2, "ko", cards, resolver);
 check("CURRENT_INPUT_IS_APPLIED_PROBLEM", mission.id !== "fallback_recent_concept" && mission.kind !== "concept_trace", mission.id + ":" + mission.kind);
-check("CURRENT_INPUT_RELATED", /input\s*\(/.test(mission.code) && mission.sourceCardId === "I1", mission.id + ":" + mission.sourceCardId);
+check("SESSION_SOURCE_SURVIVES_CURRENT_CARD_DRIFT", /input\s*\(/.test(mission.code) && mission.sourceCardId === "I1" && current.id !== mission.sourceCardId, mission.id + ":current=" + current.id + ":source=" + mission.sourceCardId);
 check("ANSWER_DERIVED_FROM_CODE", mission.choices[mission.answerIndex] === "Mina", JSON.stringify(mission.choices));
 check("NO_CONCEPT_GUESS_PROMPT", !/학습 개념은 무엇일까요/.test(mission.question), mission.question);
 check("SOURCE_MODE_RECORDED", mission.sourceMode === "current_or_learned_combination", String(mission.sourceMode));
@@ -124,12 +131,18 @@ check("CALL_ONLY_FUNCTION_MODULE_LOCKED", callOnlyFunctionModule && callOnlyFunc
 const callOnlyCheckpoint = engine.missionForCheckpoint(1, "ko", callOnlyCards, resolver);
 check("UNSAFE_CHECKPOINT_BECOMES_UNAVAILABLE", callOnlyCheckpoint.id === "practice_unavailable" && callOnlyCheckpoint.unavailable === true, callOnlyCheckpoint.id + ":" + callOnlyCheckpoint.kind);
 
-check("OVERLAY_EXPOSES_AUDIT_API", win.AppliedPracticeQualityV400 && win.AppliedPracticeQualityV400.version === "v400_applied_practice_r2", win.AppliedPracticeQualityV400 && win.AppliedPracticeQualityV400.version);
+check("OVERLAY_EXPOSES_AUDIT_API", win.AppliedPracticeQualityV400 && win.AppliedPracticeQualityV400.version === "v400_applied_practice_r3", win.AppliedPracticeQualityV400 && win.AppliedPracticeQualityV400.version);
 check("CALL_NOT_ALIASED_TO_FUNCTION", !/call\s*:\s*\[\s*["']function["']/.test(overlaySource), "generic call remains separate");
 check("FUNCTION_FAMILY_GUARD_PRESENT", overlaySource.includes('if (family === "function") return functionKnown(set);'), "@function cannot be satisfied by generic call");
 check("BAD_FALLBACK_NOT_RETURNED", !/return\s+original;\s*\n\s*};/.test(overlaySource), "bad fallback is replaced by unavailable state");
-check("RUNTIME_LOADER_PRESENT", loaderSource.includes("applied_practice_quality_v400.js?v=20260911_v400_applied_practice_r2"), "admin loader references hardened overlay");
+check("SESSION_SOURCE_LOOKUP_PRESENT", overlaySource.includes("session.sourceCardId") && overlaySource.includes("sourceCard(win, rows, session)"), "overlay resolves the captured source card before current-card fallback");
+check("CONTEXT_SESSION_CAPTURES_SOURCE_CARD", contextualSource.includes('sourceCardId: String(sourceCardId || "")'), "contextual practice stores the source card id");
+check("CONTEXT_START_PASSES_SOURCE_CARD", contextualSource.includes("startContextPractice(module.id, reason, nextReturnIndex(), sourceCard && sourceCard.id)"), "suggestion click passes the source card id");
+check("RUNTIME_LOADER_PRESENT", loaderSource.includes("applied_practice_quality_v400.js?v=20260914_v400_applied_practice_r3"), "admin loader references source-bound overlay");
 check("RUNTIME_LOADER_GLOBAL_NOT_LOCAL_ONLY", loaderSource.indexOf("applied_practice_quality_v400.js") > loaderSource.lastIndexOf("})();", loaderSource.indexOf("applied_practice_quality_v400.js") - 1), "overlay loader is outside local-admin IIFE");
+check("PWA_CONTEXT_CACHE_BUST", pwaIndexSource.includes("contextual_practice_v351.js?v=20260914_v351_a2"), "pwa index requests the source-binding contextual script");
+check("PWA_LOADER_CACHE_BUST", pwaIndexSource.includes("admin_local_loader_v400_7.js?v=20260914_v400_7_applied_r3"), "pwa index requests the updated applied-practice loader");
+check("ROOT_RELEASE_CACHE_BUST", rootIndexSource.includes('RELEASE = "20260914_v400_7_applied_r3"'), "root redirect forces a fresh pwa index URL");
 
 console.log("ERRORS=" + failures);
 console.log("RESULT=" + (failures ? "FAIL_APPLIED_PRACTICE_QUALITY_V400" : "PASS_APPLIED_PRACTICE_QUALITY_V400"));

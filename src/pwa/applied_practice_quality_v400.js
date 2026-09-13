@@ -2,7 +2,7 @@
   "use strict";
   if (!root) return;
 
-  const VERSION = "v400_applied_practice_r2";
+  const VERSION = "v400_applied_practice_r3";
   const SESSION_KEY = "python-reading-trainer-contextual-practice-session-v351";
   const PROGRESS_KEY = "python-reading-trainer-progress-v1";
   const FUNCTION_SPECIFIC = new Set(["def", "function", "parameter", "argument", "return", "scope"]);
@@ -51,7 +51,14 @@
     return expand(out);
   }
   function read(storage, key) { try { const raw = storage && storage.getItem(key); return raw ? JSON.parse(raw) : null; } catch (_) { return null; } }
-  function sourceCard(win, rows) {
+  function sourceCard(win, rows, session) {
+    const sourceId = session ? String(session.sourceCardId || "") : "";
+    if (sourceId) {
+      for (let i = 0; i < rows.length; i += 1) {
+        if (rows[i] && String(rows[i].id || "") === sourceId) return rows[i];
+      }
+      return null;
+    }
     try { if (typeof win.getCurrentCard === "function") { const card = win.getCurrentCard(); if (card) return card; } } catch (_) {}
     try { if (typeof currentIndex !== "undefined" && rows[currentIndex]) return rows[currentIndex]; } catch (_) {}
     return null;
@@ -149,7 +156,7 @@
 
     engine.missionForPracticeModule = function (moduleId, count, locale, cardsValue, resolver) {
       const rows = Array.isArray(cardsValue) ? cardsValue : [], session = read(win.sessionStorage, SESSION_KEY);
-      const src = session ? sourceCard(win, rows) : null, known = learned(win, rows, count, resolver, src), srcSet = concepts(src, resolver), p = primary(src, resolver);
+      const src = session ? sourceCard(win, rows, session) : null, known = learned(win, rows, count, resolver, src), srcSet = concepts(src, resolver), p = primary(src, resolver);
       if (src) {
         const v = pick(known, srcSet, moduleId, p, session && session.reason, engine);
         if (v) { const m = mission(v, locale); m.checkpoint=0; m.boundary=Number(count||0); m.moduleId=moduleId; m.sourceCardId=String(src.id||""); m.sourceMode="current_or_learned_combination"; return m; }

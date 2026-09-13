@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "V400.7_ADMIN_LOCAL_LOADER1";
+  const VERSION = "V400.7_ADMIN_LOCAL_LOADER2";
 
   function isLocalHost() {
     const host = String(window.location.hostname || "").toLowerCase();
@@ -47,8 +47,8 @@
   "use strict";
   if (document.querySelector('script[data-applied-practice-quality-v400]')) return;
   const script = document.createElement("script");
-  script.src = "./applied_practice_quality_v400.js?v=20260911_v400_applied_practice_r2";
+  script.src = "./applied_practice_quality_v400.js?v=20260914_v400_applied_practice_r3";
   script.async = false;
-  script.setAttribute("data-applied-practice-quality-v400", "v400_applied_practice_r2");
+  script.setAttribute("data-applied-practice-quality-v400", "v400_applied_practice_r3");
   document.head.appendChild(script);
 })();

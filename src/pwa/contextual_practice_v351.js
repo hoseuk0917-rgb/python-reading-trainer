@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "v351_a1";
+  const VERSION = "v351_a2";
   const STATE_KEY = "python-reading-trainer-contextual-practice-v351";
   const SESSION_KEY = "python-reading-trainer-contextual-practice-session-v351";
   const EXPERIENCE_KEY = "python-reading-trainer-learning-experience-v341";
@@ -164,7 +164,8 @@
 
   function showSuggestion(card, reason, options) {
     const count = attemptedCount();
-    const module = recommendedModule(card || currentCardSafe(), count);
+    const sourceCard = card || currentCardSafe();
+    const module = recommendedModule(sourceCard, count);
     if (!module) return false;
     const result = document.getElementById("resultBox");
     if (!result || result.classList.contains("hidden")) return false;
@@ -197,7 +198,7 @@
     start.className = "context-practice-start-v351";
     start.textContent = t("응용 문제 풀기", "Try an applied problem");
     start.addEventListener("click", function () {
-      startContextPractice(module.id, reason, nextReturnIndex());
+      startContextPractice(module.id, reason, nextReturnIndex(), sourceCard && sourceCard.id);
     });
     const later = document.createElement("button");
     later.type = "button";
@@ -265,10 +266,11 @@
     if (close) close.click();
   }
 
-  function startContextPractice(moduleId, reason, returnIndex) {
+  function startContextPractice(moduleId, reason, returnIndex, sourceCardId) {
     const value = {
       moduleId: String(moduleId || ""),
       reason: String(reason || "context"),
+      sourceCardId: String(sourceCardId || ""),
       returnIndex: Math.max(0, Number(returnIndex || 0)),
       completed: false,
       startedAt: Date.now()
@@ -394,7 +396,8 @@
     const result = modal && modal.querySelector(".mission-v341-result");
     if (!result || document.getElementById("contextCheckpointActionsV351")) return false;
     const count = attemptedCount();
-    const module = recommendedModule(currentCardSafe(), count);
+    const sourceCard = currentCardSafe();
+    const module = recommendedModule(sourceCard, count);
     if (!module) return false;
 
     const box = document.createElement("div");
@@ -406,7 +409,7 @@
     const apply = document.createElement("button");
     apply.type = "button";
     apply.textContent = t("배운 내용 적용해보기", "Apply what I learned");
-    apply.addEventListener("click", function () { startContextPractice(module.id, "checkpoint", Math.min(cardRows().length - 1, count)); });
+    apply.addEventListener("click", function () { startContextPractice(module.id, "checkpoint", Math.min(cardRows().length - 1, count), sourceCard && sourceCard.id); });
     const next = document.createElement("button");
     next.type = "button";
     next.className = "secondary";
