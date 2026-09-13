@@ -142,7 +142,7 @@ check("RUNTIME_LOADER_PRESENT", loaderSource.includes("applied_practice_quality_
 check("RUNTIME_LOADER_GLOBAL_NOT_LOCAL_ONLY", loaderSource.indexOf("applied_practice_quality_v400.js") > loaderSource.lastIndexOf("})();", loaderSource.indexOf("applied_practice_quality_v400.js") - 1), "overlay loader is outside local-admin IIFE");
 check("PWA_CONTEXT_CACHE_BUST", pwaIndexSource.includes("contextual_practice_v351.js?v=20260914_v351_a2"), "pwa index requests the source-binding contextual script");
 check("PWA_LOADER_CACHE_BUST", pwaIndexSource.includes("admin_local_loader_v400_7.js?v=20260914_v400_7_applied_r3"), "pwa index requests the updated applied-practice loader");
-check("ROOT_RELEASE_CACHE_BUST", rootIndexSource.includes('RELEASE = "20260914_v400_7_applied_r3"'), "root redirect forces a fresh pwa index URL");
+check("ROOT_RELEASE_CONTRACT_PRESERVED", rootIndexSource.includes('RELEASE = "20260821_v400_7_hardening1"'), "root redirect keeps the V400.7 release contract while child script URLs are cache-busted");
 
 console.log("ERRORS=" + failures);
 console.log("RESULT=" + (failures ? "FAIL_APPLIED_PRACTICE_QUALITY_V400" : "PASS_APPLIED_PRACTICE_QUALITY_V400"));
