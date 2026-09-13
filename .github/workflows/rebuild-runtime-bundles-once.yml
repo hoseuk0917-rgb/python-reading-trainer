@@ -1,0 +1,43 @@
+name: One-time runtime bundle rebuild
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/rebuild-runtime-bundles-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Rebuild canonical runtime bundles
+        run: python tools/build_runtime_lesson_bundle_v400_5.py
+
+      - name: Validate generated diff
+        shell: bash
+        run: |
+          git diff --check
+          git diff --exit-code --quiet -- data/runtime/support_bundle_v400_5.json data_i18n/en/runtime/support_bundle_v400_5.json data_i18n/en/runtime/lesson_bundle_v400_5.json || true
+          changed="$(git diff --name-only -- data/runtime/lesson_bundle_v400_5.json data_i18n/en/runtime/lesson_bundle_v400_5.json data/runtime/support_bundle_v400_5.json data_i18n/en/runtime/support_bundle_v400_5.json)"
+          test -n "$changed"
+          echo "$changed"
+
+      - name: Commit regenerated bundles
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/runtime/lesson_bundle_v400_5.json data_i18n/en/runtime/lesson_bundle_v400_5.json data/runtime/support_bundle_v400_5.json data_i18n/en/runtime/support_bundle_v400_5.json
+          git commit -m "Rebuild V400 runtime lesson bundles"
+          git push origin HEAD:main
