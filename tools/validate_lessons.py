@@ -2,6 +2,7 @@
 import argparse
 import json
 import re
+import unicodedata
 from collections import Counter
 from pathlib import Path
 
@@ -19,6 +20,12 @@ def collect_side_cards(data):
             if isinstance(value, list):
                 cards.extend(value)
     return cards
+
+
+def display_choice_key(value):
+    text = unicodedata.normalize("NFKC", str(value))
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Cf")
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def choice_issue_context(card, source, extra):
@@ -99,7 +106,10 @@ def main():
     required_fields = ["id", "level", "title", "concepts", "reading_goal", "code", "question_type", "question", "choices", "answer", "explanation"]
     missing_required = []
     answer_not_in_choices = []
+    choices_not_list = []
+    too_few_choices = []
     duplicate_choices = []
+    display_duplicate_choices = []
     empty_choices = []
     empty_concepts = []
     bad_levels = []
@@ -118,7 +128,12 @@ def main():
                 answer_not_in_choices.append(cid)
 
         choices = card.get("choices", [])
-        if isinstance(choices, list):
+        if not isinstance(choices, list):
+            choices_not_list.append(choice_issue_context(card, source, {"choice_type": type(choices).__name__}))
+        else:
+            if len(choices) < 2:
+                too_few_choices.append(choice_issue_context(card, source, {"choice_count": len(choices)}))
+
             repeated = [
                 choice
                 for choice, count in Counter(str(choice) for choice in choices).items()
@@ -129,10 +144,21 @@ def main():
                     choice_issue_context(card, source, {"duplicates": repeated})
                 )
 
+            display_keys = [display_choice_key(choice) for choice in choices]
+            repeated_display = [
+                key
+                for key, count in Counter(display_keys).items()
+                if key and count > 1
+            ]
+            if repeated_display:
+                display_duplicate_choices.append(
+                    choice_issue_context(card, source, {"display_duplicates": repeated_display})
+                )
+
             blank_positions = [
                 index
                 for index, choice in enumerate(choices)
-                if not str(choice).strip()
+                if not display_choice_key(choice)
             ]
             if blank_positions:
                 empty_choices.append(
@@ -165,7 +191,10 @@ def main():
         "DUPLICATE SIDE IDS": duplicate_side_ids,
         "MISSING REQUIRED FIELDS": missing_required,
         "ANSWER NOT IN CHOICES": answer_not_in_choices,
+        "CHOICES NOT LIST": choices_not_list,
+        "TOO FEW CHOICES": too_few_choices,
         "DUPLICATE CHOICES": duplicate_choices,
+        "DISPLAY DUPLICATE CHOICES": display_duplicate_choices,
         "EMPTY CHOICES": empty_choices,
         "EMPTY CONCEPTS": empty_concepts,
         "BAD LEVELS": bad_levels,

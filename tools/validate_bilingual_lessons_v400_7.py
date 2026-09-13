@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 from collections import Counter
 from pathlib import Path
 
@@ -54,6 +55,12 @@ def collect_side_cards(payload) -> list[dict]:
             if isinstance(value, list):
                 rows.extend(row for row in value if isinstance(row, dict))
     return rows
+
+
+def display_choice_key(value) -> str:
+    text = unicodedata.normalize("NFKC", str(value))
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Cf")
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def validate_language(language: str, source_root: Path, lesson_paths: list[str], side_paths: list[str]):
@@ -111,10 +118,27 @@ def validate_language(language: str, source_root: Path, lesson_paths: list[str],
             failures.append(f"{language}:bad_level:{cid}:{level}")
 
         choices = card.get("choices")
-        if not isinstance(choices, list) or not choices:
-            failures.append(f"{language}:bad_choices:{cid}")
-        elif card.get("question_type") in {"meaning_choice", "order_choice"} and card.get("answer") not in choices:
-            failures.append(f"{language}:answer_not_in_choices:{cid}")
+        if not isinstance(choices, list):
+            failures.append(f"{language}:choices_not_list:{cid}:{type(choices).__name__}")
+        elif len(choices) < 2:
+            failures.append(f"{language}:too_few_choices:{cid}:{len(choices)}")
+        else:
+            raw_keys = [str(choice) for choice in choices]
+            raw_duplicates = [key for key, count in Counter(raw_keys).items() if count > 1]
+            if raw_duplicates:
+                failures.append(f"{language}:duplicate_choices:{cid}:{raw_duplicates[:10]}")
+
+            display_keys = [display_choice_key(choice) for choice in choices]
+            blank_positions = [index for index, key in enumerate(display_keys) if not key]
+            if blank_positions:
+                failures.append(f"{language}:empty_choices:{cid}:{blank_positions}")
+
+            display_duplicates = [key for key, count in Counter(display_keys).items() if key and count > 1]
+            if display_duplicates:
+                failures.append(f"{language}:display_duplicate_choices:{cid}:{display_duplicates[:10]}")
+
+            if card.get("question_type") in {"meaning_choice", "order_choice"} and card.get("answer") not in choices:
+                failures.append(f"{language}:answer_not_in_choices:{cid}")
 
         for sid in card.get("side_card_ids", []) or []:
             if sid not in known_ids:
