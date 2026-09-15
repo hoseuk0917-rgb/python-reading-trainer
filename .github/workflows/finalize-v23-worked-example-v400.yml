@@ -1,0 +1,79 @@
+name: Finalize V2.3 Worked Example V400
+
+on:
+  push:
+    branches:
+      - audit/same-grammar-example-v400
+    paths:
+      - 'tools/finalize_v23_worked_example_v400.py'
+      - '.github/workflows/finalize-v23-worked-example-v400.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Apply guarded finalization
+        run: python tools/finalize_v23_worked_example_v400.py
+
+      - name: Syntax checks
+        run: |
+          python -m py_compile tools/finalize_v23_worked_example_v400.py
+          node --check src/pwa/worked_example_quality_v355_r2.js
+          node --check tools/audit_effective_same_syntax_v400.js
+          node --check tools/audit_v23_worked_example_boundary_v400.js
+
+      - name: V2.3 boundary regression audits
+        run: |
+          node tools/audit_v23_worked_example_boundary_v400.js | tee /tmp/v23-boundary.txt
+          grep -q '^KO_V23_RUNTIME_SUPPRESSED_COUNT=1785$' /tmp/v23-boundary.txt
+          grep -q '^EN_V23_RUNTIME_SUPPRESSED_COUNT=1785$' /tmp/v23-boundary.txt
+          grep -q '^RESULT=PASS_V23_WORKED_EXAMPLE_BOUNDARY$' /tmp/v23-boundary.txt
+          node tools/audit_effective_same_syntax_v400.js | tee /tmp/effective.txt
+          grep -q '^KO_EFFECTIVE_PANEL_MISMATCH_COUNT=0$' /tmp/effective.txt
+          grep -q '^EN_EFFECTIVE_PANEL_MISMATCH_COUNT=0$' /tmp/effective.txt
+          grep -q '^LEGACY_PANEL_INVARIANT_PASS=True$' /tmp/effective.txt
+
+      - name: Existing permanent validators
+        run: |
+          python tools/validate_lessons.py
+          python tools/validate_bilingual_lessons_v400_7.py
+
+      - name: Cache-bust wiring guard
+        run: |
+          grep -q 'worked_example_quality_v355_r2.js?v=20260915_v355_r3_v23_boundary1' src/pwa/index.html
+
+      - name: Diff integrity and scope guard
+        run: |
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          printf 'CHANGED=%s\n' "${changed[*]}"
+          expected=(
+            'src/pwa/index.html'
+            'tools/audit_effective_same_syntax_v400.js'
+          )
+          if [ "${changed[*]}" != "${expected[*]}" ]; then
+            echo 'DIFF_SCOPE_FAIL=True'
+            exit 1
+          fi
+          echo 'DIFF_SCOPE_PASS=True'
+
+      - name: Commit finalization on audit branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/pwa/index.html tools/audit_effective_same_syntax_v400.js
+          git commit -m 'Finalize V2.3 worked-example boundary guards'
+          git push origin HEAD:audit/same-grammar-example-v400
