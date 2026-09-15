@@ -247,6 +247,15 @@ function main() {
   console.log(`EN_EFFECTIVE_PANEL_MISMATCH_COUNT=${en.stats.exactSyntaxMismatch}`);
   console.log(`KO_TEACHING_FOCUS_MISMATCH_COUNT=${ko.stats.teachingFocusMismatch}`);
   console.log(`EN_TEACHING_FOCUS_MISMATCH_COUNT=${en.stats.teachingFocusMismatch}`);
+  const legacyMismatchTotal = ko.stats.exactSyntaxMismatch + en.stats.exactSyntaxMismatch;
+  if (legacyMismatchTotal !== 0) {
+    console.log(`LEGACY_PANEL_MISMATCH_TOTAL=${legacyMismatchTotal}`);
+    console.log("LEGACY_PANEL_INVARIANT_PASS=False");
+    process.exitCode = 1;
+    return;
+  }
+  console.log("LEGACY_PANEL_MISMATCH_TOTAL=0");
+  console.log("LEGACY_PANEL_INVARIANT_PASS=True");
   console.log("RESULT=AUDIT_COMPLETE");
 }
 
