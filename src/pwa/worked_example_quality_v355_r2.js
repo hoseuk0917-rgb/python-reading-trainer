@@ -46,6 +46,16 @@
     return box;
   }
 
+  function isV23RichCard(card) {
+    return Boolean(
+      card &&
+      card.authoring_version === "V2.3" &&
+      card.concept_explanation &&
+      card.teaching_example &&
+      card.answer_explanation
+    );
+  }
+
   function currentContext() {
     try {
       if (typeof cards === "undefined" || !Array.isArray(cards)) return null;
@@ -210,6 +220,10 @@
       return false;
     }
     const ctx = currentContext();
+    if (ctx && isV23RichCard(ctx.card)) {
+      hideOwnedBox();
+      return false;
+    }
     const selected = selectCurrentExample(ctx);
     if (!ctx || !selected) {
       hideOwnedBox();
@@ -237,6 +251,7 @@
     if (!api || !engine) return { total: cardsValue.length, details: details };
 
     cardsValue.forEach(function (card, index) {
+      if (isV23RichCard(card)) return;
       const ctx = { cardsValue: cardsValue, index: index, card: card, conceptInfoValue: conceptInfoValue };
       const primary = primaryConcept(ctx);
       const variants = candidateVariants(api, primary);
@@ -263,10 +278,11 @@
     let conceptInfoValue = {};
     try { if (typeof cards !== "undefined" && Array.isArray(cards)) cardsValue = cards; } catch (_) {}
     try { if (typeof conceptInfo !== "undefined" && conceptInfo) conceptInfoValue = conceptInfo; } catch (_) {}
-    const stats = { total: cardsValue.length, candidates: 0, shown: 0, missing: [], duplicate: [] };
+    const stats = { total: cardsValue.length, v23Suppressed: 0, candidates: 0, shown: 0, missing: [], duplicate: [] };
     if (!api || !engine) return stats;
 
     cardsValue.forEach(function(card, index) {
+      if (isV23RichCard(card)) { stats.v23Suppressed += 1; return; }
       const ctx = { cardsValue: cardsValue, index: index, card: card, conceptInfoValue: conceptInfoValue };
       const primary = primaryConcept(ctx);
       const variants = candidateVariants(api, primary);

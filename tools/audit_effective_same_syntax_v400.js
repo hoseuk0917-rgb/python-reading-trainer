@@ -64,6 +64,16 @@ function focusText(card) {
   return String(card.focus_span || card.target_statement || "").trim();
 }
 
+function isV23RichCard(card) {
+  return Boolean(
+    card &&
+    card.authoring_version === "V2.3" &&
+    card.concept_explanation &&
+    card.teaching_example &&
+    card.answer_explanation
+  );
+}
+
 function syntaxSignals(card) {
   const text = focusText(card);
   const signals = [];
@@ -127,6 +137,7 @@ function auditLanguage(language, cards, conceptInfo) {
   const stats = {
     language,
     cards: cards.length,
+    v23LegacyPanelSuppressed: 0,
     hasPanelCandidate: 0,
     selected: 0,
     assessable: 0,
@@ -161,6 +172,11 @@ function auditLanguage(language, cards, conceptInfo) {
           example: teaching.code.replace(/\n/g, "\\n")
         });
       } else stats.teachingFocusPass += 1;
+    }
+
+    if (isV23RichCard(card)) {
+      stats.v23LegacyPanelSuppressed += 1;
+      return;
     }
 
     const primary = pickPrimary(card || {}, conceptInfo);
@@ -225,6 +241,8 @@ function main() {
   console.log(`KO_CARD_COUNT=${ko.stats.cards}`);
   console.log(`EN_CARD_COUNT=${en.stats.cards}`);
   console.log(`TOTAL_CARD_VARIANTS=${ko.stats.cards + en.stats.cards}`);
+  console.log(`KO_V23_LEGACY_PANEL_SUPPRESSED_COUNT=${ko.stats.v23LegacyPanelSuppressed}`);
+  console.log(`EN_V23_LEGACY_PANEL_SUPPRESSED_COUNT=${en.stats.v23LegacyPanelSuppressed}`);
   console.log(`KO_EFFECTIVE_PANEL_MISMATCH_COUNT=${ko.stats.exactSyntaxMismatch}`);
   console.log(`EN_EFFECTIVE_PANEL_MISMATCH_COUNT=${en.stats.exactSyntaxMismatch}`);
   console.log(`KO_TEACHING_FOCUS_MISMATCH_COUNT=${ko.stats.teachingFocusMismatch}`);
