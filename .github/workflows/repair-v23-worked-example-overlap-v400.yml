@@ -1,0 +1,73 @@
+name: Repair V2.3 Worked Example Overlap V400
+
+on:
+  push:
+    branches:
+      - audit/same-grammar-example-v400
+    paths:
+      - 'tools/repair_v23_worked_example_overlap_v400.py'
+      - '.github/workflows/repair-v23-worked-example-overlap-v400.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Apply guarded boundary repair
+        run: python tools/repair_v23_worked_example_overlap_v400.py
+
+      - name: Syntax check repair tool
+        run: python -m py_compile tools/repair_v23_worked_example_overlap_v400.py
+
+      - name: Verify effective runtime audit
+        run: |
+          node tools/audit_effective_same_syntax_v400.js | tee /tmp/effective_audit.txt
+          grep -q '^KO_V23_LEGACY_PANEL_SUPPRESSED_COUNT=1785$' /tmp/effective_audit.txt
+          grep -q '^EN_V23_LEGACY_PANEL_SUPPRESSED_COUNT=1785$' /tmp/effective_audit.txt
+          grep -q '^KO_EFFECTIVE_PANEL_MISMATCH_COUNT=0$' /tmp/effective_audit.txt
+          grep -q '^EN_EFFECTIVE_PANEL_MISMATCH_COUNT=0$' /tmp/effective_audit.txt
+          grep -q '^RESULT=AUDIT_COMPLETE$' /tmp/effective_audit.txt
+
+      - name: Run permanent lesson validators
+        run: |
+          python tools/validate_lessons.py
+          python tools/validate_bilingual_lessons_v400_7.py
+
+      - name: Diff integrity and scope guard
+        run: |
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          printf 'CHANGED=%s\n' "${changed[*]}"
+          expected=(
+            'src/pwa/worked_example_quality_v355_r2.js'
+            'tools/audit_effective_same_syntax_v400.js'
+          )
+          if [ "${changed[*]}" != "${expected[*]}" ]; then
+            echo 'DIFF_SCOPE_FAIL=True'
+            exit 1
+          fi
+          echo 'DIFF_SCOPE_PASS=True'
+
+      - name: Commit repaired source on audit branch
+        run: |
+          if git diff --quiet; then
+            echo 'NO_REPAIR_DIFF=True'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/pwa/worked_example_quality_v355_r2.js tools/audit_effective_same_syntax_v400.js
+          git commit -m 'Suppress legacy worked examples for V2.3 cards'
+          git push origin HEAD:audit/same-grammar-example-v400
