@@ -29,6 +29,37 @@ jobs:
         run: python tools/audit_same_grammar_examples_v400.py | tee audit_evidence/stored_teaching_example_audit.txt
       - name: Effective runtime same-syntax audit
         run: node tools/audit_effective_same_syntax_v400.js | tee audit_evidence/effective_runtime_same_syntax_audit.txt
+      - name: Corpus authoring-version profile
+        run: |
+          python - <<'PY' | tee audit_evidence/corpus_authoring_profile.txt
+          import json
+          from collections import Counter
+          from pathlib import Path
+
+          for label, root in (
+              ('KO', Path('data/lessons')),
+              ('EN', Path('data_i18n/en/lessons')),
+          ):
+              rows = []
+              for path in sorted(root.glob('*.json')):
+                  data = json.loads(path.read_text(encoding='utf-8'))
+                  if isinstance(data, list):
+                      rows.extend(x for x in data if isinstance(x, dict))
+              versions = Counter(str(x.get('authoring_version') or '<missing>') for x in rows)
+              primary = Counter(str(x.get('primary_concept') or '<missing>') for x in rows)
+              rich = sum(
+                  1 for x in rows
+                  if x.get('authoring_version') == 'V2.3'
+                  and isinstance(x.get('concept_explanation'), dict)
+                  and isinstance(x.get('teaching_example'), dict)
+                  and isinstance(x.get('answer_explanation'), dict)
+              )
+              print(f'=== {label} CORPUS PROFILE ===')
+              print(f'CARD_COUNT={len(rows)}')
+              print(f'AUTHORING_VERSION_COUNTS={dict(sorted(versions.items()))}')
+              print(f'V23_RICH_CARD_COUNT={rich}')
+              print(f'PRIMARY_CONCEPT_TOP20={primary.most_common(20)}')
+          PY
       - name: Upload audit evidence
         if: always()
         uses: actions/upload-artifact@v4
