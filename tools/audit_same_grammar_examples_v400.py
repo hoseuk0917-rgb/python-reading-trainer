@@ -153,11 +153,13 @@ def audit_language(label: str, lesson_dir: Path):
 
     print("--- STRIP CARDS ---")
     for cid, fname, focus, code, walkthrough in strip_cards:
+        compact_code = code.replace("\n", "\\n")
+        compact_walkthrough = walkthrough.replace("\n", " ")
         print(
             "STRIP_CARD|"
             f"ID={cid}|FILE={fname}|FOCUS={focus!r}|"
-            f"EXAMPLE={code.replace(chr(10), '\\n')}|"
-            f"WALKTHROUGH={walkthrough.replace(chr(10), ' ')}"
+            f"EXAMPLE={compact_code}|"
+            f"WALKTHROUGH={compact_walkthrough}"
         )
 
     return {
