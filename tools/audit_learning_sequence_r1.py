@@ -461,22 +461,64 @@ def load_prelearn_support(root: Path) -> dict[str, dict]:
     for item in config.get("prelearn_support", []) or []:
         if not isinstance(item, dict):
             continue
+
         cid = str(item.get("id", "")).strip()
-        side_card_id = str(item.get("side_card_id", "")).strip()
+        raw_side_ids = item.get("side_card_ids")
+        if isinstance(raw_side_ids, list):
+            side_card_ids = [
+                str(value).strip()
+                for value in raw_side_ids
+                if str(value).strip()
+            ]
+        else:
+            legacy_id = str(item.get("side_card_id", "")).strip()
+            side_card_ids = [legacy_id] if legacy_id else []
+
         covers = [
             str(value).strip()
             for value in (item.get("covers_call_targets", []) or [])
             if str(value).strip()
         ]
-        if not cid or not side_card_id:
+        if not cid or not side_card_ids:
             continue
+
         support_map[cid] = {
             "id": cid,
-            "side_card_id": side_card_id,
+            "side_card_ids": side_card_ids[:2],
             "covers_call_targets": covers,
             "reason": item.get("reason", ""),
         }
+
     return support_map
+
+
+def relevant_pedagogic_call_targets(card: dict) -> list[str]:
+    all_calls = pedagogic_call_targets(str(card.get("code", "")))
+    focused_calls = pedagogic_focus_call_targets(str(card.get("focus_span", "")))
+    relevant = set(focused_calls)
+
+    blob = " ".join(
+        [
+            str(card.get("title", "")),
+            str(card.get("reading_goal", "")),
+            str(card.get("focus_span", "")),
+        ]
+    ).lower()
+
+    for target in all_calls:
+        leaf = target.split(".")[-1].lower()
+        markers = [
+            f"{leaf}(",
+            f"{leaf}()",
+            f"{leaf} 호출",
+            f"{leaf} 함수",
+            f"{leaf} 생성자",
+            f"{leaf} 메서드",
+        ]
+        if any(marker in blob for marker in markers):
+            relevant.add(target)
+
+    return sorted(relevant)
 
 
 def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
@@ -522,10 +564,11 @@ def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
     for cid, support in prelearn_support.items():
         if cid not in known_card_ids:
             prelearn_errors.append(f"unknown lesson card: {cid}")
-        if support["side_card_id"] not in known_side_ids:
-            prelearn_errors.append(
-                f"unknown side card: {cid} -> {support['side_card_id']}"
-            )
+        for side_card_id in support["side_card_ids"]:
+            if side_card_id not in known_side_ids:
+                prelearn_errors.append(
+                    f"unknown side card: {cid} -> {side_card_id}"
+                )
 
     ids = [str(card.get("id", "")) for card in cards]
     duplicates = sorted(key for key, count in Counter(ids).items() if key and count > 1)
@@ -580,7 +623,7 @@ def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
         cid = str(card.get("id", ""))
         pos = position[cid]
         concept_prereqs = explicit_concept_prereqs(card)
-        all_calls = pedagogic_call_targets(str(card.get("code", "")))
+        all_calls = relevant_pedagogic_call_targets(card)
         focused_calls = pedagogic_focus_call_targets(str(card.get("focus_span", "")))
         support = prelearn_support.get(cid)
         covered_call_targets = {
@@ -646,10 +689,10 @@ def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
             if reason.get("relation") == "cross_level"
         ]
         delivery = delivery_for(card, str(card.get("_source", "")))
-        if same_level_reasons:
-            sequence_status = "ORDER_REVIEW"
-        elif cross_level_reasons and delivery == "Review":
+        if cross_level_reasons and delivery == "Review":
             sequence_status = "REVIEW_BEFORE_LEARN"
+        elif same_level_reasons:
+            sequence_status = "ORDER_REVIEW"
         elif cross_level_reasons:
             sequence_status = "CROSS_LEVEL_PREREQ"
         else:
@@ -702,16 +745,30 @@ def canary_result(rows_by_id: dict[str, dict]) -> dict[str, Any]:
     checks: dict[str, Any] = {}
 
     required_prelearn = {
-        "PYF95_A2_DTS_009_DICT_ITEMS_LIST": "PYF95_A2_DICT_KEYS_VALUES_ITEMS",
-        "PYF95_A3_LOOP_017_REVERSED_LIST": "PYF95_A3_REVERSED_BASIC",
-        "PYF95_A3_LOOP_018_REVERSED_ORIGINAL": "PYF95_A3_REVERSED_BASIC",
-        "PY104_L03_LIST_INSERT_001": "PYV104_LIST_EXTEND_INSERT",
+        "PYF95_A2_DTS_009_DICT_ITEMS_LIST": [
+            "PYF95_A2_DICT_KEYS_VALUES_ITEMS",
+            "PYV158_A1_LIST_CONSTRUCTOR",
+        ],
+        "PYF95_A3_LOOP_017_REVERSED_LIST": [
+            "PYF95_A3_REVERSED_BASIC",
+            "PYV158_A1_LIST_CONSTRUCTOR",
+        ],
+        "PYF95_A3_LOOP_018_REVERSED_ORIGINAL": [
+            "PYF95_A3_REVERSED_BASIC",
+        ],
+        "PY104_L03_LIST_INSERT_001": [
+            "PYV104_LIST_EXTEND_INSERT",
+        ],
+        "PYF95_A3_LOOP_026_ZIP_TO_LIST": [
+            "PYF95_A3_ZIP_BASIC",
+            "PYV158_A1_LIST_CONSTRUCTOR",
+        ],
     }
     prelearn_actual = {
-        cid: ((rows_by_id.get(cid) or {}).get("prelearn_support") or {}).get("side_card_id")
+        cid: ((rows_by_id.get(cid) or {}).get("prelearn_support") or {}).get("side_card_ids", [])
         for cid in required_prelearn
     }
-    checks["PRELEARN_SUPPORT_R1"] = {
+    checks["PRELEARN_SUPPORT_R2"] = {
         "pass": prelearn_actual == required_prelearn,
         "actual": prelearn_actual,
     }
