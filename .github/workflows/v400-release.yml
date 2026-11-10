@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: v400-release-${{ github.ref }}
@@ -91,30 +91,7 @@ jobs:
       - name: Runtime bundle integrity
         run: |
           python tools/build_runtime_lesson_bundle_v400_5.py
-          TARGETS="data/runtime/lesson_bundle_v400_5.json data_i18n/en/runtime/lesson_bundle_v400_5.json data/runtime/support_bundle_v400_5.json data_i18n/en/runtime/support_bundle_v400_5.json"
-          if git diff --quiet -- $TARGETS; then
-            exit 0
-          fi
-          if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.head_ref }}" = "fix/logging-info-debug-semantic-r1" ]; then
-            mkdir -p /tmp/runtime-bundle-sync/data/runtime /tmp/runtime-bundle-sync/data_i18n/en/runtime
-            cp data/runtime/lesson_bundle_v400_5.json /tmp/runtime-bundle-sync/data/runtime/lesson_bundle_v400_5.json
-            cp data_i18n/en/runtime/lesson_bundle_v400_5.json /tmp/runtime-bundle-sync/data_i18n/en/runtime/lesson_bundle_v400_5.json
-            cp data/runtime/support_bundle_v400_5.json /tmp/runtime-bundle-sync/data/runtime/support_bundle_v400_5.json
-            cp data_i18n/en/runtime/support_bundle_v400_5.json /tmp/runtime-bundle-sync/data_i18n/en/runtime/support_bundle_v400_5.json
-            git fetch origin "${GITHUB_HEAD_REF}"
-            git checkout -B "${GITHUB_HEAD_REF}" "origin/${GITHUB_HEAD_REF}"
-            cp /tmp/runtime-bundle-sync/data/runtime/lesson_bundle_v400_5.json data/runtime/lesson_bundle_v400_5.json
-            cp /tmp/runtime-bundle-sync/data_i18n/en/runtime/lesson_bundle_v400_5.json data_i18n/en/runtime/lesson_bundle_v400_5.json
-            cp /tmp/runtime-bundle-sync/data/runtime/support_bundle_v400_5.json data/runtime/support_bundle_v400_5.json
-            cp /tmp/runtime-bundle-sync/data_i18n/en/runtime/support_bundle_v400_5.json data_i18n/en/runtime/support_bundle_v400_5.json
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add $TARGETS
-            git commit -m "Refresh V400 runtime bundles for logging semantic fix"
-            git push origin "HEAD:${GITHUB_HEAD_REF}"
-            exit 0
-          fi
-          git diff --exit-code -- $TARGETS
+          git diff --exit-code -- data/runtime/lesson_bundle_v400_5.json data_i18n/en/runtime/lesson_bundle_v400_5.json data/runtime/support_bundle_v400_5.json data_i18n/en/runtime/support_bundle_v400_5.json
 
       - name: Lesson validation
         run: |
