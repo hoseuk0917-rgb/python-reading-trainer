@@ -257,6 +257,7 @@ def teaching_primary_syntax_status(card):
 
 
 def boolean_contradiction_details(card, language):
+    language_key = str(language or "").lower()
     code = str(card.get("code") or "")
     prose = " ".join(
         [
@@ -273,7 +274,7 @@ def boolean_contradiction_details(card, language):
 
     for name, actual in assignments:
         opposite = "False" if actual == "True" else "True"
-        if language == "ko":
+        if language_key == "ko":
             patterns = [
                 f"{name}의 현재 값은 {opposite}",
                 f"{name}는 {opposite}다",
@@ -314,6 +315,7 @@ def unbalanced_double_backtick_paths(value, prefix=""):
 
 
 def explanation_readiness_rows(cards, sources, language):
+    language_key = str(language or "").lower()
     metrics = Counter()
     candidates = []
     ce_fields = ["what_it_is", "how_to_read", "key_point", "common_mistake"]
@@ -401,7 +403,7 @@ def explanation_readiness_rows(cards, sources, language):
             ]
         )
 
-        if language == "ko":
+        if language_key == "ko":
             placeholder_markers = [
                 "target의 메서드 호출",
                 "target의 함수 호출",
@@ -446,10 +448,11 @@ def explanation_readiness_rows(cards, sources, language):
             domain_blob = " ".join(
                 [
                     str(card.get("title") or ""),
+                    str(card.get("question") or ""),
+                    str(card.get("reading_goal") or ""),
                     str(card.get("project_context") or ""),
                     str(card.get("coverage_domain") or ""),
                     " ".join(str(value) for value in (card.get("coverage_topics") or [])),
-                    rich_blob,
                 ]
             )
             external_terms = [
@@ -467,8 +470,15 @@ def explanation_readiness_rows(cards, sources, language):
                 "NumPy",
                 "numpy",
             ]
-            if any(term.lower() in domain_blob.lower() for term in external_terms):
-                if language == "ko":
+            if any(
+                re.search(
+                    rf"(?<![A-Za-z0-9_]){re.escape(term)}(?![A-Za-z0-9_])",
+                    domain_blob,
+                    flags=re.IGNORECASE,
+                )
+                for term in external_terms
+            ):
+                if language_key == "ko":
                     boundary_markers = [
                         "모의",
                         "로컬",
