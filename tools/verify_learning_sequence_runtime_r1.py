@@ -60,39 +60,48 @@ def stable_apply(rows: list[dict], config: dict) -> list[dict]:
     for level in levels:
         group = groups[level]
         ids = [row["id"] for row in group]
-        adjacency = {cid: [] for cid in ids}
-        indegree = {cid: 0 for cid in ids}
-        edges: set[tuple[str, str]] = set()
+        id_set = set(ids)
+        prerequisites = {cid: [] for cid in ids}
 
         for rule in rules_by_level.get(level, []):
             cid = rule["id"]
             for prerequisite_id in rule["after"]:
                 if prerequisite_id == cid:
                     raise SystemExit(f"FAIL: self dependency: {cid}")
-                edge = (prerequisite_id, cid)
-                if edge in edges:
+                if prerequisite_id not in id_set:
+                    raise SystemExit(
+                        f"FAIL: prerequisite missing from L{level}: {cid} <- {prerequisite_id}"
+                    )
+                if prerequisite_id in prerequisites[cid]:
                     continue
-                edges.add(edge)
-                adjacency[prerequisite_id].append(cid)
-                indegree[cid] += 1
+                prerequisites[cid].append(prerequisite_id)
 
-        queue = sorted(
-            [cid for cid in ids if indegree[cid] == 0],
-            key=original_index.__getitem__,
-        )
+        state: dict[str, int] = {}
         ordered: list[str] = []
+        cycle_detected = False
 
-        while queue:
-            cid = queue.pop(0)
+        def emit_with_prerequisites(cid: str) -> None:
+            nonlocal cycle_detected
+            status = state.get(cid, 0)
+            if status == 2 or cycle_detected:
+                return
+            if status == 1:
+                cycle_detected = True
+                return
+
+            state[cid] = 1
+            for prerequisite_id in prerequisites[cid]:
+                emit_with_prerequisites(prerequisite_id)
+            if cycle_detected:
+                return
+            state[cid] = 2
             ordered.append(cid)
-            for next_id in adjacency[cid]:
-                indegree[next_id] -= 1
-                if indegree[next_id] == 0:
-                    queue.append(next_id)
-                    queue.sort(key=original_index.__getitem__)
 
-        if len(ordered) != len(ids):
-            blocked = sorted(cid for cid in ids if indegree[cid] > 0)
+        for cid in ids:
+            emit_with_prerequisites(cid)
+
+        if cycle_detected or len(ordered) != len(ids):
+            blocked = sorted(cid for cid in ids if state.get(cid, 0) == 1)
             raise SystemExit(f"FAIL: cycle detected in L{level}: {blocked}")
 
         output.extend(by_id[cid] for cid in ordered)
