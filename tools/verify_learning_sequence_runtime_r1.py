@@ -122,7 +122,7 @@ def main() -> None:
     if not isinstance(config.get("rules"), list) or not config["rules"]:
         raise SystemExit("FAIL: rules must be a non-empty list")
 
-    analysis = build_analysis(ROOT)
+    analysis = build_analysis(ROOT, use_effective_sequence=False)
     baseline = analysis["rows"]
     effective = stable_apply(baseline, config)
 
@@ -169,6 +169,31 @@ def main() -> None:
         "PYF95_A1_FUNC_011_FUNCTION_IN_FUNCTION",
         "PYF95_A1_FUNC_003_RETURN_ASSIGN",
     )
+    assert_after(
+        effective_pos,
+        "PY10_L03_def_return_001",
+        "PYF95_A1_FUNC_008_RETURN_NO_PRINT",
+    )
+    assert_after(
+        effective_pos,
+        "PYF95_A1_FUNC_020_COUNT_PREFIX",
+        "PYV99_A1_GAP_006_STARTSWITH_PREFIX",
+    )
+    assert_after(
+        effective_pos,
+        "PYF95_A3_LOOP_007_BREAK_FIND_FIRST",
+        "PYV99_A1_GAP_006_STARTSWITH_PREFIX",
+    )
+    assert_after(
+        effective_pos,
+        "PY4_L04_all_001",
+        "PY4_L04_any_001",
+    )
+    assert_after(
+        effective_pos,
+        "PY130_L05_API_KEY_NOT_IN_CODE_001",
+        "PY130_L05_ENV_VAR_CONCEPT_001",
+    )
 
     moved = [
         cid
@@ -197,6 +222,36 @@ def main() -> None:
         "CANARY_FUNCTION_DEF_CALL="
         f"{effective_pos['PYF95_A1_FUNC_002_DEF_NOT_CALLED']}"
         f"<{effective_pos['PYF95_A1_FUNC_001_DEF_CALL_PRINT']}"
+        "=PASS"
+    )
+    print(
+        "CANARY_R2_DEF_RETURN="
+        f"{effective_pos['PYF95_A1_FUNC_008_RETURN_NO_PRINT']}"
+        f"<{effective_pos['PY10_L03_def_return_001']}"
+        "=PASS"
+    )
+    print(
+        "CANARY_R2_STARTSWITH_FUNCTION="
+        f"{effective_pos['PYV99_A1_GAP_006_STARTSWITH_PREFIX']}"
+        f"<{effective_pos['PYF95_A1_FUNC_020_COUNT_PREFIX']}"
+        "=PASS"
+    )
+    print(
+        "CANARY_R2_STARTSWITH_LOOP="
+        f"{effective_pos['PYV99_A1_GAP_006_STARTSWITH_PREFIX']}"
+        f"<{effective_pos['PYF95_A3_LOOP_007_BREAK_FIND_FIRST']}"
+        "=PASS"
+    )
+    print(
+        "CANARY_R2_GENERATOR_ALL="
+        f"{effective_pos['PY4_L04_any_001']}"
+        f"<{effective_pos['PY4_L04_all_001']}"
+        "=PASS"
+    )
+    print(
+        "CANARY_R2_ENV_SECRET="
+        f"{effective_pos['PY130_L05_ENV_VAR_CONCEPT_001']}"
+        f"<{effective_pos['PY130_L05_API_KEY_NOT_IN_CODE_001']}"
         "=PASS"
     )
     print("VERIFY_LEARNING_SEQUENCE_RUNTIME_R1=PASS")
