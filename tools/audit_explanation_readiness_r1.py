@@ -32,6 +32,13 @@ THIRD_PARTY_ROOTS = {
     "torch","transformers","uvicorn","cv2","pytesseract","fitz","pdfplumber","PIL",
 }
 
+SEMANTIC_CALL_LEAFS = {
+    "abs","all","any","bool","dict","enumerate","float","input","int","len","list","max","min",
+    "open","range","reversed","round","set","sorted","str","sum","tuple","type","zip",
+    "append","extend","get","insert","items","join","keys","lower","pop","remove","replace",
+    "sort","split","startswith","strip","upper","values",
+}
+
 AST_PRIMARY = {
     "assignment": (ast.Assign, ast.AnnAssign),
     "augmented_assignment": (ast.AugAssign,),
@@ -58,6 +65,7 @@ AST_PRIMARY = {
     "with_statement": (ast.With,),
     "async_with_statement": (ast.AsyncWith,),
     "yield_expression": (ast.Yield, ast.YieldFrom),
+    "unary_operation": (ast.UnaryOp,),
 }
 
 TECHNICAL_TERMS = re.compile(
@@ -127,15 +135,28 @@ def specific_target_call_required(card, focus_calls):
     primary=str(card.get("primary_concept",""))
     if primary not in {"call","argument_passing"}:
         return set()
+
+    authority=authority_class(card)
+    if authority=="LOCAL_CODE_AUTHORITY":
+        return set()
+
     blob=" ".join(
         [str(card.get("title","")), str(card.get("reading_goal",""))] +
         [str(x) for x in (card.get("coverage_topics",[]) or [])]
     ).lower()
+    topics={str(x).lower() for x in (card.get("coverage_topics",[]) or [])}
     required=set()
+
     for leaf in focus_calls:
         low=leaf.lower()
-        if low+"(" in blob or low+"()" in blob or low in [str(x).lower() for x in (card.get("coverage_topics",[]) or [])]:
+        named=low+"(" in blob or low+"()" in blob or low in topics
+        if not named:
+            continue
+        if low in SEMANTIC_CALL_LEAFS:
             required.add(leaf)
+        elif authority in {"STDLIB_API_AUTHORITY","THIRD_PARTY_API_AUTHORITY","DOMAIN_AUTHORITY_REVIEW"}:
+            required.add(leaf)
+
     return required
 
 def has_primary_syntax(primary, teaching_code):
