@@ -14,6 +14,7 @@ function withDataVersion(path) {
 let curriculum = null;
 let cards = [];
 let sideCards = [];
+let learningSequenceConfigR1 = null;
 
 // === LANGUAGE_TOGGLE_I18N_V334_A9 START ===
 const LANGUAGE_STORAGE_KEY_V334_A9 = "pythonReadingTrainer.language";
@@ -605,7 +606,41 @@ function buildSafeSideCardIntroTextV306(sourceCard) {
   return trimConceptIntroTextV306(raw, 260);
 }
 
+function getPrelearnSupportSideCardR1(card) {
+  if (
+    !card ||
+    !learningSequenceConfigR1 ||
+    !Array.isArray(learningSequenceConfigR1.prelearn_support)
+  ) {
+    return null;
+  }
+
+  const support = learningSequenceConfigR1.prelearn_support.find(function(item) {
+    return item && item.id === card.id && typeof item.side_card_id === "string";
+  });
+  if (!support) {
+    return null;
+  }
+
+  return getSideCardById(support.side_card_id) || null;
+}
+
 function buildConceptIntroV306(card) {
+  const prelearnSourceCard = getPrelearnSupportSideCardR1(card);
+  if (prelearnSourceCard) {
+    const prelearnText = buildSafeSideCardIntroTextV306(prelearnSourceCard);
+    if (prelearnText) {
+      return {
+        sourceSideCardId: prelearnSourceCard.id || "",
+        concept: "",
+        title: prelearnSourceCard.title || "먼저 익힐 개념",
+        body: prelearnText,
+        sourceTitle: prelearnSourceCard.title || "",
+        prelearn: true
+      };
+    }
+  }
+
   const sourceCard = pickConceptIntroSideCardV306(card);
   const primaryConcept = getPrimaryConceptV306(card, sourceCard);
   const concept = primaryConcept && conceptInfo[primaryConcept] ? conceptInfo[primaryConcept] : null;
@@ -2591,7 +2626,7 @@ async function init() {
   }));
 
   curriculum = await curriculumRes.json();
-  const learningSequenceR1 = learningSequenceRes && learningSequenceRes.ok
+  learningSequenceConfigR1 = learningSequenceRes && learningSequenceRes.ok
     ? await learningSequenceRes.json()
     : null;
   cards = lessonResults.flat();
@@ -2604,7 +2639,7 @@ async function init() {
     }
     return a.id.localeCompare(b.id);
   });
-  cards = applyLearningSequenceR1(cards, learningSequenceR1);
+  cards = applyLearningSequenceR1(cards, learningSequenceConfigR1);
 
   if (window.CodeExplainer && typeof window.CodeExplainer.setLearningContent === "function") {
     window.CodeExplainer.setLearningContent(cards, sideCards);
