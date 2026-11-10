@@ -105,7 +105,11 @@ def imported_roots(tree):
 
 def local_callable_names(tree):
     if tree is None: return set()
-    return {node.name for node in ast.walk(tree) if isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef))}
+    return {
+        node.name
+        for node in ast.walk(tree)
+        if isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef,ast.ClassDef))
+    }
 
 def call_leafs(text):
     try: tree=ast.parse(text,mode="eval")
@@ -169,14 +173,23 @@ def has_primary_syntax(primary, teaching_code):
     if primary=="slice":
         return any(isinstance(n,ast.Subscript) and isinstance(n.slice,ast.Slice) for n in ast.walk(tree))
     if primary=="comparison": return any(isinstance(n,ast.Compare) for n in ast.walk(tree))
-    if primary=="boolean_operation": return any(isinstance(n,ast.BoolOp) for n in ast.walk(tree))
+    if primary=="boolean_operation":
+        return any(
+            isinstance(n,ast.BoolOp)
+            or (isinstance(n,ast.UnaryOp) and isinstance(n.op,ast.Not))
+            for n in ast.walk(tree)
+        )
     if primary=="membership_test":
         return any(isinstance(n,ast.Compare) and any(isinstance(op,(ast.In,ast.NotIn)) for op in n.ops) for n in ast.walk(tree))
     if primary=="identity_test":
         return any(isinstance(n,ast.Compare) and any(isinstance(op,(ast.Is,ast.IsNot)) for op in n.ops) for n in ast.walk(tree))
     if primary=="import_statement": return any(isinstance(n,ast.Import) for n in ast.walk(tree))
     if primary=="from_import_statement": return any(isinstance(n,ast.ImportFrom) for n in ast.walk(tree))
-    if primary=="literal": return any(isinstance(n,ast.Constant) for n in ast.walk(tree))
+    if primary=="literal":
+        return any(
+            isinstance(n,(ast.Constant,ast.List,ast.Tuple,ast.Set,ast.Dict))
+            for n in ast.walk(tree)
+        )
     if primary=="attribute_access": return any(isinstance(n,ast.Attribute) for n in ast.walk(tree))
     if primary=="name_reference": return any(isinstance(n,ast.Name) for n in ast.walk(tree))
     if primary=="arithmetic": return any(isinstance(n,ast.BinOp) for n in ast.walk(tree))
