@@ -114,6 +114,7 @@ def main():
     empty_concepts = []
     bad_levels = []
     missing_side_refs = []
+    semantic_invariant_errors = []
 
     for card in lesson_cards:
         cid = card.get("id")
@@ -176,6 +177,84 @@ def main():
             if sid not in all_known_ids:
                 missing_side_refs.append((cid, sid))
 
+    logging_card_id = "PY129_L05_LOG_LEVEL_INFO_DEBUG_001"
+    logging_card = next(
+        (card for card in lesson_cards if card.get("id") == logging_card_id),
+        None,
+    )
+    if logging_card is None:
+        semantic_invariant_errors.append((logging_card_id, "ko_card_missing"))
+    else:
+        explanation = str(logging_card.get("explanation") or "")
+        key_point = str(
+            (logging_card.get("concept_explanation") or {}).get("key_point") or ""
+        )
+        if logging_card.get("answer") != "INFO":
+            semantic_invariant_errors.append((logging_card_id, "ko_answer_not_info"))
+        if "verbose = False" not in str(logging_card.get("code") or ""):
+            semantic_invariant_errors.append((logging_card_id, "ko_code_not_false"))
+        if (
+            "False" not in explanation
+            or "logging.INFO" not in explanation
+            or "INFO" not in explanation
+            or "현재 값은 True" in explanation
+            or "DEBUG가 출력" in explanation
+        ):
+            semantic_invariant_errors.append((logging_card_id, "ko_explanation_false_branch"))
+        if (
+            "verbose=False" not in key_point
+            or "logging.INFO" not in key_point
+            or "verbose=True" in key_point
+        ):
+            semantic_invariant_errors.append((logging_card_id, "ko_key_point_false_branch"))
+
+    en_logging_path = (
+        root
+        / "data_i18n"
+        / "en"
+        / "lessons"
+        / "python_logging_verbose_cli_beginner_v129_a1.json"
+    )
+    if not en_logging_path.exists():
+        semantic_invariant_errors.append((logging_card_id, "en_file_missing"))
+    else:
+        try:
+            en_cards = load_json(en_logging_path)
+        except Exception as exc:
+            semantic_invariant_errors.append((logging_card_id, f"en_json_error:{exc!r}"))
+        else:
+            en_logging_card = next(
+                (
+                    card
+                    for card in en_cards
+                    if isinstance(card, dict) and card.get("id") == logging_card_id
+                ),
+                None,
+            )
+            if en_logging_card is None:
+                semantic_invariant_errors.append((logging_card_id, "en_card_missing"))
+            else:
+                en_explanation = str(en_logging_card.get("explanation") or "")
+                en_key_point = str(
+                    (en_logging_card.get("concept_explanation") or {}).get("key_point") or ""
+                )
+                if en_logging_card.get("answer") != "INFO":
+                    semantic_invariant_errors.append((logging_card_id, "en_answer_not_info"))
+                if (
+                    "False" not in en_explanation
+                    or "logging.INFO" not in en_explanation
+                    or "INFO" not in en_explanation
+                    or "current value of `verbose` is `True`" in en_explanation
+                    or "DEBUG` is printed" in en_explanation
+                ):
+                    semantic_invariant_errors.append((logging_card_id, "en_explanation_false_branch"))
+                if (
+                    "verbose=False" not in en_key_point
+                    or "logging.INFO" not in en_key_point
+                    or "verbose=True" in en_key_point
+                ):
+                    semantic_invariant_errors.append((logging_card_id, "en_key_point_false_branch"))
+
     failures = []
 
     if args.expected_app_version and app_version != args.expected_app_version:
@@ -199,6 +278,7 @@ def main():
         "EMPTY CONCEPTS": empty_concepts,
         "BAD LEVELS": bad_levels,
         "MISSING SIDE CARD REFERENCES": missing_side_refs,
+        "SEMANTIC INVARIANTS": semantic_invariant_errors,
     }
 
     print("APP_VERSION:", app_version)
