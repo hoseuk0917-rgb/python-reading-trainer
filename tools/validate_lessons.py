@@ -448,10 +448,11 @@ def explanation_readiness_rows(cards, sources, language):
             domain_blob = " ".join(
                 [
                     str(card.get("title") or ""),
+                    str(card.get("question") or ""),
+                    str(card.get("reading_goal") or ""),
                     str(card.get("project_context") or ""),
                     str(card.get("coverage_domain") or ""),
                     " ".join(str(value) for value in (card.get("coverage_topics") or [])),
-                    rich_blob,
                 ]
             )
             external_terms = [
