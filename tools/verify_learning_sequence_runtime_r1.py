@@ -131,6 +131,31 @@ def main() -> None:
     if not isinstance(config.get("rules"), list) or not config["rules"]:
         raise SystemExit("FAIL: rules must be a non-empty list")
 
+    expected_prelearn = {
+        "PYF95_A2_DTS_009_DICT_ITEMS_LIST": "PYF95_A2_DICT_KEYS_VALUES_ITEMS",
+        "PYF95_A3_LOOP_017_REVERSED_LIST": "PYF95_A3_REVERSED_BASIC",
+        "PYF95_A3_LOOP_018_REVERSED_ORIGINAL": "PYF95_A3_REVERSED_BASIC",
+        "PY104_L03_LIST_INSERT_001": "PYV104_LIST_EXTEND_INSERT",
+    }
+    prelearn = config.get("prelearn_support", [])
+    if not isinstance(prelearn, list):
+        raise SystemExit("FAIL: prelearn_support must be a list")
+    actual_prelearn = {
+        str(item.get("id", "")): str(item.get("side_card_id", ""))
+        for item in prelearn
+        if isinstance(item, dict)
+    }
+    if actual_prelearn != expected_prelearn:
+        raise SystemExit(
+            f"FAIL: unexpected prelearn support mapping: {actual_prelearn}"
+        )
+    for item in prelearn:
+        covers = item.get("covers_call_targets", [])
+        if not isinstance(covers, list) or not covers:
+            raise SystemExit(
+                f"FAIL: prelearn support must declare covers_call_targets: {item}"
+            )
+
     analysis = build_analysis(ROOT, use_effective_sequence=False)
     baseline = analysis["rows"]
     effective = stable_apply(baseline, config)
@@ -213,6 +238,7 @@ def main() -> None:
     print("LEARNING_SEQUENCE_RUNTIME_R1")
     print(f"CARD_COUNT={len(effective)}")
     print(f"RULE_COUNT={len(config['rules'])}")
+    print(f"PRELEARN_SUPPORT_COUNT={len(prelearn)}")
     print(f"MOVED_CARD_COUNT={len(moved)}")
     for cid in moved:
         print(
@@ -257,6 +283,7 @@ def main() -> None:
         f"<{effective_pos['PY4_L04_all_001']}"
         "=PASS"
     )
+    print("CANARY_PRELEARN_SUPPORT_R1=PASS")
     print(
         "CANARY_R2_ENV_SECRET="
         f"{effective_pos['PY130_L05_ENV_VAR_CONCEPT_001']}"
