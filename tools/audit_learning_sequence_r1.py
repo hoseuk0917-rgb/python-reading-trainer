@@ -448,6 +448,37 @@ def side_reference_candidates(card: dict, side_cards: list[dict], limit: int = 3
         for score, sid, match_type, side in scored[:limit]
     ]
 
+def load_prelearn_support(root: Path) -> dict[str, dict]:
+    config_path = root / "data" / "curriculum" / "learning_sequence_r1.json"
+    if not config_path.is_file():
+        return {}
+
+    config = load_json(config_path)
+    if not isinstance(config, dict):
+        return {}
+
+    support_map: dict[str, dict] = {}
+    for item in config.get("prelearn_support", []) or []:
+        if not isinstance(item, dict):
+            continue
+        cid = str(item.get("id", "")).strip()
+        side_card_id = str(item.get("side_card_id", "")).strip()
+        covers = [
+            str(value).strip()
+            for value in (item.get("covers_call_targets", []) or [])
+            if str(value).strip()
+        ]
+        if not cid or not side_card_id:
+            continue
+        support_map[cid] = {
+            "id": cid,
+            "side_card_id": side_card_id,
+            "covers_call_targets": covers,
+            "reason": item.get("reason", ""),
+        }
+    return support_map
+
+
 def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
     app_path = root / "src" / "pwa" / "app.js"
     if not app_path.is_file():
@@ -475,6 +506,26 @@ def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
     for rel in side_paths:
         path = runtime_path(root, app_path, rel)
         side_cards.extend(collect_side_cards(load_json(path)))
+
+    prelearn_support = load_prelearn_support(root)
+    known_side_ids = {
+        str(side.get("id", "")).strip()
+        for side in side_cards
+        if str(side.get("id", "")).strip()
+    }
+    known_card_ids = {
+        str(card.get("id", "")).strip()
+        for card in cards
+        if str(card.get("id", "")).strip()
+    }
+    prelearn_errors: list[str] = []
+    for cid, support in prelearn_support.items():
+        if cid not in known_card_ids:
+            prelearn_errors.append(f"unknown lesson card: {cid}")
+        if support["side_card_id"] not in known_side_ids:
+            prelearn_errors.append(
+                f"unknown side card: {cid} -> {support['side_card_id']}"
+            )
 
     ids = [str(card.get("id", "")) for card in cards]
     duplicates = sorted(key for key, count in Counter(ids).items() if key and count > 1)
@@ -531,6 +582,11 @@ def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
         concept_prereqs = explicit_concept_prereqs(card)
         all_calls = pedagogic_call_targets(str(card.get("code", "")))
         focused_calls = pedagogic_focus_call_targets(str(card.get("focus_span", "")))
+        support = prelearn_support.get(cid)
+        covered_call_targets = {
+            str(value).split(".")[-1]
+            for value in ((support or {}).get("covers_call_targets", []) or [])
+        }
 
         order_reasons: list[dict] = []
 
@@ -554,6 +610,8 @@ def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
                 )
 
         for target in all_calls:
+            if target.split(".")[-1] in covered_call_targets:
+                continue
             intro = call_intro.get(target)
             if not intro:
                 continue
@@ -609,6 +667,7 @@ def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
                 "call_targets": all_calls,
                 "sequence_status": sequence_status,
                 "order_reasons": order_reasons,
+                "prelearn_support": support,
                 "easy_reference_status": (
                     "DIRECT"
                     if any(ref.get("match_type") == "DIRECT" for ref in easy_refs)
@@ -627,6 +686,8 @@ def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
         "side_file_count": len(side_paths),
         "card_count": len(runtime_cards),
         "side_card_count": len(side_cards),
+        "prelearn_support_count": len(prelearn_support),
+        "prelearn_errors": prelearn_errors,
         "baseline_position": baseline_position,
         "effective_position": position,
         "rows": rows,
@@ -639,6 +700,21 @@ def canary_result(rows_by_id: dict[str, dict]) -> dict[str, Any]:
     function_first = rows_by_id.get("PYF95_A1_FUNC_001_DEF_CALL_PRINT")
 
     checks: dict[str, Any] = {}
+
+    required_prelearn = {
+        "PYF95_A2_DTS_009_DICT_ITEMS_LIST": "PYF95_A2_DICT_KEYS_VALUES_ITEMS",
+        "PYF95_A3_LOOP_017_REVERSED_LIST": "PYF95_A3_REVERSED_BASIC",
+        "PYF95_A3_LOOP_018_REVERSED_ORIGINAL": "PYF95_A3_REVERSED_BASIC",
+        "PY104_L03_LIST_INSERT_001": "PYV104_LIST_EXTEND_INSERT",
+    }
+    prelearn_actual = {
+        cid: ((rows_by_id.get(cid) or {}).get("prelearn_support") or {}).get("side_card_id")
+        for cid in required_prelearn
+    }
+    checks["PRELEARN_SUPPORT_R1"] = {
+        "pass": prelearn_actual == required_prelearn,
+        "actual": prelearn_actual,
+    }
 
     if not input_int:
         checks["INPUT_INT_ORDER_RESOLVED"] = {"pass": False, "reason": "card missing"}
@@ -710,6 +786,7 @@ def main() -> None:
         "side_file_count": analysis["side_file_count"],
         "card_count": analysis["card_count"],
         "side_card_count": analysis["side_card_count"],
+        "prelearn_support_count": analysis["prelearn_support_count"],
         "composition_counts": dict(sorted(role_counts.items())),
         "delivery_counts": dict(sorted(delivery_counts.items())),
         "sequence_counts": dict(sorted(sequence_counts.items())),
@@ -727,6 +804,11 @@ def main() -> None:
         )
     if analysis["card_count"] != 1785:
         hard_failures.append(f"CARD_COUNT expected 1785, got {analysis['card_count']}")
+    if analysis["prelearn_errors"]:
+        hard_failures.extend(
+            f"PRELEARN_SUPPORT {error}"
+            for error in analysis["prelearn_errors"]
+        )
     for name, result in canaries.items():
         if not result.get("pass"):
             hard_failures.append(f"CANARY {name} failed: {result}")
@@ -739,6 +821,7 @@ def main() -> None:
         print(f"SIDE_FILES={analysis['side_file_count']}")
         print(f"CARDS={analysis['card_count']}")
         print(f"SIDE_CARDS={analysis['side_card_count']}")
+        print(f"PRELEARN_SUPPORT_COUNT={analysis['prelearn_support_count']}")
         print("COMPOSITION_COUNTS=" + json.dumps(summary["composition_counts"], ensure_ascii=False, sort_keys=True))
         print("DELIVERY_COUNTS=" + json.dumps(summary["delivery_counts"], ensure_ascii=False, sort_keys=True))
         print("SEQUENCE_COUNTS=" + json.dumps(summary["sequence_counts"], ensure_ascii=False, sort_keys=True))
