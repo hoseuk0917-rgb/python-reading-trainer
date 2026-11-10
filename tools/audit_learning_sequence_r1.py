@@ -300,6 +300,86 @@ def apply_sequence_config(root: Path, cards: list[dict]) -> list[dict]:
     return output
 
 
+def load_review_delivery(root: Path) -> list[dict]:
+    config_path = root / "data" / "curriculum" / "learning_sequence_r1.json"
+    if not config_path.is_file():
+        return []
+
+    config = load_json(config_path)
+    if not isinstance(config, dict):
+        return []
+
+    rules: list[dict] = []
+    for item in config.get("review_delivery", []) or []:
+        if not isinstance(item, dict):
+            continue
+        cid = str(item.get("id", "")).strip()
+        after = [
+            str(value).strip()
+            for value in (item.get("after", []) or [])
+            if str(value).strip()
+        ]
+        if cid and after:
+            rules.append(
+                {
+                    "id": cid,
+                    "after": after,
+                    "delivery": str(item.get("delivery", "Review")),
+                    "reason": item.get("reason", ""),
+                }
+            )
+    return rules
+
+
+def apply_review_delivery_config(root: Path, cards: list[dict]) -> list[dict]:
+    rules = load_review_delivery(root)
+    if not rules:
+        return cards
+
+    by_id = {
+        str(card.get("id", "")): card
+        for card in cards
+        if str(card.get("id", ""))
+    }
+    valid = [
+        rule
+        for rule in rules
+        if rule["id"] in by_id
+        and all(after_id in by_id for after_id in rule["after"])
+    ]
+    if not valid:
+        return cards
+
+    review_ids = {rule["id"] for rule in valid}
+    base = [
+        card
+        for card in cards
+        if str(card.get("id", "")) not in review_ids
+    ]
+    base_index = {
+        str(card.get("id", "")): index
+        for index, card in enumerate(base)
+    }
+    after_map: dict[str, list[tuple[int, dict]]] = {}
+
+    for rule_index, rule in enumerate(valid):
+        anchors = sorted(
+            rule["after"],
+            key=base_index.__getitem__,
+        )
+        anchor_id = anchors[-1]
+        after_map.setdefault(anchor_id, []).append((rule_index, rule))
+
+    output: list[dict] = []
+    for card in base:
+        cid = str(card.get("id", ""))
+        output.append(card)
+        for _rule_index, rule in sorted(after_map.get(cid, [])):
+            output.append(by_id[rule["id"]])
+
+    return output if len(output) == len(cards) else cards
+
+
 def nested_call_count(code: str) -> int:
     try:
         tree = ast.parse(code or "")
@@ -550,6 +630,7 @@ def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
         side_cards.extend(collect_side_cards(load_json(path)))
 
     prelearn_support = load_prelearn_support(root)
+    review_delivery = load_review_delivery(root)
     known_side_ids = {
         str(side.get("id", "")).strip()
         for side in side_cards
@@ -570,6 +651,18 @@ def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
                     f"unknown side card: {cid} -> {side_card_id}"
                 )
 
+    review_delivery_errors: list[str] = []
+    for rule in review_delivery:
+        if rule["id"] not in known_card_ids:
+            review_delivery_errors.append(
+                f"unknown review card: {rule['id']}"
+            )
+        for after_id in rule["after"]:
+            if after_id not in known_card_ids:
+                review_delivery_errors.append(
+                    f"unknown review anchor: {rule['id']} -> {after_id}"
+                )
+
     ids = [str(card.get("id", "")) for card in cards]
     duplicates = sorted(key for key, count in Counter(ids).items() if key and count > 1)
     if duplicates:
@@ -580,11 +673,10 @@ def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
         str(card.get("id")): index
         for index, card in enumerate(baseline_cards, start=1)
     }
-    runtime_cards = (
-        apply_sequence_config(root, baseline_cards)
-        if use_effective_sequence
-        else baseline_cards
-    )
+    runtime_cards = baseline_cards
+    if use_effective_sequence:
+        runtime_cards = apply_sequence_config(root, runtime_cards)
+        runtime_cards = apply_review_delivery_config(root, runtime_cards)
     position = {
         str(card.get("id")): index
         for index, card in enumerate(runtime_cards, start=1)
@@ -731,6 +823,8 @@ def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
         "side_card_count": len(side_cards),
         "prelearn_support_count": len(prelearn_support),
         "prelearn_errors": prelearn_errors,
+        "review_delivery_count": len(review_delivery),
+        "review_delivery_errors": review_delivery_errors,
         "baseline_position": baseline_position,
         "effective_position": position,
         "rows": rows,
@@ -771,6 +865,33 @@ def canary_result(rows_by_id: dict[str, dict]) -> dict[str, Any]:
     checks["PRELEARN_SUPPORT_R2"] = {
         "pass": prelearn_actual == required_prelearn,
         "actual": prelearn_actual,
+    }
+
+    review_delivery_pairs = {
+        "PYV96_A2_NOTE_011_FUNCTION_RETURN_USED": "PYF95_A1_FUNC_003_RETURN_ASSIGN",
+        "PYV96_A2_NOTE_012_FUNCTION_RETURN_STOPS": "PYF95_A1_FUNC_012_RETURN_STOPS_AFTER",
+        "PYV96_A2_NOTE_015_FILE_WRITE_LIGHT": "PYF95_A4_FILE_005_WRITE_TEXT",
+    }
+    review_actual = {}
+    review_pass = True
+    for review_id, anchor_id in review_delivery_pairs.items():
+        review_row = rows_by_id.get(review_id)
+        anchor_row = rows_by_id.get(anchor_id)
+        relation_ok = bool(
+            review_row
+            and anchor_row
+            and review_row["position"] > anchor_row["position"]
+        )
+        review_actual[review_id] = {
+            "anchor": anchor_id,
+            "review_position": review_row["position"] if review_row else None,
+            "anchor_position": anchor_row["position"] if anchor_row else None,
+            "pass": relation_ok,
+        }
+        review_pass = review_pass and relation_ok
+    checks["REVIEW_DELIVERY_R1"] = {
+        "pass": review_pass,
+        "actual": review_actual,
     }
 
     if not input_int:
@@ -844,6 +965,7 @@ def main() -> None:
         "card_count": analysis["card_count"],
         "side_card_count": analysis["side_card_count"],
         "prelearn_support_count": analysis["prelearn_support_count"],
+        "review_delivery_count": analysis["review_delivery_count"],
         "composition_counts": dict(sorted(role_counts.items())),
         "delivery_counts": dict(sorted(delivery_counts.items())),
         "sequence_counts": dict(sorted(sequence_counts.items())),
@@ -866,6 +988,11 @@ def main() -> None:
             f"PRELEARN_SUPPORT {error}"
             for error in analysis["prelearn_errors"]
         )
+    if analysis["review_delivery_errors"]:
+        hard_failures.extend(
+            f"REVIEW_DELIVERY {error}"
+            for error in analysis["review_delivery_errors"]
+        )
     for name, result in canaries.items():
         if not result.get("pass"):
             hard_failures.append(f"CANARY {name} failed: {result}")
@@ -879,6 +1006,7 @@ def main() -> None:
         print(f"CARDS={analysis['card_count']}")
         print(f"SIDE_CARDS={analysis['side_card_count']}")
         print(f"PRELEARN_SUPPORT_COUNT={analysis['prelearn_support_count']}")
+        print(f"REVIEW_DELIVERY_COUNT={analysis['review_delivery_count']}")
         print("COMPOSITION_COUNTS=" + json.dumps(summary["composition_counts"], ensure_ascii=False, sort_keys=True))
         print("DELIVERY_COUNTS=" + json.dumps(summary["delivery_counts"], ensure_ascii=False, sort_keys=True))
         print("SEQUENCE_COUNTS=" + json.dumps(summary["sequence_counts"], ensure_ascii=False, sort_keys=True))
