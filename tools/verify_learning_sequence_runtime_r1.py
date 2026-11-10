@@ -60,39 +60,48 @@ def stable_apply(rows: list[dict], config: dict) -> list[dict]:
     for level in levels:
         group = groups[level]
         ids = [row["id"] for row in group]
-        adjacency = {cid: [] for cid in ids}
-        indegree = {cid: 0 for cid in ids}
-        edges: set[tuple[str, str]] = set()
+        id_set = set(ids)
+        prerequisites = {cid: [] for cid in ids}
 
         for rule in rules_by_level.get(level, []):
             cid = rule["id"]
             for prerequisite_id in rule["after"]:
                 if prerequisite_id == cid:
                     raise SystemExit(f"FAIL: self dependency: {cid}")
-                edge = (prerequisite_id, cid)
-                if edge in edges:
+                if prerequisite_id not in id_set:
+                    raise SystemExit(
+                        f"FAIL: prerequisite missing from L{level}: {cid} <- {prerequisite_id}"
+                    )
+                if prerequisite_id in prerequisites[cid]:
                     continue
-                edges.add(edge)
-                adjacency[prerequisite_id].append(cid)
-                indegree[cid] += 1
+                prerequisites[cid].append(prerequisite_id)
 
-        queue = sorted(
-            [cid for cid in ids if indegree[cid] == 0],
-            key=original_index.__getitem__,
-        )
+        state: dict[str, int] = {}
         ordered: list[str] = []
+        cycle_detected = False
 
-        while queue:
-            cid = queue.pop(0)
+        def emit_with_prerequisites(cid: str) -> None:
+            nonlocal cycle_detected
+            status = state.get(cid, 0)
+            if status == 2 or cycle_detected:
+                return
+            if status == 1:
+                cycle_detected = True
+                return
+
+            state[cid] = 1
+            for prerequisite_id in prerequisites[cid]:
+                emit_with_prerequisites(prerequisite_id)
+            if cycle_detected:
+                return
+            state[cid] = 2
             ordered.append(cid)
-            for next_id in adjacency[cid]:
-                indegree[next_id] -= 1
-                if indegree[next_id] == 0:
-                    queue.append(next_id)
-                    queue.sort(key=original_index.__getitem__)
 
-        if len(ordered) != len(ids):
-            blocked = sorted(cid for cid in ids if indegree[cid] > 0)
+        for cid in ids:
+            emit_with_prerequisites(cid)
+
+        if cycle_detected or len(ordered) != len(ids):
+            blocked = sorted(cid for cid in ids if state.get(cid, 0) == 1)
             raise SystemExit(f"FAIL: cycle detected in L{level}: {blocked}")
 
         output.extend(by_id[cid] for cid in ordered)
@@ -122,7 +131,7 @@ def main() -> None:
     if not isinstance(config.get("rules"), list) or not config["rules"]:
         raise SystemExit("FAIL: rules must be a non-empty list")
 
-    analysis = build_analysis(ROOT)
+    analysis = build_analysis(ROOT, use_effective_sequence=False)
     baseline = analysis["rows"]
     effective = stable_apply(baseline, config)
 
@@ -169,6 +178,31 @@ def main() -> None:
         "PYF95_A1_FUNC_011_FUNCTION_IN_FUNCTION",
         "PYF95_A1_FUNC_003_RETURN_ASSIGN",
     )
+    assert_after(
+        effective_pos,
+        "PY10_L03_def_return_001",
+        "PYF95_A1_FUNC_008_RETURN_NO_PRINT",
+    )
+    assert_after(
+        effective_pos,
+        "PYF95_A1_FUNC_020_COUNT_PREFIX",
+        "PYV99_A1_GAP_006_STARTSWITH_PREFIX",
+    )
+    assert_after(
+        effective_pos,
+        "PYF95_A3_LOOP_007_BREAK_FIND_FIRST",
+        "PYV99_A1_GAP_006_STARTSWITH_PREFIX",
+    )
+    assert_after(
+        effective_pos,
+        "PY4_L04_all_001",
+        "PY4_L04_any_001",
+    )
+    assert_after(
+        effective_pos,
+        "PY130_L05_API_KEY_NOT_IN_CODE_001",
+        "PY130_L05_ENV_VAR_CONCEPT_001",
+    )
 
     moved = [
         cid
@@ -197,6 +231,36 @@ def main() -> None:
         "CANARY_FUNCTION_DEF_CALL="
         f"{effective_pos['PYF95_A1_FUNC_002_DEF_NOT_CALLED']}"
         f"<{effective_pos['PYF95_A1_FUNC_001_DEF_CALL_PRINT']}"
+        "=PASS"
+    )
+    print(
+        "CANARY_R2_DEF_RETURN="
+        f"{effective_pos['PYF95_A1_FUNC_008_RETURN_NO_PRINT']}"
+        f"<{effective_pos['PY10_L03_def_return_001']}"
+        "=PASS"
+    )
+    print(
+        "CANARY_R2_STARTSWITH_FUNCTION="
+        f"{effective_pos['PYV99_A1_GAP_006_STARTSWITH_PREFIX']}"
+        f"<{effective_pos['PYF95_A1_FUNC_020_COUNT_PREFIX']}"
+        "=PASS"
+    )
+    print(
+        "CANARY_R2_STARTSWITH_LOOP="
+        f"{effective_pos['PYV99_A1_GAP_006_STARTSWITH_PREFIX']}"
+        f"<{effective_pos['PYF95_A3_LOOP_007_BREAK_FIND_FIRST']}"
+        "=PASS"
+    )
+    print(
+        "CANARY_R2_GENERATOR_ALL="
+        f"{effective_pos['PY4_L04_any_001']}"
+        f"<{effective_pos['PY4_L04_all_001']}"
+        "=PASS"
+    )
+    print(
+        "CANARY_R2_ENV_SECRET="
+        f"{effective_pos['PY130_L05_ENV_VAR_CONCEPT_001']}"
+        f"<{effective_pos['PY130_L05_API_KEY_NOT_IN_CODE_001']}"
         "=PASS"
     )
     print("VERIFY_LEARNING_SEQUENCE_RUNTIME_R1=PASS")
