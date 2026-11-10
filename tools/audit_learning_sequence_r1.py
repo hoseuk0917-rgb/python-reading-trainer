@@ -442,7 +442,7 @@ def side_reference_candidates(card: dict, side_cards: list[dict], limit: int = 3
         for score, sid, match_type, side in scored[:limit]
     ]
 
-def build_analysis(root: Path) -> dict:
+def build_analysis(root: Path, use_effective_sequence: bool = True) -> dict:
     app_path = root / "src" / "pwa" / "app.js"
     if not app_path.is_file():
         raise SystemExit(f"FAIL: app.js not found: {app_path}")
@@ -480,7 +480,11 @@ def build_analysis(root: Path) -> dict:
         str(card.get("id")): index
         for index, card in enumerate(baseline_cards, start=1)
     }
-    runtime_cards = apply_sequence_config(root, baseline_cards)
+    runtime_cards = (
+        apply_sequence_config(root, baseline_cards)
+        if use_effective_sequence
+        else baseline_cards
+    )
     position = {
         str(card.get("id")): index
         for index, card in enumerate(runtime_cards, start=1)
