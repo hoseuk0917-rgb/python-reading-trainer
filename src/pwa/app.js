@@ -606,36 +606,66 @@ function buildSafeSideCardIntroTextV306(sourceCard) {
   return trimConceptIntroTextV306(raw, 260);
 }
 
-function getPrelearnSupportSideCardR1(card) {
+function getPrelearnSupportSideCardsR1(card) {
   if (
     !card ||
     !learningSequenceConfigR1 ||
     !Array.isArray(learningSequenceConfigR1.prelearn_support)
   ) {
-    return null;
+    return [];
   }
 
   const support = learningSequenceConfigR1.prelearn_support.find(function(item) {
-    return item && item.id === card.id && typeof item.side_card_id === "string";
+    return item && item.id === card.id;
   });
   if (!support) {
-    return null;
+    return [];
   }
 
-  return getSideCardById(support.side_card_id) || null;
+  const ids = Array.isArray(support.side_card_ids)
+    ? support.side_card_ids
+    : typeof support.side_card_id === "string"
+      ? [support.side_card_id]
+      : [];
+
+  return ids
+    .map(getSideCardById)
+    .filter(Boolean)
+    .slice(0, 2);
 }
 
 function buildConceptIntroV306(card) {
-  const prelearnSourceCard = getPrelearnSupportSideCardR1(card);
-  if (prelearnSourceCard) {
-    const prelearnText = buildSafeSideCardIntroTextV306(prelearnSourceCard);
-    if (prelearnText) {
+  const prelearnSourceCards = getPrelearnSupportSideCardsR1(card);
+  if (prelearnSourceCards.length > 0) {
+    const entries = prelearnSourceCards.map(function(sourceCard) {
       return {
-        sourceSideCardId: prelearnSourceCard.id || "",
+        card: sourceCard,
+        text: buildSafeSideCardIntroTextV306(sourceCard)
+      };
+    }).filter(function(entry) {
+      return Boolean(entry.text);
+    });
+
+    if (entries.length > 0) {
+      const sourceIds = entries.map(function(entry) {
+        return entry.card.id || "";
+      }).filter(Boolean);
+      const combinedBody = entries.map(function(entry, index) {
+        const marker = entries.length > 1 ? String(index + 1) + ". " : "";
+        return marker + (entry.card.title || "개념") + " — " + entry.text;
+      }).join("\n\n");
+
+      return {
+        sourceSideCardId: sourceIds[0] || "",
+        sourceSideCardIds: sourceIds,
         concept: "",
-        title: prelearnSourceCard.title || "먼저 익힐 개념",
-        body: prelearnText,
-        sourceTitle: prelearnSourceCard.title || "",
+        title: entries.length > 1
+          ? studyToolsTextV334A10N("먼저 익힐 개념", "Concepts to learn first")
+          : (entries[0].card.title || studyToolsTextV334A10N("먼저 익힐 개념", "Concept to learn first")),
+        body: combinedBody,
+        sourceTitle: entries.map(function(entry) {
+          return entry.card.title || "";
+        }).filter(Boolean).join(" · "),
         prelearn: true
       };
     }
@@ -665,7 +695,7 @@ function buildConceptIntroV306(card) {
 
 function renderConceptIntroV306(card) {
   const box = document.getElementById("conceptIntro");
-  if (!box) return "";
+  if (!box) return [];
 
   const intro = buildConceptIntroV306(card);
   box.innerHTML = "";
@@ -673,11 +703,15 @@ function renderConceptIntroV306(card) {
   if (!intro) {
     box.classList.add("hidden");
     box.removeAttribute("data-side-card-id");
-    return "";
+    return [];
   }
 
+  const sourceSideCardIds = Array.isArray(intro.sourceSideCardIds)
+    ? intro.sourceSideCardIds.filter(Boolean)
+    : [intro.sourceSideCardId].filter(Boolean);
+
   box.classList.remove("hidden");
-  box.setAttribute("data-side-card-id", intro.sourceSideCardId || "");
+  box.setAttribute("data-side-card-id", sourceSideCardIds.join(","));
 
   const label = document.createElement("div");
   label.className = "concept-intro-label-v306";
@@ -693,16 +727,22 @@ function renderConceptIntroV306(card) {
 
   const note = document.createElement("div");
   note.className = "concept-intro-note-v306";
-  note.textContent = intro.sourceSideCardId
-    ? "사이드카드의 일반 개념 설명만 먼저 보여줍니다. 예시와 정답 해설은 문제 풀이 뒤에 확인합니다."
-    : "정답을 직접 알려주지 않는 일반 개념 설명입니다.";
+  note.textContent = sourceSideCardIds.length > 0
+    ? studyToolsTextV334A10N(
+        "사이드카드의 일반 개념 설명만 먼저 보여줍니다. 예시와 정답 해설은 문제 풀이 뒤에 확인합니다.",
+        "Only the general concept explanation is shown first. Check examples and answer explanations after attempting the question."
+      )
+    : studyToolsTextV334A10N(
+        "정답을 직접 알려주지 않는 일반 개념 설명입니다.",
+        "This is a general concept explanation that does not reveal the answer."
+      );
 
   box.appendChild(label);
   box.appendChild(title);
   box.appendChild(body);
   box.appendChild(note);
 
-  return intro.sourceSideCardId || "";
+  return sourceSideCardIds;
 }
 
 function renderReadingGoalV306(card) {
@@ -1176,7 +1216,9 @@ function renderSideCards(card, excludedIntroSideCardIdV306) {
   sideEl.innerHTML = "";
 
   const excludedIntroIdsV306 = new Set(
-    [excludedIntroSideCardIdV306].filter(Boolean)
+    Array.isArray(excludedIntroSideCardIdV306)
+      ? excludedIntroSideCardIdV306.filter(Boolean)
+      : [excludedIntroSideCardIdV306].filter(Boolean)
   );
 
   const rawDirectIds = card.side_card_ids || [];
