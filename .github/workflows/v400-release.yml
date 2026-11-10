@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: v400-release-${{ github.ref }}
@@ -23,8 +23,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: fix/explanation-api-examples-r2-bilingual
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -90,25 +88,9 @@ jobs:
           PY
           test ! -e src/pwa/v400_mobile_admin_route.js
 
-      - name: Runtime bundle build
-        run: python tools/build_runtime_lesson_bundle_v400_5.py
-
-      - name: Temporary commit generated runtime lesson bundles
-        if: github.event_name == 'pull_request'
-        shell: bash
-        run: |
-          git add data/runtime/lesson_bundle_v400_5.json data_i18n/en/runtime/lesson_bundle_v400_5.json
-          if git diff --cached --quiet; then
-            echo "RUNTIME_BUNDLE_COMMIT=NOT_NEEDED"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Refresh bilingual V400 lesson bundles for explanation fixes"
-          git push origin "HEAD:${{ github.head_ref }}"
-
       - name: Runtime bundle integrity
         run: |
+          python tools/build_runtime_lesson_bundle_v400_5.py
           git diff --exit-code -- data/runtime/lesson_bundle_v400_5.json data_i18n/en/runtime/lesson_bundle_v400_5.json data/runtime/support_bundle_v400_5.json data_i18n/en/runtime/support_bundle_v400_5.json
 
       - name: Lesson validation
