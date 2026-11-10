@@ -295,6 +295,24 @@ def boolean_contradiction_details(card, language):
     return details
 
 
+def unbalanced_double_backtick_paths(value, prefix=""):
+    paths = []
+    if isinstance(value, str):
+        if value.count(chr(96) * 2) % 2 == 1:
+            paths.append(prefix or "<root>")
+        return paths
+    if isinstance(value, dict):
+        for key, item in value.items():
+            child = f"{prefix}.{key}" if prefix else str(key)
+            paths.extend(unbalanced_double_backtick_paths(item, child))
+        return paths
+    if isinstance(value, (list, tuple)):
+        for index, item in enumerate(value):
+            child = f"{prefix}[{index}]" if prefix else f"[{index}]"
+            paths.extend(unbalanced_double_backtick_paths(item, child))
+    return paths
+
+
 def explanation_readiness_rows(cards, sources, language):
     metrics = Counter()
     candidates = []
@@ -400,13 +418,23 @@ def explanation_readiness_rows(cards, sources, language):
                 (language, cid, "PLACEHOLDER_TEXT", source, "target placeholder")
             )
 
-        if re.search(
-            r"\x60\x60\s+(?:targets|returns|fills|removes|selects)\b",
-            rich_blob,
-            flags=re.IGNORECASE,
-        ):
+        markup_paths = unbalanced_double_backtick_paths(
+            {
+                "explanation": card.get("explanation"),
+                "concept_explanation": ce,
+                "teaching_example": te,
+                "answer_explanation": ae,
+            }
+        )
+        if markup_paths:
             candidates.append(
-                (language, cid, "BROKEN_INLINE_MARKUP", source, "double-backtick fragment")
+                (
+                    language,
+                    cid,
+                    "BROKEN_INLINE_MARKUP",
+                    source,
+                    "unbalanced double-backticks: " + ",".join(markup_paths),
+                )
             )
 
         code = str(card.get("code") or "")
