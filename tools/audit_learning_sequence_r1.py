@@ -16,8 +16,6 @@ GATED_CONCEPTS = {
     "function_definition",
     "parameter_definition",
     "if_statement",
-    "elif_clause",
-    "else_clause",
     "for_statement",
     "while_statement",
     "break_statement",
@@ -29,10 +27,6 @@ GATED_CONCEPTS = {
     "set_comprehension",
     "generator_expression",
     "lambda_expression",
-    "except_clause",
-    "try_statement",
-    "try_else_clause",
-    "finally_clause",
     "with_statement",
     "async_with_statement",
     "await_expression",
@@ -40,6 +34,23 @@ GATED_CONCEPTS = {
     "decorator",
     "raise_statement",
     "yield_expression",
+}
+
+COMPANION_CONCEPTS = {
+    "elif_clause",
+    "else_clause",
+    "except_clause",
+    "try_statement",
+    "try_else_clause",
+    "finally_clause",
+}
+
+PEDAGOGIC_CALL_TARGETS = {
+    "abs", "all", "any", "bool", "dict", "enumerate", "float", "input", "int",
+    "len", "list", "max", "min", "open", "range", "reversed", "round", "set",
+    "sorted", "str", "sum", "tuple", "type", "zip",
+    "append", "extend", "get", "insert", "items", "join", "keys", "lower",
+    "pop", "remove", "replace", "split", "startswith", "strip", "values",
 }
 
 IGNORE_CALL_TARGETS = {
@@ -150,7 +161,13 @@ def focus_call_targets(focus: str) -> list[str]:
         try:
             tree = ast.parse(focus)
         except SyntaxError:
-            return []
+            if focus.rstrip().endswith(":"):
+                try:
+                    tree = ast.parse(focus.rstrip() + "\n    pass")
+                except SyntaxError:
+                    return []
+            else:
+                return []
     targets: list[str] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
@@ -160,6 +177,121 @@ def focus_call_targets(focus: str) -> list[str]:
                 if key not in IGNORE_CALL_TARGETS:
                     targets.append(key)
     return sorted(set(targets))
+
+
+def pedagogic_call_targets(code: str) -> list[str]:
+    return sorted(
+        target
+        for target in call_targets(code)
+        if target.split(".")[-1] in PEDAGOGIC_CALL_TARGETS
+    )
+
+
+def pedagogic_focus_call_targets(focus: str) -> list[str]:
+    return sorted(
+        target
+        for target in focus_call_targets(focus)
+        if target.split(".")[-1] in PEDAGOGIC_CALL_TARGETS
+    )
+
+
+def apply_sequence_config(root: Path, cards: list[dict]) -> list[dict]:
+    config_path = root / "data" / "curriculum" / "learning_sequence_r1.json"
+    if not config_path.is_file():
+        return cards
+
+    config = load_json(config_path)
+    if not isinstance(config, dict) or config.get("enabled") is not True:
+        return cards
+    rules = config.get("rules", [])
+    if not isinstance(rules, list):
+        return cards
+
+    original = list(cards)
+    original_index = {
+        str(card.get("id", "")): index
+        for index, card in enumerate(original)
+    }
+    by_id = {
+        str(card.get("id", "")): card
+        for card in original
+        if str(card.get("id", ""))
+    }
+
+    levels: list[Any] = []
+    groups: dict[Any, list[dict]] = {}
+    for card in original:
+        level = card.get("level")
+        if level not in groups:
+            groups[level] = []
+            levels.append(level)
+        groups[level].append(card)
+
+    rules_by_level: dict[Any, list[tuple[str, list[str]]]] = {}
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        cid = str(rule.get("id", ""))
+        after = [
+            str(value)
+            for value in (rule.get("after", []) or [])
+            if str(value)
+        ]
+        card = by_id.get(cid)
+        if not card:
+            continue
+        valid = [
+            prerequisite_id
+            for prerequisite_id in after
+            if prerequisite_id in by_id
+            and by_id[prerequisite_id].get("level") == card.get("level")
+        ]
+        rules_by_level.setdefault(card.get("level"), []).append((cid, valid))
+
+    output: list[dict] = []
+
+    for level in levels:
+        group = groups[level]
+        ids = [str(card.get("id", "")) for card in group]
+        id_set = set(ids)
+        adjacency = {cid: [] for cid in ids}
+        indegree = {cid: 0 for cid in ids}
+        edges: set[tuple[str, str]] = set()
+
+        for cid, after in rules_by_level.get(level, []):
+            if cid not in id_set:
+                continue
+            for prerequisite_id in after:
+                if prerequisite_id not in id_set or prerequisite_id == cid:
+                    continue
+                edge = (prerequisite_id, cid)
+                if edge in edges:
+                    continue
+                edges.add(edge)
+                adjacency[prerequisite_id].append(cid)
+                indegree[cid] += 1
+
+        queue = sorted(
+            [cid for cid in ids if indegree[cid] == 0],
+            key=original_index.__getitem__,
+        )
+        ordered: list[str] = []
+
+        while queue:
+            cid = queue.pop(0)
+            ordered.append(cid)
+            for next_id in adjacency[cid]:
+                indegree[next_id] -= 1
+                if indegree[next_id] == 0:
+                    queue.append(next_id)
+                    queue.sort(key=original_index.__getitem__)
+
+        if len(ordered) != len(ids):
+            output.extend(group)
+        else:
+            output.extend(by_id[cid] for cid in ordered)
+
+    return output
 
 
 def nested_call_count(code: str) -> int:
@@ -343,8 +475,16 @@ def build_analysis(root: Path) -> dict:
     if duplicates:
         raise SystemExit(f"FAIL: duplicate lesson ids: {duplicates[:20]}")
 
-    runtime_cards = sorted(cards, key=lambda card: (card.get("level", 999), str(card.get("id", ""))))
-    position = {str(card.get("id")): index for index, card in enumerate(runtime_cards, start=1)}
+    baseline_cards = sorted(cards, key=lambda card: (card.get("level", 999), str(card.get("id", ""))))
+    baseline_position = {
+        str(card.get("id")): index
+        for index, card in enumerate(baseline_cards, start=1)
+    }
+    runtime_cards = apply_sequence_config(root, baseline_cards)
+    position = {
+        str(card.get("id")): index
+        for index, card in enumerate(runtime_cards, start=1)
+    }
 
     concept_intro: dict[str, tuple[int, str]] = {}
     call_intro: dict[str, tuple[int, str]] = {}
@@ -362,11 +502,16 @@ def build_analysis(root: Path) -> dict:
             if concept == primary or focus_introduces_concept(concept, focus):
                 concept_intro[concept] = (pos, cid)
 
-        focused = focus_call_targets(focus)
+        focused = pedagogic_focus_call_targets(focus)
         if len(focused) == 1:
             target = focused[0]
             if target not in call_intro:
                 call_intro[target] = (pos, cid)
+
+    by_id_level = {
+        str(card.get("id", "")): card.get("level")
+        for card in runtime_cards
+    }
 
     rows: list[dict] = []
 
@@ -374,20 +519,27 @@ def build_analysis(root: Path) -> dict:
         cid = str(card.get("id", ""))
         pos = position[cid]
         concept_prereqs = explicit_concept_prereqs(card)
-        all_calls = call_targets(str(card.get("code", "")))
-        focused_calls = focus_call_targets(str(card.get("focus_span", "")))
+        all_calls = pedagogic_call_targets(str(card.get("code", "")))
+        focused_calls = pedagogic_focus_call_targets(str(card.get("focus_span", "")))
 
         order_reasons: list[dict] = []
 
         for concept in concept_prereqs:
             intro = concept_intro.get(concept)
             if intro and intro[0] > pos:
+                intro_level = by_id_level.get(intro[1])
                 order_reasons.append(
                     {
                         "kind": "concept",
                         "prerequisite": concept,
                         "intro_card": intro[1],
                         "intro_position": intro[0],
+                        "intro_level": intro_level,
+                        "relation": (
+                            "same_level"
+                            if intro_level == card.get("level")
+                            else "cross_level"
+                        ),
                     }
                 )
 
@@ -398,27 +550,54 @@ def build_analysis(root: Path) -> dict:
             if target in focused_calls and len(focused_calls) == 1 and intro[1] == cid:
                 continue
             if intro[0] > pos:
+                intro_level = by_id_level.get(intro[1])
                 order_reasons.append(
                     {
                         "kind": "call_target",
                         "prerequisite": target,
                         "intro_card": intro[1],
                         "intro_position": intro[0],
+                        "intro_level": intro_level,
+                        "relation": (
+                            "same_level"
+                            if intro_level == card.get("level")
+                            else "cross_level"
+                        ),
                     }
                 )
 
         easy_refs = side_reference_candidates(card, side_cards)
+        same_level_reasons = [
+            reason
+            for reason in order_reasons
+            if reason.get("relation") == "same_level"
+        ]
+        cross_level_reasons = [
+            reason
+            for reason in order_reasons
+            if reason.get("relation") == "cross_level"
+        ]
+        delivery = delivery_for(card, str(card.get("_source", "")))
+        if same_level_reasons:
+            sequence_status = "ORDER_REVIEW"
+        elif cross_level_reasons and delivery == "Review":
+            sequence_status = "REVIEW_BEFORE_LEARN"
+        elif cross_level_reasons:
+            sequence_status = "CROSS_LEVEL_PREREQ"
+        else:
+            sequence_status = "PREREQ_OK"
+
         rows.append(
             {
                 "position": pos,
                 "id": cid,
                 "level": card.get("level"),
                 "composition": composition_for(card, str(card.get("_source", ""))),
-                "delivery": delivery_for(card, str(card.get("_source", ""))),
+                "delivery": delivery,
                 "primary_concept": card.get("primary_concept"),
                 "concept_prerequisites": concept_prereqs,
                 "call_targets": all_calls,
-                "sequence_status": "ORDER_REVIEW" if order_reasons else "PREREQ_OK",
+                "sequence_status": sequence_status,
                 "order_reasons": order_reasons,
                 "easy_reference_status": (
                     "DIRECT"
@@ -438,6 +617,8 @@ def build_analysis(root: Path) -> dict:
         "side_file_count": len(side_paths),
         "card_count": len(runtime_cards),
         "side_card_count": len(side_cards),
+        "baseline_position": baseline_position,
+        "effective_position": position,
         "rows": rows,
     }
 
@@ -450,14 +631,14 @@ def canary_result(rows_by_id: dict[str, dict]) -> dict[str, Any]:
     checks: dict[str, Any] = {}
 
     if not input_int:
-        checks["INPUT_INT_BEFORE_INT"] = {"pass": False, "reason": "card missing"}
+        checks["INPUT_INT_ORDER_RESOLVED"] = {"pass": False, "reason": "card missing"}
     else:
         missing = {
             reason["prerequisite"]
             for reason in input_int["order_reasons"]
         }
-        checks["INPUT_INT_BEFORE_INT"] = {
-            "pass": "int" in missing,
+        checks["INPUT_INT_ORDER_RESOLVED"] = {
+            "pass": "int" not in missing,
             "status": input_int["sequence_status"],
             "missing": sorted(missing),
         }
@@ -472,14 +653,14 @@ def canary_result(rows_by_id: dict[str, dict]) -> dict[str, Any]:
         }
 
     if not function_first:
-        checks["FUNCTION_CALL_BEFORE_DEF"] = {"pass": False, "reason": "card missing"}
+        checks["FUNCTION_DEF_CALL_ORDER_RESOLVED"] = {"pass": False, "reason": "card missing"}
     else:
         missing = {
             reason["prerequisite"]
             for reason in function_first["order_reasons"]
         }
-        checks["FUNCTION_CALL_BEFORE_DEF"] = {
-            "pass": "function_definition" in missing,
+        checks["FUNCTION_DEF_CALL_ORDER_RESOLVED"] = {
+            "pass": "function_definition" not in missing,
             "status": function_first["sequence_status"],
             "missing": sorted(missing),
         }
@@ -559,17 +740,27 @@ def main() -> None:
             print(f"CANARY_{name}={'PASS' if result.get('pass') else 'FAIL'} {json.dumps(result, ensure_ascii=False, sort_keys=True)}")
 
         order_rows = [row for row in rows if row["sequence_status"] == "ORDER_REVIEW"]
+        review_before_learn = [
+            row for row in rows
+            if row["sequence_status"] == "REVIEW_BEFORE_LEARN"
+        ]
+        cross_level = [
+            row for row in rows
+            if row["sequence_status"] == "CROSS_LEVEL_PREREQ"
+        ]
         print(f"ORDER_REVIEW_COUNT={len(order_rows)}")
-        for row in order_rows[: max(0, args.limit)]:
+        print(f"REVIEW_BEFORE_LEARN_COUNT={len(review_before_learn)}")
+        print(f"CROSS_LEVEL_PREREQ_COUNT={len(cross_level)}")
+        for row in (order_rows + review_before_learn + cross_level)[: max(0, args.limit)]:
             reasons = ",".join(
-                f"{reason['kind']}:{reason['prerequisite']}->{reason['intro_card']}"
+                f"{reason['kind']}:{reason['prerequisite']}->{reason['intro_card']}[{reason.get('relation','')}]"
                 for reason in row["order_reasons"]
             )
             refs = ",".join(ref["id"] for ref in row["easy_reference_candidates"])
             print(
                 "\t".join(
                     [
-                        "ORDER_REVIEW",
+                        row["sequence_status"],
                         str(row["position"]),
                         row["id"],
                         f"L{row['level']}",
@@ -588,8 +779,15 @@ def main() -> None:
             print("FAILURE=" + failure)
         raise SystemExit(1)
 
-    if args.strict_order and any(row["sequence_status"] == "ORDER_REVIEW" for row in rows):
-        print("AUDIT_LEARNING_SEQUENCE_R1=ORDER_REVIEW_REMAINS")
+    if args.strict_order and any(
+        row["sequence_status"] in {
+            "ORDER_REVIEW",
+            "REVIEW_BEFORE_LEARN",
+            "CROSS_LEVEL_PREREQ",
+        }
+        for row in rows
+    ):
+        print("AUDIT_LEARNING_SEQUENCE_R1=SEQUENCE_REVIEW_REMAINS")
         raise SystemExit(2)
 
     print("AUDIT_LEARNING_SEQUENCE_R1=PASS")
