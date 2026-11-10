@@ -2333,54 +2333,56 @@ function applyLearningSequenceR1(inputCards, config) {
     const group = groups.get(level) || [];
     const ids = group.map(function(card) { return card.id; });
     const idSet = new Set(ids);
-    const adjacency = new Map();
-    const indegree = new Map();
+    const prerequisites = new Map();
 
     ids.forEach(function(id) {
-      adjacency.set(id, []);
-      indegree.set(id, 0);
+      prerequisites.set(id, []);
     });
 
-    const edgeKeys = new Set();
     (rulesByLevel.get(level) || []).forEach(function(rule) {
       if (!idSet.has(rule.id)) {
         return;
       }
 
+      const current = prerequisites.get(rule.id);
       rule.after.forEach(function(afterId) {
-        if (!idSet.has(afterId) || afterId === rule.id) {
+        if (!idSet.has(afterId) || afterId === rule.id || current.includes(afterId)) {
           return;
         }
-
-        const edgeKey = afterId + "\u0000" + rule.id;
-        if (edgeKeys.has(edgeKey)) {
-          return;
-        }
-        edgeKeys.add(edgeKey);
-        adjacency.get(afterId).push(rule.id);
-        indegree.set(rule.id, indegree.get(rule.id) + 1);
+        current.push(afterId);
       });
     });
 
-    const queue = ids
-      .filter(function(id) { return indegree.get(id) === 0; })
-      .sort(function(a, b) { return originalIndex.get(a) - originalIndex.get(b); });
-
+    const state = new Map();
     const orderedIds = [];
-    while (queue.length > 0) {
-      const id = queue.shift();
-      orderedIds.push(id);
+    let cycleDetected = false;
 
-      adjacency.get(id).forEach(function(nextId) {
-        indegree.set(nextId, indegree.get(nextId) - 1);
-        if (indegree.get(nextId) === 0) {
-          queue.push(nextId);
-          queue.sort(function(a, b) { return originalIndex.get(a) - originalIndex.get(b); });
-        }
+    function emitWithPrerequisites(id) {
+      const status = state.get(id) || 0;
+      if (status === 2 || cycleDetected) {
+        return;
+      }
+      if (status === 1) {
+        cycleDetected = true;
+        return;
+      }
+
+      state.set(id, 1);
+      (prerequisites.get(id) || []).forEach(function(prerequisiteId) {
+        emitWithPrerequisites(prerequisiteId);
       });
+      if (cycleDetected) {
+        return;
+      }
+      state.set(id, 2);
+      orderedIds.push(id);
     }
 
-    if (orderedIds.length !== ids.length) {
+    ids.forEach(function(id) {
+      emitWithPrerequisites(id);
+    });
+
+    if (cycleDetected || orderedIds.length !== ids.length) {
       console.warn("LEARNING_SEQUENCE_R1 cycle detected; preserving original level order:", level);
       group.forEach(function(card) { output.push(card); });
       return;
