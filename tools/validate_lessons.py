@@ -255,6 +255,111 @@ def main():
                 ):
                     semantic_invariant_errors.append((logging_card_id, "en_key_point_false_branch"))
 
+    pandas_fill_id = "PY122_L06_ISNA_FILLNA_001"
+    pandas_drop_id = "PY122_L06_DROPNA_FLOW_001"
+
+    pandas_fill = next(
+        (card for card in lesson_cards if card.get("id") == pandas_fill_id),
+        None,
+    )
+    if pandas_fill is None:
+        semantic_invariant_errors.append((pandas_fill_id, "ko_card_missing"))
+    else:
+        fill_explanation = str(pandas_fill.get("explanation") or "")
+        fill_why = str(
+            (pandas_fill.get("answer_explanation") or {}).get("why_correct") or ""
+        )
+        if "DemoSeries" not in fill_explanation or "pandas" not in fill_explanation:
+            semantic_invariant_errors.append((pandas_fill_id, "ko_mock_context_missing"))
+        if "target의 메서드 호출" in fill_explanation or "target의 메서드 호출" in fill_why:
+            semantic_invariant_errors.append((pandas_fill_id, "ko_target_placeholder"))
+        if pandas_fill.get("answer") != "score 값의 None을 0으로 채운 결과를 만든다":
+            semantic_invariant_errors.append((pandas_fill_id, "ko_answer_drift"))
+
+    pandas_drop = next(
+        (card for card in lesson_cards if card.get("id") == pandas_drop_id),
+        None,
+    )
+    if pandas_drop is None:
+        semantic_invariant_errors.append((pandas_drop_id, "ko_card_missing"))
+    else:
+        drop_explanation = str(pandas_drop.get("explanation") or "")
+        if "class DemoFrame(list)" not in str(pandas_drop.get("code") or ""):
+            semantic_invariant_errors.append((pandas_drop_id, "ko_mock_code_missing"))
+        if pandas_drop.get("answer") != "score 값이 None인 행을 제외한 새 DemoFrame":
+            semantic_invariant_errors.append((pandas_drop_id, "ko_answer_not_demoframe"))
+        if "DemoFrame" not in drop_explanation or "pandas DataFrame" not in drop_explanation:
+            semantic_invariant_errors.append((pandas_drop_id, "ko_mock_real_boundary_missing"))
+
+    en_pandas_path = (
+        root
+        / "data_i18n"
+        / "en"
+        / "lessons"
+        / "python_pandas_beginner_v122_a1.json"
+    )
+    if not en_pandas_path.exists():
+        semantic_invariant_errors.append(("PY122", "en_file_missing"))
+    else:
+        try:
+            en_pandas_cards = load_json(en_pandas_path)
+        except Exception as exc:
+            semantic_invariant_errors.append(("PY122", f"en_json_error:{exc!r}"))
+        else:
+            en_fill = next(
+                (
+                    card
+                    for card in en_pandas_cards
+                    if isinstance(card, dict) and card.get("id") == pandas_fill_id
+                ),
+                None,
+            )
+            en_drop = next(
+                (
+                    card
+                    for card in en_pandas_cards
+                    if isinstance(card, dict) and card.get("id") == pandas_drop_id
+                ),
+                None,
+            )
+
+            if en_fill is None:
+                semantic_invariant_errors.append((pandas_fill_id, "en_card_missing"))
+            else:
+                en_fill_blob = " ".join(
+                    [
+                        str(en_fill.get("explanation") or ""),
+                        str((en_fill.get("concept_explanation") or {}).get("common_mistake") or ""),
+                        str((en_fill.get("answer_explanation") or {}).get("why_correct") or ""),
+                    ]
+                )
+                target_placeholder = (
+                    "Calling the " + chr(96) + "target" + chr(96) + " method"
+                )
+                broken_marker = chr(96) * 2 + " targets"
+                if "DemoSeries" not in en_fill_blob or "pandas" not in en_fill_blob:
+                    semantic_invariant_errors.append((pandas_fill_id, "en_mock_context_missing"))
+                if target_placeholder in en_fill_blob or broken_marker in en_fill_blob:
+                    semantic_invariant_errors.append((pandas_fill_id, "en_placeholder_or_broken_markup"))
+                en_fill_answer = str(en_fill.get("answer") or "").replace(chr(96), "")
+                if en_fill_answer != "Create a result where None values under score are filled with 0":
+                    semantic_invariant_errors.append((pandas_fill_id, "en_answer_drift"))
+
+            if en_drop is None:
+                semantic_invariant_errors.append((pandas_drop_id, "en_card_missing"))
+            else:
+                en_drop_explanation = str(en_drop.get("explanation") or "")
+                en_drop_wrong = str(
+                    ((en_drop.get("answer_explanation") or {}).get("common_wrong_choice") or {}).get("why_wrong") or ""
+                )
+                en_drop_answer = str(en_drop.get("answer") or "").replace(chr(96), "")
+                if en_drop_answer != "A new DemoFrame excluding rows whose score value is None":
+                    semantic_invariant_errors.append((pandas_drop_id, "en_answer_not_demoframe"))
+                if "DemoFrame" not in en_drop_explanation or "pandas DataFrame" not in en_drop_explanation:
+                    semantic_invariant_errors.append((pandas_drop_id, "en_mock_real_boundary_missing"))
+                if "Deleting rows is a different syntax" in en_drop_wrong:
+                    semantic_invariant_errors.append((pandas_drop_id, "en_row_column_mismatch"))
+
     failures = []
 
     if args.expected_app_version and app_version != args.expected_app_version:
