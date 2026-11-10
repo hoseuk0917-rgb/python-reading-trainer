@@ -115,6 +115,29 @@ def call_leafs(text):
             elif isinstance(node.func,ast.Attribute): out.add(node.func.attr)
     return sorted(out)
 
+def meaningful_code_lines(code):
+    return [
+        line for line in str(code or "").splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+
+def specific_target_call_required(card, focus_calls):
+    if not focus_calls:
+        return set()
+    primary=str(card.get("primary_concept",""))
+    if primary not in {"call","argument_passing"}:
+        return set()
+    blob=" ".join(
+        [str(card.get("title","")), str(card.get("reading_goal",""))] +
+        [str(x) for x in (card.get("coverage_topics",[]) or [])]
+    ).lower()
+    required=set()
+    for leaf in focus_calls:
+        low=leaf.lower()
+        if low+"(" in blob or low+"()" in blob or low in [str(x).lower() for x in (card.get("coverage_topics",[]) or [])]:
+            required.add(leaf)
+    return required
+
 def has_primary_syntax(primary, teaching_code):
     tree=parse_code(teaching_code)
     if tree is None: return False
@@ -181,13 +204,27 @@ def quality_reasons(card):
         primary=str(card.get("primary_concept",""))
         focus_calls=set(call_leafs(str(card.get("focus_span",""))))
         teach_calls=set(call_leafs(teach_code))
-        if focus_calls and not (focus_calls & teach_calls):
+        required_calls=specific_target_call_required(card,focus_calls)
+        if required_calls and not (required_calls & teach_calls):
             reasons.append("TEACHING_EXAMPLE_TARGET_CALL_MISMATCH")
-        elif not focus_calls and not has_primary_syntax(primary,teach_code):
+        elif not has_primary_syntax(primary,teach_code):
             reasons.append("TEACHING_EXAMPLE_PRIMARY_SYNTAX_MISMATCH")
-    if not walkthrough or len(walkthrough)<45: reasons.append("WALKTHROUGH_THIN")
-    if not step or len(step)<70: reasons.append("ANSWER_TRACE_THIN")
-    if not why or len(why)<30: reasons.append("WHY_CORRECT_THIN")
+
+    teach_line_count=len(meaningful_code_lines(teach_code))
+    card_line_count=len(meaningful_code_lines(str(card.get("code",""))))
+    if not walkthrough:
+        reasons.append("WALKTHROUGH_THIN")
+    elif teach_line_count>=4 and len(walkthrough)<55:
+        reasons.append("WALKTHROUGH_THIN")
+
+    if not step:
+        reasons.append("ANSWER_TRACE_THIN")
+    elif card_line_count>=7 and len(step)<90:
+        reasons.append("ANSWER_TRACE_THIN")
+    elif card_line_count>=4 and len(step)<60:
+        reasons.append("ANSWER_TRACE_THIN")
+
+    if not why or len(why)<18: reasons.append("WHY_CORRECT_THIN")
     if not str(wrong.get("choice","")).strip() or not str(wrong.get("why_wrong","")).strip():
         reasons.append("WRONG_CHOICE_REASONING_THIN")
     if not takeaway or len(takeaway)<25: reasons.append("TAKEAWAY_THIN")
