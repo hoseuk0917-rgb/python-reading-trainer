@@ -44,7 +44,17 @@ GATED_CONCEPTS = {
 
 IGNORE_CALL_TARGETS = {
     "print",
-    "type",
+}
+
+QUALIFIED_CALL_ROOTS = {
+    "asyncio", "cv2", "fitz", "gr", "Image", "json", "logging", "math", "np", "os",
+    "Path", "pd", "pytesseract", "random", "requests", "statistics", "st", "subprocess",
+    "torch", "uvicorn",
+}
+
+GENERIC_REFERENCE_TERMS = {
+    "call", "assignment", "name_reference", "literal", "attribute_access",
+    "argument_passing", "read_execution_order", "identify_meaning", "trace_state",
 }
 
 PIPELINE_RE = re.compile(
@@ -104,6 +114,15 @@ def dotted_name(node: ast.AST) -> str | None:
     return None
 
 
+def call_key(name: str) -> str:
+    parts = name.split(".")
+    if len(parts) == 1:
+        return name
+    if parts[0] in QUALIFIED_CALL_ROOTS or parts[0][:1].isupper():
+        return name
+    return parts[-1]
+
+
 def call_targets(code: str) -> list[str]:
     try:
         tree = ast.parse(code or "")
@@ -116,9 +135,9 @@ def call_targets(code: str) -> list[str]:
         name = dotted_name(node.func)
         if not name:
             continue
-        leaf = name.rsplit(".", 1)[-1]
-        if leaf not in IGNORE_CALL_TARGETS:
-            targets.append(leaf)
+        key = call_key(name)
+        if key not in IGNORE_CALL_TARGETS:
+            targets.append(key)
     return sorted(set(targets))
 
 
@@ -137,9 +156,9 @@ def focus_call_targets(focus: str) -> list[str]:
         if isinstance(node, ast.Call):
             name = dotted_name(node.func)
             if name:
-                leaf = name.rsplit(".", 1)[-1]
-                if leaf not in IGNORE_CALL_TARGETS:
-                    targets.append(leaf)
+                key = call_key(name)
+                if key not in IGNORE_CALL_TARGETS:
+                    targets.append(key)
     return sorted(set(targets))
 
 
@@ -160,6 +179,31 @@ def nested_call_count(code: str) -> int:
                 count += 1
                 break
     return count
+
+
+def focus_introduces_concept(concept: str, focus: str) -> bool:
+    text = (focus or "").strip()
+    patterns = {
+        "function_definition": r"^def\s+",
+        "return_statement": r"^return\b",
+        "if_statement": r"^if\s+",
+        "elif_clause": r"^elif\s+",
+        "else_clause": r"^else\s*:",
+        "for_statement": r"^for\s+",
+        "while_statement": r"^while\s+",
+        "except_clause": r"^except\b",
+        "try_statement": r"^try\s*:",
+        "finally_clause": r"^finally\s*:",
+        "with_statement": r"^with\s+",
+        "async_with_statement": r"^async\s+with\s+",
+        "await_expression": r"\bawait\s+",
+        "class_definition": r"^class\s+",
+        "decorator": r"^@",
+        "raise_statement": r"^raise\b",
+        "yield_expression": r"^yield\b",
+    }
+    pattern = patterns.get(concept)
+    return bool(pattern and re.search(pattern, text))
 
 
 def normalize_terms(values: list[Any]) -> set[str]:
@@ -215,10 +259,23 @@ def composition_for(card: dict, source: str) -> str:
 
 
 def side_reference_candidates(card: dict, side_cards: list[dict], limit: int = 3) -> list[dict]:
-    card_terms = normalize_terms(card.get("concepts", []) or [])
+    direct_ids = {
+        str(value).strip()
+        for value in (card.get("side_card_ids", []) or [])
+        if str(value).strip()
+    }
+    card_terms = normalize_terms(card.get("concepts", []) or []) - GENERIC_REFERENCE_TERMS
     primary = str(card.get("primary_concept", "")).strip().lower()
+    if primary in GENERIC_REFERENCE_TERMS:
+        primary = ""
     calls = normalize_terms(call_targets(str(card.get("code", ""))))
-    scored: list[tuple[int, str, dict]] = []
+    calls = {
+        term.split(".")[-1]
+        for term in calls
+        if term.split(".")[-1] not in GENERIC_REFERENCE_TERMS
+    }
+
+    scored: list[tuple[int, str, str, dict]] = []
 
     for side in side_cards:
         sid = str(side.get("id", "")).strip()
@@ -226,25 +283,32 @@ def side_reference_candidates(card: dict, side_cards: list[dict], limit: int = 3
             continue
         related = normalize_terms(side.get("related_concepts", []) or [])
         score = 0
+        match_type = "SUGGESTED"
+
+        if sid in direct_ids:
+            score += 100
+            match_type = "DIRECT"
+
         if primary and primary in related:
-            score += 6
-        score += 3 * len(card_terms & related)
-        score += len(calls & related)
+            score += 8
+        score += 4 * len(card_terms & related)
+        score += 3 * len(calls & related)
+
         if score <= 0:
             continue
-        scored.append((score, sid, side))
+        scored.append((score, sid, match_type, side))
 
     scored.sort(key=lambda item: (-item[0], item[1]))
     return [
         {
             "id": sid,
             "score": score,
+            "match_type": match_type,
             "title": side.get("title", ""),
             "when_to_show": side.get("when_to_show", ""),
         }
-        for score, sid, side in scored[:limit]
+        for score, sid, match_type, side in scored[:limit]
     ]
-
 
 def build_analysis(root: Path) -> dict:
     app_path = root / "src" / "pwa" / "app.js"
@@ -289,11 +353,17 @@ def build_analysis(root: Path) -> dict:
         cid = str(card.get("id", ""))
         pos = position[cid]
         primary = str(card.get("primary_concept", "")).strip()
-        if primary and primary not in concept_intro:
-            concept_intro[primary] = (pos, cid)
+        focus = str(card.get("focus_span", ""))
+        concepts = [str(value).strip() for value in (card.get("concepts", []) or [])]
 
-        focused = focus_call_targets(str(card.get("focus_span", "")))
-        if str(card.get("primary_concept", "")) in {"call", "argument_passing"} and len(focused) == 1:
+        for concept in concepts:
+            if not concept or concept in concept_intro:
+                continue
+            if concept == primary or focus_introduces_concept(concept, focus):
+                concept_intro[concept] = (pos, cid)
+
+        focused = focus_call_targets(focus)
+        if len(focused) == 1:
             target = focused[0]
             if target not in call_intro:
                 call_intro[target] = (pos, cid)
@@ -350,6 +420,13 @@ def build_analysis(root: Path) -> dict:
                 "call_targets": all_calls,
                 "sequence_status": "ORDER_REVIEW" if order_reasons else "PREREQ_OK",
                 "order_reasons": order_reasons,
+                "easy_reference_status": (
+                    "DIRECT"
+                    if any(ref.get("match_type") == "DIRECT" for ref in easy_refs)
+                    else "SUGGESTED"
+                    if easy_refs
+                    else "UNMATCHED"
+                ),
                 "easy_reference_candidates": easy_refs,
                 "source": card.get("_source"),
                 "title": card.get("title"),
@@ -433,6 +510,8 @@ def main() -> None:
     delivery_counts = Counter(row["delivery"] for row in rows)
     sequence_counts = Counter(row["sequence_status"] for row in rows)
     easy_reference_matched = sum(bool(row["easy_reference_candidates"]) for row in rows)
+    easy_reference_direct = sum(row["easy_reference_status"] == "DIRECT" for row in rows)
+    easy_reference_suggested = sum(row["easy_reference_status"] == "SUGGESTED" for row in rows)
 
     summary = {
         "schema": "python-reading-trainer/learning-sequence-audit-r1",
@@ -444,6 +523,8 @@ def main() -> None:
         "delivery_counts": dict(sorted(delivery_counts.items())),
         "sequence_counts": dict(sorted(sequence_counts.items())),
         "easy_reference_matched_cards": easy_reference_matched,
+        "easy_reference_direct_cards": easy_reference_direct,
+        "easy_reference_suggested_cards": easy_reference_suggested,
         "easy_reference_unmatched_cards": len(rows) - easy_reference_matched,
         "canaries": canaries,
     }
@@ -471,6 +552,8 @@ def main() -> None:
         print("DELIVERY_COUNTS=" + json.dumps(summary["delivery_counts"], ensure_ascii=False, sort_keys=True))
         print("SEQUENCE_COUNTS=" + json.dumps(summary["sequence_counts"], ensure_ascii=False, sort_keys=True))
         print(f"EASY_REFERENCE_MATCHED={easy_reference_matched}")
+        print(f"EASY_REFERENCE_DIRECT={easy_reference_direct}")
+        print(f"EASY_REFERENCE_SUGGESTED={easy_reference_suggested}")
         print(f"EASY_REFERENCE_UNMATCHED={len(rows) - easy_reference_matched}")
         for name, result in canaries.items():
             print(f"CANARY_{name}={'PASS' if result.get('pass') else 'FAIL'} {json.dumps(result, ensure_ascii=False, sort_keys=True)}")
