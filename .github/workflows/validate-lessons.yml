@@ -9,6 +9,7 @@ on:
       - 'data/lessons/**'
       - 'data/side_cards/**'
       - 'tools/validate_lessons.py'
+      - 'tools/audit_learning_sequence_r1.py'
       - '.github/workflows/validate-lessons.yml'
   pull_request:
     branches: [ main ]
@@ -17,6 +18,7 @@ on:
       - 'data/lessons/**'
       - 'data/side_cards/**'
       - 'tools/validate_lessons.py'
+      - 'tools/audit_learning_sequence_r1.py'
       - '.github/workflows/validate-lessons.yml'
 
 jobs:
@@ -40,14 +42,24 @@ jobs:
           set -o pipefail
           python tools/validate_lessons.py 2>&1 | tee lesson-validation.txt
 
+      - name: Audit learning sequence R1
+        id: sequence
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          python tools/audit_learning_sequence_r1.py 2>&1 | tee learning-sequence-r1.txt
+
       - name: Upload validation report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lesson-validation-report
-          path: lesson-validation.txt
+          path: |
+            lesson-validation.txt
+            learning-sequence-r1.txt
           retention-days: 7
 
       - name: Fail when validation failed
-        if: steps.validate.outcome == 'failure'
+        if: steps.validate.outcome == 'failure' || steps.sequence.outcome == 'failure'
         run: exit 1
