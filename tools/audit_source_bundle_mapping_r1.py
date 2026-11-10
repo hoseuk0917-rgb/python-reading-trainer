@@ -75,6 +75,7 @@ PRIMARY_BUNDLES = {
     "class_definition": "PY_REF_COMPOUND_STATEMENTS",
     "decorator": "PY_REF_COMPOUND_STATEMENTS",
     "parameter_definition": "PY_REF_COMPOUND_STATEMENTS",
+    "match_statement": "PY_REF_COMPOUND_STATEMENTS",
 
     "comment": "PY_REF_LEXICAL_ANALYSIS",
     "f_string": "PY_REF_LEXICAL_ANALYSIS",
