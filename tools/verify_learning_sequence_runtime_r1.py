@@ -132,28 +132,83 @@ def main() -> None:
         raise SystemExit("FAIL: rules must be a non-empty list")
 
     expected_prelearn = {
-        "PYF95_A2_DTS_009_DICT_ITEMS_LIST": "PYF95_A2_DICT_KEYS_VALUES_ITEMS",
-        "PYF95_A3_LOOP_017_REVERSED_LIST": "PYF95_A3_REVERSED_BASIC",
-        "PYF95_A3_LOOP_018_REVERSED_ORIGINAL": "PYF95_A3_REVERSED_BASIC",
-        "PY104_L03_LIST_INSERT_001": "PYV104_LIST_EXTEND_INSERT",
+        "PYF95_A2_DTS_009_DICT_ITEMS_LIST": [
+            "PYF95_A2_DICT_KEYS_VALUES_ITEMS",
+            "PYV158_A1_LIST_CONSTRUCTOR",
+        ],
+        "PYF95_A3_LOOP_017_REVERSED_LIST": [
+            "PYF95_A3_REVERSED_BASIC",
+            "PYV158_A1_LIST_CONSTRUCTOR",
+        ],
+        "PYF95_A3_LOOP_018_REVERSED_ORIGINAL": [
+            "PYF95_A3_REVERSED_BASIC",
+        ],
+        "PY104_L03_LIST_INSERT_001": [
+            "PYV104_LIST_EXTEND_INSERT",
+        ],
+        "PYF95_A3_LOOP_026_ZIP_TO_LIST": [
+            "PYF95_A3_ZIP_BASIC",
+            "PYV158_A1_LIST_CONSTRUCTOR",
+        ],
     }
     prelearn = config.get("prelearn_support", [])
     if not isinstance(prelearn, list):
         raise SystemExit("FAIL: prelearn_support must be a list")
-    actual_prelearn = {
-        str(item.get("id", "")): str(item.get("side_card_id", ""))
-        for item in prelearn
-        if isinstance(item, dict)
-    }
-    if actual_prelearn != expected_prelearn:
-        raise SystemExit(
-            f"FAIL: unexpected prelearn support mapping: {actual_prelearn}"
-        )
+
+    actual_prelearn: dict[str, list[str]] = {}
     for item in prelearn:
+        if not isinstance(item, dict):
+            raise SystemExit(f"FAIL: malformed prelearn support: {item}")
+
+        cid = str(item.get("id", ""))
+        raw_side_ids = item.get("side_card_ids")
+        if isinstance(raw_side_ids, list):
+            side_ids = [
+                str(value)
+                for value in raw_side_ids
+                if str(value)
+            ]
+        else:
+            legacy_id = str(item.get("side_card_id", ""))
+            side_ids = [legacy_id] if legacy_id else []
+
+        if not cid or not side_ids or len(side_ids) > 2:
+            raise SystemExit(f"FAIL: invalid prelearn support side ids: {item}")
+
         covers = item.get("covers_call_targets", [])
         if not isinstance(covers, list) or not covers:
             raise SystemExit(
                 f"FAIL: prelearn support must declare covers_call_targets: {item}"
+            )
+
+        actual_prelearn[cid] = side_ids
+
+    if actual_prelearn != expected_prelearn:
+        raise SystemExit(
+            f"FAIL: unexpected prelearn support mapping: {actual_prelearn}"
+        )
+
+    required_core_side_ids = {
+        "PYV158_A1_LIST_CONSTRUCTOR",
+        "PYV158_A1_BUILTIN_SUM",
+    }
+    core_side_paths = [
+        ROOT / "data" / "side_cards" / "python_unlinked_core_gap_side_cards_v158_a1.json",
+        ROOT / "data_i18n" / "en" / "side_cards" / "python_unlinked_core_gap_side_cards_v158_a1.json",
+    ]
+    for side_path in core_side_paths:
+        if not side_path.is_file():
+            raise SystemExit(f"FAIL: missing core side-card file: {side_path}")
+        payload = json.loads(side_path.read_text(encoding="utf-8-sig"))
+        ids = {
+            str(item.get("id", ""))
+            for item in payload
+            if isinstance(item, dict)
+        }
+        missing = sorted(required_core_side_ids - ids)
+        if missing:
+            raise SystemExit(
+                f"FAIL: missing R2 core side cards in {side_path}: {missing}"
             )
 
     analysis = build_analysis(ROOT, use_effective_sequence=False)
@@ -283,7 +338,8 @@ def main() -> None:
         f"<{effective_pos['PY4_L04_all_001']}"
         "=PASS"
     )
-    print("CANARY_PRELEARN_SUPPORT_R1=PASS")
+    print("CANARY_PRELEARN_SUPPORT_R2=PASS")
+    print("CANARY_CORE_SIDE_CARDS_R2=PASS")
     print(
         "CANARY_R2_ENV_SECRET="
         f"{effective_pos['PY130_L05_ENV_VAR_CONCEPT_001']}"
