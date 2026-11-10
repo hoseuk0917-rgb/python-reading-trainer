@@ -161,7 +161,13 @@ def focus_call_targets(focus: str) -> list[str]:
         try:
             tree = ast.parse(focus)
         except SyntaxError:
-            return []
+            if focus.rstrip().endswith(":"):
+                try:
+                    tree = ast.parse(focus.rstrip() + "\n    pass")
+                except SyntaxError:
+                    return []
+            else:
+                return []
     targets: list[str] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
