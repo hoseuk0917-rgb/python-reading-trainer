@@ -1035,7 +1035,12 @@ function renderCard() {
   selectedChoice = null;
   document.getElementById("nextBtn").classList.remove("primary-next");
 
-  document.getElementById("levelBadge").textContent = "Level " + card.level;
+  const reviewDeliveryRuleR1 = getReviewDeliveryRuleR1(card);
+  document.getElementById("levelBadge").textContent = "Level " + card.level + (
+    reviewDeliveryRuleR1
+      ? " · " + studyToolsTextV334A10N("복습", "Review")
+      : ""
+  );
   document.getElementById("progressText").textContent = (currentIndex + 1) + " / " + cards.length;
   document.getElementById("cardTitle").textContent = learnerTextV400(card, card.title);
   const conceptIntroSideCardIdV306 = renderConceptIntroV306(card);
@@ -2472,6 +2477,89 @@ function applyLearningSequenceR1(inputCards, config) {
 
   return output;
 }
+
+function applyReviewDeliveryR1(inputCards, config) {
+  if (
+    !Array.isArray(inputCards) ||
+    !config ||
+    !Array.isArray(config.review_delivery) ||
+    config.review_delivery.length === 0
+  ) {
+    return inputCards;
+  }
+
+  const byId = new Map(inputCards.map(function(card) {
+    return [card.id, card];
+  }));
+  const validRules = [];
+
+  config.review_delivery.forEach(function(rule, ruleIndex) {
+    if (!rule || typeof rule.id !== "string" || !Array.isArray(rule.after) || rule.after.length === 0) {
+      return;
+    }
+    if (!byId.has(rule.id) || rule.after.some(function(afterId) { return !byId.has(afterId); })) {
+      console.warn("LEARNING_SEQUENCE_R1 invalid review delivery rule:", rule && rule.id);
+      return;
+    }
+    validRules.push({ rule: rule, ruleIndex: ruleIndex });
+  });
+
+  if (validRules.length === 0) {
+    return inputCards;
+  }
+
+  const reviewIds = new Set(validRules.map(function(item) {
+    return item.rule.id;
+  }));
+  const base = inputCards.filter(function(card) {
+    return !reviewIds.has(card.id);
+  });
+  const baseIndex = new Map(base.map(function(card, index) {
+    return [card.id, index];
+  }));
+  const afterMap = new Map();
+
+  validRules.forEach(function(item) {
+    const rule = item.rule;
+    const anchors = rule.after
+      .filter(function(afterId) { return baseIndex.has(afterId); })
+      .sort(function(a, b) { return baseIndex.get(a) - baseIndex.get(b); });
+    const anchorId = anchors[anchors.length - 1];
+    if (!anchorId) {
+      return;
+    }
+    if (!afterMap.has(anchorId)) {
+      afterMap.set(anchorId, []);
+    }
+    afterMap.get(anchorId).push(item);
+  });
+
+  const output = [];
+  base.forEach(function(card) {
+    output.push(card);
+    (afterMap.get(card.id) || [])
+      .sort(function(a, b) { return a.ruleIndex - b.ruleIndex; })
+      .forEach(function(item) {
+        output.push(byId.get(item.rule.id));
+      });
+  });
+
+  return output.length === inputCards.length ? output : inputCards;
+}
+
+function getReviewDeliveryRuleR1(card) {
+  if (
+    !card ||
+    !learningSequenceConfigR1 ||
+    !Array.isArray(learningSequenceConfigR1.review_delivery)
+  ) {
+    return null;
+  }
+
+  return learningSequenceConfigR1.review_delivery.find(function(rule) {
+    return rule && rule.id === card.id;
+  }) || null;
+}
 // === LEARNING_SEQUENCE_R1 END ===
 
 async function init() {
@@ -2682,6 +2770,7 @@ async function init() {
     return a.id.localeCompare(b.id);
   });
   cards = applyLearningSequenceR1(cards, learningSequenceConfigR1);
+  cards = applyReviewDeliveryR1(cards, learningSequenceConfigR1);
 
   if (window.CodeExplainer && typeof window.CodeExplainer.setLearningContent === "function") {
     window.CodeExplainer.setLearningContent(cards, sideCards);

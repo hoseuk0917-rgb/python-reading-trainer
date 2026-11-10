@@ -5,7 +5,7 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
-from audit_learning_sequence_r1 import build_analysis
+from audit_learning_sequence_r1 import apply_review_delivery_config, build_analysis
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -211,9 +211,34 @@ def main() -> None:
                 f"FAIL: missing R2 core side cards in {side_path}: {missing}"
             )
 
+    expected_review_delivery = {
+        "PYV96_A2_NOTE_011_FUNCTION_RETURN_USED": ["PYF95_A1_FUNC_003_RETURN_ASSIGN"],
+        "PYV96_A2_NOTE_012_FUNCTION_RETURN_STOPS": ["PYF95_A1_FUNC_012_RETURN_STOPS_AFTER"],
+        "PYV96_A2_NOTE_015_FILE_WRITE_LIGHT": ["PYF95_A4_FILE_005_WRITE_TEXT"],
+    }
+    review_delivery = config.get("review_delivery", [])
+    if not isinstance(review_delivery, list):
+        raise SystemExit("FAIL: review_delivery must be a list")
+    actual_review_delivery = {
+        str(item.get("id", "")): [
+            str(value)
+            for value in (item.get("after", []) or [])
+            if str(value)
+        ]
+        for item in review_delivery
+        if isinstance(item, dict)
+    }
+    if actual_review_delivery != expected_review_delivery:
+        raise SystemExit(
+            f"FAIL: unexpected review delivery mapping: {actual_review_delivery}"
+        )
+    if any(str(item.get("delivery", "")) != "Review" for item in review_delivery):
+        raise SystemExit("FAIL: all review_delivery entries must use delivery=Review")
+
     analysis = build_analysis(ROOT, use_effective_sequence=False)
     baseline = analysis["rows"]
     effective = stable_apply(baseline, config)
+    effective = apply_review_delivery_config(ROOT, effective)
 
     if len(baseline) != 1785 or len(effective) != 1785:
         raise SystemExit(
@@ -283,6 +308,21 @@ def main() -> None:
         "PY130_L05_API_KEY_NOT_IN_CODE_001",
         "PY130_L05_ENV_VAR_CONCEPT_001",
     )
+    assert_after(
+        effective_pos,
+        "PYV96_A2_NOTE_011_FUNCTION_RETURN_USED",
+        "PYF95_A1_FUNC_003_RETURN_ASSIGN",
+    )
+    assert_after(
+        effective_pos,
+        "PYV96_A2_NOTE_012_FUNCTION_RETURN_STOPS",
+        "PYF95_A1_FUNC_012_RETURN_STOPS_AFTER",
+    )
+    assert_after(
+        effective_pos,
+        "PYV96_A2_NOTE_015_FILE_WRITE_LIGHT",
+        "PYF95_A4_FILE_005_WRITE_TEXT",
+    )
 
     moved = [
         cid
@@ -294,6 +334,7 @@ def main() -> None:
     print(f"CARD_COUNT={len(effective)}")
     print(f"RULE_COUNT={len(config['rules'])}")
     print(f"PRELEARN_SUPPORT_COUNT={len(prelearn)}")
+    print(f"REVIEW_DELIVERY_COUNT={len(review_delivery)}")
     print(f"MOVED_CARD_COUNT={len(moved)}")
     for cid in moved:
         print(
@@ -340,6 +381,24 @@ def main() -> None:
     )
     print("CANARY_PRELEARN_SUPPORT_R2=PASS")
     print("CANARY_CORE_SIDE_CARDS_R2=PASS")
+    print(
+        "CANARY_REVIEW_RETURN_USED="
+        f"{effective_pos['PYF95_A1_FUNC_003_RETURN_ASSIGN']}"
+        f"<{effective_pos['PYV96_A2_NOTE_011_FUNCTION_RETURN_USED']}"
+        "=PASS"
+    )
+    print(
+        "CANARY_REVIEW_RETURN_STOPS="
+        f"{effective_pos['PYF95_A1_FUNC_012_RETURN_STOPS_AFTER']}"
+        f"<{effective_pos['PYV96_A2_NOTE_012_FUNCTION_RETURN_STOPS']}"
+        "=PASS"
+    )
+    print(
+        "CANARY_REVIEW_FILE_WRITE="
+        f"{effective_pos['PYF95_A4_FILE_005_WRITE_TEXT']}"
+        f"<{effective_pos['PYV96_A2_NOTE_015_FILE_WRITE_LIGHT']}"
+        "=PASS"
+    )
     print(
         "CANARY_R2_ENV_SECRET="
         f"{effective_pos['PY130_L05_ENV_VAR_CONCEPT_001']}"
