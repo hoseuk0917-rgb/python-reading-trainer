@@ -254,39 +254,45 @@ def apply_sequence_config(root: Path, cards: list[dict]) -> list[dict]:
         group = groups[level]
         ids = [str(card.get("id", "")) for card in group]
         id_set = set(ids)
-        adjacency = {cid: [] for cid in ids}
-        indegree = {cid: 0 for cid in ids}
-        edges: set[tuple[str, str]] = set()
+        prerequisites = {cid: [] for cid in ids}
 
         for cid, after in rules_by_level.get(level, []):
             if cid not in id_set:
                 continue
             for prerequisite_id in after:
-                if prerequisite_id not in id_set or prerequisite_id == cid:
+                if (
+                    prerequisite_id not in id_set
+                    or prerequisite_id == cid
+                    or prerequisite_id in prerequisites[cid]
+                ):
                     continue
-                edge = (prerequisite_id, cid)
-                if edge in edges:
-                    continue
-                edges.add(edge)
-                adjacency[prerequisite_id].append(cid)
-                indegree[cid] += 1
+                prerequisites[cid].append(prerequisite_id)
 
-        queue = sorted(
-            [cid for cid in ids if indegree[cid] == 0],
-            key=original_index.__getitem__,
-        )
+        state: dict[str, int] = {}
         ordered: list[str] = []
+        cycle_detected = False
 
-        while queue:
-            cid = queue.pop(0)
+        def emit_with_prerequisites(cid: str) -> None:
+            nonlocal cycle_detected
+            status = state.get(cid, 0)
+            if status == 2 or cycle_detected:
+                return
+            if status == 1:
+                cycle_detected = True
+                return
+
+            state[cid] = 1
+            for prerequisite_id in prerequisites.get(cid, []):
+                emit_with_prerequisites(prerequisite_id)
+            if cycle_detected:
+                return
+            state[cid] = 2
             ordered.append(cid)
-            for next_id in adjacency[cid]:
-                indegree[next_id] -= 1
-                if indegree[next_id] == 0:
-                    queue.append(next_id)
-                    queue.sort(key=original_index.__getitem__)
 
-        if len(ordered) != len(ids):
+        for cid in ids:
+            emit_with_prerequisites(cid)
+
+        if cycle_detected or len(ordered) != len(ids):
             output.extend(group)
         else:
             output.extend(by_id[cid] for cid in ordered)
