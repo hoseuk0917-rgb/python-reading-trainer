@@ -2267,10 +2267,141 @@ function startStaticUiI18nV334A10() {
 }
 // === DYNAMIC_CONCEPT_I18N_V334_A10B END ===
 
+// === LEARNING_SEQUENCE_R1 START ===
+function applyLearningSequenceR1(inputCards, config) {
+  if (!Array.isArray(inputCards) || !config || config.enabled !== true || !Array.isArray(config.rules)) {
+    return inputCards;
+  }
+
+  const original = inputCards.slice();
+  const originalIndex = new Map();
+  original.forEach(function(card, index) {
+    originalIndex.set(card.id, index);
+  });
+
+  const byId = new Map();
+  original.forEach(function(card) {
+    byId.set(card.id, card);
+  });
+
+  const levelOrder = [];
+  const groups = new Map();
+  original.forEach(function(card) {
+    const level = card.level;
+    if (!groups.has(level)) {
+      groups.set(level, []);
+      levelOrder.push(level);
+    }
+    groups.get(level).push(card);
+  });
+
+  const rulesByLevel = new Map();
+  config.rules.forEach(function(rule) {
+    if (!rule || typeof rule.id !== "string" || !Array.isArray(rule.after)) {
+      return;
+    }
+
+    const card = byId.get(rule.id);
+    if (!card) {
+      console.warn("LEARNING_SEQUENCE_R1 missing card:", rule.id);
+      return;
+    }
+
+    const level = card.level;
+    const validAfter = rule.after.filter(function(afterId) {
+      const prerequisite = byId.get(afterId);
+      if (!prerequisite) {
+        console.warn("LEARNING_SEQUENCE_R1 missing prerequisite:", rule.id, afterId);
+        return false;
+      }
+      if (prerequisite.level !== level) {
+        console.warn("LEARNING_SEQUENCE_R1 cross-level rule ignored:", rule.id, afterId);
+        return false;
+      }
+      return true;
+    });
+
+    if (!rulesByLevel.has(level)) {
+      rulesByLevel.set(level, []);
+    }
+    rulesByLevel.get(level).push({ id: rule.id, after: validAfter });
+  });
+
+  const output = [];
+
+  levelOrder.forEach(function(level) {
+    const group = groups.get(level) || [];
+    const ids = group.map(function(card) { return card.id; });
+    const idSet = new Set(ids);
+    const adjacency = new Map();
+    const indegree = new Map();
+
+    ids.forEach(function(id) {
+      adjacency.set(id, []);
+      indegree.set(id, 0);
+    });
+
+    const edgeKeys = new Set();
+    (rulesByLevel.get(level) || []).forEach(function(rule) {
+      if (!idSet.has(rule.id)) {
+        return;
+      }
+
+      rule.after.forEach(function(afterId) {
+        if (!idSet.has(afterId) || afterId === rule.id) {
+          return;
+        }
+
+        const edgeKey = afterId + "\u0000" + rule.id;
+        if (edgeKeys.has(edgeKey)) {
+          return;
+        }
+        edgeKeys.add(edgeKey);
+        adjacency.get(afterId).push(rule.id);
+        indegree.set(rule.id, indegree.get(rule.id) + 1);
+      });
+    });
+
+    const queue = ids
+      .filter(function(id) { return indegree.get(id) === 0; })
+      .sort(function(a, b) { return originalIndex.get(a) - originalIndex.get(b); });
+
+    const orderedIds = [];
+    while (queue.length > 0) {
+      const id = queue.shift();
+      orderedIds.push(id);
+
+      adjacency.get(id).forEach(function(nextId) {
+        indegree.set(nextId, indegree.get(nextId) - 1);
+        if (indegree.get(nextId) === 0) {
+          queue.push(nextId);
+          queue.sort(function(a, b) { return originalIndex.get(a) - originalIndex.get(b); });
+        }
+      });
+    }
+
+    if (orderedIds.length !== ids.length) {
+      console.warn("LEARNING_SEQUENCE_R1 cycle detected; preserving original level order:", level);
+      group.forEach(function(card) { output.push(card); });
+      return;
+    }
+
+    orderedIds.forEach(function(id) {
+      output.push(byId.get(id));
+    });
+  });
+
+  return output;
+}
+// === LEARNING_SEQUENCE_R1 END ===
+
 async function init() {
   renderLanguageToggleV334A9();
   startStaticUiI18nV334A10();
   const curriculumRes = await fetch(withDataVersion(localizedDataPath("../../data/curriculum/curriculum_v1.json")));
+  const learningSequenceRes = await fetch(withDataVersion("../../data/curriculum/learning_sequence_r1.json")).catch(function() {
+    return null;
+  });
   const lessonFiles = [
     "../../data/lessons/cards_seed_v1.json",
     "../../data/lessons/python_core_expansion_v1.json",
@@ -2458,13 +2589,12 @@ async function init() {
   }));
 
   curriculum = await curriculumRes.json();
+  const learningSequenceR1 = learningSequenceRes && learningSequenceRes.ok
+    ? await learningSequenceRes.json()
+    : null;
   cards = lessonResults.flat();
   sideCards = sideResults.flat();
   resourceCards = resourceResults.flat();
-
-  if (window.CodeExplainer && typeof window.CodeExplainer.setLearningContent === "function") {
-    window.CodeExplainer.setLearningContent(cards, sideCards);
-  }
 
   cards.sort(function(a, b) {
     if (a.level !== b.level) {
@@ -2472,6 +2602,11 @@ async function init() {
     }
     return a.id.localeCompare(b.id);
   });
+  cards = applyLearningSequenceR1(cards, learningSequenceR1);
+
+  if (window.CodeExplainer && typeof window.CodeExplainer.setLearningContent === "function") {
+    window.CodeExplainer.setLearningContent(cards, sideCards);
+  }
 
   document.getElementById("nextBtn").onclick = nextCard;
   document.getElementById("prevBtn").onclick = prevCard;
