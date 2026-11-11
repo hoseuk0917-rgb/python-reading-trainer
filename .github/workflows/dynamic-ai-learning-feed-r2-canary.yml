@@ -1,0 +1,201 @@
+name: Dynamic AI learning feed R2 semantic canary
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'tools/enrich_dynamic_ai_learning_feed_r2.py'
+      - '.github/workflows/dynamic-ai-learning-feed-r2-canary.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'tools/enrich_dynamic_ai_learning_feed_r2.py'
+      - '.github/workflows/dynamic-ai-learning-feed-r2-canary.yml'
+  workflow_dispatch:
+    inputs:
+      live:
+        description: 'Call OpenAI API for semantic enrichment'
+        required: false
+        default: false
+        type: boolean
+      limit:
+        description: 'Maximum candidate items'
+        required: false
+        default: '5'
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dynamic-ai-learning-feed-r2-canary
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile R2 semantic enrichment
+        run: python -m py_compile tools/enrich_dynamic_ai_learning_feed_r2.py
+
+      - name: R2 self-test
+        run: python tools/enrich_dynamic_ai_learning_feed_r2.py --self-test
+
+      - name: R2 five-item plan
+        run: python tools/enrich_dynamic_ai_learning_feed_r2.py --plan --limit 5
+
+  live:
+    if: github.event_name == 'workflow_dispatch' && inputs.live == true
+    needs: validate
+    runs-on: ubuntu-latest
+
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      R2_BRANCH: automation/dynamic-ai-learning-feed-r2-canary
+
+    steps:
+      - name: Check out full repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Require API key
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${OPENAI_API_KEY:-}" ]; then
+            echo "OPENAI_API_KEY repository secret is missing."
+            exit 1
+          fi
+
+      - name: Prepare cumulative R2 canary branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin main
+
+          if git ls-remote --exit-code --heads origin "$R2_BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$R2_BRANCH"
+            git checkout -B "$R2_BRANCH" FETCH_HEAD
+            git merge --no-edit origin/main
+          else
+            git checkout -b "$R2_BRANCH" origin/main
+          fi
+
+      - name: Enrich R2 canary
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          LIMIT="${{ inputs.limit }}"
+
+          if ! [[ "$LIMIT" =~ ^[1-9][0-9]*$ ]]; then
+            echo "limit must be a positive integer: $LIMIT"
+            exit 1
+          fi
+
+          if [ "$LIMIT" -gt 15 ]; then
+            echo "R2 canary limit may not exceed 15."
+            exit 1
+          fi
+
+          python tools/enrich_dynamic_ai_learning_feed_r2.py             --live             --limit "$LIMIT"             --model gpt-6.1-sol
+
+      - name: Validate R2 output
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("data/dynamic_feed/enriched_r2_canary.jsonl")
+
+          if not path.is_file():
+              raise SystemExit("R2 output not generated")
+
+          ids = set()
+          count = 0
+
+          for line_number, line in enumerate(
+              path.read_text(encoding="utf-8").splitlines(),
+              start=1,
+          ):
+              if not line.strip():
+                  continue
+
+              row = json.loads(line)
+
+              if row.get("schema") != "python-reading-trainer/dynamic-ai-semantic-enrichment-v1":
+                  raise SystemExit(f"schema mismatch at line {line_number}")
+
+              item_id = row.get("id")
+
+              if not item_id or item_id in ids:
+                  raise SystemExit(f"bad or duplicate id at line {line_number}: {item_id}")
+
+              ids.add(item_id)
+              count += 1
+
+              enrichment = row.get("enrichment") or {}
+
+              if enrichment.get("disposition") not in {
+                  "KEEP",
+                  "CASE_STUDY",
+                  "DROP",
+                  "DUPLICATE",
+              }:
+                  raise SystemExit(f"bad disposition: {item_id}")
+
+              usage = row.get("usage") or {}
+
+              if int(usage.get("input_tokens") or 0) <= 0:
+                  raise SystemExit(f"missing input token usage: {item_id}")
+
+              if int(usage.get("output_tokens") or 0) <= 0:
+                  raise SystemExit(f"missing output token usage: {item_id}")
+
+          if count == 0:
+              raise SystemExit("R2 output is empty")
+
+          print(f"R2_OUTPUT_COUNT={count}")
+          print("DYNAMIC_AI_SEMANTIC_R2_OUTPUT_VALIDATION=PASS")
+          PY
+
+      - name: Commit and push R2 output
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git add data/dynamic_feed/enriched_r2_canary.jsonl
+
+          if git diff --cached --quiet; then
+            echo "DYNAMIC_AI_R2_NEW_CONTENT=NO"
+            exit 0
+          fi
+
+          git commit -m "Add Dynamic AI Learning Feed R2 canary enrichment"
+          git push -u origin "$R2_BRANCH"
+
+          echo "DYNAMIC_AI_R2_NEW_CONTENT=YES"
+          echo "R2_BRANCH_READY=$R2_BRANCH"
