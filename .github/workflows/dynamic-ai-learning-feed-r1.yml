@@ -97,7 +97,8 @@ jobs:
             --collect \
             --max-new-per-source 25 \
             --runtime-limit 60 \
-            --threshold 5
+            --threshold 5 \
+            --lookback-days 14
 
       - name: Validate generated feed files
         shell: bash
@@ -118,26 +119,41 @@ jobs:
 
           ids = set()
           candidate_count = 0
-          for line_number, line in enumerate(archive.read_text(encoding="utf-8").splitlines(), start=1):
+
+          for line_number, line in enumerate(
+              archive.read_text(encoding="utf-8").splitlines(),
+              start=1,
+          ):
               if not line.strip():
                   continue
+
               row = json.loads(line)
               item_id = row.get("id")
+
               if not item_id or item_id in ids:
-                  raise SystemExit(f"bad or duplicate archive id at line {line_number}: {item_id}")
+                  raise SystemExit(
+                      f"bad or duplicate archive id at line {line_number}: {item_id}"
+                  )
+
               ids.add(item_id)
+
               if row.get("status") == "CANDIDATE":
                   candidate_count += 1
+
               if row.get("source_authority") != "official":
                   raise SystemExit(f"non-official source item: {item_id}")
 
           payload = json.loads(runtime.read_text(encoding="utf-8"))
+
           if payload.get("schema") != "python-reading-trainer/dynamic-ai-learning-feed-v1":
               raise SystemExit("runtime schema mismatch")
+
           if payload.get("contract") != "DISCOVERY_ONLY_NO_CORE_LESSON_MUTATION":
               raise SystemExit("runtime contract mismatch")
+
           if payload.get("item_count") != len(payload.get("items") or []):
               raise SystemExit("runtime item count mismatch")
+
           if payload.get("archive_candidate_count") != candidate_count:
               raise SystemExit("archive candidate count mismatch")
 
@@ -153,7 +169,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          git add             data/dynamic_feed/items_r1.jsonl             data/runtime/dynamic_ai_learning_feed_r1.json
+          git add \
+            data/dynamic_feed/items_r1.jsonl \
+            data/runtime/dynamic_ai_learning_feed_r1.json
 
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -180,12 +198,52 @@ jobs:
         if: steps.diff.outputs.changed == 'true'
         shell: bash
         run: |
-          set -euo pipefail
+          set -uo pipefail
 
-          PR_NUMBER="$(gh pr list             --repo "$GITHUB_REPOSITORY"             --head "$FEED_BRANCH"             --base main             --state open             --json number             --jq '.[0].number')"
+          PR_NUMBER="$(gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --head "$FEED_BRANCH" \
+            --base main \
+            --state open \
+            --json number \
+            --jq '.[0].number')"
 
-          if [ -z "$PR_NUMBER" ]; then
-            gh pr create               --repo "$GITHUB_REPOSITORY"               --base main               --head "$FEED_BRANCH"               --title "Update Dynamic AI Learning Feed R1"               --body "Automated official-source discovery inbox update. This PR only changes cumulative feed archive/runtime data and does not mutate the 1,785-card core curriculum."
-          else
+          if [ -n "$PR_NUMBER" ]; then
             echo "EXISTING_FEED_PR=$PR_NUMBER"
+            exit 0
           fi
+
+          set +e
+
+          CREATE_OUTPUT="$(gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --head "$FEED_BRANCH" \
+            --title "Update Dynamic AI Learning Feed R1" \
+            --body "Automated official-source discovery inbox update. This PR only changes cumulative feed archive/runtime data and does not mutate the 1,785-card core curriculum." 2>&1)"
+
+          CREATE_EXIT=$?
+
+          set -e
+
+          if [ "$CREATE_EXIT" -eq 0 ]; then
+            echo "$CREATE_OUTPUT"
+            echo "FEED_PR_CREATE=PASS"
+            exit 0
+          fi
+
+          echo "$CREATE_OUTPUT"
+          echo "FEED_PR_CREATE=BLOCKED_OR_FAILED"
+          echo "FEED_BRANCH_READY=$FEED_BRANCH"
+
+          {
+            echo "### Dynamic AI Learning Feed R1"
+            echo
+            echo "Feed data was collected, validated, committed, and pushed successfully."
+            echo
+            echo "Automatic PR creation was unavailable for this repository token."
+            echo
+            echo "Branch ready for review: $FEED_BRANCH"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          exit 0
