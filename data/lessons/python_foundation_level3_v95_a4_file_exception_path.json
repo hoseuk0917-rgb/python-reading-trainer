@@ -576,24 +576,24 @@
     "primary_concept": "assignment",
     "reading_goal_internal": "들여쓰기된 reassignment가 with 블록 안에서 실행되고 블록을 벗어난 뒤에도 새 status 값이 유지되는 상태 변화를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "reassignment는 이미 값이 있는 이름에 새 값을 다시 저장해 이후 그 이름이 새 값을 가리키게 합니다.",
-      "how_to_read": "status의 이전 값을 확인한 뒤 들여쓰기된 `status = \"inside\"`가 실제 with 블록 안에서 실행되는 순서를 따라갑니다.",
-      "key_point": "with가 새 변수 스코프를 만드는 것은 아니므로 블록 안에서 바뀐 status는 블록 밖 print에서도 inside입니다.",
-      "common_mistake": "with 블록이 함수처럼 별도 지역 스코프를 만들어 status 변경이 블록 밖에서 사라진다고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `with` 블록 안에서도 일반 대입은 실행되며, `with` 자체는 새 변수 스코프를 만들지 않으므로 블록 안에서 바꾼 `status`를 블록 밖에서도 같은 이름으로 읽을 수 있습니다.\n정확한 정의: 대입문 `status = \"inside\"`는 오른쪽 문자열 객체를 현재 스코프의 이름 `status`에 바인딩합니다. `with` 문은 context manager의 진입과 종료를 관리하지만 그 suite 자체를 별도의 지역 변수 스코프로 만들지는 않습니다.",
+      "how_to_read": "직관적 모델: `with`를 파일 사용 구간을 표시하는 울타리라고 생각하면 됩니다. 울타리 안에서 `status` 이름표를 새 값으로 옮겼다고 해서 울타리를 나오는 순간 원래 값으로 돌아가지는 않습니다.\n코드 읽기: 먼저 `status`는 `\"before\"`입니다. `with`에 진입한 뒤 `status = \"inside\"`가 실행되어 같은 스코프의 이름을 새 문자열에 재바인딩합니다. 블록을 정상적으로 벗어나도 이 바인딩은 유지됩니다.",
+      "key_point": "실행 흐름:\n`status = \"before\"`\n↓\n`with` 진입\n↓\n`status = \"inside\"` 실행\n↓\n같은 스코프 `status` → `\"inside\"`\n↓\n`with` 종료\n↓\n`print(status)`\n↓\n결과: `inside`",
+      "common_mistake": "`with` 블록이 함수처럼 새 local scope를 만든다고 생각하기 쉽습니다. `with`는 context-manager 구간을 정하지만 그 자체로 새 이름 스코프를 만들지는 않습니다."
     },
     "teaching_example": {
-      "code": "status = \"before\"\nwith open(\"note.txt\", \"w\", encoding=\"utf-8\") as f:\n    status = \"written\"\nprint(status)",
-      "walkthrough": "들여쓰기된 reassignment가 실행되어 블록 밖에서도 status는 written입니다."
+      "code": "status = \"before\"\nwith open(\"note.txt\", \"w\", encoding=\"utf-8\") as f:\n    status = \"written\"\n    f.write(\"A\")\nprint(status)",
+      "walkthrough": "한 줄씩 읽기:\n1) `status`는 `\"before\"`로 시작합니다.\n2) `with` 블록에 진입합니다.\n3) `status = \"written\"`이 같은 스코프의 이름을 새 문자열에 재바인딩합니다.\n4) 파일 쓰기 뒤 `with`를 벗어나도 그 바인딩은 유지됩니다.\n5) `print(status)`가 `written`을 출력합니다.\n\n실행 흐름: before → with 진입 → written으로 재대입 → with 종료 → 출력.\n결과: `written`."
     },
     "answer_explanation": {
-      "step_by_step": "1) 첫 줄에서 status에 before를 저장한다. 2) with 블록 안의 들여쓰기된 reassignment가 status를 inside로 바꾼다. 3) 같은 블록에서 파일 쓰기가 실행된 뒤 with를 벗어난다. 4) with는 새 변수 스코프를 만들지 않으므로 print가 inside를 읽는다.",
-      "why_correct": "블록 안 reassignment가 같은 함수/모듈 스코프의 status를 바꾸므로 이후에도 inside가 현재 값입니다.",
+      "step_by_step": "처음 `status`는 `\"before\"`다.\n↓\n`with` 블록에 진입한다.\n↓\n`status = \"inside\"`가 실행되어 같은 스코프의 `status`를 새 문자열에 재바인딩한다.\n↓\n파일 쓰기 뒤 `with`를 벗어난다.\n↓\n`with`는 새 변수 스코프를 만들지 않으므로 `status`는 계속 `\"inside\"`다.",
+      "why_correct": "블록 안 재대입이 같은 스코프의 `status`를 `\"inside\"`로 바꾸고 `with` 종료가 그 바인딩을 되돌리지 않으므로 정답은 `inside`입니다.",
       "common_wrong_choice": {
         "choice": "before",
-        "why_wrong": "before는 reassignment 전 값이며 with 블록 안에서 이미 inside로 교체되었습니다.",
-        "misread_step": "with 블록이 함수처럼 별도 지역 스코프를 만들어 status 변경이 블록 밖에서 사라진다고 생각하기 쉽습니다."
+        "why_wrong": "`before`는 재대입 전 값입니다. 블록 안 `status = \"inside\"`가 실행된 뒤 현재 바인딩은 이미 바뀌었습니다.",
+        "misread_step": "`with` 블록을 별도 변수 스코프로 오해해 내부 변경이 사라진다고 본 경우입니다."
       },
-      "takeaway": "들여쓰기 블록은 **어떤 문장이 블록 안에서 실행되는지**를 정하지만 with 자체가 새 변수 스코프를 만들지는 않습니다."
+      "takeaway": "`with`는 context-manager 구간을 만들지만 **새 변수 스코프를 만들지는 않으므로 실행된 대입 결과를 그대로 추적**합니다."
     },
     "target_statement": "status = \"inside\"",
     "focus_span": "status = \"inside\"",
