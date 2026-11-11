@@ -769,8 +769,8 @@
                                     "common_mistake":  "It is easy to think `join` deletes the queue itself."
                                 },
         "teaching_example":  {
-                                 "code":  "# producer put 2 items\n# consumer task_done twice\n# await queue.join() then continues",
-                                 "walkthrough":  "`join` waits until it receives a completion signal for both tasks."
+                                 "code":  "import asyncio\n\nasync def worker(queue):\n    await queue.get()\n    queue.task_done()\n\nasync def main():\n    queue = asyncio.Queue()\n    await queue.put(\"job\")\n    asyncio.create_task(worker(queue))\n    await queue.join()\n    print(\"all done\")\n\nasyncio.run(main())",
+                                 "walkthrough":  "`queue.put()` creates one unfinished task. The worker gets that job and calls `task_done()`, which reduces the unfinished count to 0. Only then does `await queue.join()` finish and execution continues to `all done`."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "`queue.join` completes when tracking of jobs added with `put` and calls to `task_done` brings the unfinished count to 0.",
