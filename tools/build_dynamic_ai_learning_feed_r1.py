@@ -130,6 +130,96 @@ LOW_VALUE_CONTEXT_TERMS = (
     "hiring",
 )
 
+TECHNICAL_TITLE_TERMS = (
+    "api",
+    "sdk",
+    "agent",
+    "agentic",
+    "model",
+    "reasoning",
+    "multimodal",
+    "inference",
+    "training",
+    "embedding",
+    "transformer",
+    "benchmark",
+    "eval",
+    "evaluation",
+    "architecture",
+    "developer",
+    "developers",
+    "code review",
+    "coding",
+    "cyber",
+    "security",
+    "research",
+    "infrastructure",
+    "open source",
+    "open-source",
+    "weights",
+    "quantization",
+    "rag",
+    "mcp",
+    "bench",
+)
+
+SOURCE_TITLE_AI_TERMS = {
+    "github_changelog": (
+        "copilot",
+        "gemini",
+        "claude",
+        "gpt",
+        "agent",
+        "ai",
+    ),
+    "openai_news": (
+        "gpt",
+        "chatgpt",
+        "codex",
+        "agent",
+        "ai",
+        "model",
+        "reasoning",
+    ),
+    "google_blog": (
+        "gemini",
+        "agent",
+        "ai",
+        "model",
+        "multimodal",
+    ),
+    "huggingface_blog": (
+        "agent",
+        "model",
+        "transformer",
+        "embedding",
+        "training",
+        "inference",
+        "benchmark",
+        "bench",
+        "multimodal",
+        "rag",
+        "mcp",
+        "quantization",
+    ),
+}
+
+SOURCE_TITLE_BLOCK_TERMS = {
+    "github_changelog": (
+        "seat management",
+        "impact dashboard",
+        "personal accounts",
+    ),
+    "openai_news": (
+        "airlines",
+        "travel",
+        "drawings in minutes",
+        "caregiver",
+        "veterans",
+        "servicemembers",
+    ),
+}
+
 TOPIC_RULES = (
     ("model_release", ("gpt", "claude", "gemini", "model")),
     ("agent_tooling", ("agent", "copilot", "mcp", "tool use")),
@@ -271,7 +361,57 @@ def parse_feed(xml_bytes: bytes, source_url: str) -> list[dict]:
     return rows
 
 
-def classify(text: str, base_score: int, threshold: int) -> dict:
+def title_gate(source_id: str, title: str) -> tuple[bool, list[str], list[str]]:
+    lowered = (title or "").lower()
+    technical = [term for term in TECHNICAL_TITLE_TERMS if term in lowered]
+    source_ai = [
+        term
+        for term in SOURCE_TITLE_AI_TERMS.get(source_id, ())
+        if term in lowered
+    ]
+    blocked = [
+        term
+        for term in SOURCE_TITLE_BLOCK_TERMS.get(source_id, ())
+        if term in lowered
+    ]
+
+    if blocked:
+        return False, technical, blocked
+
+    if source_id == "github_changelog":
+        model_in_copilot = (
+            "copilot" in lowered
+            and any(
+                term in lowered
+                for term in (
+                    "gemini",
+                    "claude",
+                    "gpt",
+                )
+            )
+        )
+        return bool((source_ai and technical) or model_in_copilot), technical, blocked
+
+    if source_id == "openai_news":
+        return bool(source_ai and technical), technical, blocked
+
+    if source_id == "google_blog":
+        return bool(source_ai and technical), technical, blocked
+
+    if source_id == "huggingface_blog":
+        return bool(technical), technical, blocked
+
+    return bool(technical), technical, blocked
+
+
+def classify(
+    text: str,
+    base_score: int,
+    threshold: int,
+    *,
+    source_id: str = "",
+    title: str = "",
+) -> dict:
     lowered = text.lower()
     score = int(base_score)
     matched_terms = []
@@ -319,11 +459,17 @@ def classify(text: str, base_score: int, threshold: int) -> dict:
             if concept not in linked_concepts:
                 linked_concepts.append(concept)
 
+    title_ok, title_technical_signals, title_block_signals = title_gate(
+        source_id,
+        title,
+    )
+
     is_candidate = (
         score >= threshold
         and bool(linked_concepts)
         and bool(ai_signals)
         and bool(learning_signals)
+        and title_ok
     )
     status = "CANDIDATE" if is_candidate else "WATCH_ONLY"
     return {
@@ -334,6 +480,9 @@ def classify(text: str, base_score: int, threshold: int) -> dict:
         "ai_signals": ai_signals[:10],
         "learning_signals": learning_signals[:10],
         "low_value_signals": low_value_signals[:8],
+        "title_gate": title_ok,
+        "title_technical_signals": title_technical_signals[:10],
+        "title_block_signals": title_block_signals[:8],
         "topics": topics,
         "linked_concepts": linked_concepts[:8],
     }
@@ -513,7 +662,13 @@ def collect(
                 continue
 
             combined = f"{entry['title']} {entry.get('summary') or ''}"
-            result = classify(combined, source["base_score"], threshold)
+            result = classify(
+                combined,
+                source["base_score"],
+                threshold,
+                source_id=sid,
+                title=entry["title"],
+            )
             row = {
                 "id": item_id,
                 "source_id": sid,
@@ -530,6 +685,9 @@ def collect(
                 "ai_signals": result["ai_signals"],
                 "learning_signals": result["learning_signals"],
                 "low_value_signals": result["low_value_signals"],
+                "title_gate": result["title_gate"],
+                "title_technical_signals": result["title_technical_signals"],
+                "title_block_signals": result["title_block_signals"],
                 "matched_topics": result["topics"],
                 "linked_concepts": result["linked_concepts"],
                 "first_seen_at": utc_now(),
@@ -591,22 +749,61 @@ def self_test() -> int:
     assert len(rows) == 2
     assert rows[0]["url"] == "https://example.com/release"
 
-    first = classify(f"{rows[0]['title']} {rows[0]['summary']}", 3, 5)
-    second = classify(f"{rows[1]['title']} {rows[1]['summary']}", 3, 5)
+    first = classify(
+        f"{rows[0]['title']} {rows[0]['summary']}",
+        3,
+        5,
+        source_id="openai_news",
+        title=rows[0]["title"],
+    )
+    second = classify(
+        f"{rows[1]['title']} {rows[1]['summary']}",
+        3,
+        5,
+        source_id="openai_news",
+        title=rows[1]["title"],
+    )
     consumer = classify(
         "ChatGPT Plus for veterans and servicemembers. Product access update.",
         3,
         5,
+        source_id="openai_news",
+        title="ChatGPT Plus for veterans and servicemembers",
     )
     generic_dev = classify(
         "A more informative GitHub dashboard for developers.",
         1,
         5,
+        source_id="github_changelog",
+        title="A more informative GitHub dashboard",
     )
     technical = classify(
         "Gemini Decisions API for developers with multimodal model evaluation.",
         1,
         5,
+        source_id="google_blog",
+        title="Gemini Decisions API: Fast, calibrated multimodal decisions",
+    )
+    copilot_model = classify(
+        "Gemini 4 Carbon in GitHub Copilot for coding.",
+        1,
+        5,
+        source_id="github_changelog",
+        title="Gemini 4 Carbon in GitHub Copilot",
+    )
+    seat_admin = classify(
+        "Enterprise Copilot seat management with developer APIs.",
+        1,
+        5,
+        source_id="github_changelog",
+        title="GitHub App support for Enterprise Copilot seat management",
+    )
+    hf_bench = classify(
+        "CWE-bench v2 evaluation benchmark for models.",
+        3,
+        5,
+        source_id="huggingface_blog",
+        title="CWE-bench v2: More coverage, quality, and transparency",
     )
 
     assert first["status"] == "CANDIDATE"
@@ -616,6 +813,9 @@ def self_test() -> int:
     assert consumer["status"] == "WATCH_ONLY"
     assert generic_dev["status"] == "WATCH_ONLY"
     assert technical["status"] == "CANDIDATE"
+    assert copilot_model["status"] == "CANDIDATE"
+    assert seat_admin["status"] == "WATCH_ONLY"
+    assert hf_bench["status"] == "CANDIDATE"
     assert stable_id(
         "x", rows[0]["url"], rows[0]["title"], rows[0]["published_at"]
     ).startswith("AIFR1_")
