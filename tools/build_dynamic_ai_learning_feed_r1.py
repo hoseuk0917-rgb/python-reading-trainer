@@ -379,7 +379,18 @@ def title_gate(source_id: str, title: str) -> tuple[bool, list[str], list[str]]:
         return False, technical, blocked
 
     if source_id == "github_changelog":
-        return bool(source_ai and technical), technical, blocked
+        model_in_copilot = (
+            "copilot" in lowered
+            and any(
+                term in lowered
+                for term in (
+                    "gemini",
+                    "claude",
+                    "gpt",
+                )
+            )
+        )
+        return bool((source_ai and technical) or model_in_copilot), technical, blocked
 
     if source_id == "openai_news":
         return bool(source_ai and technical), technical, blocked
