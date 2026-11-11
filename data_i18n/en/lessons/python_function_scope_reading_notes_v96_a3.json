@@ -275,24 +275,24 @@
     "primary_concept": "assignment",
     "reading_goal_internal": "함수 호출 전 바깥 x=10과 함수 안 대입 x=3을 서로 다른 binding으로 구분해 호출 뒤 바깥 x가 10으로 유지되는 상태를 추적한다.",
     "concept_explanation": {
-      "what_it_is": "If you assign a value to a name inside a function, that name is treated as a local binding within the function unless otherwise declared.",
-      "how_to_read": "Do not merge the variable `x` outside a function with the variable `x` inside a function simply because they share the same spelling; first distinguish which scope the name belongs to.",
-      "key_point": "The `x = 3` inside `change()` creates a local `x`, while the `x = 10` in the module scope remains unchanged.",
-      "common_mistake": "Since the names are spelled the same, it’s easy to assume that an assignment inside a function will immediately change the outer variable as well."
+      "what_it_is": "Easy meaning: When a function assigns to a name such as `x = 3`, that name is local to the function unless an applicable `global` or `nonlocal` declaration says otherwise, so it must be tracked separately from an outer name with the same spelling.\nExact definition: If a name-binding operation occurs in a Python function block, that name is local to the block unless declared `global` or `nonlocal`. Therefore `x = 3` inside `change()` binds the function-local `x`, not the module-scoped `x`.",
+      "how_to_read": "Mental model: Imagine two rooms that both contain a tag labeled `x`. The module's `x=10` and the function's local `x=3` are separate bindings because they belong to different scopes.\nReading the code: First the module-scoped `x` refers to 10. Calling `change()` executes a function-local binding of `x` to 3. When the function returns, no assignment has changed the outer `x`, so its value remains 10.",
+      "key_point": "Execution flow:\nmodule `x` → `10`\n↓\ncall `change()`\n↓\nfunction-local `x = 3`\n↓\nfunction returns\n↓\nmodule `x` is still `10`\n↓\n`print(x)`\n↓\nresult: `10`",
+      "common_mistake": "It is easy to assume that the same spelling `x` means the same binding everywhere. In Python, determine which scope owns the name first."
     },
     "teaching_example": {
-      "code": "value = 5\ndef set_local():\n    value = 1\nset_local()\nprint(value)",
-      "walkthrough": "The `value=1` inside the function is a local binding, while the `value=5` outside remains unchanged, so 5 is printed."
+      "code": "value = 5\ndef set_local():\n    value = 1\n\nset_local()\nprint(value)",
+      "walkthrough": "Line by line:\n1) The outer `value` is 5.\n2) Call `set_local()`.\n3) `value = 1` inside the function binds the function-local name `value`.\n4) No assignment changes the outer `value`, so it remains 5.\n5) The final print displays 5.\n\nExecution flow: outer value=5 → local value=1 → function returns → outer value=5.\nResult: `5`."
     },
     "answer_explanation": {
-      "step_by_step": "1) Store 10 in the module-scoped variable x. 2) Call change(). 3) The statement x = 3 inside the function creates a local x binding. 4) After the function exits, the outer x is still 10, so print outputs 10.",
-      "why_correct": "Assignment inside a function renames the local variable, and since there is no separate global declaration, it does not affect the outer `x=10`.",
+      "step_by_step": "At module scope, `x=10`.\n↓\nCall `change()`.\n↓\n`x = 3` in the function binds the function-local name `x`.\n↓\nThe function returns.\n↓\nNo assignment changed the module-scoped `x`, so it is still 10.\n↓\nThe outer `print(x)` displays 10.",
+      "why_correct": "The `x = 3` assignment changes a separate local binding, and without a `global x` declaration it does not rebind the module-scoped `x=10`, so the correct output is `10`.",
       "common_wrong_choice": {
         "choice": "3",
-        "why_wrong": "3 is a value bound only to the local variable `x` within the function.",
-        "misread_step": "Since the names are spelled the same, it’s easy to assume that an assignment inside a function will immediately change the outer variable as well."
+        "why_wrong": "3 is bound only to the function-local `x`. The module-scoped `x` still has the value 10.",
+        "misread_step": "This merges two same-spelled names from different scopes into one binding."
       },
-      "takeaway": "Scope issues are determined first by **which scope the binding belongs to** rather than whether the names are the same."
+      "takeaway": "For scope questions, **identify the scope of each binding first, then track the values separately**."
     },
     "target_statement": "x = 3",
     "focus_span": "x = 3",

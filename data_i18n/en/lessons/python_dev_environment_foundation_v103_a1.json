@@ -1794,24 +1794,24 @@
     "primary_concept": "assignment",
     "reading_goal_internal": "기존 batch_size 값을 사용해 더 작은 값을 계산하고 같은 변수에 다시 저장하는 reassignment를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "Reassignment occurs when a new value is stored in a variable that already has a value.",
-      "how_to_read": "I interpret this as the expression on the right being evaluated first using the existing variable value, and then the value of the variable on the left being replaced with the new result.",
-      "key_point": "Reducing the batch size decreases the amount of data loaded onto the GPU at one time, which can help lower VRAM usage.",
-      "common_mistake": "`// 2` It’s easy to think of this as an operation that subtracts 2. This is floor division, which divides by 2."
+      "what_it_is": "Easy meaning: `batch_size = batch_size // 2` reads the current batch size, floor-divides it by 2, and makes the result the new current value of the same name.\nExact definition: The assignment evaluates the right-hand `batch_size // 2` before rebinding the left-hand `batch_size`. With integer operands, `//` performs floor division, and `16 // 2` produces the integer 8.",
+      "how_to_read": "Mental model: Read the current batch size, calculate the reduced value first, and only then move the `batch_size` name tag to the new result.\nReading the code: After the first line, `batch_size` is 16. On the second line, read the current 16 and evaluate `16 // 2` to get 8. Only after that calculation finishes is `batch_size` rebound to 8.",
+      "key_point": "Execution flow:\n`batch_size = 16`\n↓\ncurrent right-hand value `16`\n↓\n`16 // 2` → `8`\n↓\nrebind `batch_size` to `8`\n↓\nresult: `8`",
+      "common_mistake": "It is easy to read `// 2` as subtracting 2 or keep 16 as the current value because it was used in the calculation. The calculated result 8 becomes the new binding."
     },
     "teaching_example": {
-      "code": "workers = 8\nworkers = workers // 2",
-      "walkthrough": "The result of dividing 8 by 2 (4) is stored back into the same variable, `workers`."
+      "code": "workers = 8\nworkers = workers // 2\nprint(workers)",
+      "walkthrough": "Line by line:\n1) The current `workers` is 8.\n2) Evaluate `workers // 2` as `8 // 2`, producing 4.\n3) Rebind `workers` to 4.\n4) The final line prints 4.\n\nExecution flow: 8 → floor division → 4 → reassignment.\nResult: `4`."
     },
     "answer_explanation": {
-      "step_by_step": "The `batch_size // 2` on the right calculates 8 using the current value of 16. The result is then stored back into the same variable.",
-      "why_correct": "This is because the reassignment replaces the existing value of 16 with the new value of 8.",
+      "step_by_step": "The first line makes `batch_size` 16.\n↓\nEvaluate the right-hand `batch_size // 2` first.\n↓\n`16 // 2` produces 8.\n↓\nRebind the same name `batch_size` to that result.\n↓\nThe current value after execution is 8.",
+      "why_correct": "The right-hand floor-division result is 8 and that result is rebound to the same name `batch_size`, so its value after execution is `8`.",
       "common_wrong_choice": {
         "choice": "16",
-        "why_wrong": "That value represents the state before the reassignment is executed.",
-        "misread_step": "This is a case where the state after the calculation on the right and the reassignment has not been reflected."
+        "why_wrong": "16 is the previous value used as input to the calculation. After reassignment, the current binding of `batch_size` is 8.",
+        "misread_step": "This confuses the input value before reassignment with the current value after reassignment."
       },
-      "takeaway": "The adjustment of OOM response values is described as **existing value → scaled calculation → reassignment**."
+      "takeaway": "Trace numeric reassignment as **read old value → evaluate the operation → rebind the same name to the result**."
     },
     "target_statement": "batch_size = batch_size // 2",
     "focus_span": "batch_size = batch_size // 2",

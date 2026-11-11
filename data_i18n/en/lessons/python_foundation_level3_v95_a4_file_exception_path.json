@@ -576,24 +576,24 @@
     "primary_concept": "assignment",
     "reading_goal_internal": "들여쓰기된 reassignment가 with 블록 안에서 실행되고 블록을 벗어난 뒤에도 새 status 값이 유지되는 상태 변화를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "Reassignment stores a new value in a name that already has a value, so that the name subsequently refers to the new value.",
-      "how_to_read": "After checking the previous value of `status`, the indented `status = \"inside\"` follows the actual execution order within the `with` block.",
-      "key_point": "Since `with` does not create a new variable scope, the `status` variable modified within the block is still `inside` when printed outside the block.",
-      "common_mistake": "Since blocks create their own local scope, much like functions, it is easy to assume that state changes disappear outside the block."
+      "what_it_is": "Easy meaning: Normal assignment still executes inside a `with` block, and because `with` does not create a new variable scope, a value assigned to `status` there can still be read through the same name after the block.\nExact definition: The assignment `status = \"inside\"` binds the string object to the name `status` in the current scope. A `with` statement manages entering and exiting a context manager, but its suite does not itself establish a separate local-variable scope.",
+      "how_to_read": "Mental model: Think of `with` as a fence around the period when a resource is in use. Moving the `status` name tag inside the fence does not automatically move it back when execution leaves the fence.\nReading the code: `status` starts as `\"before\"`. After entering `with`, the indented assignment executes and rebinds the same scoped name to `\"inside\"`. Exiting the block normally does not undo that binding.",
+      "key_point": "Execution flow:\n`status = \"before\"`\n↓\nenter `with`\n↓\nexecute `status = \"inside\"`\n↓\nsame scoped `status` → `\"inside\"`\n↓\nexit `with`\n↓\n`print(status)`\n↓\nresult: `inside`",
+      "common_mistake": "It is easy to treat a `with` block like a function that creates a new local scope. `with` controls context-manager lifetime but does not by itself create a separate name scope."
     },
     "teaching_example": {
-      "code": "status = \"before\"\nwith open(\"note.txt\", \"w\", encoding=\"utf-8\") as f:\n    status = \"written\"\nprint(status)",
-      "walkthrough": "Because the indented reassignment is executed, the status remains “written” even outside the block."
+      "code": "status = \"before\"\nwith open(\"note.txt\", \"w\", encoding=\"utf-8\") as f:\n    status = \"written\"\n    f.write(\"A\")\nprint(status)",
+      "walkthrough": "Line by line:\n1) `status` starts as `\"before\"`.\n2) Enter the `with` block.\n3) `status = \"written\"` rebinds the same scoped name to the new string.\n4) Leaving the `with` block does not undo that binding.\n5) `print(status)` displays `written`.\n\nExecution flow: before → enter `with` → rebind to written → exit → output.\nResult: `written`."
     },
     "answer_explanation": {
-      "step_by_step": "1) In the first line, `before` is stored in `status`. 2) The indented reassignment inside the `with` block changes `status` to `inside`. 3) After the file write operation is executed within the same block, the code exits the `with` block. 4) Since the `with` block does not create a new variable scope, the `print` statement reads `inside`.",
-      "why_correct": "Since the reassignment inside the block changes the status within the same function/module scope, `inside` will retain its current value thereafter.",
+      "step_by_step": "`status` initially refers to `\"before\"`.\n↓\nEnter the `with` block.\n↓\nExecute `status = \"inside\"`, rebinding the same scoped name.\n↓\nFinish the file write and leave the block.\n↓\nBecause `with` did not create a new variable scope, `status` still refers to `\"inside\"`.",
+      "why_correct": "The assignment inside the block really rebinds `status` to `\"inside\"` in the same scope, and exiting `with` does not restore the earlier binding, so the answer is `inside`.",
       "common_wrong_choice": {
         "choice": "before",
-        "why_wrong": "\"before\" refers to the value prior to reassignment, and it has already been replaced with \"inside\" within the `with` block.",
-        "misread_step": "Since blocks create their own local scope, much like functions, it is easy to assume that state changes disappear outside the block."
+        "why_wrong": "\"before\" is the value before reassignment. The indented assignment has already rebound `status` to \"inside\".",
+        "misread_step": "This incorrectly treats the `with` suite as a separate local-variable scope whose changes disappear on exit."
       },
-      "takeaway": "An indentation block determines **which statements execute inside the block**, but `with` itself does not create a new variable scope."
+      "takeaway": "`with` manages a context, not a new variable scope; **track assignments executed inside it just like other assignments in the surrounding scope**."
     },
     "target_statement": "status = \"inside\"",
     "focus_span": "status = \"inside\"",
