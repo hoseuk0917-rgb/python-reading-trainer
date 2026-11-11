@@ -5,11 +5,13 @@ on:
     branches: [ main ]
     paths:
       - 'tools/enrich_dynamic_ai_learning_feed_r2.py'
+      - 'tools/build_dynamic_ai_learner_material_r2_1.py'
       - '.github/workflows/dynamic-ai-learning-feed-r2-canary.yml'
   push:
     branches: [ main ]
     paths:
       - 'tools/enrich_dynamic_ai_learning_feed_r2.py'
+      - 'tools/build_dynamic_ai_learner_material_r2_1.py'
       - '.github/workflows/dynamic-ai-learning-feed-r2-canary.yml'
   workflow_dispatch:
     inputs:
@@ -49,6 +51,12 @@ jobs:
 
       - name: R2 self-test
         run: python tools/enrich_dynamic_ai_learning_feed_r2.py --self-test
+
+      - name: Compile R2.1 learner material
+        run: python -m py_compile tools/build_dynamic_ai_learner_material_r2_1.py
+
+      - name: R2.1 self-test
+        run: python tools/build_dynamic_ai_learner_material_r2_1.py --self-test
 
       - name: R2 five-item plan
         run: python tools/enrich_dynamic_ai_learning_feed_r2.py --plan --limit 5
@@ -182,20 +190,115 @@ jobs:
           print("DYNAMIC_AI_SEMANTIC_R2_OUTPUT_VALIDATION=PASS")
           PY
 
-      - name: Commit and push R2 output
+      - name: Generate R2.1 beginner learner material
         shell: bash
         run: |
           set -euo pipefail
 
-          git add data/dynamic_feed/enriched_r2_canary.jsonl
+          python tools/build_dynamic_ai_learner_material_r2_1.py \
+            --live \
+            --model gpt-6.1-sol
+
+      - name: Validate R2.1 output
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          source_path = Path("data/dynamic_feed/enriched_r2_canary.jsonl")
+          learner_path = Path("data/dynamic_feed/learner_r2_1_canary.jsonl")
+
+          if not learner_path.is_file():
+              raise SystemExit("R2.1 learner output not generated")
+
+          eligible = set()
+
+          for line in source_path.read_text(encoding="utf-8").splitlines():
+              if not line.strip():
+                  continue
+
+              row = json.loads(line)
+              disposition = (row.get("enrichment") or {}).get("disposition")
+
+              if disposition in {"KEEP", "CASE_STUDY"}:
+                  eligible.add(row.get("id"))
+
+          learner_ids = set()
+          count = 0
+
+          for line_number, line in enumerate(
+              learner_path.read_text(encoding="utf-8").splitlines(),
+              start=1,
+          ):
+              if not line.strip():
+                  continue
+
+              row = json.loads(line)
+
+              if row.get("schema") != "python-reading-trainer/dynamic-ai-learner-material-v1":
+                  raise SystemExit(f"learner schema mismatch at line {line_number}")
+
+              item_id = row.get("id")
+
+              if not item_id or item_id in learner_ids:
+                  raise SystemExit(f"bad or duplicate learner id: {item_id}")
+
+              if item_id not in eligible:
+                  raise SystemExit(f"learner item is not KEEP/CASE_STUDY: {item_id}")
+
+              learner_ids.add(item_id)
+              count += 1
+
+              material = row.get("material") or {}
+
+              for key in (
+                  "title_ko",
+                  "easy_one_liner_ko",
+                  "intuitive_explanation_ko",
+                  "why_it_is_interesting_ko",
+                  "deeper_explanation_ko",
+                  "source_boundary_ko",
+                  "check_question_ko",
+                  "check_answer_ko",
+              ):
+                  if not str(material.get(key) or "").strip():
+                      raise SystemExit(f"missing learner field {key}: {item_id}")
+
+              usage = row.get("usage") or {}
+
+              if int(usage.get("input_tokens") or 0) <= 0:
+                  raise SystemExit(f"missing R2.1 input usage: {item_id}")
+
+              if int(usage.get("output_tokens") or 0) <= 0:
+                  raise SystemExit(f"missing R2.1 output usage: {item_id}")
+
+          if learner_ids != eligible:
+              missing = sorted(eligible - learner_ids)
+              raise SystemExit(f"eligible learner items missing: {missing}")
+
+          print(f"R2_1_OUTPUT_COUNT={count}")
+          print("DYNAMIC_AI_LEARNER_R2_1_OUTPUT_VALIDATION=PASS")
+          PY
+
+      - name: Commit and push overnight R2 outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git add \
+            data/dynamic_feed/enriched_r2_canary.jsonl \
+            data/dynamic_feed/learner_r2_1_canary.jsonl
 
           if git diff --cached --quiet; then
-            echo "DYNAMIC_AI_R2_NEW_CONTENT=NO"
+            echo "DYNAMIC_AI_OVERNIGHT_NEW_CONTENT=NO"
             exit 0
           fi
 
-          git commit -m "Add Dynamic AI Learning Feed R2 canary enrichment"
+          git commit -m "Add Dynamic AI Learning Feed overnight R2 outputs"
           git push -u origin "$R2_BRANCH"
 
-          echo "DYNAMIC_AI_R2_NEW_CONTENT=YES"
+          echo "DYNAMIC_AI_OVERNIGHT_NEW_CONTENT=YES"
           echo "R2_BRANCH_READY=$R2_BRANCH"
