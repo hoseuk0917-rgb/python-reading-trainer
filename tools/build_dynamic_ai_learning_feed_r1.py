@@ -66,6 +66,70 @@ NEGATIVE_TERMS = {
     "policy": -1,
 }
 
+AI_SIGNAL_TERMS = (
+    "ai",
+    "artificial intelligence",
+    "chatgpt",
+    "gpt",
+    "claude",
+    "gemini",
+    "llm",
+    "language model",
+    "model",
+    "agent",
+    "copilot",
+    "reasoning",
+    "multimodal",
+    "inference",
+    "embedding",
+    "rag",
+    "mcp",
+    "transformer",
+    "pytorch",
+    "quantization",
+)
+
+LEARNING_SIGNAL_TERMS = (
+    "api",
+    "sdk",
+    "developer",
+    "coding",
+    "python",
+    "agent",
+    "tool use",
+    "reasoning",
+    "multimodal",
+    "inference",
+    "training",
+    "fine-tun",
+    "embedding",
+    "rag",
+    "mcp",
+    "transformer",
+    "pytorch",
+    "quantization",
+    "benchmark",
+    "eval",
+    "open source",
+    "open-source",
+    "weights",
+    "architecture",
+    "research",
+)
+
+LOW_VALUE_CONTEXT_TERMS = (
+    "veteran",
+    "servicemember",
+    "caregiver",
+    "carplay",
+    "pixel drop",
+    "seat management",
+    "billing",
+    "travel",
+    "office",
+    "hiring",
+)
+
 TOPIC_RULES = (
     ("model_release", ("gpt", "claude", "gemini", "model")),
     ("agent_tooling", ("agent", "copilot", "mcp", "tool use")),
@@ -223,6 +287,27 @@ def classify(text: str, base_score: int, threshold: int) -> dict:
             score += weight
             negative_terms.append(term)
 
+    ai_signals = [term for term in AI_SIGNAL_TERMS if term in lowered]
+    learning_signals = [term for term in LEARNING_SIGNAL_TERMS if term in lowered]
+    low_value_signals = [term for term in LOW_VALUE_CONTEXT_TERMS if term in lowered]
+
+    if low_value_signals and not any(
+        term in lowered
+        for term in (
+            "api",
+            "sdk",
+            "developer",
+            "research",
+            "benchmark",
+            "training",
+            "inference",
+            "architecture",
+            "open source",
+            "open-source",
+        )
+    ):
+        score -= 3
+
     topics = []
     for topic, terms in TOPIC_RULES:
         if any(term in lowered for term in terms):
@@ -234,12 +319,21 @@ def classify(text: str, base_score: int, threshold: int) -> dict:
             if concept not in linked_concepts:
                 linked_concepts.append(concept)
 
-    status = "CANDIDATE" if score >= threshold and linked_concepts else "WATCH_ONLY"
+    is_candidate = (
+        score >= threshold
+        and bool(linked_concepts)
+        and bool(ai_signals)
+        and bool(learning_signals)
+    )
+    status = "CANDIDATE" if is_candidate else "WATCH_ONLY"
     return {
         "score": max(0, score),
         "status": status,
         "matched_terms": matched_terms[:12],
         "negative_terms": negative_terms[:8],
+        "ai_signals": ai_signals[:10],
+        "learning_signals": learning_signals[:10],
+        "low_value_signals": low_value_signals[:8],
         "topics": topics,
         "linked_concepts": linked_concepts[:8],
     }
@@ -382,11 +476,13 @@ def collect(
     runtime_limit: int,
     threshold: int,
     timeout: int,
+    lookback_days: int,
 ) -> int:
     registry = load_registry(registry_path)
     archive, known_ids = read_archive(archive_path)
     new_rows = []
     source_success_count = 0
+    cutoff = datetime.now(timezone.utc).timestamp() - (lookback_days * 86400)
 
     for source in registry["sources"]:
         if source.get("enabled") is not True:
@@ -406,7 +502,13 @@ def collect(
 
         new_for_source = 0
         for entry in entries:
-            item_id = stable_id(sid, entry["url"], entry["title"], entry.get("published_at"))
+            published_at = entry.get("published_at")
+            if published_at:
+                published_dt = datetime.fromisoformat(published_at.replace("Z", "+00:00"))
+                if published_dt.timestamp() < cutoff:
+                    continue
+
+            item_id = stable_id(sid, entry["url"], entry["title"], published_at)
             if item_id in known_ids:
                 continue
 
@@ -425,6 +527,9 @@ def collect(
                 "status": result["status"],
                 "matched_terms": result["matched_terms"],
                 "negative_terms": result["negative_terms"],
+                "ai_signals": result["ai_signals"],
+                "learning_signals": result["learning_signals"],
+                "low_value_signals": result["low_value_signals"],
                 "matched_topics": result["topics"],
                 "linked_concepts": result["linked_concepts"],
                 "first_seen_at": utc_now(),
@@ -488,11 +593,29 @@ def self_test() -> int:
 
     first = classify(f"{rows[0]['title']} {rows[0]['summary']}", 3, 5)
     second = classify(f"{rows[1]['title']} {rows[1]['summary']}", 3, 5)
+    consumer = classify(
+        "ChatGPT Plus for veterans and servicemembers. Product access update.",
+        3,
+        5,
+    )
+    generic_dev = classify(
+        "A more informative GitHub dashboard for developers.",
+        1,
+        5,
+    )
+    technical = classify(
+        "Gemini Decisions API for developers with multimodal model evaluation.",
+        1,
+        5,
+    )
 
     assert first["status"] == "CANDIDATE"
     assert "api_sdk" in first["topics"]
     assert "call" in first["linked_concepts"]
     assert second["status"] == "WATCH_ONLY"
+    assert consumer["status"] == "WATCH_ONLY"
+    assert generic_dev["status"] == "WATCH_ONLY"
+    assert technical["status"] == "CANDIDATE"
     assert stable_id(
         "x", rows[0]["url"], rows[0]["title"], rows[0]["published_at"]
     ).startswith("AIFR1_")
@@ -524,6 +647,7 @@ def main() -> int:
     parser.add_argument("--runtime-limit", type=int, default=60)
     parser.add_argument("--threshold", type=int, default=5)
     parser.add_argument("--timeout", type=int, default=20)
+    parser.add_argument("--lookback-days", type=int, default=14)
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--registry-check", action="store_true")
     parser.add_argument("--collect", action="store_true")
@@ -549,6 +673,7 @@ def main() -> int:
             args.runtime_limit,
             args.threshold,
             args.timeout,
+            args.lookback_days,
         )
 
     parser.error("choose --self-test, --registry-check, or --collect")
