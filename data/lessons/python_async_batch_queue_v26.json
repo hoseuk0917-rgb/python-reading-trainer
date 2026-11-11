@@ -759,8 +759,8 @@
       "common_mistake": "join이 queue 자체를 삭제한다고 생각하기 쉽습니다."
     },
     "teaching_example": {
-      "code": "# producer put 2 items\n# consumer task_done twice\n# await queue.join() then continues",
-      "walkthrough": "join은 두 작업 모두 완료 신호를 받을 때까지 대기합니다."
+      "code": "import asyncio\n\nasync def worker(queue):\n    await queue.get()\n    queue.task_done()\n\nasync def main():\n    queue = asyncio.Queue()\n    await queue.put(\"job\")\n    asyncio.create_task(worker(queue))\n    await queue.join()\n    print(\"all done\")\n\nasyncio.run(main())",
+      "walkthrough": "queue.put()으로 unfinished task가 1개 생깁니다. worker가 그 작업을 꺼내 task_done()을 호출하면 unfinished count가 0이 되고, 그때 await queue.join()이 끝나서 all done으로 진행합니다."
     },
     "answer_explanation": {
       "step_by_step": "queue.join은 put된 작업 수와 task_done 호출을 추적해 unfinished count가 0이 될 때 완료됩니다.",
