@@ -1,0 +1,191 @@
+name: Dynamic AI learning feed R1
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'data/dynamic_feed/source_registry_r1.json'
+      - 'tools/build_dynamic_ai_learning_feed_r1.py'
+      - '.github/workflows/dynamic-ai-learning-feed-r1.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'data/dynamic_feed/source_registry_r1.json'
+      - 'tools/build_dynamic_ai_learning_feed_r1.py'
+      - '.github/workflows/dynamic-ai-learning-feed-r1.yml'
+  workflow_dispatch:
+    inputs:
+      collect:
+        description: 'Run live collection after validation'
+        required: false
+        default: true
+        type: boolean
+  schedule:
+    - cron: '17 0,12 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: dynamic-ai-learning-feed-r1
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile collector
+        run: python -m py_compile tools/build_dynamic_ai_learning_feed_r1.py
+
+      - name: Collector self-test
+        run: python tools/build_dynamic_ai_learning_feed_r1.py --self-test
+
+      - name: Validate source registry
+        run: python tools/build_dynamic_ai_learning_feed_r1.py --registry-check
+
+  collect:
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.collect == true)
+    needs: validate
+    runs-on: ubuntu-latest
+
+    env:
+      FEED_BRANCH: automation/dynamic-ai-learning-feed-r1
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Check out full repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Prepare cumulative automation branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch origin main
+
+          if git ls-remote --exit-code --heads origin "$FEED_BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$FEED_BRANCH"
+            git checkout -B "$FEED_BRANCH" FETCH_HEAD
+            git merge --no-edit origin/main
+          else
+            git checkout -b "$FEED_BRANCH" origin/main
+          fi
+
+      - name: Collect official AI feed candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python tools/build_dynamic_ai_learning_feed_r1.py \
+            --collect \
+            --max-new-per-source 25 \
+            --runtime-limit 60 \
+            --threshold 5
+
+      - name: Validate generated feed files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          archive = Path("data/dynamic_feed/items_r1.jsonl")
+          runtime = Path("data/runtime/dynamic_ai_learning_feed_r1.json")
+
+          if not archive.is_file():
+              raise SystemExit("archive not generated")
+          if not runtime.is_file():
+              raise SystemExit("runtime feed not generated")
+
+          ids = set()
+          candidate_count = 0
+          for line_number, line in enumerate(archive.read_text(encoding="utf-8").splitlines(), start=1):
+              if not line.strip():
+                  continue
+              row = json.loads(line)
+              item_id = row.get("id")
+              if not item_id or item_id in ids:
+                  raise SystemExit(f"bad or duplicate archive id at line {line_number}: {item_id}")
+              ids.add(item_id)
+              if row.get("status") == "CANDIDATE":
+                  candidate_count += 1
+              if row.get("source_authority") != "official":
+                  raise SystemExit(f"non-official source item: {item_id}")
+
+          payload = json.loads(runtime.read_text(encoding="utf-8"))
+          if payload.get("schema") != "python-reading-trainer/dynamic-ai-learning-feed-v1":
+              raise SystemExit("runtime schema mismatch")
+          if payload.get("contract") != "DISCOVERY_ONLY_NO_CORE_LESSON_MUTATION":
+              raise SystemExit("runtime contract mismatch")
+          if payload.get("item_count") != len(payload.get("items") or []):
+              raise SystemExit("runtime item count mismatch")
+          if payload.get("archive_candidate_count") != candidate_count:
+              raise SystemExit("archive candidate count mismatch")
+
+          print(f"ARCHIVE_ITEM_COUNT={len(ids)}")
+          print(f"ARCHIVE_CANDIDATE_COUNT={candidate_count}")
+          print(f"RUNTIME_ITEM_COUNT={payload.get('item_count')}")
+          print("DYNAMIC_AI_FEED_GENERATED_VALIDATION_R1=PASS")
+          PY
+
+      - name: Detect generated changes
+        id: diff
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git add             data/dynamic_feed/items_r1.jsonl             data/runtime/dynamic_ai_learning_feed_r1.json
+
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "DYNAMIC_AI_FEED_NEW_CONTENT=NO"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "DYNAMIC_AI_FEED_NEW_CONTENT=YES"
+            git diff --cached --stat
+          fi
+
+      - name: Commit and push feed update
+        if: steps.diff.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git commit -m "Update Dynamic AI Learning Feed R1"
+          git push -u origin "$FEED_BRANCH"
+
+      - name: Create or reuse feed PR
+        if: steps.diff.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PR_NUMBER="$(gh pr list             --repo "$GITHUB_REPOSITORY"             --head "$FEED_BRANCH"             --base main             --state open             --json number             --jq '.[0].number')"
+
+          if [ -z "$PR_NUMBER" ]; then
+            gh pr create               --repo "$GITHUB_REPOSITORY"               --base main               --head "$FEED_BRANCH"               --title "Update Dynamic AI Learning Feed R1"               --body "Automated official-source discovery inbox update. This PR only changes cumulative feed archive/runtime data and does not mutate the 1,785-card core curriculum."
+          else
+            echo "EXISTING_FEED_PR=$PR_NUMBER"
+          fi
