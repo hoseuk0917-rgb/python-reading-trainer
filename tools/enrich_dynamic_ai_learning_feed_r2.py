@@ -491,6 +491,9 @@ def openai_request(
                 ],
             }
         ],
+        "reasoning": {
+            "effort": "low",
+        },
         "text": {
             "verbosity": "low",
             "format": {
@@ -501,7 +504,7 @@ def openai_request(
                 "schema": schema,
             },
         },
-        "max_output_tokens": 1800,
+        "max_output_tokens": 25000,
     }
 
     request = urllib.request.Request(
@@ -703,8 +706,16 @@ def live(
         )
 
         if response.get("status") not in {"completed", None}:
+            incomplete = response.get("incomplete_details") or {}
+            usage = response.get("usage") or {}
+            output_details = usage.get("output_tokens_details") or {}
             raise RuntimeError(
-                f"response not completed for {item_id}: {response.get('status')}"
+                "response not completed for "
+                f"{item_id}: status={response.get('status')}, "
+                f"reason={incomplete.get('reason') or 'unknown'}, "
+                f"input_tokens={int(usage.get('input_tokens') or 0)}, "
+                f"output_tokens={int(usage.get('output_tokens') or 0)}, "
+                f"reasoning_tokens={int(output_details.get('reasoning_tokens') or 0)}"
             )
 
         output_text = extract_output_text(response)
