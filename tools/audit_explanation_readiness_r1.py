@@ -74,7 +74,7 @@ TECHNICAL_TERMS = re.compile(
     r"schema|vector|embedding)\b", re.I
 )
 EASY_BRIDGE_TERMS = re.compile(
-    r"(쉽게|말하면|처럼|기능|역할|뜻|의미|먼저|하나씩|골라|묶|꺼내|보여|돌려|저장|연결|반복|선택|확인|만들)",
+    r"(쉽게|말하면|처럼|기능|역할|뜻|의미|먼저|하나씩|골라|묶|꺼내|보여|돌려|저장|연결|반복|선택|확인|만들|easy meaning|in simple terms|put simply)",
     re.I
 )
 
