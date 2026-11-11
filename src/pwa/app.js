@@ -2730,6 +2730,7 @@ async function init() {
   "../../data/side_cards/python_unlinked_secondary_gap_side_cards_v159_a1.json",
   "../../data/side_cards/python_unlinked_tertiary_gap_side_cards_v160_a1.json",
   "../../data/side_cards/python_unlinked_quaternary_gap_side_cards_v161_a1.json",
+  "../../data/side_cards/python_easy_reference_gap_side_cards_v162_a1.json",
   ];
 
   const sideResults = await Promise.all(sideFiles.map(function(path) {
