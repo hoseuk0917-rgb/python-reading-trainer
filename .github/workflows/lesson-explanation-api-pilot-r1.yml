@@ -27,8 +27,14 @@ on:
         required: false
         default: '100'
         type: string
+      resume_run_id:
+        description: 'Optional failed workflow run ID whose validated provenance should be resumed'
+        required: false
+        default: ''
+        type: string
 
 permissions:
+  actions: read
   contents: write
 
 concurrency:
@@ -104,12 +110,36 @@ jobs:
 
           git checkout -b "$PILOT_BRANCH" origin/main
 
+      - name: Download resume provenance
+        if: inputs.resume_run_id != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          RESUME_RUN_ID="${{ inputs.resume_run_id }}"
+          if ! [[ "$RESUME_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "resume_run_id must be a numeric GitHub Actions run ID: $RESUME_RUN_ID"
+            exit 1
+          fi
+
+          mkdir -p "$RUNNER_TEMP/resume"
+          gh run download "$RESUME_RUN_ID" \
+            --repo "${{ github.repository }}" \
+            --name lesson-explanation-api-pilot-r1 \
+            --dir "$RUNNER_TEMP/resume"
+
+          test -f "$RUNNER_TEMP/resume/lesson-explanation-api-pilot-r1.jsonl"
+
       - name: Run real lesson explanation pilot
         shell: bash
         run: |
           set -euo pipefail
 
           LIMIT="${{ inputs.limit }}"
+          RESUME_RUN_ID="${{ inputs.resume_run_id }}"
+
           if ! [[ "$LIMIT" =~ ^[1-9][0-9]*$ ]]; then
             echo "limit must be a positive integer: $LIMIT"
             exit 1
@@ -119,7 +149,22 @@ jobs:
             exit 1
           fi
 
-          python tools/run_lesson_explanation_api_pilot_r1.py             --live             --limit "$LIMIT"             --model gpt-6.1-sol             --result-path "$RUNNER_TEMP/lesson-explanation-api-pilot-r1.jsonl"             --max-total-tokens 1500000
+          ARGS=(
+            --live
+            --limit "$LIMIT"
+            --model gpt-6.1-sol
+            --result-path "$RUNNER_TEMP/lesson-explanation-api-pilot-r1.jsonl"
+            --max-total-tokens 1500000
+          )
+
+          if [ -n "$RESUME_RUN_ID" ]; then
+            ARGS+=(
+              --resume-result-path
+              "$RUNNER_TEMP/resume/lesson-explanation-api-pilot-r1.jsonl"
+            )
+          fi
+
+          python tools/run_lesson_explanation_api_pilot_r1.py "${ARGS[@]}"
 
       - name: Rebuild runtime lesson bundles
         run: python tools/build_runtime_lesson_bundle_v400_5.py
