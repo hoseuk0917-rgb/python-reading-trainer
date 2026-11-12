@@ -749,14 +749,14 @@
     "primary_concept": "await_expression",
     "reading_goal_internal": "await 뒤의 비동기 호출을 시작한 뒤 그 작업이 완료되어 결과를 줄 때까지 현재 coroutine의 다음 단계가 진행되지 않는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`await expression`은 awaitable 작업의 완료를 기다리고 그 결과를 현재 비동기 함수 안에서 받는 표현식입니다.",
-      "how_to_read": "먼저 run_curate() 호출로 coroutine을 얻고, await가 그 작업을 실행·대기한 뒤 반환값을 받는다고 읽습니다.",
-      "key_point": "await는 프로그램 전체를 무조건 멈추는 문법이 아니라 현재 coroutine이 작업 완료를 기다리도록 합니다.",
-      "common_mistake": "await를 무시하고 아래 로그가 run_curate 완료 전에 바로 실행된다고 읽기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `await`는 비동기 작업이 끝나면 그 결과를 받아 다음 단계에서 쓰게 합니다.\n정확한 정의: `await expression`은 awaitable(완료를 기다릴 수 있는 객체)을 기다려 완료 결과를 값으로 얻는 표현식이며, 기다리는 동안 현재 코루틴의 실행이 일시 중단될 수 있습니다.",
+      "how_to_read": "결과를 받아야 다음 칸으로 넘어가는 흐름으로 생각하세요. 이 카드에서 `run_curate()`는 코루틴 객체를 만들고, `await`는 그 코루틴을 실행하며 완료 결과를 기다립니다. `run_curate`가 `\"curated\"`를 반환하면 그 값이 `result`에 저장되고, 그다음 `print(result)`가 실행됩니다.",
+      "key_point": "`asyncio.run(scheduled())` → `cron`에 문자열 저장 → `cron fired 0 * * * *` 출력 → `run_curate()`를 await → 내부의 `await asyncio.sleep(0)`에서 실행을 잠시 양보 → `return \"curated\"` → `result = \"curated\"` → `curated` 출력. `cron` 문자열 자체는 이 코드에서 예약 실행을 설정하지 않습니다.",
+      "common_mistake": "`run_curate`, `run_curate()`, `await run_curate()`를 같은 값으로 읽지 마세요. 각각 함수 객체, 코루틴 객체, 코루틴의 완료 결과를 뜻합니다. 여기서 저장되는 것은 `\"curated\"`이며, `print(result)`는 그 결과를 받기 전에 실행되지 않습니다. 기다림이 프로그램 전체를 멈춘다는 뜻도 아닙니다."
     },
     "teaching_example": {
       "code": "import asyncio\n\nasync def fetch():\n    await asyncio.sleep(0)\n    return \"ready\"\n\nasync def main():\n    value = await fetch()\n    print(value)\n\nasyncio.run(main())",
-      "walkthrough": "fetch coroutine이 완료되어 ready를 반환한 뒤 value에 저장되고 출력됩니다."
+      "walkthrough": "1) `import asyncio`는 아래에서 사용할 모듈을 가져옵니다.\n2) `async def fetch():`는 비동기 함수를 정의합니다. 정의만으로 본문이 실행되지는 않습니다.\n3) 그 본문의 `await asyncio.sleep(0)`는 실행을 잠시 양보하고, 이어서 `return \"ready\"`가 완료 결과를 돌려줍니다.\n4) `async def main():`도 비동기 함수를 정의합니다.\n5) 마지막 줄의 `asyncio.run(main())`이 `main` 코루틴을 실행합니다.\n6) `value = await fetch()`에서 `fetch()`가 코루틴 객체를 만들고, `await`가 이를 실행하며 완료를 기다립니다. 위의 `sleep(0)` 다음에 반환된 `\"ready\"`가 `value`에 저장됩니다.\n7) 그다음 `print(value)`가 실행되어 `ready`를 한 줄 출력합니다.\n흐름: `fetch()` → await로 완료 대기 → `\"ready\"` 반환 → `value`에 저장 → 출력."
     },
     "answer_explanation": {
       "step_by_step": "1) run_curate() 호출이 awaitable 작업을 만든다. 2) await가 그 작업의 완료를 기다린다. 3) coroutine은 curated를 반환한다. 4) 그 값이 await 표현식 결과이므로 result에 저장된다.",

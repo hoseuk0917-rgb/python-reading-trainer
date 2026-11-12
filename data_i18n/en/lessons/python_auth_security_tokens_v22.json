@@ -567,24 +567,24 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "set_cookie 호출에서 HttpOnly security option이 이름 있는 argument로 설정되는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`httponly=True` is a keyword argument that enables the HttpOnly option in a call to `set_cookie`.",
-                                    "how_to_read":  "Distinguish the names of \"secure,\" \"samesite,\" and other cookie options.",
-                                    "key_point":  "HttpOnly is used to prevent browser JavaScript from directly reading that cookie.",
-                                    "common_mistake":  "It’s easy to think of `HttpOnly` as an option that allows only HTTPS and blocks HTTP. Its role differs from that of the `Secure` flag."
+                                    "what_it_is":  "Easy meaning: `httponly=True` means 'pass the true value under the name httponly' in this call.\nExact definition: It is a keyword argument, which the `**options` parameter receives here as the dictionary entry `'httponly': True`.",
+                                    "how_to_read":  "Picture passing values with name tags attached. `class Response` defines a class, and `set_cookie` defines a method that returns the options it receives. `response = Response()` creates an object, and `session_id = \"opaque\"` binds a string. In the final call, `response` is passed automatically as `self`, while the arguments named `key`, `value`, `httponly`, `secure`, and `samesite` are collected in `options`. In particular, `value=session_id` passes the string `\"opaque\"`, and `httponly=True` passes the Boolean value `True`.",
+                                    "key_point":  "Call → collect named arguments in `options` → `return options` → bind the returned dictionary to `cookie`.\nThe result is `{'key': 'session', 'value': 'opaque', 'httponly': True, 'secure': True, 'samesite': 'lax'}`. Nothing is printed. The HttpOnly option means restricting direct cookie reading by browser JavaScript, but this example method only returns a dictionary; it does not set an actual browser cookie.",
+                                    "common_mistake":  "Do not read `httponly=True` as a variable assignment statement or as 'allow HTTP only.' Here, `=` connects an argument name to the value passed in a call. HttpOnly's JavaScript access restriction is distinct from Secure's role concerning HTTPS transmission."
                                 },
         "teaching_example":  {
                                  "code":  "def make_cookie(*, httponly, secure):\n    return {\"httponly\":httponly,\"secure\":secure}\ncookie=make_cookie(httponly=True,secure=True)",
                                  "walkthrough":  "Pass two different security options by name."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Pass `httponly=True` to `set_cookie` to enable the cookie option.",
-                                   "why_correct":  "This is because the primary purpose of `HttpOnly` is to restrict direct cookie access by client-side scripts.",
+                                   "step_by_step":  "1) `Response()` creates an object, and `session_id` is bound to `\"opaque\"`.\n2) The call to `response.set_cookie(...)` passes `True` under the name `httponly`.\n3) `**options` receives this as `'httponly': True` along with the other arguments.\n4) The method returns that dictionary, which `cookie` then refers to.\n5) The question asks what this option means. HttpOnly denotes an option that restricts browser JavaScript from reading a cookie directly.",
+                                   "why_correct":  "Thus, the closest choice is 'Make it difficult to read cookies directly in browser JavaScript'. However, this code itself does not enforce that protection: the method shown only returns the option values.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Allow only HTTP and block HTTPS",
-                                                               "why_wrong":  "The option related to HTTPS-only transmission is \"Secure.\"",
-                                                               "misread_step":  "This is an example where the roles of the HttpOnly and Secure flags have been reversed."
+                                                               "why_wrong":  "HttpOnly does not select between HTTP and HTTPS. The separately passed `secure` option concerns HTTPS transmission.",
+                                                               "misread_step":  "This reads the name `httponly` as 'HTTP only' without separating the option's meaning from the passing of a named value."
                                                            },
-                                   "takeaway":  "Cookie security is explained by **distinguishing the roles of HttpOnly, Secure, and SameSite**."
+                                   "takeaway":  "First trace which value `name=value` passes, then read the option's meaning. Here, `True` is passed, but the actual execution result is an options dictionary."
                                },
         "target_statement":  "response.set_cookie(key=\"session\", value=session_id, httponly=True, secure=True, samesite=\"lax\")",
         "focus_span":  "httponly=True",

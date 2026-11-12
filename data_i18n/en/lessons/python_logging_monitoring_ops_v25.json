@@ -749,14 +749,14 @@
     "primary_concept": "await_expression",
     "reading_goal_internal": "await 뒤의 비동기 호출을 시작한 뒤 그 작업이 완료되어 결과를 줄 때까지 현재 coroutine의 다음 단계가 진행되지 않는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`await expression` is an expression that waits for an awaitable operation to complete and receives its result within the current asynchronous function.",
-      "how_to_read": "First, I interpret that calling `run_curate()` obtains a coroutine, and that `await` executes and waits for that task to complete before receiving the return value.",
-      "key_point": "`await` is not a statement that unconditionally halts the entire program; rather, it causes the current coroutine to wait for its task to complete.",
-      "common_mistake": "It’s easy to misread this as the log below being executed immediately, ignoring `await`, before `run_curate` completes."
+      "what_it_is": "Easy meaning: `await` receives an asynchronous operation's result when it finishes so the next step can use it.\nExact definition: `await expression` waits on an awaitable (an object whose completion can be awaited) and produces its completion result as a value; the current coroutine may suspend while waiting.",
+      "how_to_read": "Picture a flow that needs a result before moving to the next box. In this card, `run_curate()` creates a coroutine object, and `await` runs that coroutine and waits for its completion result. When `run_curate` returns `\"curated\"`, that value is stored in `result`, and then `print(result)` executes.",
+      "key_point": "`asyncio.run(scheduled())` → store the string in `cron` → print `cron fired 0 * * * *` → await `run_curate()` → briefly yield execution at its inner `await asyncio.sleep(0)` → `return \"curated\"` → `result = \"curated\"` → print `curated`. The `cron` string itself does not set up scheduled execution in this code.",
+      "common_mistake": "Do not read `run_curate`, `run_curate()`, and `await run_curate()` as the same value. They mean the function object, a coroutine object, and the coroutine's completion result, respectively. The value stored here is `\"curated\"`, and `print(result)` does not execute before that result is received. Waiting does not mean stopping the entire program either."
     },
     "teaching_example": {
       "code": "import asyncio\n\nasync def fetch():\n    await asyncio.sleep(0)\n    return \"ready\"\n\nasync def main():\n    value = await fetch()\n    print(value)\n\nasyncio.run(main())",
-      "walkthrough": "Once the `fetch` coroutine completes and returns `ready`, the result is stored in `value` and printed."
+      "walkthrough": "1) `import asyncio` imports the module used below.\n2) `async def fetch():` defines an asynchronous function. Defining it does not execute its body.\n3) In that body, `await asyncio.sleep(0)` briefly yields execution, and then `return \"ready\"` supplies the completion result.\n4) `async def main():` also defines an asynchronous function.\n5) The final line, `asyncio.run(main())`, runs the `main` coroutine.\n6) In `value = await fetch()`, `fetch()` creates a coroutine object, and `await` runs it and waits for completion. The `\"ready\"` returned after the `sleep(0)` above is stored in `value`.\n7) Then `print(value)` executes and prints one line: `ready`.\nFlow: `fetch()` → await completion → return `\"ready\"` → store in `value` → print."
     },
     "answer_explanation": {
       "step_by_step": "1) Calling `run_curate()` creates an awaitable task. 2) `await` waits for that task to complete. 3) The coroutine returns `curated`. 4) Since that value is the result of the `await` expression, it is stored in `result`.",
