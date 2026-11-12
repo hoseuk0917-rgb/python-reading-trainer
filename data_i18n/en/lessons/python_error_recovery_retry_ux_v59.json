@@ -569,24 +569,24 @@
         "primary_concept":  "except_clause",
         "reading_goal_internal":  "렌더 함수의 예외가 typed except로 전달되고 fallback 호출로 복구되는 실행 순서를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`except Exception:` is a typed `except` statement that executes when an exception of the `Exception` class occurs within a `try` block.",
-                                    "how_to_read":  "It seems to check which call to `try` raises an exception and executes the `except` block only in that case.",
-                                    "key_point":  "By isolating a single card failure with a fallback, you can minimize the risk of the rest of the screen crashing along with it.",
-                                    "common_mistake":  "It’s easy to think that the `except` block always executes, even if the `try` block succeeds. If no exception occurs, the `except` block is skipped."
+                                    "what_it_is":  "Easy meaning: `except Exception:` sets an alternative path to run if the attempted work fails.\nExact definition: `except Exception:` is an exception-handling clause that runs its handler when an exception propagated during the associated `try` block is an instance of `Exception` or one of its subclasses.",
+                                    "how_to_read":  "Picture switching from the normal path to an alternative path when an error occurs. In this card, `try` calls `render_card(card)`, and the `RuntimeError` raised inside that function propagates to the call site. `except Exception:` matches it, so `render_card_fallback(card[\"id\"])` runs.",
+                                    "key_point":  "Check `\"bad\"` → raise `RuntimeError` → never reach the normal `append` → handle with `except Exception:` → pass `\"bad\"` to the fallback → append `\"fallback:bad\"`. The final `rendered` is `[\"fallback:bad\"]`.",
+                                    "common_mistake":  "It is easy to think handling an exception resumes execution at the line immediately after the failure. Here, execution of `render_card` stops, so its normal `append` never runs. If `try` finished without an exception, the `except` body would be skipped."
                                 },
         "teaching_example":  {
-                                 "code":  "events = []\ntry:\n    raise ValueError(\"bad\")\nexcept ValueError:\n    events.append(\"fallback\")",
-                                 "walkthrough":  "A ValueError occurs, causing the `except` block to execute and the fallback to be logged."
+                                 "code":  "events = []\ntry:\n    raise RuntimeError(\"failed\")\n    events.append(\"normal\")\nexcept Exception:\n    events.append(\"fallback\")",
+                                 "walkthrough":  "1) `events = []` creates an empty list.\n2) `try:` starts the attempted work.\n3) `raise RuntimeError(\"failed\")` raises an exception.\n4) Execution transfers to exception handling, skipping `events.append(\"normal\")`.\n5) `except Exception:` matches because `RuntimeError` is a subclass of `Exception`.\n6) The handler appends `\"fallback\"`.\nResult: `events` is `[\"fallback\"]`."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "A RuntimeError occurs on the \"bad\" card, so the normal append operation is not executed. The `except` clause catches the exception and calls the fallback function.",
-                                   "why_correct":  "RuntimeError is part of the Exception class, which is why it can be handled using `typed except`.",
+                                   "step_by_step":  "1) Start with `rendered = []`. The two `def` statements define functions without running their bodies yet.\n2) Bind `card` to `{\"id\": \"bad\"}`.\n3) The `try` block calls `render_card(card)`.\n4) `card[\"id\"] == \"bad\"` is true, so `RuntimeError(\"render failed\")` is raised. The function's normal `append` does not run, leaving the list empty.\n5) The exception propagates to the call site. `except Exception:` handles it because `RuntimeError` is a subclass of `Exception`.\n6) `render_card_fallback(card[\"id\"])` receives `\"bad\"`. The f-string becomes `\"fallback:bad\"`, and that string is appended to the list.\nFinal value: `[\"fallback:bad\"]`.",
+                                   "why_correct":  "The exception prevents the normal append, and only the fallback call in the handler adds a string. `\"render failed\"` is the exception message, not a value appended to the list.",
                                    "common_wrong_choice":  {
                                                                "choice":  "[\"bad\"]",
-                                                               "why_wrong":  "`render_card` raises an exception before `append`.",
-                                                               "misread_step":  "This assumes that the statement following the point where the exception occurred is executed."
+                                                               "why_wrong":  "`raise` stops the function before it reaches the line that would append `\"bad\"`.",
+                                                               "misread_step":  "This assumes catching an exception resumes the failed function at its next line."
                                                            },
-                                   "takeaway":  "The error boundary flow is read as **failure point → except → fallback UI**."
+                                   "takeaway":  "Exception raised → current normal path stops → matching `except` runs. Handling does not return execution to the failure point."
                                },
         "target_statement":  "except Exception:",
         "focus_span":  "except Exception:",

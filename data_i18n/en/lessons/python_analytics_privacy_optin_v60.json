@@ -811,17 +811,17 @@
     },
     "teaching_example": {
       "code": "def no_tracking_when_disabled():\n    enabled = False\n    events = [] if not enabled else [\"view\"]\n    return len(events) == 0\n\nassert no_tracking_when_disabled()",
-      "walkthrough": "Since the `events` array is empty while `tracking` is disabled, the `assert` passes."
+      "walkthrough": "1. `def` defines the function. The code inside it does not run yet.\n2. The final line, `assert no_tracking_when_disabled()`, calls the function to obtain the value to check.\n3. `enabled = False` sets the tracking state to disabled.\n4. `not enabled` is True, so the conditional expression selects `[]`, making `events` an empty list.\n5. `len(events)` is 0, so `0 == 0` is True. `return` sends this value back to the caller.\n6. `assert` receives True and passes without printing anything. If the checked result is false, it raises AssertionError. Thus, `assert` is a check on the result, not a switch that disables tracking.\nThis describes normal execution with assertions enabled. Optimized execution can omit assert statements."
     },
     "answer_explanation": {
-      "step_by_step": "The `opt-out` function returns whether `events` is empty when `consent=False`, and `assert` enforces that condition.",
-      "why_correct": "This is because analytics events must not be generated without user consent in order for privacy preferences to be truly respected.",
+      "step_by_step": "1. The two `def` statements define functions without running their bodies yet.\n2. `assert no_event_when_opted_out()` calls the first function. `consent = False` → `not consent` is True → `events = []` → `len(events) == 0` is True → True is returned, so the first check passes.\n3. `assert event_when_opted_in()` calls the second function. `consent = True` → the conditional expression selects `[\"lesson_open\"]` → `len(events) == 1` is True → True is returned, so the second check also passes.\n4. In normal execution with assertions enabled, both checks pass and there is no output.",
+      "why_correct": "The first check verifies that the event list is empty without consent, so the correct answer is 'To verify that events are not collected without consent,'. The second check also verifies that there is one event with consent. This code tests those conditions using local lists; it does not inspect an actual external collection system.",
       "common_wrong_choice": {
         "choice": "To hide the verification results,",
-        "why_wrong": "`assert` does not hide condition violations but reveals them as failures.",
-        "misread_step": "This is an example where \"quality gate\" and \"suppression\" were interpreted in reverse."
+        "why_wrong": "When assertions are enabled, a false condition exposes a failure by raising AssertionError. Having no output on success does not mean the purpose is to hide results.",
+        "misread_step": "This mistakes the step where assert checks the function's returned True for a step that hides the verification result."
       },
-      "takeaway": "Privacy QA covers the entire process from **user selection → actual data collection status → behavior verification via assert**."
+      "takeaway": "Consent value → event list → count comparison → assert checks the returned true/false value. assert verifies the result rather than blocking collection, and optimized execution can omit it, so it cannot replace actual consent controls."
     },
     "target_statement": "assert no_event_when_opted_out()",
     "focus_span": "assert no_event_when_opted_out()",

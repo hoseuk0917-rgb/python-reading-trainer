@@ -627,10 +627,10 @@
         "primary_concept":  "generator_expression",
         "reading_goal_internal":  "generator가 모든 파일의 HTTP availability를 True로 만든다는 사실과, total count mismatch가 True라는 사실을 함께 읽고 각 evidence가 어떤 주장까지 증명하는지 구분한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "generator expression은 각 status를 200과 비교한 Boolean을 순차 생성합니다. 모든 비교가 True여도 그것은 요청 성공 범위의 evidence이며 데이터 합산 완전성 같은 다른 속성은 별도 gate가 필요합니다.",
-                                    "how_to_read":  "PASS/FAIL을 한 줄로 합치지 말고 각 gate의 피연산자를 확인합니다. HTTP status gate는 availability를, total count gate는 expected integration count를 직접 검사합니다.",
-                                    "key_point":  "현재 load_checks는 [True, True, True]지만 total_cards=102, expected_total=103이라 count_mismatch=True입니다. 따라서 파일 접근 가능 주장은 지지되지만 완전 통합 주장은 승인할 수 없습니다.",
-                                    "common_mistake":  "눈에 띄는 PASS가 여러 개 있다고 더 직접적인 FAIL evidence를 무시하면 안 됩니다. 주장과 동일한 속성을 측정하는 gate를 우선해야 합니다."
+                                    "what_it_is":  "쉽게 말하면: 여러 값을 차례로 꺼내 같은 계산을 하고, 결과가 필요할 때 하나씩 내주는 방법입니다.\n정확한 정의: 제너레이터 표현식(generator expression)은 반복 가능한 대상의 항목에 표현식을 적용한 결과를 요청받을 때마다 생성하는 제너레이터 객체를 만드는 표현식입니다.",
+                                    "how_to_read":  "결과를 하나씩 내주는 작업대라고 생각하세요. `status == 200 for status in statuses`는 먼저 `for status in statuses`를 따라 값을 하나씩 꺼내고, 각 값에 `status == 200`을 계산한다고 읽습니다. 첫 줄은 `[200, 200, 200]`을 준비합니다. 둘째 줄에서 제너레이터가 만들어지고, `list(...)`가 결과를 끝까지 요청해 `True`, `True`, `True`를 리스트로 모아 `load_checks`에 연결합니다. 이 코드는 HTTP 요청을 보내는 것이 아니라 이미 주어진 숫자를 비교합니다.",
+                                    "key_point":  "`200, 200, 200` → 각각 `== 200` → `True, True, True` → `list(...)` → `[True, True, True]`입니다. 이어서 `previous_total`은 100, `new_file_card_count`는 3이므로 `expected_total`은 103입니다. `total_cards`는 102이므로 `102 != 103`은 `True`이고, 최종 출력은 `[True, True, True] True`입니다. 주어진 상태 값은 파일 접근 가능성을 지지하지만, 카드 수가 기대보다 하나 적으므로 완전 통합을 승인할 수는 없습니다.",
+                                    "common_mistake":  "`status == 200`은 200인 항목만 골라내는 필터가 아니라 각 항목을 비교해 `True` 또는 `False`를 만드는 계산입니다. 예를 들어 상태가 404라면 그 자리에 `False`가 생성되며 항목이 빠지지 않습니다. 또한 제너레이터 자체는 리스트가 아닙니다. 여기서는 `list(...)`가 결과를 모읍니다. 비교 결과 세 개가 모두 `True`여도 별도로 계산한 카드 수 불일치가 사라지는 것은 아닙니다."
                                 },
         "teaching_example":  {
                                  "code":  "statuses = [200, 200]\nchecks = list(status == 200 for status in statuses)\nexpected = 10\nactual = 9\nprint(checks, actual != expected)",

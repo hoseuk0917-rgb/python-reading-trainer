@@ -444,24 +444,24 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "middleware 설정 호출에서 frontend origin 목록이 이름 있는 argument로 전달되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`allow_origins=[...]`는 호출에 list 값을 전달하는 keyword argument입니다.",
-      "how_to_read": "keyword 이름과 오른쪽 list 항목을 확인합니다.",
-      "key_point": "origin은 scheme, host, port 조합이므로 localhost:8790 frontend를 허용하려면 그 origin이 목록에 있어야 합니다.",
-      "common_mistake": "CORS 허용이 사용자 인증까지 제공한다고 생각하기 쉽습니다. CORS는 browser의 교차 출처 규칙과 관련된 설정입니다."
+      "what_it_is": "쉽게 말하면: 호출할 때 입력 이름을 붙이면 그 이름에 맞는 자리로 값을 전달할 수 있습니다.\n정확한 정의: keyword argument(키워드 인자)는 함수나 메서드 호출에서 `이름=값` 형태로 지정하며, 해당 이름의 parameter(매개변수)에 값이 바인딩됩니다.",
+      "how_to_read": "매개변수를 이름표가 붙은 입력 자리라고 생각하세요. `add_middleware(self, name, allow_origins)`에서 `self`에는 호출 대상인 `app`이 자동으로 연결됩니다. 호출의 첫 위치 인자 `\"CORSMiddleware\"`는 `name`에, `allow_origins=[\"http://localhost:8790\"]`의 리스트는 이름이 일치하는 `allow_origins`에 연결됩니다. 그런 다음 본문의 `self.middleware[name] = allow_origins`가 그 리스트를 딕셔너리에 저장합니다.",
+      "key_point": "`[\"http://localhost:8790\"]` 생성 → `allow_origins`에 전달 → `app.middleware[\"CORSMiddleware\"]`에 저장 → 같은 키로 조회 → `allowed`는 `[\"http://localhost:8790\"]`가 됩니다. 리스트 안의 origin 문자열은 `http://localhost:8790`입니다. 이 코드는 값을 저장하고 조회할 뿐, 실제 네트워크 접근을 제어하지는 않습니다.",
+      "common_mistake": "`allow_origins=`를 호출 밖 변수에 값을 저장하는 대입문으로 읽지 마세요. 여기서는 메서드의 입력 이름을 지정합니다. 또한 리스트를 전달했으므로 `allowed`에는 문자열 하나가 아니라 그 문자열을 담은 리스트가 연결됩니다."
     },
     "teaching_example": {
       "code": "class App:\n    def configure(self, allow_origins):\n        return allow_origins\n\napp = App()\norigins = app.configure(allow_origins=[\"http://localhost:3000\"])",
       "walkthrough": "allow_origins keyword argument에 origin 하나가 든 리스트가 전달됩니다."
     },
     "answer_explanation": {
-      "step_by_step": "`allow_origins`에 전달된 리스트의 유일한 항목이 http://localhost:8790이고 그 리스트가 설정에 저장됩니다.",
-      "why_correct": "keyword argument 값 자체가 허용 origin 목록이기 때문입니다.",
+      "step_by_step": "1) 클래스 정의 후 `app = App()`이 객체를 만들고, `__init__`가 `app.middleware`를 빈 딕셔너리로 초기화합니다.\n2) `app.add_middleware(...)` 호출에서 `self`는 `app`, `name`은 `\"CORSMiddleware\"`, `allow_origins`는 `[\"http://localhost:8790\"]`에 연결됩니다.\n3) 메서드 본문이 `app.middleware[\"CORSMiddleware\"]`에 이 리스트를 저장합니다.\n4) 마지막 줄이 같은 키로 리스트를 조회해 `allowed`에 연결합니다.\n5) 따라서 `allowed`의 값은 `[\"http://localhost:8790\"]`이고, 그 안의 유일한 origin은 `http://localhost:8790`입니다.",
+      "why_correct": "선택지는 리스트 전체가 아니라 그 안의 origin을 묻습니다. 전달한 리스트의 유일한 항목이 `http://localhost:8790`이고, 저장하거나 조회할 때 항목이 바뀌지 않으므로 이 선택지가 정답입니다.",
       "common_wrong_choice": {
         "choice": "모든 origin",
-        "why_wrong": "현재 코드에는 wildcard가 아니라 특정 origin 하나만 적혀 있습니다.",
-        "misread_step": "allow_methods/headers의 wildcard 같은 다른 설정과 origin 설정을 혼동한 경우입니다."
+        "why_wrong": "전달하고 저장한 리스트에는 `http://localhost:8790` 하나만 있습니다. 모든 origin을 나타내는 값이나 목록을 확장하는 처리는 없습니다.",
+        "misread_step": "`allow_origins`라는 이름만 보고 의미를 추측하고, `=` 오른쪽에 실제로 전달한 리스트와 메서드의 저장 동작을 확인하지 않은 경우입니다."
       },
-      "takeaway": "CORS 설정은 **허용할 정확한 origin 문자열**을 확인합니다."
+      "takeaway": "입력 이름과 전달 값을 연결한 뒤, 본문에서 그 값이 어디에 저장되는지 따라가세요. 리스트 자체와 그 안의 문자열도 구별하세요."
     },
     "target_statement": "app.add_middleware(\"CORSMiddleware\", allow_origins=[\"http://localhost:8790\"])",
     "focus_span": "allow_origins=[\"http://localhost:8790\"]",

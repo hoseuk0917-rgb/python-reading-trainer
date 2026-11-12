@@ -203,10 +203,10 @@
     "primary_concept": "lambda_expression",
     "reading_goal_internal": "lambda의 parameter row가 sorted가 검사하는 현재 dict를 받고 `row['score']` 값을 짧은 함수 결과로 내놓는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`lambda parameters: expression` is a short, unnamed function that returns the result of a single expression.",
-      "how_to_read": "Check what value the parameter to the left of the colon receives, then evaluate the expression on the right using that value to obtain the function’s result.",
-      "key_point": "This lambda function does not compare the entire row but instead provides the score value (0.7 or 0.9) of each row as the key.",
-      "common_mistake": "It is easy to assume that `lambda` directly compares the two rows or stores the `score` value back into the original dictionary."
+      "what_it_is": "Easy meaning: `lambda` makes a small function that performs a short calculation or lookup on its input and gives back the result.\nExact definition: `lambda parameters: expression` is an expression that creates an unnamed function object which, when called, evaluates one expression using its parameter values and returns the result.",
+      "how_to_read": "Picture a tool that extracts a sorting number from each row. First, `rows` contains the dictionaries for A and B. The function created by lambda is passed through `key=`. When `sorted` passes each dictionary to this function, `row` on the left of the colon receives that dictionary, and `row[\"score\"]` on the right retrieves and returns its score.",
+      "key_point": "A's dictionary → `row[\"score\"]` → `0.7`; B's dictionary → `row[\"score\"]` → `0.9`. Thus, the value the lambda provides is the `score value`. With `reverse=True`, `sorted` creates a new list containing the original dictionaries in descending score order. The order in `ranked` is B, A, and `print(ranked[0][\"label\"])` prints `B`.",
+      "common_mistake": "Do not read `row` as a row number or assume the lambda directly compares two rows and returns True/False. Here, `row` is one dictionary, and the lambda returns only its score. `sorted` does the work of ordering by those scores. The returned scores do not replace the items in the result list."
     },
     "teaching_example": {
       "code": "rows = [{\"name\":\"A\",\"age\":20},{\"name\":\"B\",\"age\":18}]\nranked = sorted(rows, key=lambda row: row[\"age\"])\nprint(ranked[0][\"name\"])",
@@ -1154,24 +1154,24 @@
     "primary_concept": "class_definition",
     "reading_goal_internal": "class 정의의 base 목록을 읽어 Item이 BaseModel 계열 schema class임을 식별한다.",
     "concept_explanation": {
-      "what_it_is": "`class Child(Base):` This is a class definition that inherits from another class.",
-      "how_to_read": "Distinguish between the new class name and the base class name in parentheses to verify the inheritance relationship.",
-      "key_point": "Pydantic’s `class Item(BaseModel):` also uses the same Python inheritance syntax.",
-      "common_mistake": "It is easy to mistake `BaseModel` for the name of a field in an `Item` instance. Within parentheses, it refers to the base class."
+      "what_it_is": "Easy meaning: `class Item(BaseModel):` creates a new kind called `Item` that inherits behavior from the existing `BaseModel`.\nExact definition: This class definition executes its body in a new namespace, then creates a class object with `BaseModel` as its direct base class and binds it to the name `Item`.",
+      "how_to_read": "Think of making a new blueprint based on an existing one. `Item` after `class` is the new class name; `BaseModel` in parentheses is the class it inherits from. In the body, `title: str` and `score: float` are attribute type annotations, not an inheritance list.",
+      "key_point": "The flow is: define `BaseModel` → define `Item` inheriting from `BaseModel` → call `Item(...)` → run the inherited `__init__`. `values` contains `title=\"news\"` and `score=0.8`; the loop and `setattr` store these as instance attributes. Thus, `result` is `0.8`. Here, `BaseModel` is defined locally in the code; the type annotations alone do not perform validation or conversion.",
+      "common_mistake": "Seeing `score: float` can make you think `Item` inherits from `float`. Read inheritance from the parentheses in the class header, and distinguish it from the type annotation after the colon."
     },
     "teaching_example": {
-      "code": "class Record:\n    pass\n\nclass User(Record):\n    name: str",
-      "walkthrough": "`User` is a subclass based on `Record`."
+      "code": "class Record:\n    def label(self):\n        return \"record\"\n\nclass User(Record):\n    pass\n\nuser = User()\nresult = user.label()",
+      "walkthrough": "1) `class Record:` defines the existing class.\n2) `def label(self):` defines a method. It has not been called, so `return \"record\"` does not run yet.\n3) `class User(Record):` defines `User` with `Record` as its direct base class.\n4) `pass` adds no new behavior.\n5) `user = User()` creates a `User` instance.\n6) `user.label()` finds the method in the base class `Record`, since it is not defined in `User`, and calls it. Now `return \"record\"` executes.\nResult: `result` is the string `\"record\"`. The direct base class of `User` is `Record`."
     },
     "answer_explanation": {
-      "step_by_step": "`class Item(BaseModel):` Here, the new class name is `Item`, and the name in parentheses is the base class it inherits from.",
-      "why_correct": "This is because, in Python’s class definition syntax, the class inside parentheses refers to a list of base classes.",
+      "step_by_step": "1) The `BaseModel` class is defined first. Its `__init__` is defined to store supplied names and values as attributes.\n2) In `class Item(BaseModel):`, `BaseModel` is evaluated, and `Item` is created with it as its direct base class.\n3) The body contains the type annotations `title: str` and `score: float`; these do not add base classes.\n4) `Item(title=\"news\", score=0.8)` uses the inherited `BaseModel.__init__`. Its loop uses `setattr` to store the `title` and `score` attributes.\n5) `item.score` is `0.8`, so `result` is also `0.8`. The direct base class that supplies this behavior is `BaseModel`.",
+      "why_correct": "`BaseModel` is the only base class specified in parentheses after the class name in `class Item(BaseModel):`, so the answer is `BaseModel`.",
       "common_wrong_choice": {
         "choice": "float",
-        "why_wrong": "`float` is the type used in the `score: float` type annotation; it is not a base class.",
-        "misread_step": "This is an example of confusion between class inheritance and field type annotation."
+        "why_wrong": "`float` is the attribute type annotation in `score: float`. It is not in the base list in the class header.",
+        "misread_step": "This mistakes a type annotation in the class body for the inheritance list in the class header."
       },
-      "takeaway": "When reading a schema class, examine the **class name → base class → field annotation** separately."
+      "takeaway": "Read direct inheritance from `class NewName(Base):`. Type annotations in the body and later instance creation are separate steps."
     },
     "target_statement": "class Item(BaseModel):",
     "focus_span": "class Item(BaseModel):",

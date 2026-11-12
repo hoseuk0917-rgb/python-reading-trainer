@@ -1003,10 +1003,10 @@
     "primary_concept": "comparison",
     "reading_goal_internal": "runtime 환경과 pip 설치 환경 이름을 equality comparison으로 비교해 ModuleNotFoundError의 환경 불일치 가능성을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`left == right` compares whether two values are equal and returns a boolean.",
-      "how_to_read": "Check the actual values on the left and right and compare them to see if they are exactly the same.",
-      "key_point": "If you’ve installed a package but the `import` fails, you need to check whether the pip you used to install it points to a different venv than the one where Python is actually running.",
-      "common_mistake": "It’s easy to assume that if the package name matches, the environment is automatically the same. However, the interpreter and pip may be in different environments."
+      "what_it_is": "Easy meaning: `==` asks whether two values are the same.\nExact definition: In this code, `==` is the equality comparison operator that evaluates whether two strings have the same character content, producing the boolean value `True` or `False`.",
+      "how_to_read": "Imagine revealing the values attached to two name tags and comparing them. The first line binds `runtime_env` to the string `\"venv-app\"`, and the second binds `pip_env` to `\"global-python\"`. On the third line, first read `runtime_env == pip_env` on the right as “Are these two strings equal?”, then bind that result to the name `same_environment` on the left.",
+      "key_point": "`\"venv-app\"` and `\"global-python\"` → different strings → comparison result `False` → `same_environment` has the value `False`. In this card, that supports first checking for a mismatch between the runtime and installation environments. However, the code only compares the supplied environment names; it does not inspect the actual Python or pip environments or execute an `import`.",
+      "common_mistake": "Do not read `==` as a command that makes the environments equal. `==` only compares, while `=` binds the result on the right to the name on the left. The two environment names therefore stay unchanged, and only `same_environment` becomes `False`. Also, an environment mismatch is a possible cause of `ModuleNotFoundError`, not its only cause."
     },
     "teaching_example": {
       "code": "runtime_env = \"venv-a\"\npip_env = \"venv-a\"\nsame = runtime_env == pip_env",
@@ -1305,10 +1305,10 @@
     "primary_concept": "membership_test",
     "reading_goal_internal": "충돌 marker 문자열이 source text에 남아 있는지 membership test로 확인한다.",
     "concept_explanation": {
-      "what_it_is": "`substring in text` is a membership test that checks whether a specific substring exists within a string.",
-      "how_to_read": "Compare the left marker string with the entire text on the right.",
-      "key_point": "The presence of a Git conflict marker indicates that the automatic merge is not complete and that a user must manually select the content.",
-      "common_mistake": "It’s easy to assume that Git will automatically resolve a marker if you commit it as-is. You must resolve and verify it manually before committing."
+      "what_it_is": "Easy meaning: `in` asks whether the text you are looking for appears inside a longer text.\nExact definition: For strings, `substring in text` is a membership test that returns `True` if the left string occurs as a contiguous part of the right string, and `False` otherwise.",
+      "how_to_read": "Picture searching a document: the left side is the search text, and the right side is the whole document. The first line binds `conflicted_text` to a string containing conflict markers, with `\\n` representing line breaks. Read `\"<<<<<<< HEAD\" in conflicted_text` on the second line as “Does this whole text contain `<<<<<<< HEAD`?” The test result is then bound to `has_conflict_marker`.",
+      "key_point": "The value of `conflicted_text` → search for `<<<<<<< HEAD` → the string is present, so `True` → assign that result to `has_conflict_marker`. In this card, the text with remaining conflict markers indicates a merge conflict requiring manual resolution. The code itself only checks for the string; it does not resolve the conflict or change the text.",
+      "common_mistake": "Do not read `in` as checking whether two entire strings are equal. The full text has other lines, but the search string appears within it, so the result is `True`. This differs from `==`, which tests equality of the whole values. Also, `True` here means the marker was found, not that the merge was resolved."
     },
     "teaching_example": {
       "code": "text = \"START\\n<<<<<<< HEAD\\nold\\n=======\\nnew\\n>>>>>>> feature\"\nfound = \"<<<<<<< HEAD\" in text",
@@ -1427,24 +1427,24 @@
     "primary_concept": "call",
     "reading_goal_internal": "환경설정 key를 method argument로 전달해 실제 value를 가져오는 데이터 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`obj.getenv(key)` The syntax is a method call that passes a configuration key to an object’s method and receives a value.",
-      "how_to_read": "Distinguish between key names and method return values.",
-      "key_point": "The actual `os.getenv('OPENAI_API_KEY')` is also an example of a pattern where secret values are not hard-coded but are read from the execution environment.",
-      "common_mistake": "It is easy to mistake the \"OPENAI_API_KEY\" string itself for a secret value. This is the name of the configuration key to be looked up."
+      "what_it_is": "Easy meaning: `env.getenv(\"OPENAI_API_KEY\")` hands over a label and asks for the value associated with it.\nExact definition: This expression is a method call that calls the `env` object's `getenv` method with a string argument and receives the value returned by the method's `return` statement.",
+      "how_to_read": "Picture a service desk that finds values using labels. The string inside the parentheses is the label in the request; the call's result is the value the desk hands back. When `env.getenv(\"OPENAI_API_KEY\")` is called here, `self` refers to the `env` object and `key` is `\"OPENAI_API_KEY\"`. The method finds the value associated with that key in the `self.values` dictionary. This `getenv` is a locally defined method: it reads the dictionary supplied in the code, not operating-system environment variables.",
+      "key_point": "Pass `\"OPENAI_API_KEY\"` → look it up with `self.values.get(key)` → return `\"sk-local-example\"` → store it in `api_key`. The key going into the call differs from the value coming out.",
+      "common_mistake": "Seeing `\"OPENAI_API_KEY\"` inside the parentheses does not mean that string is stored unchanged. An argument goes into the method; the value assigned is the result the method returns. This dictionary contains the key, so the associated string is returned rather than `None`."
     },
     "teaching_example": {
-      "code": "class Env:\n    def __init__(self, values): self.values = values\n    def getenv(self, key): return self.values.get(key)\n\nenv = Env({\"TOKEN\": \"abc\"})\ntoken = env.getenv(\"TOKEN\")",
-      "walkthrough": "The `TOKEN` key is passed to the method, and the value `abc` is returned."
+      "code": "class Env:\n    def __init__(self, values):\n        self.values = values\n    def getenv(self, key):\n        return self.values.get(key)\n\nenv = Env({\"TOKEN\": \"abc\"})\ntoken = env.getenv(\"TOKEN\")",
+      "walkthrough": "1) `class Env:` defines a class used to create objects.\n2) `def __init__(self, values):` defines an initializer that receives the dictionary supplied during object creation.\n3) `self.values = values` attaches that dictionary to the object's `values` attribute when initialization runs.\n4) `def getenv(self, key):` defines a method that receives a lookup key.\n5) `return self.values.get(key)` finds the key's value and sends it back to the caller when called. Method bodies run when called, not when defined.\n6) `env = Env({\"TOKEN\": \"abc\"})` creates an object and runs initialization. The object's `values` refers to this dictionary.\n7) `token = env.getenv(\"TOKEN\")` passes `\"TOKEN\"` as `key`. The lookup returns `\"abc\"`, which is stored in `token`.\nResult: `token` holds the string `\"abc\"`. There is no print statement."
     },
     "answer_explanation": {
-      "step_by_step": "The `getenv` method receives `OPENAI_API_KEY` as its key, finds `sk-local-example` in the `values` dict, and returns it.",
-      "why_correct": "Because the result of the method call on the right side of the assignment is stored in `api_key`.",
+      "step_by_step": "1) The `Environment` class defines an initializer and a `getenv` method.\n2) Creating an object with `Environment({\"OPENAI_API_KEY\": \"sk-local-example\"})` runs `__init__`, attaching the dictionary to `self.values`. `env` refers to this object.\n3) Python evaluates the assignment's right side, `env.getenv(\"OPENAI_API_KEY\")`. `self` is the `env` object and `key` is `\"OPENAI_API_KEY\"`.\n4) `self.values.get(key)` finds the string `\"sk-local-example\"` associated with that key in the dictionary.\n5) `return` sends this string back as the call's result.\n6) That result is stored in `api_key`.",
+      "why_correct": "`api_key` receives the method's return value, not the lookup key, so the correct answer is `sk-local-example`.",
       "common_wrong_choice": {
         "choice": "OPENAI_API_KEY",
-        "why_wrong": "That value is not the `secret` itself, but the name of the lookup key.",
-        "misread_step": "This is an instance where the environment variable name and the environment variable value were confused."
+        "why_wrong": "This string is the key specifying which entry to find. The value associated with that key in the dictionary is `\"sk-local-example\"`.",
+        "misread_step": "This mistakes the argument passed into the call for the result returned from the call."
       },
-      "takeaway": "The configuration code follows the pattern: **key name → look up external value → store in variable**."
+      "takeaway": "Read a method call as argument → execute method body → return value, and read the assignment as storing that returned value."
     },
     "target_statement": "api_key = env.getenv(\"OPENAI_API_KEY\")",
     "focus_span": "env.getenv(\"OPENAI_API_KEY\")",

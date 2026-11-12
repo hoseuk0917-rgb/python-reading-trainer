@@ -266,10 +266,10 @@
     "primary_concept": "lambda_expression",
     "reading_goal_internal": "lambda가 각 card에서 `(level, id)` tuple을 만들어 `sorted()`의 정렬 기준으로 제공하는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`lambda x: expression` is an expression that creates a short, unnamed function.",
-      "how_to_read": "It reads that when the parameter `card` is passed, the expression following the colon is evaluated to return a `(level, id)` tuple.",
-      "key_point": "When sorting tuples by key, the first element is compared first; if they are equal, the next element is compared. Therefore, when the level is the same, the id becomes the second criterion.",
-      "common_mistake": "It’s easy to assume that `lambda` performs the sorting itself. However, `lambda` creates the sort key for each card, while the actual sorting is performed by `sorted()`."
+      "what_it_is": "Easy meaning: `lambda` creates a small function right where it is needed, taking input and returning a short calculation's result.\nExact definition: `lambda parameters: expression` is an expression that creates an unnamed function which, when called, evaluates the expression after the colon and returns its value.",
+      "how_to_read": "Imagine attaching a comparison label to each card. First, `cards` contains two dictionaries in B-then-A order. On the next line, read `lambda card: (card[\"level\"], card[\"id\"])` as 'take one card as `card` and return a tuple containing its level value followed by its id value.' `key=` passes this function to `sorted()` to produce a comparison value for each card.",
+      "key_point": "When `sorted()` calls the function for each card, the B card produces `(2, \"B\")` and the A card produces `(2, \"A\")`. Tuples are compared from the first element onward, so the equal first values, `2`, lead to comparing the next values: the id strings. Since `\"A\"` comes before `\"B\"`, `ordered` becomes `[{\"level\": 2, \"id\": \"A\"}, {\"level\": 2, \"id\": \"B\"}]`. The original order of `cards` is unchanged.",
+      "common_mistake": "It is easy to think that `lambda` itself sorts the cards, or that equal levels always preserve input order. This function only returns comparison tuples; `sorted()` performs the sorting. Here, the second elements—the ids—differ and determine the order. Input order is preserved when the entire sorting keys are equal."
     },
     "teaching_example": {
       "code": "items = [{\"group\": 1, \"name\": \"b\"}, {\"group\": 1, \"name\": \"a\"}]\nordered = sorted(items, key=lambda item: (item[\"group\"], item[\"name\"]))",
@@ -1452,24 +1452,24 @@
     "primary_concept": "arithmetic",
     "reading_goal_internal": "shard 번호와 shard 크기를 곱해 데이터 범위의 시작 index를 구하는 계산을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`a * b` is a multiplication expression that multiplies two numbers.",
-      "how_to_read": "It performs the calculation by substituting the current values of each variable.",
-      "key_point": "In fixed-size shards, as the shard_id increases, the starting index shifts by the shard_size unit.",
-      "common_mistake": "It’s easy to assume that since `shard_id 3` is the third shard, `start` is 400. This function uses 0-based shard IDs."
+      "what_it_is": "Easy meaning: Multiplying a piece's number by the size of one piece gives its starting position.\nExact definition: In this code, `*` and `+` are arithmetic operators that compute the product and sum, respectively, of integer operands.",
+      "how_to_read": "Picture pieces of size 200 arranged in a row. Number 0 starts at position 0, and number 1 starts at position 200. `shard_id * shard_size` moves by one piece's size for each unit of the number, so read it here as `3 * 200`. Then add the piece's size to the starting position to get the ending position.",
+      "key_point": "Values flow as `3 * 200` → `start = 600` → `600 + 200` → `end = 800`. `return start, end` returns both values as the tuple `(600, 800)`, which is assigned to `result`.",
+      "common_mistake": "Do not interpret `shard_id` 3 as 'the third piece' and subtract 1. This expression multiplies the supplied number directly. Since number 0 starts at 0, number 3 starts at 600, not 400."
     },
     "teaching_example": {
       "code": "shard_id = 2\nshard_size = 50\nstart = shard_id * shard_size",
       "walkthrough": "Because `2 * 50 = 100`, `start` is 100."
     },
     "answer_explanation": {
-      "step_by_step": "It sets `start` to 600 (3 × 200), adds 200 to that to make `end` equal to 800, and then returns a tuple.",
-      "why_correct": "This is because the `shard start` calculation is defined as multiplication.",
+      "step_by_step": "1. The `def` statement defines the function without running the calculations inside it yet.\n2. Calling `shard_range(3, 200)` sets `shard_id` to 3 and `shard_size` to 200.\n3. `start = shard_id * shard_size` calculates `3 * 200` and assigns 600 to `start`.\n4. `end = start + shard_size` calculates `600 + 200` and assigns 800 to `end`.\n5. `return start, end` returns the tuple `(600, 800)`.\n6. That returned value is assigned to `result`.",
+      "why_correct": "The returned values are the calculated `start` and `end`, not the two inputs. They are 600 and 800, so the answer is `(600, 800)`.",
       "common_wrong_choice": {
-        "choice": "(200, 400)",
-        "why_wrong": "That range is close to when shard_id=1.",
-        "misread_step": "This is a case where shard_id 3 has not been included in the calculation."
+        "choice": "(3, 200)",
+        "why_wrong": "These are the inputs passed to the function. The function does not return them unchanged; it calculates new values using multiplication and addition.",
+        "misread_step": "This mistakes the call's arguments `3, 200` for the return value, skipping the two lines calculating `start` and `end` and the statement `return start, end`."
       },
-      "takeaway": "The shard range is read as **ID * size → start → start+size → end**."
+      "takeaway": "Read the flow as inputs → number × size for the start → start + size for the end → return both values as a tuple."
     },
     "target_statement": "start = shard_id * shard_size",
     "focus_span": "shard_id * shard_size",
@@ -1570,10 +1570,10 @@
     "primary_concept": "arithmetic",
     "reading_goal_internal": "두 변수의 실제 숫자를 확인하고 multiplication 결과를 계산해 대입 결과를 예측한다.",
     "concept_explanation": {
-      "what_it_is": "`a * b` is an arithmetic expression that multiplies two values to produce a new numerical result.",
-      "how_to_read": "First, check the current value of each variable, then multiply those numbers.",
-      "key_point": "This line does not model the entire API billing policy. It only performs the multiplication `number of requests × cost per request`.",
-      "common_mistake": "It is easy to add 1000 and 0.02 or to convert 0.02 separately as a percentage. You must apply the `*` operation as written in the code."
+      "what_it_is": "Easy meaning: `*` multiplies two numbers, as when you use a quantity and a price per item to find a total cost.\nExact definition: Used with numbers, `*` is an arithmetic operator that produces the product of two operands (the values used in the calculation).",
+      "how_to_read": "Imagine entering “quantity × price per item” into a calculator. The first line binds `num_requests` to the request count `1000`, and the second binds `cost_per_request` to the cost per request `0.02`. On the third line, replace the variable names mentally with their current values to read `1000 * 0.02`: calculate the product first, then bind the result to `total_cost`. The last line prints that result.",
+      "key_point": "The value flow is `1000` and `0.02` → multiplication → `20.0` → `total_cost` → output. Here, multiplying the integer `1000` by the floating-point number (float) `0.02` produces the float `20.0`, so the displayed output is `20.0`.",
+      "common_mistake": "Do not read `0.02` as `0.2` or treat it as a percentage and divide it by 100 again. In this code, `0.02` is the number to multiply as written. `*` means multiplication, not addition, so calculate `1000 * 0.02`."
     },
     "teaching_example": {
       "code": "items = 250\nunit_price = 0.04\ntotal = items * unit_price",
@@ -1697,14 +1697,14 @@
       "walkthrough": "Since it contains \"robot,\" the first condition is True, so `matched` is also True."
     },
     "answer_explanation": {
-      "step_by_step": "If the `title` is converted to lowercase, `vertiport` is included, causing the second `membership test` to evaluate to `True`, which triggers the execution of the UAM branch.",
-      "why_correct": "This is because the condition is true as a whole if either of the two subconditions is true.",
+      "step_by_step": "1. Calling classify_domain(\"Vertiport operation guide\") gives title this string.\n2. title.lower() produces \"vertiport operation guide\", which is assigned to text.\n3. \"uam\" in text is False. Since the left side is False, or also evaluates the right side.\n4. \"vertiport\" in text is True, so the whole condition is True.\n5. return \"UAM\" runs and immediately ends the function. The robot check and return \"Other\" do not run.\n6. The returned string \"UAM\" is assigned to result.",
+      "why_correct": "The second of the two membership tests joined by or is True. Therefore, the first if body runs, and result has the value \"UAM\".",
       "common_wrong_choice": {
         "choice": "Other",
-        "why_wrong": "The keyword “vertiport” is explicitly included in the UAM requirements.",
-        "misread_step": "This is a case where the second condition of `or` was not checked."
+        "why_wrong": "Even though \"uam\" is absent, \"vertiport\" is present, so the first condition is true. Execution never reaches return \"Other\".",
+        "misread_step": "Treating the first False test as making the whole condition False skips the test on the right of or."
       },
-      "takeaway": "Rule classifiers read in the following order: **preprocessing → keyword conditions → branch order**."
+      "takeaway": "When the left side is False, or checks the right side. Here the flow is False or True → return \"UAM\" → result = \"UAM\"."
     },
     "target_statement": "if \"uam\" in text or \"vertiport\" in text:",
     "focus_span": "\"uam\" in text or \"vertiport\" in text",

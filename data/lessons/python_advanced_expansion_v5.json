@@ -340,24 +340,24 @@
     "primary_concept": "await_expression",
     "reading_goal_internal": "async HTTP client method의 완료 결과를 await해 response 객체를 받는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`await expression`은 awaitable 작업이 완료될 때까지 기다렸다가 그 결과를 받는 표현식입니다.",
-      "how_to_read": "await 오른쪽 호출이 무엇을 하는지와 완료 후 반환값이 어디에 저장되는지 확인합니다.",
-      "key_point": "HTTP client의 async get 호출에서는 네트워크 I/O가 끝나 response를 받을 때까지 await합니다.",
-      "common_mistake": "await가 URL 문자열 자체를 기다린다고 생각하기 쉽습니다. 기다리는 대상은 get 호출이 만든 비동기 작업입니다."
+      "what_it_is": "쉽게 말하면: `await`는 비동기 작업이 끝나면 그 결과를 받아 다음 코드에서 쓰게 합니다.\n정확한 정의: `await` 표현식은 awaitable(완료를 기다릴 수 있는 객체)의 완료 결과를 얻으며, 기다리는 동안 현재 코루틴의 실행이 일시 중단될 수 있습니다.",
+      "how_to_read": "결과를 받아야 다음 단계로 넘어가는 인계 지점으로 생각하세요. 이 코드에서 `client.get(...)`은 코루틴 객체를 만들고, `await`가 이를 실행해 완료 결과를 받습니다. 그 결과인 `Response` 객체가 `res`에 저장됩니다.",
+      "key_point": "`get_items`가 실행될 때: `Client()` 생성 → `get(...)`의 코루틴 생성 → `await`로 실행 → `Response(200)` 반환 → `res`에 저장 → `res.status_code`인 `200` 반환. 이 예제의 `get`은 실제 통신 없이 즉시 응답 객체를 만들므로, 여기서 실행이 반드시 일시 중단되는 것은 아닙니다. 제시된 코드는 함수 정의만 하며 `get_items`를 실행하지는 않습니다.",
+      "common_mistake": "`await`가 URL 문자열을 기다리거나 HTTP 요청을 자동으로 보내는 것은 아닙니다. 기다릴 대상은 오른쪽 호출이 반환한 코루틴이며, 실제 동작은 그 함수 본문으로 판단합니다."
     },
     "teaching_example": {
       "code": "class Client:\n    async def get(self, url):\n        return {\"status\": 201}\n\nasync def run(client):\n    response = await client.get(\"/items\")\n    return response[\"status\"]",
       "walkthrough": "get의 async 결과가 완료되면 response dict를 받고 status 201을 사용합니다."
     },
     "answer_explanation": {
-      "step_by_step": "client.get은 HTTP 요청을 나타내는 async 작업을 만들고 await가 그 작업이 끝나 Response 객체를 줄 때까지 기다립니다.",
-      "why_correct": "async HTTP get의 결과가 response이기 때문입니다.",
+      "step_by_step": "1) `get_items`가 실행되면 `client = Client()`로 객체를 만듭니다.\n2) `client.get(URL)`은 코루틴 객체를 만듭니다.\n3) `await`로 실행되는 `get`은 `Response(200)`을 반환합니다. 생성자는 `status_code`에 `200`을 저장합니다.\n4) 이 응답 객체가 `res`에 저장됩니다.\n5) `return res.status_code`는 정수 `200`을 반환합니다.",
+      "why_correct": "선택지에서는 ‘HTTP 응답’이 맞습니다. `await`가 받는 완료 결과가 HTTP 응답을 나타내는 `Response` 객체이기 때문입니다. 다만 이 로컬 예제는 실제 서버에 요청하지 않고 응답 객체를 직접 만듭니다.",
       "common_wrong_choice": {
         "choice": "CSS 렌더링",
-        "why_wrong": "코드에는 CSS 처리 로직이 없습니다.",
-        "misread_step": "HTTP client 역할을 UI rendering과 혼동한 경우입니다."
+        "why_wrong": "`get`의 본문은 `Response(200)`을 반환할 뿐, CSS를 처리하거나 화면을 그리지 않습니다.",
+        "misread_step": "웹 주소가 있다는 이유로 응답을 받는 과정과 화면을 그리는 과정을 혼동한 것입니다."
       },
-      "takeaway": "비동기 HTTP 코드는 **request call → await → response object**로 읽습니다."
+      "takeaway": "`res = await client.get(...)`은 ‘코루틴 실행 → 완료 결과인 응답 객체 받기 → `res`에 저장’으로 읽습니다."
     },
     "target_statement": "res = await client.get(\"https://example.com/api/items\")",
     "focus_span": "await client.get(\"https://example.com/api/items\")",

@@ -444,24 +444,24 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "middleware 설정 호출에서 frontend origin 목록이 이름 있는 argument로 전달되는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`allow_origins=[...]` is a keyword argument that passes a list value to the call.",
-                                    "how_to_read":  "Check the keyword name and the list item to its right.",
-                                    "key_point":  "Since an origin is a combination of scheme, host, and port, that origin must be included in the list to allow access to the localhost:8790 frontend.",
-                                    "common_mistake":  "It is easy to think CORS permission also provides user authentication. CORS is configuration related to browser cross-origin rules."
+                                    "what_it_is":  "Easy meaning: Giving an input name in a call sends a value to the matching input slot.\nExact definition: A keyword argument is specified as `name=value` in a function or method call, and its value is bound to the parameter with that name.",
+                                    "how_to_read":  "Think of parameters as labeled input slots. In `add_middleware(self, name, allow_origins)`, `self` automatically receives the object being called on, `app`. The first positional argument, `\"CORSMiddleware\"`, binds to `name`; the list in `allow_origins=[\"http://localhost:8790\"]` binds to the matching parameter `allow_origins`. The body, `self.middleware[name] = allow_origins`, then stores that list in the dictionary.",
+                                    "key_point":  "Create `[\"http://localhost:8790\"]` → pass it to `allow_origins` → store it at `app.middleware[\"CORSMiddleware\"]` → retrieve it using the same key → `allowed` becomes `[\"http://localhost:8790\"]`. The origin string inside the list is `http://localhost:8790`. This code only stores and retrieves values; it does not enforce actual network access.",
+                                    "common_mistake":  "Do not read `allow_origins=` as an assignment to a variable outside the call. Here it specifies a method input name. Also, because a list is passed, `allowed` refers to the list containing the string, not to the string alone."
                                 },
         "teaching_example":  {
                                  "code":  "class App:\n    def configure(self, allow_origins):\n        return allow_origins\n\napp = App()\norigins = app.configure(allow_origins=[\"http://localhost:3000\"])",
                                  "walkthrough":  "A list containing a single `origin` is passed to the `allow_origins` keyword argument."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "The only item in the list passed to `allow_origins` is `http://localhost:8790`, and that list is stored in the configuration.",
-                                   "why_correct":  "This is because the keyword argument value itself is a list of allowed origins.",
+                                   "step_by_step":  "1) After the class definition, `app = App()` creates an object, and `__init__` initializes `app.middleware` as an empty dictionary.\n2) In the `app.add_middleware(...)` call, `self` binds to `app`, `name` to `\"CORSMiddleware\"`, and `allow_origins` to `[\"http://localhost:8790\"]`.\n3) The method body stores this list at `app.middleware[\"CORSMiddleware\"]`.\n4) The last line retrieves the list using the same key and binds it to `allowed`.\n5) Thus, the value of `allowed` is `[\"http://localhost:8790\"]`, and its only origin is `http://localhost:8790`.",
+                                   "why_correct":  "The choices ask for the origin inside the list, not the entire list. Its only item is `http://localhost:8790`, and storing and retrieving it does not change that item, so this is the correct choice.",
                                    "common_wrong_choice":  {
                                                                "choice":  "All source",
-                                                               "why_wrong":  "The current code specifies only one specific origin, not a wildcard.",
-                                                               "misread_step":  "This is a case where the origin setting was confused with other settings, such as the wildcard in `allow_methods/headers`."
+                                                               "why_wrong":  "The list passed and stored contains only `http://localhost:8790`. There is no value representing every origin and no operation that expands the list.",
+                                                               "misread_step":  "This guesses from the name `allow_origins` without checking the actual list to the right of `=` and the method's storage operation."
                                                            },
-                                   "takeaway":  "The CORS settings specify the **exact origin strings** to be allowed."
+                                   "takeaway":  "Match each input name to its supplied value, then trace where the body stores that value. Distinguish the list itself from the string inside it."
                                },
         "target_statement":  "app.add_middleware(\"CORSMiddleware\", allow_origins=[\"http://localhost:8790\"])",
         "focus_span":  "allow_origins=[\"http://localhost:8790\"]",
