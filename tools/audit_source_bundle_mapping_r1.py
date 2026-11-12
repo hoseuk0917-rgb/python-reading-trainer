@@ -17,6 +17,7 @@ BUNDLE_URLS = {
     "PY_REF_LEXICAL_ANALYSIS": "https://docs.python.org/3.10/reference/lexical_analysis.html",
     "PY_BUILTIN_FUNCTIONS": "https://docs.python.org/3.10/library/functions.html",
     "PY_BUILTIN_TYPES": "https://docs.python.org/3.10/library/stdtypes.html",
+    "PY_BUILTIN_EXCEPTIONS": "https://docs.python.org/3.10/library/exceptions.html",
     "PY_TUTORIAL_CONTROL_FLOW": "https://docs.python.org/3.10/tutorial/controlflow.html",
     "PY_TUTORIAL_DATA_STRUCTURES": "https://docs.python.org/3.10/tutorial/datastructures.html",
     "THIRD_PARTY_PANDAS_READ_CSV": "https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html",
@@ -88,15 +89,26 @@ BUILTIN_CALLS = {
     "open","print","range","reversed","round","set","sorted","str","sum","tuple","type","zip",
 }
 BUILTIN_TYPE_METHODS = {
-    "append","clear","copy","count","endswith","extend","find","get","index","insert","items",
-    "join","keys","lower","pop","remove","replace","reverse","sort","split","startswith","strip",
-    "upper","values",
+    "add","append","casefold","clear","copy","count","decode","encode","endswith","extend",
+    "find","format","get","index","insert","isdisjoint","items","join","keys","lower","pop",
+    "remove","replace","reverse","rsplit","setdefault","sort","split","splitlines","startswith",
+    "strip","union","upper","values",
+}
+
+BUILTIN_EXCEPTION_CALLS = {
+    "FileNotFoundError","KeyError","ModuleNotFoundError","RuntimeError","SystemExit","ValueError",
+}
+
+FOCUS_METHOD_BUNDLES = {
+    "readline": "PY_STDLIB_IO",
+    "readlines": "PY_STDLIB_IO",
+    "write": "PY_STDLIB_IO",
 }
 
 STDLIB_MODULES = {
     "argparse","asyncio","collections","contextlib","csv","dataclasses","datetime","hashlib","io",
-    "json","logging","os","pathlib","re","shutil","sqlite3","stat","subprocess","sys","tempfile",
-    "threading","urllib","venv","zipfile",
+    "itertools","json","logging","os","pathlib","re","shutil","sqlite3","stat","statistics",
+    "subprocess","sys","tempfile","threading","types","urllib","venv","zipfile",
 }
 
 THIRD_PARTY_URLS = {
@@ -229,6 +241,12 @@ def supplemental_bundles(card):
         bundles.add("PY_BUILTIN_FUNCTIONS")
     if focus_leaves & BUILTIN_TYPE_METHODS:
         bundles.add("PY_BUILTIN_TYPES")
+    if focus_leaves & BUILTIN_EXCEPTION_CALLS:
+        bundles.add("PY_BUILTIN_EXCEPTIONS")
+    for leaf in sorted(focus_leaves):
+        bundle = FOCUS_METHOD_BUNDLES.get(leaf)
+        if bundle:
+            bundles.add(bundle)
 
     imports=set(aliases.values())
     for module in sorted(imports & STDLIB_MODULES):
