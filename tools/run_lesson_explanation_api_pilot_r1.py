@@ -658,8 +658,14 @@ def openai_request(
         if attempt > 1:
             attempt_prompt += (
                 "\n\nRECOVERY NOTE: A previous generation exceeded the output budget. "
-                "Return only the required JSON schema. Keep every explanation field concise, "
-                "avoid repeated clauses, and do not restate the contract."
+                "Return only the required JSON schema. Do not restate the contract or card. "
+                "Keep each prose field to at most 3 short sentences. "
+                "For Korean fields, stay roughly within 450 characters; for English fields, "
+                "stay roughly within 650 characters. "
+                "If teaching_example is required, keep code to at most 10 lines and the "
+                "walkthrough to at most 6 short steps. "
+                "Preserve every required fact and target call, but remove repetition, "
+                "extra examples, optional edge cases, and background commentary."
             )
 
         body = {
@@ -681,7 +687,7 @@ def openai_request(
                     "schema": schema,
                 },
             },
-            "max_output_tokens": 4000,
+            "max_output_tokens": 6000 if attempt == 3 else 4000,
         }
         encoded = json.dumps(body, ensure_ascii=False).encode("utf-8")
 
