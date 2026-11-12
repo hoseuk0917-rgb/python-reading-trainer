@@ -119,6 +119,8 @@ def collect_rows() -> list[dict]:
         card = by_id[row["id"]]
         direct = direct_source_bundles(card)
         resolution = classify(row, card)
+        concept = card.get("concept_explanation") if isinstance(card.get("concept_explanation"), dict) else {}
+        answer_explanation = card.get("answer_explanation") if isinstance(card.get("answer_explanation"), dict) else {}
         rows.append({
             **row,
             "direct_source_bundles": direct,
@@ -126,6 +128,10 @@ def collect_rows() -> list[dict]:
             "question": clean(card.get("question")),
             "answer": clean(card.get("answer")),
             "focus_span_clean": clean(card.get("focus_span")),
+            "concept_what": clean(concept.get("what_it_is")),
+            "concept_key": clean(concept.get("key_point")),
+            "answer_why": clean(answer_explanation.get("why_correct")),
+            "answer_takeaway": clean(answer_explanation.get("takeaway")),
         })
 
     rows.sort(
@@ -182,6 +188,10 @@ def main() -> int:
             + row["focus_span_clean"] + "\t"
             + row["question"] + "\t"
             + row["answer"] + "\t"
+            + row["concept_what"] + "\t"
+            + row["concept_key"] + "\t"
+            + row["answer_why"] + "\t"
+            + row["answer_takeaway"] + "\t"
             + row["file"] + "\t"
             + row["title"]
         )
