@@ -282,16 +282,25 @@ def validate_web_sources(
     if not web_sources:
         raise RuntimeError(f"{cid}: required web search produced no source URLs")
 
+    def domain_matches(host: str, authority_domain: str) -> bool:
+        host = host.lower().rstrip(".")
+        authority_domain = authority_domain.lower().rstrip(".")
+        return host == authority_domain or host.endswith("." + authority_domain)
+
     allowed = set(source_info["allowed_domains"])
     observed_domains: set[str] = set()
     for url in web_sources:
-        domain = urllib.parse.urlparse(url).hostname or ""
-        if domain not in allowed:
+        domain = (urllib.parse.urlparse(url).hostname or "").lower().rstrip(".")
+        if not any(domain_matches(domain, authority_domain) for authority_domain in allowed):
             raise RuntimeError(f"{cid}: non-allowlisted web source used: {url}")
         observed_domains.add(domain)
 
     required_domains = set(source_info["required_domains"])
-    if not (observed_domains & required_domains):
+    if not any(
+        domain_matches(observed_domain, required_domain)
+        for observed_domain in observed_domains
+        for required_domain in required_domains
+    ):
         raise RuntimeError(
             f"{cid}: authority-specific source domain not consulted: "
             f"required={sorted(required_domains)} observed={sorted(observed_domains)}"
@@ -636,6 +645,30 @@ def self_test() -> int:
     })
     if citation_urls != ["https://numpy.org/doc/stable/reference/generated/numpy.array.html"]:
         raise RuntimeError(f"source-backed citation source extraction failed: {citation_urls}")
+
+    validate_web_sources(
+        cid="SELF_TEST_OFFICIAL_SUBDOMAIN",
+        web_sources=["https://cdn-media.huggingface.co/landing/assets/official.pdf"],
+        source_info={
+            "allowed_domains": ["huggingface.co"],
+            "required_domains": ["huggingface.co"],
+            "required_prefixes": [],
+        },
+    )
+    try:
+        validate_web_sources(
+            cid="SELF_TEST_LOOKALIKE_DOMAIN",
+            web_sources=["https://evil-huggingface.co/not-official"],
+            source_info={
+                "allowed_domains": ["huggingface.co"],
+                "required_domains": ["huggingface.co"],
+                "required_prefixes": [],
+            },
+        )
+    except RuntimeError:
+        pass
+    else:
+        raise RuntimeError("source-backed lookalike domain guard failed")
 
     print(f"SOURCE_BACKED_SELF_TEST_INVENTORY={len(rows)}")
     print("SOURCE_BACKED_WEB_PROVENANCE_EXTRACTION=PASS")
