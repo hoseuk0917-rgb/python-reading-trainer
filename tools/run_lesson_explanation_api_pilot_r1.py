@@ -24,7 +24,7 @@ CONTRACT_PATH = ROOT / "docs" / "LESSON_EXPLANATION_CONTRACT_V1.md"
 
 DEFAULT_MODEL = "gpt-6.1-sol"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
-PROMPT_VERSION = "lesson-explanation-api-pilot-r1-v1"
+PROMPT_VERSION = "lesson-explanation-api-pilot-r1-v2"
 RESULT_SCHEMA = "python-reading-trainer/lesson-explanation-api-pilot-r1"
 
 TARGET_DISPOSITIONS = {
@@ -34,6 +34,10 @@ TARGET_DISPOSITIONS = {
 SAFE_AUTHORITIES = {
     "PYTHON_LANGUAGE_AUTHORITY",
     "LOCAL_CODE_AUTHORITY",
+}
+REVIEW_AUTHORITIES = {
+    "AUTHORITY_REVIEW",
+    "DOMAIN_AUTHORITY_REVIEW",
 }
 
 CONCEPT_REASONS = {
@@ -287,6 +291,71 @@ def select_pilot(limit: int) -> list[dict[str, Any]]:
     return selected
 
 
+def select_explicit(selection_ids: list[str]) -> list[dict[str, Any]]:
+    if not selection_ids:
+        raise SystemExit("explicit selection may not be empty")
+    if len(selection_ids) != len(set(selection_ids)):
+        raise SystemExit("explicit selection contains duplicate card IDs")
+
+    by_id = {
+        str(card["id"]): card
+        for card in readiness.load_cards()
+    }
+    selected: list[dict[str, Any]] = []
+
+    for cid in selection_ids:
+        card = by_id.get(cid)
+        if card is None:
+            raise SystemExit(f"explicit selection card not found: {cid}")
+        if cid in GOLD_IDS:
+            raise SystemExit(f"explicit selection may not rewrite GOLD card: {cid}")
+
+        authority, reasons, disposition = authority_and_reasons(card)
+        if authority not in REVIEW_AUTHORITIES:
+            raise SystemExit(
+                f"explicit local-evidence selection requires review authority: "
+                f"{cid} authority={authority}"
+            )
+        if disposition not in TARGET_DISPOSITIONS:
+            raise SystemExit(
+                f"explicit selection is not a current rewrite candidate: "
+                f"{cid} disposition={disposition}"
+            )
+
+        row = dict(card)
+        row["_authority"] = authority
+        row["_reasons"] = list(reasons)
+        row["_disposition"] = disposition
+        row["_patch_targets"] = patch_targets_for(reasons)
+
+        if not row["_patch_targets"]:
+            raise SystemExit(f"no patch target for explicit rewrite card: {cid}")
+        if "teaching_example" in row["_patch_targets"]:
+            raise SystemExit(
+                f"explicit local-evidence selection may not rewrite teaching examples: {cid}"
+            )
+
+        selected.append(row)
+
+    return selected
+
+
+def local_evidence_instructions(authority: str) -> list[str]:
+    if authority not in REVIEW_AUTHORITIES:
+        return []
+    return [
+        "",
+        "LOCAL EVIDENCE MODE — MANDATORY:",
+        "- The current card code, frozen question/answer, current explanations, connected support, and contract are the factual boundary.",
+        "- Coverage-domain labels and names such as FastAPI, OAuth, RAG, PWA, HTTP, model, service, or worker are context labels, not permission to add external product/framework behavior.",
+        "- Do not add or strengthen claims about real APIs, protocols, lifecycles, security properties, architecture best practices, or library behavior unless that behavior is explicitly encoded in the supplied card/support evidence.",
+        "- For concept_explanation rewrites, preserve the current factual meaning and add the beginner bridge; do not broaden the claim.",
+        "- For answer_explanation rewrites, derive every step from visible Python execution, local values, branches, calls, assignments, and returns.",
+        "- Treat undefined helper names as opaque local functions. You may describe only the dataflow visible in this code, not their hidden implementation.",
+        "- If a domain rationale is not derivable from the supplied evidence, omit that rationale and explain the Python/code-level reason instead.",
+    ]
+
+
 def public_card(card: dict[str, Any]) -> dict[str, Any]:
     keys = [
         "id",
@@ -505,6 +574,9 @@ def build_prompt(
         "For Python language semantics, be technically exact and conservative.",
         "The Korean and English outputs must be semantic equivalents, not independent rewrites.",
         "",
+    ]
+    instructions.extend(local_evidence_instructions(authority))
+    instructions.extend([
         "Quality requirements:",
         "- Beginner must understand the easy layer before knowing specialist terms.",
         "- concept_explanation.what_it_is: easy meaning first, then exact technical definition.",
@@ -544,7 +616,7 @@ def build_prompt(
         "",
         "LESSON_EXPLANATION_CONTRACT_V1:",
         contract,
-    ]
+    ])
     return "\n".join(instructions)
 
 
@@ -1158,6 +1230,10 @@ def load_resume_results(
 
 def self_test() -> int:
     assert len(GOLD_IDS) == 46
+    assert not local_evidence_instructions("PYTHON_LANGUAGE_AUTHORITY")
+    local_mode = local_evidence_instructions("DOMAIN_AUTHORITY_REVIEW")
+    assert any("LOCAL EVIDENCE MODE" in line for line in local_mode)
+    assert any("opaque local functions" in line for line in local_mode)
 
     sample = (
         '[\n  {\n    "id": "A",\n'
@@ -1414,8 +1490,20 @@ def self_test() -> int:
     return 0
 
 
-def plan(limit: int) -> int:
-    selected = select_pilot(limit)
+def plan(
+    limit: int,
+    *,
+    selection_ids: list[str] | None = None,
+) -> int:
+    if selection_ids is not None:
+        if len(selection_ids) != limit:
+            raise SystemExit(
+                f"explicit selection count must equal limit: "
+                f"selection={len(selection_ids)} limit={limit}"
+            )
+        selected = select_explicit(selection_ids)
+    else:
+        selected = select_pilot(limit)
     disposition_counts: dict[str, int] = defaultdict(int)
     authority_counts: dict[str, int] = defaultdict(int)
     concept_counts: dict[str, int] = defaultdict(int)
@@ -1431,6 +1519,7 @@ def plan(limit: int) -> int:
 
     print(f"GOLD_REFERENCE_COUNT={len(GOLD_IDS)}")
     print(f"PILOT_LIMIT={limit}")
+    print(f"PILOT_EXPLICIT_SELECTION={'YES' if selection_ids is not None else 'NO'}")
     print("PILOT_DISPOSITION_COUNTS=" + json.dumps(dict(sorted(disposition_counts.items())), sort_keys=True))
     print("PILOT_AUTHORITY_COUNTS=" + json.dumps(dict(sorted(authority_counts.items())), sort_keys=True))
     print("PILOT_PRIMARY_CONCEPT_COUNTS=" + json.dumps(dict(sorted(concept_counts.items())), sort_keys=True))
@@ -1457,6 +1546,7 @@ def live(
     result_path: Path,
     hold_path: Path,
     resume_result_path: Path | None,
+    selection_ids: list[str] | None,
     max_total_tokens: int,
     max_holds: int,
 ) -> int:
@@ -1464,7 +1554,15 @@ def live(
     if not api_key:
         raise SystemExit("OPENAI_API_KEY is required for --live")
 
-    selected = select_pilot(limit)
+    if selection_ids is not None:
+        if len(selection_ids) != limit:
+            raise SystemExit(
+                f"explicit selection count must equal limit: "
+                f"selection={len(selection_ids)} limit={limit}"
+            )
+        selected = select_explicit(selection_ids)
+    else:
+        selected = select_pilot(limit)
     ko_cards, _ = load_all_cards(LESSON_ROOT_KO)
     en_cards, _ = load_all_cards(LESSON_ROOT_EN)
     ko_support_index = load_support_index(SUPPORT_KO)
@@ -1771,12 +1869,23 @@ def main() -> int:
     parser.add_argument("--result-path", type=Path, default=Path("lesson-explanation-api-pilot-r1.jsonl"))
     parser.add_argument("--hold-path", type=Path, default=Path("lesson-explanation-api-pilot-r1-holds.jsonl"))
     parser.add_argument("--resume-result-path", type=Path)
+    parser.add_argument(
+        "--selection-ids",
+        default="",
+        help="Optional comma-separated review-authority card IDs for LOCAL EVIDENCE MODE.",
+    )
     parser.add_argument("--max-total-tokens", type=int, default=1_500_000)
     parser.add_argument("--max-holds", type=int, default=5)
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--plan", action="store_true")
     parser.add_argument("--live", action="store_true")
     args = parser.parse_args()
+
+    selection_ids = [
+        value.strip()
+        for value in args.selection_ids.split(",")
+        if value.strip()
+    ] or None
 
     modes = sum(bool(value) for value in (args.self_test, args.plan, args.live))
     if modes != 1:
@@ -1785,7 +1894,7 @@ def main() -> int:
     if args.self_test:
         return self_test()
     if args.plan:
-        return plan(args.limit)
+        return plan(args.limit, selection_ids=selection_ids)
     return live(
         limit=args.limit,
         model=args.model,
@@ -1793,6 +1902,7 @@ def main() -> int:
         result_path=args.result_path,
         hold_path=args.hold_path,
         resume_result_path=args.resume_result_path,
+        selection_ids=selection_ids,
         max_total_tokens=args.max_total_tokens,
         max_holds=args.max_holds,
     )
