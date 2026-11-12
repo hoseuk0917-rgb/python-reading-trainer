@@ -19,6 +19,7 @@ BUNDLE_URLS = {
     "PY_BUILTIN_TYPES": "https://docs.python.org/3.10/library/stdtypes.html",
     "PY_TUTORIAL_CONTROL_FLOW": "https://docs.python.org/3.10/tutorial/controlflow.html",
     "PY_TUTORIAL_DATA_STRUCTURES": "https://docs.python.org/3.10/tutorial/datastructures.html",
+    "THIRD_PARTY_PANDAS_READ_CSV": "https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html",
 }
 
 PRIMARY_BUNDLES = {
@@ -118,6 +119,10 @@ THIRD_PARTY_URLS = {
     "uvicorn": "https://www.uvicorn.org/",
 }
 
+CARD_SOURCE_BUNDLES = {
+    "PY42_L07_read_csv_sep_001": ("THIRD_PARTY_PANDAS_READ_CSV",),
+}
+
 DOMAIN_REVIEW_EXEMPT = {
     "python_core","data_structures","functions_and_oop","files_paths_serialization",
     "modules_packages_environment",
@@ -206,7 +211,7 @@ def supplemental_bundles(card):
     if not calls:
         calls=[node for node in ast.walk(tree) if isinstance(node,ast.Call)] if tree is not None else []
 
-    bundles=set()
+    bundles=set(CARD_SOURCE_BUNDLES.get(str(card.get("id","")), ()))
     focus_leaves={call_leaf(node) for node in calls if call_leaf(node)}
 
     if focus_leaves & local_names:
