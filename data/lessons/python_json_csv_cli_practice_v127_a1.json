@@ -153,14 +153,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "안쪽 DictReader 호출 결과를 바깥 list 생성자가 순회해 새 list로 만드는 중첩 호출 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`list(iterable)`은 iterable의 항목을 순서대로 소비해 새 Python list를 만드는 생성자 호출입니다.",
-      "how_to_read": "먼저 안쪽 csv.DictReader(f)가 행 iterator를 만들고, 그 결과가 바깥 list의 입력으로 들어간다고 읽습니다.",
-      "key_point": "최종 rows는 CSV 각 행을 dict처럼 담은 list입니다.",
-      "common_mistake": "list가 CSV 파일 자체를 그대로 문자열 목록으로 바꾼다고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `list(csv.DictReader(f))`는 CSV에서 이름표가 붙은 행들을 꺼내 하나의 목록으로 모읍니다.\n정확한 정의: 이 중첩 호출은 안쪽 `csv.DictReader(f)`가 반환한 행 이터레이터를 바깥 `list()` 생성자에 인자로 전달하여, 순서대로 얻은 행 딕셔너리들을 담은 새 리스트를 만듭니다.",
+      "how_to_read": "직관적 모델: 안쪽 호출은 행을 하나씩 건네주는 읽기 도구를 준비하고, 바깥 호출은 그 도구에서 나오는 행을 차례로 모으는 역할입니다. 이터레이터는 이렇게 항목을 하나씩 얻을 수 있는 객체입니다.\n이 코드에서는 먼저 `csv.DictReader(f)`를 호출합니다. 그 결과를 받은 `list()`가 실제로 순회하면서 첫 줄 `name,score`를 키 이름으로 사용하고, 뒤의 두 데이터 행을 딕셔너리로 얻습니다. 완성된 리스트가 `rows`에 연결됩니다.",
+      "key_point": "실행 흐름: `f` → `csv.DictReader(f)`로 행 이터레이터 생성 → `list()`가 끝까지 순회 → `rows = [{'name': 'A', 'score': '10'}, {'name': 'B', 'score': '20'}]`.\n그다음 `rows[0]`은 첫 데이터 행이고, `[\"name\"]`은 그 행의 값 `'A'`를 꺼냅니다. 따라서 출력은 `A`입니다.",
+      "common_mistake": "`list()` 자체가 CSV를 해석하거나 헤더를 데이터 행으로 넣는다고 생각하기 쉽습니다. CSV를 해석하고 헤더를 키로 사용하는 것은 `DictReader`이고, `list()`는 그것이 내놓는 행 딕셔너리들을 모읍니다. 따라서 `rows[0][\"name\"]`은 헤더 `name`이 아니라 첫 데이터 값 `A`입니다."
     },
     "teaching_example": {
-      "code": "import csv, io\nf = io.StringIO(\"name\\nA\\n\")\nrows = list(csv.DictReader(f))\nprint(rows[0][\"name\"])",
-      "walkthrough": "DictReader가 행 dict를 내놓고 list가 그것을 모아 첫 name 값 A를 읽습니다."
+      "code": "import csv, io\nf = io.StringIO(\"name\\nMina\\nJoon\\n\")\nrows = list(csv.DictReader(f))\nprint(rows[1][\"name\"])",
+      "walkthrough": "1) `import csv, io`는 사용할 두 모듈을 불러옵니다.\n2) `io.StringIO(...)`는 문자열을 메모리에서 파일처럼 읽을 수 있게 만듭니다. `\\n`은 줄바꿈이므로 내용은 헤더 `name`과 데이터 행 `Mina`, `Joon`입니다.\n3) 안쪽 `csv.DictReader(f)`가 행 이터레이터를 만듭니다. 바깥 `list()`가 이를 순회해 `{'name': 'Mina'}`, `{'name': 'Joon'}`을 차례로 모읍니다. 따라서 `rows`는 `[{'name': 'Mina'}, {'name': 'Joon'}]`입니다.\n4) `rows[1]`은 두 번째 딕셔너리이며, `[\"name\"]`으로 값 `'Joon'`을 얻습니다. `print()`가 `Joon`을 출력합니다.\n실행 흐름: 안쪽 호출 → 이터레이터 → 바깥 호출로 리스트 생성 → 두 번째 행의 값 조회 → 출력 `Joon`."
     },
     "answer_explanation": {
       "step_by_step": "1) StringIO에 헤더와 두 데이터 행이 들어 있다. 2) csv.DictReader(f)가 각 데이터 행을 컬럼명 기준 mapping으로 읽는 iterator를 만든다. 3) 바깥 list 생성자가 iterator의 두 행을 소비해 새 리스트를 만든다. 4) rows[0]['name']은 첫 행의 A다.",
@@ -214,10 +214,10 @@
     "primary_concept": "attribute_access",
     "reading_goal_internal": "점 왼쪽 reader 인스턴스에서 fieldnames 속성값을 읽어 CSV 컬럼명 목록을 얻는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "속성 접근 `object.attr`은 점 왼쪽 객체에서 attr 이름의 현재 값을 읽는 표현식입니다.",
-      "how_to_read": "`reader.fieldnames`에서는 reader가 DictReader 인스턴스이고 fieldnames가 읽을 속성입니다.",
-      "key_point": "헤더가 name,score이면 fieldnames 값은 그 두 문자열을 담은 목록입니다.",
-      "common_mistake": "fieldnames가 호출해야 하는 메서드라서 반드시 괄호가 필요하다고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `reader.fieldnames`는 `reader`에게 “열 이름 목록이 무엇이지?”라고 묻는 표현입니다.\n정확한 정의: 속성 접근 `object.attribute`는 점 왼쪽 객체에서 오른쪽 이름의 속성을 조회하는 표현식이며, 여기서는 `DictReader` 객체의 `fieldnames` 값을 읽습니다.",
+      "how_to_read": "직관적 모델: 점 왼쪽은 정보를 물어볼 대상이고, 오른쪽은 읽을 정보의 이름이라고 생각하세요.\n코드 읽기: 첫 줄은 `csv`와 `io`를 가져옵니다. 둘째 줄은 `io.StringIO(...)`로 문자열을 파일처럼 읽을 수 있게 하고, 이를 읽는 `DictReader` 객체를 만들어 `reader`에 연결합니다. 문자열의 `\\n`은 줄바꿈이므로 첫 줄은 `name,score`, 다음 줄은 `A,10`입니다. 마지막 줄의 `reader.fieldnames`는 이 객체의 열 이름 목록을 조회하고, `print(...)`는 그 값을 출력합니다.",
+      "key_point": "이 코드에서는 열 이름을 별도로 지정하지 않았으므로 `fieldnames`를 처음 조회할 때 첫 행을 읽어 열 이름으로 사용합니다.\n`reader.fieldnames` 조회\n↓\n첫 행 `name,score` 읽기\n↓\n열 이름 목록 `['name', 'score']`\n↓\n`print`에 전달\n↓\n출력: `['name', 'score']`\n객체 생성 시 이미 헤더를 읽었다고 생각할 필요는 없습니다. 이 코드에서는 속성 조회가 헤더 읽기를 일으킵니다.",
+      "common_mistake": "`fieldnames`를 실행해야 하는 메서드로 생각해 `reader.fieldnames()`라고 읽기 쉽습니다. 여기서는 괄호 없이 속성값을 읽습니다. 또한 `['A', '10']`은 데이터 행의 값이지 열 이름이 아닙니다."
     },
     "teaching_example": {
       "code": "import csv, io\nreader = csv.DictReader(io.StringIO(\"id,title\\n1,A\\n\"))\nprint(reader.fieldnames)",
@@ -398,14 +398,14 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "DictWriter 호출의 `fieldnames=` keyword argument가 저장할 CSV 컬럼 이름과 순서를 명시한다는 의미를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "keyword argument는 호출에서 `name=value` 형태로 특정 매개변수에 값을 명시적으로 전달합니다.",
-      "how_to_read": "`fieldnames=`라는 매개변수 이름과 오른쪽 리스트의 순서를 연결해 DictWriter가 어떤 CSV 컬럼 구조를 사용할지 확인합니다.",
-      "key_point": "fieldnames는 단순한 참고 목록이 아니라 writeheader와 행 저장이 따를 컬럼 이름·순서를 정합니다.",
-      "common_mistake": "row dict의 key 순서만 보고 CSV 컬럼 순서가 자동 결정된다고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: 호출할 때 입력 이름을 붙여 값을 넘기면, 무엇을 설정하는 값인지 알 수 있습니다.\n정확한 정의: 키워드 인자는 호출에서 `매개변수명=값` 형태로 전달하는 인자이며, 여기서는 리스트 `[\"name\", \"score\"]`를 `DictWriter`의 `fieldnames` 매개변수에 전달합니다.",
+      "how_to_read": "직관적 모델: `fieldnames`를 CSV의 왼쪽부터 붙일 열 이름표 목록이라고 생각하세요. 이 카드의 `fieldnames=[\"name\", \"score\"]`는 “첫 열은 name, 둘째 열은 score로 써라”라는 설정입니다. `f`는 쓸 곳을 전달하고, `fieldnames=...`는 열 구성을 전달합니다.",
+      "key_point": "`[\"name\", \"score\"]` → `fieldnames`에 전달 → `writeheader()`가 `name,score` 작성 → `writerows(rows)`가 `A,10` 작성. 마지막 줄은 전체 내용에서 첫 줄만 선택하므로 `name,score`를 출력합니다. 생성자에 인자를 전달하는 것만으로 헤더가 작성되지는 않습니다.",
+      "common_mistake": "행 딕셔너리에 키를 적은 순서가 CSV 열 순서라고 읽기 쉽습니다. 출력 순서는 `fieldnames`를 따릅니다. 또한 목록의 두 항목은 두 열을 지정하는 것이지, 행 수를 두 개로 제한하는 것이 아닙니다."
     },
     "teaching_example": {
-      "code": "import csv\nfrom io import StringIO\nwith StringIO() as f:\n    w = csv.DictWriter(f, fieldnames=[\"id\", \"title\"])\n    w.writeheader()\n    print(f.getvalue().strip())",
-      "walkthrough": "fieldnames의 id, title 순서가 그대로 헤더 순서가 됩니다."
+      "code": "import csv\nfrom io import StringIO\nrows = [{\"name\": \"B\", \"score\": 20}]\nwith StringIO() as f:\n    w = csv.DictWriter(f, fieldnames=[\"score\", \"name\"])\n    w.writeheader()\n    w.writerows(rows)\n    print(f.getvalue().splitlines())",
+      "walkthrough": "1) `import csv`는 CSV 도구를 사용할 수 있게 합니다.\n2) `from io import StringIO`는 메모리에 텍스트를 쓰는 도구를 가져옵니다.\n3) `rows`는 name 값이 B, score 값이 20인 딕셔너리 하나를 담습니다.\n4) `with StringIO() as f:`는 텍스트를 쓸 공간을 만들고 블록 안에서 `f`로 사용합니다.\n5) `DictWriter(...)`는 쓸 곳으로 `f`를 받고, 키워드 인자 `fieldnames`로 `[\"score\", \"name\"]`을 받습니다.\n6) `writeheader()`가 `score,name`을 씁니다.\n7) `writerows(rows)`는 지정된 열 순서로 값을 찾아 `20,B`를 씁니다.\n8) `getvalue()`로 내용을 얻고 `splitlines()`로 줄 목록을 만들어 출력합니다. 블록이 끝나면 `f`는 닫힙니다.\n결과: `['score,name', '20,B']`.\n딕셔너리에 name을 먼저 적었어도, 전달한 목록에서 score가 먼저이므로 score 열이 먼저 나옵니다."
     },
     "answer_explanation": {
       "step_by_step": "1) `fieldnames` keyword에 name, score 리스트가 전달된다. 2) DictWriter는 이를 컬럼 schema처럼 사용한다. 3) writeheader가 같은 순서로 헤더를 쓴다. 4) writerows가 각 dict의 값을 해당 컬럼에 맞춰 쓴다.",

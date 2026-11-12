@@ -153,14 +153,14 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "안쪽 DictReader 호출 결과를 바깥 list 생성자가 순회해 새 list로 만드는 중첩 호출 순서를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`list(iterable)` is a constructor call that consumes the items of the iterable in order to create a new Python list.",
-                                    "how_to_read":  "First, the inner `csv.DictReader(f)` creates a row iterator, and the result is passed as input to the outer list.",
-                                    "key_point":  "The `final_rows` is a list that contains each row of the CSV as a dictionary.",
-                                    "common_mistake":  "It’s easy to assume that `list` simply converts the CSV file itself into a list of strings."
+                                    "what_it_is":  "Easy meaning: `list(csv.DictReader(f))` takes labeled rows from CSV text and collects them into one list.\nExact definition: This nested call passes the row iterator returned by the inner `csv.DictReader(f)` as an argument to the outer `list()` constructor, creating a new list containing the row dictionaries in iteration order.",
+                                    "how_to_read":  "Mental model: the inner call prepares a reading tool that hands over rows one at a time, and the outer call collects those rows in order. An iterator is an object from which items can be obtained one at a time.\nIn this code, `csv.DictReader(f)` is called first. The receiving `list()` then actually iterates over it, using the first line `name,score` as key names and obtaining dictionaries for the following two data rows. The completed list is bound to `rows`.",
+                                    "key_point":  "Execution flow: `f` → create a row iterator with `csv.DictReader(f)` → `list()` iterates to exhaustion → `rows = [{'name': 'A', 'score': '10'}, {'name': 'B', 'score': '20'}]`.\nThen `rows[0]` selects the first data row, and `[\"name\"]` retrieves its value `'A'`. The output is therefore `A`.",
+                                    "common_mistake":  "It is easy to think that `list()` itself parses CSV or includes the header as a data row. `DictReader` parses the CSV and uses the header as keys; `list()` collects the row dictionaries it produces. Thus `rows[0][\"name\"]` is the first data value `A`, not the header `name`."
                                 },
         "teaching_example":  {
-                                 "code":  "import csv, io\nf = io.StringIO(\"name\\nA\\n\")\nrows = list(csv.DictReader(f))\nprint(rows[0][\"name\"])",
-                                 "walkthrough":  "DictReader outputs a row dict, and the list collects it and reads the first name value, A."
+                                 "code":  "import csv, io\nf = io.StringIO(\"name\\nMina\\nJoon\\n\")\nrows = list(csv.DictReader(f))\nprint(rows[1][\"name\"])",
+                                 "walkthrough":  "1) `import csv, io` imports the two modules used here.\n2) `io.StringIO(...)` makes the string readable like a file in memory. Each `\\n` is a newline, so the contents are the header `name` and data rows `Mina` and `Joon`.\n3) The inner `csv.DictReader(f)` creates a row iterator. The outer `list()` iterates over it, collecting `{'name': 'Mina'}` and then `{'name': 'Joon'}`. Thus `rows` is `[{'name': 'Mina'}, {'name': 'Joon'}]`.\n4) `rows[1]` selects the second dictionary, and `[\"name\"]` retrieves `'Joon'`. `print()` displays `Joon`.\nExecution flow: inner call → iterator → outer call creates a list → look up the second row's value → output `Joon`."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "1) StringIO contains a header and two rows of data. 2) csv.DictReader(f) creates an iterator that reads each row of data as a mapping based on column names. 3) The outer list constructor consumes the two rows from the iterator to create a new list. 4) rows[0][\u0027name\u0027] is \"A\" from the first row.",
@@ -214,10 +214,10 @@
         "primary_concept":  "attribute_access",
         "reading_goal_internal":  "점 왼쪽 reader 인스턴스에서 fieldnames 속성값을 읽어 CSV 컬럼명 목록을 얻는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "Attribute access `object.attr` is an expression that reads the current value of the attr name from the object on the left side of the dot.",
-                                    "how_to_read":  "In `reader.fieldnames`, `reader` is a DictReader instance and `fieldnames` are the attributes to be read.",
-                                    "key_point":  "If the headers are \"name\" and \"score,\" the value of \"fieldnames\" is a list containing those two strings.",
-                                    "common_mistake":  "It is easy to assume that parentheses are required because `fieldnames` is a method that must be called."
+                                    "what_it_is":  "Easy meaning: `reader.fieldnames` asks `reader`, “What is the list of column names?”\nExact definition: Attribute access `object.attribute` looks up the named attribute on the object to the left of the dot; here it reads the `fieldnames` value of a `DictReader` object.",
+                                    "how_to_read":  "Mental model: Think of the left side of the dot as the object to ask and the right side as the name of the information to read.\nReading the code: The first line imports `csv` and `io`. The second line uses `io.StringIO(...)` to make the string readable like a file, creates a `DictReader` object to read it, and binds that object to `reader`. In the string, `\\n` marks a line break, so the first line is `name,score` and the next is `A,10`. On the last line, `reader.fieldnames` looks up this object's column-name list, and `print(...)` displays that value.",
+                                    "key_point":  "This code does not supply column names separately, so the first access to `fieldnames` reads the first row and uses it for the column names.\nAccess `reader.fieldnames`\n↓\nRead the first row, `name,score`\n↓\nColumn-name list `['name', 'score']`\n↓\nPass it to `print`\n↓\nOutput: `['name', 'score']`\nDo not assume the header was already read during object creation. In this code, accessing the attribute triggers reading the header.",
+                                    "common_mistake":  "It is easy to treat `fieldnames` as a method to execute and read it as `reader.fieldnames()`. Here you read the attribute value without parentheses. Also, `['A', '10']` contains data-row values, not column names."
                                 },
         "teaching_example":  {
                                  "code":  "import csv, io\nreader = csv.DictReader(io.StringIO(\"id,title\\n1,A\\n\"))\nprint(reader.fieldnames)",
@@ -398,14 +398,14 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "DictWriter 호출의 `fieldnames=` keyword argument가 저장할 CSV 컬럼 이름과 순서를 명시한다는 의미를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "A keyword argument explicitly passes a value to a specific parameter in the form `name=value` during a function call.",
-                                    "how_to_read":  "`fieldnames=` It determines which CSV column structure DictWriter will use by associating the parameter name with the order of the list on the right.",
-                                    "key_point":  "`fieldnames` is not merely a reference list; it defines the column names and order that will be used by `writeheader` and when rows are saved.",
-                                    "common_mistake":  "It is easy to assume that the order of CSV columns is automatically determined based solely on the order of keys in the `row dict`."
+                                    "what_it_is":  "Easy meaning: Labeling a value with an input name in a call shows what that value configures.\nExact definition: A keyword argument is an argument supplied as `parameter_name=value` in a call; here, the list `[\"name\", \"score\"]` is passed to the `fieldnames` parameter of `DictWriter`.",
+                                    "how_to_read":  "Mental model: Think of `fieldnames` as a list of column labels placed from left to right in the CSV. This card's `fieldnames=[\"name\", \"score\"]` says “use name for the first column and score for the second.” `f` supplies where to write, while `fieldnames=...` supplies the column layout.",
+                                    "key_point":  "`[\"name\", \"score\"]` → passed to `fieldnames` → `writeheader()` writes `name,score` → `writerows(rows)` writes `A,10`. The final line selects only the first line of the complete contents, so it prints `name,score`. Passing the argument to the constructor does not itself write the header.",
+                                    "common_mistake":  "It is easy to read the order of keys in a row dictionary as the CSV column order. Output order follows `fieldnames`. Also, the two list items specify two columns; they do not limit the number of rows to two."
                                 },
         "teaching_example":  {
-                                 "code":  "import csv\nfrom io import StringIO\nwith StringIO() as f:\n    w = csv.DictWriter(f, fieldnames=[\"id\", \"title\"])\n    w.writeheader()\n    print(f.getvalue().strip())",
-                                 "walkthrough":  "The order of `id` and `title` in `fieldnames` will be preserved as the header order."
+                                 "code":  "import csv\nfrom io import StringIO\nrows = [{\"name\": \"B\", \"score\": 20}]\nwith StringIO() as f:\n    w = csv.DictWriter(f, fieldnames=[\"score\", \"name\"])\n    w.writeheader()\n    w.writerows(rows)\n    print(f.getvalue().splitlines())",
+                                 "walkthrough":  "1) `import csv` makes the CSV tools available.\n2) `from io import StringIO` imports a tool for writing text in memory.\n3) `rows` holds one dictionary with name B and score 20.\n4) `with StringIO() as f:` creates a space for text and makes it available as `f` inside the block.\n5) `DictWriter(...)` receives `f` as the destination and `[\"score\", \"name\"]` through the keyword argument `fieldnames`.\n6) `writeheader()` writes `score,name`.\n7) `writerows(rows)` looks up values in the specified column order and writes `20,B`.\n8) `getvalue()` retrieves the contents, and `splitlines()` makes a list of lines to print. When the block ends, `f` is closed.\nResult: `['score,name', '20,B']`.\nAlthough name appears first in the dictionary, score comes first in the passed list, so the score column comes first."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "1) The `fieldnames` keyword is passed a list containing `name` and `score`. 2) `DictWriter` uses this as a column schema. 3) `writeheader` writes the headers in the same order. 4) `writerows` writes the values of each dictionary to the corresponding columns.",

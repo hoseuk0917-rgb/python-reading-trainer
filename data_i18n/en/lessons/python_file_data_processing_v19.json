@@ -89,14 +89,14 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "`delimiter='\\t'` keyword argument가 TSV 입력의 탭 경계를 reader에 전달하는 의미를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A keyword argument passes a value to a specific option of a function by name.",
-      "how_to_read": "Read this by comparing `DictReader`’s default comma-separated format with the tab-separated format specified in this code.",
-      "key_point": "`delimiter='\\t'` This reflects the fact that the input is TSV in the reader settings, causing it to split columns by tabs.",
-      "common_mistake": "Do not assume that DictReader automatically detects tabs simply because the file extension is ``.tsv``. You must specify the delimiter."
+      "what_it_is": "Easy meaning: This is a way to say “use this value” by naming an option in a call.\nExact definition: A keyword argument is an argument supplied in a call as `name=value`; here, the one-character tab string `'\\t'` is passed under the name `delimiter`.",
+      "how_to_read": "Mental model: Think of `delimiter` as a setting labeled “character separating columns.”\nReading the code: `csv.DictReader(f, delimiter='\\t')` supplies `f` as input and sets that setting to a tab. `'\\t'` represents a tab; `'\\n'` represents a newline.",
+      "key_point": "`StringIO(...)` creates an in-memory text input → the call passes a tab as the delimiter → `list(reader)` reads the input → the first line supplies the keys `id` and `title`, and the next two lines become data dictionaries → `len(rows)` is `2` → `print` displays `2`.",
+      "common_mistake": "It is easy to assume that output `2` proves the columns were read correctly. However, omitting this argument uses the default comma delimiter, making `id\\ttitle` a single key. This input still has two data rows, so the row count alone cannot confirm correct column splitting."
     },
     "teaching_example": {
       "code": "import csv\nfrom io import StringIO\nf = StringIO('a\\tb\\n1\\t2\\n')\nrows = list(csv.DictReader(f, delimiter='\\t'))\nprint(rows[0]['b'])",
-      "walkthrough": "Since tabs are used as column delimiters, the second field becomes the value of the ``b`` key."
+      "walkthrough": "1) `import csv` imports the module used for reading.\n2) `from io import StringIO` imports a tool for using a string as text input.\n3) `f = StringIO(...)` creates input with tab-separated headings `a`, `b` and data `1`, `2`.\n4) The `DictReader` call passes a tab under the name `delimiter`. As `list(...)` performs the reading, the first line supplies the keys, and `rows` becomes `[{'a': '1', 'b': '2'}]`.\n5) `rows[0]` selects the first data dictionary, and `['b']` retrieves the string `'2'`. `print` displays `2`."
     },
     "answer_explanation": {
       "step_by_step": "1) TSV text has columns separated by tab characters. 2) Specify `delimiter='\\t'` in the DictReader call. 3) The reader splits fields using tabs instead of commas. 4) `list(reader)` materializes the parsed rows.",
@@ -210,10 +210,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "호출 괄호 안에서 이름이 붙은 `ensure_ascii=False`가 별도 변수 대입이 아니라 json.dumps의 keyword argument라는 점을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A keyword argument is a syntax in which you explicitly specify the names of the parameters to be passed to a function and provide their values.",
-      "how_to_read": "Separate the name on the left side of the equals sign from the value on the right, and verify that the entire expression is enclosed within the function call parentheses.",
-      "key_point": "A `False` without quotes is passed to the `ensure_ascii` parameter to preserve Korean characters as readable text.",
-      "common_mistake": "It is easier to read the assignment of a new variable outside the call as ``ensure_ascii=False``."
+      "what_it_is": "Easy meaning: When giving a function a value, you attach a name tag saying which input slot should receive it.\nExact definition: A keyword argument is an argument specified as `name=expression` in a function call, passing the evaluated expression's value to the parameter with that name.",
+      "how_to_read": "Mental model: Think of `ensure_ascii=False` as attaching the tag ‘to the ensure_ascii input slot’ to the value `False`.\nReading the code: In `json.dumps(row, ensure_ascii=False)`, `row` is passed by position, while the Boolean value `False` is passed by the name `ensure_ascii`. This setting leaves `한글` unchanged in the returned JSON string.",
+      "key_point": "`rows` contains one dictionary, so the loop runs once.\nPass `row` and the named argument `ensure_ascii=False` to `json.dumps`\n→ return the JSON string `{\"id\": \"n1\", \"label\": \"한글\"}`\n→ bind the returned value to `line`\n→ write `line + \"\\n\"` to the in-memory `buffer`\n→ retrieve the entire string with `buffer.getvalue()`\n→ `\"한글\" in ...` evaluates to `True`\n→ `print` displays `True`.",
+      "common_mistake": "An equals sign does not necessarily create a new global variable called `ensure_ascii`. Here, `name=value` inside the call parentheses passes a value by name. By contrast, the outer equals sign in `line = json.dumps(...)` is assignment: it binds the returned value to `line`. Also, unquoted `False` is a Boolean value, not a string, and this code writes to a memory buffer rather than a disk file."
     },
     "teaching_example": {
       "code": "import json\nrow = {\"name\": \"서울\"}\ntext = json.dumps(row, ensure_ascii=False)\nprint(\"서울\" in text)",
@@ -334,10 +334,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "메서드 호출 안 `parents=True`를 일반 대입이 아니라 `parents` parameter에 True를 전달하는 keyword argument로 읽는다.",
     "concept_explanation": {
-      "what_it_is": "The `name=value` format inside the parentheses of a function or method call is a keyword argument, which allows you to specify a parameter name directly and pass a value to it.",
-      "how_to_read": "Distinguish between the parameter name on the left side of the equals sign (`parents`) and the value to be passed on the right side (`True`).",
-      "key_point": "`parents=True` specifies the behavior option for the `mkdir()` call; it is not a statement that assigns a value to a separate variable named `parents`.",
-      "common_mistake": "It is easy to misread ``=`` inside the call parentheses as a regular assignment statement. In this context, it is a keyword argument."
+      "what_it_is": "Easy meaning: Giving an input name when passing a value makes it clear which setting you are turning on.\nExact definition: A keyword argument supplies the value of an expression to a named parameter in a function or method call using the form `name=expression`.",
+      "how_to_read": "Imagine input slots with name labels. `parents=True` puts the value `True`, meaning true, into the slot labeled `parents`.\nThis code first imports `Path`, then builds a path with `Path(\"derived\") / \"clean\" / \"inbox\"` and binds it to `out_dir`. In the next call, `parents=True` requests creation of necessary parent folders too, while `exist_ok=True` allows the target to exist already as a folder.",
+      "key_point": "Call `out_dir.mkdir(...)`\n→ pass `True` to the `parents` parameter\n→ create `derived` and `derived/clean` as necessary parent folders if missing\n→ create the target folder `derived/clean/inbox` or allow the existing folder.\nIf the call succeeds without errors such as permission problems, the target folder exists. The last line only builds the path to `manifest.jsonl` inside that folder and binds it to `out_file`; it does not create the file. Nothing is printed.",
+      "common_mistake": "Do not read `parents=True` as an assignment statement storing a value in a separate variable named `parents`. Inside this call, it passes a value by naming the input. By contrast, `out_dir = ...` is an assignment that binds the computed path to a name. Also, the value `True` does not itself create folders. `mkdir()` uses the value passed to `parents` to decide to create necessary parent folders."
     },
     "teaching_example": {
       "code": "from pathlib import Path\n\ncache_dir = Path(\"build\") / \"cache\" / \"images\"\ncache_dir.mkdir(parents=True, exist_ok=True)",
@@ -394,10 +394,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "중첩 호출에서 glob 결과가 먼저 만들어지고 그 iterable이 `sorted()`에 들어가 정렬된 새 리스트가 되는 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`sorted(iterable)` is a function call that returns a **new list** with the items of the iterable sorted.",
-      "how_to_read": "First, check what the iterable inside the parentheses is, and then read that the list resulting from applying the sort operation to those items becomes the value at the call site.",
-      "key_point": "The purpose of using `sorted()` here is not to modify the file’s contents, but to **reliably determine the order in which the file is processed**.",
-      "common_mistake": "`sorted()` It is easy to assume that this modifies the source file itself or even reorders the file’s contents. What this call actually handles is the order of the path entries."
+      "what_it_is": "Easy meaning: `sorted(...)` makes a new collection with the supplied items arranged in order.\nExact definition: `sorted(iterable)` is a call to a Python built-in function that takes an iterable—an object that can supply items one at a time—and returns a new sorted list of those items.",
+      "how_to_read": "Mental model: imagine receiving cards with paths written on them and making a new list with the cards in order. You are arranging path cards, not the contents inside files.\nReading the code: `from pathlib import Path` imports `Path`. `Path(\"data/lessons\")` represents the folder to search, and `.glob(\"*.json\")` creates an iterable that supplies matching paths from that folder one at a time. The outer `sorted(...)` takes paths from this iterable and returns a new sorted list. `files` is bound to that list, and the `for` loop prints each `path.name` in list order.",
+      "key_point": "Execution flow: `Path(\"data/lessons\")` → path iterable from `.glob(\"*.json\")` → `sorted(...)` takes and sorts the items → new list → `files` → each path's name is printed.\nThe outer call directly produces a sorted list of paths. If nothing matches, the list is `[]` and the loop prints nothing. The actual names and number of output lines depend on the folder contents, so this code alone does not determine them.",
+      "common_mistake": "It is easy to assume that `sorted()` opens JSON files and sorts their contents. However, the supplied items are path objects, not file contents. This call only creates a new sorted list of paths; it does not change file contents, names, or extensions. Also, do not read the `glob()` call itself as creating an already sorted list. The outer `sorted()` creates the new sorted list here."
     },
     "teaching_example": {
       "code": "from pathlib import Path\n\npaths = [Path(\"b.json\"), Path(\"a.json\")]\nordered = sorted(paths)",
@@ -456,10 +456,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "open 호출의 두 번째 positional argument가 binary read mode를 지정한다는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "Values passed by position—without a name—inside the parentheses of a function call are called positional arguments.",
-      "how_to_read": "In `open(path, mode)`, let’s look at which parameters the first and second values correspond to, in order.",
-      "key_point": "`rb` is a binary read mode that reads file bytes without decoding the text.",
-      "common_mistake": "`b` It’s easy to assume that “backup” refers to a backup. Here, it refers to a binary."
+      "what_it_is": "Easy meaning: The order of values in a function call tells it what to open and how to read it.\nExact definition: A positional argument is a value supplied by position without a parameter name; here, `\"pack.zip\"` corresponds to the `file` parameter of `open`, and `\"rb\"` corresponds to `mode`.",
+      "how_to_read": "Picture two input slots: ‘which file?’ and ‘which mode?’. Read `open(\"pack.zip\", \"rb\")` as ‘open pack.zip for reading in binary mode’. The `r` means reading, and the `b` means binary. Consequently, `f.read(...)` returns file contents as `bytes` without interpreting them as text.",
+      "key_point": "Create a hash object with `hashlib.sha256()` → open the file with `\"rb\"` as the second argument → read `bytes` in chunks of at most 1 MiB with `f.read(1024 * 1024)` → pass each `block` to `h.update(block)` → stop when reading returns the empty byte sequence `b\"\"` → store the string returned by `h.hexdigest()` in `digest`. On successful completion, this produces the SHA-256 hash of all the file’s bytes. The exact hash depends on the file contents, and this code prints nothing.",
+      "common_mistake": "It is easy to assume that the `.zip` extension automatically selects binary mode. The supplied `\"rb\"`, not the filename, selects the reading mode. Passing only `\"r\"` reads in text mode and returns `str`, which cannot be passed directly to `h.update()`. Nor does `\"rb\"` instruct Python to decompress the ZIP or convert its format."
     },
     "teaching_example": {
       "code": "with open(\"image.bin\", \"rb\") as f:\n    chunk = f.read(4)",
@@ -517,24 +517,24 @@
     "primary_concept": "call",
     "reading_goal_internal": "ZipFile instance의 extractall 메서드가 out_dir을 받아 archive 전체를 해당 위치에 추출하는 호출을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`obj.method(arg)` is an expression that calls an object’s method while passing an argument.",
-      "how_to_read": "Check the object to the left of the dot, the method name, and the role of the argument inside the parentheses, in that order.",
-      "key_point": "`extractall(out_dir)` The `out_dir` is the destination directory where the extracted files will be placed.",
-      "common_mistake": "It’s easy to assume that `extractall` compresses `out_dir` itself. On the contrary, it extracts the contents of the ZIP file into `out_dir`."
+      "what_it_is": "Easy meaning: This asks, “Unpack this ZIP into the specified folder.”\nExact definition: `zf.extractall(out_dir)` calls the `extractall` method of `zf`, passing the first argument, `out_dir`, as the extraction destination path.",
+      "how_to_read": "Picture the ZIP as a packed box and `out_dir` as the place to put its contents. `zf` is the ZIP object to work with, `.extractall` is the operation that unpacks all items, and `(out_dir)` supplies its destination.",
+      "key_point": "`zf` opens `pack.clean.zip` → call `extractall` → extract to the path `tmp/unpacked` held by `out_dir`. On successful completion, the ZIP's items are unpacked beneath that directory. This is not a screen-output operation.",
+      "common_mistake": "It is easy to read `out_dir` inside the parentheses as the source to compress. An argument's role depends on the method. Here it is the extraction destination, not a folder to compress."
     },
     "teaching_example": {
       "code": "from zipfile import ZipFile\nfrom pathlib import Path\n\nwith ZipFile(\"sample.zip\") as archive:\n    archive.extractall(Path(\"unpacked\"))",
-      "walkthrough": "Extract the contents of `sample.zip` into the `unpacked` directory."
+      "walkthrough": "Assume a readable `sample.zip` exists and extraction completes successfully.\n1) The first line imports `ZipFile` for working with ZIP files.\n2) The second imports `Path` for representing paths.\n3) The `with` line opens `sample.zip` and uses `archive` for that object.\n4) The indented line constructs the destination path with `Path(\"unpacked\")`, then passes that value as an argument when calling `archive.extractall(...)`.\nFlow: opened ZIP → supply destination path → extract all items.\nResult: the items are unpacked beneath `unpacked`, and the ZIP closes when the block ends. Nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "`zf` refers to a ZIP archive, and `extractall(out_dir)` extracts all items from the archive to the specified directory.",
-      "why_correct": "This is because the role of the `extractall` method is archive extraction.",
+      "step_by_step": "1) The two import statements import `Path` and `ZipFile`.\n2) `zip_path` represents `pack.clean.zip`; `out_dir` represents `tmp/unpacked`. Constructing paths alone does not perform file operations.\n3) `mkdir` creates the destination folder and any needed parent folders. It allows the destination to exist already as a directory.\n4) `with ZipFile(zip_path) as zf:` opens the ZIP and uses `zf` for it.\n5) `zf.extractall(out_dir)` receives the destination path and unpacks all ZIP items beneath it.",
+      "why_correct": "The operation acts on the ZIP opened by `zf`, and `out_dir` is the extraction destination, so the answer is “Extract the items from the ZIP file into the out_dir directory”.",
       "common_wrong_choice": {
         "choice": "Compress the `out_dir` into a ZIP file",
-        "why_wrong": "Its role is related to archive creation, and the current method name is `extract`.",
-        "misread_step": "This is an example of reading “compression” and “decompression” in reverse."
+        "why_wrong": "`extractall` unpacks items from an existing ZIP; it does not create a ZIP.",
+        "misread_step": "This reverses the operation by reading the destination argument `out_dir` as the source to compress."
       },
-      "takeaway": "The `archive` code first checks **which method of which object** it is."
+      "takeaway": "Read `object.method(argument)` as “Ask which object to perform which operation using which value?” Here: ZIP → extraction → destination folder."
     },
     "target_statement": "zf.extractall(out_dir)",
     "focus_span": "zf.extractall(out_dir)",
@@ -579,10 +579,10 @@
     "primary_concept": "attribute_access",
     "reading_goal_internal": "method call로 얻은 stat result 객체에서 st_size attribute를 읽는 중첩 표현식을 해석한다.",
     "concept_explanation": {
-      "what_it_is": "`obj.attr` is attribute access that reads the value of an object attribute.",
-      "how_to_read": "First, evaluate the expression to the left of the dot to determine what kind of object it is, and then read that object’s attribute.",
-      "key_point": "`path.stat()` This metadata object is created, and ``.st_size`` reads the file size value from that object.",
-      "common_mistake": "It’s easy to assume that `st_size` returns the entire contents of the file. It is metadata for the file’s size."
+      "what_it_is": "Easy meaning: Use the name after a dot to read a value attached to an object.\nExact definition: Attribute access `obj.attr` is an expression that looks up the attribute named `attr` on the object obtained by evaluating `obj`.",
+      "how_to_read": "Mental model: Imagine receiving a file information sheet and then reading its 'size' field.\nReading the code: `from pathlib import Path` imports `Path`. `path = Path(\"manifest.jsonl\")` binds `path` to an object representing that path. In `path.stat().st_size`, first call `path.stat()` to obtain a result object containing file information, then read that object's `st_size` attribute. Thus, `.st_size` applies to the result of `path.stat()`, not to `path` itself.",
+      "key_point": "If the lookup succeeds and the target is a regular file, execution flows as follows:\n`path` → call `stat()` → file information result object → read `.st_size` → integer file size in bytes → assign to `size`.\nTherefore, the answer is 'File size'. The actual number depends on the file, and this code does not print the value.",
+      "common_mistake": "Do not read `st_size` as the entire file content or a character count. For a regular file, it is size information measured in bytes. Also, `stat()` is a method call with parentheses, whereas `.st_size` is attribute access that reads a value from that call's result; it is not called as `st_size()`."
     },
     "teaching_example": {
       "code": "from pathlib import Path\npath = Path(\"note.txt\")\nsize = path.stat().st_size",
@@ -647,14 +647,14 @@
       "walkthrough": "Only the \"abc\" elements at indices 0, 1, and 2 are selected; index 3 is not included."
     },
     "answer_explanation": {
-      "step_by_step": "`[:120]` selects and returns up to 120 characters from the beginning of a string.",
-      "why_correct": "This is because `slice stop 120` limits the return range.",
+      "step_by_step": "1) Calling safe_name(\"  report?.pdf  \") makes name refer to \"  report?.pdf  \".\n2) name.strip() removes the whitespace at both ends, and name becomes \"report?.pdf\".\n3) re.sub(...) replaces the matching ? with _, so name becomes \"report_.pdf\".\n4) name[:120] selects from the beginning up to, but not including, index 120: at most 120 characters. If the string is shorter, it selects only the characters available.\n5) \"report_.pdf\" has 11 characters, so the whole string is selected. return returns this value, making result equal to \"report_.pdf\".",
+      "why_correct": "The correct answer is 'Prevent file names from becoming too long.' Because [:120] returns at most the first 120 characters, strings longer than 120 characters are truncated. This input is already short and is returned unchanged, but the length cap still applies. Index 120 is excluded, so the maximum is not 121 characters.",
       "common_wrong_choice": {
         "choice": "Delete the first 120 files.",
-        "why_wrong": "The `slice` operation operates on a string representing a name, not a list of files.",
-        "misread_step": "This is an example of a string slice being misinterpreted as a file deletion operation."
+        "why_wrong": "name is a string, not a list of files. This slice only selects the beginning of the string; it does not delete actual files.",
+        "misread_step": "The mistake is reading [:120] as 'delete the first 120 items.' Here, read it as 'keep at most the first 120 characters.'"
       },
-      "takeaway": "`slice` first checks the **target sequence and the start/stop range**."
+      "takeaway": "For a string, [:n] selects at most the first n characters. A shorter string remains whole; a longer string returns only its first n characters."
     },
     "target_statement": "return name[:120]",
     "focus_span": "name[:120]",
@@ -818,14 +818,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "`object.method(arg)` 형태에서 tmp Path 객체의 replace 메서드에 최종 path가 인자로 전달되는 구조를 분리해 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A method call, in the form `object.method(arguments)`, invokes a specific action provided by an object.",
-      "how_to_read": "In `tmp.replace(path)`, read the expression by separating it as follows: `tmp` (to the left of the dot) is the called object, `replace` (to the right of the dot) is the method name, and `path` (inside the parentheses) is the argument passed to the method.",
-      "key_point": "In this line, ``path`` is not the object calling the method, but rather **the destination argument passed to `replace`**.",
-      "common_mistake": "`path.replace(tmp)` It’s easy to read the call direction in reverse. The object immediately to the left of the dot is the subject of the method call."
+      "what_it_is": "Easy meaning: a method call asks an object to do a job it provides.\nExact definition: `object.method(arg)` is an expression that calls the method obtained through the object's `method` attribute with the argument inside parentheses.",
+      "how_to_read": "Mental model: the left side of the dot receives the request; the parentheses supply information for it. Read `tmp.replace(path)` as “move the file represented by `tmp` to destination `path`.” `tmp` is the receiver object, `replace` is the method name, and `path` is the destination argument.",
+      "key_point": "`path` → the `result.json` path\n`path.with_suffix(\".tmp\")` → creates the `result.tmp` path, bound to `tmp`\n`tmp.write_text(...)` → writes text to the temporary file\n`tmp.replace(path)` → passes `path` to the method on `tmp`\nOn success, the file moves to `result.json`. The returned destination Path object is not saved. Thus, the receiver is `tmp`.",
+      "common_mistake": "It is easy to choose `path` because it represents the final file location. But `path` is the argument inside parentheses. Changing this to `path.replace(tmp)` does not merely rephrase the same operation: it reverses the source and destination roles."
     },
     "teaching_example": {
-      "code": "from pathlib import Path\nsource = Path(\"draft.tmp\")\ntarget = Path(\"draft.txt\")\nsource.replace(target)",
-      "walkthrough": "The call target is `source`, and the target is the destination `Path` argument passed to `replace`."
+      "code": "from pathlib import Path\nsource = Path(\"draft.tmp\")\ntarget = Path(\"draft.txt\")\nsource.write_text(\"ready\", encoding=\"utf-8\")\nsource.replace(target)",
+      "walkthrough": "1) Import `Path`.\n2) Bind `source` to the path object for `draft.tmp`.\n3) Bind `target` to the path object for `draft.txt`. Creating a path object alone does not create a file.\n4) Call `write_text` on `source` to write `ready` to the file.\n5) Call `replace` on `source`, passing `target` as the destination argument.\nFlow: write `draft.tmp` → `source.replace(target)` → on success, `draft.txt` contains `ready`. An existing destination file is replaced. The return value is unused, and nothing is printed. This result assumes the file operations succeed."
     },
     "answer_explanation": {
       "step_by_step": "1) `path` is the final `result.json` path. 2) `tmp` is the `result.tmp` path. 3) In `tmp.replace`, the `tmp` to the left of the dot is the method receiver. 4) The path inside the parentheses is the argument passed to `replace`. 5) Therefore, the object calling the `replace` method is `tmp`.",

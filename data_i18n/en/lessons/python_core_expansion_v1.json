@@ -906,14 +906,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "`Path.glob('*.jsonl')` 호출이 확장자 패턴과 일치하는 파일만 선택하는 범위를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "The `Path.glob(pattern)` method call returns an iterable containing Paths that match the pattern under the current path.",
-      "how_to_read": "Check the filename created under `root` and compare it with the extension condition in the pattern `*.jsonl`.",
-      "key_point": "`*.jsonl` selects only items with the exact extension .jsonl.",
-      "common_mistake": "Do not assume that the `*` in `glob` automatically performs a recursive search down into subfolders. Recursion is typically indicated by `**`."
+      "what_it_is": "Easy meaning: `root.glob(\"*.jsonl\")` asks to find entries in the root folder whose names end in `.jsonl`.\nExact definition: `Path.glob(pattern)` is a method call that yields matching paths as Path objects, using the directory represented by that Path as its base.",
+      "how_to_read": "Picture a sieve that filters names. `root` specifies where to look, and `\"*.jsonl\"` inside the parentheses supplies the search condition. Here, `*` stands for the beginning of the name, while the ending `.jsonl` must match. Of the three files created, `a.jsonl` and `c.jsonl` pass through; `b.json` does not.",
+      "key_point": "Create three files → iterate over `root.glob(\"*.jsonl\")` → extract name strings from the two matching Paths with `path.name` → build a sorted list with `sorted()` → store it in `matches` → `print(matches)` displays `['a.jsonl', 'c.jsonl']`. `glob()` itself neither returns a list of names nor sorts them.",
+      "common_mistake": "The presence of `*` does not select every file or automatically search inside subfolders. `*.jsonl` applies to names directly inside root; `b.json` is excluded because its ending differs. The pattern for searching subfolders too is `**/*.jsonl`. Also, `glob()` does not inspect file contents or file formats; matching directory names can be included too."
     },
     "teaching_example": {
       "code": "from pathlib import Path\nfrom tempfile import TemporaryDirectory\nwith TemporaryDirectory() as folder:\n    root = Path(folder)\n    (root / \"one.csv\").touch()\n    (root / \"two.txt\").touch()\n    print([p.name for p in root.glob(\"*.csv\")])",
-      "walkthrough": "Among the files in the `root` directory, only `one.csv`, which matches the `.csv` pattern, is included in the glob results."
+      "walkthrough": "1) The first line imports `Path` for working with paths.\n2) The second imports `TemporaryDirectory` for creating a temporary folder.\n3) The `with` line creates a temporary folder and binds its path string to `folder`.\n4) `Path(folder)` creates a path object representing that folder and binds it to `root`.\n5) `root / \"one.csv\"` builds a file path inside the folder, and `.touch()` creates an empty file there.\n6) The next line creates `two.txt` in the same way.\n7) On the final line, iterating over `root.glob(\"*.csv\")` yields only the Path for `one.csv`. The list comprehension extracts its name with `p.name`, building `['one.csv']`, and `print()` displays that list.\nFlow: two files → select names with `*.csv` → Path for `one.csv` → name list → output `['one.csv']`.\nWhen the `with` block ends, the temporary folder and its files are cleaned up."
     },
     "answer_explanation": {
       "step_by_step": "1) Create three files in the temporary root directory. 2) Create only the paths that match root.glob('*.jsonl'). 3) The generator extracts the name from each path. 4) The sorted results are output in the order a.jsonl, c.jsonl.",
@@ -1147,10 +1147,10 @@
     "primary_concept": "attribute_access",
     "reading_goal_internal": "parse_args 결과 객체에서 `args.input` attribute를 읽어 옵션 값이 어디에 저장되는지 추적한다.",
     "concept_explanation": {
-      "what_it_is": "Attribute access is an expression used to read an object’s attributes or members, in the form `object.name`.",
-      "how_to_read": "`args.input` Here, it appears that the code first checks what kind of object `args` is and then reads the value of that object’s `input` attribute.",
-      "key_point": "The CLI rules of argparse are library functionality; the Python syntax focus is attribute access that reads a value from the parsed result object.",
-      "common_mistake": "It’s easy to assume that `input` refers to Python’s built-in `input` function. However, since `args` appears before the dot here, it refers to the `input` attribute of the `args` object."
+      "what_it_is": "Easy meaning: `args.input` reads the value stored under the name `input` on the object that `args` refers to.\nExact definition: Attribute access `object.name` is an expression that first evaluates `object`, then looks up the attribute named `name` on the resulting object.",
+      "how_to_read": "Mental model: Imagine `args` as a results sheet with labeled fields for options. `args.input` reads the field labeled `input`.\nReading the code: `import argparse` imports the module. `ArgumentParser()` creates an object for parsing options, and `add_argument(\"--input\")` registers the option. `parse_args([\"--input\", \"data.json\"])` parses the supplied list and returns a result object whose `input` attribute holds the string `\"data.json\"`. `args` refers to this object, and the last line reads the value with `args.input` and prints it.",
+      "key_point": "Value flow: `[\"--input\", \"data.json\"]` → parsing stores `\"data.json\"` in the result object's `input` attribute → `args` refers to the result object → `args.input` reads `\"data.json\"` → `print` outputs `data.json`. `--input` is the option name; the attribute holds the value supplied after it.",
+      "common_mistake": "Do not read `args.input` as a call to the built-in function `input()`. Here, `input` after the dot is an attribute name on the `args` object, and there are no call parentheses. This expression does not request new input; it reads the string `\"data.json\"` already parsed and stored."
     },
     "teaching_example": {
       "code": "import argparse\n\nparser = argparse.ArgumentParser()\nparser.add_argument(\"--name\")\noptions = parser.parse_args([\"--name\", \"Mina\"])\nprint(options.name)",
@@ -1506,24 +1506,24 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "dataclass instance 생성 호출에서 field 이름을 붙인 keyword argument가 해당 field 값으로 전달되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`name=value` If you pass a value to a call in this format, it is a keyword argument.",
-      "how_to_read": "Look at the name on the left side of the equals sign to see which parameter or field it corresponds to, and then check the actual value on the right side.",
-      "key_point": "`kind=\"Sensor\"` passes the string \"Sensor\" to the `kind` parameter of the Node constructor.",
-      "common_mistake": "It’s easy to assume that “Sensor” appears in the first field label just by looking at the position of the keyword argument. However, since the name is “kind,” it corresponds to “kind.”"
+      "what_it_is": "Easy meaning: Attach a name tag to a value to specify which input slot receives it.\nExact definition: A keyword argument written as `name=value` in a call passes the value of the right-hand expression to the parameter named `name`.",
+      "how_to_read": "Picture input slots with names. In `kind=\"Sensor\"`, `kind` names the receiving slot, while `\"Sensor\"` is the string value being sent. In this card, `@dataclass` automatically generates an initialization method, `__init__`, from the `label` and `kind` fields. Thus, `Node(label=\"LiDAR\", kind=\"Sensor\")` passes each value to the parameter with the matching name and stores it in the new object's field.",
+      "key_point": "`kind=\"Sensor\"`\n↓\npass `\"Sensor\"` to the generated `__init__` parameter `kind`\n↓\nstore it in the new object's `kind` field\n↓\nreading `node.kind` gives `\"Sensor\"`\n↓\n`result` holds the string `\"Sensor\"`",
+      "common_mistake": "The name `kind` itself is not the stored value. In the call, `kind` on the left of `=` specifies the receiving parameter; `\"Sensor\"` on the right is the actual value. Also, `\"LiDAR\"` is passed to `label`, so reading `node.kind` does not select it."
     },
     "teaching_example": {
       "code": "from dataclasses import dataclass\n\n@dataclass\nclass Device:\n    name: str\n    kind: str\n\ndevice = Device(name=\"Cam\", kind=\"Sensor\")",
       "walkthrough": "Since `kind=\"Sensor\"` is passed to the kind field, `device.kind` is `Sensor`."
     },
     "answer_explanation": {
-      "step_by_step": "When the `Node` is created, `kind=\"Sensor\"` is passed to the `kind` parameter and stored in the `kind` field of the dataclass instance.",
-      "why_correct": "This is because a keyword argument passes a value to a parameter with the same name.",
+      "step_by_step": "1) `from dataclasses import dataclass` imports the decorator.\n2) Inside `class Node`, `label: str` and `kind: str` declare two fields. `@dataclass` generates an `__init__` method that initializes them.\n3) Calling `Node(label=\"LiDAR\", kind=\"Sensor\")` passes `\"LiDAR\"` to the `label` parameter and `\"Sensor\"` to the `kind` parameter.\n4) The initialized object's `label` is `\"LiDAR\"` and its `kind` is `\"Sensor\"`; `node` refers to this object.\n5) `result = node.kind` reads this object's `kind` attribute and binds its value, `\"Sensor\"`, to `result`.",
+      "why_correct": "The final line reads `node.kind`, not `node.label`. The `kind` field holds the string `\"Sensor\"` received through the matching keyword argument, so the correct choice is Sensor.",
       "common_wrong_choice": {
         "choice": "LiDAR",
-        "why_wrong": "LiDAR is the value of the `label` keyword argument.",
-        "misread_step": "This is an example where the two keywords “label” and “kind” were read in the wrong order."
+        "why_wrong": "`\"LiDAR\"` is passed through `label=\"LiDAR\"` and stored in `node.label`. The attribute read on the final line is `kind`.",
+        "misread_step": "This selects the first value passed when creating the object without checking which field `.kind` selects on the final line."
       },
-      "takeaway": "The dataclass constructor **maps field names to keyword arguments based on their names**."
+      "takeaway": "Trace keyword name → matching parameter → object field → attribute read at the end. Here, `kind=\"Sensor\"` → `node.kind` → `result` all lead to the string `\"Sensor\"`."
     },
     "target_statement": "node = Node(label=\"LiDAR\", kind=\"Sensor\")",
     "focus_span": "kind=\"Sensor\"",

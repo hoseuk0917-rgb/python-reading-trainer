@@ -925,10 +925,10 @@
     "primary_concept": "parameter_definition",
     "reading_goal_internal": "FastAPI endpoint parameter의 default expression이 dependency injection metadata로 쓰이는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`user = Depends(get_current_user)`는 Python 문법상 default value expression을 가진 parameter definition입니다.",
-      "how_to_read": "일반 default 값처럼 보이지만 FastAPI가 Depends 객체를 dependency metadata로 해석한다는 framework 의미를 함께 봅니다.",
-      "key_point": "get_current_user dependency가 token을 검증하고 성공한 user를 endpoint에 제공하는 패턴으로 사용할 수 있습니다.",
-      "common_mistake": "Depends가 모든 user를 자동 admin으로 만든다고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `user`는 함수가 사용할 사용자를 받는 입력 칸이고, `Depends(get_current_user)`는 그 값을 준비할 함수를 지정하는 표시입니다.\n정확한 정의: `user = Depends(get_current_user)`는 기본값 표현식이 있는 매개변수 정의이며, FastAPI는 그 기본값인 Depends 객체를 의존성 선언으로 해석하여 `get_current_user`의 반환값을 `user`에 전달합니다.",
+      "how_to_read": "직관적 모델: `user` 입력 칸에 '이 함수가 준비한 값을 넣어 주세요'라는 쪽지를 붙였다고 생각하세요.\n코드 읽기: `Depends`를 가져오고, `get_current_user`의 `credentials` 입력에는 `bearer`의 결과를 연결합니다. 그 함수 본문은 `credentials.credentials`를 `verify_token`에 전달하고 결과를 반환합니다. 이어서 `private`의 `user` 입력에는 `get_current_user`의 결과를 연결하고, 본문은 `user.id`를 딕셔너리에 담아 반환합니다. 이 흐름은 `private`가 endpoint로 연결되어 FastAPI가 요청을 처리할 때 적용됩니다. 연결 코드는 이 조각에 없습니다.",
+      "key_point": "정의 시점: `Depends(get_current_user)`를 평가해 의존성 표시를 만듭니다. 이때 `get_current_user` 본문을 실행하는 것은 아닙니다.\n요청 처리 시점: `bearer`의 결과 → `credentials` → `verify_token(credentials.credentials)` → 반환된 값이 `user`로 전달됨 → `private` 본문 실행 → `{\"user_id\": user.id}` 반환.\n카드가 의도한 인증 흐름에서는 검증된 사용자 객체가 전달됩니다. 구체적인 ID와 검증 실패 동작은 제시되지 않았습니다. 검증은 요청이 도착하기 전이 아니라, 요청 처리 중 endpoint 본문 실행 전에 이루어집니다.",
+      "common_mistake": "`Depends(get_current_user)`를 `get_current_user()`처럼 즉시 사용자를 구하는 호출로 읽기 쉽습니다. 여기서는 함수 자체를 Depends에 전달하며, 토큰 검증 작업은 `verify_token` 호출에 있습니다. 또한 일반 Python 코드에서 `private()`만 직접 호출하면 FastAPI가 개입하지 않으므로 사용자 값이 자동으로 채워지지 않습니다."
     },
     "teaching_example": {
       "code": "def provide_user():\n    return \"u1\"\nclass Depends:\n    def __init__(self,fn): self.fn=fn\ndef endpoint(user=Depends(provide_user)):\n    return user",

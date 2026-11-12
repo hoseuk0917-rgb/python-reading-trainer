@@ -685,10 +685,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "메서드 호출 안의 `default=100`을 keyword argument로 읽고 옵션 생략 시 사용되는 값과 연결한다.",
     "concept_explanation": {
-      "what_it_is": "A keyword argument is syntax that passes a value to a specific parameter in a function call using the form `name=value`.",
-      "how_to_read": "`default=100` It treats this as a single unit and interprets it as passing 100 to the “default” setting.",
-      "key_point": "The meaning of `argparse` options refers to library functionality, while the Python syntax focus is on passing keyword arguments, such as ``default=100``.",
-      "common_mistake": "It’s easy to assume that 100 always overrides user input. “default” refers to the default value used when that option is omitted."
+      "what_it_is": "Easy meaning: `default=100` passes 100 with a label meaning “the value to use when omitted.”\nExact definition: A keyword argument passes a value by name using `name=value` in a function or method call; here it passes the integer `100` to `add_argument` as the default setting.",
+      "how_to_read": "Mental model: Think of registering an option as filling in a settings sheet. `\"--limit\"` names the option, `type=int` sets the rule for converting input to an integer, and `default=100` sets the value for omission.\nReading the code: `import argparse` loads the tool, and `ArgumentParser()` creates a parser. The next two calls register required options `--input` and `--output`. The final call registers `--limit`, passing `int` under the name `type` and `100` under the name `default`.",
+      "key_point": "Execution flow: `100` → passed as the keyword argument `default` → registered as the default for `--limit`.\nThis code only registers settings; it does not yet parse command-line input or print a value. When `parse_args()` is later called with the required options supplied, omitting `--limit` makes `limit` the integer `100`. Supplying `--limit 20` makes it the integer `20`.",
+      "common_mistake": "`default=100` does not force `--limit` to be 100 or overwrite user input. Here, `=` passes an argument by name inside a call rather than assigning a separate variable. The value 100 is used when the `--limit` option itself is omitted."
     },
     "teaching_example": {
       "code": "parser.add_argument(\"--count\", type=int, default=5)",
@@ -744,10 +744,10 @@
     "primary_concept": "attribute_access",
     "reading_goal_internal": "subprocess 실행 결과 객체에서 `.stdout` 속성으로 캡처된 표준 출력을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`object.name` is the syntax used to access an object’s attributes.",
-      "how_to_read": "First, note that `result` is an object representing the result of a `subprocess` execution, and read `stdout` after the dot as the output attribute of that object.",
-      "key_point": "`capture_output` is a subprocess function, and the focus of the Python syntax is on accessing the `stdout` attribute of the result object.",
-      "common_mistake": "`result.stdout` It’s easy to assume that this calls a function named `stdout`. Since there are no parentheses, it is actually reading the value of an attribute."
+      "what_it_is": "Easy meaning: `result.stdout` reads the output collected in the execution result.\nExact definition: Attribute access `object.name` looks up the named attribute on an object; here it reads the `stdout` attribute of the `CompletedProcess` object referenced by `result`.",
+      "how_to_read": "Mental model: Think of `result` as an execution report and `stdout` as its “standard output” field. Standard output is the channel through which the executed program sends ordinary output.\nReading the code: `import subprocess` imports the module. `subprocess.run(...)` executes the command specified by `[\"python\", \"--version\"]` and waits for it to finish. `capture_output=True` captures output, and `text=True` handles it as text strings. The returned result object is named `result`. The final line first reads `result.stdout`, then passes that value to `print`.",
+      "key_point": "Execution flow: execute command → capture output → return result object → bind it to `result` → read the captured standard output string through `result.stdout` → display it with `print`.\nThe value read is therefore “Standard output captured in the result object.” The exact version string depends on the execution environment, so no particular version number is guaranteed.",
+      "common_mistake": "Do not read `result.stdout` as the command list or as a call to a function named `stdout`. The command list is input passed to `run`; `result.stdout` is a value read from the result object afterward. This expression only looks up the attribute: it does not execute the command again or call `stdout`."
     },
     "teaching_example": {
       "code": "result = FakeResult()\nprint(result.returncode)",
@@ -1093,24 +1093,24 @@
     "primary_concept": "attribute_access",
     "reading_goal_internal": "sequence index로 객체를 고른 뒤 그 instance attribute 값을 읽는 중첩 표현식을 추적한다.",
     "concept_explanation": {
-      "what_it_is": "`obj.attr` is an attribute access that reads the value of an object’s instance attribute.",
-      "how_to_read": "First, evaluate the expression to the left of the dot to determine what kind of object it is, and then retrieve the value of that object’s attribute.",
-      "key_point": "In `nodes[1].label`, the program first selects the second node and then reads its label.",
-      "common_mistake": "`nodes[1]` It’s easy to think of this string as “`n002`.” In reality, it is an entire Node object, and ``.label`` retrieves the label value of that object."
+      "what_it_is": "Easy meaning: Dot notation reads a named value from the object you selected.\nExact definition: Attribute access `obj.attr` looks up the name `attr` according to the object's attribute lookup rules; in this card, it reads the selected instance's `label` attribute.",
+      "how_to_read": "Imagine the list as a row of object cards. First choose one card, then read a named field on that card. In `nodes[1].label`, indexing starts at 0, so `nodes[1]` selects the second Node object, and `.label` reads that object's `label` value.",
+      "key_point": "`nodes` → select the second object with `[1]` → object with `id=\"n002\", label=\"Radar\"` → look up `.label` → string `\"Radar\"` → assign to `selected_label`. The list index selects the object; the name after the dot selects the attribute to read.",
+      "common_mistake": "It is easy to think `nodes[1]` is the string `\"n002\"`. However, the list item is a Node object with both `id` and `label` values. `nodes[1].id` is `\"n002\"`, whereas this code's `nodes[1].label` is `\"Radar\"`."
     },
     "teaching_example": {
       "code": "from dataclasses import dataclass\n\n@dataclass\nclass Item:\n    name: str\n\nitems = [Item(\"A\"), Item(\"B\")]\nname = items[0].name",
-      "walkthrough": "`items[0]` selects the first `Item` object, and ``.name`` returns `A`."
+      "walkthrough": "1) `from dataclasses import dataclass` imports `dataclass`.\n2) `class Item:` with `@dataclass` and `name: str` defines a class with a `name` field. Here, the generated initializer stores the value supplied during construction in the instance's `name` attribute.\n3) `items = [Item(\"A\"), Item(\"B\")]` creates two objects whose names are `\"A\"` and `\"B\"`, and puts them in a list in that order.\n4) In `name = items[0].name`, `items[0]` first selects the first object. Then `.name` reads that object's string `\"A\"`, which is assigned to the variable `name` on the left.\nResult: `name` has the value `\"A\"`. Nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "`nodes[1]` selects the `Node('n002', 'Radar')` object. The `label` attribute of that object is `Radar`.",
-      "why_correct": "This is because attribute access returns the value of the corresponding attribute stored in the selected instance.",
+      "step_by_step": "1) Import `dataclass` and define Node with fields in the order `id`, `label`. In this code, the generated initializer accepts arguments in that order.\n2) `Node(\"n001\", \"LiDAR\")` creates an object with `id=\"n001\"` and `label=\"LiDAR\"`.\n3) `Node(\"n002\", \"Radar\")` creates an object with `id=\"n002\"` and `label=\"Radar\"`. The `nodes` list contains these two objects in that order.\n4) On the right side of the final assignment, evaluate `nodes[1]`. Index 0 selects the first object, so index 1 selects the second.\n5) `.label` reads the selected object's `label` value, `\"Radar\"`.\n6) That string is assigned to `selected_label`.",
+      "why_correct": "The second Node object's `label` is `\"Radar\"`, and the final expression reads exactly that attribute. Therefore, `selected_label` holds the string `\"Radar\"`, so the correct choice is Radar.",
       "common_wrong_choice": {
         "choice": "n002",
-        "why_wrong": "n002 is the id attribute of the same object, and the attribute currently being accessed is label.",
-        "misread_step": "This is a case where two fields of an object were read in the wrong order."
+        "why_wrong": "`\"n002\"` is the selected object's `id` value. The code reads `label`, not `id`.",
+        "misread_step": "This selects the object with `nodes[1]` but then reads its `id` value instead of following `.label`."
       },
-      "takeaway": "The nested access is evaluated in the order of **selecting an object from a container → reading the object's attribute**."
+      "takeaway": "Distinguish `[index]`, which selects an object from the list, from `.attribute`, which reads a value from that object: select object → look up specified attribute → assign result."
     },
     "target_statement": "selected_label = nodes[1].label",
     "focus_span": "nodes[1].label",
