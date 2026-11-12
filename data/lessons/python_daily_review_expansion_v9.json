@@ -773,18 +773,18 @@
       "common_mistake": "citation field가 존재하기만 하면 근거 정확성도 자동 보장된다고 생각하기 쉽습니다."
     },
     "teaching_example": {
-      "code": "def rerank(items): return list(reversed(items))\ndef validate(items): return [x for x in items if x[\"ok\"]]\nhits=[{\"id\":\"a\",\"ok\":True}]\nverified=validate(rerank(hits))",
-      "walkthrough": "먼저 후보 순서를 조정하고 그 결과에서 검증된 항목만 남깁니다."
+      "code": "def rerank(items):\n    return list(reversed(items))\n\ndef validate(items):\n    return [item for item in items if item[\"ok\"]]\n\nhits = [{\"id\": \"a\", \"ok\": False}, {\"id\": \"b\", \"ok\": True}]\nverified = validate(rerank(hits))\nprint(verified)",
+      "walkthrough": "1) 첫 함수 정의는 `rerank`를 만듭니다. 호출되면 받은 항목의 순서를 뒤집은 리스트를 반환합니다.\n2) 두 번째 정의는 `validate`를 만듭니다. 호출되면 `ok`가 참인 항목만 리스트에 남깁니다. 이 예제의 단순한 필터이지 실제 citation 검증 구현은 아닙니다.\n3) `hits`에는 a, b 순서로 두 항목이 들어갑니다.\n4) 중첩 호출은 안쪽부터 실행합니다. `rerank(hits)`가 b, a 순서의 리스트를 반환합니다.\n5) 그 반환값이 `validate`의 인자가 됩니다. b는 남고 a는 제외되어 `[{\"id\": \"b\", \"ok\": True}]`가 반환되고 `verified`에 연결됩니다.\n6) 마지막 줄은 `[{'id': 'b', 'ok': True}]`를 출력합니다. 바깥 함수가 먼저 처리하는 것이 아니라 안쪽 호출의 결과를 받아 처리합니다."
     },
     "answer_explanation": {
-      "step_by_step": "후보 hits가 rerank를 거친 뒤 citation validator로 전달됩니다.",
-      "why_correct": "검색 후보 품질과 근거 연결 품질을 각각 개선하는 단계이기 때문입니다.",
+      "step_by_step": "1) `def`는 함수를 정의합니다. 본문은 `improve_retrieval(query, chunks)`가 호출될 때 실행됩니다.\n2) `retrieve_with_embeddings(query, chunks)`를 호출하고 반환값을 `hits`에 연결합니다.\n3) `validate_citations(rerank(hits))`에서는 먼저 `rerank(hits)`를 호출합니다.\n4) 그 반환값을 인자로 `validate_citations`를 호출합니다. 이 함수의 반환값이 `verified_hits`에 연결됩니다.\n5) `return verified_hits`는 그 값을 호출한 곳으로 돌려줍니다. 보이는 흐름은 검색 호출 → rerank 호출 → citation 검증 호출 → 반환입니다. 구체적인 결과 데이터는 도우미 함수의 구현이 없어 알 수 없습니다.",
+      "why_correct": "정답은 ‘embedding 검색이나 rerank를 추가하고 citation 검증을 강화한다’입니다. 이 선택지는 코드에 나타난 검색 → rerank → 검증이라는 처리 방향과 일치합니다. 코드에는 이미 이 이름의 호출들이 있으므로, 새로운 단계가 반드시 빠져 있다는 뜻이 아니라 이 처리 흐름을 보강하는 방향으로 읽습니다.",
       "common_wrong_choice": {
         "choice": "근거 없이 답하도록 바꾼다",
-        "why_wrong": "RAG의 evidence-first 방향과 정반대입니다.",
-        "misread_step": "retrieval 품질 개선의 목적을 반대로 이해한 경우입니다."
+        "why_wrong": "코드는 검색 결과를 바로 반환하지 않고 `rerank`의 결과를 `validate_citations`에 전달합니다. 근거 없이 답하도록 바꾸는 것은 이 검증 단계를 강화하는 방향과 맞지 않습니다.",
+        "misread_step": "`hits`가 곧바로 최종 결과가 된다고 보고, 중간의 중첩 호출을 건너뛴 경우입니다."
       },
-      "takeaway": "RAG 개선은 **retrieve → rerank → citation validation → answer**로 분리해서 봅니다."
+      "takeaway": "중첩 호출은 안쪽 결과를 바깥 호출에 전달합니다: `hits` → `rerank` → `validate_citations` → `verified_hits` 반환."
     },
     "target_statement": "verified_hits = validate_citations(rerank(hits))",
     "focus_span": "validate_citations(rerank(hits))",
@@ -1562,18 +1562,18 @@
       "common_mistake": "decorator가 함수 본문 첫 줄만 감싼다고 생각하기 쉽습니다. 대상은 아래 함수 객체 전체입니다."
     },
     "teaching_example": {
-      "code": "class App:\n    def route(self, path):\n        def decorate(func):\n            func.path = path\n            return func\n        return decorate\n\napp = App()\n\n@app.route(\"/items\")\ndef items():\n    return []",
-      "walkthrough": "route 호출이 만든 decorator가 items 함수에 적용되어 path 정보를 붙입니다."
+      "code": "class App:\n    def route(self, path):\n        def decorate(func):\n            func.path = path\n            return func\n        return decorate\n\napp = App()\n\n@app.route(\"/items\")\ndef items():\n    return []\n\nprint(items.path)",
+      "walkthrough": "1. `class App`은 `route` 메서드를 가진 클래스를 정의합니다. `route` 안의 `decorate`는 함수를 받아 그 함수에 경로 이름표를 붙이는 역할입니다.\n2. `app = App()`은 객체를 만들고 `app`에 연결합니다.\n3. `app.route(\"/items\")`를 평가하면 `path`가 `\"/items\"`가 됩니다. `def decorate(func)`가 내부 함수를 만들고, `return decorate`가 그 함수를 반환합니다. 이때 `decorate`의 본문은 아직 실행되지 않습니다.\n4. `def items()`로 만든 함수 객체가 반환된 decorator의 `func`로 전달됩니다. `func.path = path`가 그 함수의 `path` 속성을 `\"/items\"`로 설정합니다.\n5. `return func`가 같은 함수를 반환하고, 그 결과가 `items`에 연결됩니다. `items` 본문의 `return []`는 함수를 호출하지 않았으므로 실행되지 않습니다.\n6. `print(items.path)`는 붙여 둔 속성을 읽어 `/items`를 출력합니다. 즉, decorator 적용은 `items()` 호출과 다릅니다."
     },
     "answer_explanation": {
-      "step_by_step": "`@app.post('/api/search', ...)`가 만든 decorator는 method를 POST, path를 /api/search로 기록합니다.",
-      "why_correct": "decorator 표현식의 실제 호출 인자가 route 정보로 사용되기 때문입니다.",
+      "step_by_step": "1. `app = App()`으로 객체를 만듭니다.\n2. `app.post(\"/api/search\", response_model=\"SearchResponse\")`를 평가합니다. `path`는 `\"/api/search\"`, `response_model`은 `\"SearchResponse\"`가 되고, `post`는 내부 함수 `decorate`를 반환합니다.\n3. 바로 아래에서 만든 `search` 함수 객체가 `decorate`의 `func`로 전달됩니다.\n4. `func.route = (\"POST\", path, response_model)`가 실행되어 함수의 `route` 속성에 `(\"POST\", \"/api/search\", \"SearchResponse\")`가 저장됩니다.\n5. `return func`가 같은 함수를 반환하고, 이 함수가 `search`에 연결됩니다. 이 과정에서 `search` 본문은 실행되지 않습니다.\n6. 질문은 저장된 세 값 중 HTTP method와 path를 묻습니다. 첫 두 값은 `(\"POST\", \"/api/search\")`입니다.",
+      "why_correct": "`\"POST\"`는 `func.route`에 대입하는 튜플의 첫 값으로 직접 쓰여 있고, 두 번째 값 `path`에는 호출 인자 `\"/api/search\"`가 들어갑니다. `\"SearchResponse\"`는 세 번째 값이므로 묻는 조합에 포함되지 않습니다.",
       "common_wrong_choice": {
         "choice": "(\"GET\", \"/api/search\")",
-        "why_wrong": "사용된 메서드 이름은 `post`입니다.",
-        "misread_step": "HTTP method를 decorator 이름과 연결하지 않은 경우입니다."
+        "why_wrong": "경로는 맞지만, 대입문이 저장하는 첫 값은 `\"GET\"`이 아니라 `\"POST\"`입니다.",
+        "misread_step": "`func.route = (\"POST\", path, response_model)`의 첫 값을 확인하지 않고 method를 추측한 경우입니다."
       },
-      "takeaway": "endpoint는 **decorator 이름 → route argument → 바로 아래 함수** 순서로 읽습니다."
+      "takeaway": "decorator 호출의 인자 → 반환된 decorator에 전달되는 함수 → 속성 대입 → 반환된 함수 순서로 따라가세요. 이 코드에서는 함수 호출 없이도 `search.route`가 설정됩니다."
     },
     "target_statement": "@app.post(\"/api/search\", response_model=\"SearchResponse\")",
     "focus_span": "@app.post(\"/api/search\", response_model=\"SearchResponse\")",
