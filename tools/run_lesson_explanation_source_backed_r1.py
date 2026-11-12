@@ -237,17 +237,39 @@ def build_source_prompt(
 
 def extract_web_source_urls(response: dict[str, Any]) -> list[str]:
     urls: list[str] = []
+
+    def add_url(value: Any) -> None:
+        if isinstance(value, str):
+            value = value.strip()
+            if value and value not in urls:
+                urls.append(value)
+
     for item in response.get("output") or []:
-        if not isinstance(item, dict) or item.get("type") != "web_search_call":
+        if not isinstance(item, dict):
             continue
-        action = item.get("action") or {}
-        candidates = action.get("sources") or item.get("sources") or []
-        for source in candidates:
-            if not isinstance(source, dict):
-                continue
-            url = source.get("url")
-            if isinstance(url, str) and url.strip() and url not in urls:
-                urls.append(url.strip())
+
+        if item.get("type") == "web_search_call":
+            action = item.get("action") or {}
+            add_url(action.get("url"))
+
+            candidates = action.get("sources") or item.get("sources") or []
+            for source in candidates:
+                if isinstance(source, dict):
+                    add_url(source.get("url"))
+
+        if item.get("type") == "message":
+            for content in item.get("content") or []:
+                if not isinstance(content, dict):
+                    continue
+                for annotation in content.get("annotations") or []:
+                    if not isinstance(annotation, dict):
+                        continue
+                    if annotation.get("type") == "url_citation":
+                        add_url(annotation.get("url"))
+                    nested = annotation.get("url_citation")
+                    if isinstance(nested, dict):
+                        add_url(nested.get("url"))
+
     return urls
 
 
@@ -574,7 +596,49 @@ def self_test() -> int:
         info = row["_official_source_info"]
         if not info["allowed_domains"] or not info["required_domains"]:
             raise RuntimeError(f"{row['id']}: source-backed source info incomplete")
+
+    search_urls = extract_web_source_urls({
+        "output": [{
+            "type": "web_search_call",
+            "action": {
+                "type": "search",
+                "sources": [{"type": "url", "url": "https://docs.python.org/3.10/library/pathlib.html"}],
+            },
+        }]
+    })
+    if search_urls != ["https://docs.python.org/3.10/library/pathlib.html"]:
+        raise RuntimeError(f"source-backed search source extraction failed: {search_urls}")
+
+    open_page_urls = extract_web_source_urls({
+        "output": [{
+            "type": "web_search_call",
+            "action": {
+                "type": "open_page",
+                "url": "https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html",
+            },
+        }]
+    })
+    if open_page_urls != ["https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html"]:
+        raise RuntimeError(f"source-backed open_page source extraction failed: {open_page_urls}")
+
+    citation_urls = extract_web_source_urls({
+        "output": [{
+            "type": "message",
+            "content": [{
+                "type": "output_text",
+                "text": "grounded answer",
+                "annotations": [{
+                    "type": "url_citation",
+                    "url": "https://numpy.org/doc/stable/reference/generated/numpy.array.html",
+                }],
+            }],
+        }]
+    })
+    if citation_urls != ["https://numpy.org/doc/stable/reference/generated/numpy.array.html"]:
+        raise RuntimeError(f"source-backed citation source extraction failed: {citation_urls}")
+
     print(f"SOURCE_BACKED_SELF_TEST_INVENTORY={len(rows)}")
+    print("SOURCE_BACKED_WEB_PROVENANCE_EXTRACTION=PASS")
     print("LESSON_EXPLANATION_SOURCE_BACKED_R1_SELF_TEST=PASS")
     return 0
 
