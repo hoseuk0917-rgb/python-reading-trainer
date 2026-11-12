@@ -572,14 +572,14 @@
                                  "walkthrough":  "Since only `b` is in the saved set, only one dictionary with the ID `b` remains in the result."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "When comparing each card ID to the bookmark_set, only c2 and c3 satisfy the conditions, so only those cards remain.",
-                                   "why_correct":  "Because the filter condition is bookmark membership itself.",
+                                   "step_by_step":  "1) `bookmarks` is [\"c2\", \"c3\"], and `set(bookmarks)` creates a set containing those two IDs.\n2) `cards` contains card dictionaries with IDs c1, c2, and c3, in that order.\n3) `for card in cards` visits each card. `card[\"id\"] in bookmark_set` checks whether the current card's ID is in the bookmark set.\n4) c1 → the condition is False, so skip it. c2 → True, so put the value of the front expression `card`, the whole card dictionary, into the new list. c3 → True, so include it in the same way.\n5) Thus, `filtered` is [{\"id\": \"c2\"}, {\"id\": \"c3\"}].\n6) The last line extracts just the IDs from the retained cards, so `filtered_ids` is [\"c2\", \"c3\"].",
+                                   "why_correct":  "Only cards whose IDs are in the bookmark set are collected into a separate list, so the answer is 'To view only the cards I’ve bookmarked separately'. This code prepares that list; it does not itself display it.",
                                    "common_wrong_choice":  {
                                                                "choice":  "To delete all cards,",
-                                                               "why_wrong":  "The code creates a new filtered list without deleting the original cards.",
-                                                               "misread_step":  "This is an example of confusion between `filter` and `delete`."
+                                                               "why_wrong":  "Cards that fail the condition are simply not included in the new list. All three cards remain in the original `cards` list.",
+                                                               "misread_step":  "This mistakes exclusion by the `if` condition for deletion of an original card. The comprehension creates a new list rather than deleting cards."
                                                            },
-                                   "takeaway":  "The \"bookmark filter\" is interpreted as **save ID set → membership check → create personal list**."
+                                   "takeaway":  "Choose one card → check whether its ID is in the bookmark set → include the card in the new list only if True. Result order follows `cards`."
                                },
         "target_statement":  "filtered = [card for card in cards if card[\"id\"] in bookmark_set]",
         "focus_span":  "[card for card in cards if card[\"id\"] in bookmark_set]",
@@ -862,14 +862,14 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "`*sources`가 source 리스트 하나를 넘기는 것이 아니라 안의 세 리스트를 각각 별도 위치 인자로 펼쳐 전달함을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "In a function call, `*iterable` unpacks the elements of the iterable into multiple positional arguments.",
-                                    "how_to_read":  "First, look at the number of top-level items in `sources`, then observe how `*` expands to define the boundaries of the call arguments.",
-                                    "key_point":  "In an actual queue builder, cards with the same ID must be deduplicated using a stable ID, and priority rules must be applied separately.",
-                                    "common_mistake":  "It is easy to assume that the entire `sources` is passed as a single first argument."
+                                    "what_it_is":  "Easy meaning: Using `*sources` in a call takes its items one by one and passes them to the function's input slots in order.\nExact definition: In a function call, `*iterable` is argument-unpacking syntax that expands an iterable's items in order, passing each as a positional argument.",
+                                    "how_to_read":  "Think of the outer list as a basket holding three bundles. `*` passes each bundle separately; it does not also unpack what is inside each bundle. This card's call is equivalent to `build_queue(sources[0], sources[1], sources[2])`. Thus `[\"c1\",\"c2\"]` binds to `bookmarked`, `[\"c2\",\"c3\"]` to `wrong`, and `[\"c4\"]` to `noted`.",
+                                    "key_point":  "Three top-level items in `sources` → 3 positional arguments → binding to the three parameters in order. Inside the function, concatenating the lists makes `ordered` equal to `['c1', 'c2', 'c2', 'c3', 'c4']`. `dict.fromkeys` keeps one key for each distinct value in first-occurrence order, and `list(...)` turns those keys into a list. The returned value is stored in `queue`, and `['c1', 'c2', 'c3', 'c4']` is printed.",
+                                    "common_mistake":  "It is easy to count one variable name and conclude there is 1 argument, or count the five inner strings and conclude there are 5. `*sources` only unpacks the three lists that are items of the outer list. `build_queue(sources)` would pass one argument, but would raise `TypeError` because the other two required arguments are missing."
                                 },
         "teaching_example":  {
-                                 "code":  "def count_groups(*groups):\n    return len(groups)\nsources=[[\"a\"],[\"b\"]]\nprint(count_groups(*sources))",
-                                 "walkthrough":  "Since the two lists are unpacked as separate positional arguments, the length of `groups` is 2."
+                                 "code":  "def combine(first, second):\n    return first + second\n\nparts = [[\"a\", \"b\"], [\"c\"]]\nresult = combine(*parts)\nprint(result)",
+                                 "walkthrough":  "1) `def combine(first, second):` defines a function with two input names. Its body runs when called.\n2) `return first + second` concatenates the two supplied lists and returns the result.\n3) `parts = ...` creates an outer list containing two lists.\n4) `combine(*parts)` passes 2 positional arguments, just like `combine([\"a\", \"b\"], [\"c\"])`. `first` binds to `[\"a\", \"b\"]`, and `second` to `[\"c\"]`.\n5) The body runs and returns `['a', 'b', 'c']`, which is stored in `result`.\n6) `print(result)` displays `['a', 'b', 'c']`. There are three inner strings, but only two positional arguments were passed."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "1) The top-level items in `sources` are three lists. 2) The asterisk (*) expands these three items. 3) Each list is placed into `bookmarked`, `wrong`, or `noted`. 4) Therefore, there are three positional arguments.",

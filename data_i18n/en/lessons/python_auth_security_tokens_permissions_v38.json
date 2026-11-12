@@ -502,10 +502,10 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "비밀번호 문자열을 메서드에 전달하고 반환된 별도 표현을 변수에 저장하는 데이터 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`obj.method(value)` is a call that passes a value to an object’s method and receives a return value.",
-                                    "how_to_read":  "Check the argument value, the method’s return value, and the target variable for assignment, in that order.",
-                                    "key_point":  "The `Hasher` in this example is a local object used for learning syntax, and the key point is the flow of storing the method’s return value in a separate variable instead of the original string.",
-                                    "common_mistake":  "It is easy to think the original password is still stored in `password_hash` after the method call. The stored value is actually the return result."
+                                    "what_it_is":  "Easy meaning: `hasher.hash(plain_password)` hands over a string, asks for a job to be done, and receives the result.\nExact definition: A method call is an expression that executes a function associated with an object; here, `hasher` is bound to `self`, the supplied argument value is bound to `text`, and the value from `return` becomes the call's result.",
+                                    "how_to_read":  "Picture a small workstation with input → work → returned result. `def hash` inside `class Hasher` defines how to do the work; it does not execute the body yet. `hasher = Hasher()` creates an object, and `plain_password = \"swordfish\"` names the input string. Next, `hasher.hash(plain_password)` executes the method with `text` referring to `\"swordfish\"`. `len(text)` returns the character count 9, and `return` sends the string `\"hash::9\"` back to the calling expression.",
+                                    "key_point":  "Execution flow: `plain_password` → `\"swordfish\"` → the method's `text` → `len(text)` is `9` → `f\"hash::{len(text)}\"` is `\"hash::9\"` → `return` → `\"hash::9\"` is stored in `password_hash`.\nThis local `Hasher` is teaching code that builds a string containing a length, not an actual implementation of password-protecting hashing.",
+                                    "common_mistake":  "It is easy to think that `password_hash` stores `\"swordfish\"` because `plain_password` appears inside the parentheses. But the value inside the parentheses is the input; the value assigned is the result received through `return`. `plain_password` still refers to `\"swordfish\"`, while `password_hash` refers to `\"hash::9\"`."
                                 },
         "teaching_example":  {
                                  "code":  "class Encoder:\n    def encode(self, text):\n        return f\"encoded:{text}\"\n\nencoder = Encoder()\nresult = encoder.encode(\"hello\")",
@@ -572,14 +572,14 @@
                                  "walkthrough":  "Since index 1 is the second item, the step is “approve.”"
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since Python list indices start at 0, ``[2]`` returns the third string.",
-                                   "why_correct":  "This is because the third item in `oauth_steps` is ``app validates auth result``.",
+                                   "step_by_step":  "1) A list of four strings is created and bound to `oauth_steps`.\n2) Positions start at 0: 0 is \"user clicks login\", 1 is \"provider authenticates user and asks consent\", 2 is \"app validates auth result\", and 3 is \"app creates its own session\".\n3) On the right-hand side, `oauth_steps[2]` returns the string at position 2, \"app validates auth result\".\n4) That value is bound to `next_step`.",
+                                   "why_correct":  "`next_step` holds the third item, \"app validates auth result\". This code only selects a string describing a step; it does not perform the authentication action described by that string.",
                                    "common_wrong_choice":  {
                                                                "choice":  "provider authenticates user and asks consent",
-                                                               "why_wrong":  "That value is the second item at index 1.",
-                                                               "misread_step":  "This is a case of counting the index from 1."
+                                                               "why_wrong":  "This string is the second item, at index 1. It is not the item selected by `[2]`.",
+                                                               "misread_step":  "Counting positions from 1 incorrectly makes index 2 seem to mean the second item."
                                                            },
-                                   "takeaway":  "The flow list checks both **0-based indices and the actual step order**."
+                                   "takeaway":  "Read in order: identify the list → count from 0 to find the indexed position → retrieve its value → bind it to the name on the left."
                                },
         "target_statement":  "next_step = oauth_steps[2]",
         "focus_span":  "oauth_steps[2]",
@@ -633,14 +633,14 @@
                                  "walkthrough":  "Since the editor permission list includes \"write,\" the value is True."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "roles[\u0027admin\u0027] contains manage_cards.",
-                                   "why_correct":  "This is because the permission explicitly granted to the admin role is manage_cards.",
+                                   "step_by_step":  "1. The first assignment creates a dictionary linking role names to their permission lists and binds it to `roles`.\n2. `roles[\"admin\"]` retrieves the list `[\"manage_cards\"]` associated with the `\"admin\"` key.\n3. `\"manage_cards\" in [\"manage_cards\"]` checks whether the list contains an item equal to that string. It does, so the result is `True`.\n4. That result is assigned to `can_manage`, so its value is `True`. There is no code that prints anything.",
+                                   "why_correct":  "The permission explicitly listed for admin in this code is `\"manage_cards\"`. The membership test confirms that this permission is in the list, so the answer is `manage_cards`.",
                                    "common_wrong_choice":  {
                                                                "choice":  "read_report only",
-                                                               "why_wrong":  "`read_report` is defined in the parent role.",
-                                                               "misread_step":  "This is an example of an incorrect mapping between a role and a permission."
+                                                               "why_wrong":  "`\"read_report\"` is in the list at `roles[\"parent\"]`, not in the list being checked at `roles[\"admin\"]`.",
+                                                               "misread_step":  "This confuses a permission visible somewhere in the dictionary with an admin permission. First select the list using the `\"admin\"` key, then look for the permission only within that list."
                                                            },
-                                   "takeaway":  "RBAC is interpreted as **role → permission set → membership verification**."
+                                   "takeaway":  "Use `roles[role]` to select that role's permission list, then use `permission in list` to check membership. Here, `\"manage_cards\"` is present, so `can_manage` is `True`."
                                },
         "target_statement":  "can_manage = \"manage_cards\" in roles[\"admin\"]",
         "focus_span":  "\"manage_cards\" in roles[\"admin\"]",
@@ -750,18 +750,18 @@
                                     "common_mistake":  "It is easier to read if the statement “The smaller the exp is compared to now, the longer the token remains valid” is reversed."
                                 },
         "teaching_example":  {
-                                 "code":  "def status(exp,now):\n    if exp\u003cnow:\n        return 401\n    return 200\nresult=status(10,20)",
-                                 "walkthrough":  "Since 10\u003c20, the token has expired and a 401 error has occurred."
+                                 "code":  "def status(exp, now):\n    if exp < now:\n        return 401\n    return 200\n\nresult = status(10, 20)",
+                                 "walkthrough":  "1) `def` defines the function. Its body runs when called.\n2) Calling `status(10, 20)` runs the body with `exp = 10` and `now = 20`.\n3) `if exp < now:` acts like a checkpoint. Since `10 < 20` is `True`, execution enters the indented block.\n4) `return 401` returns 401 and ends the function call.\n5) Therefore, the later `return 200` does not execute.\nResult: `result` is 401. Nothing is printed."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since the `exp` token is in the past relative to the current time, the `if` statement executes and `status_code` becomes 401.",
-                                   "why_correct":  "This is because expired credentials cannot be used to access protected resources.",
+                                   "step_by_step":  "1) `def` defines `authorize`; the final line calls it.\n2) `token` is `{\"exp\": 100}` and `now` is 120.\n3) `token[\"exp\"]` retrieves 100.\n4) The condition `100 < 120` is `True`, so the if block runs.\n5) `return 401` immediately ends the function call, so `return 200` does not execute.\n6) The returned value 401 is stored in `status_code`.",
+                                   "why_correct":  "This code is written to return 401 when expiration time 100 is earlier than current time 120. Thus, the choice corresponding to the returned value is `401 Unauthorized`. The code does not actually send an HTTP response.",
                                    "common_wrong_choice":  {
-                                                               "choice":  "404 Not Found",
-                                                               "why_wrong":  "This is not a resource availability issue, but rather an issue with the validity of the credential.",
-                                                               "misread_step":  "This is an example of confusing “authentication error” with “resource-not-found.”"
+                                                               "choice":  "200 OK",
+                                                               "why_wrong":  "`return 200` does not always execute just because it appears later. Here, `return 401` ends the function call first.",
+                                                               "misread_step":  "This overlooks that `return` ends the function call after execution enters the true condition's block."
                                                            },
-                                   "takeaway":  "\"token expiry\" is interpreted as **exp timestamp \u003c now → expired → 401/refresh flow**."
+                                   "takeaway":  "Check arguments → compare → enter the if block when true → return 401 → `status_code = 401`. This code reaches `return 200` only when the condition is false."
                                },
         "target_statement":  "if token[\"exp\"] \u003c now:",
         "focus_span":  "token[\"exp\"] \u003c now",
@@ -867,18 +867,18 @@
                                     "common_mistake":  "It is easy to read 429 as meaning the server is permanently broken."
                                 },
         "teaching_example":  {
-                                 "code":  "def status(count):\n    if count\u003e10:\n        return 429\n    return 200\nresult=status(12)",
-                                 "walkthrough":  "Since 12 \u003e 10, 429 is returned."
+                                 "code":  "def status(count):\n    if count > 10:\n        return 429\n    return 200\n\nresult = status(12)",
+                                 "walkthrough":  "1) `def status(count):` defines a function. Its body does not run yet.\n2) `result = status(12)` calls the function, making `count` equal to 12.\n3) `if count > 10:` acts like a checkpoint. `12 > 10` is `True`, so execution enters the indented block.\n4) `return 429` returns 429 and ends the function call.\n5) Therefore, the following `return 200` does not run. The returned value 429 is stored in `result`.\nResult: `result` is 429, and nothing is printed."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "The current request volume has exceeded the threshold of 60, so the rate-limit branch is being enforced.",
-                                   "why_correct":  "This is because HTTP status code 429 indicates a situation where the frequency of requests is too high and has been throttled.",
+                                   "step_by_step":  "1) The `def` statement defines `check_request_rate`.\n2) Calling `check_request_rate(75)` makes `request_count` equal to 75.\n3) Evaluating `request_count > 60` gives `75 > 60`, which is `True`.\n4) Because the condition is true, the indented `return 429` runs. Returning 429 ends the function call, so `return 200` does not run.\n5) The returned value is stored in `status_code`, making its value 429. There is no code that prints anything.",
+                                   "why_correct":  "429 Too Many Requests means requests have been limited because there are too many. This code returns 429 when the request count of 75 exceeds the limit of 60, so the correct choice is “The request exceeded the limit.” The code represents this situation with an integer return value.",
                                    "common_wrong_choice":  {
                                                                "choice":  "The server was always down",
-                                                               "why_wrong":  "429 indicates a request rate limit, not a server failure.",
-                                                               "misread_step":  "This is a case of confusing rate limiting with a server failure."
+                                                               "why_wrong":  "429 indicates a request limit, not that the server was always down.",
+                                                               "misread_step":  "This misreads the 429 selected by the request-count check `75 > 60` as an indication of server failure."
                                                            },
-                                   "takeaway":  "\"Rate limit\" is read as **usage count → threshold comparison → 429**."
+                                   "takeaway":  "Read the flow as request count → compare with `> 60` → return 429 if true → end the function call. If the count is exactly 60, the condition is false and execution reaches `return 200`."
                                },
         "target_statement":  "if request_count \u003e 60:",
         "focus_span":  "request_count \u003e 60",

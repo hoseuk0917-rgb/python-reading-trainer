@@ -387,10 +387,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "메서드 체인에서 앞 호출의 반환값이 다음 메서드 호출의 receiver가 되는 실행 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "In a method call chain, you can call the next `object.method(...)` directly from the object returned by the previous `.method(...)`.",
-      "how_to_read": "After each call, check how the `receiver` has changed, and then apply the argument and return rules of the next method.",
-      "key_point": "The default value `{}` for the first `get` is used only when the `meta` key itself does not exist; in this example, an empty dictionary—which is the actual `meta` value—is returned.",
-      "common_mistake": "It’s easy to assume that both `get` functions are executed simultaneously, or that the first `get` always returns the default value of ``{}``."
+      "what_it_is": "Easy meaning: This code asks for one operation, then asks the value it gets back to perform the next operation.\nExact definition: A method call chain uses the object returned by one call as the target (receiver) of the next method call, and `dict.get(key, default)` returns the value for an existing key or the specified default if the key is absent.",
+      "how_to_read": "Mental model: Think of a relay where the first operation hands you an object and you perform the next operation on that object.\nThe first line, `row = {\"meta\": {}}`, creates a dictionary whose `\"meta\"` value is an empty dictionary. On the second line, `row.get(\"meta\", {})` returns that actual empty dictionary. The following `.get(\"score\", 0)` searches for `\"score\"` in the dictionary just returned, not in `row`. The key is absent, so it returns `0`, which is stored in the variable `score`. The third line, `print(score)`, outputs `0`.",
+      "key_point": "`row` → first `get(\"meta\", {})` → actual `\"meta\"` value `{}` → `get(\"score\", 0)` on that dictionary → `0` → stored in `score` → output `0`.\nThe first default `{}` is returned only if the `\"meta\"` key is absent. Here that key exists, so its default is not used; the second default, `0`, is the final return value.",
+      "common_mistake": "It is easy to read both `get()` calls as searching for keys in `row`. The second call targets the dictionary returned by the first call. Also, an empty dictionary is still an actual stored value: being empty does not cause it to be replaced by the default. The default for `get()` is returned when the key is absent."
     },
     "teaching_example": {
       "code": "data = {\"config\": {}}\nlimit = data.get(\"config\", {}).get(\"limit\", 5)\nprint(limit)",
@@ -1215,10 +1215,10 @@
     "primary_concept": "parameter_definition",
     "reading_goal_internal": "함수 정의에서 타입 annotation과 기본값을 분리해 default parameter의 의미를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`name: type = default` This is a parameter definition that includes both a type annotation and a default value.",
-      "how_to_read": "Treat parameter names, type annotations, and default values on the right side of `=` as separate elements.",
-      "key_point": "`limit: int = 10` indicates that `limit` should be treated as an `int`, and if omitted in a call, the value 10 is used.",
-      "common_mistake": "`10` It’s easy to assume that this is always enforced. If the caller passes a `limit` value, that value overrides the default."
+      "what_it_is": "Easy meaning: writing a default value beside a function's input name lets you leave that input out when calling it.\nExact definition: `limit: int = 10` defines a parameter with the type annotation `int` and default value `10`; when its argument is omitted in a call, the default value is bound to `limit`.",
+      "how_to_read": "Picture an input slot with a backup value ready. On the `def` line, `q: str` is an input without a default; split `limit: int = 10` into the name `limit`, type annotation `int`, and default `10`. The `return` line puts both input values into a dictionary and returns it. On the final line, `search(\"rag\")` supplies a value only for `q`.",
+      "key_point": "`search(\"rag\")` → `q` is `\"rag\"` and omitted `limit` is `10` → return `{\"query\": \"rag\", \"limit\": 10}` → store it in `result`. Therefore, `result[\"limit\"]` is the integer `10`.",
+      "common_mistake": "`int` does not choose a default or automatically convert a value. In this ordinary Python function, the type annotation does not enforce a type; `= 10` specifies the default. Nor is `10` always used: in `search(\"rag\", 3)`, `limit` is `3`."
     },
     "teaching_example": {
       "code": "def list_items(category: str, page: int = 1):\n    return page\n\nresult = list_items(\"python\")",
@@ -1277,14 +1277,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "DB connection 객체의 execute 메서드에 SQL 문자열이 전달되고 반환 cursor가 저장되는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`obj.method(arg)` is a method call that passes an argument to an object’s method.",
-      "how_to_read": "Check the calling object, method name, and arguments in parentheses in that order.",
-      "key_point": "`LIMIT 10` is a rule within an SQL string, and in Python syntax, the entire string serves as the input to the `execute` method.",
-      "common_mistake": "It’s easy to assume that SQL strings are automatically executed in Python. The actual execution request occurs in the ``conn.execute(...)`` call."
+      "what_it_is": "Easy meaning: `conn.execute(...)` asks `conn` to do a defined job and hands it the value inside the parentheses.\nExact definition: This method call executes the `execute` method of `conn`, binding `conn` to `self` and the supplied string to the parameter `sql`.",
+      "how_to_read": "Think input → processing → returned value. `conn.execute(\"SELECT title FROM items LIMIT 10\")` supplies the entire string as input. Inside `execute`, that string is named `sql`, and `return {\"sql\": sql}` returns a dictionary containing it.",
+      "key_point": "`Connection()` creates an object → `conn` refers to it → `execute` is called → `sql` receives the SQL string → `{\"sql\": \"SELECT title FROM items LIMIT 10\"}` is returned → `cursor` refers to it. Thus, `cursor[\"sql\"]` is the original string, whose `LIMIT 10` specifies at most 10 rows. This code itself does not query a database.",
+      "common_mistake": "The method name `execute` or the variable name `cursor` may suggest that a real database query happens. Check the method body, not just its name. Here it only returns a dictionary containing the string, and `cursor` actually refers to that dictionary."
     },
     "teaching_example": {
-      "code": "class Connection:\n    def execute(self, sql):\n        return sql\n\nconn = Connection()\nquery = conn.execute(\"SELECT id FROM users LIMIT 5\")",
-      "walkthrough": "An SQL string is passed to the `execute` method, and the same string is returned."
+      "code": "class Connection:\n    def execute(self, sql):\n        return {\"sql\": sql}\n\nconn = Connection()\nresult = conn.execute(\"SELECT id FROM users LIMIT 5\")\nprint(result[\"sql\"])",
+      "walkthrough": "1) `class Connection:` defines the class used to create objects.\n2) `def execute(self, sql):` defines a method. Its body does not run yet.\n3) `return {\"sql\": sql}` is the part that will return a dictionary containing the input string when called.\n4) `conn = Connection()` creates an object and binds it to `conn`.\n5) Calling `conn.execute(...)` supplies `conn` as `self` and `\"SELECT id FROM users LIMIT 5\"` as `sql`. The method body runs and returns `{\"sql\": \"SELECT id FROM users LIMIT 5\"}`, and `result` is bound to this dictionary.\n6) `print(result[\"sql\"])` retrieves the string from the dictionary and prints it.\nOutput: `SELECT id FROM users LIMIT 5`\nThe flow is string input → method execution → dictionary returned → string printed. No actual database query takes place."
     },
     "answer_explanation": {
       "step_by_step": "The string passed to `conn.execute(...)` is `SELECT title FROM items LIMIT 10`. The SQL clause `LIMIT 10` means at most 10 rows.",
@@ -1398,14 +1398,14 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "vector search call에서 top_k keyword가 반환 후보 수 상한을 지정하는 의미를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`top_k=5` is a keyword argument that passes the number 5 as the value for the `top_k` parameter in a `search` call.",
-      "how_to_read": "Distinguish between what `query_vector` and `top_k` are responsible for—the search query and the number of results, respectively.",
-      "key_point": "`top_k` determines how many of the highest-ranked candidates are requested in similarity search.",
-      "common_mistake": "\"top_k=5\" is easy to read as meaning that the search is repeated 5 times."
+      "what_it_is": "Easy meaning: `top_k=5` passes a named setting asking the search for up to 5 top candidates.\nExact definition: `top_k=5` is a keyword argument that passes the value `5` to the parameter named `top_k` in a call.",
+      "how_to_read": "Picture input slots with name tags. In `index.search(query_vector, top_k=5)`, `query_vector` is the search input passed by position, while `5` is the count setting passed by the name `top_k`. In this card's search, read it as requesting up to 5 top candidates.",
+      "key_point": "`def` defines the function without immediately executing its body. When `retrieve` is called, the flow is `question` → `embedder.encode(question)` → `query_vector` → `index.search(query_vector, top_k=5)` → `hits` → return. The actual candidates and their count cannot be determined from the supplied code alone.",
+      "common_mistake": "`top_k=5` does not mean repeating the search 5 times or guaranteeing exactly 5 results. The call syntax passes a value by name; this search function determines its meaning as a candidate limit."
     },
     "teaching_example": {
-      "code": "class Index:\n    def search(self, vector, top_k):\n        return list(range(top_k))\n\nindex=Index()\nhits=index.search([0.1,0.2], top_k=3)",
-      "walkthrough": "Since `top_k=3`, request a maximum of 3 search result candidates."
+      "code": "def select_top(candidates, top_k):\n    return candidates[:top_k]\n\nhits = select_top(['A', 'B', 'C', 'D'], top_k=3)\nprint(hits)",
+      "walkthrough": "1) `def` defines a function accepting a candidate list and a count limit. Assume the candidates are already ranked best first.\n2) `return candidates[:top_k]` returns up to `top_k` items from the start of the list. This line runs when the function is called.\n3) In the call, the list binds to `candidates`, and the keyword argument `3` binds to `top_k`.\n4) The function evaluates `candidates[:3]` and returns `['A', 'B', 'C']`, which is stored in `hits`.\n5) `print(hits)` displays `['A', 'B', 'C']`."
     },
     "answer_explanation": {
       "step_by_step": "Since the `top_k` parameter in the `index.search` call is set to 5, the search engine is asked to return up to 5 top candidates.",

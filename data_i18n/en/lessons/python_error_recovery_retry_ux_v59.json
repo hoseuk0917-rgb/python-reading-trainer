@@ -749,14 +749,14 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "내부 진단 로그와 사용자에게 전달할 메시지를 서로 다른 함수 호출로 분리하는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`show_error(message)` is a function call that passes the value `message` to the function.",
-                                    "how_to_read":  "Check which function is being called and the actual message inside the parentheses.",
-                                    "key_point":  "It is recommended to separate sensitive diagnostic information—such as internal stack traces or tokens—from user-facing guidance.",
-                                    "common_mistake":  "It’s easy to assume that showing users the entire contents of the debug log is helpful for debugging. However, this could expose internal or sensitive information."
+                                    "what_it_is":  "Easy meaning: a function call hands a value to a named task and asks it to run.\nExact definition: a function call is an expression that uses parentheses after a function to pass arguments and execute it; for the user-defined functions here, the supplied value is bound to a parameter before the function body runs.",
+                                    "how_to_read":  "Imagine a function as a service desk. The parentheses contain the value you hand over, and the function body gives instructions for where to put it.\nFirst, the code creates two empty lists. The two `def` statements define tasks but do not yet add strings. At `log_error(\"TimeoutError at search.py:42\")`, the string is bound to `error`, and `developer_logs.append(error)` runs. Next, `show_error(\"문제가 발생했습니다\")` binds its string to `message` and runs `user_messages.append(message)`.",
+                                    "key_point":  "`log_error(...)` → `error` → added to `developer_logs`.\n`show_error(\"문제가 발생했습니다\")` → `message` → added to `user_messages`.\nThe final values are `developer_logs == [\"TimeoutError at search.py:42\"]` and `user_messages == [\"문제가 발생했습니다\"]`. Despite its name, `show_error` in this code stores a value in a list rather than displaying it on screen.",
+                                    "common_mistake":  "It is easy to assume that the error string passed earlier automatically goes to the next function too. Each call instead passes the value inside its own parentheses. Determine which list changes by checking the target of `append` in the body, not just the function's name."
                                 },
         "teaching_example":  {
-                                 "code":  "messages = []\ndef show(message):\n    messages.append(message)\nshow(\"다시 시도해 주세요\")",
-                                 "walkthrough":  "The message string is passed to the function and recorded in `messages`."
+                                 "code":  "messages = []\ndef show(message):\n    messages.append(message)\nshow(\"다시 시도해 주세요\")\nshow(\"잠시 기다려 주세요\")",
+                                 "walkthrough":  "1) `messages = []` creates an empty list.\n2) `def show(message):` defines a function with a parameter named `message`. Its body does not run yet.\n3) `messages.append(message)` is the task that will add the supplied value to the end of the list when called.\n4) The first `show(...)` call binds `\"다시 시도해 주세요\"` to `message` and runs the body. The list becomes `[\"다시 시도해 주세요\"]`.\n5) The second call binds `\"잠시 기다려 주세요\"` to `message` and runs the same body again.\nFlow: each call's string → `message` → `messages.append(message)`.\nThe final `messages` is `[\"다시 시도해 주세요\", \"잠시 기다려 주세요\"]`. Nothing is printed."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "The first call logs an internal string to `developer_logs`. The second `show_error(...)` adds a message for the user to a separate `user_messages` list.",

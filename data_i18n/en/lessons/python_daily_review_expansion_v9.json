@@ -168,24 +168,24 @@
     "primary_concept": "call",
     "reading_goal_internal": "API workflow에서 실제 요청에 해당하는 post 메서드 호출과 전달 인자를 식별한다.",
     "concept_explanation": {
-      "what_it_is": "`obj.method(...)` calls a method of an object.",
-      "how_to_read": "Examine the receiver, method name, and arguments in that order.",
-      "key_point": "You must distinguish between the line that defines the URL and the line that actually makes the POST call.",
-      "common_mistake": "It is easy to mistakenly assume that assigning a value to `API_URL` constitutes a request."
+      "what_it_is": "Easy meaning: a call asks a feature to do a job using values you supply.\nExact definition: a method call expression `obj.method(...)` passes arguments to an object's method, executes it, and obtains its return value.",
+      "how_to_read": "Picture handing prepared materials to a worker. Here, you hand a URL, headers, body data, and a timeout value to `client`'s `post`. `API_URL` is passed positionally to `url`; `headers=headers`, `json=payload`, and `timeout=30` pass values by name. `client` is supplied automatically as `self`.",
+      "key_point": "Prepared values → `client.post(...)` call → execution of the `post` body → dictionary containing the four values → binding to `response`. This code defines its own `post` method; it sends no actual network request. Even `timeout=30` is only a value placed in the returned dictionary here.",
+      "common_mistake": "Storing an address with `API_URL = ...` does not execute a request. Nor does the name `post` guarantee an HTTP request. Find the call with parentheses, then check the method body to determine what actually happens."
     },
     "teaching_example": {
-      "code": "class Client:\n    def post(self, url):\n        return url\n\nclient = Client()\nresult = client.post(\"https://example.test\")",
-      "walkthrough": "The `client.post(...)` call is the actual point of execution."
+      "code": "class Client:\n    def post(self, url):\n        return {\"url\": url}\n\nclient = Client()\naddress = \"https://example.test\"\nresult = client.post(address)",
+      "walkthrough": "1) `class Client:` defines a class.\n2) `def post(self, url):` defines a method without executing its body yet.\n3) `return {\"url\": url}` is the part that will return a dictionary containing the supplied address when called.\n4) `client = Client()` creates an object and binds it to `client`.\n5) `address = ...` prepares the address string.\n6) Calling `client.post(address)` binds `client` to `self` and the address string to `url`. The body runs and returns `{\"url\": \"https://example.test\"}`, which is bound to `result`.\nFlow: prepare address → call method → return dictionary → `result`. There is no screen output or network request."
     },
     "answer_explanation": {
-      "step_by_step": "The URL and settings are provided in the training data, and the actual operation is a call to `client.post(...)`.",
-      "why_correct": "This is because the POST method is an expression that is executed directly.",
+      "step_by_step": "1) The `Client` definition prepares the `post` method without executing its body yet.\n2) `Client()` creates an object, which is bound to `client`.\n3) `API_URL`, `headers`, and `payload` are bound to the address string and the two dictionaries.\n4) On the right side of the final line, `client.post(API_URL, headers=headers, json=payload, timeout=30)` executes. The address goes to `url`, the headers dictionary to `headers`, `payload` to `json`, and `30` to `timeout`.\n5) The body returns `{\"url\": \"https://api.example.test/v1/chat\", \"headers\": {\"Authorization\": \"Bearer demo\"}, \"json\": {\"prompt\": \"hello\"}, \"timeout\": 30}`.\n6) The return value is bound to `response`. There is no output or actual network communication.",
+      "why_correct": "The correct expression is the choice that executes the `post` method with the prepared values. It therefore identifies the POST call site intended by the question. However, the supplied implementation only returns a dictionary; it does not send an actual HTTP POST.",
       "common_wrong_choice": {
         "choice": "API_URL = \"https://api.example.test/v1/chat\"",
-        "why_wrong": "It only stores the URL string; it does not send a request.",
-        "misread_step": "You have confused \"setting up\" with \"executing a request.\""
+        "why_wrong": "This is only an assignment binding an address string to a name; it does not call the `post` method.",
+        "misread_step": "This confuses preparing an address with passing that address as an argument to execute a method."
       },
-      "takeaway": "Read the API code by **separating the configuration setup from the actual request call**."
+      "takeaway": "Distinguish preparation assignments from method calls, and check the body—not the name—to determine what a call actually does."
     },
     "target_statement": "response = client.post(API_URL, headers=headers, json=payload, timeout=30)",
     "focus_span": "client.post(API_URL, headers=headers, json=payload, timeout=30)",
@@ -302,24 +302,24 @@
     "primary_concept": "subscription",
     "reading_goal_internal": "nested dict/list 접근을 왼쪽부터 따라가 최종 content 값을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`mapping[key]` reads the value associated with the key in the dict.",
-      "how_to_read": "The nested approach checks the current container one level at a time, starting from the left.",
-      "key_point": "The final line, ``['content']``, outputs the actual response string.",
-      "common_mistake": "It is easy to mistake the content of a key itself for the return value."
+      "what_it_is": "Easy meaning: Square brackets `[...]` retrieve a value inside something using a label or position number.\nExact definition: Subscription, written `obj[key]`, returns the value associated with a key for the dictionaries in this code, or the item at an integer index for the list.",
+      "how_to_read": "Picture a path leading inward through nested data. The value obtained from each pair of brackets becomes the target of the next pair. Here, `[\"choices\"]` retrieves a list from `data`, `[0]` retrieves its first dictionary, `[\"message\"]` retrieves the inner dictionary, and `[\"content\"]` retrieves the string.",
+      "key_point": "`data` → `[\"choices\"]`: list → `[0]`: first dictionary → `[\"message\"]`: `{\"content\": \"RAG uses retrieved context.\"}` → `[\"content\"]`: `\"RAG uses retrieved context.\"` → assigned to `text`. String keys locate dictionary values, while integer `0` selects the first list item. This code stores a value; it does not display output.",
+      "common_mistake": "It is easy to think `[\"content\"]` produces the key name `\"content\"`. The key inside the brackets specifies what to look up; the result is its associated value. Likewise, `[0]` selects the first item; it does not mean the result is the number 0."
     },
     "teaching_example": {
       "code": "data={\"items\":[{\"value\":\"A\"}]}\nresult=data[\"items\"][0][\"value\"]",
       "walkthrough": "It reads the key-value pair from the first dict and obtains A."
     },
     "answer_explanation": {
-      "step_by_step": "If you navigate in the order of choices → index 0 → message → content, you will arrive at the final string.",
-      "why_correct": "This is because the nested `subscription` returns the specified value at each step.",
+      "step_by_step": "1) `data = {...}` creates a dictionary and binds it to `data`. The value for `\"choices\"` is a list containing one dictionary.\n2) `data[\"choices\"]` returns `[{\"message\": {\"content\": \"RAG uses retrieved context.\"}}]`.\n3) The following `[0]` returns the first list item, `{\"message\": {\"content\": \"RAG uses retrieved context.\"}}`.\n4) `[\"message\"]` returns `{\"content\": \"RAG uses retrieved context.\"}`.\n5) The final `[\"content\"]` returns the string `\"RAG uses retrieved context.\"`.\n6) The final value of the right-hand expression is assigned to `text`.",
+      "why_correct": "`text` stores the value retrieved by the final lookup, not a key name used along the path. Therefore, the answer is `RAG uses retrieved context.`.",
       "common_wrong_choice": {
         "choice": "content",
-        "why_wrong": "\"content\" is the key name, and the actual value is a sentence.",
-        "misread_step": "The key and value were confused."
+        "why_wrong": "`content` is the key being looked up in the final dictionary. Its associated value is `\"RAG uses retrieved context.\"`.",
+        "misread_step": "At the final `[\"content\"]`, the key inside the brackets was mistaken for the retrieved value."
       },
-      "takeaway": "Nested JSON is read **one level at a time, starting from the left**."
+      "takeaway": "Follow the brackets from left to right, checking whether the current value is a dictionary or a list. Apply each next lookup to the value just retrieved, then assign the final value."
     },
     "target_statement": "text = data[\"choices\"][0][\"message\"][\"content\"]",
     "focus_span": "[\"content\"]",
@@ -377,14 +377,14 @@
       "walkthrough": "Collect execution identifiers and observations into a single dictionary."
     },
     "answer_explanation": {
-      "step_by_step": "`run_log` records execution identifiers, request/response sizes, cost estimates, and errors.",
-      "why_correct": "This is because it provides the basis for post-execution analysis of how much a particular execution used and why it failed.",
+      "step_by_step": "1. The first line binds run_id to the string \"run-42\".\n2. The next two lines bind request_bytes to the integer 1200 and response_bytes to the integer 640.\n3. estimated_cost is bound to 0.003, and error to None. Here, None represents no recorded error information; this code does not verify that an actual run succeeded.\n4. The {...} on the final line is a dictionary literal. A quoted key such as \"run_id\" labels an entry, while run_id to the right of the colon supplies its previously assigned value. The other entries are evaluated in the same way.\n5. As a result, run_log refers to {\"run_id\": \"run-42\", \"request_bytes\": 1200, \"response_bytes\": 640, \"estimated_cost\": 0.003, \"error\": None}. This code only constructs the record in memory; it neither saves it to a file nor prints it.",
+      "why_correct": "This dictionary groups the run's identity, request and response sizes, cost estimate, and error information. Making this information clearer therefore most directly supports tracking a run and reviewing it later. However, error is currently None, so this example itself contains no detailed failure-cause information.",
       "common_wrong_choice": {
         "choice": "Write the API key directly into the code",
-        "why_wrong": "This is a security vulnerability that increases the risk of exposing secrets.",
-        "misread_step": "This is a case where the improvement of observability was confused with credential hardcoding."
+        "why_wrong": "Writing the API key directly into the code does not clarify the run identifier, sizes, cost, or errors. Instead, it increases the risk of exposing secret information.",
+        "misread_step": "This confuses collecting useful run information in the final dictionary with putting authentication secrets into the code."
       },
-      "takeaway": "Operational logging considers **identifiability + cost/scale + root cause of failure + minimization of secrets** together."
+      "takeaway": "In a dictionary literal, keys label information and values hold the actual record contents. For later review, clearly record run identity, sizes, cost, and errors—but not secrets."
     },
     "target_statement": "run_log = {\"run_id\": run_id, \"request_bytes\": request_bytes, \"response_bytes\": response_bytes, \"estimated_cost\": estimated_cost, \"error\": error}",
     "focus_span": "{\"run_id\": run_id, \"request_bytes\": request_bytes, \"response_bytes\": response_bytes, \"estimated_cost\": estimated_cost, \"error\": error}",
@@ -440,18 +440,18 @@
       "common_mistake": "It’s easy to think of RAG as just a single LLM call."
     },
     "teaching_example": {
-      "code": "def answer(q):\n    docs=[\"python\"]\n    return {\"query\":q,\"hit\":docs[0]}\nresult=answer(\"python\")",
-      "walkthrough": "It selects data within a call and returns the result."
+      "code": "def make_answer(q):\n    text = \"Python is a language.\"\n    prompt = f\"context={text} | question={q}\"\n    return {\"answer\": f\"answer:{prompt}\"}\n\nresult = make_answer(\"Python\")",
+      "walkthrough": "1) `def` defines the function without running its body yet.\n2) The final line calls `make_answer(\"Python\")`, passing \"Python\" to `q`.\n3) `text` stores the sentence.\n4) `prompt` combines the sentence and question into \"context=Python is a language. | question=Python\".\n5) `return` returns {\"answer\": \"answer:context=Python is a language. | question=Python\"}.\n6) The dictionary returned by the call is stored in `result`. Nothing is printed.\nRead the flow as input → body execution → return value → `result`."
     },
     "answer_explanation": {
-      "step_by_step": "The order of sentences in the function body is: chunks → hits → prompt → answer → citations.",
-      "why_correct": "This is because it matches the execution order of the actual source code.",
+      "step_by_step": "1) Calling `answer_with_rag(\"파이썬\")` sets `query` to \"파이썬\" and runs the body.\n2) `chunks` prepares two document dictionaries.\n3) `hits` checks whether each document's text contains \"파이썬\". Only d1 matches, so the list contains just the d1 document. This is the retrieve step here.\n4) `hits[0]['text']` and `query` form `prompt`: \"context=파이썬은 프로그래밍 언어다. | question=파이썬\".\n5) Prefixing this with \"answer:\" creates `answer`.\n6) Collecting the matching documents' doc_id values creates `citations = [\"d1\"]`.\n7) The function returns a dictionary, which is stored in `result`: {\"answer\": \"answer:context=파이썬은 프로그래밍 언어다. | question=파이썬\", \"citations\": [\"d1\"]}. Nothing is printed.",
+      "why_correct": "The body executes in the order chunks preparation → retrieval → prompt generation → answer generation → citation composition, matching the first choice. Here, answer generation constructs a string rather than calling an actual model.",
       "common_wrong_choice": {
         "choice": "Return only the citation without generating a prompt",
-        "why_wrong": "The code explicitly specifies the generation of prompts and answers.",
-        "misread_step": "This looks only at part of the `return` and misses the preceding steps."
+        "why_wrong": "The code creates `prompt` and `answer` first, then includes both answer and citations in the returned dictionary.",
+        "misread_step": "This focuses only on the final `citations` calculation, overlooking earlier execution and the answer entry in `return`."
       },
-      "takeaway": "RAG reads the **retrieval·generation·citation flow together**."
+      "takeaway": "A function call passes input into the body. Follow the body's execution order, then check how the return value comes back to the call and is stored in `result`."
     },
     "target_statement": "result = answer_with_rag(\"파이썬\")",
     "focus_span": "answer_with_rag(\"파이썬\")",
@@ -1160,10 +1160,10 @@
     "primary_concept": "literal",
     "reading_goal_internal": "복잡한 Kalman 코드를 수식 암기보다 state와 단계 중심으로 읽는 순서를 구조화한다.",
     "concept_explanation": {
-      "what_it_is": "A list literal stores multiple values in a specific order.",
-      "how_to_read": "Treat each string as a step in the code review process and maintain the order from front to back.",
-      "key_point": "When working with state estimation code, it is helpful for understanding the structure to first identify what the “state” is and then observe how the `predict` and `update` functions modify that state.",
-      "common_mistake": "It’s easy to think that you can’t read the code until you’ve memorized all the matrix notations."
+      "what_it_is": "Easy meaning: A literal writes a value directly in code. Exact definition: A literal is syntax that directly represents a value such as a string or number; here, the quoted values are string literals, and the expression enclosing them in square brackets is a list display (commonly called a list literal).",
+      "how_to_read": "Picture four step cards arranged in order inside the brackets. The first line creates a list containing the strings \"state_definition\", \"predict\", \"update\", and \"usage\" in that order and binds it to reading_order. This represents the reading sequence state definition → predict → update → usage. On the second line, reading_order[0] selects the first card.",
+      "key_point": "Execution flows from four strings → creation of an ordered list → binding to reading_order → selecting the first item with index 0 → binding \"state_definition\" to first_step. Nothing is printed. This code records a reading sequence as data; it does not execute predict or update.",
+      "common_mistake": "Do not read \"predict\" as executing a function. Text inside quotation marks is a string value, not a function call such as predict(). Also, [0] selects the first item; it does not mean there are zero items."
     },
     "teaching_example": {
       "code": "reading_order=[\"input\",\"transform\",\"output\"]\nfirst=reading_order[0]",
@@ -1232,18 +1232,18 @@
       "common_mistake": "It’s easy to assume that calling `run_shard` always processes all tasks. Use `slice` to select only a portion of them."
     },
     "teaching_example": {
-      "code": "def run(items,start,size):\n    selected=items[start:start+size]\n    return len(selected)\nresult=run([1,2,3,4],1,2)",
-      "walkthrough": "Select only two items starting from index 1; the result is 2."
+      "code": "def run(items, start, size):\n    selected = items[start:start + size]\n    return len(selected)\nresult = run([1, 2, 3, 4], start=1, size=2)",
+      "walkthrough": "1) `def` defines the function; its body does not run yet.\n2) On the last line, `run(...)` calls the function to do a job. The list is passed to `items`, `1` to `start`, and `2` to `size`.\n3) In the body, `selected = items[1:3]` selects `[2, 3]`, the items at indices 1 and 2. End index 3 is excluded.\n4) `return len(selected)` returns the item count, `2`.\n5) The call's result, `2`, is stored in `result`. Nothing is printed.\nFlow: pass arguments → select range → return count 2 → `result = 2`."
     },
     "answer_explanation": {
-      "step_by_step": "Since `shard_id 1` and `size 2` select indices between 2 and 4, only `t2` and `t3` are processed.",
-      "why_correct": "This is because the slice inside the function selects only the range where the shard was calculated.",
+      "step_by_step": "1) `def` defines the function, then `tasks` is assigned the five strings.\n2) Calling `run_shard(tasks, shard_id=1, shard_size=2)` passes the list to the function's `tasks`, and passes `1` and `2` to `shard_id` and `shard_size` respectively.\n3) `start = 1 * 2` gives `2`; `end = 2 + 2` gives `4`.\n4) `tasks[2:4]` excludes end index 4, so `selected` is `[\"t2\", \"t3\"]`.\n5) Calling `upper()` on each string makes `done` equal to `[\"T2\", \"T3\"]`.\n6) The function returns `{\"shard_id\": 1, \"done\": [\"T2\", \"T3\"]}`, and this dictionary is stored in `summary`.\n7) `summary[\"done\"]` retrieves `[\"T2\", \"T3\"]` from it.",
+      "why_correct": "The values passed in the call determine the slice `2:4`. The uppercase versions of those two strings form the returned dictionary's `\"done\"` value, so the answer is `[\"T2\", \"T3\"]`.",
       "common_wrong_choice": {
         "choice": "[\"T0\", \"T1\"]",
-        "why_wrong": "That range is selected when shard_id is 0.",
-        "misread_step": "This is a case where the calculation of the shard start index has been omitted."
+        "why_wrong": "This would result from processing `tasks[0:2]` with `shard_id=0`. The actual call passes `shard_id=1`.",
+        "misread_step": "This skips `start = shard_id * shard_size` and assumes selection begins with the first two items."
       },
-      "takeaway": "The shard workflow is described as **id × size → slice range → processing of selected tasks → summary**."
+      "takeaway": "Read a function call as passing arguments → executing the body → storing the return value. Here: `1 × 2 → tasks[2:4] → uppercase conversion → summary[\"done\"]`."
     },
     "target_statement": "summary = run_shard(tasks, shard_id=1, shard_size=2)",
     "focus_span": "run_shard(tasks, shard_id=1, shard_size=2)",
@@ -1298,18 +1298,18 @@
       "common_mistake": "It is easy to assume that the index includes up to 600. The slice stop is excluded."
     },
     "teaching_example": {
-      "code": "tasks=list(range(20))\nstart=5\nend=8\nselected=tasks[start:end]",
-      "walkthrough": "The selected values are 5, 6, and 7; 8 is not included."
+      "code": "tasks = list(range(20))\nstart = 5\nend = 8\nselected = tasks[start:end]",
+      "walkthrough": "1) `tasks` refers to a list of integers from 0 through 19.\n2) `start = 5` sets the starting position.\n3) `end = 8` sets the ending boundary.\n4) `tasks[5:8]` takes a section from index 5 up to, but not including, index 8. Those values are 5, 6, and 7.\nResult: `selected` is the new list `[5, 6, 7]`. The original `tasks` is unchanged, and nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "`tasks[400:600]` selects items with indices from 400 to 599.",
-      "why_correct": "This is because Python slices exclude the stop position.",
+      "step_by_step": "1) `tasks` is a list of integers from 0 through 999.\n2) `shard_id = 2` and `shard_size = 200`.\n3) `start = 2 * 200` → `400`.\n4) `end = 400 + 200` → `600`.\n5) `tasks[start:end]` → `tasks[400:600]`. It includes starting index 400 and excludes ending boundary 600.\n6) A new list containing the 200 items at original indexes 400–599 is assigned to `selected`. In this code, their values also run from 400 through 599.",
+      "why_correct": "The selected items have original indexes 400 through 599, so the answer is '400 or more, but less than 600'. The new list `selected` itself has indexes 0 through 199, but the question asks about positions in the original list.",
       "common_wrong_choice": {
         "choice": "400 or more, 600 or fewer",
-        "why_wrong": "Index 600 is a stop position and is therefore not selected.",
-        "misread_step": "This is a case where “slice stop” was read as being included."
+        "why_wrong": "This range includes index 600, but `tasks[400:600]` stops just before 600.",
+        "misread_step": "This reads `end` as the last included index rather than the excluded boundary."
       },
-      "takeaway": "A \"shard slice\" applies the following process: **start calculation → end calculation → stop exclusion**."
+      "takeaway": "Calculate start → calculate the ending boundary → include start, exclude end. Also distinguish original indexes from indexes in the new list."
     },
     "target_statement": "selected = tasks[start:end]",
     "focus_span": "tasks[start:end]",
@@ -1623,10 +1623,10 @@
     "primary_concept": "parameter_definition",
     "reading_goal_internal": "기본값이 없는 query와 기본값 5가 있는 top_k를 함수 parameter 정의에서 구분한다.",
     "concept_explanation": {
-      "what_it_is": "If a parameter is defined as `= value`, it has a default value that is used when that argument is omitted in a call.",
-      "how_to_read": "Check whether each parameter has a default value.",
-      "key_point": "The `query` must be included, but if `top_k` is omitted, the default value of 5 is used.",
-      "common_mistake": "It’s easy to assume that a type annotation automatically provides a default value. The default value must be explicitly specified after ``=``."
+      "what_it_is": "Easy meaning: A function can name its input slots and specify a fallback value to use when an input is left out.\nExact definition: A parameter is an input name declared in a function definition; specifying a default with `= expression` makes that default value bind to the parameter when the corresponding argument is omitted from a call.",
+      "how_to_read": "Mental model: Picture `query` and `top_k` as two input slots. The caller must fill `query`, while `top_k` uses the prepared value 5 if left out.\nReading the code: On the first line, `query: str` is a parameter without a default, and `top_k: int = 5` declares the name `top_k`, the type annotation `int`, and the default value 5. The `return` line puts the two input values into a dictionary and returns it. The call on the last line supplies only the first argument, `\"vector search\"`, so that string binds to `query` and the default 5 binds to `top_k`.",
+      "key_point": "Execution flow: `make_search_request(\"vector search\")` → `query` is `\"vector search\"` and omitted `top_k` is 5 → return `{\"query\": \"vector search\", \"top_k\": 5}` → store it in `request` → `request[\"top_k\"]` has the integer value 5. This code does not print anything.",
+      "common_mistake": "It is easy to think that `: int` makes an omitted value automatically become 0. A type annotation does not create a default; `= 5` is what specifies 5 here. The default is used only when the argument is omitted, so with `make_search_request(\"vector search\", 2)`, `top_k` would be 2, not 5."
     },
     "teaching_example": {
       "code": "def make_request(term: str, page: int = 1):\n    return term, page\n\nresult = make_request(\"python\")",
@@ -1758,10 +1758,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "검색 함수 호출에서 요청의 top_k 값이 `limit` keyword argument로 전달되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`limit=value` A keyword argument is a parameter name specified in a function call to pass a value.",
-      "how_to_read": "First, evaluate the expression on the right side of the equals sign, then see which parameter the resulting value is assigned to.",
-      "key_point": "The value that controls the actual number of searches is read from ``request['top_k']`` and passed as a parameter to ``limit``.",
-      "common_mistake": "`top_k` It’s easy to assume that the name “`limit=`” is the exact name of the `search_index` parameter. However, when calling the function, it is passed under the name “.”"
+      "what_it_is": "Easy meaning: When giving a function a value, you can name the input slot that should receive it.\nExact definition: A keyword argument is supplied in a function call as `name=expression`, binding the evaluated value of the expression to the parameter with that name.",
+      "how_to_read": "Think of the function's parameters as labeled input slots. `def search_index(query, limit)` defines slots named `query` and `limit`. `request = ...` creates a dictionary containing the values to pass. In the final call, `request[\"query\"]` supplies `\"rag\"` to the first slot, `query`. `limit=request[\"top_k\"]` means to read `3` from the dictionary key `\"top_k\"` and pass it to the slot labeled `limit`.",
+      "key_point": "Value flow: `request[\"query\"]` → `\"rag\"` → `query`, and `request[\"top_k\"]` → `3` → `limit`.\nInside the function, `range(limit)` becomes `range(3)`, so `i` takes the values `0`, `1`, and `2` in turn. The function builds a string for each value and returns `[\"rag:0\", \"rag:1\", \"rag:2\"]`. This list is bound to `rows`, so `rows` contains 3 items.",
+      "common_mistake": "It is easy to read `top_k` as a function parameter name, but here it is a dictionary key. The call's `limit=` names the parameter that receives the value, while `request[\"top_k\"]` on the right obtains the value to pass. These names do not have to match, and this call does not rename the dictionary key."
     },
     "teaching_example": {
       "code": "def fetch(term, limit):\n    return [term] * limit\n\nresult = fetch(\"python\", limit=2)",
@@ -2162,14 +2162,14 @@
       "walkthrough": "The \"START\" line and the \"work()\" line remain in \"found.\""
     },
     "answer_explanation": {
-      "step_by_step": "Only the first line containing `FEATURE START` and the second line containing `sayHello` meet the criteria.",
-      "why_correct": "This is because in a filtered list comprehension, if any of the `or` conditions evaluates to True, that line is included in the result.",
+      "step_by_step": "`for line in lines` checks the four strings in order. `in` tests whether the search string occurs within the current string.\n1) \"// === FEATURE START ===\": contains \"FEATURE START\", so the condition is True. The test after `or` is skipped, and the whole line is added to the new list.\n2) \"function sayHello() {\": does not contain \"FEATURE START\", but contains \"sayHello\", so the condition is True. This whole line is added too.\n3) \"console.log('hello');\": contains neither search string, so it is not added.\n4) \"// === FEATURE END ===\": contains neither search string, so it is not added.\nThe completed list is assigned to `matches`: `[\"// === FEATURE START ===\", \"function sayHello() {\"]`. It therefore has 2 items.",
+      "why_correct": "The `or` condition passes when either test is true. The first and second lines each pass, and the expression at the front, `line`, stores each whole line as one item, so the answer is `2`.",
       "common_wrong_choice": {
         "choice": "1",
-        "why_wrong": "Each of the two different lines satisfies one distinct pattern.",
-        "misread_step": "This is an example of reading the two conditions as ``and``."
+        "why_wrong": "Not only the first line containing \"FEATURE START\" but also the second line containing \"sayHello\" passes, giving two items rather than one.",
+        "misread_step": "This checks only the first search condition and misses that `or \"sayHello\" in line` can let another line pass."
       },
-      "takeaway": "The validation search is interpreted as **each line → check for pattern → collect lines that pass the condition**."
+      "takeaway": "Choose each line → check whether it contains either search string → collect each passing whole line as one item → count the collected items."
     },
     "target_statement": "matches = [line for line in lines if \"FEATURE START\" in line or \"sayHello\" in line]",
     "focus_span": "[line for line in lines if \"FEATURE START\" in line or \"sayHello\" in line]",

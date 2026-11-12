@@ -625,17 +625,17 @@
     },
     "teaching_example": {
       "code": "def load():\n    return [\"doc\"]\n\ndef split(docs):\n    return [docs[0] + \":chunk\"]\n\ndef encode(chunks):\n    return [chunks[0] + \":vec\"]\n\nitems = load()\nchunks = split(items)\nvectors = encode(chunks)",
-      "walkthrough": "The result of `load` is passed to `split`, and the result of `split` is passed to `encode`, in that order."
+      "walkthrough": "1) The three `def` statements define functions. Their bodies do not execute yet.\n2) `items = load()` calls `load()`. It returns `[\"doc\"]`, which is bound to `items`.\n3) `split(items)` receives that list through its parameter `docs`. It appends `\":chunk\"` to `docs[0]`, which is `\"doc\"`, and returns `[\"doc:chunk\"]`. This value is bound to `chunks`.\n4) `encode(chunks)` receives that list through its parameter `chunks`. It appends `\":vec\"` to the first string and returns `[\"doc:chunk:vec\"]`. This value is bound to `vectors`.\nLike handing each stage's result to the next, the flow is `load → split → encode`. The final value of `vectors` is `[\"doc:chunk:vec\"]`; nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "The assignment statements in the `run` function execute from top to bottom, creating `docs`, `chunks`, and `vectors` sequentially.",
-      "why_correct": "This is because each subsequent function call uses the variables from the immediately preceding step as arguments.",
+      "step_by_step": "1) After the function definitions, `result = run()` starts executing the body of `run`.\n2) `docs = load_documents()` receives `[\"doc-a\"]` and binds it to `docs`.\n3) `make_chunks(docs)` receives that list and appends `\":chunk\"` to its first string. Its return value, `[\"doc-a:chunk\"]`, is bound to `chunks`.\n4) `embed_chunks(chunks)` receives the now-available `chunks` and appends `\":vector\"` to its first string. Its return value, `[\"doc-a:chunk:vector\"]`, is bound to `vectors`.\n5) `return vectors` returns this list, which is bound to `result`. Nothing is printed.",
+      "why_correct": "Statements in `run()` execute from top to bottom. In each assignment, the call on the right finishes before its return value is bound to the name on the left. Therefore, the call order is `load_documents → make_chunks → embed_chunks`.",
       "common_wrong_choice": {
         "choice": "embed_chunks → load_documents → make_chunks",
-        "why_wrong": "The `chunks` that `embed_chunks` will use have not been created yet.",
-        "misread_step": "This is an example where data dependencies were ignored and only the function names were read in a random order."
+        "why_wrong": "The first call in `run()` is `load_documents()`. The local variable `chunks`, needed for `embed_chunks(chunks)`, only gets its value after the second call finishes.",
+        "misread_step": "This focuses on the final processing stage as if it ran first, skipping the statement order in `run()` and the steps that produce its input."
       },
-      "takeaway": "A pipeline tracks **whether the return value of each step becomes an argument for the next call**."
+      "takeaway": "Follow actual call statements, not where functions are defined. Track which name receives each return value and how that value becomes the next call's input."
     },
     "target_statement": "vectors = embed_chunks(chunks)",
     "focus_span": "embed_chunks(chunks)",

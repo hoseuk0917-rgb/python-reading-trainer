@@ -212,10 +212,10 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "함수 호출 괄호 안에서 message가 받을 매개변수 이름이고 오른쪽 문자열이 실제 전달값이라는 역할 차이를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "A keyword argument specifies the name of a parameter to be passed in a function call in the form `parameter=value`.",
-                                    "how_to_read":  "Separate the name on the left of `=` from the expression on the right, evaluate the right-hand value, and pass it to the parameter with that name.",
-                                    "key_point":  "The `message` parameter is passed the string \"Add Git workflow reading cards.\"",
-                                    "common_mistake":  "You should not assume that `message` is a new global variable assignment or that an actual `git commit` is executed."
+                                    "what_it_is":  "Easy meaning: This is a way to give a function a value by naming the input that should receive it.\nExact definition: A keyword argument uses `name=expression` in a function call and binds the evaluated expression's value to the parameter with that name.",
+                                    "how_to_read":  "Imagine the function's input slots have name tags. `def make_commit(message)` defines an input named `message`. In the call, `message=\"Add Git workflow reading cards\"` names the receiving parameter on the left and supplies the string on the right. Inside the function, `return {\"message\": message}` places that string under the dictionary key `\"message\"` and returns the dictionary.",
+                                    "key_point":  "Call → bind the string `\"Add Git workflow reading cards\"` to parameter `message` → return `{\"message\": \"Add Git workflow reading cards\"}` → bind it to `commit` → retrieve the string with `commit[\"message\"]`. The value and printed output are therefore `Add Git workflow reading cards`.",
+                                    "common_mistake":  "In the call's `message=`, `message` is the receiving parameter's name, not the string being passed. Also, in `{\"message\": message}`, quoted `\"message\"` is a dictionary key, while unquoted `message` refers to the string received by the function."
                                 },
         "teaching_example":  {
                                  "code":  "def make_record(message):\n    return message\nprint(make_record(message=\"update docs\"))",
@@ -453,10 +453,10 @@
         "primary_concept":  "membership_test",
         "reading_goal_internal":  "restore 대상 경로가 modified 목록에 존재하는지 확인해 작업 손실 위험을 해석한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`value in container` is a membership test that checks whether a specific value is present in a container.",
-                                    "how_to_read":  "Compare the file path on the left with the modified list on the right.",
-                                    "key_point":  "If the target file is in a \"modified\" state before the \"restore\" operation, be aware that changes not yet committed to the repository may be lost.",
-                                    "common_mistake":  "It is easy to think of `restore` simply as a command to fetch the latest file remotely. Here, the key is to understand the risks involved in reverting changes to the working tree."
+                                    "what_it_is":  "Easy meaning: `in` asks, “Is this value in the list?”\nExact definition: For a list, `value in items` is a membership-test expression that returns the Boolean value `True` or `False` according to whether the list contains an item equal to that value.",
+                                    "how_to_read":  "Imagine checking the value you want against the list's items one by one. The first line binds `modified_files` to a list containing two path strings. The second line binds `target` to the path string `\"src/pwa/app.js\"`. Read `target in modified_files` on the third line as “Does this list contain an item equal to this path?” The first item matches exactly, so the test produces `True`.",
+                                    "key_point":  "Execution flows from the value of `target` → checking for an equal item in the list → `True` → assignment to `would_discard_changes`. In this card, that means the target is in the list of modified files, so before restoring, watch out for losing uncommitted changes to app.js. The code itself only checks the list; it does not query Git status or perform a restore.",
+                                    "common_mistake":  "For a list, `in` checks equality with a whole item, not part of a path string. Thus, if `target` were `\"app.js\"`, the result with this list would be `False`. Also, the name `would_discard_changes` does not mean changes have already been deleted: it only stores the test result."
                                 },
         "teaching_example":  {
                                  "code":  "modified = [\"app.py\", \"README.md\"]\ntarget = \"app.py\"\nrisky = target in modified",
@@ -513,24 +513,24 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "branch 생성과 current branch 변경을 함께 수행하는 method call의 상태 변화를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`obj.method(arg)` calls the object’s method while passing an argument value.",
-                                    "how_to_read":  "Check the called object, method name, and branch name being passed in that order.",
-                                    "key_point":  "In this example, `switch_create` creates a new branch and immediately sets that branch as `current_branch`.",
-                                    "common_mistake":  "It’s easy to think that creating a new branch will delete the `main` branch. However, the `main` branch remains in the branch list."
+                                    "what_it_is":  "Easy meaning: `repo.switch_create(...)` asks `repo` to perform a defined task using the supplied name.\nExact definition: A method call of the form `obj.method(arg)` executes a method bound to an object; in this code, the object is bound to `self` and the supplied argument to `name`.",
+                                    "how_to_read":  "Picture the object as a record of its state and the method call as a request to update that record. `repo.switch_create(\"feature/v33-git-cards\")` means to execute `repo`'s `switch_create` method. Inside the method, `self` is `repo` and `name` is `\"feature/v33-git-cards\"`, so the two lines update the same object's list and current name in order.",
+                                    "key_point":  "Initialize with `Repository()` → `branches` is `[\"main\"]` and `current_branch` is `\"main\"` → pass the new name through the method call → add it to the list with `append(name)` → change the current name with `self.current_branch = name`. The final `repo.current_branch` is `\"feature/v33-git-cards\"`. This code only changes a Python object's state; it does not execute actual Git commands.",
+                                    "common_mistake":  "Do not confuse a method's return value with the changes it leaves in an object. This method has no explicit `return`, so it returns `None`, but first it changes `repo.current_branch` to the new name. The question asks for the updated attribute, not the return value."
                                 },
         "teaching_example":  {
-                                 "code":  "class Repo:\n    def __init__(self):\n        self.current = \"main\"\n        self.branches = [\"main\"]\n    def create_and_switch(self, name):\n        self.branches.append(name)\n        self.current = name\n\nrepo = Repo()\nrepo.create_and_switch(\"feature/a\")",
-                                 "walkthrough":  "feature/a is added to the list of branches, and the current branch becomes feature/a."
+                                 "code":  "class Repo:\n    def __init__(self):\n        self.current = \"main\"\n        self.branches = [\"main\"]\n    def create_and_switch(self, name):\n        self.branches.append(name)\n        self.current = name\n\nrepo = Repo()\nrepo.create_and_switch(\"feature/a\")\nprint(repo.current)",
+                                 "walkthrough":  "1) `class Repo:` defines how objects are initialized and their methods. Defining a method does not immediately execute its body.\n2) The two lines under `def __init__(self):` set `current` to `\"main\"` and `branches` to `[\"main\"]` during initialization.\n3) The body under `def create_and_switch(self, name):` defines the task of adding a name to the list and changing the current name.\n4) `repo = Repo()` creates and initializes an object, then binds it to `repo`.\n5) Calling `repo.create_and_switch(\"feature/a\")` makes `self` refer to `repo` and binds `name` to `\"feature/a\"`. First, `append(name)` changes the list to `[\"main\", \"feature/a\"]`; then the assignment changes `current` to `\"feature/a\"`.\n6) `print(repo.current)` outputs `feature/a`."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "The branch name passed to `switch_create` is stored in `current_branch` within the method.",
-                                   "why_correct":  "This is because the method definition executes `self.current_branch = name`.",
+                                   "step_by_step":  "1) `repo = Repository()` creates an object and runs `__init__`. `repo.branches` is `[\"main\"]` and `repo.current_branch` is `\"main\"`.\n2) `repo.switch_create(\"feature/v33-git-cards\")` calls the method. `self` is bound to `repo`, and `name` is bound to `\"feature/v33-git-cards\"`.\n3) `self.branches.append(name)` changes the list to `[\"main\", \"feature/v33-git-cards\"]`.\n4) `self.current_branch = name` changes the same object's current name to `\"feature/v33-git-cards\"`.\n5) Reading `repo.current_branch` after the call gives `\"feature/v33-git-cards\"`.",
+                                   "why_correct":  "The string supplied in the call passes through `name` and is assigned to `repo.current_branch`, so the answer is `feature/v33-git-cards`.",
                                    "common_wrong_choice":  {
-                                                               "choice":  "main",
-                                                               "why_wrong":  "`main` is the `current branch` before the call and changes to a new branch after the call.",
-                                                               "misread_step":  "This is a case where the state change following the method call has not been reflected."
+                                                               "choice":  "None",
+                                                               "why_wrong":  "The method's return value is `None`, but the question asks for `repo.current_branch`, not the return value. That attribute stores the supplied string.",
+                                                               "misread_step":  "This confuses the value assigned to an attribute during method execution with the value returned by the method."
                                                            },
-                                   "takeaway":  "The code for switching branches reads as **pass new name → create branch → change current branch**."
+                                   "takeaway":  "Trace a method call as **pass arguments → execute the body → update object state**. The return value and the updated attribute value are separate."
                                },
         "target_statement":  "repo.switch_create(\"feature/v33-git-cards\")",
         "focus_span":  "repo.switch_create(\"feature/v33-git-cards\")",
@@ -573,10 +573,10 @@
         "primary_concept":  "membership_test",
         "reading_goal_internal":  "특정 conflict marker 문자열의 존재 여부를 검사해 자동 병합 실패 상태를 해석한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`substring in text` checks whether a specific substring is contained within a string.",
-                                    "how_to_read":  "Compare the left marker with the entire text on the right.",
-                                    "key_point":  "`\u003c\u003c\u003c\u003c\u003c\u003c\u003c HEAD` If the same marker remains, it indicates a conflict where Git cannot automatically determine which change to select.",
-                                    "common_mistake":  "It’s easy to assume that the presence of a `marker` means the merge was successful. On the contrary, it’s a signal that manual resolution is required."
+                                    "what_it_is":  "Easy meaning: This checks whether some text you are looking for appears inside a longer piece of text. Exact definition: For strings, `in` is a membership-test operator that returns `True` or `False` according to whether the left string occurs as a contiguous substring of the right string.",
+                                    "how_to_read":  "Think of searching a document for a particular phrase. The first line binds `text` to a string containing conflict markers and two versions of the content. `\\n` represents a newline. Read `\"<<<<<<< HEAD\" in text` on the second line as “Does the exact phrase `<<<<<<< HEAD` appear anywhere inside `text`?” The left side is the phrase to find; the right side is the entire string to search.",
+                                    "key_point":  "`text` contains `<<<<<<< HEAD` → the membership test produces `True` → that value is assigned to `has_conflict`. In this card’s text, conflict markers remain between the two changes, indicating that Git was unable to automatically determine which change to select. This code only checks for the marker; it neither selects a change nor resolves the conflict.",
+                                    "common_mistake":  "`in` does not compare the two complete strings for equality. It returns `True` even when the phrase is only part of a longer string. Also, `True` here means that a conflict marker was found, not that the merge succeeded. Python has not directly checked Git’s state."
                                 },
         "teaching_example":  {
                                  "code":  "text = \"\u003c\u003c\u003c\u003c\u003c\u003c\u003c HEAD\\na\\n=======\\nb\\n\u003e\u003e\u003e\u003e\u003e\u003e\u003e branch\"\nfound = \"\u003c\u003c\u003c\u003c\u003c\u003c\u003c HEAD\" in text",

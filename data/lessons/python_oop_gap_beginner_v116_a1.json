@@ -393,14 +393,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "super()가 제공하는 부모 탐색 객체에서 __init__ 메서드를 찾아 name 값을 전달하고 부모의 초기화 코드를 실행하는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "메서드 호출은 `object.method(arguments)` 형태로 대상 객체에서 메서드를 찾아 실행합니다.",
-      "how_to_read": "먼저 `super()` 결과를 확인하고, 그 객체의 `__init__` 메서드 호출과 전달 인자 name을 분리합니다.",
-      "key_point": "부모 User.__init__가 실행되어 self.name 속성이 먼저 설정됩니다.",
-      "common_mistake": "super가 부모 클래스 이름 자체이거나 `__init__`을 새로 정의하는 문법이라고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `super().__init__(name)`은 부모 쪽에 있는 준비 작업을 같은 객체에 실행해 달라는 요청입니다.\n정확한 정의: 메서드 호출인 `super().__init__(name)`은 메서드 탐색 순서에서 현재 클래스 다음부터 `__init__`을 찾아, 현재 객체에 연결된 메서드에 `name` 값을 전달해 실행합니다.",
+      "how_to_read": "직관적 모델: 한 객체의 준비 작업을 나누어 맡는다고 생각하세요. 부모가 이름을 설정하고, 자식이 등급을 추가합니다. 별도의 부모 객체를 만드는 것은 아닙니다.\n이 카드에서 `Admin(\"Mina\", 3)`은 `Admin.__init__`을 실행합니다. `super()`는 `Admin` 다음부터 메서드를 찾는 통로이고, 여기서는 `User.__init__`을 찾습니다. 마지막 `(name)`이 실제 호출이며, `\"Mina\"`를 전달합니다. `self`는 자동으로 전달되며 두 초기화 메서드에서 같은 `Admin` 객체를 가리킵니다.",
+      "key_point": "`Admin(\"Mina\", 3)` → `Admin.__init__` → `super().__init__(name)` → `User.__init__`의 `self.name = name`으로 `\"Mina\"` 저장 → 자식 코드로 돌아와 `self.level = level`로 `3` 저장 → `print(admin.name, admin.level)`이 `Mina 3`을 출력합니다.",
+      "common_mistake": "`__init__`이 `None`을 반환하므로 `admin.name`도 `None`이라고 생각하기 쉽습니다. 하지만 반환값과 속성에 저장한 값은 다릅니다. 여기서는 반환값을 사용하지 않고, 부모 메서드가 같은 객체에 저장한 `\"Mina\"`를 나중에 읽습니다."
     },
     "teaching_example": {
-      "code": "class Base:\n    def __init__(self, name):\n        self.name = name\nclass Child(Base):\n    def __init__(self, name):\n        super().__init__(name)\nprint(Child(\"Mina\").name)",
-      "walkthrough": "Child 초기화 중 부모 Base.__init__을 호출해 name 속성을 설정합니다."
+      "code": "class Base:\n    def __init__(self, name):\n        self.name = name\n\nclass Child(Base):\n    def __init__(self, name):\n        super().__init__(name)\n\nchild = Child(\"Jin\")\nprint(child.name)",
+      "walkthrough": "1) `class Base:`는 부모 클래스를 정의합니다.\n2) 그 안의 `def __init__(self, name):`은 초기화 메서드를 정의합니다. 본문 `self.name = name`은 호출될 때 전달된 이름을 객체에 저장합니다.\n3) `class Child(Base):`는 `Base`를 상속하는 자식 클래스를 정의합니다.\n4) 자식의 `def __init__(self, name):`은 자식의 초기화 메서드를 정의합니다. 이때는 본문을 아직 실행하지 않습니다.\n5) `child = Child(\"Jin\")`에서 새 객체의 `Child.__init__`이 실행되고, `name`은 `\"Jin\"`이 됩니다.\n6) 본문의 `super().__init__(name)`이 `Base.__init__`을 같은 객체에 대해 호출합니다. 부모 본문의 `self.name = name`이 `\"Jin\"`을 저장한 뒤 자식으로 돌아옵니다. 초기화가 끝난 객체가 `child`에 연결됩니다.\n7) `print(child.name)`은 저장된 이름을 읽어 `Jin`을 출력합니다.\n실행 흐름: `\"Jin\"` 전달 → 부모 초기화 호출 → 같은 객체의 `name` 설정 → 속성 읽기 → 출력 `Jin`."
     },
     "answer_explanation": {
       "step_by_step": "1) Admin('Mina', 3) 호출에서 name과 level 값이 들어온다. 2) `super()`가 부모 초기화를 호출할 경로를 제공한다. 3) `__init__(name)`이 User.__init__을 실행해 self.name에 Mina를 저장한다. 4) 다음 줄이 self.level에 3을 저장해 Mina 3이 출력된다.",

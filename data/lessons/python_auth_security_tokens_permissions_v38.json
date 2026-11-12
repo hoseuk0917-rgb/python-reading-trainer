@@ -502,10 +502,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "비밀번호 문자열을 메서드에 전달하고 반환된 별도 표현을 변수에 저장하는 데이터 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`obj.method(value)`는 객체의 메서드에 값을 전달하고 반환값을 받는 호출입니다.",
-      "how_to_read": "argument 값, 메서드 반환값, 대입 대상 변수를 차례로 확인합니다.",
-      "key_point": "이 예제의 Hasher는 문법 학습용 로컬 객체이며, 핵심은 원문 문자열 대신 메서드 반환값을 별도 변수에 저장하는 흐름입니다.",
-      "common_mistake": "메서드 호출 뒤에도 `password_hash`에 원문 비밀번호가 그대로 저장된다고 생각하기 쉽습니다. 실제 저장값은 반환 결과입니다."
+      "what_it_is": "쉽게 말하면: `hasher.hash(plain_password)`는 문자열을 건네주며 작업을 시키고, 그 결과를 돌려받는 표현입니다.\n정확한 정의: 메서드 호출은 객체에 연결된 함수를 실행하는 표현식으로, 이 코드에서는 `hasher`가 `self`에, 전달한 인자 값이 `text`에 연결되고 `return`의 값이 호출 결과가 됩니다.",
+      "how_to_read": "입력 → 작업 → 결과를 돌려주는 작은 작업대로 생각하세요. `class Hasher` 안의 `def hash`는 작업 방법을 정의하며, 이때 본문을 실행하지는 않습니다. `hasher = Hasher()`는 객체를 만들고, `plain_password = \"swordfish\"`는 입력 문자열에 이름을 붙입니다. 이어서 `hasher.hash(plain_password)`가 메서드를 실행하면 `text`는 `\"swordfish\"`를 가리킵니다. `len(text)`가 문자 수 9를 반환하고, `return`이 문자열 `\"hash::9\"`를 호출한 곳으로 돌려줍니다.",
+      "key_point": "실행 흐름: `plain_password` → `\"swordfish\"` → 메서드의 `text` → `len(text)`는 `9` → `f\"hash::{len(text)}\"`는 `\"hash::9\"` → `return` → `password_hash`에 `\"hash::9\"` 저장.\n이 로컬 `Hasher`는 길이를 넣은 문자열을 만드는 학습용 코드이지 실제 비밀번호 보호용 해싱 구현이 아닙니다.",
+      "common_mistake": "괄호 안에 `plain_password`가 있으므로 `password_hash`에도 `\"swordfish\"`가 저장된다고 생각하기 쉽습니다. 하지만 괄호 안의 값은 입력이고, 대입되는 값은 `return`으로 돌려받은 결과입니다. `plain_password`는 그대로 `\"swordfish\"`를 가리키며, `password_hash`는 `\"hash::9\"`를 가리킵니다."
     },
     "teaching_example": {
       "code": "class Encoder:\n    def encode(self, text):\n        return f\"encoded:{text}\"\n\nencoder = Encoder()\nresult = encoder.encode(\"hello\")",
@@ -572,14 +572,14 @@
       "walkthrough": "index 1은 두 번째 항목이므로 step은 approve입니다."
     },
     "answer_explanation": {
-      "step_by_step": "Python list 인덱스는 0부터 시작하므로 `[2]`는 세 번째 문자열을 반환합니다.",
-      "why_correct": "oauth_steps의 세 번째 항목이 `app validates auth result`이기 때문입니다.",
+      "step_by_step": "1) 네 문자열을 나열한 리스트를 만들고 `oauth_steps`에 연결합니다.\n2) 위치 번호는 0부터 시작합니다: 0은 \"user clicks login\", 1은 \"provider authenticates user and asks consent\", 2는 \"app validates auth result\", 3은 \"app creates its own session\"입니다.\n3) 오른쪽의 `oauth_steps[2]`가 2번 위치의 문자열 \"app validates auth result\"를 반환합니다.\n4) 그 값을 `next_step`에 연결합니다.",
+      "why_correct": "`next_step`의 값은 세 번째 항목인 \"app validates auth result\"입니다. 이 코드는 단계 설명 문자열을 선택할 뿐, 그 문자열에 적힌 인증 작업을 실행하지는 않습니다.",
       "common_wrong_choice": {
         "choice": "provider authenticates user and asks consent",
-        "why_wrong": "그 값은 index 1의 두 번째 항목입니다.",
-        "misread_step": "인덱스를 1부터 센 경우입니다."
+        "why_wrong": "이 문자열은 두 번째 항목으로, 인덱스가 1입니다. `[2]`가 선택하는 항목이 아닙니다.",
+        "misread_step": "위치 번호를 1부터 세어 인덱스 2를 두 번째 항목으로 읽었습니다."
       },
-      "takeaway": "흐름 list는 **0-based index와 실제 단계 순서**를 함께 확인합니다."
+      "takeaway": "리스트 확인 → 0부터 세어 인덱스 위치 찾기 → 해당 값 읽기 → 왼쪽 이름에 연결하기 순서로 읽습니다."
     },
     "target_statement": "next_step = oauth_steps[2]",
     "focus_span": "oauth_steps[2]",
@@ -633,14 +633,14 @@
       "walkthrough": "editor permission list에 write가 있어 True입니다."
     },
     "answer_explanation": {
-      "step_by_step": "roles['admin']에는 manage_cards가 들어 있습니다.",
-      "why_correct": "admin role에 명시적으로 부여된 permission이 manage_cards이기 때문입니다.",
+      "step_by_step": "1. 첫 대입문은 역할 이름을 각 권한 목록에 연결하는 딕셔너리를 만들어 `roles`에 연결합니다.\n2. `roles[\"admin\"]`은 `\"admin\"` 키에 연결된 목록 `[\"manage_cards\"]`를 가져옵니다.\n3. `\"manage_cards\" in [\"manage_cards\"]`는 목록 안에 해당 문자열과 같은 항목이 있는지 검사합니다. 있으므로 결과는 `True`입니다.\n4. 이 결과가 `can_manage`에 대입되어 `can_manage`의 값은 `True`가 됩니다. 화면에 출력하는 코드는 없습니다.",
+      "why_correct": "이 코드에서 admin의 권한 목록에 명시된 항목은 `\"manage_cards\"`입니다. 멤버십 검사도 이 권한이 목록에 있음을 확인하므로 정답은 `manage_cards`입니다.",
       "common_wrong_choice": {
         "choice": "read_report만",
-        "why_wrong": "read_report는 parent role에 정의돼 있습니다.",
-        "misread_step": "role과 permission mapping을 잘못 연결한 경우입니다."
+        "why_wrong": "`\"read_report\"`는 `roles[\"parent\"]`의 목록에 있고, 검사 대상인 `roles[\"admin\"]`의 목록에는 없습니다.",
+        "misread_step": "딕셔너리 전체에서 보이는 권한을 admin의 권한으로 혼동한 것입니다. 먼저 `\"admin\"` 키로 목록을 선택한 뒤, 그 목록 안에서만 권한을 찾아야 합니다."
       },
-      "takeaway": "RBAC는 **role → permission set → membership 확인**으로 읽습니다."
+      "takeaway": "`roles[역할]`로 해당 역할의 권한 목록을 선택하고, `권한 in 목록`으로 포함 여부를 확인합니다. 여기서는 `\"manage_cards\"`가 있으므로 `can_manage`는 `True`입니다."
     },
     "target_statement": "can_manage = \"manage_cards\" in roles[\"admin\"]",
     "focus_span": "\"manage_cards\" in roles[\"admin\"]",
@@ -750,18 +750,18 @@
       "common_mistake": "exp가 now보다 작을수록 token이 더 오래 유효하다고 반대로 읽기 쉽습니다."
     },
     "teaching_example": {
-      "code": "def status(exp,now):\n    if exp<now:\n        return 401\n    return 200\nresult=status(10,20)",
-      "walkthrough": "10<20이라 token은 만료됐고 401입니다."
+      "code": "def status(exp, now):\n    if exp < now:\n        return 401\n    return 200\n\nresult = status(10, 20)",
+      "walkthrough": "1) `def`는 함수를 정의합니다. 본문은 호출할 때 실행됩니다.\n2) `status(10, 20)`을 호출하면 `exp = 10`, `now = 20`으로 본문을 실행합니다.\n3) `if exp < now:`는 검사 문처럼 작동합니다. `10 < 20`이 `True`이므로 들여쓴 블록으로 들어갑니다.\n4) `return 401`이 401을 반환하고 함수 실행을 끝냅니다.\n5) 따라서 뒤의 `return 200`은 실행되지 않습니다.\n결과: `result`는 401입니다. 화면 출력은 없습니다."
     },
     "answer_explanation": {
-      "step_by_step": "token exp가 현재 시각보다 과거라 if가 실행되고 status_code는 401이 됩니다.",
-      "why_correct": "만료된 인증 credential은 보호 resource 접근에 사용할 수 없기 때문입니다.",
+      "step_by_step": "1) `def`로 `authorize`를 정의한 뒤 마지막 줄에서 호출합니다.\n2) `token`은 `{\"exp\": 100}`, `now`는 120입니다.\n3) `token[\"exp\"]`로 100을 읽습니다.\n4) 조건 `100 < 120`은 `True`이므로 if 블록을 실행합니다.\n5) `return 401`로 함수가 즉시 끝나므로 `return 200`은 실행되지 않습니다.\n6) 반환값 401이 `status_code`에 저장됩니다.",
+      "why_correct": "이 코드는 만료 시각 100이 현재 시각 120보다 이전인 경우 401을 반환하도록 정했습니다. 따라서 반환값에 대응하는 선택지는 `401 Unauthorized`입니다. 실제 HTTP 응답을 전송하는 코드는 아닙니다.",
       "common_wrong_choice": {
-        "choice": "404 Not Found",
-        "why_wrong": "resource 존재 문제가 아니라 인증 credential 유효성 문제입니다.",
-        "misread_step": "authentication error와 resource-not-found를 혼동한 경우입니다."
+        "choice": "200 OK",
+        "why_wrong": "`return 200`이 아래에 있어도 항상 실행되지는 않습니다. 여기서는 먼저 `return 401`을 실행하면서 함수가 끝납니다.",
+        "misread_step": "조건이 참인 블록에 들어간 뒤, `return`이 함수 실행을 끝낸다는 점을 놓친 경우입니다."
       },
-      "takeaway": "token expiry는 **exp timestamp < now → expired → 401/refresh flow**로 읽습니다."
+      "takeaway": "인자 값 확인 → 비교 → 참이면 if 블록 실행 → 401 반환 → `status_code = 401`. 조건이 거짓일 때만 이 코드의 `return 200`에 도달합니다."
     },
     "target_statement": "if token[\"exp\"] < now:",
     "focus_span": "token[\"exp\"] < now",
@@ -867,18 +867,18 @@
       "common_mistake": "429를 서버가 영구적으로 고장났다는 뜻으로 읽기 쉽습니다."
     },
     "teaching_example": {
-      "code": "def status(count):\n    if count>10:\n        return 429\n    return 200\nresult=status(12)",
-      "walkthrough": "12>10이라 429가 반환됩니다."
+      "code": "def status(count):\n    if count > 10:\n        return 429\n    return 200\n\nresult = status(12)",
+      "walkthrough": "1) `def status(count):`는 함수를 정의합니다. 이때 함수 안의 코드는 아직 실행되지 않습니다.\n2) `result = status(12)`에서 함수를 호출하면 `count`는 12가 됩니다.\n3) `if count > 10:`은 검사 문처럼 작동합니다. `12 > 10`은 `True`이므로 들여쓴 블록으로 들어갑니다.\n4) `return 429`가 429를 반환하고 함수 실행을 끝냅니다.\n5) 따라서 다음 줄의 `return 200`은 실행되지 않습니다. 반환값 429가 `result`에 저장됩니다.\n결과: `result`는 429이며, 출력은 없습니다."
     },
     "answer_explanation": {
-      "step_by_step": "현재 요청량이 threshold 60을 넘어서 rate-limit branch가 실행됩니다.",
-      "why_correct": "429는 요청 빈도가 너무 높아 제한된 상황을 나타내는 HTTP status이기 때문입니다.",
+      "step_by_step": "1) `def`로 `check_request_rate` 함수를 정의합니다.\n2) `check_request_rate(75)`를 호출하면 `request_count`는 75가 됩니다.\n3) 조건 `request_count > 60`을 계산하면 `75 > 60`, 즉 `True`입니다.\n4) 조건이 참이므로 들여쓴 `return 429`를 실행합니다. 429를 반환하면서 함수 실행이 끝나므로 `return 200`은 실행되지 않습니다.\n5) 반환값이 `status_code`에 저장되어 그 값은 429가 됩니다. 화면에 출력하는 코드는 없습니다.",
+      "why_correct": "429 Too Many Requests는 요청이 너무 많아 제한된 상황을 뜻합니다. 이 코드도 요청 수 75가 한도 60을 넘었을 때 429를 반환하므로 정답은 ‘요청이 너무 많아 제한됐다’입니다. 코드는 이 상황을 정수 반환값으로 나타냅니다.",
       "common_wrong_choice": {
         "choice": "서버가 항상 고장났다",
-        "why_wrong": "429는 서버 장애 자체가 아니라 요청량 제한 상태입니다.",
-        "misread_step": "rate limiting과 server failure를 혼동한 경우입니다."
+        "why_wrong": "429는 요청량 제한을 나타내며, 서버가 항상 고장났다는 뜻이 아닙니다.",
+        "misread_step": "`75 > 60`이라는 요청 수 검사로 선택된 429를 서버 고장 표시로 해석한 것입니다."
       },
-      "takeaway": "rate limit은 **usage count → threshold comparison → 429**로 읽습니다."
+      "takeaway": "요청 수 → `> 60` 비교 → 참이면 429 반환 → 함수 종료 순서로 읽습니다. 요청 수가 정확히 60이면 조건은 거짓이므로 `return 200`에 도달합니다."
     },
     "target_statement": "if request_count > 60:",
     "focus_span": "request_count > 60",

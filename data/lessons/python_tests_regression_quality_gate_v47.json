@@ -697,18 +697,18 @@
       "common_mistake": "ok가 False라 if도 False라고 생각하기 쉽습니다. 앞에 not이 있어 전체 조건은 True입니다."
     },
     "teaching_example": {
-      "code": "passed = False\nsteps = []\nif not passed:\n    steps.append(\"stop\")",
-      "walkthrough": "not False가 True라 stop이 추가됩니다."
+      "code": "passed = False\nsteps = []\nif not passed:\n    raise SystemExit(1)\nsteps.append(\"next\")",
+      "walkthrough": "1) `passed = False`는 검증 실패를 나타냅니다.\n2) `steps = []`는 빈 목록을 만듭니다.\n3) `if not passed:`에서 `not False`는 `True`이므로 들여쓴 블록으로 들어갑니다. 실패했을 때 닫히는 통과문이라고 생각하면 됩니다.\n4) `raise SystemExit(1)`은 종료 코드 1을 담은 예외를 발생시킵니다. 이 코드에는 이를 잡는 처리가 없으므로 실행이 종료됩니다.\n5) 따라서 `steps.append(\"next\")`는 실행되지 않고 `steps`는 `[]`로 남습니다.\n흐름: `False` → `not False` → `True` → 종료 → 다음 단계 차단.\n반대로 `passed`가 `True`라면 조건은 `False`여서 종료 블록을 건너뛰고 `steps`는 `[\"next\"]`가 됩니다."
     },
     "answer_explanation": {
-      "step_by_step": "검증 결과가 False이므로 stop branch가 실행됩니다. 따라서 commit 단계는 validation 통과 후에만 도달할 수 있습니다.",
-      "why_correct": "gate condition이 다음 단계 진입 여부를 결정하기 때문입니다.",
+      "step_by_step": "1) `events = []`로 빈 목록을 만들고, 세 개의 `def` 문으로 함수를 정의합니다. 함수 본문은 아직 실행하지 않습니다.\n2) `generate_files()`를 호출하면 `\"generated\"`가 추가되어 `events`는 `[\"generated\"]`가 됩니다. 이 예제의 함수는 실제 파일을 만들지는 않습니다.\n3) `run_validation_gate()`가 `False`를 반환하므로 `ok`는 `False`입니다.\n4) `if not ok:`의 조건은 `not False`, 즉 `True`이므로 들여쓴 `raise SystemExit(1)`을 실행합니다.\n5) 이 코드에는 예외를 잡는 처리가 없으므로 실행이 종료되어 `commit_and_push()`에 도달하지 않습니다. 따라서 `\"committed\"`는 추가되지 않고 종료 시점의 `events`는 `[\"generated\"]`입니다.",
+      "why_correct": "따라서 정답은 '검증을 통과한 산출물만 다음 단계로 보내는 것'입니다. 실패 결과인 `False`는 종료 경로로 이어집니다. 검증 결과가 `True`라면 `not ok`가 `False`여서 종료 블록을 건너뛰고 다음 단계에 도달합니다. 현재 코드는 항상 `False`를 반환하므로 다음 단계가 차단됩니다.",
       "common_wrong_choice": {
         "choice": "모든 오류를 무시하는 것",
-        "why_wrong": "오히려 오류가 있으면 명시적으로 중단합니다.",
-        "misread_step": "quality gate의 방향을 반대로 이해한 경우입니다."
+        "why_wrong": "검증 실패를 무시하고 계속하는 것이 아니라, `raise SystemExit(1)`로 다음 단계에 도달하지 못하게 합니다.",
+        "misread_step": "`ok`가 `False`이므로 if 블록도 건너뛴다고 읽는 실수입니다. `not`이 값을 뒤집으므로 조건은 `True`입니다. 또한 다음 호출이 들여쓰기 밖에 있어도 앞에서 실행이 종료되면 실행되지 않습니다."
       },
-      "takeaway": "validation gate는 **검증 결과 → 실패 차단 → 성공 시 다음 단계**로 읽습니다."
+      "takeaway": "검증 결과 → `not`으로 실패 여부 확인 → 실패하면 종료, 통과하면 다음 단계 순서로 읽습니다."
     },
     "target_statement": "if not ok:",
     "focus_span": "if not ok:",

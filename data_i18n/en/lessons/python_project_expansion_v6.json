@@ -232,24 +232,24 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "router 등록 method 호출에서 prefix keyword argument가 경로 앞부분을 결정하는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`prefix='/api'` is a keyword argument that passes a string value with a name in a method call.",
-      "how_to_read": "We look at what kind of option the keyword is and what value the string on the right actually passes.",
-      "key_point": "In FastAPI `include_router`, `prefix` is used to add a common path in front of the routes owned by the router.",
-      "common_mistake": "It is easy to think `prefix` changes the server port or database name. It is an option related to the beginning of a URL path."
+      "what_it_is": "Easy meaning: Write an input's name in a call to pass a value to that named input.\nExact definition: A keyword argument is an argument specified as `name=value` in a function or method call that binds a value to the corresponding parameter.",
+      "how_to_read": "Imagine input slots with name labels. In `app.include_router(router, prefix=\"/api\")`, `app` is automatically bound to `self`, the positional argument `router` binds to the parameter `router`, and the named argument `\"/api\"` binds to the parameter `prefix`. Then read how the method body uses these values.",
+      "key_point": "`prefix=\"/api\"` → inside the method, `prefix` is `\"/api\"` → evaluate `prefix + path` for each `path` → `app.routes` becomes `[\"/api/health\", \"/api/items\"]` → `[0]` gives `\"/api/health\"`. The method body in this code performs the joining; the keyword name itself does not.",
+      "common_mistake": "It is easy to read `prefix=\"/api\"` as a comparison or assume the supplied value replaces the whole path. Here, `=` is syntax for passing a named argument, and `prefix + path` in the body joins the original path after the prefix string."
     },
     "teaching_example": {
-      "code": "class App:\n    def include(self, router, prefix):\n        return prefix + router[\"path\"]\n\napp = App()\nroute = app.include({\"path\": \"/items\"}, prefix=\"/v1\")",
-      "walkthrough": "The prefix /v1 is appended to the router path /items, resulting in /v1/items."
+      "code": "def make_route(path, prefix):\n    return prefix + path\n\nroute = make_route(\"/users\", prefix=\"/v2\")\nprint(route)",
+      "walkthrough": "1) `def make_route(path, prefix):` defines a function with two input names. Its body does not run yet.\n2) `return prefix + path` joins the two strings in this order and returns the result when called.\n3) In `route = make_route(\"/users\", prefix=\"/v2\")`, the positional argument `\"/users\"` binds to `path`, and the keyword argument `\"/v2\"` binds to `prefix`. The body evaluates `\"/v2\" + \"/users\"`, returns `\"/v2/users\"`, and that value is stored in `route`.\n4) `print(route)` displays `/v2/users`."
     },
     "answer_explanation": {
-      "step_by_step": "The prefix `/health` is added before the router’s `/api`, so `/api/health` is added to the routes.",
-      "why_correct": "This is because the prefix keyword argument in the `include_router` call specifies the beginning of the common path.",
+      "step_by_step": "1) `class App` defines the initialization method and the `include_router` method.\n2) `router` is bound to `[\"/health\", \"/items\"]`.\n3) `app = App()` creates an object and runs `__init__`, making `app.routes` an empty list.\n4) Calling `app.include_router(router, prefix=\"/api\")` binds `self` to `app`, `router` to the supplied list, and `prefix` to `\"/api\"`.\n5) `extend` adds the generated strings in order. The first `path` is `\"/health\"`, so `prefix + path` is `\"/api/health\"`; the next result is `\"/api/items\"`.\n6) Thus, `app.routes` is `[\"/api/health\", \"/api/items\"]`. `app.routes[0]` selects the first item, so `first_route` is `\"/api/health\"`.",
+      "why_correct": "The keyword argument passes `\"/api\"` to `prefix`, and the method places it before the first path, `\"/health\"`. Index `0` selects this first result, so the answer is `/api/health`.",
       "common_wrong_choice": {
         "choice": "/health",
-        "why_wrong": "That value is the original path inside the router, not the final path after the prefix is applied.",
-        "misread_step": "This is the case when the `prefix` option is not applied."
+        "why_wrong": "This is the first path in the original list. `app.routes` contains strings produced by `prefix + path`, so the prefix string must be included.",
+        "misread_step": "This skips substituting the supplied `prefix` value into `prefix + path` in the method body."
       },
-      "takeaway": "A separated API route is read as **router path + include prefix = final URL**."
+      "takeaway": "Connect each `name=value` in the call to its parameter, then follow the body. Here, the code joins `prefix + path` in that order and selects the first result."
     },
     "target_statement": "app.include_router(router, prefix=\"/api\")",
     "focus_span": "prefix=\"/api\"",
@@ -292,10 +292,10 @@
     "primary_concept": "arithmetic",
     "reading_goal_internal": "문자열 addition으로 main prefix와 router path가 하나의 최종 URL이 되는 과정을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "In strings, `left + right` is an addition operation that concatenates the two strings.",
-      "how_to_read": "Concatenate the actual values of the left and right strings in order.",
-      "key_point": "Even if you separate the router, you must track the final URL by combining the router path and the include prefix.",
-      "common_mistake": "It’s easy to assume that the `health` function name automatically determines the entire URL. However, the URL is determined by the `path` and `prefix` settings."
+      "what_it_is": "Easy meaning: String `+` joins two pieces of text in order. Exact definition: The `+` operation on two strings creates a new string containing the left string followed by the right string.",
+      "how_to_read": "Picture placing two text pieces side by side. The first line binds `prefix` to `\"/api\"`, and the second binds `route_path` to `\"/health\"`. On the third line, replace the names in `prefix + route_path` with their values and read it as `\"/api\" + \"/health\"`.",
+      "key_point": "`\"/api\"` → append `\"/health\"` → create `\"/api/health\"` → assign it to `final_path`. The original two strings remain unchanged, and this code does not print the value.",
+      "common_mistake": "Do not assume `+` automatically cleans up paths or adds `/`. It joins the characters exactly as given, so the middle `/` here comes from the first character of `\"/health\"`."
     },
     "teaching_example": {
       "code": "prefix = \"/v1\"\npath = \"/users\"\nfull = prefix + path",
@@ -658,24 +658,24 @@
     "primary_concept": "call",
     "reading_goal_internal": "cache storage 객체의 open method에 이름을 전달해 특정 cache를 얻는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`obj.open(name)` This is a method call that passes `name` to the `open` method of an object.",
-      "how_to_read": "Check whether the object to the left of the dot is the cache storage and whether the string inside the parentheses is a cache name.",
-      "key_point": "During the Service Worker installation phase, it is common to prepare cache space to store resources such as the app shell.",
-      "common_mistake": "`caches.open` It’s easy to think this refers to opening a browser tab or a database. Here, it refers to named cache storage."
+      "what_it_is": "Easy meaning: `caches.open(\"app-v1\")` asks `caches` to do a job with a name and give back a result.\nExact definition: This is a method call that executes a method bound to an object; here, `caches` is passed as `self`, the string `\"app-v1\"` is passed as `name`, and the return value is a dictionary.",
+      "how_to_read": "Think of input → work → result. Before the dot, `caches` is the object doing the work; `open` is the method to execute; inside the parentheses, `\"app-v1\"` is the value passed in. The `open` defined in this code adds the name to a set, then returns a dictionary containing that name.",
+      "key_point": "`\"app-v1\"` → `name` → record the name with `self.names.add(name)` → `return {\"name\": name}` → `{\"name\": \"app-v1\"}` → bind to `cache`. Therefore, `cache[\"name\"]` is `\"app-v1\"`.",
+      "common_mistake": "Do not assume that the variable name `cache` becomes the value in the returned dictionary. The value comes from the string passed to the method, not the variable's name. Also, what `open` does here is determined by its shown method body, not by its name alone."
     },
     "teaching_example": {
-      "code": "class CacheStore:\n    def open(self, name):\n        return {\"name\": name}\nstore = CacheStore()\ncache = store.open(\"assets-v2\")",
-      "walkthrough": "The name \"assets-v2\" is passed to `open`, and a value representing its cache is returned."
+      "code": "class CacheStore:\n    def open(self, name):\n        return {\"name\": name}\nstore = CacheStore()\ncache = store.open(\"assets-v2\")\nprint(cache[\"name\"])",
+      "walkthrough": "1) `class CacheStore:` begins the class definition.\n2) `def open(self, name):` defines a method that receives the object and a name. Its body does not run yet.\n3) `return {\"name\": name}` specifies that the method will return a dictionary containing the name when called.\n4) `store = CacheStore()` creates an object and binds it to `store`.\n5) Calling `store.open(\"assets-v2\")` makes `self` the `store` object and `name` the string `\"assets-v2\"`. The body runs, returns `{\"name\": \"assets-v2\"}`, and `cache` is bound to that dictionary.\n6) `print(cache[\"name\"])` reads the value at key `\"name\"` and prints `assets-v2`."
     },
     "answer_explanation": {
-      "step_by_step": "`caches.open('app-v1')` In the call, the string \"app-v1\" is passed as the cache name, and the same name is included in the returned dictionary.",
-      "why_correct": "This is because the `open` method is modeled to select or create a named cache.",
+      "step_by_step": "1) The class definition makes the `__init__` and `open` methods available.\n2) Creating an object with `CacheStorage()` runs `__init__`, making `self.names` an empty set. `caches` is bound to this object.\n3) `caches.open(\"app-v1\")` executes `open` with this object as `self` and `\"app-v1\"` as `name`.\n4) `self.names.add(name)` adds `\"app-v1\"` to the set.\n5) `return {\"name\": name}` returns `{\"name\": \"app-v1\"}`.\n6) `cache` is bound to the returned dictionary. Therefore, `cache[\"name\"]` is the string `\"app-v1\"`.",
+      "why_correct": "The value associated with key `\"name\"` is the value of parameter `name`, which is `\"app-v1\"` in this call, so the answer is `app-v1`.",
       "common_wrong_choice": {
-        "choice": "install",
-        "why_wrong": "\"install\" refers to the lifecycle context, and the cache name is \"app-v1.\"",
-        "misread_step": "This is an instance where the event name was confused with the cache name."
+        "choice": "None",
+        "why_wrong": "`self.names.add(name)` itself returns `None`, but `open` does not return that result. It explicitly returns a dictionary on the next line.",
+        "misread_step": "This confuses the result of an intermediate call inside the method with the return value of the entire `open` call."
       },
-      "takeaway": "The PWA cache code reads as **cache storage object → open name → versioned cache**."
+      "takeaway": "Trace a method call through the passed values → body execution → actual `return` value → assignment."
     },
     "target_statement": "cache = caches.open(\"app-v1\")",
     "focus_span": "caches.open(\"app-v1\")",
@@ -781,14 +781,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "object.method(...) 구조에서 호출 대상 client와 메서드 invoke_model, 전달 인자를 구분하고 반환값이 result에 저장되는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A method call in the form `object.method(arguments)` is an expression that executes behavior provided by a particular object.",
-      "how_to_read": "First, check the client on the left side of the dot, then read “invoke_model” on the right side of the dot as the method name, and finally check the arguments inside the parentheses.",
-      "key_point": "`model_id` and `body_json` are not the targets of method calls but rather arguments passed to `invoke_model`.",
-      "common_mistake": "It is easy to misinterpret `invoke_model` as a standalone function or to mistake `model_id` for the object being called."
+      "what_it_is": "Easy meaning: A method call asks a particular object to do something it provides.\nExact definition: In this code, `object.method(...)` calls a method found on the object, automatically passing that object as `self` along with the arguments inside the parentheses.",
+      "how_to_read": "Mental model: separate ‘which object → which job → which inputs.’ In `client.invoke_model(...)`, `client` is the object receiving the request, and `invoke_model` is the method to execute. `modelId=model_id` passes the value of `model_id` to the parameter `modelId`. Read the other two arguments the same way. Here, only the locally defined method runs; it does not contact an external service.",
+      "key_point": "`client = BedrockClient()` creates an object. During the call, that object is passed as `self`, while `modelId` receives `\"demo-model\"`, `contentType` receives `\"application/json\"`, and `body` receives the string `'{\"prompt\":\"hello\"}'`.\nExecute the method → return a dictionary containing the three values → bind it to `result` → read `result[\"modelId\"]` → print `demo-model`.\nThus, the name referring to the target object is `client`.",
+      "common_mistake": "It is easy to mistake `model_id` for the target, but it names a value passed inside the parentheses. `client`, to the left of the dot, is the target object; `result` receives the return value after the call finishes. Also, `body_json` is passed unchanged as a string, not converted to a dictionary in this code."
     },
     "teaching_example": {
-      "code": "class Client:\n    def send(self, payload):\n        return {\"sent\": payload}\n\nclient = Client()\nprint(client.send(\"ping\"))",
-      "walkthrough": "The client is the target of the method call, send is the method, and ping is passed as an argument."
+      "code": "class Client:\n    def send(self, payload):\n        return {\"sent\": payload}\n\nclient = Client()\nmessage = \"ping\"\nresult = client.send(payload=message)\nprint(result[\"sent\"])",
+      "walkthrough": "1) `class Client:` defines a class for creating objects.\n2) `def send(self, payload):` defines the `send` method. Defining it does not yet execute its body.\n3) `return {\"sent\": payload}` is the part that will return the supplied value inside a dictionary when the method is called.\n4) `client = Client()` creates an object and binds it to the name `client`.\n5) `message = \"ping\"` prepares the string to pass.\n6) `client.send(payload=message)` calls the method on `client`. `self` automatically receives the `client` object, and `payload` receives `\"ping\"`. The body executes and returns `{'sent': 'ping'}`, which is bound to `result`.\n7) `print(result[\"sent\"])` retrieves the value from the returned dictionary and prints `ping`.\nFlow: call `send` on `client` → pass `\"ping\"` → return a dictionary → `result` → print `ping`."
     },
     "answer_explanation": {
       "step_by_step": "1) In the dot notation `client.invoke_model`, identify the name to the left of the dot. 2) `client` is the object on which the method is being called. 3) `invoke_model` is the name of the method being called on that object. 4) The values `modelId`, `contentType`, and `body` inside the parentheses are the arguments passed to the method.",

@@ -574,24 +574,24 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "`subset=[\"id\"]`가 중복 판정에 사용할 field 목록을 메서드에 전달한다는 의미를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`subset=[\"id\"]`은 이름이 있는 keyword argument로 리스트 값을 전달합니다.",
-                                    "how_to_read":  "keyword 이름과 오른쪽 값을 분리해 어떤 옵션을 어떤 값으로 설정하는지 봅니다.",
-                                    "key_point":  "여기서는 전체 row가 완전히 같은지를 보는 것이 아니라 id field를 중복 기준으로 사용합니다.",
-                                    "common_mistake":  "subset이 결과에 남길 column 목록이라고 생각하기 쉽습니다. 이 맥락에서는 중복을 판정할 기준 column 목록입니다."
+                                    "what_it_is":  "쉽게 말하면: `subset=[\"id\"]`는 메서드의 `subset`이라는 입력 자리에 `[\"id\"]`를 전달합니다.\n정확한 정의: 키워드 인자는 호출에서 매개변수 이름을 지정해 값을 전달하는 방식이며, 여기서는 리스트 `[\"id\"]`가 매개변수 `subset`에 바인딩됩니다.",
+                                    "how_to_read":  "이름표가 붙은 입력 칸을 떠올리세요. `subset`은 칸 이름이고 `[\"id\"]`는 전달할 값입니다. 이 코드에서는 `key = subset[0]`이 첫 항목 `\"id\"`를 꺼내므로, `row[key]`는 각 행의 `id` 값을 읽습니다.",
+                                    "key_point":  "`[\"id\"]` → `subset` → `subset[0]` → `\"id\"` → 각 행의 `id` 비교 순서입니다. 처음 보는 값 1과 2의 행만 결과에 추가되어 2개가 남습니다. 이 구현은 전달된 목록의 첫 항목만 사용합니다.",
+                                    "common_mistake":  "`subset`을 결과에 남길 필드 목록으로 읽지 마세요. 여기서는 비교할 키를 정하며, `result.append(row)`는 `name`도 포함한 행 전체를 추가합니다. 이 의미는 인자 이름 자체가 아니라 메서드 본문에서 결정됩니다."
                                 },
         "teaching_example":  {
-                                 "code":  "class Table:\n    def dedup(self, subset):\n        return subset\n\ntable = Table()\nkeys = table.dedup(subset=[\"email\"])",
-                                 "walkthrough":  "email이 중복 판정 기준 목록으로 전달됩니다."
+                                 "code":  "def first_key(subset):\n    return subset[0]\n\nkey = first_key(subset=[\"email\"])\nprint(key)",
+                                 "walkthrough":  "1) `def`는 `subset`을 입력받는 함수를 정의합니다. 아직 본문은 실행하지 않습니다.\n2) `first_key(subset=[\"email\"])`은 리스트를 이름이 일치하는 매개변수 `subset`에 전달합니다.\n3) `return subset[0]`이 첫 항목 `\"email\"`을 반환합니다.\n4) 반환값이 `key`에 연결됩니다.\n5) `print(key)`는 `email`을 출력합니다."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "subset은 id를 기준으로 지정합니다. 첫 id=1은 남고 두 번째 id=1은 빠지며 id=2는 남습니다.",
-                                   "why_correct":  "중복 판정 key가 id 하나이기 때문입니다.",
+                                   "step_by_step":  "1) `Frame(...)`의 `__init__`이 세 행을 `self.rows`에 연결합니다.\n2) 메서드 호출에서 `self`는 `frame`, `subset`은 `[\"id\"]`에 연결됩니다.\n3) `key`는 `\"id\"`, `seen`은 빈 집합, `result`는 빈 리스트로 시작합니다.\n4) 첫 행의 id 1은 처음이므로 `seen`에 1을 넣고 A 행을 추가합니다.\n5) 두 번째 행의 id 1은 이미 있으므로 `continue`로 B 행의 추가를 건너뜁니다.\n6) 세 번째 행의 id 2는 처음이므로 2를 기록하고 C 행을 추가합니다.\n7) 두 행이 담긴 `result`를 반환하여 `deduped`에 연결합니다.",
+                                   "why_correct":  "`deduped`는 `[{\"id\": 1, \"name\": \"A\"}, {\"id\": 2, \"name\": \"C\"}]`이므로 정답은 `2개`입니다.",
                                    "common_wrong_choice":  {
                                                                "choice":  "3개",
-                                                               "why_wrong":  "id=1이 두 번 나타나므로 하나는 제거됩니다.",
-                                                               "misread_step":  "subset 기준의 중복 제거를 반영하지 않은 경우입니다."
+                                                               "why_wrong":  "`name`은 서로 달라도 비교하는 값은 `id`뿐이므로 두 번째 행은 결과에 추가되지 않습니다.",
+                                                               "misread_step":  "`subset=[\"id\"]`가 `key = \"id\"`로 이어지는 단계를 놓치고 행 전체를 비교한 경우입니다."
                                                            },
-                                   "takeaway":  "dedup 코드는 **어떤 field를 key로 쓰는지**부터 읽습니다."
+                                   "takeaway":  "키워드 인자는 이름으로 입력에 연결하고, 전달된 값이 본문에서 어떻게 사용되는지 따라 읽으세요."
                                },
         "target_statement":  "deduped = frame.drop_duplicates(subset=[\"id\"])",
         "focus_span":  "subset=[\"id\"]",
@@ -635,24 +635,24 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "status field 이름을 메서드에 전달해 같은 값을 가진 row들이 어떤 그룹으로 묶이는지 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`obj.groupby(field)` 형태는 객체의 groupby 메서드에 grouping 기준 field를 전달하는 method call입니다.",
-                                    "how_to_read":  "argument 문자열이 어떤 field를 가리키는지 확인하고 각 row의 해당 값을 기준으로 묶인다고 봅니다.",
-                                    "key_point":  "원래 pandas 코드에서 이어지는 `.size()`는 이렇게 만들어진 각 status 그룹의 행 수를 세는 단계입니다.",
-                                    "common_mistake":  "status 값을 정렬만 하는 호출이라고 생각하기 쉽습니다. 핵심은 같은 status끼리 그룹을 만드는 것입니다."
+                                    "what_it_is":  "쉽게 말하면: `table.groupby(\"status\")`는 표에 “status 값이 같은 행끼리 모아 줘”라고 요청합니다.\n정확한 정의: 이 표현식은 여기서 정의한 `Table.groupby` 메서드를 호출하며, `self`에 `table`이 자동으로 전달되고 `field`에 문자열 `\"status\"`가 전달됩니다.",
+                                    "how_to_read":  "이름표가 붙은 바구니에 행을 나누어 담는다고 생각하세요. `table.groupby`는 실행할 메서드를 가리키고, 괄호의 `\"status\"`는 분류할 필드 이름입니다. 호출하면 메서드 본문이 실행되어 각 행의 `row[\"status\"]` 값에 해당하는 리스트에 그 행을 넣습니다.",
+                                    "key_point":  "`\"status\"` → `field` → 각 행에서 PASS, FAIL, PASS 읽기 → 해당 리스트에 행 추가 → 결과 딕셔너리 반환 → `groups`에 연결. `groups[\"PASS\"]`는 두 행이 든 리스트입니다. 호출 자체가 개수를 반환하는 것은 아닙니다.",
+                                    "common_mistake":  "`\"status\"`를 모을 값 자체로 오해하지 마세요. 이것은 필드 이름이며 실제 그룹 키는 PASS와 FAIL입니다. 이 동작은 이름만 보고 추측하는 것이 아니라, 여기 정의된 `groupby` 본문에서 확인합니다."
                                 },
         "teaching_example":  {
-                                 "code":  "class Table:\n    def __init__(self, rows): self.rows = rows\n    def groupby(self, field):\n        result = {}\n        for row in self.rows:\n            result.setdefault(row[field], []).append(row)\n        return result\n\ntable = Table([{\"kind\": \"A\"}, {\"kind\": \"B\"}, {\"kind\": \"A\"}])\ngroups = table.groupby(\"kind\")",
-                                 "walkthrough":  "kind A 두 row와 B 한 row가 각각 같은 key 아래 묶입니다."
+                                 "code":  "class Table:\n    def __init__(self, rows):\n        self.rows = rows\n    def groupby(self, field):\n        result = {}\n        for row in self.rows:\n            result.setdefault(row[field], []).append(row)\n        return result\n\ntable = Table([{\"kind\": \"A\"}, {\"kind\": \"B\"}, {\"kind\": \"A\"}])\ngroups = table.groupby(\"kind\")",
+                                 "walkthrough":  "1) `class Table`은 클래스를 정의하고, 두 `def`는 메서드를 정의합니다. 본문은 호출될 때 실행됩니다.\n2) `Table(...)`로 객체를 만들면 `__init__`의 `self.rows = rows`가 세 행을 저장합니다.\n3) `table.groupby(\"kind\")`를 호출하면 `self`는 `table`, `field`는 `\"kind\"`가 됩니다.\n4) `result = {}`로 빈 딕셔너리를 만들고 `for`가 행을 차례로 방문합니다.\n5) `setdefault`는 해당 키의 리스트를 반환하고, 키가 없으면 먼저 빈 리스트를 넣습니다. `append(row)`가 그 리스트에 현재 행을 추가합니다. A → B → A 순서로 처리되어 A에는 두 행, B에는 한 행이 들어갑니다.\n6) `return result`가 딕셔너리를 반환하고 `groups`가 그 결과를 가리킵니다. 결과는 `{'A': [{'kind': 'A'}, {'kind': 'A'}], 'B': [{'kind': 'B'}]}`이며 화면 출력은 없습니다."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "세 row 중 status가 PASS인 것은 첫 번째와 세 번째입니다. groupby가 두 row를 PASS key에 모읍니다.",
-                                   "why_correct":  "grouping field로 status가 전달됐기 때문입니다.",
+                                   "step_by_step":  "1) `Table(...)`이 세 행을 `table.rows`에 저장합니다.\n2) `table.groupby(\"status\")`를 호출하여 `field`에 `\"status\"`를 전달합니다.\n3) 빈 `result`에서 시작합니다. 첫 행은 PASS 리스트를 만들고 그 행을 추가합니다: PASS 1개.\n4) 둘째 행은 FAIL 리스트를 만들고 그 행을 추가합니다: FAIL 1개.\n5) 셋째 행은 기존 PASS 리스트를 다시 사용하여 추가합니다: PASS 2개.\n6) `return result`의 결과가 `groups`에 연결됩니다. `groups[\"PASS\"]`는 첫째와 셋째 행이 든 리스트입니다.",
+                                   "why_correct":  "PASS 리스트에는 `{\"status\": \"PASS\"}`인 행 두 개가 들어 있으므로 정답은 `2개`입니다.",
                                    "common_wrong_choice":  {
                                                                "choice":  "1개",
-                                                               "why_wrong":  "PASS가 첫 row뿐 아니라 셋째 row에도 있습니다.",
-                                                               "misread_step":  "모든 row의 grouping key를 확인하지 않은 경우입니다."
+                                                               "why_wrong":  "PASS라는 키는 하나지만, 그 키에 연결된 리스트에는 두 행이 있습니다. 같은 내용을 가진 행도 `append`할 때마다 추가됩니다.",
+                                                               "misread_step":  "셋째 행이 기존 PASS 리스트에 추가되는 단계를 놓치거나, 그룹 키 하나를 리스트 항목 하나로 혼동한 경우입니다."
                                                            },
-                                   "takeaway":  "groupby는 **기준 field → 각 row의 값 → 같은 값끼리 묶기**로 읽습니다."
+                                   "takeaway":  "메서드 호출은 인자 전달 → 본문 실행 → 반환값 사용으로 읽으세요. 그룹 키 수와 각 그룹 리스트의 항목 수는 다릅니다."
                                },
         "target_statement":  "groups = table.groupby(\"status\")",
         "focus_span":  "table.groupby(\"status\")",
@@ -696,24 +696,24 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "merge 호출에서 왼쪽과 오른쪽 데이터의 서로 다른 field 이름이 join key로 지정되는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`left_on=\"node_id\"`은 merge 함수의 왼쪽 데이터 key 이름을 지정하는 keyword argument입니다.",
-                                    "how_to_read":  "keyword 이름이 옵션의 역할이고 오른쪽 문자열이 실제 field 이름이라고 구분합니다.",
-                                    "key_point":  "왼쪽 nodes의 node_id와 오른쪽 edges의 to_node_id 값이 같은 row끼리 연결됩니다.",
-                                    "common_mistake":  "left_on과 right_on의 문자열이 같아야 join된다고 생각하기 쉽습니다. field 이름은 달라도 그 field 안의 실제 값이 같으면 연결할 수 있습니다."
+                                    "what_it_is":  "쉽게 말하면: 함수를 부를 때 입력 이름을 적어 어떤 값을 전달할지 지정합니다.\n정확한 정의: 키워드 인자(keyword argument)는 호출에서 `이름=값` 형태로 전달하며, 해당 이름의 매개변수에 값을 바인딩합니다.",
+                                    "how_to_read":  "매개변수를 이름표가 붙은 입력 자리라고 생각하세요. `merge_rows`의 정의가 자리를 정하고, 호출의 `nodes`, `edges`는 순서대로 `left`, `right`에 연결됩니다. `left_on=\"node_id\"`는 `left_on` 자리에 문자열 `\"node_id\"`를 전달합니다. 따라서 본문의 `left_row[left_on]`은 `left_row[\"node_id\"]`로 읽습니다.",
+                                    "key_point":  "`left_on` → `\"node_id\"`, `right_on` → `\"to_node_id\"`\n↓\n`left_row[\"node_id\"] == right_row[\"to_node_id\"]`로 값을 비교합니다.\n↓\n`n1`에는 일치하는 오른쪽 행이 없고, `n2`에는 `e1` 행이 일치합니다.\n↓\n`merged`는 각 왼쪽 행과 일치 목록을 담습니다. `how=\"left\"`도 전달되지만 이 함수 본문은 `how`를 사용하지 않습니다.",
+                                    "common_mistake":  "`left_on` 자체를 딕셔너리 키라고 읽지 마세요. 이것은 매개변수 이름이고, 실제 왼쪽 키는 전달된 문자열 `\"node_id\"`입니다. 양쪽 키 이름이 달라도 꺼낸 값이 같으면 일치합니다."
                                 },
         "teaching_example":  {
                                  "code":  "def join(left_on, right_on):\n    return left_on, right_on\n\nkeys = join(left_on=\"user_id\", right_on=\"owner_id\")",
                                  "walkthrough":  "왼쪽은 user_id, 오른쪽은 owner_id라는 서로 다른 field 이름을 기준으로 지정합니다."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "`left_on=\"node_id\"`이 명시돼 있으므로 왼쪽 데이터에서 node_id field를 비교에 사용합니다.",
-                                   "why_correct":  "keyword 이름 left_on이 왼쪽 join key의 field 이름을 지정하기 때문입니다.",
+                                   "step_by_step":  "1) 호출에서 `nodes`는 `left`에, `edges`는 `right`에 연결됩니다.\n2) `left_on=\"node_id\"`로 `left_on`에 문자열 `\"node_id\"`가 전달됩니다.\n3) 반복문은 `nodes`의 각 딕셔너리를 `left_row`로 읽습니다.\n4) 비교식의 `left_row[left_on]`은 `left_row[\"node_id\"]`가 되어 차례로 `\"n1\"`, `\"n2\"`를 꺼냅니다.\n5) 오른쪽의 `\"n2\"`와 비교하므로 왼쪽 비교 필드는 `node_id`입니다.",
+                                   "why_correct":  "호출에서 전달한 `\"node_id\"`가 함수 안에서 왼쪽 딕셔너리를 조회하는 키로 실제 사용되므로 정답은 `node_id`입니다.",
                                    "common_wrong_choice":  {
                                                                "choice":  "to_node_id",
-                                                               "why_wrong":  "to_node_id는 `right_on`에 지정된 오른쪽 데이터 field입니다.",
-                                                               "misread_step":  "left_on과 right_on을 서로 바꿔 읽은 경우입니다."
+                                                               "why_wrong":  "`\"to_node_id\"`는 `right_on`에 전달되어 오른쪽 `edges`의 딕셔너리를 조회하는 키입니다.",
+                                                               "misread_step":  "`left_row[left_on]`과 `right_row[right_on]`에 전달된 값을 서로 바꿔 읽은 경우입니다."
                                                            },
-                                   "takeaway":  "merge는 **왼쪽 key 이름과 오른쪽 key 이름을 따로 확인**합니다."
+                                   "takeaway":  "호출의 키워드 인자 → 매개변수에 전달된 값 → 본문에서 그 값을 사용하는 위치 순서로 추적하세요."
                                },
         "target_statement":  "merged = merge_rows(nodes, edges, left_on=\"node_id\", right_on=\"to_node_id\", how=\"left\")",
         "focus_span":  "left_on=\"node_id\"",

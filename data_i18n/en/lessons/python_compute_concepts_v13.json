@@ -684,24 +684,24 @@
     "primary_concept": "call",
     "reading_goal_internal": "training 경로에서 backward 호출이 optimizer update보다 먼저 실행되는 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`obj.method()` is an expression that calls a method of an object.",
-      "how_to_read": "Follow the order in which calls appear from top to bottom, reflecting the state changes of each method.",
-      "key_point": "A typical training workflow may include a backward pass to compute gradients and a parameter update step.",
-      "common_mistake": "It is easy to assume that the inference and training code share the same calls. You must compare the actual lines of code."
+      "what_it_is": "Easy meaning: `loss.backward()` asks `loss` to perform its `backward` task now.\nExact definition: `obj.method()` is an expression that looks up and calls a method on an object; for the instance methods in this code, that object is automatically passed as `self`.",
+      "how_to_read": "Think of a method definition as task instructions and a call as the instruction to perform that task. At `loss.backward()`, enter the body of `Loss.backward`, execute `events.append(\"backward\")`, and then return. The next line, `optimizer.step()`, adds `\"step\"` in the same way.",
+      "key_point": "`events = []` → create objects (no list change) → `loss.backward()` → `[\"backward\"]` → `optimizer.step()` → `[\"backward\", \"step\"]`.\nThese methods only append strings; they do not actually calculate gradients or update parameters. Both methods return `None`; the effect to track here is the change to the list.",
+      "common_mistake": "It is easy to think the body runs as soon as Python reaches `def backward(self):`. A definition prepares the task; the parentheses in `loss.backward()` trigger the actual call. Writing only `loss.backward` retrieves the method without running it."
     },
     "teaching_example": {
-      "code": "events = []\nclass Task:\n    def run(self): events.append(\"run\")\ntask = Task()\ntask.run()",
-      "walkthrough": "When a method is called, `run` is added to `events`."
+      "code": "events = []\nclass Task:\n    def run(self):\n        events.append(\"run\")\ntask = Task()\ntask.run()\ntask.run()",
+      "walkthrough": "1) `events = []` creates an empty list.\n2) `class Task:` defines a class.\n3) `def run(self):` defines a method. The indented `events.append(\"run\")` is its instruction for when it is called; it does not run yet.\n4) `task = Task()` creates an object and binds it to `task`. The list is still `[]`.\n5) The first `task.run()` executes the body, making the list `[\"run\"]`.\n6) The second `task.run()` executes the same body again, making it `[\"run\", \"run\"]`.\nThe final value of `events` is `[\"run\", \"run\"]`; there is no print statement."
     },
     "answer_explanation": {
-      "step_by_step": "The first method call appends `backward`, then `optimizer.step` appends `step`.",
-      "why_correct": "Since Python statements are executed from top to bottom, the call order is directly reflected in `events`.",
+      "step_by_step": "1) Start with `events = []`.\n2) Define `Loss` and `Optimizer`, without executing the `append` calls inside their method bodies yet.\n3) `loss = Loss()` and `optimizer = Optimizer()` create the objects. `events` is still `[]`.\n4) `loss.backward()` runs the body of `backward`. After `events.append(\"backward\")`, the value is `[\"backward\"]`.\n5) After that call finishes, `optimizer.step()` runs. `events.append(\"step\")` adds an item at the end, producing the final value `[\"backward\", \"step\"]`.",
+      "why_correct": "The two calls execute in the written order, and `append` adds each new item after the existing items. Therefore, the answer is `[\"backward\", \"step\"]`.",
       "common_wrong_choice": {
         "choice": "[\"step\", \"backward\"]",
-        "why_wrong": "This is the value obtained by reading the call sequence of the source code in reverse.",
-        "misread_step": "This is a case where the actual line order was not verified."
+        "why_wrong": "This order would result if `step()` ran first. In the actual code, `loss.backward()` runs first.",
+        "misread_step": "This reverses the execution order of the final two call lines."
       },
-      "takeaway": "The training code reads the **actual call sequence of `backward` and `optimizer_update`**."
+      "takeaway": "Do not infer behavior from method names alone. Follow calls with `()` in order, enter their bodies, and track changes to the list."
     },
     "target_statement": "loss.backward()",
     "focus_span": "loss.backward()",
@@ -869,14 +869,14 @@
       "walkthrough": "GPU_or_TPU is mapped to the matrix workload."
     },
     "answer_explanation": {
-      "step_by_step": "In the \"mapping\" section, \"large matrix multiplication\" is associated with \"GPU_or_TPU.\"",
-      "why_correct": "This is because these devices provide computing resources specialized for large-scale parallel numerical computations.",
+      "step_by_step": "1) The first assignment creates a dictionary storing workload names as keys and device choices as values, and binds it to `accelerator_by_workload`.\n2) On the right side of the last line, `[\"large_matrix_multiplication\"]` looks up the value attached to the label for large matrix multiplication. It does not look up a numbered position.\n3) The matching entry is `\"large_matrix_multiplication\": \"GPU_or_TPU\"`, so the lookup returns the string `\"GPU_or_TPU\"`.\n4) This value is assigned to `accelerator`. There is no code that prints it or runs an actual device.",
+      "why_correct": "The retrieved value `\"GPU_or_TPU\"` corresponds to the choice 'GPU or TPU'. Thus, following the workload mapping given in this code, the correct answer is 'GPU or TPU'.",
       "common_wrong_choice": {
-        "choice": "Only a single core of the CPU",
-        "why_wrong": "This choice makes almost no use of the parallelism available for large matrix multiplication.",
-        "misread_step": "This is a case where the parallel processing characteristics of the workload were not taken into account."
+        "choice": "NPU only",
+        "why_wrong": "In this dictionary, `\"NPU\"` is associated with `\"on_device_low_power_inference\"`. The last line looks up `\"large_matrix_multiplication\"`, not that key.",
+        "misread_step": "Choosing only by an AI-related device name can skip the step of checking the exact key inside the brackets and the value associated with it."
       },
-      "takeaway": "The accelerator is selected based on **the actual characteristics of the workload**, not the name “AI.”"
+      "takeaway": "Read dictionary lookup as 'identify the dictionary → find the key inside the brackets → return its associated value'. Here it retrieves `\"GPU_or_TPU\"` and assigns it to `accelerator`."
     },
     "target_statement": "accelerator = accelerator_by_workload[\"large_matrix_multiplication\"]",
     "focus_span": "accelerator_by_workload[\"large_matrix_multiplication\"]",

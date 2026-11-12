@@ -697,18 +697,18 @@
                                     "common_mistake":  "It’s easy to assume that since `ok` is False, the `if` statement is also False. However, because there is a `not` before it, the overall condition is True."
                                 },
         "teaching_example":  {
-                                 "code":  "passed = False\nsteps = []\nif not passed:\n    steps.append(\"stop\")",
-                                 "walkthrough":  "Since `not False` is `True`, `stop` is added."
+                                 "code":  "passed = False\nsteps = []\nif not passed:\n    raise SystemExit(1)\nsteps.append(\"next\")",
+                                 "walkthrough":  "1) `passed = False` represents failed validation.\n2) `steps = []` creates an empty list.\n3) In `if not passed:`, `not False` is `True`, so execution enters the indented block. Think of a checkpoint that blocks progress on failure.\n4) `raise SystemExit(1)` raises an exception carrying exit code 1. Nothing in this code catches it, so execution terminates.\n5) Therefore `steps.append(\"next\")` does not run, and `steps` remains `[]`.\nFlow: `False` → `not False` → `True` → termination → next stage blocked.\nIn contrast, if `passed` were `True`, the condition would be `False`, the termination block would be skipped, and `steps` would become `[\"next\"]`."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since the validation result is False, the stop branch is executed. Therefore, the commit stage can only be reached after passing validation.",
-                                   "why_correct":  "This is because the gate condition determines whether to proceed to the next step.",
+                                   "step_by_step":  "1) `events = []` creates an empty list, and the three `def` statements define functions. Their bodies do not run yet.\n2) Calling `generate_files()` appends `\"generated\"`, making `events` equal to `[\"generated\"]`. The function in this example does not actually create files.\n3) `run_validation_gate()` returns `False`, so `ok` is `False`.\n4) The condition in `if not ok:` is `not False`, which is `True`, so the indented `raise SystemExit(1)` runs.\n5) Nothing in this code catches the exception, so execution terminates without reaching `commit_and_push()`. Thus `\"committed\"` is not appended, and `events` is `[\"generated\"]` at termination.",
+                                   "why_correct":  "Therefore the correct answer is 'Send only artifacts that passed validation to the next stage.' A failed result, `False`, leads to termination. If validation returned `True`, `not ok` would be `False`, so execution would skip the termination block and reach the next stage. The current code always returns `False`, so it blocks that stage.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Ignoring all errors",
-                                                               "why_wrong":  "If there is an error, stop explicitly.",
-                                                               "misread_step":  "This is an example of misunderstanding the direction of the \"quality gate.\""
+                                                               "why_wrong":  "Rather than ignoring failed validation and continuing, `raise SystemExit(1)` prevents execution from reaching the next stage.",
+                                                               "misread_step":  "The mistake is assuming that because `ok` is `False`, the if block is skipped. `not` reverses the value, making the condition `True`. Also, being outside the indented block does not make the next call run after execution has terminated."
                                                            },
-                                   "takeaway":  "\"validation gate\" should be read as **\"validation result → failure block → next step upon success**."
+                                   "takeaway":  "Read this as: validation result → use `not` to check for failure → terminate on failure, proceed on success."
                                },
         "target_statement":  "if not ok:",
         "focus_span":  "if not ok:",

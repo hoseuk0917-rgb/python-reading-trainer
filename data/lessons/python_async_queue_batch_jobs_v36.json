@@ -398,14 +398,14 @@
       "walkthrough": "`parallel` key의 value `many at once`가 mode에 저장됩니다."
     },
     "answer_explanation": {
-      "step_by_step": "`models['parallelism']`은 parallelism key의 value를 그대로 반환합니다.",
-      "why_correct": "dict key lookup은 정확히 지정된 key의 value를 가져오기 때문입니다.",
+      "step_by_step": "1) `models = {...}`는 두 키와 각각의 설명 문자열을 짝지은 딕셔너리를 만들고 `models`에 연결합니다.\n2) 마지막 줄에서는 오른쪽의 `models[\"parallelism\"]`을 먼저 평가합니다. 대괄호 안의 `\"parallelism\"`은 찾을 키입니다.\n3) 이 키에 연결된 값은 `\"multiple workers run at the same time\"`이므로 조회 결과는 이 문자열입니다.\n4) 그 결과를 왼쪽 이름 `parallelism`에 연결합니다. 따라서 `parallelism`에 저장되는 설명은 `\"multiple workers run at the same time\"`입니다.",
+      "why_correct": "딕셔너리 조회는 지정한 키에 연결된 값을 가져옵니다. 여기서는 `\"parallelism\"` 키의 설명 문자열을 가져와 대입하므로 정답은 `multiple workers run at the same time`입니다.",
       "common_wrong_choice": {
         "choice": "one worker switches between tasks",
-        "why_wrong": "그 설명은 concurrency key의 value입니다.",
-        "misread_step": "두 개념의 key/value를 뒤바꾼 경우입니다."
+        "why_wrong": "이 문자열은 `\"concurrency\"` 키에 연결된 값입니다. 코드가 조회하는 키는 `\"parallelism\"`입니다.",
+        "misread_step": "대괄호 안의 키를 확인하지 않고 다른 키의 설명을 선택한 경우입니다."
       },
-      "takeaway": "개념 비교 카드도 **실제 Python 데이터 구조에서 key와 value를 정확히 연결**해 읽습니다."
+      "takeaway": "딕셔너리 조회와 대입은 ‘대괄호 안의 키 확인 → 그 키의 값 가져오기 → 왼쪽 이름에 연결하기’ 순서로 읽습니다."
     },
     "target_statement": "parallelism = models[\"parallelism\"]",
     "focus_span": "models[\"parallelism\"]",
@@ -509,10 +509,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "완료된 shard id가 이름 있는 keyword argument로 checkpoint 함수에 전달되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`name=value` 형태로 호출에 전달하는 값은 keyword argument입니다.",
-      "how_to_read": "등호 왼쪽 argument 이름과 오른쪽 실제 값을 확인해 함수의 같은 이름 parameter에 대응시킵니다.",
-      "key_point": "`last_done=shard_id`는 재개 시점으로 사용할 완료 지점을 명시적으로 전달합니다.",
-      "common_mistake": "`last_done`이 새 변수에 대입된다고 생각하기 쉽습니다. 호출 괄호 안에서는 keyword argument 이름입니다."
+      "what_it_is": "쉽게 말하면: 함수를 부를 때 입력 이름을 지정해서 그 자리에 값을 전달합니다.\n정확한 정의: 키워드 인자(keyword argument)는 함수 호출에서 `이름=표현식`으로 지정하는 인자로, 표현식을 평가한 값을 해당 이름의 매개변수(parameter)에 바인딩합니다.",
+      "how_to_read": "함수의 입력 자리에 이름표가 있다고 생각하세요. `def write_checkpoint(last_done)`은 `last_done`이라는 입력 자리를 정의합니다. `shard_id = \"shard-07\"`은 전달할 값을 준비합니다. 호출의 `last_done=shard_id`는 왼쪽 이름으로 입력 자리를 고르고, 오른쪽 `shard_id`의 값인 `\"shard-07\"`을 그 자리에 전달한다는 뜻입니다.",
+      "key_point": "값의 흐름: `shard_id` → `\"shard-07\"` → 함수 안의 `last_done` → `{\"last_done\": \"shard-07\"}` 반환 → `checkpoint`에 연결. 따라서 `checkpoint[\"last_done\"]`의 값은 `\"shard-07\"`입니다. 반환 딕셔너리에서 따옴표가 있는 `\"last_done\"`은 키이고, 오른쪽 `last_done`은 전달받은 값을 가리킵니다.",
+      "common_mistake": "`last_done=shard_id`를 함수 밖에 새 변수 `last_done`을 만드는 대입문으로 읽지 마세요. 호출 안에서는 입력 이름을 지정하는 문법입니다. 전달되는 것은 이름 자체인 `\"shard_id\"`나 `\"last_done\"`이 아니라 `shard_id`가 가리키는 값 `\"shard-07\"`입니다."
     },
     "teaching_example": {
       "code": "def save_state(last_page):\n    return last_page\n\npage = 8\nsaved = save_state(last_page=page)",
@@ -571,24 +571,24 @@
     "primary_concept": "continue_statement",
     "reading_goal_internal": "완료 ID membership이 True일 때 current iteration을 건너뛰고 미완료 작업만 처리하는 resume 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`continue`는 현재 반복의 남은 문장을 건너뛰고 다음 iteration으로 이동합니다.",
-      "how_to_read": "continue 아래 어떤 작업이 skip되는지 확인합니다.",
-      "key_point": "resume에서는 이미 완료한 job을 다시 처리하지 않아 시간·비용·중복 산출물을 줄일 수 있습니다.",
-      "common_mistake": "continue가 for loop 전체를 끝낸다고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `continue`는 이번 항목의 남은 일을 건너뛰고 다음 항목으로 넘어가게 합니다.\n정확한 정의: `continue` 문은 자신을 감싸는 가장 가까운 반복문의 현재 반복에서 남은 실행을 건너뛰고 다음 반복을 진행합니다.",
+      "how_to_read": "항목마다 '이미 끝낸 일인가?'를 확인하는 검사대를 떠올리세요. 이 코드에서 `job[\"id\"] in done`은 현재 ID가 완료 집합에 있는지 검사합니다. 참이면 `continue`를 실행하여 아래의 `processed.append(...)`를 건너뛰고 다음 job을 가져옵니다.",
+      "key_point": "`\"job1\"`은 `done`에 있으므로 추가하지 않습니다. `\"job2\"`는 없으므로 `processed`에 추가합니다. 최종 값은 `[\"job2\"]`이며, 화면에 출력하는 코드는 없습니다.",
+      "common_mistake": "`continue`를 반복문 전체를 끝내는 명령으로 읽지 마세요. 전체 반복을 끝내는 `break`와 달리, `continue`는 이번 반복의 나머지만 건너뜁니다. 따라서 job1을 건너뛴 뒤에도 job2를 검사합니다."
     },
     "teaching_example": {
-      "code": "done={1}\nprocessed=[]\nfor job in [1,2]:\n    if job in done:\n        continue\n    processed.append(job)",
-      "walkthrough": "1은 건너뛰고 2만 processed에 들어갑니다."
+      "code": "done = {1}\nprocessed = []\nfor job in [1, 2]:\n    if job in done:\n        continue\n    processed.append(job)",
+      "walkthrough": "1. `done = {1}`은 완료된 번호 1을 집합에 넣습니다.\n2. `processed = []`는 빈 결과 리스트를 만듭니다.\n3. `for job in [1, 2]:`는 1, 2를 차례로 `job`으로 사용합니다.\n4. 먼저 `job`이 1이면 `job in done`은 `True`입니다.\n5. `continue`가 실행되어 이번 반복의 `processed.append(job)`을 건너뜁니다.\n6. 다음 `job`은 2이고 조건은 `False`이므로 `continue`를 실행하지 않습니다. `processed.append(job)`이 2를 추가합니다.\n최종 `processed`는 `[2]`입니다. 출력문은 없습니다."
     },
     "answer_explanation": {
-      "step_by_step": "done membership이 True인 job은 continue로 process 단계에 도달하지 않습니다.",
-      "why_correct": "continue가 current iteration의 나머지 코드를 건너뛰기 때문입니다.",
+      "step_by_step": "1. `done`은 `{\"job1\"}`, `all_jobs`는 job1과 job2의 딕셔너리가 들어 있는 리스트이고, `processed`는 빈 리스트입니다.\n2. 첫 반복에서 `job[\"id\"]`는 `\"job1\"`입니다. `\"job1\" in done`이 `True`이므로 `continue`가 실행됩니다.\n3. 아래의 `processed.append(job[\"id\"])`를 건너뛰어 `processed`는 여전히 `[]`입니다.\n4. 다음 반복에서 ID는 `\"job2\"`입니다. `\"job2\" in done`은 `False`이므로 `continue`를 실행하지 않습니다.\n5. `append`가 `\"job2\"`를 추가합니다. 반복이 끝난 뒤 `processed`는 `[\"job2\"]`입니다.",
+      "why_correct": "완료 집합에 있는 ID일 때만 `continue`가 실행되어 그 job을 리스트에 추가하는 단계를 건너뜁니다. 따라서 정답은 '이미 완료된 job은 건너뛴다'입니다.",
       "common_wrong_choice": {
         "choice": "완료된 job만 다시 처리한다",
-        "why_wrong": "정반대로 완료 job을 skip합니다.",
-        "misread_step": "continue의 효과를 반대로 이해한 경우입니다."
+        "why_wrong": "완료된 job은 `append`에 도달하지 않습니다. 오히려 완료 집합에 없는 job2만 결과 리스트에 들어갑니다.",
+        "misread_step": "`if` 조건이 참이면 아래의 모든 줄을 실행한다고 읽은 오류입니다. 실제로는 조건이 참일 때 `continue`가 먼저 실행되어 이번 반복의 나머지 줄을 건너뜁니다."
       },
-      "takeaway": "resume는 **done set 확인 → continue skip → unfinished only**로 읽습니다."
+      "takeaway": "완료 여부 검사 → 참이면 `continue`로 이번 항목 건너뛰기 → 거짓이면 아래 작업 실행하기 순서로 읽으세요."
     },
     "target_statement": "continue",
     "focus_span": "continue",
@@ -701,14 +701,14 @@
       "walkthrough": "status key의 value는 queued입니다."
     },
     "answer_explanation": {
-      "step_by_step": "job['status']가 직접 `running` 문자열을 반환합니다.",
-      "why_correct": "현재 상태는 progress 숫자가 아니라 status field가 명시합니다.",
+      "step_by_step": "1) `job`에 딕셔너리가 연결됩니다. 이 딕셔너리에서 키 `\"status\"`에 대응하는 값은 `\"running\"`입니다.\n2) `job[\"status\"]`는 대괄호 안의 키 `\"status\"`를 찾아 그 값 `\"running\"`을 가져옵니다.\n3) 가져온 문자열이 `current_status`에 연결됩니다. 따라서 `current_status`의 값은 `\"running\"`입니다. 화면에 출력하는 코드는 없습니다.",
+      "why_correct": "현재 상태를 나타내는 `\"status\"`의 값이 `\"running\"`이므로 정답은 running입니다. 이 조회는 `\"done\"`이나 `\"total\"`의 숫자로 상태를 계산하지 않습니다.",
       "common_wrong_choice": {
         "choice": "done",
-        "why_wrong": "done은 progress count key 이름이며 status value는 running입니다.",
-        "misread_step": "field name과 field value를 혼동한 경우입니다."
+        "why_wrong": "`\"done\"`은 값이 120인 별도의 키입니다. 조회한 키는 `\"status\"`이고, 그 값은 `\"running\"`입니다.",
+        "misread_step": "딕셔너리에 `\"done\"`이라는 키가 있다는 사실을 현재 상태의 값이 `\"done\"`이라는 뜻으로 잘못 읽은 경우입니다."
       },
-      "takeaway": "status record는 **status field와 progress counters를 별도로** 읽습니다."
+      "takeaway": "딕셔너리 조회는 ‘딕셔너리 확인 → 대괄호 안의 키 찾기 → 그 키에 대응하는 값 가져오기’ 순서로 읽습니다."
     },
     "target_statement": "current_status = job[\"status\"]",
     "focus_span": "job[\"status\"]",

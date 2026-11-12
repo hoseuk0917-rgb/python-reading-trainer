@@ -398,14 +398,14 @@
                                  "walkthrough":  "The value `many at once` of the `parallel` key is stored in `mode`."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "`models[\u0027parallelism\u0027]` It returns the value of the `parallelism` key as-is.",
-                                   "why_correct":  "This is because a dictionary key lookup retrieves the value associated with a precisely specified key.",
+                                   "step_by_step":  "1) `models = {...}` creates a dictionary pairing two keys with their description strings and binds it to `models`.\n2) On the last line, Python first evaluates the right-hand expression `models[\"parallelism\"]`. The string `\"parallelism\"` inside the brackets is the key to look up.\n3) The value associated with this key is `\"multiple workers run at the same time\"`, so the lookup returns that string.\n4) The result is bound to the name `parallelism` on the left. Thus, the description stored in `parallelism` is `\"multiple workers run at the same time\"`.",
+                                   "why_correct":  "A dictionary lookup retrieves the value associated with the specified key. Here, the description string for the key `\"parallelism\"` is retrieved and assigned, so the correct answer is `multiple workers run at the same time`.",
                                    "common_wrong_choice":  {
                                                                "choice":  "one worker switches between tasks",
-                                                               "why_wrong":  "That description is the value of the concurrency key.",
-                                                               "misread_step":  "This is a case where the key and value of the two concepts have been swapped."
+                                                               "why_wrong":  "This string is associated with the key `\"concurrency\"`. The code looks up the key `\"parallelism\"`.",
+                                                               "misread_step":  "This selects the description for a different key without checking the key inside the brackets."
                                                            },
-                                   "takeaway":  "Concept comparison cards are also read by **accurately linking keys and values in actual Python data structures**."
+                                   "takeaway":  "Read dictionary lookup and assignment as: check the key inside the brackets → retrieve that key’s value → bind it to the name on the left."
                                },
         "target_statement":  "parallelism = models[\"parallelism\"]",
         "focus_span":  "models[\"parallelism\"]",
@@ -509,10 +509,10 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "완료된 shard id가 이름 있는 keyword argument로 checkpoint 함수에 전달되는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`name=value` Values passed to a call in this format are keyword arguments.",
-                                    "how_to_read":  "Check the argument name on the left side of the equals sign and the actual value on the right side, and match them to the parameter of the same name in the function.",
-                                    "key_point":  "`last_done=shard_id` explicitly specifies the completion point to be used as the resumption point.",
-                                    "common_mistake":  "It is easy to assume that `last_done` is assigned to a new variable. However, within the call parentheses, it is a keyword argument name."
+                                    "what_it_is":  "Easy meaning: When calling a function, you name an input slot and send a value to it.\nExact definition: A keyword argument is an argument specified as `name=expression` in a function call; the evaluated expression's value is bound to the parameter with that name.",
+                                    "how_to_read":  "Picture named input slots in the function. `def write_checkpoint(last_done)` defines an input slot named `last_done`. `shard_id = \"shard-07\"` prepares the value to pass. In the call, `last_done=shard_id` selects the input slot using the name on the left and passes the value of `shard_id`, `\"shard-07\"`, from the right.",
+                                    "key_point":  "Value flow: `shard_id` → `\"shard-07\"` → `last_done` inside the function → return `{\"last_done\": \"shard-07\"}` → bind it to `checkpoint`. Therefore, `checkpoint[\"last_done\"]` is `\"shard-07\"`. In the returned dictionary, quoted `\"last_done\"` is the key, while `last_done` on the right refers to the value received.",
+                                    "common_mistake":  "Do not read `last_done=shard_id` as an assignment statement creating a new variable `last_done` outside the function. Inside this call, it specifies an input name. The value passed is not the name itself, `\"shard_id\"` or `\"last_done\"`, but the value that `shard_id` refers to: `\"shard-07\"`."
                                 },
         "teaching_example":  {
                                  "code":  "def save_state(last_page):\n    return last_page\n\npage = 8\nsaved = save_state(last_page=page)",
@@ -571,24 +571,24 @@
         "primary_concept":  "continue_statement",
         "reading_goal_internal":  "완료 ID membership이 True일 때 current iteration을 건너뛰고 미완료 작업만 처리하는 resume 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`continue` skips the remaining statements in the current iteration and moves on to the next iteration.",
-                                    "how_to_read":  "Check which operation below `continue` is skipped.",
-                                    "key_point":  "In Resume, jobs that have already been completed are not processed again, which helps reduce time, costs, and redundant outputs.",
-                                    "common_mistake":  "It is easy to think that `continue` terminates the entire `for` loop."
+                                    "what_it_is":  "Easy meaning: `continue` skips the remaining work for this item and moves on to the next item.\nExact definition: A `continue` statement skips the remaining execution of the current iteration of the nearest enclosing loop and proceeds with the next iteration.",
+                                    "how_to_read":  "Picture a checkpoint asking each item, 'Is this already finished?' Here, `job[\"id\"] in done` checks whether the current ID is in the completed set. If true, `continue` skips `processed.append(...)` below it and fetches the next job.",
+                                    "key_point":  "`\"job1\"` is in `done`, so it is not added. `\"job2\"` is not, so it is added to `processed`. The final value is `[\"job2\"]`; there is no code that prints it.",
+                                    "common_mistake":  "Do not read `continue` as ending the entire loop. Unlike `break`, which ends the loop, `continue` skips only the rest of this iteration. The code therefore still checks job2 after skipping job1."
                                 },
         "teaching_example":  {
-                                 "code":  "done={1}\nprocessed=[]\nfor job in [1,2]:\n    if job in done:\n        continue\n    processed.append(job)",
-                                 "walkthrough":  "Skip 1 and only process 2."
+                                 "code":  "done = {1}\nprocessed = []\nfor job in [1, 2]:\n    if job in done:\n        continue\n    processed.append(job)",
+                                 "walkthrough":  "1. `done = {1}` puts the completed number 1 in a set.\n2. `processed = []` creates an empty result list.\n3. `for job in [1, 2]:` uses 1 and then 2 as `job`.\n4. First, when `job` is 1, `job in done` is `True`.\n5. `continue` executes, skipping `processed.append(job)` for this iteration.\n6. The next `job` is 2, and the condition is `False`, so `continue` does not execute. `processed.append(job)` adds 2.\nThe final `processed` is `[2]`. There is no print statement."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Jobs for which `done_membership` is True do not reach the `process` stage due to `continue`.",
-                                   "why_correct":  "This is because `continue` skips the remaining code in the current iteration.",
+                                   "step_by_step":  "1. `done` is `{\"job1\"}`, `all_jobs` is a list containing the dictionaries for job1 and job2, and `processed` is an empty list.\n2. In the first iteration, `job[\"id\"]` is `\"job1\"`. `\"job1\" in done` is `True`, so `continue` executes.\n3. It skips `processed.append(job[\"id\"])` below, leaving `processed` as `[]`.\n4. In the next iteration, the ID is `\"job2\"`. `\"job2\" in done` is `False`, so `continue` does not execute.\n5. `append` adds `\"job2\"`. After the loop, `processed` is `[\"job2\"]`.",
+                                   "why_correct":  "`continue` executes only for an ID in the completed set, skipping the step that adds that job to the list. Therefore, the correct answer is 'Skip jobs that have already been completed.'",
                                    "common_wrong_choice":  {
                                                                "choice":  "Only reprocess completed jobs.",
-                                                               "why_wrong":  "Instead, skip the completed job.",
-                                                               "misread_step":  "This is an example of misunderstanding the effect of `continue` in the opposite way."
+                                                               "why_wrong":  "Completed jobs do not reach `append`. Instead, only job2, which is not in the completed set, enters the result list.",
+                                                               "misread_step":  "This misreads a true `if` condition as executing every line below it. In fact, when the condition is true, `continue` executes first and skips the remaining lines of this iteration."
                                                            },
-                                   "takeaway":  "\"resume\" is read as **check done set → continue skip → unfinished only**."
+                                   "takeaway":  "Read the flow as: check completion → if true, skip this item with `continue` → if false, perform the work below."
                                },
         "target_statement":  "continue",
         "focus_span":  "continue",
@@ -701,14 +701,14 @@
                                  "walkthrough":  "The value of the `status` key is `queued`."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "`job[\u0027status\u0027]` directly returns the string `running`.",
-                                   "why_correct":  "The current status is indicated by the \"status\" field, not the \"progress\" number.",
+                                   "step_by_step":  "1) `job` is bound to a dictionary. In this dictionary, the key `\"status\"` maps to the value `\"running\"`.\n2) `job[\"status\"]` looks up the key `\"status\"` inside the brackets and retrieves its value, `\"running\"`.\n3) That string is bound to `current_status`. Thus, the value of `current_status` is `\"running\"`. There is no code that prints it.",
+                                   "why_correct":  "The value of `\"status\"`, which records the current state, is `\"running\"`, so the answer is running. This lookup does not calculate a status from the numbers under `\"done\"` or `\"total\"`.",
                                    "common_wrong_choice":  {
                                                                "choice":  "done",
-                                                               "why_wrong":  "\"done\" is the name of the progress count key, and the status value is \"running.\"",
-                                                               "misread_step":  "This is an instance where the field name and field value were confused."
+                                                               "why_wrong":  "`\"done\"` is a separate key whose value is 120. The key being looked up is `\"status\"`, whose value is `\"running\"`.",
+                                                               "misread_step":  "This mistakes the presence of a key named `\"done\"` for a current status value of `\"done\"`."
                                                            },
-                                   "takeaway":  "The **status record** reads the **status field and progress counters separately**."
+                                   "takeaway":  "Read a dictionary lookup as ‘identify the dictionary → find the key inside the brackets → retrieve the value mapped to that key.’"
                                },
         "target_statement":  "current_status = job[\"status\"]",
         "focus_span":  "job[\"status\"]",

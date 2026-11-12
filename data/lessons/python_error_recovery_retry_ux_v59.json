@@ -749,14 +749,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "내부 진단 로그와 사용자에게 전달할 메시지를 서로 다른 함수 호출로 분리하는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`show_error(message)`는 message 값을 함수에 전달하는 function call입니다.",
-      "how_to_read": "호출되는 함수의 대상과 괄호 안 실제 메시지를 확인합니다.",
-      "key_point": "내부 stack trace나 token 같은 민감한 진단 정보와 사용자용 안내 문구는 분리하는 것이 좋습니다.",
-      "common_mistake": "개발 로그의 모든 내용을 그대로 사용자에게 보여주는 것이 디버깅에 좋다고 생각하기 쉽습니다. 내부·민감 정보가 노출될 수 있습니다."
+      "what_it_is": "쉽게 말하면: 함수 호출은 이름 붙여 둔 작업에 값을 건네고 실행을 부탁하는 것입니다.\n정확한 정의: 함수 호출은 함수 뒤에 괄호를 붙여 인자를 전달하고 실행하는 표현식이며, 이 코드의 사용자 정의 함수에서는 전달된 값이 매개변수에 연결된 뒤 함수 본문이 실행됩니다.",
+      "how_to_read": "함수를 작업 창구라고 생각하세요. 괄호 안은 건네는 값이고, 함수 본문은 그 값을 어디에 넣을지 정한 작업 지시입니다.\n먼저 두 빈 리스트를 만듭니다. 두 `def` 문은 작업을 정의할 뿐, 아직 문자열을 추가하지 않습니다. `log_error(\"TimeoutError at search.py:42\")`를 만나면 문자열이 `error`에 연결되고 `developer_logs.append(error)`가 실행됩니다. 이어서 `show_error(\"문제가 발생했습니다\")`는 문자열을 `message`에 연결하고 `user_messages.append(message)`를 실행합니다.",
+      "key_point": "`log_error(...)` → `error` → `developer_logs`에 추가.\n`show_error(\"문제가 발생했습니다\")` → `message` → `user_messages`에 추가.\n최종 값은 `developer_logs == [\"TimeoutError at search.py:42\"]`, `user_messages == [\"문제가 발생했습니다\"]`입니다. 이 코드의 `show_error`는 이름과 달리 화면에 출력하지 않고 리스트에 저장합니다.",
+      "common_mistake": "앞에서 전달한 오류 문자열이 다음 함수에도 자동으로 전달된다고 읽기 쉽습니다. 하지만 각 호출은 자기 괄호 안의 값을 전달합니다. 어느 리스트가 바뀌는지도 함수 이름이 아니라 본문의 `append` 대상을 보고 판단해야 합니다."
     },
     "teaching_example": {
-      "code": "messages = []\ndef show(message):\n    messages.append(message)\nshow(\"다시 시도해 주세요\")",
-      "walkthrough": "안내 문자열이 함수에 전달되어 messages에 기록됩니다."
+      "code": "messages = []\ndef show(message):\n    messages.append(message)\nshow(\"다시 시도해 주세요\")\nshow(\"잠시 기다려 주세요\")",
+      "walkthrough": "1) `messages = []`는 빈 리스트를 만듭니다.\n2) `def show(message):`는 `message`라는 매개변수를 받는 함수를 정의합니다. 아직 본문은 실행하지 않습니다.\n3) `messages.append(message)`는 호출 시 전달받은 값을 리스트 끝에 추가할 작업입니다.\n4) 첫 `show(...)` 호출은 `\"다시 시도해 주세요\"`를 `message`에 연결하고 본문을 실행합니다. 리스트는 `[\"다시 시도해 주세요\"]`가 됩니다.\n5) 두 번째 호출은 `\"잠시 기다려 주세요\"`를 `message`에 연결하고 같은 본문을 다시 실행합니다.\n흐름: 각 호출의 문자열 → `message` → `messages.append(message)`.\n최종 `messages`는 `[\"다시 시도해 주세요\", \"잠시 기다려 주세요\"]`입니다. 화면 출력은 없습니다."
     },
     "answer_explanation": {
       "step_by_step": "첫 호출은 developer_logs에 내부 문자열을 기록합니다. 두 번째 `show_error(...)`는 별도 user_messages 리스트에 사용자용 문구를 추가합니다.",

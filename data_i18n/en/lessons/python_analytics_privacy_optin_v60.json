@@ -623,24 +623,24 @@
     "primary_concept": "call",
     "reading_goal_internal": "집계 함수가 개인 텍스트 없이 level과 accuracy 필드만 사용해 평균을 만드는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A function call is an expression that passes argument values to a function and receives a return value.",
-      "how_to_read": "First identify which data and criteria are passed as arguments, then trace what result the function returns.",
-      "key_point": "In a privacy-safe metric context, you can design around only the minimum aggregatable fields rather than personal content such as raw answers or notes.",
-      "common_mistake": "`aggregate` Based on the name alone, it’s easy to assume that the original `events` will be lost. In this example, the function returns a separate aggregation dictionary."
+      "what_it_is": "Easy meaning: A function call hands inputs to a prepared task and gets a result back.\nExact definition: A function call is an expression that evaluates argument expressions, passes their values to the function's parameters, and executes the function body to obtain a return value.",
+      "how_to_read": "Think of a function as an input → processing → result workstation. `def aggregate(...)` defines the task; it does not execute the body yet. Calling `aggregate(events, \"level\")` passes the list `events` to the parameter `events` and the string `\"level\"` to `group_key`. Thus, `event[group_key]` in the body reads each record's `event[\"level\"]`. The name `avg_accuracy` then refers to the result returned by the function.",
+      "key_point": "Call → create `grouped = {}` → collect accuracy values by each record's level → `{9: [0.8, 1.0], 8: [0.6]}` → divide each list's sum by its count → return `{9: 0.9, 8: 0.6}` → bind it to `avg_accuracy`. Therefore, `avg_accuracy[9]` is `0.9`.",
+      "common_mistake": "Passing `\"level\"` does not mean the function averages the level numbers themselves. This argument selects the grouping criterion. The values collected and averaged are `event[\"accuracy\"]`. Also, `aggregate` refers to the function itself, whereas `aggregate(events, \"level\")` calls it."
     },
     "teaching_example": {
       "code": "def average(values):\n    return sum(values) / len(values)\n\nresult = average([0.5, 1.0])",
       "walkthrough": "The average of the two numbers, 0.75, is stored in `result`."
     },
     "answer_explanation": {
-      "step_by_step": "Level 9 event: The two accuracy scores are 0.8 and 1.0. The average is `(0.8 + 1.0) / 2 = 0.9`.",
-      "why_correct": "This is because the aggregate function creates a list of accuracy values at the same level and then calculates the average.",
+      "step_by_step": "1) `def` defines the function, and the `events` list is created with three records.\n2) Calling `aggregate(events, \"level\")` makes `group_key` refer to `\"level\"`, and the function creates an empty dictionary, `grouped`.\n3) The first record's key is 9. `setdefault(key, [])` inserts an empty list if that key is absent and returns the list. Appending 0.8 produces `{9: [0.8]}`.\n4) The second record also has key 9, so 1.0 is appended to the existing list. The third record has key 8, so 0.6 goes into a separate list. The result is now `{9: [0.8, 1.0], 8: [0.6]}`.\n5) The dictionary comprehension in `return` calculates `sum(values) / len(values)` for each group. For group 9, `(0.8 + 1.0) / 2 = 0.9`; for group 8, `0.6 / 1 = 0.6`.\n6) The returned dictionary `{9: 0.9, 8: 0.6}` is bound to `avg_accuracy`, so `avg_accuracy[9]` is `0.9`.",
+      "why_correct": "`avg_accuracy[9]` reads the value at key 9 in the returned dictionary. That value averages the accuracy values from both level 9 records, so the correct answer is `0.9`.",
       "common_wrong_choice": {
         "choice": "0.8",
-        "why_wrong": "This value is based on only the first event and does not include the two Level 9 events.",
-        "misread_step": "This is an example where the fact that aggregate functions group multiple events was not reflected."
+        "why_wrong": "`0.8` is only the accuracy of the first level 9 record. The second value in that group, `1.0`, also contributes to the average.",
+        "misread_step": "This misses that the loop continues after the first record and appends values to the list for the same key."
       },
-      "takeaway": "Aggregate functions are read in the following order: **group criterion → collect corresponding values → calculate aggregate**."
+      "takeaway": "Read a function call as arguments → parameters → body execution → return value → assignment. Here, `level` selects the groups, while `accuracy` supplies the values being averaged."
     },
     "target_statement": "avg_accuracy = aggregate(events, \"level\")",
     "focus_span": "aggregate(events, \"level\")",
@@ -874,14 +874,14 @@
       "walkthrough": "Reads the position where the user clicks to close the window."
     },
     "answer_explanation": {
-      "step_by_step": "Note that the `dict` has separate fields for the items collected, the purpose, and how to turn it off.",
-      "why_correct": "This is because a privacy notice is meaningful only when it discloses not only the fact that data is collected, but also the purpose of collection and the methods by which users can exercise control.",
+      "step_by_step": "1) `notice` is assigned a dictionary with three keys and string values. `what_is_collected` describes anonymous usage events, `why` describes improving the learning app, and `how_to_disable` describes turning analytics off in settings.\n2) `notice[\"how_to_disable\"]` is a dictionary lookup by key. Its result is not the key itself but the associated string, `\"turn analytics off in settings\"`.\n3) That string is assigned to `opt_out_text`. Nothing is printed, and analytics is not actually disabled.",
+      "why_correct": "The three entries explain what is collected, why it is collected, and how to turn it off, so the choice covering those three topics is the intended answer. The final lookup retrieves the explanation of how to turn it off.",
       "common_wrong_choice": {
         "choice": "To hide the verification results,",
-        "why_wrong": "The purpose of a privacy notice is transparent explanation, not concealment.",
-        "misread_step": "This is an example of misunderstanding the difference between “privacy” and “concealment.”"
+        "why_wrong": "The dictionary contains explanations of collection, purpose, and disabling analytics; it contains no content or operation that hides verification results.",
+        "misread_step": "This interprets privacy as an operation that hides information instead of reading the actual keys and values."
       },
-      "takeaway": "The \"privacy notice\" is interpreted as **What is collected → Why is it necessary → How can it be disabled**."
+      "takeaway": "Read a dictionary lookup as **identify the dictionary → find the key → return its associated value**. Here it retrieves an instruction string; it does not change any settings."
     },
     "target_statement": "opt_out_text = notice[\"how_to_disable\"]",
     "focus_span": "notice[\"how_to_disable\"]",
@@ -923,10 +923,10 @@
     "primary_concept": "literal",
     "reading_goal_internal": "privacy workflow의 단계가 어떤 순서로 배치돼 있는지 list 순서로 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A list literal stores multiple values in order.",
-      "how_to_read": "In the \"privacy flow,\" read from the first item to the last without changing the order.",
-      "key_point": "If collection happens before consent is checked, the basic direction of the privacy flow is broken.",
-      "common_mistake": "It is easy to think that withdrawing consent is a separate feature unrelated to the initial opt-in."
+      "what_it_is": "Easy meaning: You can write values directly in code; here, four step names are grouped in order.\nExact definition: A literal is syntax that directly represents a value in code; here, each quoted item is a string literal, and the expression grouping them with square brackets and commas is a list display that creates a new list.",
+      "how_to_read": "Picture the square brackets as a row of step names. Everything inside each pair of quotes is one string value. Reading left to right gives: explain the purpose and obtain consent → collect only the minimum permitted events → aggregate data subject to protection conditions → implement withdrawal and deletion requests.",
+      "key_point": "Python evaluates the four strings on the right from left to right, creates a new list containing them in that order, and binds that list to the name privacy_flow. The result is a list of four ordered strings; nothing is printed, and no actual privacy-processing steps are performed.",
+      "common_mistake": "Words such as track or deletion inside a string do not cause collection or deletion to run. The quoted text is data naming a step, not an executable instruction. Read this question's sequence from the list's order, not from actual task execution."
     },
     "teaching_example": {
       "code": "flow = [\"explain\", \"ask\", \"collect\", \"delete_on_request\"]\nfirst = flow[0]",
