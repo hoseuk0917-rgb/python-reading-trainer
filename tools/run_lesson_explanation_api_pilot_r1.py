@@ -24,7 +24,7 @@ CONTRACT_PATH = ROOT / "docs" / "LESSON_EXPLANATION_CONTRACT_V1.md"
 
 DEFAULT_MODEL = "gpt-6.1-sol"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
-PROMPT_VERSION = "lesson-explanation-api-pilot-r1-v2"
+PROMPT_VERSION = "lesson-explanation-api-pilot-r1-v3"
 RESULT_SCHEMA = "python-reading-trainer/lesson-explanation-api-pilot-r1"
 
 TARGET_DISPOSITIONS = {
@@ -345,6 +345,8 @@ def local_evidence_instructions(authority: str) -> list[str]:
         "- Coverage-domain labels and names such as FastAPI, OAuth, RAG, PWA, HTTP, model, service, or worker are context labels, not permission to add external product/framework behavior.",
         "- Do not add or strengthen claims about real APIs, protocols, lifecycles, security properties, architecture best practices, or library behavior unless that behavior is explicitly encoded in the supplied card/support evidence.",
         "- For concept_explanation rewrites, preserve the current factual meaning and add the beginner bridge; do not broaden the claim.",
+        "- Do not add unrelated edge cases, extra guarantees, caveats, defaults, or general facts merely because they are true; stay within what this card needs to explain.",
+        "- If the current explanation omits a general semantic detail that is not needed to answer/read this card, keep it omitted.",
         "- For answer_explanation rewrites, derive every step from visible Python execution, local values, branches, calls, assignments, and returns.",
         "- For teaching_example rewrites, demonstrate only Python or self-contained local-code behavior; do not invent external API/framework behavior.",
         "- Treat undefined helper names as opaque local functions. You may describe only the dataflow visible in this code, not their hidden implementation.",
@@ -550,6 +552,8 @@ def build_prompt(
     en_support: list[dict[str, Any]],
     gold_reference: dict[str, Any] | None,
 ) -> str:
+    required_calls = sorted(required_target_calls(ko_card))
+
     preserved = {
         "id": ko_card.get("id"),
         "primary_concept": ko_card.get("primary_concept"),
@@ -582,6 +586,7 @@ def build_prompt(
         "- key_point must expose execution/value flow and the result where deterministic.",
         "- common_mistake must address a genuine beginner misread.",
         "- teaching_example must demonstrate the SAME target concept, not merely similar syntax.",
+        "- If REQUIRED_TARGET_CALLS_IN_TEACHING_EXAMPLE is non-empty and teaching_example is a patch target, the example code must literally call at least one listed function/method name.",
         "- teaching_example walkthrough must read the code line by line and state execution/result.",
         "- answer_explanation must reconstruct why the correct answer follows from execution.",
         "- common_wrong_choice.choice must exactly copy one provided wrong choice in that language.",
@@ -591,6 +596,7 @@ def build_prompt(
         f"AUTHORITY_CLASS={authority}",
         f"QUALITY_REASONS={json.dumps(reasons, ensure_ascii=False)}",
         f"PATCH_TARGETS={json.dumps(targets, ensure_ascii=False)}",
+        f"REQUIRED_TARGET_CALLS_IN_TEACHING_EXAMPLE={json.dumps(required_calls, ensure_ascii=False)}",
         "",
         "FROZEN CORE:",
         json.dumps(preserved, ensure_ascii=False, indent=2),
@@ -1230,6 +1236,7 @@ def self_test() -> int:
     local_mode = local_evidence_instructions("DOMAIN_AUTHORITY_REVIEW")
     assert any("LOCAL EVIDENCE MODE" in line for line in local_mode)
     assert any("opaque local functions" in line for line in local_mode)
+    assert any("unrelated edge cases" in line for line in local_mode)
 
     sample = (
         '[\n  {\n    "id": "A",\n'
