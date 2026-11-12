@@ -939,6 +939,50 @@ def apply_file_patches(
     write_raw_preserving_bom(path, raw, has_bom)
 
 
+def target_quality_reasons(
+    card: dict[str, Any],
+    targets: list[str] | set[str],
+) -> set[str]:
+    reasons = set(readiness.quality_reasons(card))
+    targets_set = set(targets)
+    relevant: set[str] = set()
+
+    if "concept_explanation" in targets_set:
+        relevant.update(reason for reason in reasons if reason in CONCEPT_REASONS)
+
+    if "teaching_example" in targets_set:
+        relevant.update(reason for reason in reasons if reason in TEACHING_REASONS)
+        relevant.update(
+            reason
+            for reason in reasons
+            if reason.startswith("TEACHING_EXAMPLE_")
+        )
+
+    if "answer_explanation" in targets_set:
+        relevant.update(reason for reason in reasons if reason in ANSWER_REASONS)
+
+    return relevant
+
+
+def validate_generated_target_quality(
+    *,
+    card: dict[str, Any],
+    patch: dict[str, Any],
+    targets: list[str],
+    language: str,
+) -> None:
+    candidate = dict(card)
+    for target in targets:
+        candidate[target] = patch[target]
+
+    remaining = target_quality_reasons(candidate, targets)
+    if remaining:
+        raise RuntimeError(
+            f"{card['id']} {language}: target quality reasons remain: "
+            f"{sorted(remaining)}"
+        )
+
+
 def validate_after_apply(
     *,
     selected: list[dict[str, Any]],
@@ -947,8 +991,6 @@ def validate_after_apply(
     ko_after, _ = load_all_cards(LESSON_ROOT_KO)
     en_after, _ = load_all_cards(LESSON_ROOT_EN)
 
-    patch_reason_set = CONCEPT_REASONS | TEACHING_REASONS | ANSWER_REASONS
-
     for selected_row in selected:
         cid = str(selected_row["id"])
         targets = set(selected_row["_patch_targets"])
@@ -956,19 +998,8 @@ def validate_after_apply(
         ko = ko_after[cid]
         en = en_after[cid]
 
-        ko_reasons = set(readiness.quality_reasons(ko))
-        en_reasons = set(readiness.quality_reasons(en))
-
-        remaining_ko = {
-            reason
-            for reason in ko_reasons
-            if reason in patch_reason_set or reason.startswith("TEACHING_EXAMPLE_")
-        }
-        remaining_en = {
-            reason
-            for reason in en_reasons
-            if reason in patch_reason_set or reason.startswith("TEACHING_EXAMPLE_")
-        }
+        remaining_ko = target_quality_reasons(ko, targets)
+        remaining_en = target_quality_reasons(en, targets)
 
         if remaining_ko:
             raise RuntimeError(f"{cid}: KO target quality reasons remain: {sorted(remaining_ko)}")
@@ -1059,6 +1090,18 @@ def validate_resume_results(
         validate_patch(
             patch=row.get("en") or {},
             card=en_card,
+            targets=targets,
+            language="en",
+        )
+        validate_generated_target_quality(
+            card=ko_card,
+            patch=row.get("ko") or {},
+            targets=targets,
+            language="ko",
+        )
+        validate_generated_target_quality(
+            card=en_card,
+            patch=row.get("en") or {},
             targets=targets,
             language="en",
         )
@@ -1301,18 +1344,18 @@ def self_test() -> int:
         },
         "ko": {
             "concept_explanation": {
-                "what_it_is": "쉽게 말하면: 값입니다.\n정확한 정의: 리터럴 값입니다.",
-                "how_to_read": "코드에 적힌 값을 그대로 읽습니다.",
-                "key_point": "이 예에서는 값 1이 사용됩니다.",
-                "common_mistake": "문자열과 숫자를 혼동하지 않습니다.",
+                "what_it_is": "쉽게 말하면: 코드에 직접 적힌 값을 그대로 사용하는 것입니다.\n정확한 정의: 리터럴은 소스 코드에 직접 표현된 고정된 값입니다.",
+                "how_to_read": "오른쪽에 직접 적힌 숫자 1을 먼저 읽고, 그 값이 왼쪽 이름 x에 연결된다고 따라갑니다.",
+                "key_point": "이 예에서는 정수 리터럴 1이 평가되고 그 결과가 x에 저장됩니다.",
+                "common_mistake": "숫자 1과 문자열 '1'은 서로 다른 값이라는 점을 혼동하기 쉽습니다.",
             }
         },
         "en": {
             "concept_explanation": {
-                "what_it_is": "Easy meaning: it is a value.\nExact definition: it is a literal value.",
-                "how_to_read": "Read the value written directly in the code.",
-                "key_point": "This example uses the value 1.",
-                "common_mistake": "Do not confuse strings and numbers.",
+                "what_it_is": "Easy meaning: the code uses a value written directly in the source.\nExact definition: a literal is a fixed value represented directly in source code.",
+                "how_to_read": "Read the number 1 on the right first, then follow that evaluated value as it becomes bound to the name x.",
+                "key_point": "This example evaluates the integer literal 1 and stores that resulting value in x.",
+                "common_mistake": "It is easy to confuse the number 1 with the string '1', but they are different values.",
             }
         },
         "quality": {
@@ -1329,6 +1372,43 @@ def self_test() -> int:
         model="test-model",
     )
     assert len(validated_resume) == 1
+
+    scoped_card = {
+        "id": "SCOPED_TEST",
+        "primary_concept": "literal",
+        "focus_span": "1",
+        "code": "x = 1",
+        "choices": ["1", "2"],
+        "answer": "1",
+        "concept_explanation": {
+            "what_it_is": "A parameter expression binds an object reference.",
+            "how_to_read": "Read the value in the statement before continuing.",
+            "key_point": "The code uses the value 1.",
+            "common_mistake": "Do not confuse the literal with a string.",
+        },
+        "teaching_example": {
+            "code": "x = 1",
+            "walkthrough": "The statement assigns the literal value 1 to x and leaves x referring to that value.",
+        },
+        "answer_explanation": {
+            "step_by_step": "The code evaluates the literal 1 and assigns that value to x.",
+            "why_correct": "The value in the code is the integer 1.",
+            "common_wrong_choice": {
+                "choice": "2",
+                "why_wrong": "The code never evaluates the literal 2.",
+                "misread_step": "This reads a value that is not present in the code.",
+            },
+            "takeaway": "Read the literal value that actually appears in the statement.",
+        },
+    }
+    assert "EASY_BRIDGE_REVIEW" in target_quality_reasons(
+        scoped_card,
+        ["concept_explanation"],
+    )
+    assert not target_quality_reasons(
+        scoped_card,
+        ["answer_explanation"],
+    )
 
     print("LESSON_EXPLANATION_API_PILOT_R1_SELF_TEST=PASS")
     return 0
@@ -1506,6 +1586,18 @@ def live(
             validate_patch(
                 patch=generated["en"],
                 card=en_card,
+                targets=targets,
+                language="en",
+            )
+            validate_generated_target_quality(
+                card=ko_card,
+                patch=generated["ko"],
+                targets=targets,
+                language="ko",
+            )
+            validate_generated_target_quality(
+                card=en_card,
+                patch=generated["en"],
                 targets=targets,
                 language="en",
             )
