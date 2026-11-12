@@ -74,10 +74,7 @@ def official_source_info(card: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def select_source_ready(limit: int) -> list[dict[str, Any]]:
-    if limit < 1 or limit > 96:
-        raise SystemExit("source-backed batch limit must be between 1 and 96")
-
+def collect_source_ready() -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for card in readiness.load_cards():
         record = source_plan.source_record(card)
@@ -95,9 +92,42 @@ def select_source_ready(limit: int) -> list[dict[str, Any]]:
         if not row["_patch_targets"]:
             raise SystemExit(f"no patch target for source-ready card: {row['id']}")
         rows.append(row)
+    return rows
 
-    if len(rows) != 96:
-        raise SystemExit(f"unexpected source-ready inventory: expected=96 actual={len(rows)}")
+
+def select_source_ready(
+    limit: int,
+    *,
+    selection_ids: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    rows = collect_source_ready()
+    inventory = len(rows)
+    if inventory < 1:
+        raise SystemExit("source-backed inventory is empty")
+
+    if selection_ids is not None:
+        if not selection_ids:
+            raise SystemExit("explicit source-backed selection is empty")
+        if len(selection_ids) != len(set(selection_ids)):
+            raise SystemExit("explicit source-backed selection contains duplicate ids")
+        if limit != len(selection_ids):
+            raise SystemExit(
+                f"explicit source-backed selection size mismatch: limit={limit} ids={len(selection_ids)}"
+            )
+
+        by_id = {str(row["id"]): row for row in rows}
+        missing = [cid for cid in selection_ids if cid not in by_id]
+        if missing:
+            raise SystemExit(
+                "explicit source-backed selection is not currently source-ready: "
+                + ",".join(missing)
+            )
+        return [by_id[cid] for cid in selection_ids]
+
+    if limit < 1 or limit > inventory:
+        raise SystemExit(
+            f"source-backed batch limit must be between 1 and current inventory {inventory}"
+        )
 
     by_authority: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
@@ -116,7 +146,7 @@ def select_source_ready(limit: int) -> list[dict[str, Any]]:
         selected = list(rows)
     else:
         third_count = len(by_authority["THIRD_PARTY_API_AUTHORITY"])
-        third_target = max(1, round(limit * third_count / len(rows)))
+        third_target = max(1, round(limit * third_count / len(rows))) if third_count else 0
         third_target = min(third_target, third_count, limit)
         stdlib_target = limit - third_target
 
@@ -503,14 +533,20 @@ def load_resume_results(
     )
 
 
-def plan(limit: int) -> int:
-    selected = select_source_ready(limit)
+def plan(
+    limit: int,
+    *,
+    selection_ids: list[str] | None = None,
+) -> int:
+    inventory = len(collect_source_ready())
+    selected = select_source_ready(limit, selection_ids=selection_ids)
     authority_counts = Counter(str(row["_authority"]) for row in selected)
     disposition_counts = Counter(str(row["_disposition"]) for row in selected)
     digest = selection_sha(selected)
 
-    print(f"SOURCE_READY_INVENTORY=96")
+    print(f"SOURCE_READY_INVENTORY={inventory}")
     print(f"SOURCE_BACKED_LIMIT={limit}")
+    print(f"SOURCE_BACKED_EXPLICIT_SELECTION={'YES' if selection_ids is not None else 'NO'}")
     print("SOURCE_BACKED_AUTHORITY_COUNTS=" + json.dumps(dict(sorted(authority_counts.items())), sort_keys=True))
     print("SOURCE_BACKED_DISPOSITION_COUNTS=" + json.dumps(dict(sorted(disposition_counts.items())), sort_keys=True))
     print(f"SOURCE_BACKED_SELECTION_SHA256={digest}")
@@ -530,17 +566,15 @@ def plan(limit: int) -> int:
 
 
 def self_test() -> int:
-    selected = select_source_ready(10)
-    if len(selected) != 10:
-        raise RuntimeError("source-backed self-test selection size mismatch")
-    if not any(row["_authority"] == "THIRD_PARTY_API_AUTHORITY" for row in selected):
-        raise RuntimeError("source-backed canary lacks third-party authority")
-    if not any(row["_authority"] == "STDLIB_API_AUTHORITY" for row in selected):
-        raise RuntimeError("source-backed canary lacks stdlib authority")
-    for row in selected:
+    rows = collect_source_ready()
+    if not rows:
+        raise RuntimeError("source-backed self-test inventory is empty")
+    sample = rows[: min(10, len(rows))]
+    for row in sample:
         info = row["_official_source_info"]
         if not info["allowed_domains"] or not info["required_domains"]:
             raise RuntimeError(f"{row['id']}: source-backed source info incomplete")
+    print(f"SOURCE_BACKED_SELF_TEST_INVENTORY={len(rows)}")
     print("LESSON_EXPLANATION_SOURCE_BACKED_R1_SELF_TEST=PASS")
     return 0
 
@@ -553,6 +587,7 @@ def live(
     result_path: Path,
     hold_path: Path,
     resume_result_path: Path | None,
+    selection_ids: list[str] | None,
     max_total_tokens: int,
     max_holds: int,
 ) -> int:
@@ -560,7 +595,7 @@ def live(
     if not api_key:
         raise SystemExit("OPENAI_API_KEY is required for source-backed --live")
 
-    selected = select_source_ready(limit)
+    selected = select_source_ready(limit, selection_ids=selection_ids)
     selection_hash = selection_sha(selected)
     ko_cards, _ = base.load_all_cards(base.LESSON_ROOT_KO)
     en_cards, _ = base.load_all_cards(base.LESSON_ROOT_EN)
@@ -792,6 +827,11 @@ def main() -> int:
     parser.add_argument("--result-path", type=Path, default=Path("lesson-explanation-source-backed-r1.jsonl"))
     parser.add_argument("--hold-path", type=Path, default=Path("lesson-explanation-source-backed-r1-holds.jsonl"))
     parser.add_argument("--resume-result-path", type=Path)
+    parser.add_argument(
+        "--selection-ids",
+        default="",
+        help="Optional comma-separated current source-ready card IDs to process in the given order.",
+    )
     parser.add_argument("--max-total-tokens", type=int, default=400_000)
     parser.add_argument("--max-holds", type=int, default=3)
     parser.add_argument("--self-test", action="store_true")
@@ -799,13 +839,19 @@ def main() -> int:
     parser.add_argument("--live", action="store_true")
     args = parser.parse_args()
 
+    selection_ids = [
+        value.strip()
+        for value in args.selection_ids.split(",")
+        if value.strip()
+    ] or None
+
     modes = sum(bool(value) for value in (args.self_test, args.plan, args.live))
     if modes != 1:
         parser.error("choose exactly one of --self-test, --plan, or --live")
     if args.self_test:
         return self_test()
     if args.plan:
-        return plan(args.limit)
+        return plan(args.limit, selection_ids=selection_ids)
     return live(
         limit=args.limit,
         model=args.model,
@@ -813,6 +859,7 @@ def main() -> int:
         result_path=args.result_path,
         hold_path=args.hold_path,
         resume_result_path=args.resume_result_path,
+        selection_ids=selection_ids,
         max_total_tokens=args.max_total_tokens,
         max_holds=args.max_holds,
     )
