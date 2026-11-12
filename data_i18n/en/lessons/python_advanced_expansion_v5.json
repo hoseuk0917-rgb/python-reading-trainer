@@ -340,24 +340,24 @@
         "primary_concept":  "await_expression",
         "reading_goal_internal":  "async HTTP client method의 완료 결과를 await해 response 객체를 받는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`await expression` is an expression that waits for an awaitable operation to complete and then receives its result.",
-                                    "how_to_read":  "Check what the right-hand side of the `await` call does and where the return value is stored after it completes.",
-                                    "key_point":  "In an async get call from an HTTP client, you must await until the network I/O is complete and the response is received.",
-                                    "common_mistake":  "It is easy to think `await` waits for the URL string itself. It waits for the asynchronous work created by the `get` call."
+                                    "what_it_is":  "Easy meaning: `await` receives an asynchronous operation's result when it finishes so the next code can use it.\nExact definition: An `await` expression obtains the completion result of an awaitable (an object whose completion can be awaited), potentially suspending the current coroutine while waiting.",
+                                    "how_to_read":  "Think of a handoff point where a result is needed before proceeding. Here, `client.get(...)` creates a coroutine object, and `await` runs it to obtain its completion result. That result, a `Response` object, is stored in `res`.",
+                                    "key_point":  "When `get_items` runs: create `Client()` → create the coroutine from `get(...)` → run it with `await` → return `Response(200)` → store it in `res` → return `res.status_code`, which is `200`. This example's `get` immediately creates a response object without real communication, so execution does not necessarily suspend here. The shown code only defines the functions; it does not run `get_items`.",
+                                    "common_mistake":  "`await` does not wait for the URL string or automatically send an HTTP request. Its operand is the coroutine returned by the call; read that function's body to determine what actually happens."
                                 },
         "teaching_example":  {
                                  "code":  "class Client:\n    async def get(self, url):\n        return {\"status\": 201}\n\nasync def run(client):\n    response = await client.get(\"/items\")\n    return response[\"status\"]",
                                  "walkthrough":  "When the async result of `get` completes, it returns a `response` dictionary and returns status code 201."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "`client.get` creates an async task representing an HTTP request, and `await` waits until that task completes and returns a `Response` object.",
-                                   "why_correct":  "This is because the result of an async HTTP GET is a `response`.",
+                                   "step_by_step":  "1) When `get_items` runs, `client = Client()` creates an object.\n2) `client.get(URL)` creates a coroutine object.\n3) Executed through `await`, `get` returns `Response(200)`. The constructor stores `200` in `status_code`.\n4) This response object is stored in `res`.\n5) `return res.status_code` returns the integer `200`.",
+                                   "why_correct":  "Among the choices, “HTTP Response” is correct because the completion result received by `await` is a `Response` object representing an HTTP response. However, this local example constructs the response directly rather than contacting a real server.",
                                    "common_wrong_choice":  {
                                                                "choice":  "CSS Rendering",
-                                                               "why_wrong":  "The code does not contain any CSS processing logic.",
-                                                               "misread_step":  "This is an example of confusing the role of an HTTP client with UI rendering."
+                                                               "why_wrong":  "The body of `get` only returns `Response(200)`; it neither processes CSS nor draws a page.",
+                                                               "misread_step":  "This confuses receiving a response with drawing a page merely because a web address appears."
                                                            },
-                                   "takeaway":  "Asynchronous HTTP code follows the pattern: **request call → await → response object**."
+                                   "takeaway":  "Read `res = await client.get(...)` as “run the coroutine → receive its completed response object → store it in `res`.”"
                                },
         "target_statement":  "res = await client.get(\"https://example.com/api/items\")",
         "focus_span":  "await client.get(\"https://example.com/api/items\")",

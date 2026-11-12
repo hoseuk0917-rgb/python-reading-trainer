@@ -236,24 +236,24 @@
     "primary_concept": "continue_statement",
     "reading_goal_internal": "429 조건에서 continue가 성공 처리 부분을 건너뛰는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`continue` skips the remaining statements in the current iteration.",
-      "how_to_read": "Let’s look at the conditions for reaching `continue` and the statements omitted below it.",
-      "key_point": "In step 429, after the backoff, proceed to the next attempt.",
-      "common_mistake": "It is easy to confuse `continue` with `break`, which terminates a loop."
+      "what_it_is": "Easy meaning: `continue` skips the rest of this turn and moves on to the next turn.\nExact definition: A `continue` statement skips the remaining execution of the current iteration of the nearest enclosing loop and proceeds with the next iteration.",
+      "how_to_read": "Imagine a path for processing each item: reaching `continue` skips the rest of that path. In this code, when `status_code == 429`, Python calculates `delay` and then reaches `continue`, so it skips `processed.append(status_code)` for that iteration and moves to the next item.",
+      "key_point": "`enumerate` supplies (index, item) pairs, starting the index at 0. For (0, 429), Python assigns `delay = 2 ** 0`, which is 1, then skips the append. For (1, 200), the condition is false, so Python appends 200. The final `processed` is `[200]`. Assigning a value to `delay` does not actually wait or send a request.",
+      "common_mistake": "Do not confuse `continue` with `break`, which ends the loop entirely. Here, only the remaining processing for 429 is skipped, so the next item, 200, is still processed. Also, although `append` is outside the `if`, it is still inside the loop, so it is skipped on the iteration that executes `continue`."
     },
     "teaching_example": {
-      "code": "seen=[]\nfor n in [0,1]:\n    if n==0:\n        continue\n    seen.append(n)",
-      "walkthrough": "At 0, the append operation is skipped, leaving only 1."
+      "code": "seen = []\nfor n in [0, 1]:\n    if n == 0:\n        continue\n    seen.append(n)",
+      "walkthrough": "1. `seen = []` creates an empty list for the results.\n2. `for n in [0, 1]:` uses 0 and then 1 as `n`.\n3. `if n == 0:` is true on the first turn.\n4. `continue` executes, skipping `seen.append(n)` for that turn. `seen` is still `[]`.\n5. On the next turn, `n` is 1, so the condition is false and `continue` does not execute.\n6. `seen.append(n)` adds 1. After the loop, `seen` is `[1]`."
     },
     "answer_explanation": {
-      "step_by_step": "The first iteration is skipped using `continue`, and 2 million is added in the second iteration.",
-      "why_correct": "This is because `continue` skips the remaining statements in the current iteration.",
+      "step_by_step": "1. `status_codes` starts as `[429, 200]`, and `processed` starts as `[]`.\n2. The first pair from `enumerate(status_codes)` is (0, 429), so `attempt = 0` and `status_code = 429`.\n3. The condition is true, so `delay = 2 ** 0` executes, making `delay` equal to 1.\n4. Next, `continue` executes and skips `processed.append(status_code)`. `processed` remains `[]`.\n5. The next pair is (1, 200). Since 200 is not 429, Python skips the two statements inside the `if`.\n6. `processed.append(200)` executes, producing `[200]`. There are no more items, so the loop ends.",
+      "why_correct": "The iteration for 429 does not reach the append statement because of `continue`, while the iteration for 200 does reach it. Therefore, `[200]`, containing only 200, is correct.",
       "common_wrong_choice": {
         "choice": "[429, 200]",
-        "why_wrong": "In iteration 429, it does not reach `append`.",
-        "misread_step": "I assumed that the sentences following `continue` would also be executed."
+        "why_wrong": "This value would require both iterations to execute `append`, but `continue` skips it on the iteration for 429.",
+        "misread_step": "The misread is assuming that because `append` is outside the `if`, it still executes after `continue`. `continue` skips the entire remaining portion of the current iteration."
       },
-      "takeaway": "The retry loop follows the sequence: **condition → backoff → continue → next attempt**."
+      "takeaway": "First check whether execution reaches `continue`. If it does, skip the remaining statements in that iteration and resume tracing with the next item."
     },
     "target_statement": "continue",
     "focus_span": "continue",
@@ -568,10 +568,10 @@
     "primary_concept": "generator_expression",
     "reading_goal_internal": "각 query term이 text에 포함되는지 검사하고 포함된 term마다 1을 생성해 score로 합산하는 과정을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`(expr for item in items if condition)` It is a generator expression that generates values for each item that passes the condition.",
-      "how_to_read": "After checking the terms to be iterated over and the if condition, it reads that the value 1 is generated when the condition is true.",
-      "key_point": "Here, a value of 1 is generated for each query term contained in the text, and `sum` counts the number of such terms.",
-      "common_mistake": "It’s easy to assume that the actual number of occurrences of a term is being counted. This code only checks whether each query term is included at least once."
+      "what_it_is": "Easy meaning: This is a way to supply one value at a time whenever an item meets a condition.\nExact definition: A generator expression creates a generator object that produces the expression's value on demand for each item in an iterable that passes the condition.",
+      "how_to_read": "Picture a flow that supplies a 1 whenever an item passes a checkpoint. The first line binds terms to three strings, and the second binds text to \"python rag pipeline\". Read `1 for term in terms if term in text` on the third line as “take each term from terms, check whether it is contained in text, and supply 1 if true.” `sum` receives and adds these values one at a time. No list of all the values is built first.",
+      "key_point": "As `sum` requests values, \"python\" passes the condition and supplies 1, and \"rag\" also passes and supplies 1. \"gpu\" is not contained in text, so it supplies no value. The generated values are therefore 1, 1, and the result of `sum`, 2, is assigned to score.",
+      "common_mistake": "It is easy to think this counts every occurrence of each term in the string. However, `term in text` only checks whether that string is contained as a substring; it does not check word boundaries. For each item in terms, this code supplies 1 only once if the condition is true."
     },
     "teaching_example": {
       "code": "terms=[\"a\",\"b\"]\ntext=\"a only\"\nscore=sum(1 for term in terms if term in text)",
@@ -1367,14 +1367,14 @@
       "walkthrough": "`continue` executes at `b`, skipping `append`, so only `a` and `c` remain in `processed`."
     },
     "answer_explanation": {
-      "step_by_step": "Since the membership condition is true in cases a and c, the `continue` statement following `skipped += 1` is executed in each case. Only b is added to `processed`.",
-      "why_correct": "This is because `continue` skips only the remaining statements in the current iteration and moves on to the next task.",
+      "step_by_step": "1. `tasks` is ordered a → b → c, and `existing_outputs` contains \"a\" and \"c\". Start with `skipped=0` and `processed=[]`.\n2. a: `task[\"id\"] in existing_outputs` is true. `skipped += 1` changes 0 → 1, then `continue` skips `processed.append(...)` below it.\n3. b: The condition is false, so neither the increment nor `continue` inside the `if` runs. `processed.append(\"b\")` runs, making `processed=[\"b\"]`. `skipped` remains 1.\n4. c: The condition is true, so `skipped` changes 1 → 2. Again, `continue` skips `append`. There are no more tasks, so the loop ends.\n5. The final values are `skipped=2, processed=[\"b\"]`.",
+      "why_correct": "`skipped` increases once for a and once for c, where the condition is true. In both cases, `continue` skips the remaining code in that iteration, namely `append`, so only b, where the condition is false, is added to `processed`.",
       "common_wrong_choice": {
         "choice": "skipped=1, processed=[\"a\", \"c\"]",
-        "why_wrong": "Items a and c are skipped because they already have existing output.",
-        "misread_step": "This is an example of misinterpreting the meaning of the membership conditions."
+        "why_wrong": "This choice reverses which items are skipped and which are added. a and c are in the existing-output set, so they are skipped; b is not, so it is added.",
+        "misread_step": "The mistake is reading a true `in existing_outputs` condition as a reason to add the item to the processing list. In fact, a true condition increments `skipped`, then uses `continue` to skip the addition code."
       },
-      "takeaway": "The `resume loop` reads in the following order: **check existing output → increment `skipped` → `continue` → next task**."
+      "takeaway": "Code before `continue` has already run; only the remaining code in the current iteration is skipped. Unlike `break`, which ends the entire loop, `continue` lets the loop keep checking the next task."
     },
     "target_statement": "continue",
     "focus_span": "continue",
@@ -1426,10 +1426,10 @@
     "primary_concept": "except_clause",
     "reading_goal_internal": "예외 발생 시 except-as가 예외 객체를 이름에 바인딩하고 그 문자열을 실패 로그에 넣는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`except Exception as error:` catches the specified exception class and binds the raised exception object to the variable named `error`.",
-      "how_to_read": "Check which exception is caught, what the name after `as` is, and how that name is used in the `except` block.",
-      "key_point": "Using `str(error)` allows you to convert the message contained in the exception object into a string.",
-      "common_mistake": "`error` It is easy to assume that this is always the same fixed string. In reality, it is a name that refers to the exception object that was raised."
+      "what_it_is": "Easy meaning: `except Exception as error:` handles an error that occurred and lets you inspect it using the name `error`.\nExact definition: This `except` clause handles an exception raised in `try` if it is an instance of `Exception` or a subclass, binding the caught exception object to the name `error` inside the handler.",
+      "how_to_read": "Imagine moving to an error-handling desk when an error occurs and attaching the label `error` to that error.\n1) `tasks` contains the `\"ok\"` and `\"bad\"` tasks in order, and `failed` starts as an empty list.\n2) `for` reads each task as `task` and checks the condition inside `try`.\n3) For `\"ok\"`, the condition is false, so no exception occurs and `except` does not run.\n4) For `\"bad\"`, `raise RuntimeError(\"model timeout\")` raises an exception.\n5) `RuntimeError` is a subclass of `Exception`, so this `except` handles it and names the actual exception object `error`.\n6) `append` adds a dictionary containing the current task's id and `str(error)` to `failed`.",
+      "key_point": "Value flow: `\"bad\"` task → raise `RuntimeError(\"model timeout\")` → match `except Exception` → bind the exception object to `error` → `str(error)` is `\"model timeout\"` → append `{\"id\": \"bad\", \"error\": \"model timeout\"}` to `failed`.\nOnly one item is added, so `failed[0]` is `{\"id\": \"bad\", \"error\": \"model timeout\"}`.",
+      "common_mistake": "It is easy to think that `error` itself is a string or that `str(error)` produces the type name `\"RuntimeError\"`. `error` refers to the caught exception object, and `str(error)` in this code returns the message `\"model timeout\"`. Also, `except` does not run for every task; it runs only when a matching exception occurs."
     },
     "teaching_example": {
       "code": "messages = []\ntry:\n    raise ValueError(\"bad value\")\nexcept ValueError as exc:\n    messages.append(str(exc))",

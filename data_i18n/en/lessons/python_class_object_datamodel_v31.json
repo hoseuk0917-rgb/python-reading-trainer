@@ -148,10 +148,10 @@
         "primary_concept":  "attribute_access",
         "reading_goal_internal":  "메서드 안에서 self가 현재 인스턴스를 가리키고 점 접근이 그 객체의 상태를 읽는 흐름을 이해한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`object.attribute` is attribute access that reads an attribute of an object. In an instance method, `self` refers to the current object that called the method.",
-                                    "how_to_read":  "`self.seen` This is interpreted as reading the ``seen`` attribute within the `Progress` object.",
-                                    "key_point":  "`seen` is not a global variable but **an attribute attached to the current `self` instance**.",
-                                    "common_mistake":  "`self` It is easy to think of `self` as a special global object. In reality, the instance that called the method is passed as `self`."
+                                    "what_it_is":  "Easy meaning: `self.seen` refers to the value named `seen` attached to the Progress object currently being used.\nExact definition: An attribute access expression, `object.attribute`, looks up the named attribute on an object; here, `self.seen` reads the `seen` attribute value of the current instance referred to by `self`.",
+                                    "how_to_read":  "Imagine each Progress object has a storage slot labeled `seen`. `self` points to the current object, and `.seen` identifies that object's slot. In `__init__`, `self.seen = set()` creates an empty set and stores it in this attribute. In `mark_seen`, `self.seen.add(card_id)` reads the set from the same attribute, then adds `card_id` to that set.",
+                                    "key_point":  "Flow when called: instance initialization → `set()` creates an empty set → store it in `self.seen`. Later, when `mark_seen` is called: current instance → retrieve the set from its `seen` attribute → add an item to that set with `add(card_id)`. Thus, `self.seen` refers to the current Progress instance's `seen` attribute. The shown code itself only defines the class, so it does not yet create an instance or add any items, and it produces no output.",
+                                    "common_mistake":  "Do not read `self.seen` as a global variable named `seen`. The `self` to the left of the dot determines whose attribute is accessed. `self` is not a special global object; it is the parameter name that receives the instance in a normal instance-method call. Here, each instance receives a separate empty set as its own `seen` attribute when initialized."
                                 },
         "teaching_example":  {
                                  "code":  "class Basket:\n    def __init__(self):\n        self.items = []\n\n    def count(self):\n        return len(self.items)",
@@ -219,14 +219,14 @@
                                  "walkthrough":  "Although both objects have the same ``name`` attribute, ``u1.name`` is stored as ``\"Ana\"``, and ``u2.name`` is stored as ``\"Bo\"``."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "In the constructor calls, different strings are stored in the `title` attributes of ``a`` and ``b``. When the `title` is subsequently read from each object, the stored value is returned as-is.",
-                                   "why_correct":  "This is because instance attributes can be stored separately for each object.",
+                                   "step_by_step":  "1) `class Card` defines the class. The assignments inside `__init__` run when each object is initialized.\n2) `a = Card(\"c1\", \"A\")` creates a new object. During initialization, `self` refers to this object: `self.card_id = card_id` stores \"c1\", and `self.title = title` stores \"A\". `a` refers to this object.\n3) `b = Card(\"c2\", \"B\")` creates a separate object. This time, `self` refers to the new object, so its `card_id` is set to \"c2\" and its `title` to \"B\". `a.title` does not change.\n4) `title_a = a.title` reads \"A\" from the `title` attribute of the object referenced by `a` and assigns it to `title_a`.\n5) `title_b = b.title` reads \"B\" from the `title` attribute of the object referenced by `b` and assigns it to `title_b`.\nResult: `title_a` is \"A\" and `title_b` is \"B\".",
+                                   "why_correct":  "`a.title` and `b.title` use the same attribute name but read values from different objects. Those objects store \"A\" and \"B\", respectively, so the correct choice is 'A and B.'.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Both are A",
-                                                               "why_wrong":  "`b` is created as a separate instance, and the constructor sets the `title` to ``\"B\"``.",
-                                                               "misread_step":  "This is an example where class sharing and instance state sharing are treated as the same thing."
+                                                               "why_wrong":  "When `b` is initialized, the `title` argument is \"B\", which is stored on the object referenced by `b`. Reading `b.title` therefore gives \"B\", not \"A\".",
+                                                               "misread_step":  "This treats `self.title` as one shared storage location because both objects come from the same class. Here, `self` refers to the particular object being initialized."
                                                            },
-                                   "takeaway":  "Even within the same class, **attribute values may differ from one instance to another.**"
+                                   "takeaway":  "Check the object before the dot first. Even with the same attribute name, `a.title` and `b.title` read the values stored on their respective objects."
                                },
         "target_statement":  "title_a = a.title",
         "focus_span":  "a.title",
@@ -822,18 +822,18 @@
                                     "common_mistake":  "It is easy to assume that count is reset to 0 every time add() is called."
                                 },
         "teaching_example":  {
-                                 "code":  "class Score:\n    def __init__(self): self.value=5\n    def add(self): self.value += 1\nscore=Score()\nscore.add()",
-                                 "walkthrough":  "The existing value of 5 changes to 6 and is retained within the instance."
+                                 "code":  "class Score:\n    def __init__(self):\n        self.value = 5\n\n    def add(self):\n        self.value += 1\n\nscore = Score()\nscore.add()\nresult = score.value",
+                                 "walkthrough":  "1. `class Score:` defines the object's data and behavior.\n2. `def __init__(self):` defines how a new object is initialized. During initialization, `self.value = 5` stores 5 in that object's `value` attribute.\n3. `def add(self):` defines an action to call later. It does not execute `self.value += 1` yet.\n4. `score = Score()` creates and initializes an object, so `score.value` is 5.\n5. Calling `score.add()` makes `self` refer to the object referenced by `score`. `self.value += 1` reads the existing integer 5, adds 1, and stores the result, 6, back in the same attribute.\n6. `result = score.value` reads the stored 6 and binds it to `result`. Finally, both `score.value` and `result` are 6; nothing is printed."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since `add()` adds 1 to `count`, which started at 0 in the constructor, the result is 1.",
-                                   "why_correct":  "This is because the `augmented assignment` actually updates the existing instance state.",
+                                   "step_by_step":  "1. Inside `class Counter:`, the code defines `__init__` and `add`. Defining these methods does not execute their bodies.\n2. `counter = Counter()` creates an object and runs `__init__`. `self.count = 0` sets that object's `count` to 0.\n3. `counter.add()` runs `add` once on the same object. Here, `self` refers to the object referenced by `counter`.\n4. `self.count += 1` reads the current value, 0, calculates `0 + 1`, and stores the result, 1, in that object's `count` attribute.\n5. After the call, `counter.count` remains 1. `result = counter.count` reads that value, so `result` is also 1.",
+                                   "why_correct":  "In this code, `+= 1` is augmented assignment: it adds 1 to the existing integer value and stores the result back in the same attribute. One call to `add()` therefore changes `self.count` from 0 to 1, matching the choice '1 increases'.",
                                    "common_wrong_choice":  {
                                                                "choice":  "It is always 0",
-                                                               "why_wrong":  "0 is the initial value and changes after the add call.",
-                                                               "misread_step":  "This is an example where the order of constructor initialization and method state changes is not distinguished."
+                                                               "why_wrong":  "0 is the value stored during initialization. `add()` does not run `__init__` again; it adds 1 to the value already stored.",
+                                                               "misread_step":  "This misreads `counter.add()` as also executing `self.count = 0` again. The body of the method actually called is `self.count += 1`."
                                                            },
-                                   "takeaway":  "A \"stateful object\" is described as **initial state → method mutation → retained state**."
+                                   "takeaway":  "For the object's attribute in this code, read `+= 1` as 'read the existing value → add 1 → store in the same attribute.' The initial 0 becomes 1 and remains stored after the call."
                                },
         "target_statement":  "self.count += 1",
         "focus_span":  "self.count += 1",

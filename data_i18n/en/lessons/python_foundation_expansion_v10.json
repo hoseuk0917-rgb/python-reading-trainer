@@ -2152,10 +2152,10 @@
     "primary_concept": "except_clause",
     "reading_goal_internal": "첫 호출 실패 시 typed except가 선택되고 같은 함수가 한 번 더 호출되는 실제 실행 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`except Exception:` This is a typed `except` clause that executes when a ``Exception`` exception occurs within the `try` block.",
-      "how_to_read": "First, check whether the first `fn()` call succeeds; if an exception occurs, the `try` block’s return statement is not executed, and control flows to the `except` block.",
-      "key_point": "This function is designed to make **only one additional call after the first failure**, rather than retrying indefinitely.",
-      "common_mistake": "It’s easy to assume that the second `fn()` inside the `except` block will also be automatically caught by the same `except` clause. However, the current code does not contain an additional `try` block surrounding the second call."
+      "what_it_is": "Easy meaning: `except` marks what to do instead when an attempted task raises a specified kind of error.\nExact definition: `except Exception:` is an exception-handling clause selected when an exception raised in its associated `try` block is an instance of `Exception` or one of its subclasses.",
+      "how_to_read": "Mental model: `try` is the first route, and `except` is a detour entered only when a matching error occurs.\n`def retry_once(fn):` defines a function that uses the supplied function `fn`. When `retry_once` is called, `return fn()` in `try` first executes `fn()` and returns its result if it succeeds. If the first call raises an `Exception`-family exception as stated in the question, that return does not complete. `except Exception:` is selected, and its `return fn()` calls the same function one more time.",
+      "key_point": "First `fn()` call → raise an `Exception`-family exception → select `except Exception:` → second `fn()` call. If the second call succeeds, its return value becomes the return value of `retry_once`. Since the behavior of `fn` is not supplied, the specific return value is unknown, but the next action is definitely one additional call. If the first call succeeds, `except` is skipped.",
+      "common_mistake": "It is easy to think `except` automatically repeats until success. This handler contains only one additional call. If the second call raises an exception, the same `except` does not catch it again; that exception propagates to the caller of `retry_once`."
     },
     "teaching_example": {
       "code": "def retry_once(fn):\n    try:\n        return fn()\n    except Exception:\n        return fn()\n\nattempts = 0\ndef work():\n    global attempts\n    attempts += 1\n    if attempts == 1:\n        raise RuntimeError(\"first\")\n    return \"ok\"\n\nresult = retry_once(work)",
@@ -2643,17 +2643,17 @@
     },
     "teaching_example": {
       "code": "def choose(kind):\n    if kind == \"fast\":\n        return \"turbo\"\n    if kind == \"safe\":\n        return \"normal\"\n    return \"basic\"\n\nresult = choose(\"fast\")",
-      "walkthrough": "Since the first condition is True, it returns ``turbo``, and the function ends, so the second `if` statement is not evaluated."
+      "walkthrough": "1) `def choose(kind):` defines the function. Its body does not run yet.\n2) `result = choose(\"fast\")` calls the function, so `kind` is \"fast\".\n3) The first condition, `kind == \"fast\"`, becomes `\"fast\" == \"fast\"`, which is `True`.\n4) The indented `return \"turbo\"` runs, sends back \"turbo\", and immediately ends this function call.\n5) The second condition, `kind == \"safe\"`, is therefore not checked. Neither `return \"normal\"` below it nor the final `return \"basic\"` runs.\n6) The returned value \"turbo\" is stored in `result`. Nothing is printed.\n\nFlow: \"fast\" → first condition is True → return \"turbo\" → function ends → `result` is \"turbo\"."
     },
     "answer_explanation": {
-      "step_by_step": "`review == review` Since it is True, the program enters the first if block. The return statement within it returns ``daily_review``, which terminates the function.",
-      "why_correct": "This is because if the condition is true, the `return` statement in that block immediately terminates the function’s execution.",
+      "step_by_step": "1) `def select_mode(mode):` defines the function. Its body runs when it is called.\n2) Calling `select_mode(\"review\")` makes `mode` the string \"review\".\n3) The first condition, `mode == \"review\"`, becomes `\"review\" == \"review\"`, which is `True`.\n4) `return \"daily_review\"` in the first if block runs. It returns the string \"daily_review\" and ends this function call.\n5) Execution never reaches the second `if mode == \"all\":` or the final `return \"normal\"`.\n6) The call's return value, \"daily_review\", is stored in `result`.",
+      "why_correct": "Because the first condition is true, the return statement that actually runs is `return \"daily_review\"`. Thus `result` holds the string \"daily_review\", and the correct choice is `daily_review`.",
       "common_wrong_choice": {
         "choice": "normal+review",
-        "why_wrong": "That value is the return value reached when execution gets to the second `if` and `mode == \"all\"` is true.",
-        "misread_step": "This is an example where the learner interpreted the code as continuing to execute the next `if` statement even after the first `return`."
+        "why_wrong": "This value is returned only if execution reaches the second if and `mode == \"all\"` is true. Here, the function has already ended at the first return, so the second condition is not checked.",
+        "misread_step": "The mistake is assuming that execution checks the next if after running the first return. Even though the two if statements are separate, return immediately ends the function call."
       },
-      "takeaway": "**If the return statement in the selected if block is encountered within a function, the code that follows it will not be executed.**"
+      "takeaway": "A true condition makes its if block run. If that block reaches return, it sends a value back to the caller and skips the rest of the function."
     },
     "target_statement": "if mode == \"review\":",
     "focus_span": "if mode == \"review\":",

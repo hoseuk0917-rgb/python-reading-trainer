@@ -442,10 +442,10 @@
     "primary_concept": "await_expression",
     "reading_goal_internal": "async 함수 안에서 await가 coroutine 완료 결과를 받아 대입문 값으로 사용하는 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`await expression`은 awaitable 작업이 완료될 때까지 현재 coroutine을 양보하고, 완료 결과를 표현식 값으로 사용합니다.",
-      "how_to_read": "먼저 await 오른쪽 호출이 awaitable을 만든다고 보고, 완료 뒤 반환값이 await 표현식의 값이 된다고 읽습니다.",
-      "key_point": "cloud sync는 도메인 맥락이고 Python 초점은 비동기 호출 결과를 await해 대입하는 흐름입니다.",
-      "common_mistake": "await가 결과를 항상 None으로 만든다고 생각하기 쉽습니다. awaitable이 반환한 값이 그대로 await 표현식 결과가 됩니다."
+      "what_it_is": "쉽게 말하면: `await`는 작업이 끝나면 그 결과를 받아 다음 코드에서 쓰게 합니다.\n정확한 정의: `await` 표현식은 awaitable(완료를 기다릴 수 있는 객체)의 완료 결과를 값으로 얻으며, 기다리는 동안 현재 코루틴의 실행이 일시 중단될 수 있습니다.",
+      "how_to_read": "직관적 모델: 일을 맡기고 완료 결과를 받아 빈칸을 채운다고 생각하세요. `result = await upload_progress(local_progress)`의 오른쪽 결과가 준비되어야 `result`에 값이 저장됩니다.\n이 코드에서 `upload_progress(local_progress)`는 사전을 인자로 받는 코루틴 객체를 만듭니다. `await`로 그 코루틴을 실행해 완료 결과를 받습니다. 함수 본문은 곧바로 `return \"synced\"`를 실행하므로 여기서는 실제 대기나 다른 작업으로의 전환이 필요하지 않습니다.",
+      "key_point": "`asyncio.run(sync())`가 `sync`를 실행합니다.\n`local_progress = {\"correct\": 12}`\n↓\n`upload_progress(local_progress)`가 코루틴 객체를 만듦\n↓\n`await`로 실행하여 `return \"synced\"`의 값을 받음\n↓\n`result = \"synced\"`\n↓\n`sync`가 `result`를 반환\n↓\n`asyncio.run(...)`이 그 값을 반환하여 `final_status = \"synced\"`\n이 코드에는 실제 네트워크 업로드가 없습니다.",
+      "common_mistake": "인자로 넘긴 사전의 `12`가 그대로 결과가 된다고 생각하기 쉽습니다. 인자는 함수에 전달하는 값이고, `await`가 받는 값은 코루틴이 반환한 값입니다. 여기서는 `progress`를 사용하지 않고 `\"synced\"`를 반환하므로 결과는 `12`나 `None`이 아니라 문자열 `\"synced\"`입니다."
     },
     "teaching_example": {
       "code": "import asyncio\n\nasync def fetch_count():\n    return 3\n\nasync def main():\n    count = await fetch_count()\n    return count\n\nresult = asyncio.run(main())",

@@ -148,10 +148,10 @@
     "primary_concept": "attribute_access",
     "reading_goal_internal": "메서드 안에서 self가 현재 인스턴스를 가리키고 점 접근이 그 객체의 상태를 읽는 흐름을 이해한다.",
     "concept_explanation": {
-      "what_it_is": "`object.attribute`는 객체가 가진 속성을 읽는 attribute access입니다. 인스턴스 메서드의 `self`는 그 메서드를 호출한 현재 객체를 가리킵니다.",
-      "how_to_read": "`self.seen`은 현재 Progress 객체 안의 `seen` 속성을 읽는다고 해석합니다.",
-      "key_point": "`seen`은 전역 상태가 아니라 **현재 self 인스턴스에 붙어 있는 속성**입니다.",
-      "common_mistake": "`self`를 특별한 전역 객체라고 생각하기 쉽습니다. 실제로는 메서드를 호출한 각 인스턴스가 self로 전달됩니다."
+      "what_it_is": "쉽게 말하면: `self.seen`은 지금 다루는 Progress 객체에 붙어 있는 `seen`이라는 값을 가리킵니다.\n정확한 정의: 속성 접근(attribute access) 표현식 `object.attribute`는 객체의 해당 이름 속성을 조회하며, 여기서 `self.seen`은 `self`가 가리키는 현재 인스턴스의 `seen` 속성 값을 읽습니다.",
+      "how_to_read": "각 Progress 객체에 `seen`이라는 이름표가 붙은 보관 칸이 있다고 생각하세요. `self`는 현재 객체를 가리키고, `.seen`은 그 객체의 칸을 지정합니다. `__init__`의 `self.seen = set()`은 빈 집합을 만들어 이 속성에 저장합니다. `mark_seen`의 `self.seen.add(card_id)`는 같은 속성에서 집합을 읽은 뒤, 그 집합에 `card_id`를 추가합니다.",
+      "key_point": "호출될 때의 흐름: 인스턴스 초기화 → `set()`으로 빈 집합 생성 → `self.seen`에 저장. 이후 `mark_seen`이 호출되면 현재 인스턴스 → `seen` 속성의 집합 조회 → `add(card_id)`로 그 집합에 항목 추가 순서입니다. 따라서 `self.seen`은 현재 Progress 인스턴스의 `seen` 속성을 가리킵니다. 제시된 코드 자체는 클래스만 정의하므로 아직 인스턴스를 만들거나 항목을 추가하지 않으며, 출력도 없습니다.",
+      "common_mistake": "`self.seen`을 전역 변수 `seen`으로 읽지 마세요. 점 왼쪽의 `self`가 어느 객체의 속성인지 정합니다. `self`는 특별한 전역 객체가 아니라, 일반적인 인스턴스 메서드 호출에서 해당 인스턴스를 전달받는 매개변수 이름입니다. 여기서는 각 인스턴스가 초기화될 때 별도의 빈 집합을 자신의 `seen` 속성으로 받습니다."
     },
     "teaching_example": {
       "code": "class Basket:\n    def __init__(self):\n        self.items = []\n\n    def count(self):\n        return len(self.items)",
@@ -219,14 +219,14 @@
       "walkthrough": "두 객체는 같은 `name` 속성을 가지지만 `u1.name`은 `\"Ana\"`, `u2.name`은 `\"Bo\"`처럼 값이 따로 저장됩니다."
     },
     "answer_explanation": {
-      "step_by_step": "생성자 호출에서 `a`와 `b`의 title 속성에 서로 다른 문자열이 저장됩니다. 이후 각 객체에서 title을 읽으면 저장된 값이 그대로 나옵니다.",
-      "why_correct": "인스턴스 attribute는 각 객체에 따로 저장될 수 있기 때문입니다.",
+      "step_by_step": "1) `class Card`는 클래스를 정의합니다. `__init__` 안의 대입은 각 객체를 초기화할 때 실행됩니다.\n2) `a = Card(\"c1\", \"A\")`는 새 객체를 만듭니다. 초기화 중 `self`는 이 객체를 가리키며, `self.card_id = card_id`는 \"c1\"을, `self.title = title`은 \"A\"를 저장합니다. `a`는 이 객체를 가리킵니다.\n3) `b = Card(\"c2\", \"B\")`는 별도의 객체를 만듭니다. 이번에는 `self`가 새 객체를 가리키므로 그 객체에 `card_id`는 \"c2\", `title`은 \"B\"로 저장됩니다. `a.title`은 바뀌지 않습니다.\n4) `title_a = a.title`은 `a`가 가리키는 객체의 `title` 값 \"A\"를 읽어 `title_a`에 대입합니다.\n5) `title_b = b.title`은 `b`가 가리키는 객체의 `title` 값 \"B\"를 읽어 `title_b`에 대입합니다.\n결과: `title_a`는 \"A\", `title_b`는 \"B\"입니다.",
+      "why_correct": "`a.title`과 `b.title`은 이름이 같은 속성이지만 서로 다른 객체에서 값을 읽습니다. 각 객체에 저장된 값이 각각 \"A\"와 \"B\"이므로 정답은 'A와 B'입니다.",
       "common_wrong_choice": {
         "choice": "둘 다 A",
-        "why_wrong": "`b`는 별도 인스턴스로 생성되며 생성자에서 title에 `\"B\"`를 저장합니다.",
-        "misread_step": "클래스 공유와 인스턴스 상태 공유를 같은 것으로 본 경우입니다."
+        "why_wrong": "`b`의 초기화에서는 `title` 인자로 \"B\"를 받아 `b`가 가리키는 객체에 저장합니다. 따라서 `b.title`을 읽으면 \"A\"가 아니라 \"B\"입니다.",
+        "misread_step": "두 객체가 같은 클래스로 만들어졌다는 이유로 `self.title`도 하나의 공유된 저장 공간이라고 생각한 것입니다. 여기서 `self`는 각 초기화 대상 객체를 가리킵니다."
       },
-      "takeaway": "같은 클래스라도 **인스턴스별 attribute 값은 서로 다를 수 있습니다.**"
+      "takeaway": "점 앞의 객체부터 확인하세요. 같은 속성 이름이라도 `a.title`과 `b.title`은 각 객체에 저장된 값을 따로 읽습니다."
     },
     "target_statement": "title_a = a.title",
     "focus_span": "a.title",
@@ -822,18 +822,18 @@
       "common_mistake": "add()가 호출될 때마다 count가 다시 0으로 초기화된다고 생각하기 쉽습니다."
     },
     "teaching_example": {
-      "code": "class Score:\n    def __init__(self): self.value=5\n    def add(self): self.value += 1\nscore=Score()\nscore.add()",
-      "walkthrough": "기존 5가 6으로 바뀌며 instance 안에 유지됩니다."
+      "code": "class Score:\n    def __init__(self):\n        self.value = 5\n\n    def add(self):\n        self.value += 1\n\nscore = Score()\nscore.add()\nresult = score.value",
+      "walkthrough": "1. `class Score:`는 객체의 데이터와 동작을 정의합니다.\n2. `def __init__(self):`는 새 객체를 초기화할 동작을 정의합니다. `self.value = 5`는 초기화할 때 그 객체의 `value`에 5를 저장합니다.\n3. `def add(self):`는 나중에 호출할 동작을 정의합니다. 이때는 아직 `self.value += 1`을 실행하지 않습니다.\n4. `score = Score()`가 객체를 만들고 초기화하므로 `score.value`는 5입니다.\n5. `score.add()`를 호출하면 `self`는 `score`가 가리키는 객체입니다. `self.value += 1`은 기존 정수 5를 읽고 1을 더한 결과 6을 같은 속성에 저장합니다.\n6. `result = score.value`는 저장된 6을 읽어 `result`에 연결합니다. 최종적으로 `score.value`와 `result`는 모두 6이며, 화면 출력은 없습니다."
     },
     "answer_explanation": {
-      "step_by_step": "constructor에서 0으로 시작한 count에 add()가 1을 더하므로 결과는 1입니다.",
-      "why_correct": "augmented assignment가 기존 instance state를 실제로 갱신하기 때문입니다.",
+      "step_by_step": "1. `class Counter:` 안에서 `__init__`와 `add`를 정의합니다. 메서드 본문은 정의만으로 실행되지 않습니다.\n2. `counter = Counter()`가 객체를 만들고 `__init__`를 실행합니다. `self.count = 0`으로 그 객체의 `count`가 0이 됩니다.\n3. `counter.add()`가 같은 객체의 `add`를 한 번 실행합니다. 여기서 `self`는 `counter`가 가리키는 객체입니다.\n4. `self.count += 1`은 현재 값 0을 읽고, `0 + 1`을 계산한 뒤, 결과 1을 그 객체의 `count`에 저장합니다.\n5. 호출이 끝나도 `counter.count`는 1로 유지됩니다. `result = counter.count`는 그 값을 읽으므로 `result`도 1입니다.",
+      "why_correct": "이 코드의 `+= 1`은 기존 정수 값에 1을 더해 같은 속성에 다시 저장하는 복합 대입입니다. 따라서 `add()`를 한 번 호출하면 `self.count`가 0에서 1로 바뀌므로 정답은 '1 증가한다'입니다.",
       "common_wrong_choice": {
         "choice": "항상 0이 된다",
-        "why_wrong": "0은 초기값이고 add 호출 뒤에는 변경됩니다.",
-        "misread_step": "constructor 초기화와 method 상태 변경 순서를 구분하지 않은 경우입니다."
+        "why_wrong": "0은 객체를 초기화할 때 저장한 값입니다. `add()`는 `__init__`를 다시 실행하지 않고, 이미 저장된 값에 1을 더합니다.",
+        "misread_step": "`counter.add()` 호출 때도 `self.count = 0`이 다시 실행된다고 읽은 것입니다. 실제로 호출되는 메서드의 본문은 `self.count += 1`입니다."
       },
-      "takeaway": "stateful object는 **initial state → method mutation → retained state**로 읽습니다."
+      "takeaway": "객체의 속성에 대한 `+= 1`은 이 코드에서 '기존 값 읽기 → 1 더하기 → 같은 속성에 저장하기'로 읽습니다. 초기값 0이 호출 후 1로 유지됩니다."
     },
     "target_statement": "self.count += 1",
     "focus_span": "self.count += 1",

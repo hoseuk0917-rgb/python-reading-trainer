@@ -565,10 +565,10 @@
     "primary_concept": "arithmetic",
     "reading_goal_internal": "GPU 자원 맥락의 두 수치를 실제 값으로 치환해 multiplication 결과를 예측한다.",
     "concept_explanation": {
-      "what_it_is": "`a * b`는 두 값을 곱하는 arithmetic expression입니다.",
-      "how_to_read": "각 변수의 현재 숫자를 먼저 확인하고 곱셈을 수행합니다.",
-      "key_point": "실제 VRAM 사용량은 모델 구조와 dtype 등에도 영향을 받지만, 이 카드는 batch size와 sequence length가 함께 커지면 처리 규모가 커진다는 관계를 단순 수치로 읽습니다.",
-      "common_mistake": "8과 2048을 더해 2056이라고 계산하기 쉽습니다. 연산자는 `*`입니다."
+      "what_it_is": "쉽게 말하면: `*`는 두 수를 곱하는 기호입니다.\n정확한 정의: 정수 사이의 `*` 연산자는 두 피연산자(계산에 쓰는 값)의 곱을 정수로 계산하는 산술 연산자입니다.",
+      "how_to_read": "2048개씩 있는 묶음이 8개라면 전체가 몇 개인지 구한다고 생각하세요. 첫째 줄은 `batch_size`에 8을, 둘째 줄은 `max_length`에 2048을 연결합니다. 셋째 줄에서는 먼저 오른쪽의 `batch_size * max_length`를 읽고, 각 이름을 현재 값으로 바꾸어 `8 * 2048`을 계산합니다. 그런 다음 결과를 왼쪽 이름 `work_units`에 연결합니다.",
+      "key_point": "값의 흐름은 `batch_size`와 `max_length` → `8 * 2048` → `16384` → `work_units`입니다. 따라서 `work_units`의 값은 정수 `16384`입니다. 곱셈은 원래 두 변수의 값을 바꾸지 않습니다.",
+      "common_mistake": "`*`를 `+`처럼 읽으면 `8 + 2048 = 2056`이라고 잘못 계산할 수 있습니다. 이 코드는 덧셈이 아니라 곱셈이므로 결과는 `16384`이며, 8이나 2048을 그대로 대입하는 것도 아닙니다."
     },
     "teaching_example": {
       "code": "batch_size = 4\nsequence_length = 512\nunits = batch_size * sequence_length",
@@ -801,10 +801,10 @@
     "primary_concept": "membership_test",
     "reading_goal_internal": "runtime 설정의 framework 값이 지원 set에 포함되는지 membership test로 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`value in container`는 value가 container 안에 있는지 검사해 boolean을 만듭니다.",
-      "how_to_read": "왼쪽 실제 값과 오른쪽 container의 항목을 비교합니다.",
-      "key_point": "TPU 환경에서는 accelerator 이름만이 아니라 사용할 framework·runtime 조합이 지원되는지도 확인해야 한다는 맥락을 표현합니다.",
-      "common_mistake": "set 안에 비슷한 문자열이 있으면 True라고 생각하기 쉽습니다. membership은 같은 값이 실제로 있어야 합니다."
+      "what_it_is": "쉽게 말하면: `in`은 “이 값이 여기 안에 있나?”를 묻습니다.\n정확한 정의: `value in container`는 왼쪽 값이 오른쪽 컨테이너에 포함되는지 검사하여 불리언 값 `True` 또는 `False`를 만드는 멤버십 테스트입니다.",
+      "how_to_read": "집합을 이름표 모음처럼 생각하고, 찾는 이름표가 그 안에 있는지 확인하세요. 첫 줄은 설정 딕셔너리 `runtime`을 만들고, 둘째 줄은 `\"jax\"`와 `\"tensorflow\"`를 담은 집합 `supported_frameworks`를 만듭니다. 셋째 줄에서는 `runtime[\"framework\"]`로 `\"jax\"`를 꺼낸 뒤, 그 값이 오른쪽 집합의 원소인지 확인합니다.",
+      "key_point": "`runtime[\"framework\"]` → `\"jax\"` → `\"jax\" in {\"jax\", \"tensorflow\"}` → `True` → `framework_supported`에 대입됩니다. 이 코드는 주어진 집합에 값이 있는지만 검사하며, 실제 환경의 지원 여부를 별도로 조회하지 않습니다.",
+      "common_mistake": "`in`이 찾은 문자열 `\"jax\"`를 반환한다고 생각하지 마세요. 문자열을 꺼내는 것은 `runtime[\"framework\"]`이고, `in`은 포함 여부인 `True` 또는 `False`를 만듭니다. 여기서는 오른쪽이 집합이므로 집합의 원소를 검사합니다. 오른쪽이 딕셔너리라면 값이 아니라 키를 검사합니다."
     },
     "teaching_example": {
       "code": "supported = {\"tensorflow\", \"jax\"}\nframework = \"pytorch\"\nok = framework in supported",

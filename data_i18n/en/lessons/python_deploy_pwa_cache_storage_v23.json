@@ -397,14 +397,14 @@
     "primary_concept": "await_expression",
     "reading_goal_internal": "여러 coroutine을 gather에 넘기고 await했을 때 하나의 실패가 전체 await 결과에 어떻게 영향을 주는지 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`await expression` `await` suspends the execution of the current async function until the awaitable operation completes and returns its result.",
-      "how_to_read": "Check what kind of awaitable is created on the right side of `await`, and see how the completion result or exception is propagated.",
-      "key_point": "`asyncio.gather()` It can wait for multiple awaitables simultaneously, and by default, a single exception can be propagated to the caller.",
-      "common_mistake": "It’s easy to assume that even if a single operation fails, only the remaining results are quietly returned. The default `gather` can propagate exceptions to the caller."
+      "what_it_is": "Easy meaning: `await` waits for a task's result so you can use it, but also receives the error if the task fails.\nExact definition: `await expression` obtains an awaitable's completion result, may suspend the current coroutine, and can propagate an exception from the awaited operation.",
+      "how_to_read": "Mental model: Imagine a counter where you wait for several orders together. Normal completion gives you a bundle of results, but here a failed order is reported as an error.\nIn this code, the `load_json(path)` calls create coroutine objects, and `*` unpacks them into separate arguments to `gather`. `gather` schedules them to run, and `await` waits for the combined result. Despite its name, `load_json` only checks the path; it does not read an actual file.",
+      "key_point": "Execute `await main()` → create coroutines for three paths → pass them to `gather` → the `bad.json` task raises `RuntimeError(\"load failed\")` → the exception propagates through the `await` waiting on default `gather`.\nIn this code, no result is assigned to `lesson_arrays`, and `return lesson_arrays` is not reached. The exception reaches the caller awaiting `main()`.",
+      "common_mistake": "It is easy to assume that `await` turns failures into successful values, or that `gather` automatically replaces a failed item with an empty list. This code does neither. Also, exception propagation does not by itself mean that all remaining tasks are automatically cancelled."
     },
     "teaching_example": {
-      "code": "import asyncio\n\nasync def one():\n    return 1\n\nasync def two():\n    return 2\n\nasync def main():\n    values = await asyncio.gather(one(), two())\n    return values",
-      "walkthrough": "We wait for both coroutines to complete and receive the result ``[1, 2]``."
+      "code": "import asyncio\n\nasync def item(ok):\n    if not ok:\n        raise RuntimeError(\"item failed\")\n    return 7\n\nasync def main():\n    values = await asyncio.gather(item(True), item(False))\n    return values",
+      "walkthrough": "1) `import asyncio` imports the module containing `gather`.\n2) `async def item(ok)` defines an async function. Calling it creates a coroutine object; its body proceeds when it runs.\n3) `if not ok` checks whether `ok` is false. For `False`, the next line raises `RuntimeError(\"item failed\")`.\n4) `return 7` provides the result when no error is raised.\n5) `async def main()` defines the function that will wait for two tasks.\n6) Executing `await main()` passes the coroutines created by `item(True)` and `item(False)` to `gather` and waits with `await`. The first task returns `7`; the second raises an exception.\n7) That exception propagates through `await`, so no list is assigned to `values` and `return values` is not executed. The final outcome is a `RuntimeError` passed to the caller, not `[7, ...]`."
     },
     "answer_explanation": {
       "step_by_step": "Of the three coroutines, loading `bad.json` raises a `RuntimeError`. The default `asyncio.gather()` `await` statement can pass this exception to the caller.",

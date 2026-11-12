@@ -568,14 +568,14 @@
         "primary_concept":  "class_definition",
         "reading_goal_internal":  "실제 provider와 비슷한 generate method를 가진 fake class를 정의해 외부 API 없이 테스트하는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`class FakeLLM:` is a class definition that defines a new class called FakeLLM.",
-                                    "how_to_read":  "We look at which methods are inside a class and which interfaces the actual objects provide.",
-                                    "key_point":  "\"fake\" can replace actual LLM APIs, allowing you to verify call flows without incurring costs, network overhead, or non-determinism.",
-                                    "common_mistake":  "It is easy to assume that using \"fakes\" makes actual provider integration testing completely unnecessary. While fakes are useful for unit and flow tests, actual integration verification may still be required separately."
+                                    "what_it_is":  "Easy meaning: `class` creates a new kind of object by grouping what its objects can do.\nExact definition: A Python class definition executes the class body in a new namespace, uses it to create a class object, and binds that object to the class name.",
+                                    "how_to_read":  "Think of a class as a blueprint and an instance as an individual object made from it. `class FakeLLM:` defines the blueprint, and `def generate(self, prompt):` inside it defines a method its objects provide. The `return` does not run yet. `FakeLLM()` creates an object, and `llm.generate(\"any prompt\")` runs that object's method. In this call, `self` is the `llm` object and `prompt` is `\"any prompt\"`.",
+                                    "key_point":  "Execute the class body to define `generate` → bind the class object to `FakeLLM` → create an instance with `FakeLLM()` → bind it to `llm` → call `generate` → return `{\"answer\": \"test\"}` → bind it to `result`.\n`prompt` is not used to calculate the return value. This code returns a fixed response without calling an actual API, allowing the call flow to be tested without actual LLM API costs. Nothing is printed.",
+                                    "common_mistake":  "It is easy to think executing `class FakeLLM:` immediately produces a response. Class definition, instance creation, and method calls are separate steps. Also, the name `FakeLLM` does not itself provide any special API-simulation behavior. This object can serve as a fake replacement because its explicitly written `generate` body returns a fixed value."
                                 },
         "teaching_example":  {
                                  "code":  "class FakeStore:\n    def get(self, key):\n        return \"fixed\"\n\nstore = FakeStore()\nvalue = store.get(\"x\")",
-                                 "walkthrough":  "Test the call flow using a \"fake\" object that returns fixed values instead of an actual database."
+                                 "walkthrough":  "1) `class FakeStore:` starts a new class definition.\n2) `def get(self, key):` executes in the class body to define the `get` method. The method body does not run yet.\n3) `return \"fixed\"` is the instruction to run when `get` is called later. When the class definition finishes, the class object is bound to `FakeStore`.\n4) `store = FakeStore()` creates an instance and binds it to `store`.\n5) `value = store.get(\"x\")` calls the method. The `store` object is passed as `self`, and `\"x\"` as `key`. Now `return \"fixed\"` runs, and its return value is bound to `value`.\nResult: `value` is `\"fixed\"`. There is no external storage lookup or printed output. Read class definition → instance creation → method call as distinct steps."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "Since the FakeLLM object returns a fixed response to `generate` calls, no actual API requests are required.",
@@ -812,24 +812,24 @@
         "primary_concept":  "function_definition",
         "reading_goal_internal":  "`def run_ci_check():`가 함수 객체를 정의하고 본문은 실제 호출 시 실행된다는 점을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`def name():` It defines a function with no parameters and assigns it to `name`.",
-                                    "how_to_read":  "Distinguish between when a function is defined and when it is called.",
-                                    "key_point":  "Structure the code so that the CI runner can repeatedly execute the same validation callable.",
-                                    "common_mistake":  "It’s easy to assume that the validation body executes as soon as the `def` line is read."
+                                    "what_it_is":  "Easy meaning: `def` prepares a named block of code to run later.\nExact definition: A function definition statement, `def`, creates a function object and binds it to a name in the current scope; the function body runs when that function is called.",
+                                    "how_to_read":  "Distinguish writing a recipe from actually cooking. Like preparing a recipe, `def run_ci_check():` defines a function with no parameters. The indented `return \"PASS\"` describes work to do when called, so it does not run yet. On the last line, `callable(run_ci_check)` receives the function itself and checks whether it can be called; it does not execute `run_ci_check()`.",
+                                    "key_point":  "Create function object → bind it to `run_ci_check` → move to the next statement without running the body → `callable(run_ci_check)` returns `True` → `print` displays `True`. The output of the full code is `True`, not `PASS`.",
+                                    "common_mistake":  "It is easy to mistake the parentheses in `def` for a function call. Here they are part of the function definition syntax. A separate `run_ci_check()` call is needed to run the body, and even then `return \"PASS\"` sends the string back to the caller rather than printing it."
                                 },
         "teaching_example":  {
                                  "code":  "def check():\n    return \"PASS\"\nprint(callable(check))",
                                  "walkthrough":  "Immediately after the function definition, `check` is a callable function object."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "1) The `def` header defines the function name. 2) The body code is assigned to the function. 3) There is no call to `run_ci_check()` yet. 4) Therefore, only the function object has been defined so far.",
-                                   "why_correct":  "The `def` statement defines a function, and the function body is executed at the time of the call.",
+                                   "step_by_step":  "1) When the function definition starting with `def run_ci_check():` executes, Python creates a function object.\n2) It binds that object to the name `run_ci_check`. The indented `return \"PASS\"` does not execute at this point.\n3) Immediately after the definition, the function is therefore defined, which answers the question.\n4) On the last line, the `run_ci_check` function object is passed to `callable`. `print` displays the check's result, `True`, and the function body still does not run.",
+                                   "why_correct":  "The direct effect of `def` is to create a function and bind it to a name, so the correct answer is 'The `run_ci_check` function is defined.' There is no `run_ci_check()` call in this code.",
                                    "common_wrong_choice":  {
                                                                "choice":  "\"PASS\" is printed immediately.",
-                                                               "why_wrong":  "The `return` statement is executed when a function is called.",
-                                                               "misread_step":  "It’s easy to assume that the validation body executes as soon as the `def` line is read."
+                                                               "why_wrong":  "`return \"PASS\"` is inside a function body that is not called, so it does not execute. Also, `return` sends a value back rather than printing it. The actual output is `True` from the last line.",
+                                                               "misread_step":  "This assumes that defining the function also runs its body, and confuses returning a value with printing it."
                                                            },
-                                   "takeaway":  "Read the code while distinguishing between function definitions and function calls."
+                                   "takeaway":  "Distinguish `def name():` for preparation, `name` for a reference to the function object, and `name()` for a call. Here, `callable(run_ci_check)` only checks whether the prepared function can be called; it does not run it."
                                },
         "target_statement":  "def run_ci_check():",
         "focus_span":  "def run_ci_check():",

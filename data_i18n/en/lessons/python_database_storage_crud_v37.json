@@ -522,14 +522,14 @@
                                  "walkthrough":  "Only the row for 2026-01-02 will remain; the row for 2025-12-31 will be excluded."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since 2025-12-20 is earlier than the cutoff date, it is excluded, while 2026-01-01 and 2026-02-10 are on or after the cutoff date, so they remain.",
-                                   "why_correct":  "This is because the condition for \"comprehension\" was defined as `created_at \u003e= cutoff`.",
+                                   "step_by_step":  "1) Initially, wrong_answers contains the dictionaries for IDs 1, 2, and 3 in order, and cutoff is \"2026-01-01\".\n2) `for row in wrong_answers` takes each row from the existing list, and `if row[\"created_at\"] >= cutoff` tests whether to keep it. For the fixed-format YYYY-MM-DD strings here, string comparison order matches date order.\n3) ID 1: \"2025-12-20\" >= \"2026-01-01\" is False → do not add it to the new list.\n4) ID 2: \"2026-01-01\" >= \"2026-01-01\" is True → the front expression `row` adds this dictionary to the new list.\n5) ID 3: \"2026-02-10\" >= \"2026-01-01\" is True → add this dictionary too.\n6) The completed new list is assigned to wrong_answers. The remaining IDs are 2 and 3, in that order.",
+                                   "why_correct":  "`>=` includes equality, so ID 2, whose date equals the cutoff, stays too. Only the dictionaries for IDs 2 and 3 pass the condition and enter the new list, so the answer is '2 and 3'. This creates a new list and rebinds the name rather than deleting items from the original list in place.",
                                    "common_wrong_choice":  {
-                                                               "choice":  "10,000",
-                                                               "why_wrong":  "ID 1 is actually before the cutoff, so it is the item to remove.",
-                                                               "misread_step":  "This is a case where the conditions to be removed and those to be retained were interpreted in reverse."
+                                                               "choice":  "1, 2, 3 all",
+                                                               "why_wrong":  "The date comparison for ID 1 is False, so it is not included in the new list.",
+                                                               "misread_step":  "This reads only `for row in wrong_answers` as copying every row, overlooking that the following `if` decides whether each row is included."
                                                            },
-                                   "takeaway":  "When translating “DELETE” as a filter, verify the **retention condition**—which is the opposite of the deletion condition."
+                                   "takeaway":  "Read a filtered list comprehension as 'take one item → test the condition → only if True, add the front expression's value to the new list'. `>=` keeps the boundary value too."
                                },
         "target_statement":  "wrong_answers = [row for row in wrong_answers if row[\"created_at\"] \u003e= cutoff]",
         "focus_span":  "[row for row in wrong_answers if row[\"created_at\"] \u003e= cutoff]",
@@ -755,10 +755,10 @@
         "primary_concept":  "except_clause",
         "reading_goal_internal":  "정상 conn으로 commit이 실행된 테스트와 두 번째 execute에서 실패해 `except Exception:`으로 이동하는 경로를 구분하고, rollback/re-raise 검증에 실패 입력이 필요함을 판단한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`except Exception:` is executed only when an Exception-class error occurs within the `try` block. Since the `else` block is executed in the success case, the rollback behavior of the `except` path is not observed.",
-                                    "how_to_read":  "Check which `execute` in the current test fixture raises an exception. If there are no exceptions, the `target except` is not reached; to verify the rollback, you need a fixture that intentionally causes an intermediate failure.",
-                                    "key_point":  "Currently, `happy connection` successfully executes both `execute` statements, so the events are `write1`, `write2`, and `commit`. `rollback` is never executed.",
-                                    "common_mistake":  "It is easy to assume that just because a transaction success test passes, atomic failure handling is also proven. The rollback path must be tested by actually triggering a failure to observe its behavior."
+                                    "what_it_is":  "Easy meaning: `except Exception:` marks the response to run if the attempted work encounters that kind of error.\nExact definition: An `except Exception:` clause is an exception handler selected when an exception raised during execution of its associated `try` block is an instance of `Exception` or one of its subclasses.",
+                                    "how_to_read":  "Picture a detour taken when an error occurs. Here, the two `execute` calls inside `try` are attempted in order. With the current `fail_second=False`, both calls append their names to `events`, execution skips `except`, and `commit()` runs in `else`. With a fresh `Conn(fail_second=True)`, the first call succeeds, but the second raises an exception before appending its name. Execution then moves to `except Exception:`, runs `rollback()`, and uses bare `raise` to propagate the exception being handled back to the caller.",
+                                    "key_point":  "Current flow: `fail_second=False` → append `\"write1\"` → append `\"write2\"` → no exception → append `\"commit\"` in `else` → print `['write1', 'write2', 'commit']`.\nFailure-check flow: fresh `Conn(fail_second=True)` → append `\"write1\"` → second call raises `Exception(\"write2 failed\")` → append `\"rollback\"` in `except` → re-raise the same exception. Here, `events` is `['write1', 'rollback']`, and `commit()` does not run. The test must catch the propagated exception to check both the exception and the recorded events.",
+                                    "common_mistake":  "It is easy to assume that a passing success test, or the mere presence of an `except` line, verifies error handling. Repeating normal input still does not execute this code's `except` path. Also, `rollback()` here only records `\"rollback\"`; it does not remove the previously recorded `\"write1\"`."
                                 },
         "teaching_example":  {
                                  "code":  "events = []\ntry:\n    events.append(\"write\")\nexcept Exception:\n    events.append(\"rollback\")\nelse:\n    events.append(\"commit\")\nprint(events)",

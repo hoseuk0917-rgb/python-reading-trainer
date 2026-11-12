@@ -2152,10 +2152,10 @@
     "primary_concept": "except_clause",
     "reading_goal_internal": "첫 호출 실패 시 typed except가 선택되고 같은 함수가 한 번 더 호출되는 실제 실행 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`except Exception:`은 try 영역에서 `Exception` 계열 예외가 발생했을 때 실행되는 typed except 절입니다.",
-      "how_to_read": "첫 `fn()` 호출이 성공하는지 먼저 보고, 예외가 나면 try의 return이 끝나지 못하고 except로 이동한다고 읽습니다.",
-      "key_point": "이 함수는 무한 retry가 아니라 **첫 실패 뒤 한 번만 추가 호출**하는 구조입니다.",
-      "common_mistake": "except 안의 두 번째 `fn()`도 자동으로 같은 except가 다시 잡아 줄 것이라고 생각하기 쉽습니다. 현재 코드에는 두 번째 호출을 감싸는 추가 try가 없습니다."
+      "what_it_is": "쉽게 말하면: `except`는 시도하던 작업에서 정해진 종류의 오류가 났을 때 대신 실행할 부분입니다.\n정확한 정의: `except Exception:`은 연결된 `try` 블록에서 발생한 예외가 `Exception` 또는 그 하위 클래스의 인스턴스일 때 선택되는 예외 처리 절입니다.",
+      "how_to_read": "직관적 모델: `try`는 먼저 가는 길이고, `except`는 일치하는 오류가 났을 때만 들어가는 우회로입니다.\n`def retry_once(fn):`은 전달받은 함수 `fn`을 사용할 함수를 정의합니다. 이 함수가 호출되면 `try`의 `return fn()`은 먼저 `fn()`을 실행하고, 성공하면 그 결과를 반환합니다. 질문처럼 첫 호출에서 `Exception` 계열 예외가 나면 이 반환은 완료되지 않습니다. `except Exception:`이 선택되고, 그 안의 `return fn()`이 같은 함수를 한 번 더 호출합니다.",
+      "key_point": "첫 `fn()` 호출 → `Exception` 계열 예외 발생 → `except Exception:` 선택 → 두 번째 `fn()` 호출 순서입니다. 두 번째 호출이 성공하면 그 반환값이 `retry_once`의 반환값이 됩니다. `fn`의 동작이 주어지지 않았으므로 구체적인 반환값은 알 수 없지만, 다음 동작이 한 번 더 호출하는 것이라는 점은 확정됩니다. 첫 호출이 성공하면 `except`는 건너뜁니다.",
+      "common_mistake": "`except`가 성공할 때까지 자동으로 반복한다고 생각하기 쉽습니다. 이 코드의 처리 절에는 추가 호출이 한 번만 있습니다. 두 번째 호출에서 예외가 나도 같은 `except`가 다시 잡지 않으며, 그 예외는 `retry_once`를 호출한 쪽으로 전달됩니다."
     },
     "teaching_example": {
       "code": "def retry_once(fn):\n    try:\n        return fn()\n    except Exception:\n        return fn()\n\nattempts = 0\ndef work():\n    global attempts\n    attempts += 1\n    if attempts == 1:\n        raise RuntimeError(\"first\")\n    return \"ok\"\n\nresult = retry_once(work)",
@@ -2643,17 +2643,17 @@
     },
     "teaching_example": {
       "code": "def choose(kind):\n    if kind == \"fast\":\n        return \"turbo\"\n    if kind == \"safe\":\n        return \"normal\"\n    return \"basic\"\n\nresult = choose(\"fast\")",
-      "walkthrough": "첫 조건이 True라 `turbo`를 반환하고 함수가 끝나므로 두 번째 if는 검사하지 않습니다."
+      "walkthrough": "1) `def choose(kind):`는 함수를 정의합니다. 이때 함수 본문은 아직 실행하지 않습니다.\n2) `result = choose(\"fast\")`에서 함수를 호출하면 `kind`는 \"fast\"가 됩니다.\n3) 첫 조건 `kind == \"fast\"`는 `\"fast\" == \"fast\"`이므로 `True`입니다.\n4) 들여쓴 `return \"turbo\"`가 실행되어 \"turbo\"를 돌려주고 함수 실행을 즉시 끝냅니다.\n5) 따라서 두 번째 조건 `kind == \"safe\"`는 검사하지 않고, 그 아래의 `return \"normal\"`과 마지막 `return \"basic\"`도 실행하지 않습니다.\n6) 호출이 돌려준 \"turbo\"가 `result`에 저장됩니다. 화면에 출력되는 것은 없습니다.\n\n흐름: \"fast\" → 첫 조건이 True → \"turbo\" 반환 → 함수 종료 → `result`는 \"turbo\"."
     },
     "answer_explanation": {
-      "step_by_step": "`review == review`가 True이므로 첫 if 블록에 들어갑니다. 그 안의 return이 `daily_review`를 반환하면서 함수를 종료합니다.",
-      "why_correct": "if 조건이 참이고 그 블록의 return이 함수 실행을 즉시 끝내기 때문입니다.",
+      "step_by_step": "1) `def select_mode(mode):`로 함수를 정의합니다. 본문은 호출할 때 실행됩니다.\n2) `select_mode(\"review\")`를 호출하면 `mode`는 문자열 \"review\"가 됩니다.\n3) 첫 조건 `mode == \"review\"`는 `\"review\" == \"review\"`이므로 `True`입니다.\n4) 첫 if 블록의 `return \"daily_review\"`가 실행됩니다. 문자열 \"daily_review\"를 반환하면서 함수 실행이 끝납니다.\n5) 두 번째 `if mode == \"all\":`과 마지막 `return \"normal\"`에는 도달하지 않습니다.\n6) 호출의 반환값 \"daily_review\"가 `result`에 저장됩니다.",
+      "why_correct": "첫 조건이 참이어서 실제로 실행되는 반환문은 `return \"daily_review\"`입니다. 따라서 `result`의 값은 문자열 \"daily_review\"이고, 정답은 `daily_review`입니다.",
       "common_wrong_choice": {
         "choice": "normal+review",
-        "why_wrong": "그 값은 두 번째 if까지 도달해 `mode == \"all\"`이 참일 때의 반환값입니다.",
-        "misread_step": "첫 return 이후에도 다음 if를 계속 실행한다고 읽은 경우입니다."
+        "why_wrong": "이 값은 두 번째 if에 도달하고 `mode == \"all\"`이 참일 때만 반환됩니다. 여기서는 첫 번째 return에서 함수가 이미 끝나므로 두 번째 조건을 검사하지 않습니다.",
+        "misread_step": "첫 번째 return을 실행한 뒤에도 다음 if를 계속 검사한다고 읽은 것입니다. 두 if가 별개의 문장이더라도 return은 함수 실행을 즉시 끝냅니다."
       },
-      "takeaway": "함수 안에서 **선택된 if 블록의 return을 만나면 그 뒤 코드는 실행되지 않습니다.**"
+      "takeaway": "조건이 참이면 if 블록을 실행합니다. 그 안에서 return을 만나면 값을 호출한 곳으로 돌려주고, 함수의 나머지 코드는 실행하지 않습니다."
     },
     "target_statement": "if mode == \"review\":",
     "focus_span": "if mode == \"review\":",

@@ -808,17 +808,17 @@
                                 },
         "teaching_example":  {
                                  "code":  "events = []\ntry:\n    raise ValueError(\"bad\")\nexcept ValueError:\n    events.append(\"recorded\")\n    raise",
-                                 "walkthrough":  "recorded를 남긴 뒤 원래 ValueError가 다시 전파됩니다."
+                                 "walkthrough":  "1. `events = []`는 기록을 담을 빈 리스트를 만든다.\n2. `try` 블록의 `raise ValueError(\"bad\")`가 예외를 발생시켜 실행이 `except ValueError`로 이동한다.\n3. `events.append(\"recorded\")`가 실행되어 리스트는 `[\"recorded\"]`가 된다.\n4. 마지막 bare `raise`(뒤에 예외를 쓰지 않은 raise)는 현재 처리 중인 바로 그 예외를 다시 발생시킨다. 기록을 남기는 것은 실패를 없애는 것과 다르다.\n5. 바깥에 예외를 잡는 코드가 없으므로 이 코드는 처리되지 않은 `ValueError: bad`로 끝난다. 기록은 추가되었지만 정상 완료되지는 않는다."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "RuntimeError가 except에 들어오고 finalize가 상태를 남긴 뒤 bare raise로 같은 오류가 다시 전파됩니다.",
-                                   "why_correct":  "reraise는 기록과 실패 전파를 동시에 가능하게 하기 때문입니다.",
+                                   "step_by_step":  "1. `events`는 빈 리스트로 시작한다. 함수 정의만으로 함수 본문이 실행되지는 않는다.\n2. 바깥 `try`에서 `main()`을 호출하고, `main()`은 `run_pipeline()`을 호출한다.\n3. `run_pipeline()`이 `RuntimeError(\"boom\")`을 발생시킨다. 따라서 다음 줄의 `finalize(status=\"ok\")`는 실행되지 않는다.\n4. `except Exception as e`가 이 예외를 잡는다. `str(e)`는 `\"boom\"`이므로 `finalize(status=\"error\", error=str(e))`는 `{'status': 'error', 'error': 'boom'}`을 `events`에 추가한다.\n5. bare `raise`가 현재 처리 중인 같은 예외를 다시 발생시킨다. `main()`은 정상 반환하지 않고 실패를 호출한 쪽으로 전달한다.\n6. 바깥의 `except RuntimeError as caught`가 이를 잡아 `caught_message`에 `\"boom\"`을 저장한다. 최종 `events`는 `[{'status': 'error', 'error': 'boom'}]`이며, 출력문은 없다.",
+                                   "why_correct":  "정답은 '오류를 기록한 뒤 호출자에게도 실패를 알리기 위해'이다. `finalize`는 오류 정보를 리스트에 남기고, bare `raise`는 원래 예외를 호출한 쪽으로 다시 전달한다. 즉, 기록과 실패 전달을 모두 수행한다.",
                                    "common_wrong_choice":  {
                                                                "choice":  "오류를 완전히 숨기기 위해",
-                                                               "why_wrong":  "bare raise의 역할은 숨김의 반대인 재전파입니다.",
-                                                               "misread_step":  "except가 예외를 잡았다는 사실만 보고 마지막 raise를 놓친 경우입니다."
+                                                               "why_wrong":  "bare `raise`는 예외를 숨기지 않고 다시 발생시킨다. 실제로 바깥 `except RuntimeError`가 그 예외를 받는다.",
+                                                               "misread_step":  "`except`가 예외를 잡고 기록했다는 점만 보고, 마지막 `raise`가 실패를 다시 전달하는 단계를 놓친 것이다."
                                                            },
-                                   "takeaway":  "exception boundary는 **기록/정리 → reraise → 상위 실패 전달**로 읽습니다."
+                                   "takeaway":  "오류 기록 → bare `raise`로 같은 예외 재발생 → 호출한 쪽에서 처리. 기록했다고 실패가 성공으로 바뀌지는 않는다."
                                },
         "target_statement":  "raise",
         "focus_span":  "raise",

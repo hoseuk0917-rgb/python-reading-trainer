@@ -459,14 +459,14 @@
                                  "walkthrough":  "It uses `await` to receive a dictionary from the async JSON response and uses the value 3."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "res.json() is an async method that returns the response body as structured data, and `await` receives the result upon completion and stores it in `cards`.",
-                                   "why_correct":  "This is because the role of the JSON response parsing step is to convert the body into application data.",
+                                   "step_by_step":  "This is the flow when the coroutine from `load_cards()` runs.\n1) `Response(True, 200, [{\"id\": \"c1\"}])` is created, storing the list `[{\"id\": \"c1\"}]` in `res.body`.\n2) Because `res.ok` is `True`, `not res.ok` is `False`. No exception is raised.\n3) Calling `res.json()` creates a coroutine object. The call alone does not give us the body data.\n4) `await` runs that coroutine and receives its completion result. Here, `json()` executes `return self.body`, so the result is `[{\"id\": \"c1\"}]`.\n5) This list is stored in `cards`, and `return cards` returns the same list.\nThe shown code only defines the functions; it does not include code that runs `load_cards()`.",
+                                   "why_correct":  "Therefore, the correct choice is 'Read the response body as JSON data'. Specifically, this code uses `await` to receive the body data returned by the async `json()` method. The body is already a Python list; no JSON string parsing or network request occurs.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Run the server",
-                                                               "why_wrong":  "This is a client-side step involving reading a response that has already been received, not server execution.",
-                                                               "misread_step":  "This is a case where response parsing was confused with server startup."
+                                                               "why_wrong":  "The body of `json()` contains only `return self.body`. It returns stored body data rather than starting a server.",
+                                                               "misread_step":  "This mistakes `await res.json()` for a server-start command without checking the return statement in the method actually called."
                                                            },
-                                   "takeaway":  "HTTP loading is described as **checking the response status → parsing the body with `await` → using structured data**."
+                                   "takeaway":  "Read `cards = await res.json()` as 'obtain a coroutine → run it and receive its completion result → store that value in cards'. Here the result is `[{\"id\": \"c1\"}]`; `await` itself does not parse JSON."
                                },
         "target_statement":  "cards = await res.json()",
         "focus_span":  "await res.json()",
