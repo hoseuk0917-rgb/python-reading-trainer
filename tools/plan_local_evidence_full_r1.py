@@ -19,6 +19,7 @@ import run_lesson_explanation_api_pilot_r1 as api_runner
 
 EXPECTED_CARD_COUNT = 1785
 EXPECTED_LOCAL_EVIDENCE_COUNT = 68
+EXPECTED_SELECTION_SHA256 = "d0621cf4b8d15eb209b0c0c88744a23788a09297c044fc4344de9473cd087160"
 
 
 def collect_rows() -> list[dict]:
@@ -102,6 +103,11 @@ def main() -> int:
         raise SystemExit(f"LOCAL_EVIDENCE_FULL_PLAN_R1=FAIL_CARD_COUNT_{len(cards)}")
     if len(rows) != EXPECTED_LOCAL_EVIDENCE_COUNT:
         raise SystemExit(f"LOCAL_EVIDENCE_FULL_PLAN_R1=FAIL_COUNT_{len(rows)}")
+    if selection_sha != EXPECTED_SELECTION_SHA256:
+        raise SystemExit(
+            "LOCAL_EVIDENCE_FULL_PLAN_R1=FAIL_SELECTION_SHA_"
+            + selection_sha
+        )
     if any(not row["patch_targets"] for row in rows):
         raise SystemExit("LOCAL_EVIDENCE_FULL_PLAN_R1=FAIL_EMPTY_PATCH_TARGET")
     if any(row["source_ready"] for row in rows):
