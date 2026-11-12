@@ -1,0 +1,1206 @@
+from __future__ import annotations
+
+import argparse
+import codecs
+import hashlib
+import json
+import os
+import re
+import time
+import urllib.error
+import urllib.request
+from collections import defaultdict
+from pathlib import Path
+from typing import Any
+
+import audit_explanation_readiness_r1 as readiness
+
+ROOT = Path(__file__).resolve().parents[1]
+LESSON_ROOT_KO = ROOT / "data" / "lessons"
+LESSON_ROOT_EN = ROOT / "data_i18n" / "en" / "lessons"
+SUPPORT_KO = ROOT / "data" / "runtime" / "support_bundle_v400_5.json"
+SUPPORT_EN = ROOT / "data_i18n" / "en" / "runtime" / "support_bundle_v400_5.json"
+CONTRACT_PATH = ROOT / "docs" / "LESSON_EXPLANATION_CONTRACT_V1.md"
+
+DEFAULT_MODEL = "gpt-6.1-sol"
+OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
+PROMPT_VERSION = "lesson-explanation-api-pilot-r1-v1"
+RESULT_SCHEMA = "python-reading-trainer/lesson-explanation-api-pilot-r1"
+
+TARGET_DISPOSITIONS = {
+    "CONCEPT_EXPLANATION_REWRITE",
+    "WALKTHROUGH_OR_ANSWER_REWRITE",
+}
+SAFE_AUTHORITIES = {
+    "PYTHON_LANGUAGE_AUTHORITY",
+    "LOCAL_CODE_AUTHORITY",
+}
+
+CONCEPT_REASONS = {
+    "MISSING_CONCEPT_EXPLANATION",
+    "EASY_OR_DEFINITION_THIN",
+    "EASY_BRIDGE_REVIEW",
+    "MENTAL_MODEL_OR_READ_GUIDE_THIN",
+    "MISSING_KEY_POINT",
+    "MISSING_CONFUSION",
+}
+TEACHING_REASONS = {
+    "MISSING_TEACHING_EXAMPLE",
+    "WALKTHROUGH_THIN",
+}
+ANSWER_REASONS = {
+    "ANSWER_TRACE_THIN",
+    "WHY_CORRECT_THIN",
+    "WRONG_CHOICE_REASONING_THIN",
+    "TAKEAWAY_THIN",
+}
+
+GOLD_IDS = {
+    # Initial 10-card V1 canary.
+    "PYF94_A1_L01_VAR_001",
+    "PYF94_A1_L01_PRINT_001",
+    "PYF94_A1_L01_INPUT_001",
+    "L01_len_001",
+    "PY3_L03_strip_001",
+    "PYF94_A2_L02_IF_001",
+    "PYF94_A2_L02_LOOP_001",
+    "PYF94_A2_L02_LIST_001",
+    "PYF95_A1_FUNC_004_PARAM_STRING",
+    "PYF95_A1_FUNC_003_RETURN_ASSIGN",
+    # Assignment A1.
+    "PYV96_A1_REVIEW_001_VAR_REASSIGN",
+    "PYV96_A2_NOTE_001_ASSIGNMENT_TRACE",
+    "PYF94_A1_L01_PRINT_009",
+    "PYF94_A1_L01_PRINT_012",
+    "PYF94_A1_L01_VAR_002",
+    "PYF94_A1_L01_VAR_003",
+    "PYF94_A1_L01_VAR_004",
+    "PYF94_A1_L01_VAR_005",
+    "PYF94_A1_L01_VAR_008",
+    "PYF94_A1_L01_VAR_011",
+    "PY10_L01_variable_001",
+    "PY10_L01_reassign_001",
+    # Assignment A2.
+    "L02_var_flow_001",
+    "PY58_L09_publish_step_001",
+    "PY103_L09_cuda_oom_batch_001",
+    "PY32_L10_config_location_001",
+    "PYF94_A2_L02_LOOP_012",
+    "PYF94_A2_L02_LOOP_015",
+    "PYF95_A4_FILE_010_WITH_SCOPE",
+    "PYV96_A3_SCOPE_005_LOCAL_DOES_NOT_CHANGE_OUTER",
+    "PY48_L07_setup_python_action_001",
+    # Representative R3 expansion.
+    "PYF95_A1_FUNC_002_DEF_NOT_CALLED",
+    "PYF95_A1_FUNC_005_TWO_ARGUMENTS",
+    "PYF95_A1_FUNC_008_RETURN_NO_PRINT",
+    "PYF95_A2_DTS_026_SET_UNION",
+    "PYF95_A4_FILE_001_OPEN_READ_ALL",
+    "PYF95_A4_FILE_004_STRIP_LINES",
+    "PYF95_A4_FILE_017_TRY_EXCEPT_VALUE_ERROR",
+    "PYF95_A4_FILE_020_EXCEPTION_AS_E",
+    "PYF95_A4_FILE_032_CHOOSE_PATHLIB_REASON",
+    "PY121_L04_RESPONSE_TEXT_DEBUG_001",
+    "PY11_L06_datetime_now_001",
+    "PY122_L04_READ_CSV_BASIC_001",
+    "PY26_L07_async_await_basic_001",
+    "PYF95_A5_OOP_001_CLASS_ONLY",
+    "PYF95_A5_OOP_004_CHANGE_ATTRIBUTE",
+}
+
+if len(GOLD_IDS) != 46:
+    raise RuntimeError(f"unexpected GOLD id count: {len(GOLD_IDS)}")
+
+
+def clean_space(value: str) -> str:
+    return re.sub(r"\s+", " ", value or "").strip()
+
+
+def load_json(path: Path) -> Any:
+    return json.loads(path.read_text(encoding="utf-8-sig"))
+
+
+def load_all_cards(root: Path) -> tuple[dict[str, dict[str, Any]], dict[str, list[dict[str, Any]]]]:
+    by_id: dict[str, dict[str, Any]] = {}
+    by_file: dict[str, list[dict[str, Any]]] = {}
+
+    for path in sorted(root.glob("*.json")):
+        payload = load_json(path)
+        if not isinstance(payload, list):
+            continue
+
+        rows: list[dict[str, Any]] = []
+
+        for index, card in enumerate(payload):
+            if not isinstance(card, dict) or not card.get("id"):
+                continue
+            row = dict(card)
+            row["_file"] = path.name
+            row["_index"] = index
+            cid = str(row["id"])
+            if cid in by_id:
+                raise SystemExit(f"duplicate card id under {root}: {cid}")
+            by_id[cid] = row
+            rows.append(row)
+
+        by_file[path.name] = rows
+
+    return by_id, by_file
+
+
+def load_support_index(path: Path) -> dict[str, dict[str, Any]]:
+    payload = load_json(path)
+    out: dict[str, dict[str, Any]] = {}
+
+    for filename, rows in (payload.get("files") or {}).items():
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict) or not row.get("id"):
+                continue
+            cid = str(row["id"])
+            item = dict(row)
+            item["_file"] = filename
+            out[cid] = item
+
+    return out
+
+
+def authority_and_reasons(card: dict[str, Any]) -> tuple[str, list[str], str]:
+    authority = readiness.authority_class(card)
+    reasons = readiness.quality_reasons(card)
+    disposition = readiness.disposition(reasons, authority)
+    return authority, reasons, disposition
+
+
+def patch_targets_for(reasons: list[str]) -> list[str]:
+    reasons_set = set(reasons)
+    targets: list[str] = []
+
+    if reasons_set & CONCEPT_REASONS:
+        targets.append("concept_explanation")
+
+    if (
+        reasons_set & TEACHING_REASONS
+        or any(reason.startswith("TEACHING_EXAMPLE_") for reason in reasons)
+    ):
+        targets.append("teaching_example")
+
+    if reasons_set & ANSWER_REASONS:
+        targets.append("answer_explanation")
+
+    return targets
+
+
+def round_robin(rows: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
+    buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
+
+    for row in rows:
+        buckets[str(row.get("primary_concept") or "UNKNOWN")].append(row)
+
+    for values in buckets.values():
+        values.sort(key=lambda row: (int(row.get("level") or 999), str(row["id"])))
+
+    keys = sorted(buckets)
+    selected: list[dict[str, Any]] = []
+
+    while len(selected) < limit:
+        progressed = False
+        for key in keys:
+            if buckets[key]:
+                selected.append(buckets[key].pop(0))
+                progressed = True
+                if len(selected) >= limit:
+                    break
+        if not progressed:
+            break
+
+    return selected
+
+
+def select_pilot(limit: int) -> list[dict[str, Any]]:
+    if limit < 1 or limit > 100:
+        raise SystemExit("pilot limit must be between 1 and 100")
+
+    concept_rows: list[dict[str, Any]] = []
+    answer_rows: list[dict[str, Any]] = []
+
+    for card in readiness.load_cards():
+        cid = str(card["id"])
+        if cid in GOLD_IDS:
+            continue
+
+        authority, reasons, disposition = authority_and_reasons(card)
+        if authority not in SAFE_AUTHORITIES:
+            continue
+        if disposition not in TARGET_DISPOSITIONS:
+            continue
+
+        row = dict(card)
+        row["_authority"] = authority
+        row["_reasons"] = list(reasons)
+        row["_disposition"] = disposition
+        row["_patch_targets"] = patch_targets_for(reasons)
+
+        if not row["_patch_targets"]:
+            raise SystemExit(f"no patch target for selected rewrite card: {cid}")
+
+        if disposition == "CONCEPT_EXPLANATION_REWRITE":
+            concept_rows.append(row)
+        elif disposition == "WALKTHROUGH_OR_ANSWER_REWRITE":
+            answer_rows.append(row)
+
+    concept_target = round(limit * 266 / 425)
+    answer_target = limit - concept_target
+
+    concept_selected = round_robin(concept_rows, min(concept_target, len(concept_rows)))
+    answer_selected = round_robin(answer_rows, min(answer_target, len(answer_rows)))
+
+    selected = concept_selected + answer_selected
+
+    if len(selected) < limit:
+        selected_ids = {str(row["id"]) for row in selected}
+        leftovers = [
+            row
+            for row in concept_rows + answer_rows
+            if str(row["id"]) not in selected_ids
+        ]
+        selected.extend(round_robin(leftovers, limit - len(selected)))
+
+    if len(selected) != limit:
+        raise SystemExit(
+            f"not enough safe rewrite candidates: requested={limit} selected={len(selected)}"
+        )
+
+    order = {
+        "CONCEPT_EXPLANATION_REWRITE": 0,
+        "WALKTHROUGH_OR_ANSWER_REWRITE": 1,
+    }
+    selected.sort(
+        key=lambda row: (
+            order.get(str(row["_disposition"]), 9),
+            str(row.get("primary_concept") or ""),
+            int(row.get("level") or 999),
+            str(row["id"]),
+        )
+    )
+    return selected
+
+
+def public_card(card: dict[str, Any]) -> dict[str, Any]:
+    keys = [
+        "id",
+        "level",
+        "title",
+        "primary_concept",
+        "concepts",
+        "reading_goal",
+        "code",
+        "question_type",
+        "question",
+        "choices",
+        "answer",
+        "focus_span",
+        "focus_mode",
+        "coverage_domain",
+        "coverage_topics",
+        "pedagogical_intent",
+        "side_card_ids",
+        "concept_explanation",
+        "teaching_example",
+        "answer_explanation",
+    ]
+    return {key: card.get(key) for key in keys if key in card}
+
+
+def support_for(card: dict[str, Any], index: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for sid in card.get("side_card_ids") or []:
+        item = index.get(str(sid))
+        if item:
+            out.append(
+                {
+                    key: value
+                    for key, value in item.items()
+                    if not key.startswith("_")
+                }
+            )
+    return out
+
+
+def build_gold_by_primary(cards: dict[str, dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    out: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    missing = sorted(cid for cid in GOLD_IDS if cid not in cards)
+    if missing:
+        raise SystemExit(f"GOLD ids missing from current corpus: {missing}")
+
+    for cid in sorted(GOLD_IDS):
+        card = cards[cid]
+        out[str(card.get("primary_concept") or "")].append(card)
+
+    return out
+
+
+def one_gold_reference(
+    target: dict[str, Any],
+    ko_gold: dict[str, list[dict[str, Any]]],
+    en_cards: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    primary = str(target.get("primary_concept") or "")
+    for card in ko_gold.get(primary, []):
+        cid = str(card["id"])
+        if cid == str(target["id"]):
+            continue
+        en = en_cards.get(cid)
+        if not en:
+            continue
+        return {
+            "note": "Example only. CONTRACT V1 remains the authority.",
+            "ko": {
+                "id": cid,
+                "primary_concept": primary,
+                "concept_explanation": card.get("concept_explanation"),
+                "teaching_example": card.get("teaching_example"),
+                "answer_explanation": card.get("answer_explanation"),
+            },
+            "en": {
+                "id": cid,
+                "primary_concept": primary,
+                "concept_explanation": en.get("concept_explanation"),
+                "teaching_example": en.get("teaching_example"),
+                "answer_explanation": en.get("answer_explanation"),
+            },
+        }
+    return None
+
+
+def concept_schema() -> dict[str, Any]:
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "what_it_is": {"type": "string"},
+            "how_to_read": {"type": "string"},
+            "key_point": {"type": "string"},
+            "common_mistake": {"type": "string"},
+        },
+        "required": ["what_it_is", "how_to_read", "key_point", "common_mistake"],
+    }
+
+
+def teaching_schema() -> dict[str, Any]:
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "code": {"type": "string"},
+            "walkthrough": {"type": "string"},
+        },
+        "required": ["code", "walkthrough"],
+    }
+
+
+def answer_schema() -> dict[str, Any]:
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "step_by_step": {"type": "string"},
+            "why_correct": {"type": "string"},
+            "common_wrong_choice": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "choice": {"type": "string"},
+                    "why_wrong": {"type": "string"},
+                    "misread_step": {"type": "string"},
+                },
+                "required": ["choice", "why_wrong", "misread_step"],
+            },
+            "takeaway": {"type": "string"},
+        },
+        "required": [
+            "step_by_step",
+            "why_correct",
+            "common_wrong_choice",
+            "takeaway",
+        ],
+    }
+
+
+def patch_schema(targets: list[str]) -> dict[str, Any]:
+    properties: dict[str, Any] = {}
+    for target in targets:
+        if target == "concept_explanation":
+            properties[target] = concept_schema()
+        elif target == "teaching_example":
+            properties[target] = teaching_schema()
+        elif target == "answer_explanation":
+            properties[target] = answer_schema()
+        else:
+            raise RuntimeError(f"unknown patch target: {target}")
+
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": properties,
+        "required": list(targets),
+    }
+
+
+def response_schema(targets: list[str]) -> dict[str, Any]:
+    bilingual_patch = patch_schema(targets)
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "ko": bilingual_patch,
+            "en": bilingual_patch,
+            "quality": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "confidence": {
+                        "type": "string",
+                        "enum": ["HIGH", "MEDIUM", "LOW"],
+                    },
+                    "grounding_note": {"type": "string"},
+                },
+                "required": ["confidence", "grounding_note"],
+            },
+        },
+        "required": ["ko", "en", "quality"],
+    }
+
+
+def build_prompt(
+    *,
+    contract: str,
+    ko_card: dict[str, Any],
+    en_card: dict[str, Any],
+    authority: str,
+    reasons: list[str],
+    targets: list[str],
+    ko_support: list[dict[str, Any]],
+    en_support: list[dict[str, Any]],
+    gold_reference: dict[str, Any] | None,
+) -> str:
+    preserved = {
+        "id": ko_card.get("id"),
+        "primary_concept": ko_card.get("primary_concept"),
+        "code": ko_card.get("code"),
+        "question": ko_card.get("question"),
+        "choices": ko_card.get("choices"),
+        "answer": ko_card.get("answer"),
+        "focus_span": ko_card.get("focus_span"),
+    }
+
+    instructions = [
+        "You are rewriting exactly one bilingual lesson card for Python Reading Trainer.",
+        "LESSON_EXPLANATION_CONTRACT_V1 below is the highest quality authority.",
+        "The card identity, question code, question, choices, correct answer, routing, level, and target concept are frozen.",
+        "Return ONLY the explanation groups named in PATCH_TARGETS. The JSON schema enforces that boundary.",
+        "Do not invent or correct unrelated facts.",
+        "Do not add external-library/API claims beyond supplied card/support evidence.",
+        "For Python language semantics, be technically exact and conservative.",
+        "The Korean and English outputs must be semantic equivalents, not independent rewrites.",
+        "",
+        "Quality requirements:",
+        "- Beginner must understand the easy layer before knowing specialist terms.",
+        "- concept_explanation.what_it_is: easy meaning first, then exact technical definition.",
+        "- Korean what_it_is must explicitly contain '쉽게 말하면:' and '정확한 정의:'.",
+        "- English what_it_is must explicitly contain 'Easy meaning:' and 'Exact definition:'.",
+        "- how_to_read must include an intuitive mental model and concrete reading of this card.",
+        "- key_point must expose execution/value flow and the result where deterministic.",
+        "- common_mistake must address a genuine beginner misread.",
+        "- teaching_example must demonstrate the SAME target concept, not merely similar syntax.",
+        "- teaching_example walkthrough must read the code line by line and state execution/result.",
+        "- answer_explanation must reconstruct why the correct answer follows from execution.",
+        "- common_wrong_choice.choice must exactly copy one provided wrong choice in that language.",
+        "- Prefer precise, useful prose over length for its own sake, but do not make later cards thinner.",
+        "- Previously rewritten GOLD is an example only; never override the V1 contract with its style.",
+        "",
+        f"AUTHORITY_CLASS={authority}",
+        f"QUALITY_REASONS={json.dumps(reasons, ensure_ascii=False)}",
+        f"PATCH_TARGETS={json.dumps(targets, ensure_ascii=False)}",
+        "",
+        "FROZEN CORE:",
+        json.dumps(preserved, ensure_ascii=False, indent=2),
+        "",
+        "CURRENT KOREAN CARD:",
+        json.dumps(public_card(ko_card), ensure_ascii=False, indent=2),
+        "",
+        "CURRENT ENGLISH CARD:",
+        json.dumps(public_card(en_card), ensure_ascii=False, indent=2),
+        "",
+        "CONNECTED KOREAN SUPPORT:",
+        json.dumps(ko_support, ensure_ascii=False, indent=2),
+        "",
+        "CONNECTED ENGLISH SUPPORT:",
+        json.dumps(en_support, ensure_ascii=False, indent=2),
+        "",
+        "SAME-PRIMARY GOLD EXAMPLE (optional):",
+        json.dumps(gold_reference, ensure_ascii=False, indent=2),
+        "",
+        "LESSON_EXPLANATION_CONTRACT_V1:",
+        contract,
+    ]
+    return "\n".join(instructions)
+
+
+def extract_output_text(response: dict[str, Any]) -> str:
+    parts: list[str] = []
+    for item in response.get("output") or []:
+        if item.get("type") != "message":
+            continue
+        for content in item.get("content") or []:
+            if content.get("type") == "output_text":
+                value = content.get("text")
+                if isinstance(value, str):
+                    parts.append(value)
+
+    text = "".join(parts).strip()
+    if not text:
+        raise RuntimeError("OpenAI response contained no output_text")
+    return text
+
+
+def openai_request(
+    *,
+    api_key: str,
+    model: str,
+    prompt: str,
+    schema: dict[str, Any],
+    timeout: int,
+) -> dict[str, Any]:
+    body = {
+        "model": model,
+        "input": [
+            {
+                "role": "user",
+                "content": [{"type": "input_text", "text": prompt}],
+            }
+        ],
+        "reasoning": {"effort": "low"},
+        "text": {
+            "verbosity": "low",
+            "format": {
+                "type": "json_schema",
+                "name": "lesson_explanation_api_pilot_r1",
+                "description": "Bilingual V1 lesson explanation patch for one frozen card.",
+                "strict": True,
+                "schema": schema,
+            },
+        },
+        "max_output_tokens": 20000,
+    }
+
+    encoded = json.dumps(body, ensure_ascii=False).encode("utf-8")
+
+    last_error: Exception | None = None
+    for attempt in range(1, 4):
+        request = urllib.request.Request(
+            OPENAI_RESPONSES_URL,
+            data=encoded,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "User-Agent": "python-reading-trainer-lesson-explanation-pilot/1.0",
+            },
+            method="POST",
+        )
+
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            body_text = exc.read().decode("utf-8", errors="replace")
+            message = f"OpenAI HTTP {exc.code}: {clean_space(body_text)[:1200]}"
+            last_error = RuntimeError(message)
+            if exc.code not in {408, 409, 429, 500, 502, 503, 504} or attempt == 3:
+                raise last_error from exc
+        except urllib.error.URLError as exc:
+            last_error = RuntimeError(f"OpenAI URL error: {exc}")
+            if attempt == 3:
+                raise last_error from exc
+
+        time.sleep((2, 5, 10)[attempt - 1])
+
+    raise RuntimeError(f"OpenAI request failed: {last_error}")
+
+
+def required_target_calls(card: dict[str, Any]) -> set[str]:
+    focus_calls = set(readiness.call_leafs(str(card.get("focus_span", ""))))
+    return readiness.specific_target_call_required(card, focus_calls)
+
+
+def validate_patch(
+    *,
+    patch: dict[str, Any],
+    card: dict[str, Any],
+    targets: list[str],
+    language: str,
+) -> None:
+    if set(patch) != set(targets):
+        raise RuntimeError(
+            f"{card['id']} {language}: patch keys mismatch "
+            f"expected={targets} actual={sorted(patch)}"
+        )
+
+    if "concept_explanation" in targets:
+        concept = patch["concept_explanation"]
+        for key in ("what_it_is", "how_to_read", "key_point", "common_mistake"):
+            if not clean_space(str(concept.get(key) or "")):
+                raise RuntimeError(f"{card['id']} {language}: empty concept field {key}")
+
+        what = str(concept["what_it_is"])
+        if language == "ko":
+            if "쉽게 말하면:" not in what or "정확한 정의:" not in what:
+                raise RuntimeError(f"{card['id']} ko: easy/exact definition labels missing")
+        else:
+            if "Easy meaning:" not in what or "Exact definition:" not in what:
+                raise RuntimeError(f"{card['id']} en: easy/exact definition labels missing")
+
+    if "teaching_example" in targets:
+        example = patch["teaching_example"]
+        code = str(example.get("code") or "")
+        walkthrough = str(example.get("walkthrough") or "")
+        if not code.strip() or len(walkthrough.strip()) < 55:
+            raise RuntimeError(f"{card['id']} {language}: thin teaching example")
+
+        primary = str(card.get("primary_concept") or "")
+        if not readiness.has_primary_syntax(primary, code):
+            raise RuntimeError(
+                f"{card['id']} {language}: teaching example misses primary syntax {primary}"
+            )
+
+        required = required_target_calls(card)
+        if required:
+            example_calls = set(readiness.call_leafs(code))
+            if not (required & example_calls):
+                raise RuntimeError(
+                    f"{card['id']} {language}: teaching example misses target call "
+                    f"{sorted(required)}"
+                )
+
+    if "answer_explanation" in targets:
+        answer = patch["answer_explanation"]
+        for key in ("step_by_step", "why_correct", "takeaway"):
+            if not clean_space(str(answer.get(key) or "")):
+                raise RuntimeError(f"{card['id']} {language}: empty answer field {key}")
+
+        wrong = answer.get("common_wrong_choice") or {}
+        for key in ("choice", "why_wrong", "misread_step"):
+            if not clean_space(str(wrong.get(key) or "")):
+                raise RuntimeError(f"{card['id']} {language}: empty wrong-choice field {key}")
+
+        choices = [str(value) for value in card.get("choices") or []]
+        correct = str(card.get("answer") or "")
+        wrong_choice = str(wrong["choice"])
+        if wrong_choice not in choices or wrong_choice == correct:
+            raise RuntimeError(
+                f"{card['id']} {language}: common_wrong_choice is not an exact wrong option"
+            )
+
+
+def json_string_end(text: str, start: int) -> int:
+    if start >= len(text) or text[start] != '"':
+        raise RuntimeError("JSON string start not found")
+
+    escaped = False
+    for index in range(start + 1, len(text)):
+        char = text[index]
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == '"':
+            return index
+    raise RuntimeError("unterminated JSON string")
+
+
+def object_end(text: str, start: int) -> int:
+    if text[start] != "{":
+        raise RuntimeError("JSON object start not found")
+
+    depth = 0
+    in_string = False
+    escaped = False
+
+    for index in range(start, len(text)):
+        char = text[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return index
+
+    raise RuntimeError("unterminated JSON object")
+
+
+def card_span(raw: str, card_id: str) -> tuple[int, int]:
+    marker = re.search(
+        rf'"id"\s*:\s*{re.escape(json.dumps(card_id, ensure_ascii=False))}',
+        raw,
+    )
+    if not marker:
+        raise RuntimeError(f"card id not found in raw JSON: {card_id}")
+
+    start = raw.rfind("{", 0, marker.start())
+    if start < 0:
+        raise RuntimeError(f"card object start not found: {card_id}")
+
+    return start, object_end(raw, start) + 1
+
+
+def group_span(card_text: str, group: str) -> tuple[int, int]:
+    marker = re.search(rf'"{re.escape(group)}"\s*:\s*\{{', card_text)
+    if not marker:
+        raise RuntimeError(f"group not found: {group}")
+
+    start = card_text.find("{", marker.start())
+    return start, object_end(card_text, start) + 1
+
+
+def replace_string_property(text: str, key: str, value: str) -> str:
+    marker = re.search(rf'"{re.escape(key)}"\s*:\s*', text)
+    if not marker:
+        raise RuntimeError(f"string property not found: {key}")
+
+    start = marker.end()
+    while start < len(text) and text[start].isspace():
+        start += 1
+
+    end = json_string_end(text, start)
+    return text[:start] + json.dumps(value, ensure_ascii=False) + text[end + 1 :]
+
+
+def patch_group_text(group_text: str, group: str, value: dict[str, Any]) -> str:
+    out = group_text
+
+    if group == "concept_explanation":
+        for key in ("what_it_is", "how_to_read", "key_point", "common_mistake"):
+            out = replace_string_property(out, key, str(value[key]))
+        return out
+
+    if group == "teaching_example":
+        for key in ("code", "walkthrough"):
+            out = replace_string_property(out, key, str(value[key]))
+        return out
+
+    if group == "answer_explanation":
+        for key in ("step_by_step", "why_correct", "choice", "why_wrong", "misread_step", "takeaway"):
+            source = value
+            if key in {"choice", "why_wrong", "misread_step"}:
+                source = value["common_wrong_choice"]
+            out = replace_string_property(out, key, str(source[key]))
+        return out
+
+    raise RuntimeError(f"unsupported group: {group}")
+
+
+def read_raw_preserving_bom(path: Path) -> tuple[str, bool]:
+    data = path.read_bytes()
+    has_bom = data.startswith(codecs.BOM_UTF8)
+    if has_bom:
+        data = data[len(codecs.BOM_UTF8) :]
+    return data.decode("utf-8"), has_bom
+
+
+def write_raw_preserving_bom(path: Path, text: str, has_bom: bool) -> None:
+    encoded = text.encode("utf-8")
+    if has_bom:
+        encoded = codecs.BOM_UTF8 + encoded
+    path.write_bytes(encoded)
+
+
+def apply_file_patches(
+    *,
+    path: Path,
+    results: list[dict[str, Any]],
+    language: str,
+) -> None:
+    raw, has_bom = read_raw_preserving_bom(path)
+    original_payload = json.loads(raw)
+    before_map = {str(row["id"]): row for row in original_payload}
+
+    patches = []
+    for result in results:
+        cid = str(result["id"])
+        start, end = card_span(raw, cid)
+        patches.append((start, end, cid, result[language], result["patch_targets"]))
+
+    patches.sort(reverse=True, key=lambda item: item[0])
+
+    for start, end, cid, patch, targets in patches:
+        card_text = raw[start:end]
+        for group in targets:
+            gs, ge = group_span(card_text, group)
+            updated_group = patch_group_text(card_text[gs:ge], group, patch[group])
+            card_text = card_text[:gs] + updated_group + card_text[ge:]
+        raw = raw[:start] + card_text + raw[end:]
+
+    updated_payload = json.loads(raw)
+    after_map = {str(row["id"]): row for row in updated_payload}
+    selected_ids = {str(result["id"]) for result in results}
+    allowed_by_id = {
+        str(result["id"]): set(result["patch_targets"])
+        for result in results
+    }
+
+    if set(before_map) != set(after_map):
+        raise RuntimeError(f"{path}: card id inventory changed")
+
+    for cid in before_map:
+        before = before_map[cid]
+        after = after_map[cid]
+        keys = set(before) | set(after)
+        diff = {
+            key
+            for key in keys
+            if json.dumps(before.get(key), ensure_ascii=False, sort_keys=True)
+            != json.dumps(after.get(key), ensure_ascii=False, sort_keys=True)
+        }
+
+        if cid not in selected_ids:
+            if diff:
+                raise RuntimeError(f"{path}: unrelated card changed: {cid} {sorted(diff)}")
+            continue
+
+        forbidden = diff - allowed_by_id[cid]
+        if forbidden:
+            raise RuntimeError(f"{path}: frozen fields changed for {cid}: {sorted(forbidden)}")
+        if not diff:
+            raise RuntimeError(f"{path}: selected card had no semantic change: {cid}")
+
+    write_raw_preserving_bom(path, raw, has_bom)
+
+
+def validate_after_apply(
+    *,
+    selected: list[dict[str, Any]],
+    en_cards_before: dict[str, dict[str, Any]],
+) -> None:
+    ko_after, _ = load_all_cards(LESSON_ROOT_KO)
+    en_after, _ = load_all_cards(LESSON_ROOT_EN)
+
+    patch_reason_set = CONCEPT_REASONS | TEACHING_REASONS | ANSWER_REASONS
+
+    for selected_row in selected:
+        cid = str(selected_row["id"])
+        targets = set(selected_row["_patch_targets"])
+
+        ko = ko_after[cid]
+        en = en_after[cid]
+
+        ko_reasons = set(readiness.quality_reasons(ko))
+        en_reasons = set(readiness.quality_reasons(en))
+
+        remaining_ko = {
+            reason
+            for reason in ko_reasons
+            if reason in patch_reason_set or reason.startswith("TEACHING_EXAMPLE_")
+        }
+        remaining_en = {
+            reason
+            for reason in en_reasons
+            if reason in patch_reason_set or reason.startswith("TEACHING_EXAMPLE_")
+        }
+
+        if remaining_ko:
+            raise RuntimeError(f"{cid}: KO target quality reasons remain: {sorted(remaining_ko)}")
+        if remaining_en:
+            raise RuntimeError(f"{cid}: EN target quality reasons remain: {sorted(remaining_en)}")
+
+        before_en = en_cards_before[cid]
+        for key in ("id", "code", "question", "choices", "answer", "primary_concept", "level"):
+            if json.dumps(before_en.get(key), ensure_ascii=False, sort_keys=True) != json.dumps(
+                en.get(key), ensure_ascii=False, sort_keys=True
+            ):
+                raise RuntimeError(f"{cid}: EN frozen field changed: {key}")
+
+        if not targets:
+            raise RuntimeError(f"{cid}: no targets after apply")
+
+
+def self_test() -> int:
+    assert len(GOLD_IDS) == 46
+
+    sample = (
+        '[\n  {\n    "id": "A",\n'
+        '    "concept_explanation": {"what_it_is": "old", "how_to_read": "old2", '
+        '"key_point": "old3", "common_mistake": "old4"},\n'
+        '    "teaching_example": {"code": "x = 1", "walkthrough": "old walk"},\n'
+        '    "answer_explanation": {"step_by_step": "old step", "why_correct": "old why", '
+        '"common_wrong_choice": {"choice": "B", "why_wrong": "old wrong", '
+        '"misread_step": "old miss"}, "takeaway": "old take"}\n  }\n]\n'
+    )
+    start, end = card_span(sample, "A")
+    card = sample[start:end]
+    gs, ge = group_span(card, "concept_explanation")
+    patched = patch_group_text(
+        card[gs:ge],
+        "concept_explanation",
+        {
+            "what_it_is": "쉽게 말하면: new\n정확한 정의: exact",
+            "how_to_read": "new read",
+            "key_point": "new point",
+            "common_mistake": "new mistake",
+        },
+    )
+    card = card[:gs] + patched + card[ge:]
+    parsed = json.loads("[" + card + "]")[0]
+    assert parsed["concept_explanation"]["key_point"] == "new point"
+
+    schema = response_schema(["concept_explanation", "answer_explanation"])
+    assert schema["additionalProperties"] is False
+    assert set(schema["properties"]["ko"]["required"]) == {
+        "concept_explanation",
+        "answer_explanation",
+    }
+
+    print("LESSON_EXPLANATION_API_PILOT_R1_SELF_TEST=PASS")
+    return 0
+
+
+def plan(limit: int) -> int:
+    selected = select_pilot(limit)
+    disposition_counts: dict[str, int] = defaultdict(int)
+    authority_counts: dict[str, int] = defaultdict(int)
+    concept_counts: dict[str, int] = defaultdict(int)
+
+    for row in selected:
+        disposition_counts[str(row["_disposition"])] += 1
+        authority_counts[str(row["_authority"])] += 1
+        concept_counts[str(row.get("primary_concept") or "UNKNOWN")] += 1
+
+    digest = hashlib.sha256(
+        "\n".join(str(row["id"]) for row in selected).encode("utf-8")
+    ).hexdigest()
+
+    print(f"GOLD_REFERENCE_COUNT={len(GOLD_IDS)}")
+    print(f"PILOT_LIMIT={limit}")
+    print("PILOT_DISPOSITION_COUNTS=" + json.dumps(dict(sorted(disposition_counts.items())), sort_keys=True))
+    print("PILOT_AUTHORITY_COUNTS=" + json.dumps(dict(sorted(authority_counts.items())), sort_keys=True))
+    print("PILOT_PRIMARY_CONCEPT_COUNTS=" + json.dumps(dict(sorted(concept_counts.items())), sort_keys=True))
+    print(f"PILOT_SELECTION_SHA256={digest}")
+
+    for index, row in enumerate(selected, start=1):
+        print(
+            "PILOT_ITEM="
+            f"{index}|{row['id']}|{row['_disposition']}|{row['_authority']}|"
+            f"{row.get('primary_concept')}|{'+'.join(row['_patch_targets'])}|"
+            f"{'+'.join(row['_reasons'])}"
+        )
+
+    print("API_CALL_PERFORMED=NO")
+    print("LESSON_EXPLANATION_API_PILOT_R1_PLAN=PASS")
+    return 0
+
+
+def live(
+    *,
+    limit: int,
+    model: str,
+    timeout: int,
+    result_path: Path,
+    max_total_tokens: int,
+) -> int:
+    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        raise SystemExit("OPENAI_API_KEY is required for --live")
+
+    selected = select_pilot(limit)
+    ko_cards, _ = load_all_cards(LESSON_ROOT_KO)
+    en_cards, _ = load_all_cards(LESSON_ROOT_EN)
+    ko_support_index = load_support_index(SUPPORT_KO)
+    en_support_index = load_support_index(SUPPORT_EN)
+    ko_gold = build_gold_by_primary(ko_cards)
+    contract = CONTRACT_PATH.read_text(encoding="utf-8-sig")
+
+    selection_sha = hashlib.sha256(
+        "\n".join(str(row["id"]) for row in selected).encode("utf-8")
+    ).hexdigest()
+
+    result_path.parent.mkdir(parents=True, exist_ok=True)
+    if result_path.exists():
+        result_path.unlink()
+
+    results: list[dict[str, Any]] = []
+    total_input_tokens = 0
+    total_output_tokens = 0
+    total_reasoning_tokens = 0
+
+    for index, selected_row in enumerate(selected, start=1):
+        cid = str(selected_row["id"])
+        ko_card = ko_cards[cid]
+        en_card = en_cards.get(cid)
+        if not en_card:
+            raise RuntimeError(f"English card missing: {cid}")
+
+        targets = list(selected_row["_patch_targets"])
+        prompt = build_prompt(
+            contract=contract,
+            ko_card=ko_card,
+            en_card=en_card,
+            authority=str(selected_row["_authority"]),
+            reasons=list(selected_row["_reasons"]),
+            targets=targets,
+            ko_support=support_for(ko_card, ko_support_index),
+            en_support=support_for(en_card, en_support_index),
+            gold_reference=one_gold_reference(selected_row, ko_gold, en_cards),
+        )
+
+        response = openai_request(
+            api_key=api_key,
+            model=model,
+            prompt=prompt,
+            schema=response_schema(targets),
+            timeout=timeout,
+        )
+
+        if response.get("status") not in {"completed", None}:
+            incomplete = response.get("incomplete_details") or {}
+            usage = response.get("usage") or {}
+            details = usage.get("output_tokens_details") or {}
+            raise RuntimeError(
+                f"{cid}: response status={response.get('status')} "
+                f"reason={incomplete.get('reason') or 'unknown'} "
+                f"input_tokens={usage.get('input_tokens')} "
+                f"output_tokens={usage.get('output_tokens')} "
+                f"reasoning_tokens={details.get('reasoning_tokens')}"
+            )
+
+        generated = json.loads(extract_output_text(response))
+        validate_patch(patch=generated["ko"], card=ko_card, targets=targets, language="ko")
+        validate_patch(patch=generated["en"], card=en_card, targets=targets, language="en")
+
+        usage = response.get("usage") or {}
+        input_tokens = int(usage.get("input_tokens") or 0)
+        output_tokens = int(usage.get("output_tokens") or 0)
+        reasoning_tokens = int(
+            (usage.get("output_tokens_details") or {}).get("reasoning_tokens") or 0
+        )
+
+        total_input_tokens += input_tokens
+        total_output_tokens += output_tokens
+        total_reasoning_tokens += reasoning_tokens
+
+        if int(usage.get("total_tokens") or (input_tokens + output_tokens)) <= 0:
+            raise RuntimeError(f"{cid}: missing token usage")
+
+        result = {
+            "schema": RESULT_SCHEMA,
+            "prompt_version": PROMPT_VERSION,
+            "selection_sha256": selection_sha,
+            "index": index,
+            "id": cid,
+            "file": str(selected_row["_file"]),
+            "primary_concept": selected_row.get("primary_concept"),
+            "authority": selected_row["_authority"],
+            "disposition_before": selected_row["_disposition"],
+            "quality_reasons_before": selected_row["_reasons"],
+            "patch_targets": targets,
+            "side_card_ids": ko_card.get("side_card_ids") or [],
+            "model": model,
+            "response_id": response.get("id") or "",
+            "usage": {
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "reasoning_tokens": reasoning_tokens,
+                "total_tokens": int(usage.get("total_tokens") or 0),
+            },
+            "ko": generated["ko"],
+            "en": generated["en"],
+            "quality": generated["quality"],
+        }
+        results.append(result)
+
+        with result_path.open("a", encoding="utf-8", newline="\n") as handle:
+            handle.write(json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\n")
+
+        current_total = total_input_tokens + total_output_tokens
+        print(
+            f"PILOT_RESULT={index}/{limit}|{cid}|"
+            f"{selected_row['_disposition']}|{'+'.join(targets)}|"
+            f"INPUT_TOKENS={input_tokens}|OUTPUT_TOKENS={output_tokens}|"
+            f"REASONING_TOKENS={reasoning_tokens}"
+        )
+
+        if current_total > max_total_tokens:
+            raise RuntimeError(
+                f"pilot token guard exceeded: {current_total}>{max_total_tokens}"
+            )
+
+    en_before = {cid: dict(card) for cid, card in en_cards.items()}
+
+    by_file: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for result in results:
+        by_file[str(result["file"])].append(result)
+
+    for filename, file_results in sorted(by_file.items()):
+        apply_file_patches(
+            path=LESSON_ROOT_KO / filename,
+            results=file_results,
+            language="ko",
+        )
+        apply_file_patches(
+            path=LESSON_ROOT_EN / filename,
+            results=file_results,
+            language="en",
+        )
+
+    validate_after_apply(selected=selected, en_cards_before=en_before)
+
+    print(f"PILOT_RESULT_COUNT={len(results)}")
+    print(f"PILOT_TOTAL_INPUT_TOKENS={total_input_tokens}")
+    print(f"PILOT_TOTAL_OUTPUT_TOKENS={total_output_tokens}")
+    print(f"PILOT_TOTAL_REASONING_TOKENS={total_reasoning_tokens}")
+    print(f"PILOT_RESULT_PATH={result_path}")
+    print("LESSON_EXPLANATION_API_PILOT_R1_LIVE=PASS")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--limit", type=int, default=100)
+    parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--timeout", type=int, default=180)
+    parser.add_argument("--result-path", type=Path, default=Path("lesson-explanation-api-pilot-r1.jsonl"))
+    parser.add_argument("--max-total-tokens", type=int, default=1_500_000)
+    parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("--plan", action="store_true")
+    parser.add_argument("--live", action="store_true")
+    args = parser.parse_args()
+
+    modes = sum(bool(value) for value in (args.self_test, args.plan, args.live))
+    if modes != 1:
+        parser.error("choose exactly one of --self-test, --plan, or --live")
+
+    if args.self_test:
+        return self_test()
+    if args.plan:
+        return plan(args.limit)
+    return live(
+        limit=args.limit,
+        model=args.model,
+        timeout=args.timeout,
+        result_path=args.result_path,
+        max_total_tokens=args.max_total_tokens,
+    )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
