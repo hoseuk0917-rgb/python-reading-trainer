@@ -573,30 +573,6 @@ def openai_request(
     schema: dict[str, Any],
     timeout: int,
 ) -> dict[str, Any]:
-    body = {
-        "model": model,
-        "input": [
-            {
-                "role": "user",
-                "content": [{"type": "input_text", "text": prompt}],
-            }
-        ],
-        "reasoning": {"effort": "low"},
-        "text": {
-            "verbosity": "low",
-            "format": {
-                "type": "json_schema",
-                "name": "lesson_explanation_api_pilot_r1",
-                "description": "Bilingual V1 lesson explanation patch for one frozen card.",
-                "strict": True,
-                "schema": schema,
-            },
-        },
-        "max_output_tokens": 8000,
-    }
-
-    encoded = json.dumps(body, ensure_ascii=False).encode("utf-8")
-
     last_error: Exception | None = None
     cumulative_input_tokens = 0
     cumulative_output_tokens = 0
@@ -604,6 +580,37 @@ def openai_request(
     cumulative_total_tokens = 0
 
     for attempt in range(1, 4):
+        attempt_prompt = prompt
+        if attempt > 1:
+            attempt_prompt += (
+                "\n\nRECOVERY NOTE: A previous generation exceeded the output budget. "
+                "Return only the required JSON schema. Keep every explanation field concise, "
+                "avoid repeated clauses, and do not restate the contract."
+            )
+
+        body = {
+            "model": model,
+            "input": [
+                {
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": attempt_prompt}],
+                }
+            ],
+            "reasoning": {"effort": "low"},
+            "text": {
+                "verbosity": "low",
+                "format": {
+                    "type": "json_schema",
+                    "name": "lesson_explanation_api_pilot_r1",
+                    "description": "Bilingual V1 lesson explanation patch for one frozen card.",
+                    "strict": True,
+                    "schema": schema,
+                },
+            },
+            "max_output_tokens": 8000,
+        }
+        encoded = json.dumps(body, ensure_ascii=False).encode("utf-8")
+
         request = urllib.request.Request(
             OPENAI_RESPONSES_URL,
             data=encoded,
@@ -979,6 +986,127 @@ def validate_after_apply(
             raise RuntimeError(f"{cid}: no targets after apply")
 
 
+def validate_resume_results(
+    *,
+    rows: list[dict[str, Any]],
+    selected: list[dict[str, Any]],
+    ko_cards: dict[str, dict[str, Any]],
+    en_cards: dict[str, dict[str, Any]],
+    selection_sha: str,
+    model: str,
+) -> list[dict[str, Any]]:
+    if len(rows) > len(selected):
+        raise RuntimeError(
+            f"resume result count exceeds selection: {len(rows)}>{len(selected)}"
+        )
+
+    validated: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+
+    for index, row in enumerate(rows, start=1):
+        selected_row = selected[index - 1]
+        cid = str(selected_row["id"])
+        targets = list(selected_row["_patch_targets"])
+
+        if row.get("schema") != RESULT_SCHEMA:
+            raise RuntimeError(f"{cid}: resume schema mismatch")
+        if row.get("prompt_version") != PROMPT_VERSION:
+            raise RuntimeError(f"{cid}: resume prompt version mismatch")
+        if row.get("selection_sha256") != selection_sha:
+            raise RuntimeError(f"{cid}: resume selection hash mismatch")
+        if int(row.get("index") or 0) != index:
+            raise RuntimeError(f"{cid}: resume index mismatch")
+        if str(row.get("id") or "") != cid:
+            raise RuntimeError(
+                f"resume id mismatch at {index}: expected={cid} actual={row.get('id')}"
+            )
+        if cid in seen_ids:
+            raise RuntimeError(f"{cid}: duplicate resume result")
+        seen_ids.add(cid)
+
+        if row.get("model") != model:
+            raise RuntimeError(
+                f"{cid}: resume model mismatch expected={model} actual={row.get('model')}"
+            )
+        if list(row.get("patch_targets") or []) != targets:
+            raise RuntimeError(f"{cid}: resume patch targets mismatch")
+        if str(row.get("file") or "") != str(selected_row["_file"]):
+            raise RuntimeError(f"{cid}: resume file mismatch")
+        if row.get("authority") != selected_row["_authority"]:
+            raise RuntimeError(f"{cid}: resume authority mismatch")
+        if row.get("disposition_before") != selected_row["_disposition"]:
+            raise RuntimeError(f"{cid}: resume disposition mismatch")
+        if list(row.get("quality_reasons_before") or []) != list(selected_row["_reasons"]):
+            raise RuntimeError(f"{cid}: resume quality reasons mismatch")
+
+        ko_card = ko_cards.get(cid)
+        en_card = en_cards.get(cid)
+        if not ko_card or not en_card:
+            raise RuntimeError(f"{cid}: resume card missing from current corpus")
+
+        validate_patch(
+            patch=row.get("ko") or {},
+            card=ko_card,
+            targets=targets,
+            language="ko",
+        )
+        validate_patch(
+            patch=row.get("en") or {},
+            card=en_card,
+            targets=targets,
+            language="en",
+        )
+
+        quality = row.get("quality") or {}
+        if quality.get("confidence") not in {"HIGH", "MEDIUM", "LOW"}:
+            raise RuntimeError(f"{cid}: resume quality confidence invalid")
+        if not clean_space(str(quality.get("grounding_note") or "")):
+            raise RuntimeError(f"{cid}: resume grounding note missing")
+
+        usage = row.get("usage") or {}
+        input_tokens = int(usage.get("input_tokens") or 0)
+        output_tokens = int(usage.get("output_tokens") or 0)
+        if input_tokens + output_tokens <= 0:
+            raise RuntimeError(f"{cid}: resume token usage missing")
+
+        attempts = int(row.get("request_attempts") or 1)
+        if attempts < 1 or attempts > 3:
+            raise RuntimeError(f"{cid}: resume request attempts invalid: {attempts}")
+
+        validated.append(row)
+
+    return validated
+
+
+def load_resume_results(
+    *,
+    path: Path | None,
+    selected: list[dict[str, Any]],
+    ko_cards: dict[str, dict[str, Any]],
+    en_cards: dict[str, dict[str, Any]],
+    selection_sha: str,
+    model: str,
+) -> list[dict[str, Any]]:
+    if path is None:
+        return []
+    if not path.exists():
+        raise RuntimeError(f"resume result path not found: {path}")
+
+    rows = [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    return validate_resume_results(
+        rows=rows,
+        selected=selected,
+        ko_cards=ko_cards,
+        en_cards=en_cards,
+        selection_sha=selection_sha,
+        model=model,
+    )
+
+
 def self_test() -> int:
     assert len(GOLD_IDS) == 46
 
@@ -1120,6 +1248,74 @@ def self_test() -> int:
     assert incomplete_response["_pilot_cumulative_usage"]["input_tokens"] == 300
     assert incomplete_response["_pilot_cumulative_usage"]["output_tokens"] == 16050
 
+    resume_selected = [
+        {
+            "id": "RESUME_TEST",
+            "_patch_targets": ["concept_explanation"],
+            "_file": "resume.json",
+            "_authority": "PYTHON_LANGUAGE_AUTHORITY",
+            "_disposition": "CONCEPT_EXPLANATION_REWRITE",
+            "_reasons": ["EASY_BRIDGE_REVIEW"],
+        }
+    ]
+    resume_ko_card = {
+        "id": "RESUME_TEST",
+        "primary_concept": "literal",
+        "focus_span": "1",
+        "choices": ["1", "2"],
+        "answer": "1",
+    }
+    resume_en_card = dict(resume_ko_card)
+    resume_row = {
+        "schema": RESULT_SCHEMA,
+        "prompt_version": PROMPT_VERSION,
+        "selection_sha256": "resume-sha",
+        "index": 1,
+        "id": "RESUME_TEST",
+        "file": "resume.json",
+        "authority": "PYTHON_LANGUAGE_AUTHORITY",
+        "disposition_before": "CONCEPT_EXPLANATION_REWRITE",
+        "quality_reasons_before": ["EASY_BRIDGE_REVIEW"],
+        "patch_targets": ["concept_explanation"],
+        "model": "test-model",
+        "request_attempts": 1,
+        "usage": {
+            "input_tokens": 10,
+            "output_tokens": 5,
+            "reasoning_tokens": 0,
+            "total_tokens": 15,
+        },
+        "ko": {
+            "concept_explanation": {
+                "what_it_is": "쉽게 말하면: 값입니다.\n정확한 정의: 리터럴 값입니다.",
+                "how_to_read": "코드에 적힌 값을 그대로 읽습니다.",
+                "key_point": "이 예에서는 값 1이 사용됩니다.",
+                "common_mistake": "문자열과 숫자를 혼동하지 않습니다.",
+            }
+        },
+        "en": {
+            "concept_explanation": {
+                "what_it_is": "Easy meaning: it is a value.\nExact definition: it is a literal value.",
+                "how_to_read": "Read the value written directly in the code.",
+                "key_point": "This example uses the value 1.",
+                "common_mistake": "Do not confuse strings and numbers.",
+            }
+        },
+        "quality": {
+            "confidence": "HIGH",
+            "grounding_note": "Synthetic resume self-test.",
+        },
+    }
+    validated_resume = validate_resume_results(
+        rows=[resume_row],
+        selected=resume_selected,
+        ko_cards={"RESUME_TEST": resume_ko_card},
+        en_cards={"RESUME_TEST": resume_en_card},
+        selection_sha="resume-sha",
+        model="test-model",
+    )
+    assert len(validated_resume) == 1
+
     print("LESSON_EXPLANATION_API_PILOT_R1_SELF_TEST=PASS")
     return 0
 
@@ -1165,6 +1361,7 @@ def live(
     model: str,
     timeout: int,
     result_path: Path,
+    resume_result_path: Path | None,
     max_total_tokens: int,
 ) -> int:
     api_key = os.environ.get("OPENAI_API_KEY", "").strip()
@@ -1183,16 +1380,56 @@ def live(
         "\n".join(str(row["id"]) for row in selected).encode("utf-8")
     ).hexdigest()
 
+    resume_results = load_resume_results(
+        path=resume_result_path,
+        selected=selected,
+        ko_cards=ko_cards,
+        en_cards=en_cards,
+        selection_sha=selection_sha,
+        model=model,
+    )
+
     result_path.parent.mkdir(parents=True, exist_ok=True)
     if result_path.exists():
         result_path.unlink()
 
-    results: list[dict[str, Any]] = []
-    total_input_tokens = 0
-    total_output_tokens = 0
-    total_reasoning_tokens = 0
+    results: list[dict[str, Any]] = list(resume_results)
+    total_input_tokens = sum(
+        int((row.get("usage") or {}).get("input_tokens") or 0)
+        for row in results
+    )
+    total_output_tokens = sum(
+        int((row.get("usage") or {}).get("output_tokens") or 0)
+        for row in results
+    )
+    total_reasoning_tokens = sum(
+        int((row.get("usage") or {}).get("reasoning_tokens") or 0)
+        for row in results
+    )
+
+    if results:
+        with result_path.open("w", encoding="utf-8", newline="\n") as handle:
+            for row in results:
+                handle.write(
+                    json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n"
+                )
+        print(f"PILOT_RESUME_COUNT={len(results)}")
+        print(f"PILOT_RESUME_LAST_ID={results[-1]['id']}")
+
+    current_total = total_input_tokens + total_output_tokens
+    if current_total > max_total_tokens:
+        raise RuntimeError(
+            f"pilot token guard exceeded before resume: "
+            f"{current_total}>{max_total_tokens}"
+        )
 
     for index, selected_row in enumerate(selected, start=1):
+        if index <= len(results):
+            print(
+                f"PILOT_SKIP={index}/{limit}|{selected_row['id']}|"
+                "RESUME_VALIDATED"
+            )
+            continue
         cid = str(selected_row["id"])
         ko_card = ko_cards[cid]
         en_card = en_cards.get(cid)
@@ -1330,6 +1567,7 @@ def main() -> int:
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--result-path", type=Path, default=Path("lesson-explanation-api-pilot-r1.jsonl"))
+    parser.add_argument("--resume-result-path", type=Path)
     parser.add_argument("--max-total-tokens", type=int, default=1_500_000)
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--plan", action="store_true")
@@ -1349,6 +1587,7 @@ def main() -> int:
         model=args.model,
         timeout=args.timeout,
         result_path=args.result_path,
+        resume_result_path=args.resume_result_path,
         max_total_tokens=args.max_total_tokens,
     )
 
