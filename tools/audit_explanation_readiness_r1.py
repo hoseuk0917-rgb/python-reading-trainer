@@ -5,6 +5,8 @@ import argparse, ast, json, re
 from collections import Counter
 from pathlib import Path
 
+import audit_source_bundle_mapping_r1 as source_map
+
 ROOT = Path(__file__).resolve().parents[1]
 LESSON_DIR = ROOT / "data" / "lessons"
 
@@ -29,7 +31,7 @@ STDLIB_ROOTS = {
 }
 THIRD_PARTY_ROOTS = {
     "fastapi","gradio","numpy","pandas","peft","pydantic","requests","sklearn","streamlit",
-    "torch","transformers","uvicorn","cv2","pytesseract","fitz","pdfplumber","PIL",
+    "torch","transformers","uvicorn","tqdm","cv2","pytesseract","fitz","pdfplumber","PIL",
 }
 
 SEMANTIC_CALL_LEAFS = {
@@ -267,13 +269,15 @@ def quality_reasons(card):
     if not takeaway or len(takeaway)<25: reasons.append("TAKEAWAY_THIN")
     return reasons
 
-def disposition(reasons,authority):
+def disposition(reasons,authority,card_id=""):
     if any(r.startswith("TEACHING_EXAMPLE_") for r in reasons): return "EXAMPLE_REWRITE"
     if any(r in {"ANSWER_TRACE_THIN","WHY_CORRECT_THIN","WRONG_CHOICE_REASONING_THIN"} for r in reasons):
         return "WALKTHROUGH_OR_ANSWER_REWRITE"
     if any(r in {"MISSING_CONCEPT_EXPLANATION","EASY_OR_DEFINITION_THIN","EASY_BRIDGE_REVIEW","MENTAL_MODEL_OR_READ_GUIDE_THIN"} for r in reasons):
         return "CONCEPT_EXPLANATION_REWRITE"
     if authority in {"DOMAIN_AUTHORITY_REVIEW","AUTHORITY_REVIEW"}:
+        if card_id and card_id in source_map.SOURCE_MAPPING_RESOLVED_IDS:
+            return "KEEP_CANDIDATE"
         return "SOURCE_MAPPING_REVIEW"
     return "KEEP_CANDIDATE"
 
@@ -284,7 +288,7 @@ def main():
     cards=load_cards(); ids=[str(c["id"]) for c in cards]
     authority_counts=Counter(); disposition_counts=Counter(); reason_counts=Counter(); rows=[]
     for card in cards:
-        authority=authority_class(card); reasons=quality_reasons(card); disp=disposition(reasons,authority)
+        authority=authority_class(card); reasons=quality_reasons(card); disp=disposition(reasons,authority,str(card["id"]))
         authority_counts[authority]+=1; disposition_counts[disp]+=1; reason_counts.update(reasons)
         if disp!="KEEP_CANDIDATE":
             rows.append((disp,int(card.get("level") or 999),str(card["id"]),authority,reasons,card["_file"],str(card.get("title",""))))
