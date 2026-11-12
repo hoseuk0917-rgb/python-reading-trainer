@@ -36,8 +36,8 @@ SEMANTIC_CALL_LEAFS = {
     "abs","all","any","bool","dict","enumerate","float","input","int","len","list","max","min",
     "open","range","reversed","round","set","sorted","str","sum","tuple","type","zip",
     "FileNotFoundError","KeyError","ModuleNotFoundError","RuntimeError","SystemExit","ValueError",
-    "add","append","casefold","decode","encode","extend","format","get","insert","isdisjoint",
-    "items","join","keys","lower","pop","readline","readlines","remove","replace","rsplit",
+    "add","append","casefold","copy","count","decode","encode","extend","format","get","index",
+    "insert","isdisjoint","items","join","keys","lower","pop","readline","readlines","remove","replace","rsplit",
     "setdefault","sort","split","splitlines","startswith","strip","union","upper","values","write",
 }
 
