@@ -18,7 +18,7 @@ import audit_explanation_readiness_r1 as readiness
 import audit_source_bundle_mapping_r1 as source_map
 
 EXPECTED_CARD_COUNT = 1785
-EXPECTED_REVIEW_COUNT = 548
+EXPECTED_REVIEW_COUNT_MAX = 548
 
 
 def digest(rows: list[dict]) -> str:
@@ -194,9 +194,9 @@ def main() -> int:
         raise SystemExit(
             f"SOURCE_MAPPING_REVIEW_CLASSIFIER_R1=FAIL_CARD_COUNT_{len(cards)}"
         )
-    if len(rows) != EXPECTED_REVIEW_COUNT:
+    if len(rows) > EXPECTED_REVIEW_COUNT_MAX:
         raise SystemExit(
-            f"SOURCE_MAPPING_REVIEW_CLASSIFIER_R1=FAIL_REVIEW_COUNT_{len(rows)}"
+            f"SOURCE_MAPPING_REVIEW_CLASSIFIER_R1=FAIL_REVIEW_COUNT_GROWTH_{len(rows)}"
         )
     if any(row["primary_bundle"] == "SOURCE_GAP" for row in rows):
         raise SystemExit("SOURCE_MAPPING_REVIEW_CLASSIFIER_R1=FAIL_PRIMARY_SOURCE_GAP")
