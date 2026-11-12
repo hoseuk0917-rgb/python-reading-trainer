@@ -970,18 +970,18 @@
       "common_mistake": "It’s easy to overlook the line where the actual state changes when looking only at the line defining the F matrix."
     },
     "teaching_example": {
-      "code": "class Model:\n    def __init__(self): self.state=2\n    def predict(self,factor): self.state = factor * self.state\nm=Model(); m.predict(3)",
-      "walkthrough": "The result of the calculation on the right is stored back into `self.state`, changing the state."
+      "code": "class Model:\n    def __init__(self):\n        self.state = 2\n\n    def predict(self, factor):\n        self.state = factor * self.state\n        return self.state\n\nm = Model()\nresult = m.predict(3)",
+      "walkthrough": "1) `class Model:` defines a blueprint for objects. The method bodies do not run yet.\n2) `__init__` is defined to set the initial state, and `predict` is defined to calculate from the current state and store the result back.\n3) `m = Model()` creates an object and runs `__init__`, setting that object's `self.state` to `2`.\n4) Calling `m.predict(3)` makes `self` refer to `m` and sets `factor` to `3`.\n5) `self.state = factor * self.state` reads the current value `2` on the right, calculates `3 * 2 = 6`, and then stores `6` in `self.state` on the left. Picture moving the same name tag to the calculation result.\n6) `return self.state` returns `6`, and the outer `result` refers to that value.\nResult: both `m.state` and `result` are `6`. There is no print statement, so nothing is displayed."
     },
     "answer_explanation": {
-      "step_by_step": "The line in question is the one inside the `predict` method that assigns the new calculation result to `self.state`.",
-      "why_correct": "This is because the result of applying the transition matrix F to the current state is stored as the instance state.",
+      "step_by_step": "1) `kf = OneDimKalman()` runs `__init__`, setting `kf.state` to the array `[[1.0], [2.0]]`.\n2) In `kf.predict(1.0)`, `self` refers to `kf` and `dt` is `1.0`.\n3) `F = np.array(...)` creates `[[1.0, 1.0], [0.0, 1.0]]`. This line only prepares `F`; it does not change `self.state`.\n4) Evaluate the right side of `self.state = F @ self.state` first. Here, `@` is matrix multiplication. The first row gives `1.0 * 1.0 + 1.0 * 2.0 = 3.0`, and the second gives `0.0 * 1.0 + 1.0 * 2.0 = 2.0`.\n5) Assign the resulting array `[[3.0], [2.0]]` to `self.state` on the left. Rather than changing the old array's elements in place, this makes the attribute refer to the new result array.\n6) `return self.state` returns the updated array, and `result` refers to that array too. Nothing is printed.",
+      "why_correct": "`self.state = F @ self.state` both calculates the result of applying `F` to the current state and assigns that result to the state attribute. It is therefore the line that forecasts and updates the state. After this call, the state is `[[3.0], [2.0]]`.",
       "common_wrong_choice": {
         "choice": "z = np.array([[measured_x]])",
-        "why_wrong": "That line is the update step that converts `measurement` into an array.",
-        "misread_step": "This is an example of confusion between the “predict” and “measurement-update” stages."
+        "why_wrong": "This choice creates an array from `measured_x` and assigns it to `z`. It neither applies `F` to the current state nor stores a result in `self.state`. It is also not a line executed in the shown code.",
+        "misread_step": "This focuses only on the appearance of an array-creation line, without checking what the right side calculates and which target on the left is updated."
       },
-      "takeaway": "The “predict step” is interpreted as **preparing the transition model → calculating the state → updating state attributes**."
+      "takeaway": "Read: current state on the right → calculate `F @ self.state` → assign the result to `self.state` on the left. Preparing `F` and actually updating the state are separate steps."
     },
     "target_statement": "self.state = F @ self.state",
     "focus_span": "self.state = F @ self.state",
