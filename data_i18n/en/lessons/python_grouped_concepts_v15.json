@@ -803,14 +803,14 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "메서드 호출의 두 번째 positional argument가 SQL 문자열과 분리된 parameter tuple이라는 점을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A positional argument is a value passed to a parameter based on its order within the call parentheses.",
-      "how_to_read": "Distinguish between the first and second arguments and verify the values produced by each expression.",
-      "key_point": "In the context of SQL injection prevention, user values are passed as separate parameter arguments rather than being concatenated directly into the SQL string. The focus of the Python syntax is on the second positional argument.",
-      "common_mistake": "It’s easy to mistake `(user_name,)` for a string enclosed in parentheses by ignoring the comma. However, the presence of the comma indicates that it is a tuple with a single element."
+      "what_it_is": "Easy meaning: Values in a call go into input slots from left to right, and a collection can itself be passed as one value.\nExact definition: A positional argument is an actual value bound to a parameter according to its position in a call; here, `(user_name,)` is a one-item tuple passed as the second positional argument.",
+      "how_to_read": "Picture two input slots. In the final `execute` call, the first holds the SQL string and the second holds a collection of values. The `?` inside the string is an SQL value placeholder, not a Python argument. The whole expression `(user_name,)` is the second argument; its inner comma creates a tuple rather than separating another call argument.",
+      "key_point": "`user_name = \"alice\"` → evaluating `(user_name,)` produces `('alice',)` → this tuple is passed as the second argument → its item is bound to the SQL `?`. The passed value is therefore a tuple containing one string value, not the name itself or an integer id. The code has no print statement.",
+      "common_mistake": "Do not read `(user_name,)` as merely a parenthesized string. `(user_name)` is the string `\"alice\"`, but `(user_name,)` is the tuple `('alice',)`. Also, `cursor` is the object that owns the method, not the first explicitly supplied argument here."
     },
     "teaching_example": {
-      "code": "params = []\ndef run(query, values):\n    params.append(values)\n\nname = \"Mina\"\nrun(\"SELECT * FROM users WHERE name = ?\", (name,))",
-      "walkthrough": "The second positional argument is a tuple containing a single value, `name`."
+      "code": "def show(query, values):\n    print(values)\n\nname = \"Mina\"\nshow(\"SELECT id FROM users WHERE name = ?\", (name,))",
+      "walkthrough": "1) `def show(query, values):` defines a function with two input names. Its body does not run yet.\n2) `print(values)` is the body that will display the second input when called.\n3) `name = \"Mina\"` binds the string to `name`.\n4) In `show(...)`, the SQL string binds to `query` as the first argument. `(name,)` evaluates to `('Mina',)` and binds to `values` as the second argument.\n5) The body runs, and `print(values)` displays `('Mina',)`.\nFlow: `name` → `\"Mina\"` → `('Mina',)` → `values` → output. This function does not execute SQL; it only displays the tuple it receives."
     },
     "answer_explanation": {
       "step_by_step": "The first argument in the call is the query string, and `(user_name,)` is the second positional argument. The comma inside the parentheses makes it a one-item tuple.",

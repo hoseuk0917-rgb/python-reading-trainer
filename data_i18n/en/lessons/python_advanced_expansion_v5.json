@@ -460,10 +460,10 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "decorator 호출 안에서 keyword argument 이름과 값을 분리해 읽고 route 응답 설정과 연결한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`name=value` Values passed to a call in this format are keyword arguments.",
-                                    "how_to_read":  "Check what the name on the left refers to and read the actual value on the right.",
-                                    "key_point":  "`status_code=200` is a route configuration value passed to the `app.get()` call, not an iteration count or a DB ID.",
-                                    "common_mistake":  "It’s easy to mistake 200 for the function’s return value. The 200 at this location is the value of an argument passed to the call."
+                                    "what_it_is":  "Easy meaning: You attach a name tag to a value to say which input should receive it.\nExact definition: A keyword argument is an argument supplied by name in a call using `name=expression`; the evaluated value of the expression is bound to the parameter with that name.",
+                                    "how_to_read":  "Mental model: Picture `status_code=200` as an input labeled `status_code` containing the integer `200`.\nReading the code: `app = FastAPI()` creates the app. Next, in `@app.get(\"/api/items\", status_code=200)`, `\"/api/items\"` is the path, and `200` is passed by name to the `status_code` parameter of `app.get()`. Below it, `def list_items()` defines the function to run for this path, and the `return` line shows the data it will return when called.",
+                                    "key_point":  "Execution flow: During route registration, call `app.get(...)` → pass the integer `200` under the name `status_code` → configure this route's HTTP response status code as `200`.\nThis does not execute the body of `list_items()`. Later, when the function is called to handle a request, it returns `[{\"id\": 1, \"title\": \"A\"}]`. The response status code `200` and the returned data have separate roles.",
+                                    "common_mistake":  "It is easy to read `200` as a value passed to `list_items()` or as that function's return value. However, it is inside the parentheses of `app.get(...)`, so it is passed to that call. Also, `=` here separates a keyword argument's name and value; it is not a standalone variable assignment statement."
                                 },
         "teaching_example":  {
                                  "code":  "def register(path, code=201):\n    return (path, code)\n\nresult = register(\"/users\", code=202)",
@@ -530,14 +530,14 @@
                                  "walkthrough":  "The list contains two strings in order and represents the allowlist as data."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "`allow_origins` The list on the right contains only one string. Therefore, there is also only one source being passed.",
-                                   "why_correct":  "This is because the number of items in a list literal is determined by the number of values actually written inside the square brackets.",
+                                   "step_by_step":  "① Read inside the square brackets to the right of `allow_origins=`. There is one quoted string.\n② Evaluating this list literal creates a new list containing that string as one item.\n③ The `app.add_middleware(...)` call receives this list as the `allow_origins` keyword argument.\n④ Therefore, the number of origins passed is 1.",
+                                   "why_correct":  "The origins list contains just one string, so the correct answer is `1`. `GET` and `POST` in `allow_methods` are HTTP methods in a separate list, so they do not count as origins.",
                                    "common_wrong_choice":  {
-                                                               "choice":  "All sources",
-                                                               "why_wrong":  "Instead of a wildcard string `*`, which represents all sources, a single specific URL is listed.",
-                                                               "misread_step":  "This is a case of considering only the CORS concept without checking the actual list values."
+                                                               "choice":  "2",
+                                                               "why_wrong":  "The list with two items is the value of `allow_methods`. The question asks about `allow_origins`, whose list contains only one item.",
+                                                               "misread_step":  "The items were counted without first identifying which keyword argument receives the list."
                                                            },
-                                   "takeaway":  "The configuration list **counts the actual items, verifies their values, and then connects them to their domain meanings**."
+                                   "takeaway":  "First find the argument named in the question, then count only the items in the list to its right. One quoted string is one item."
                                },
         "target_statement":  "allow_origins=[\"https://example.com\"]",
         "focus_span":  "[\"https://example.com\"]",
@@ -580,24 +580,24 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "INSERT 실행 이후 connection 객체의 commit 메서드 호출이 transaction 변경을 확정하는 단계임을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`object.method()` calls a method belonging to a specific object.",
-                                    "how_to_read":  "Check the object and method names to the left of the dot, and see how that call handles the state created by the preceding code.",
-                                    "key_point":  "`conn.commit()` is not a call that creates a new INSERT, but rather a step that commits database changes that have already been made.",
-                                    "common_mistake":  "`execute()` Since it’s there, it’s easy to think of a commit as a simple query. Here, however, it’s the process of finalizing an INSERT change."
+                                    "what_it_is":  "Easy meaning: `conn.commit()` asks the database to finalize changes already made.\nExact definition: `conn.commit()` calls the connection object's `commit` method without arguments to commit the pending transaction—a group of changes treated as one unit of work.",
+                                    "how_to_read":  "Mental model: distinguish making changes from confirming them.\nReading the code: `conn` is the database connection, `.commit` selects its method, and `()` executes it. The earlier `INSERT` adds a row; the final call confirms that change.",
+                                    "key_point":  "Execute `INSERT` → add a row with title `\"memo\"` and body `\"hello\"` → call `conn.commit()` → confirm the change. Nothing is printed. Because this database uses `\":memory:\"`, 'save' here does not mean permanent storage in a disk file.",
+                                    "common_mistake":  "Empty parentheses do not mean nothing happens. `()` executes the method even without additional arguments. `conn.commit` retrieves the method; `conn.commit()` actually calls it."
                                 },
         "teaching_example":  {
-                                 "code":  "class Session:\n    def commit(self):\n        return \"saved\"\n\nsession = Session()\nresult = session.commit()",
-                                 "walkthrough":  "The receiver is `session`, and the called method is `commit`. The return value is `saved`."
+                                 "code":  "import sqlite3\nconn = sqlite3.connect(\":memory:\")\nconn.execute(\"CREATE TABLE tasks(label TEXT)\")\nconn.execute(\"INSERT INTO tasks(label) VALUES (?)\", (\"study\",))\nconn.commit()",
+                                 "walkthrough":  "1) `import sqlite3` loads the module.\n2) `connect(\":memory:\")` creates an in-memory database connection and binds it to `conn`.\n3) The first `execute()` call creates the `tasks` table with a `label` column.\n4) The next `execute()` call supplies `\"study\"` for `?` and adds one row.\n5) `conn.commit()` asks that connection to confirm the change.\nExecution flow: connect → create table → add row → confirm change.\nResult: the in-memory database contains one committed `\"study\"` row. Nothing is printed."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "After INSERT makes changes to the connection, `conn.commit()` is called. commit finalizes the changes made by that transaction.",
-                                   "why_correct":  "This is because the `commit` method of a database connection is the step that permanently applies changes made by a pending transaction.",
+                                   "step_by_step":  "1) Load `sqlite3` and connect to the `\":memory:\"` database.\n2) Execute `CREATE TABLE` to create `notes` with `title` and `body` columns.\n3) Supply `\"memo\"` and `\"hello\"` for the two `?` placeholders in `INSERT`, adding one row.\n4) In `conn.commit()`, select the `commit` method on `conn` and call it with `()`.\n5) That call confirms the earlier insertion, so the answer is 'Save Changes'.",
+                                   "why_correct":  "'Save Changes' best describes confirming the changes. This code uses an in-memory database, so it must not be read as permanently saving a disk file.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Reading Files",
-                                                               "why_wrong":  "This is a call to a database connection method, not a file I/O function.",
-                                                               "misread_step":  "This is a case where the receiver `conn` and the preceding SQL context were not checked."
+                                                               "why_wrong":  "`commit()` confirms earlier database changes rather than reading file contents.",
+                                                               "misread_step":  "This reads the final call in isolation, overlooking that `conn` is a database connection and that `INSERT` immediately precedes it."
                                                            },
-                                   "takeaway":  "To understand the save flow, you must read the DB code up to the point of **executing the changes → checking whether to commit**."
+                                   "takeaway":  "Read a method call as 'ask which object to do what?' Here, `INSERT` makes the change and `commit()` confirms it."
                                },
         "target_statement":  "conn.commit()",
         "focus_span":  "conn.commit()",
@@ -761,14 +761,14 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "drop_duplicates 호출의 subset keyword argument가 중복 비교 기준 컬럼 목록을 전달하는 의미를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "A keyword argument allows you to pass a value by explicitly specifying the name of the parameter being called.",
-                                    "how_to_read":  "Read `subset=` by connecting the name on the left with the list value on the right to understand what criteria are passed to the function.",
-                                    "key_point":  "`subset=[\"url\"]` This means that you should determine whether there are duplicates based solely on the URL value, not on other columns.",
-                                    "common_mistake":  "It is easy to misread “subset” as meaning “delete the url column.” “subset” merely specifies a comparison criterion; it is not a command to delete a column."
+                                    "what_it_is":  "Easy meaning: Giving an input name when passing a value tells the call which setting the value is for.\nExact definition: A keyword argument is an argument that passes a value by explicitly naming a parameter in a function or method call.",
+                                    "how_to_read":  "Mental model: Think of `subset` as an input slot labeled 'columns to compare for duplicates.'\nIn this card, `subset=[\"url\"]` passes a list containing the single string `\"url\"` to the `subset` parameter. Read it as 'Compare only the url column when identifying duplicates.' On the left, `subset` is the input name; on the right, `[\"url\"]` is the value passed.",
+                                    "key_point":  "`[\"url\"]` → passed to `subset` → compare only url values.\nThe first and second rows are duplicates because both have url `\"/a\"`, even though their scores differ: 1 and 9. The default keeps the first occurrence, so the returned `clean` contains two rows: (`\"/a\"`, 1) and (`\"/b\"`, 3). Therefore, `print(len(clean))` displays `2`.",
+                                    "common_mistake":  "Do not read `subset=[\"url\"]` as 'delete the url column' or 'keep only the url column in the result.' This argument specifies only the duplicate comparison criteria. Both url and score remain in the result; rows identified as duplicates are excluded."
                                 },
         "teaching_example":  {
                                  "code":  "import pandas as pd\ndf = pd.DataFrame({\"email\": [\"a@x\", \"a@x\", \"b@x\"], \"name\": [\"A\", \"A2\", \"B\"]})\nclean = df.drop_duplicates(subset=[\"email\"])\nprint(len(clean))",
-                                 "walkthrough":  "Since duplicates are determined based solely on the email address, the second line containing \"a@x\" is removed, leaving two lines."
+                                 "walkthrough":  "1) `import pandas as pd`: Make pandas available under the name `pd`.\n2) `df = pd.DataFrame(...)`: Create a three-row table with email and name columns and bind it to `df`. The first two rows have the same email but different names.\n3) `clean = df.drop_duplicates(subset=[\"email\"])`: Pass the list `[\"email\"]` to the `subset` parameter. Thus, compare only email, not name. By default, keep the first `a@x` row and exclude the second `a@x` row from the returned table, which is bound to `clean`. The remaining rows are (`\"a@x\"`, `\"A\"`) and (`\"b@x\"`, `\"B\"`).\n4) `print(len(clean))`: Display the remaining row count, `2`.\nFlow: pass `[\"email\"]` → compare by email → return two rows → `clean` → length `2` → display `2`."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "The function ``subset=[\"url\"]`` inside the call parentheses passes a list of `url` column names to the `subset` parameter. Therefore, duplicate detection is performed by comparing only the `url` values.",
@@ -819,14 +819,14 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "pivot_table method call의 keyword arguments가 그룹 기준·값 컬럼·집계 방식을 함께 지정하는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "Object method calls are executed in the form `object.method(...)`, and keyword arguments can be used to specify detailed behavior.",
-                                    "how_to_read":  "Read the text by pairing each keyword name with its value following the method name to understand what data is being processed and how.",
-                                    "key_point":  "In this call, `domain` is specified as the group, `score` as the value to be aggregated, and `mean` as the aggregation function.",
-                                    "common_mistake":  "`index=\"domain\"` It is easy to read simply by changing the index numbers in the original DataFrame. In `pivot_table`, it serves to define the group axis of the results."
+                                    "what_it_is":  "Easy meaning: This call asks the table, “Collect the scores for each domain and find their average.”\nExact definition: A method call `object.method(...)` executes an object's method with arguments; here, `df.pivot_table(...)` receives keyword arguments specifying the grouping key, value column, and aggregation method, and returns a summary DataFrame.",
+                                    "how_to_read":  "Mental model: imagine attaching three instructions to a summary task: “What belongs together?”, “Which values should be collected?”, and “How should they be calculated?”\nIn this code, `df.pivot_table` is the method to use, and the following parentheses make the call. `index=\"domain\"` groups matching domains into result rows, `values=\"score\"` selects score as the calculation target, and `aggfunc=\"mean\"` requests the average for each group.",
+                                    "key_point":  "Execution flow: data in `df` → call `pivot_table(...)` with the three keyword arguments → return a summary table with `(2 + 4) / 2 = 3.0` for a.com and `8.0` for b.com → bind it to `table` → select the score in the a.com row using `table.loc[\"a.com\", \"score\"]` → `print(...)` outputs `3.0`.\nThe call returns a summary table, not a single average; the final line selects one value from that table.",
+                                    "common_mistake":  "It is easy to read `index=\"domain\"` as merely changing row numbers in the original table. Here it specifies the grouping key for result rows. Thus, the call does not choose the last a.com score, `4`; `aggfunc=\"mean\"` makes it calculate the average of both values."
                                 },
         "teaching_example":  {
                                  "code":  "import pandas as pd\ndf = pd.DataFrame({\"team\": [\"A\", \"A\", \"B\"], \"score\": [2, 4, 9]})\ntable = df.pivot_table(index=\"team\", values=\"score\", aggfunc=\"mean\")\nprint(table.loc[\"A\", \"score\"])",
-                                 "walkthrough":  "The average of Group A’s scores 2 and 4, 3.0, is entered into the results table."
+                                 "walkthrough":  "Line by line:\n1) `import pandas as pd` imports pandas for use under the name `pd`.\n2) The `pd.DataFrame(...)` call creates a table containing scores 2 and 4 for A and score 9 for B, and binds it to `df`.\n3) `df.pivot_table(...)` is called. `index=\"team\"` groups by team, `values=\"score\"` selects the scores, and `aggfunc=\"mean\"` calculates averages. The returned summary table contains score `3.0` for A and `9.0` for B, and is bound to `table`.\n4) `table.loc[\"A\", \"score\"]` selects the score in row A of the summary table. `print(...)` outputs that value, `3.0`.\nExecution flow: A's scores 2 and 4 → calculate their average through the method call → A's value `3.0` in the summary table → select the value → output `3.0`."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "`index=domain` groups items with the same domain, and `values=score` specifies `score` as the aggregation target. The values 2 and 4 for `a.com` are averaged to yield a mean of 3.0.",
@@ -876,10 +876,10 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "NumPy method call의 axis keyword argument가 어느 축을 줄이는 집계를 지정하는지 실제 배열 값으로 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`axis=0` is a keyword argument that passes the integer 0 to the `axis` parameter in a method call.",
-                                    "how_to_read":  "Before the call, examine the array’s shape and values, and check the result shape to see which direction the axis values group and aggregate the elements.",
-                                    "key_point":  "In a 2×3 array, `sum(axis=0)` reduces the row axis, leaving three column-wise sums.",
-                                    "common_mistake":  "It is easier to read `axis=0` as the sum within each row. In this example, the rows above and below are added together, leaving the result for each column."
+                                    "what_it_is":  "Easy meaning: `axis=0` tells the sum operation to “add the values above and below one another in each column.”\nExact definition: `axis=0` is a keyword argument that passes the integer `0` to the method’s `axis` parameter, specifying summation along the first axis here.",
+                                    "how_to_read":  "Mental model: Imagine labeled input slots for the call. `axis=0` puts the value `0` into the slot labeled `axis`. For this array, that selects the direction that moves up and down, collecting values in the same column.\nLine by line:\n1) `import numpy as np`: Make NumPy available under the name `np`.\n2) `x = np.array([[1, 2, 3], [4, 5, 6]])`: Create an array with two rows and three columns and bind it to `x`.\n3) `print(x.sum(axis=0))`: Pass `0` as the `axis` value to `x.sum`, calculate each column’s sum, then print the returned array.",
+                                    "key_point":  "Execution flow: call `x.sum(axis=0)` → pass `0` to the `axis` parameter → calculate `1+4=5`, `2+5=7`, and `3+6=9` by column → return a one-dimensional array containing those three values → `print` displays `[5 7 9]`.\nSummation removes the specified axis, so the array’s shape changes from `(2, 3)` to `(3,)`.",
+                                    "common_mistake":  "The `0` in `axis=0` is not an index meaning “select only the first row.” Nor does it mean to add within each row. Here, it adds values in the same column across the two rows. The within-row sums `[6 15]` are the result for `axis=1`. Inside the call, `axis=0` is syntax for passing an argument by name, not a statement assigning to a separate variable."
                                 },
         "teaching_example":  {
                                  "code":  "import numpy as np\nx = np.array([[2, 4], [3, 5]])\nprint(x.sum(axis=0))",

@@ -623,10 +623,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "메서드 호출 receiver와 pattern argument를 구분해 파일 탐색 역할을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`object.method(arg)` is an expression that calls a method belonging to an object.",
-      "how_to_read": "Check what the receiver to the left of the dot is, and then read the method name and the argument inside the parentheses in order.",
-      "key_point": "In `Path(\"data\").glob(\"*.json\")`, the `glob()` method is responsible for applying the filename pattern to find potential paths.",
-      "common_mistake": "It’s easy to assume that the outer `list()` searches a file. `list()` converts an iterable that has already been obtained into a list."
+      "what_it_is": "Easy meaning: `Path(\"data\").glob(\"*.json\")` asks, “Find paths in the data folder whose names match this pattern.”\nExact definition: This expression is a method call that passes the pattern argument `\"*.json\"` to the `glob` method of the `Path(\"data\")` path object and returns an iterator that yields matching path objects.",
+      "how_to_read": "Mental model: `Path(\"data\")` is the place to look, `\"*.json\"` is the rule for selecting names, and `glob(...)` is the request to search using that rule.\nReading the code: First, `Path(\"data\")` creates an object representing the data path. After the dot, `glob` names a method belonging to that object, and `\"*.json\"` inside the parentheses is the search pattern passed to it. This pattern matches names ending in `.json` directly inside the data folder; it does not recursively search inside subfolders.",
+      "key_point": "Execution flow: `Path(\"data\")` → call `.glob(\"*.json\")` → an iterator yielding matching paths → the outer `list(...)` iterates over it and collects the paths into a list → bind that list to `files`.\nTherefore, the call that finds candidate paths is `Path(\"data\").glob(\"*.json\")`. The actual path list depends on the folder contents and cannot be determined from the code alone.",
+      "common_mistake": "It is easy to think the outer `list(...)` applies the search rule. `glob(\"*.json\")` applies the rule; `list(...)` iterates over the returned iterator to collect its results. Also, `glob()` only finds paths with matching names: it does not read file contents or check whether they contain valid JSON."
     },
     "teaching_example": {
       "code": "from pathlib import Path\nlogs = list(Path(\"logs\").glob(\"*.txt\"))",
@@ -684,10 +684,10 @@
     "primary_concept": "subscription",
     "reading_goal_internal": "직접 dict key lookup이 데이터 schema 누락에 취약할 수 있음을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`row['doc_id']` This is a subscription that directly reads the value of the `doc_id` key from the `dict`.",
-      "how_to_read": "First, check whether the code assumes that `key` must exist.",
-      "key_point": "If the input JSONL schema is incomplete, a direct lookup may raise a KeyError.",
-      "common_mistake": "Since `json.loads` was successful, it’s easy to assume that all necessary keys are present."
+      "what_it_is": "Easy meaning: `row[\"doc_id\"]` looks for the value labeled `\"doc_id\"`.\nExact definition: Dictionary subscription, written `d[key]`, returns the value associated with the specified key and raises `KeyError` if that key is absent from an ordinary `dict`.",
+      "how_to_read": "Mental model: picture a dictionary as a collection of label–value pairs. The `\"doc_id\"` inside the brackets is the label to find, not the value to retrieve.\nReading the code: 1) `import json` imports the JSON-processing module. 2) `line` stores a JSON string containing only `title`. 3) `json.loads(line)` converts it into the dictionary `{\"title\": \"sample\"}` and binds it to `row`. 4) `row[\"doc_id\"]` searches that dictionary for the key `\"doc_id\"`, but its only key is `\"title\"`.",
+      "key_point": "Execution flow: `line` → `json.loads(line)` → `row` is `{\"title\": \"sample\"}` → look up `\"doc_id\"` → the key is absent, so `KeyError` is raised.\nWith this input, the error actually occurs; it is not merely a possibility. Because the lookup on the right fails, the step that assigns a value to `doc_id` is not executed.",
+      "common_mistake": "It is easy to assume that successful `json.loads` means all required keys are present. But successfully reading the JSON string and having a `\"doc_id\"` key are separate matters. Also, `row[\"doc_id\"]` does not create a missing key or return `None`. For this dictionary, it raises `KeyError`."
     },
     "teaching_example": {
       "code": "row = {\"title\": \"A\"}\nvalue = row[\"title\"]",

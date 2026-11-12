@@ -501,24 +501,24 @@
     "primary_concept": "list_comprehension",
     "reading_goal_internal": "비어 있지 않은 JSONL 줄만 json.loads로 파싱해 chunk 리스트를 만드는 comprehension을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A filtered list comprehension iterates through the list and includes only those items that meet the condition in the result.",
-      "how_to_read": "After checking the `for` and `if` statements, apply the conversion expression at the beginning.",
-      "key_point": "Since JSONL consists of independent JSON on each line, apply `json.loads` to each line.",
-      "common_mistake": "It is easy to think `json.loads` is called once on all of `lines` at the same time."
+      "what_it_is": "Easy meaning: This syntax processes only values that pass a test and collects the results in a new list.\nExact definition: A filtered list comprehension `[expression for target in iterable if condition]` iterates over iterable, evaluates expression only for items whose condition is truthy, and collects those results in order in a new list.",
+      "how_to_read": "Picture each line passing through a checkpoint before entering a new box. Here, `for line in lines` takes one string at a time, and `if line.strip()` checks whether anything remains after removing surrounding whitespace. Only a passing line reaches the front expression, `json.loads(line)`, which converts the JSON string to a dictionary and adds it to the new list. The result of `strip()` is used only for the test; parsing receives the original `line`.",
+      "key_point": "Execution flow: first JSON line → passes → add one dictionary; empty string `''` → `strip()` also returns `''` → excluded; final JSON line → passes → add one dictionary.\nThe final `chunks` is `[{'chunk_id': 'c1', 'text': 'Python'}, {'chunk_id': 'c2', 'text': 'RAG'}]`, containing 2 items.",
+      "common_mistake": "It is easy to assume that `json.loads(line)` runs before the test because it appears first in the code. Each line is actually tested first, so `json.loads` is not called on the empty string. Also, this condition only filters out empty or whitespace-only lines; it does not check whether the JSON is valid."
     },
     "teaching_example": {
       "code": "import json\nlines=['{\"id\":1}',\"\",'{\"id\":2}']\nrows=[json.loads(line) for line in lines if line.strip()]",
       "walkthrough": "Blank lines are omitted, and only the two JSON strings are converted to dictionaries."
     },
     "answer_explanation": {
-      "step_by_step": "Of the three lines, the blank line is filtered out, and only two lines are converted to a dict.",
-      "why_correct": "This is because one result is added for each line that passes the condition.",
+      "step_by_step": "1) `import json` makes JSON conversion functionality available.\n2) `lines` stores a JSON string, an empty string, and another JSON string, in that order. The original list has 3 items.\n3) For the first string, `line.strip()` is nonempty, so it passes. `json.loads(line)` returns `{'chunk_id': 'c1', 'text': 'Python'}`, which enters the new list.\n4) For the second string, `''`, `strip()` also returns `''`. An empty string is false in a condition, so no parsing or addition occurs.\n5) The third string passes. `json.loads(line)` returns `{'chunk_id': 'c2', 'text': 'RAG'}`, which enters the new list.\n6) The new list containing two dictionaries is assigned to `chunks`.",
+      "why_correct": "Only the first and third lines pass the condition, and each produces one dictionary. Therefore, `chunks` contains 2 items. The keys inside each dictionary do not add to the outer list's item count.",
       "common_wrong_choice": {
         "choice": "3",
-        "why_wrong": "Blank lines are excluded from the `line.strip()` condition.",
-        "misread_step": "The filter condition was ignored."
+        "why_wrong": "3 is the number of items in the original `lines`. The empty string fails the condition and is not included in the result list.",
+        "misread_step": "This counts items using only `for line in lines`, skipping the `if line.strip()` test applied to each item."
       },
-      "takeaway": "Loading JSONL involves **iterating through lines → filtering → parsing line by line → collecting lists**."
+      "takeaway": "Read a filtered list comprehension as 'select one item → test the condition → if it passes, evaluate the front expression → add one result.'"
     },
     "target_statement": "chunks = [json.loads(line) for line in lines if line.strip()]",
     "focus_span": "[json.loads(line) for line in lines if line.strip()]",
@@ -843,14 +843,14 @@
       "walkthrough": "By looking at the state x and the predict/update method together, you can quickly grasp the overall purpose of the object."
     },
     "answer_explanation": {
-      "step_by_step": "The constructor creates a state, and the `predict` and `update` functions predict and update that state, respectively.",
-      "why_correct": "This is because the structure of methods within a class directly illustrates the predict/update structure of state estimation.",
+      "step_by_step": "1) `class OneDimKalman:` defines a class that groups state with methods that change it. No instance creation or method calls appear here, so prediction and correction have not run yet.\n2) When an instance is created, `__init__` stores position x and velocity v as `[[x], [v]]` and also prepares P, Q, and R.\n3) Calling `predict(dt)` calculates the matrix product `F @ self.state`. If the previous position and velocity are x and v, the new state is `[[x + dt * v], [v]]`. The method stores this state and returns the position in the first row and first column.\n4) Calling `update(measured_x)` puts the measurement into z and overwrites `self.state[0, 0]` with that value. It leaves velocity unchanged and returns the new position.\n5) The class therefore serves to predict position and correct the position state using measurements.",
+      "why_correct": "The flow is stored position and velocity → position prediction over a time interval → replacement of position with a measurement. Thus the correct answer is ‘Use measurements to predict and correct a one-dimensional position state.’ Here, correction directly replaces position with the measurement rather than combining prediction and measurement using weights. P, Q, and R are initialized but are not used in the calculations of the two shown methods.",
       "common_wrong_choice": {
         "choice": "Call the API",
-        "why_wrong": "There are no HTTP client or endpoint calls; only numerical state operations are performed.",
-        "misread_step": "This is a case where the code was mistaken for code from an external service simply because it was complex."
+        "why_wrong": "There is no code sending requests to an external service. The shown calls prepare arrays, while the main methods calculate or modify the instance’s internal position and velocity state.",
+        "misread_step": "This mistakes `import numpy as np` and several function calls for external-service calls without checking which values are actually stored and changed."
       },
-      "takeaway": "For complex numeric classes, read them first in the following order: **state definition → roles of key methods → state changes**."
+      "takeaway": "Read a class’s purpose through ‘stored state → values changed by methods → returned values,’ not its name alone. Also distinguish class definition from actual instance creation and method execution."
     },
     "target_statement": "class OneDimKalman:",
     "focus_span": "class OneDimKalman:",
@@ -905,18 +905,18 @@
       "common_mistake": "It is easy to misinterpret x and v as a doc ID or unrelated metadata based solely on their names. You must consider both the constructor parameter and the project context."
     },
     "teaching_example": {
-      "code": "import numpy as np\nposition=2.0\nvelocity=0.5\nstate=np.array([[position],[velocity]])",
-      "walkthrough": "The first element is position, and the second is velocity."
+      "code": "import numpy as np\nposition = 2.0\nvelocity = 0.5\nstate = np.array([[position], [velocity]])",
+      "walkthrough": "1) `import numpy as np` makes NumPy available as `np`.\n2) `position = 2.0` binds the position value 2.0.\n3) `velocity = 0.5` binds the velocity value 0.5.\n4) In `np.array([[position], [velocity]])`, the variable values are read first to build `[[2.0], [0.5]]`. The function receives this one nested-list argument and returns a two-row, one-column array; `state` refers to that array.\nExecution flow: position and velocity values → nested list → function call → array → `state`.\nResult: the first row contains position 2.0, and the second contains velocity 0.5. Nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "Place `x` in the first row of the nested array, `v` in the second row, and store it as `state`.",
-      "why_correct": "This is because the constructor parameter names and array positions directly illustrate the definition of the position and velocity states.",
+      "step_by_step": "1) Import NumPy as `np`.\n2) Bind 10.0 to `x` and 2.0 to `v`.\n3) Evaluating the call argument `[[x], [v]]` produces `[[10.0], [2.0]]`.\n4) `np.array(...)` returns a two-row, one-column array from these values, and `state` refers to it.\n5) Indices start at 0. `state[0, 0]` reads 10.0 from the first row and first column and binds it to `position`. `state[1, 0]` reads 2.0 from the second row and first column and binds it to `velocity`.\nResult: `state` contains position x and velocity v, in that order. Nothing is printed.",
+      "why_correct": "The following two assignments read the first row as `position` and the second as `velocity`, so the answer is 'Position x and velocity v'. `np.array` does not interpret the meaning of variable names; it puts the supplied values into an array in the given order.",
       "common_wrong_choice": {
         "choice": "Document ID and chunk ID",
-        "why_wrong": "There are no such strings or fields in the code; only the numeric values x and v are present.",
-        "misread_step": "This is a case where a data model from another project was incorrectly applied to the current numerical state."
+        "why_wrong": "The code reads the stored values as `position` and `velocity`. Nothing uses them as document or chunk identifiers.",
+        "misread_step": "This guesses the purpose from the name `state` without checking `x` and `v` in the call or the two lines that read the values afterward."
       },
-      "takeaway": "The state estimation code **first defines the state vector structure and the meaning of the indices**."
+      "takeaway": "Trace a function call through argument values → returned array → values read by indexing. Here, the first row is position and the second is velocity."
     },
     "target_statement": "state = np.array([[x], [v]])",
     "focus_span": "np.array([[x], [v]])",
@@ -1040,14 +1040,14 @@
       "walkthrough": "The scalar 3.5 becomes the measurement vector [[3.5]]."
     },
     "answer_explanation": {
-      "step_by_step": "Place `measured_x` in a nested list, convert it to an `np.array`, and store it in `z`.",
-      "why_correct": "This is because it is an array creation statement that directly uses the `parameter` value.",
+      "step_by_step": "1) `import numpy as np` makes NumPy available as `np`. The `def` statement defines the function; its body does not run yet.\n2) Calling `make_measurement(12.5)` passes `12.5` to `measured_x` inside the function.\n3) Evaluating `[[measured_x]]` creates the nested list `[[12.5]]`: one row containing one value.\n4) The call `np.array([[measured_x]])` creates a two-dimensional array with one row, one column, and the value `12.5`. This array is bound to `z`.\n5) `return z` returns the created array, and `measurement` in the caller refers to that array. There is no statement that prints anything.",
+      "why_correct": "In `z = np.array([[measured_x]])`, the nested list containing the actual measurement is passed as the argument to the array-creation call. The call on the right creates the array, and `z` on the left receives the result, so this is the correct line. Here, the question's 'matrix' is a two-dimensional NumPy array.",
       "common_wrong_choice": {
-        "choice": "self.Q = np.eye(2) * 0.01",
-        "why_wrong": "Q is a process-noise covariance setting and does not contain the current measurement.",
-        "misread_step": "This is an instance where the `noise` parameter was confused with a sensor observation."
+        "choice": "F = np.array(...)",
+        "why_wrong": "This choice looks like an array-creation call, but it is not in the supplied code and does not show the measurement `measured_x` being passed. The actual conversion is visible in `np.array([[measured_x]])`.",
+        "misread_step": "This mistake selects a line from the call name `np.array` alone without checking which value is passed inside the parentheses."
       },
-      "takeaway": "The update code follows the sequence: **measurement input → z configuration → residual/innovation calculation**."
+      "takeaway": "Follow the argument, not just the call name: `12.5` → `measured_x` → `[[12.5]]` → array creation → `z` → return → `measurement`."
     },
     "target_statement": "z = np.array([[measured_x]])",
     "focus_span": "np.array([[measured_x]])",
@@ -1835,14 +1835,14 @@
       "walkthrough": "The `response_model` keyword specifies the response schema metadata for the route."
     },
     "answer_explanation": {
-      "step_by_step": "The route decorator registers SearchResponse as the response model.",
-      "why_correct": "This is because FastAPI can use the response model for response validation/filtering and OpenAPI schema generation.",
+      "step_by_step": "1) `SearchResponse` defines a response structure where `query` is a string and `hits` is a list of strings.\n2) The call to `app.post(...)` passes the `SearchResponse` class itself as the keyword argument `response_model`. This configures the route's response; it is not an input to `search()`.\n3) The decorator registers `search` as the function that handles POST requests to `/api/search`. Registration does not execute the function body.\n4) When a request causes `search()` to run, it creates and returns a `SearchResponse(query=\"python\", hits=[\"c1\"])` object.\n5) FastAPI validates the returned data against the declared response model and produces a JSON response. The response data here is `{\"query\":\"python\",\"hits\":[\"c1\"]}`.\n6) The same model structure is also reflected in the automatic API documentation.",
+      "why_correct": "`SearchResponse` explicitly declares the response fields and their types, and it is passed through the `response_model` argument. FastAPI uses this declaration for response validation and automatic documentation, so the correct answer is “Clarify the response structure and assist with verification and documentation.”",
       "common_wrong_choice": {
         "choice": "Always increase search speed by 100 times",
-        "why_wrong": "Schema metadata does not automatically accelerate search-algorithm performance.",
-        "misread_step": "This is an instance where the API contract functionality was confused with runtime search performance."
+        "why_wrong": "`response_model` configures the structure of returned data; it does not accelerate a search algorithm. This function performs no search: it creates and returns a response object containing fixed values.",
+        "misread_step": "This reads `response_model=SearchResponse` as an option that changes search speed rather than an argument specifying the response format."
       },
-      "takeaway": "I interpret `response_model` as a tool that **explicitly defines response contracts in code**."
+      "takeaway": "`response_model=SearchResponse` means “validate and document this route's response using this model.” Read the flow as: pass the model class → return data when a request arrives → process the response according to the model."
     },
     "target_statement": "@app.post(\"/api/search\", response_model=SearchResponse)",
     "focus_span": "response_model=SearchResponse",

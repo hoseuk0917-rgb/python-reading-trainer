@@ -84,10 +84,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "`execute(sql, params)` 호출에서 두 번째 positional argument가 SQL placeholder에 넣을 값 묶음임을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A positional argument is a syntax in which values are passed in order of position, without specifying names, when calling a function or method.",
-      "how_to_read": "As in `conn.execute(sql, params)`, when there are two arguments, we look at the order in which the first and second values are passed to their respective parameters. The comma in `(item_id,)` creates a one-element tuple.",
-      "key_point": "In SQL, `?` indicates a placeholder where the driver binds a value, and in Python code, that tuple of values is passed as the second positional argument.",
-      "common_mistake": "It’s easy to assume that `(item_id)` alone represents a tuple with a single element. Parentheses alone do not form a tuple; a comma is required, as in `(item_id,)`."
+      "what_it_is": "Easy meaning: This call supplies the SQL to run first, then a collection of values for the SQL to use.\nExact definition: A positional argument is a value supplied by position without a parameter name in a call; here, the second argument `(item_id,)` is a tuple containing one value to bind to the SQL `?`.",
+      "how_to_read": "Think of the SQL as a request with a blank, and the tuple as the collection of values corresponding to its blanks. In `conn.execute(\"SELECT title FROM items WHERE id = ?\", (item_id,))`, the first argument is the SQL request string. The second argument, `(item_id,)`, is a tuple containing the current value of `item_id`, `\"item_001\"`. The entire tuple is passed as one argument, and its contained value is connected to the SQL `?`.",
+      "key_point": "Execution flow: The earlier INSERT stores the row `(\"item_001\", \"Python 읽기\")` → `item_id = \"item_001\"` → evaluating `(item_id,)` produces `(\"item_001\",)` → pass this tuple as the second argument → bind its contained value to the SELECT's `?` → retrieve the matching row's title → `fetchone()` returns `(\"Python 읽기\",)` → `print(row[0])` displays `Python 읽기`. The SQL string and the collection of values are passed separately.",
+      "common_mistake": "It is easy to read `(item_id)` as a one-element tuple, but it is only the string value enclosed in parentheses. The comma in `(item_id,)` creates the one-element tuple. Also, the comma inside the tuple does not add another argument to `execute()`. This call has two arguments: the SQL string and the tuple."
     },
     "teaching_example": {
       "code": "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\nconn.execute(\"CREATE TABLE users (id TEXT, name TEXT)\")\nconn.execute(\"INSERT INTO users VALUES (?, ?)\", (\"u1\", \"Mina\"))\nuser_id = \"u1\"\ncursor = conn.execute(\"SELECT name FROM users WHERE id = ?\", (user_id,))\nprint(cursor.fetchone()[0])\nconn.close()",
@@ -144,10 +144,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "`conn.commit()` 메서드 호출이 현재 트랜잭션의 변경을 확정하는 시점을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "The `object.method()` syntax is used to call a method belonging to an object. `conn.commit()` calls the `commit` method of the DB connection object.",
-      "how_to_read": "First, verify that `conn` is the current database connection object, and then explain that calling `commit()` commits the changes made in the current transaction.",
-      "key_point": "`commit()` is not a call that creates a new SQL statement, but rather a call that commits changes already made within a transaction boundary.",
-      "common_mistake": "It is easy to think that because `execute()` succeeded, `commit()` has nothing left to do. On a connection that uses transactions, the two calls have different roles."
+      "what_it_is": "Easy meaning: `conn.commit()` asks the database connection to “confirm the changes made earlier now.”\nExact definition: `conn.commit()` calls the `commit` method of the SQLite connection object referenced by `conn` to commit the current transaction—the changes grouped into one unit of work.",
+      "how_to_read": "Mental model: think of adding a row and confirming that change as separate steps.\nReading the code: `import sqlite3` loads the module, and `connect(\":memory:\")` connects to an in-memory database, with `conn` referring to that connection. The first `execute()` creates the `items` table. The next `execute()` supplies `\"item_001\"` and `\"LiDAR basics\"` for the two `?` placeholders, respectively, and adds a row. The final line looks up the `commit` method on `conn` and calls it with `()`. The empty parentheses mean no explicit arguments are supplied.",
+      "key_point": "Execution flow: connect to an in-memory database → create the table → add a row with INSERT → call `conn.commit()` → commit the current transaction's changes.\nResult: the addition of the row `(\"item_001\", \"LiDAR basics\")` is committed. Nothing is displayed because there is no print statement. This database is in memory, so committing does not save it to a disk file.",
+      "common_mistake": "It is easy to assume that a successful `execute()` also finishes committing the changes. In this code, executing INSERT and committing the transaction are separate steps. Also, `conn.commit` references the method, whereas `conn.commit()` actually calls it. This call does not delete the table or assign a new value to `conn`."
     },
     "teaching_example": {
       "code": "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\nconn.execute(\"CREATE TABLE notes (id INTEGER, text TEXT)\")\nconn.execute(\"INSERT INTO notes VALUES (?, ?)\", (1, \"memo\"))\nconn.commit()",

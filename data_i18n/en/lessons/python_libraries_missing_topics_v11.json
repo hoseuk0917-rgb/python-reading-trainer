@@ -1481,14 +1481,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "array instance의 mean 메서드 호출이 전체 원소의 평균값을 반환하는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`obj.method()` is an expression that calls a method defined on an object.",
-      "how_to_read": "Identify the object to the left of the dot and see what value the method returns.",
-      "key_point": "`arr.mean()` without any arguments calculates the average of all elements in this one-dimensional array.",
-      "common_mistake": "It’s easy to assume that `mean` returns a total of 6. The mean is the sum divided by the number of items."
+      "what_it_is": "Easy meaning: `arr.mean()` asks the array to calculate the average of its numbers.\nExact definition: `arr.mean()` is an expression that calls a NumPy array object's `mean` method, which returns the arithmetic mean of all elements when no arguments are supplied.",
+      "how_to_read": "Mental model: imagine pressing an average-calculation button attached to the array. `arr.mean` identifies the operation, and the following `()` runs it.\nReading the code: `import numpy as np` makes NumPy available under the name `np`. The array created by `np.array([1, 2, 3])` is bound to `arr`. Then `arr.mean()` calculates the average of those three elements, and its returned value is bound to `average`.",
+      "key_point": "Execution flow: elements `1, 2, 3` in `arr` → call `arr.mean()` → average calculated by dividing the sum `6` by the element count `3` → returned value `2.0` → bound to `average`.\nFor this integer array, the mean is the floating-point value `2.0`. There is no print statement, so nothing is displayed.",
+      "common_mistake": "Do not read `mean()` as returning the sum `6` or the element count `3`. The average is the sum divided by the count. Also, `arr.mean` alone does not run the calculation: the following `()` calls the method."
     },
     "teaching_example": {
-      "code": "class Scores:\n    def __init__(self, values):\n        self.values = values\n    def mean(self):\n        return sum(self.values) / len(self.values)\n\nscores = Scores([2, 4, 6])\naverage = scores.mean()",
-      "walkthrough": "The `mean` method divides 12 by 3 and returns 4.0."
+      "code": "import numpy as np\nscores = np.array([2, 4, 6])\naverage = scores.mean()",
+      "walkthrough": "Line by line:\n1) `import numpy as np`: import NumPy under the name `np`.\n2) `scores = np.array([2, 4, 6])`: call `np.array(...)` to create an array containing three numbers and bind it to `scores`.\n3) `average = scores.mean()`: use `()` to call the `mean` method of `scores`. It returns the average `4.0`, calculated by dividing the sum `12` by the element count `3`, and that value is bound to `average`.\nExecution flow: `2, 4, 6` → `scores.mean()` → `4.0` → `average`.\nThe final value of `average` is `4.0`. There is no print statement, so nothing is displayed."
     },
     "answer_explanation": {
       "step_by_step": "The array contains 1, 2, and 3, and `mean` calculates the average of all elements. The code is: ``(1+2+3)/3 = 2.0``.",
@@ -2025,24 +2025,24 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "Field 호출에서 ge keyword argument의 실제 값이 최소 허용 범위를 설정한다는 의미를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`ge=1` is a keyword argument that names a function call and passes the number 1.",
-      "how_to_read": "Distinguish between keywords that denote options and their meanings, and the numbers on the right that represent actual constraint values.",
-      "key_point": "In the Pydantic Field, `ge` represents the \"greater than or equal to\" constraint, and `le` represents the \"less than or equal to\" constraint.",
-      "common_mistake": "It’s easy to assume that only 5 is allowed because of `default=5`. However, 5 is the default value when omitted, and the allowed range is determined by separate constraints."
+      "what_it_is": "Easy meaning: `ge=1` passes a labeled setting saying “the smallest allowed value is 1.”\nExact definition: `ge=1` is a keyword argument passing the integer `1` under the name `ge` to `Field`; in this function, `ge` specifies an inclusive lower-bound constraint.",
+      "how_to_read": "Mental model: Imagine putting values into labeled settings slots. The name identifies the setting, and the value on the right supplies its value.\nReading the code: The first line imports `BaseModel` and `Field`. `class Request(BaseModel):` defines a model, and `query: str` declares a string field. On the last line, `top_k: int` declares an integer field, while `Field(default=5, ge=1, le=20)` passes 5 to the default slot, 1 to the lower-bound slot, and 20 to the upper-bound slot.",
+      "key_point": "Execute the class body → pass 5 as `default`, 1 as `ge`, and 20 as `le` to `Field` → use the returned field configuration in the definition of `top_k`.\nResult: `top_k` has a default of 5 and numeric range constraints of `1 ≤ top_k ≤ 20`. This code only defines the model; it does not yet validate input or display output.",
+      "common_mistake": "Seeing `=` in `ge=1`, you might think it fixes `top_k` at 1. Here it passes a setting to `Field`. The 1 is the lower bound; the 5 in `default=5` is the default used when `top_k` is omitted."
     },
     "teaching_example": {
       "code": "def rule(default, ge, le):\n    return {\"default\": default, \"ge\": ge, \"le\": le}\n\nconfig = rule(default=3, ge=0, le=10)",
       "walkthrough": "ge=0 passes the minimum threshold value of 0 as a named argument."
     },
     "answer_explanation": {
-      "step_by_step": "In the `field` call, `ge=1` sets the minimum value to 1, and `le=20` sets the maximum value to 20.",
-      "why_correct": "Because `ge` in a Pydantic `Field` represents a greater-than-or-equal constraint.",
+      "step_by_step": "1) Identify `top_k: int` as the field being configured.\n2) The class body calls `Field(default=5, ge=1, le=20)`.\n3) `ge=1` passes the value 1 under the name `ge`.\n4) `Field` uses this as a lower-bound constraint requiring the value to be greater than or equal to 1.\n5) Thus, `ge=1` means `top_k ≥ 1`. Separately, `le=20` sets the upper bound.",
+      "why_correct": "The correct answer is “top_k is 1 or greater”. `ge` means greater than or equal, so the boundary value 1 is included.",
       "common_wrong_choice": {
         "choice": "top_k is always 1",
-        "why_wrong": "1 is the minimum value, and 5 is specified separately as the default value.",
-        "misread_step": "This is a case where the lower bound constraint was confused with substituting a fixed value."
+        "why_wrong": "1 is the minimum allowed value, not a fixed value. For example, the integer 5 also satisfies these range constraints and is specified as the default in this code.",
+        "misread_step": "This reads the call argument `ge=1` as though it were `top_k = 1`, confusing passing a constraint setting with fixing the field's value."
       },
-      "takeaway": "The validation call reads **the default and the min/max constraints separately**."
+      "takeaway": "When you see `name=value`, first identify which function receives which setting. Here, `ge` selects the lower bound and 1 supplies its boundary; read the default and upper bound separately."
     },
     "target_statement": "top_k: int = Field(default=5, ge=1, le=20)",
     "focus_span": "ge=1",
@@ -2095,17 +2095,17 @@
     },
     "teaching_example": {
       "code": "import numpy as np\nx = np.array([2, 3])\ny = np.array([4, 5])\nvalue = np.dot(x, y)",
-      "walkthrough": "When calculating `2*4 + 3*5`, the value is 23."
+      "walkthrough": "1) `import numpy as np` imports NumPy under the name `np`.\n2) `x = np.array([2, 3])` creates a one-dimensional array with two elements and binds it to `x`.\n3) `y = np.array([4, 5])` creates another one-dimensional array and binds it to `y`.\n4) `np.dot(x, y)` receives the two arrays as arguments, multiplies numbers in matching positions, and adds the products: `2*4 + 3*5 = 8 + 15 = 23`. The returned value `23` is bound to `value`.\n\nExecution flow: two arrays → function call → sum of matching products → return value `23` → `value`.\nThe result is the scalar `23`, meaning one number rather than an array of numbers. There is no `print()` call, so nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "`np.dot(a, b)` It calculates `1*3 + 2*4`. The result is 3+8=11.",
-      "why_correct": "This is because the dot product of a one-dimensional vector is the sum of the products of corresponding elements.",
+      "step_by_step": "1) `import numpy as np` makes NumPy available under the name `np`.\n2) `a` is bound to a one-dimensional array containing `1, 2`, and `b` to one containing `3, 4`.\n3) The right-hand side of the assignment, `np.dot(a, b)`, is evaluated first. The arrays referred to by `a` and `b` inside the parentheses are passed to the function.\n4) Multiplying matching positions gives `1*3 = 3` at the first position and `2*4 = 8` at the second.\n5) Adding these products gives `3 + 8 = 11`.\n6) The function returns the scalar `11`, and that value is bound to `result`. Therefore, the value of `result` is `11`.",
+      "why_correct": "When both inputs are one-dimensional arrays, as here, `np.dot()` returns their inner product: the sum of the products of matching elements. Therefore, the answer is the single number `11`, not the array `[3, 8]`.",
       "common_wrong_choice": {
         "choice": "[3, 8]",
-        "why_wrong": "This is the intermediate result of element-wise multiplication, and the dot operator adds the two values together.",
-        "misread_step": "This is an instance where \"element-wise multiplication\" was confused with \"dot product.\""
+        "why_wrong": "`3` and `8` are the products at the individual positions, but this call returns their sum, `11`. Choosing `[3, 8]` skips the addition step.",
+        "misread_step": "This reading stops after multiplying matching positions and misses the step where `np.dot(a, b)` adds all the products and returns the sum."
       },
-      "takeaway": "Read a vector dot product as **multiply matching positions → sum all products → scalar result**."
+      "takeaway": "Read `np.dot()` with two one-dimensional arrays as input arrays → multiply matching positions → add all products → return a scalar → bind it to the name on the left."
     },
     "target_statement": "result = np.dot(a, b)",
     "focus_span": "np.dot(a, b)",
@@ -2270,14 +2270,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "Counter 클래스에 라벨 쌍 리스트를 전달해 각 tuple의 등장 횟수를 저장한 새 Counter 객체를 만드는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`Counter(iterable)` It creates a `Counter` object by calling the `collections.Counter` class to count the number of occurrences of values within the iterable.",
-      "how_to_read": "Check the actual tuple elements in `pairs`, count how many times each tuple appears, and then read each value of the resulting `Counter`.",
-      "key_point": "The key in a Counter is a tuple of actual and predicted values, and the value is the frequency of that combination.",
-      "common_mistake": "It is easy to assume that Counter automatically generates a two-dimensional confusion matrix. Here, it is a pair frequency mapping."
+      "what_it_is": "Easy meaning: `Counter(pairs)` makes a tally showing how often each pair appears.\nExact definition: `Counter(pairs)` is a constructor call that passes `pairs` as an argument to the `Counter` class and creates a new `Counter` object storing each list item as a key and its occurrence count as the value.",
+      "how_to_read": "Imagine adding one tally mark to a pair's column each time you see that pair. `Counter` identifies the kind of object to create, and `pairs` inside the parentheses supplies the input to count. In this card, each whole tuple—a pair of values—is one list item. The first and third `('cat', 'cat')` contribute to the same tally; the second `('dog', 'cat')` contributes to a different tally.",
+      "key_point": "Pass `pairs` → `Counter(pairs)` creates a new tally object → `('cat', 'cat')` has count 2 and `('dog', 'cat')` has count 1 → bind that object to `counts` → `counts[('cat', 'cat')]` retrieves 2 → `print` outputs `2`.",
+      "common_mistake": "Do not read `Counter(pairs)` as returning the total number of items, `3`. The call produces an object containing counts for individual items, not a number. It also counts each whole tuple rather than counting the strings inside it separately. Use square brackets with a particular pair to retrieve that pair's count."
     },
     "teaching_example": {
-      "code": "from collections import Counter\nitems = [\"A\", \"B\", \"A\"]\ncounts = Counter(items)\nprint(counts[\"A\"])",
-      "walkthrough": "Since \"A\" appears twice, the frequency of \"A\" in the generated Counter is 2."
+      "code": "from collections import Counter\npairs = [(\"red\", \"blue\"), (\"red\", \"red\"), (\"red\", \"blue\")]\ncounts = Counter(pairs)\nprint(counts[(\"red\", \"blue\")])",
+      "walkthrough": "1) `from collections import Counter` makes the `Counter` class available.\n2) `pairs = ...` binds a list containing three tuples to `pairs`.\n3) `counts = Counter(pairs)` passes the list as an argument to create a new `Counter` object. The first pair gets count 1, and the second pair gets its own count of 1. The third pair matches the first, so that count becomes 2. The created object is bound to `counts`.\n4) `print(counts[(\"red\", \"blue\")])` retrieves that pair's count, 2, and prints it.\nExecution flow: list of pairs → constructor call → object containing per-item counts → lookup of one pair → output `2`."
     },
     "answer_explanation": {
       "step_by_step": "1) The counter counts the first tuple in the `pairs` once. 2) It counts the other tuples as separate keys. 3) Since the third tuple is the same as the first, it increments the count for that key to 2. 4) Therefore, the result of the lookup is 2.",

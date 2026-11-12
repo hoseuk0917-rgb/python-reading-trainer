@@ -501,24 +501,24 @@
     "primary_concept": "list_comprehension",
     "reading_goal_internal": "비어 있지 않은 JSONL 줄만 json.loads로 파싱해 chunk 리스트를 만드는 comprehension을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "filtered list comprehension은 반복하며 조건을 통과한 항목만 결과에 넣습니다.",
-      "how_to_read": "for와 if를 확인한 뒤 앞쪽 변환 표현식을 적용합니다.",
-      "key_point": "JSONL은 줄마다 독립 JSON이므로 줄별 json.loads를 적용합니다.",
-      "common_mistake": "전체 lines를 한 번에 json.loads한다고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: 여러 값 중 조건을 통과한 것만 처리해 새 리스트에 모으는 문법입니다.\n정확한 정의: 조건이 있는 리스트 컴프리헨션 `[expression for target in iterable if condition]`은 iterable을 순회하며 condition이 참으로 판단되는 항목에 대해서만 expression을 평가하고 그 결과를 순서대로 새 리스트에 담습니다.",
+      "how_to_read": "줄마다 검사문을 지나 새 상자로 들어가는 모습을 떠올리세요. 이 코드에서는 `for line in lines`로 문자열을 하나씩 꺼내고, `if line.strip()`으로 양끝 공백을 제거한 결과가 비어 있지 않은지 검사합니다. 통과한 경우에만 앞쪽 `json.loads(line)`을 실행해 JSON 문자열을 딕셔너리로 바꾸고 새 리스트에 넣습니다. `strip()`의 결과는 검사에만 쓰이고, 파싱에는 원래 `line`이 전달됩니다.",
+      "key_point": "실행 흐름: 첫 JSON 줄 → 조건 통과 → 딕셔너리 하나 추가; 빈 문자열 `''` → `strip()` 결과도 `''` → 조건에서 제외; 마지막 JSON 줄 → 조건 통과 → 딕셔너리 하나 추가.\n최종 `chunks`는 `[{'chunk_id': 'c1', 'text': 'Python'}, {'chunk_id': 'c2', 'text': 'RAG'}]`이며 항목 수는 2개입니다.",
+      "common_mistake": "맨 앞에 쓰인 `json.loads(line)`이 조건 검사보다 먼저 실행된다고 읽기 쉽습니다. 실제로는 각 줄의 조건을 먼저 검사하므로 빈 문자열에는 `json.loads`를 호출하지 않습니다. 또한 이 조건은 빈 줄이나 공백만 있는 줄을 거를 뿐, JSON 형식이 올바른지 검사하지는 않습니다."
     },
     "teaching_example": {
       "code": "import json\nlines=['{\"id\":1}',\"\",'{\"id\":2}']\nrows=[json.loads(line) for line in lines if line.strip()]",
       "walkthrough": "빈 줄은 제외되고 두 JSON 문자열만 dict로 바뀝니다."
     },
     "answer_explanation": {
-      "step_by_step": "세 줄 중 빈 줄은 필터에서 빠지고 두 줄만 dict로 변환됩니다.",
-      "why_correct": "조건을 통과한 줄마다 결과 하나가 추가되기 때문입니다.",
+      "step_by_step": "1) `import json`으로 JSON 변환 기능을 사용할 준비를 합니다.\n2) `lines`에 JSON 문자열, 빈 문자열, JSON 문자열을 순서대로 저장합니다. 원본 항목은 3개입니다.\n3) 첫 문자열은 `line.strip()` 결과가 비어 있지 않아 조건을 통과합니다. `json.loads(line)`이 `{'chunk_id': 'c1', 'text': 'Python'}`을 반환하고 새 리스트에 들어갑니다.\n4) 둘째 문자열 `''`은 `strip()` 결과도 `''`입니다. 빈 문자열은 조건에서 거짓으로 판단되므로 파싱도 추가도 하지 않습니다.\n5) 셋째 문자열은 조건을 통과합니다. `json.loads(line)`이 `{'chunk_id': 'c2', 'text': 'RAG'}`을 반환하고 새 리스트에 들어갑니다.\n6) 두 딕셔너리가 담긴 새 리스트가 `chunks`에 대입됩니다.",
+      "why_correct": "조건을 통과한 줄은 첫째와 셋째 두 줄이고, 각 줄이 딕셔너리 하나씩을 만듭니다. 따라서 `chunks`의 항목 수는 2개입니다. 각 딕셔너리 안의 키 개수는 바깥 리스트의 항목 수에 더하지 않습니다.",
       "common_wrong_choice": {
         "choice": "3개",
-        "why_wrong": "빈 줄은 `line.strip()` 조건에서 제외됩니다.",
-        "misread_step": "filter 조건을 무시했습니다."
+        "why_wrong": "3개는 원본 `lines`의 항목 수입니다. 빈 문자열은 조건을 통과하지 못하므로 결과 리스트에는 포함되지 않습니다.",
+        "misread_step": "`for line in lines`만 보고 항목을 세면서, 각 항목에 적용되는 `if line.strip()` 검사를 건너뛴 것입니다."
       },
-      "takeaway": "JSONL 로딩은 **줄 반복 → 필터 → 줄별 파싱 → 리스트 수집**으로 읽습니다."
+      "takeaway": "조건이 있는 리스트 컴프리헨션은 '항목 하나 선택 → 조건 검사 → 통과하면 앞 표현식 평가 → 결과 하나 추가'로 읽습니다."
     },
     "target_statement": "chunks = [json.loads(line) for line in lines if line.strip()]",
     "focus_span": "[json.loads(line) for line in lines if line.strip()]",
@@ -843,14 +843,14 @@
       "walkthrough": "state x와 predict/update method를 함께 보면 객체의 전체 목적을 빠르게 파악할 수 있습니다."
     },
     "answer_explanation": {
-      "step_by_step": "constructor가 state를 만들고 predict와 update가 그 state를 각각 예측·보정합니다.",
-      "why_correct": "class 안 method 구성이 상태추정의 predict/update 구조를 직접 보여주기 때문입니다.",
+      "step_by_step": "1) `class OneDimKalman:`은 상태와 그 상태를 바꾸는 메서드를 묶는 클래스를 정의합니다. 이 코드에는 객체 생성이나 메서드 호출이 없으므로 아직 예측·보정은 실행되지 않습니다.\n2) 객체를 만들 때 `__init__`은 위치 x와 속도 v를 `[[x], [v]]` 형태로 저장하고 P, Q, R도 준비합니다.\n3) `predict(dt)`를 호출하면 `F @ self.state`가 행렬 곱을 계산합니다. 이전 위치와 속도를 x, v라고 하면 새 상태는 `[[x + dt * v], [v]]`입니다. 이를 저장하고 첫 행·첫 열의 위치 값을 반환합니다.\n4) `update(measured_x)`를 호출하면 측정값을 z에 담고 `self.state[0, 0]`을 그 값으로 덮어씁니다. 속도는 그대로 두고 새 위치 값을 반환합니다.\n5) 따라서 이 클래스의 전체 목적은 위치를 예측하고 측정값으로 위치 상태를 보정하는 것입니다.",
+      "why_correct": "저장한 위치·속도 → 시간 간격에 따른 위치 예측 → 측정값으로 위치 교체라는 흐름이므로 정답은 ‘측정값을 이용해 1차원 위치 상태를 예측/보정한다’입니다. 여기서 보정은 예측값과 측정값을 가중 결합하는 것이 아니라 위치를 측정값으로 직접 바꾸는 동작입니다. P, Q, R은 초기화되지만 제시된 두 메서드의 계산에는 쓰이지 않습니다.",
       "common_wrong_choice": {
         "choice": "API를 호출한다",
-        "why_wrong": "HTTP client나 endpoint 호출이 없고 수치 state 연산만 있습니다.",
-        "misread_step": "복잡한 코드라는 이유만으로 외부 서비스 코드로 오해한 경우입니다."
+        "why_wrong": "외부 서비스에 요청을 보내는 코드는 없습니다. 표시된 호출은 배열을 준비하며, 주요 메서드는 객체 내부의 위치·속도 상태를 계산하거나 수정합니다.",
+        "misread_step": "`import numpy as np`와 여러 함수 호출을 보고 외부 서비스를 호출한다고 판단하고, 실제로 어떤 값이 저장되고 바뀌는지 확인하지 않은 경우입니다."
       },
-      "takeaway": "복잡한 수치 class는 **state 정의 → 주요 method 역할 → state 변화** 순서로 먼저 읽습니다."
+      "takeaway": "클래스의 목적은 이름만으로 판단하지 말고 ‘저장하는 상태 → 메서드가 바꾸는 값 → 반환값’으로 읽습니다. 클래스 정의와 실제 객체 생성·메서드 실행도 구분합니다."
     },
     "target_statement": "class OneDimKalman:",
     "focus_span": "class OneDimKalman:",
@@ -905,18 +905,18 @@
       "common_mistake": "x와 v를 doc id나 unrelated metadata처럼 이름만 보고 추측하기 쉽습니다. constructor parameter와 project context를 함께 봐야 합니다."
     },
     "teaching_example": {
-      "code": "import numpy as np\nposition=2.0\nvelocity=0.5\nstate=np.array([[position],[velocity]])",
-      "walkthrough": "첫 원소는 position, 둘째는 velocity입니다."
+      "code": "import numpy as np\nposition = 2.0\nvelocity = 0.5\nstate = np.array([[position], [velocity]])",
+      "walkthrough": "1) `import numpy as np`는 NumPy를 `np`라는 이름으로 사용하게 합니다.\n2) `position = 2.0`은 위치 값 2.0을 연결합니다.\n3) `velocity = 0.5`는 속도 값 0.5를 연결합니다.\n4) `np.array([[position], [velocity]])`에서 먼저 변수의 값을 읽어 `[[2.0], [0.5]]`를 만듭니다. 이 중첩 리스트 하나를 인자로 받아 함수가 2행 1열 배열을 반환하고, `state`가 그 배열을 가리킵니다.\n실행 흐름: 위치·속도 값 → 중첩 리스트 → 함수 호출 → 배열 → `state`.\n결과: 첫 행에는 위치 2.0, 둘째 행에는 속도 0.5가 있습니다. 화면 출력은 없습니다."
     },
     "answer_explanation": {
-      "step_by_step": "nested array의 첫 row에 x, 둘째 row에 v를 넣고 state로 저장합니다.",
-      "why_correct": "constructor parameter 이름과 배열 위치가 위치·속도 state 정의를 직접 보여주기 때문입니다.",
+      "step_by_step": "1) NumPy를 `np`라는 이름으로 가져옵니다.\n2) `x`에 10.0, `v`에 2.0을 연결합니다.\n3) 호출의 인자 `[[x], [v]]`를 평가하면 `[[10.0], [2.0]]`가 됩니다.\n4) `np.array(...)`가 이 값으로 2행 1열 배열을 반환하고, `state`가 그 배열을 가리킵니다.\n5) 인덱스는 0부터 시작합니다. `state[0, 0]`은 첫 행의 첫 열 값 10.0을 읽어 `position`에 연결합니다. `state[1, 0]`은 둘째 행의 첫 열 값 2.0을 읽어 `velocity`에 연결합니다.\n결과: `state`에는 위치 x와 속도 v가 이 순서로 들어 있습니다. 화면 출력은 없습니다.",
+      "why_correct": "뒤의 두 대입문이 첫 행을 `position`, 둘째 행을 `velocity`로 읽으므로 정답은 '위치 x와 속도 v'입니다. `np.array`가 변수 이름의 의미를 해석하는 것이 아니라, 전달된 값을 주어진 순서로 배열에 담습니다.",
       "common_wrong_choice": {
         "choice": "문서 id와 chunk id",
-        "why_wrong": "그런 문자열/field가 코드에 없고 numeric x,v만 있습니다.",
-        "misread_step": "다른 프로젝트의 data model을 현재 수치 state에 잘못 적용한 경우입니다."
+        "why_wrong": "코드는 저장된 값을 `position`과 `velocity`로 읽습니다. 문서나 chunk의 식별자로 사용하는 부분은 없습니다.",
+        "misread_step": "`state`라는 이름만 보고 용도를 추측하고, 호출에 전달되는 `x`, `v`와 이후 값을 읽는 두 줄을 확인하지 않은 경우입니다."
       },
-      "takeaway": "state-estimation 코드는 **state vector 구성과 index 의미를 먼저 고정**합니다."
+      "takeaway": "함수 호출은 인자의 값 → 반환된 배열 → 인덱스로 읽는 값 순서로 추적하세요. 여기서는 첫 행이 위치, 둘째 행이 속도입니다."
     },
     "target_statement": "state = np.array([[x], [v]])",
     "focus_span": "np.array([[x], [v]])",
@@ -1040,14 +1040,14 @@
       "walkthrough": "scalar 3.5가 measurement vector [[3.5]]가 됩니다."
     },
     "answer_explanation": {
-      "step_by_step": "measured_x를 nested list에 넣고 np.array로 변환해 z에 저장합니다.",
-      "why_correct": "측정값 parameter가 직접 사용되는 배열 생성 문장이기 때문입니다.",
+      "step_by_step": "1) `import numpy as np`로 NumPy를 `np`라는 이름으로 사용합니다. `def`는 함수를 정의하며, 이때 함수 본문은 아직 실행되지 않습니다.\n2) `make_measurement(12.5)`를 호출하면 함수 안의 `measured_x`에 `12.5`가 전달됩니다.\n3) `[[measured_x]]`를 평가하면 `[[12.5]]`라는 중첩 리스트가 만들어집니다. 한 행 안에 값 하나가 있는 모습입니다.\n4) `np.array([[measured_x]])` 호출은 이 리스트로 값이 `12.5`인 1행 1열의 2차원 배열을 만듭니다. 이 배열이 `z`에 연결됩니다.\n5) `return z`는 만들어진 배열을 반환하고, 호출한 쪽의 `measurement`가 그 배열을 가리킵니다. 화면에 출력하는 문장은 없습니다.",
+      "why_correct": "`z = np.array([[measured_x]])`에서 실제 측정값을 담은 중첩 리스트가 배열 생성 호출의 인자로 전달됩니다. 오른쪽 호출이 배열을 만들고 왼쪽 `z`가 그 결과를 받으므로 이 줄이 정답입니다. 여기서 질문의 '행렬'은 2차원 NumPy 배열입니다.",
       "common_wrong_choice": {
-        "choice": "self.Q = np.eye(2) * 0.01",
-        "why_wrong": "Q는 process-noise covariance 설정이며 current measurement를 담지 않습니다.",
-        "misread_step": "noise parameter와 sensor observation을 혼동한 경우입니다."
+        "choice": "F = np.array(...)",
+        "why_wrong": "이 선택지는 배열 생성 호출처럼 보이지만, 제시된 코드에 없고 측정값 `measured_x`를 전달하는 부분도 없습니다. 실제 변환은 `np.array([[measured_x]])`에서 확인할 수 있습니다.",
+        "misread_step": "`np.array`라는 호출 이름만 보고 선택하고, 괄호 안에 어떤 값이 전달되는지 확인하지 않은 경우입니다."
       },
-      "takeaway": "update 코드는 **measurement input → z 구성 → residual/innovation 계산** 순서로 찾습니다."
+      "takeaway": "호출 이름뿐 아니라 인자를 따라 읽으세요: `12.5` → `measured_x` → `[[12.5]]` → 배열 생성 → `z` → 반환 → `measurement`."
     },
     "target_statement": "z = np.array([[measured_x]])",
     "focus_span": "np.array([[measured_x]])",
@@ -1835,14 +1835,14 @@
       "walkthrough": "response_model keyword가 route의 응답 schema metadata를 지정합니다."
     },
     "answer_explanation": {
-      "step_by_step": "route decorator가 SearchResponse를 응답 model로 등록합니다.",
-      "why_correct": "FastAPI가 response model을 응답 validation/filtering 및 OpenAPI schema 생성에 활용할 수 있기 때문입니다.",
+      "step_by_step": "1) `SearchResponse`는 `query`가 문자열이고 `hits`가 문자열 목록인 응답 구조를 정의합니다.\n2) `app.post(...)`를 호출할 때 `response_model`이라는 키워드 인자로 `SearchResponse` 클래스 자체를 전달합니다. 이는 `search()`의 입력이 아니라 경로의 응답 설정입니다.\n3) 데코레이터는 `/api/search`의 POST 요청을 처리할 함수로 `search`를 등록합니다. 등록할 때 함수 본문을 실행하는 것은 아닙니다.\n4) 요청을 받아 `search()`가 실행되면 `SearchResponse(query=\"python\", hits=[\"c1\"])` 객체를 만들어 반환합니다.\n5) FastAPI는 지정된 응답 모델을 기준으로 반환 데이터를 검증하고 JSON 응답을 만듭니다. 이 코드의 응답 데이터는 `{\"query\":\"python\",\"hits\":[\"c1\"]}`입니다.\n6) 같은 모델의 구조가 자동 API 문서에도 반영됩니다.",
+      "why_correct": "응답에 어떤 필드와 자료형이 있어야 하는지를 `SearchResponse`로 명시하고, 이를 `response_model` 인자로 전달했습니다. FastAPI는 이 선언을 응답 검증과 자동 문서화에 활용하므로, 정답은 ‘응답 구조를 명확히 하고 검증/문서화에 도움을 준다’입니다.",
       "common_wrong_choice": {
         "choice": "검색 속도를 항상 100배 올린다",
-        "why_wrong": "schema metadata는 검색 algorithm 성능을 자동 가속하지 않습니다.",
-        "misread_step": "API contract 기능과 runtime search 성능을 혼동한 경우입니다."
+        "why_wrong": "`response_model`은 반환할 데이터의 구조를 지정하는 설정이지, 검색 알고리즘을 가속하는 설정이 아닙니다. 이 함수는 검색을 수행하지 않고 정해진 값으로 응답 객체를 만들어 반환합니다.",
+        "misread_step": "`response_model=SearchResponse`를 응답 형식에 관한 인자 전달이 아니라 검색 처리 속도를 바꾸는 옵션으로 읽은 것입니다."
       },
-      "takeaway": "response_model은 **응답 contract를 코드에 명시**하는 도구로 읽습니다."
+      "takeaway": "`response_model=SearchResponse`는 ‘이 경로의 응답을 이 모델에 맞춰 검증하고 문서화하라’는 설정입니다. 모델 클래스 전달 → 요청 시 데이터 반환 → 모델에 따른 응답 처리 순서로 읽으세요."
     },
     "target_statement": "@app.post(\"/api/search\", response_model=SearchResponse)",
     "focus_span": "response_model=SearchResponse",

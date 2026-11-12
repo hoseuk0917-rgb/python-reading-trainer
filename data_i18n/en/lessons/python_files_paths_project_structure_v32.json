@@ -209,10 +209,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "점 왼쪽 root Path 객체, 점 오른쪽 joinpath 메서드, 괄호 안 두 경로 조각을 구분하고 새 Path 반환값을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A method call in the form `object.method(arguments)` executes behavior belonging to a particular object and receives a return value.",
-      "how_to_read": "Read in the following order: target object → method name → arguments → return value.",
-      "key_point": "`joinpath` returns a new `Path` that concatenates `data/lessons` without modifying the root itself.",
-      "common_mistake": "It’s easy to assume that simply calling `joinpath` will actually create those folders on disk."
+      "what_it_is": "Easy meaning: `root.joinpath(\"data\", \"lessons\")` asks for a new path with two names appended to the existing path.\nExact definition: A method call is an expression that executes a method obtained from an object with supplied arguments; here, `joinpath` returns a new `Path` combining the two relative path segments in order.",
+      "how_to_read": "Mental model: imagine reading a path on paper and writing a longer path on a new sheet. Writing a path is different from creating actual folders.\nLine by line:\n1) `from pathlib import Path` makes `Path` available.\n2) `root = Path(\"project\")` binds `root` to a path object representing `project`.\n3) `root.joinpath(\"data\", \"lessons\")` passes two strings as positional arguments to the `joinpath` method on `root`. The returned new path is bound to `lesson_dir`.\n4) `print(lesson_dir.parts)` prints the new path's components as a tuple.",
+      "key_point": "Execution flow: `root` represents `project` → pass `\"data\"` and `\"lessons\"` to `joinpath` → return a new `Path` with the three segments joined in order → bind it to `lesson_dir` → print `.parts`.\nResult: `('project', 'data', 'lessons')`.\n`root` still represents `project`. The call returns a new `Path`; the printed tuple is that path's `.parts` value.",
+      "common_mistake": "It is easy to assume that two arguments mean two folders are actually created and `2` is returned. This call only computes a path; it does not create folders on disk. It also returns a new path rather than changing `root` or setting it to `None`."
     },
     "teaching_example": {
       "code": "from pathlib import Path\nbase = Path(\"project\")\njoined = base.joinpath(\"reports\", \"daily\")\nprint(joined.parts[-2:])",
@@ -393,10 +393,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "`mkdir()` 호출 안 `exist_ok=True`를 keyword argument로 읽고, 이미 존재하는 디렉터리를 허용하는 옵션이라는 의미를 구분한다.",
     "concept_explanation": {
-      "what_it_is": "The ``name=value`` within the call is a keyword argument that passes a value to the parameter of that name.",
-      "how_to_read": "Read `exist_ok` on the left side of the equals sign as the parameter name and `True` on the right side as the value passed.",
-      "key_point": "`exist_ok=True` This option does not mean to delete or overwrite the existing directory; rather, it means **not to raise an error simply because the directory already exists**.",
-      "common_mistake": "It is easy to overinterpret PowerShell’s `-Force` and Python’s `exist_ok=True` as “overwrite unconditionally.” Here, the focus is on the meaning of allowing directory existence errors."
+      "what_it_is": "Easy meaning: You supply a desired value by naming an option in a call.\nExact definition: A keyword argument supplies a value to the corresponding parameter by specifying its name using `name=value` in a call.",
+      "how_to_read": "Picture putting a value into a labeled input slot. `exist_ok=True` puts the Boolean value `True` into the slot named `exist_ok`. The first line imports `Path`; the next binds `backup_dir` to a path pointing to `backup` under `tmp`. The last line calls that path's `mkdir()`, passing `True` to each of `parents` and `exist_ok`.",
+      "key_point": "Execution flow: build the path → call `mkdir()` → pass `True` to the `exist_ok` parameter → if the target is already a directory, do not raise an error merely because it exists. If absent, creation is attempted; `parents=True` separately requests creation of necessary parent directories. On success, the target directory exists, and no code prints anything.",
+      "common_mistake": "`exist_ok=True` does not mean delete existing contents or ignore every error. A regular file at the target still causes an error. Also, `=` inside this call passes a value by name; it does not assign to an outside variable named `exist_ok`."
     },
     "teaching_example": {
       "code": "from pathlib import Path\n\ncache_dir = Path(\"tmp\") / \"cache\"\ncache_dir.mkdir(parents=True, exist_ok=True)",
@@ -634,10 +634,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "공백을 포함한 전체 경로 문자열이 하나의 constructor argument로 전달되어 Path 객체가 되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`Path(text)` is a constructor call that takes a path string and creates a Path object.",
-      "how_to_read": "Check that the entire string inside the parentheses is a single argument.",
-      "key_point": "Since spaces within a Python string are part of the string, “`my test project`” remains a single path segment name.",
-      "common_mistake": "It’s easy to assume that Python automatically splits a string into multiple arguments because of the spaces. However, a string literal itself is a single value."
+      "what_it_is": "Easy meaning: `Path(...)` turns a path written as text into a value Python can handle as a path.\nExact definition: `Path(\"D:/projects/my test project\")` is a constructor call that passes one string, including its spaces, as an argument to create a Path object.",
+      "how_to_read": "Mental model: think of the parentheses as an input entrance. The entire quoted string enters as one input, and a path object comes out as the result.\nRead line by line:\n1) `from pathlib import Path` makes `Path` available.\n2) Call `Path(\"D:/projects/my test project\")` and bind the resulting object to `project_dir`. The spaces in `my test project` are part of its name.\n3) `/ \"scripts\" / \"run job.py\"` appends two path components in order and binds the result to `script_path`.\n4) `script_path.name` reads the entire name of the final component and binds it to `script_name`. This is attribute access without parentheses, not a call.",
+      "key_point": "Execution flow: one string → `Path(...)` constructor call → the path object bound to `project_dir` → append `scripts`, then `run job.py` → read the final name with `.name` → `script_name` holds the string `\"run job.py\"`.\nSpaces split neither the argument passed to the constructor nor the final filename.",
+      "common_mistake": "It is easy to read the three words in `my test project` as separate arguments, or expect `.name` to return only `run`. But spaces inside quotation marks are part of the string. This call receives one string argument, and the final name retains its space."
     },
     "teaching_example": {
       "code": "from pathlib import Path\nfolder = Path(\"data/my files\")\nname = folder.name",

@@ -906,14 +906,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "`Path.glob('*.jsonl')` 호출이 확장자 패턴과 일치하는 파일만 선택하는 범위를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`Path.glob(pattern)` method call은 현재 경로 아래에서 패턴과 일치하는 Path들을 순회 가능한 결과로 제공합니다.",
-      "how_to_read": "root에 만들어진 파일 이름을 확인하고 패턴 `*.jsonl`의 확장자 조건과 대조합니다.",
-      "key_point": "`*.jsonl`은 확장자가 정확히 .jsonl인 항목만 선택합니다.",
-      "common_mistake": "glob의 `*`가 하위 폴더까지 자동 재귀 탐색한다고 생각하면 안 됩니다. 재귀 패턴은 보통 `**`를 명시합니다."
+      "what_it_is": "쉽게 말하면: `root.glob(\"*.jsonl\")`은 root 폴더에서 이름이 `.jsonl`로 끝나는 항목을 찾으라는 요청입니다.\n정확한 정의: `Path.glob(pattern)`은 해당 Path가 나타내는 디렉터리를 기준으로 패턴에 맞는 경로를 Path 객체로 하나씩 제공하는 메서드 호출입니다.",
+      "how_to_read": "이름을 거르는 체라고 생각하세요. `root`는 찾을 위치이고, 괄호 안의 `\"*.jsonl\"`은 검색 조건입니다. 여기서 `*`는 이름의 앞부분을 대신하며, 뒤의 `.jsonl`은 그대로 맞아야 합니다. 따라서 만들어진 세 파일 중 `a.jsonl`과 `c.jsonl`은 통과하고 `b.json`은 통과하지 않습니다.",
+      "key_point": "세 파일 생성 → `root.glob(\"*.jsonl\")`의 결과를 순회 → 일치하는 두 Path에서 `path.name`으로 이름 문자열 추출 → `sorted()`로 정렬한 리스트 생성 → `matches`에 저장 → `print(matches)`가 `['a.jsonl', 'c.jsonl']` 출력. `glob()`이 직접 이름 리스트를 반환하거나 정렬하는 것은 아닙니다.",
+      "common_mistake": "`*`가 있다고 모든 파일이나 하위 폴더 속 파일까지 선택되는 것은 아닙니다. `*.jsonl`은 root 바로 안의 이름에 적용되며 `b.json`은 끝부분이 달라 제외됩니다. 하위 폴더까지 찾는 패턴은 `**/*.jsonl`입니다. 또한 `glob()`은 파일 내용이나 파일 형식을 검사하지 않으며, 이름이 맞는 디렉터리도 결과에 포함될 수 있습니다."
     },
     "teaching_example": {
       "code": "from pathlib import Path\nfrom tempfile import TemporaryDirectory\nwith TemporaryDirectory() as folder:\n    root = Path(folder)\n    (root / \"one.csv\").touch()\n    (root / \"two.txt\").touch()\n    print([p.name for p in root.glob(\"*.csv\")])",
-      "walkthrough": "root 안 파일 중 .csv 패턴과 일치하는 one.csv만 glob 결과에 포함됩니다."
+      "walkthrough": "1) 첫 줄은 경로를 다루는 `Path`를 가져옵니다.\n2) 둘째 줄은 임시 폴더를 만드는 `TemporaryDirectory`를 가져옵니다.\n3) `with` 줄은 임시 폴더를 만들고 그 경로 문자열을 `folder`에 연결합니다.\n4) `Path(folder)`는 그 폴더를 나타내는 경로 객체를 만들어 `root`에 연결합니다.\n5) `root / \"one.csv\"`는 폴더 안의 파일 경로를 만들고, `.touch()`는 그곳에 빈 파일을 만듭니다.\n6) 다음 줄도 같은 방식으로 `two.txt`를 만듭니다.\n7) 마지막 줄에서 `root.glob(\"*.csv\")`를 순회하면 `one.csv`의 Path만 나옵니다. 리스트 컴프리헨션은 `p.name`으로 이름을 꺼내 `['one.csv']`를 만들고, `print()`가 이를 출력합니다.\n흐름: 두 파일 → `*.csv`로 이름 선택 → `one.csv`의 Path → 이름 리스트 → 출력 `['one.csv']`.\n`with` 블록이 끝나면 임시 폴더와 그 안의 파일들이 정리됩니다."
     },
     "answer_explanation": {
       "step_by_step": "1) 임시 root에 세 파일을 만든다. 2) root.glob('*.jsonl')가 일치하는 Path만 만든다. 3) generator가 각 Path의 name을 꺼낸다. 4) sorted 결과가 a.jsonl, c.jsonl 순서로 출력된다.",
@@ -1147,10 +1147,10 @@
     "primary_concept": "attribute_access",
     "reading_goal_internal": "parse_args 결과 객체에서 `args.input` attribute를 읽어 옵션 값이 어디에 저장되는지 추적한다.",
     "concept_explanation": {
-      "what_it_is": "attribute access는 `객체.이름` 형태로 객체가 가진 속성이나 멤버를 읽는 표현식입니다.",
-      "how_to_read": "`args.input`에서는 먼저 args가 어떤 객체인지 확인한 뒤 그 객체의 input 속성 값을 읽는다고 봅니다.",
-      "key_point": "argparse의 CLI 규칙은 라이브러리 기능이고 Python 문법 초점은 파싱된 결과 객체에서 값을 읽는 attribute access입니다.",
-      "common_mistake": "`input`이 Python의 builtin input 함수라고 생각하기 쉽습니다. 여기서는 점 앞에 args가 있으므로 `args` 객체의 `input` 속성입니다."
+      "what_it_is": "쉽게 말하면: `args.input`은 `args`가 가리키는 객체에서 `input`이라는 이름으로 저장된 값을 읽습니다.\n정확한 정의: 속성 접근(attribute access) `object.name`은 먼저 `object` 표현식을 평가하고, 그 결과 객체에서 `name`이라는 속성을 조회하는 표현식입니다.",
+      "how_to_read": "직관적 모델: `args`를 옵션별로 이름 붙은 칸이 있는 결과표라고 생각하세요. `args.input`은 그중 `input` 칸을 읽는 것입니다.\n코드 읽기: `import argparse`로 모듈을 불러옵니다. `ArgumentParser()`로 옵션을 해석할 객체를 만들고, `add_argument(\"--input\")`으로 옵션을 등록합니다. `parse_args([\"--input\", \"data.json\"])`는 주어진 목록을 해석해 `input` 속성에 문자열 `\"data.json\"`이 담긴 결과 객체를 반환합니다. `args`는 이 객체를 가리키며, 마지막 줄은 `args.input`으로 값을 읽어 출력합니다.",
+      "key_point": "값의 흐름: `[\"--input\", \"data.json\"]` → 옵션을 해석한 결과 객체의 `input` 속성에 `\"data.json\"` 저장 → `args`가 결과 객체를 가리킴 → `args.input`이 `\"data.json\"`을 읽음 → `print`가 `data.json`을 출력합니다. `--input`은 옵션 이름이고, 속성에서 읽는 것은 그 뒤에 제공된 값입니다.",
+      "common_mistake": "`args.input`을 내장 함수 `input()`의 호출로 읽지 마세요. 여기서 점 뒤의 `input`은 `args` 객체의 속성 이름이며, 호출 괄호도 없습니다. 이 표현식은 새 입력을 요청하지 않고, 이미 해석해 저장한 문자열 `\"data.json\"`을 읽습니다."
     },
     "teaching_example": {
       "code": "import argparse\n\nparser = argparse.ArgumentParser()\nparser.add_argument(\"--name\")\noptions = parser.parse_args([\"--name\", \"Mina\"])\nprint(options.name)",
@@ -1506,24 +1506,24 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "dataclass instance 생성 호출에서 field 이름을 붙인 keyword argument가 해당 field 값으로 전달되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`name=value` 형태로 호출에 값을 전달하면 keyword argument입니다.",
-      "how_to_read": "등호 왼쪽 이름이 어떤 parameter/field에 대응하는지 보고 오른쪽 실제 값을 확인합니다.",
-      "key_point": "`kind=\"Sensor\"`는 Node 생성자의 kind에 문자열 Sensor를 전달합니다.",
-      "common_mistake": "keyword argument의 위치만 보고 첫 field label에 Sensor가 들어간다고 생각하기 쉽습니다. 이름이 kind이므로 kind에 대응합니다."
+      "what_it_is": "쉽게 말하면: 값을 보낼 때 이름표를 붙여 어느 입력 자리로 보낼지 정합니다.\n정확한 정의: 호출의 `name=value` 형태인 keyword argument(키워드 인자)는 `name`과 이름이 같은 parameter(매개변수)에 오른쪽 표현식의 값을 전달합니다.",
+      "how_to_read": "이름이 붙은 입력 칸을 떠올리세요. `kind=\"Sensor\"`에서 `kind`는 받을 칸의 이름이고, `\"Sensor\"`는 보내는 문자열 값입니다. 이 카드의 `@dataclass`는 `label`, `kind` 필드를 바탕으로 초기화 메서드 `__init__`를 자동 생성합니다. 따라서 `Node(label=\"LiDAR\", kind=\"Sensor\")`는 각 값을 같은 이름의 매개변수로 전달하여 새 객체의 필드에 저장합니다.",
+      "key_point": "`kind=\"Sensor\"`\n↓\n생성된 `__init__`의 `kind` 매개변수에 `\"Sensor\"` 전달\n↓\n새 객체의 `kind` 필드에 저장\n↓\n`node.kind`를 읽으면 `\"Sensor\"`\n↓\n`result`의 값은 문자열 `\"Sensor\"`",
+      "common_mistake": "`kind`라는 이름 자체가 저장되는 값은 아닙니다. 호출에서 `=` 왼쪽의 `kind`는 받을 매개변수를 지정하고 오른쪽의 `\"Sensor\"`가 실제 값입니다. 또한 `\"LiDAR\"`는 `label`로 전달되므로 `node.kind`를 읽을 때 선택되지 않습니다."
     },
     "teaching_example": {
       "code": "from dataclasses import dataclass\n\n@dataclass\nclass Device:\n    name: str\n    kind: str\n\ndevice = Device(name=\"Cam\", kind=\"Sensor\")",
       "walkthrough": "`kind=\"Sensor\"`가 kind field에 전달되어 device.kind는 Sensor입니다."
     },
     "answer_explanation": {
-      "step_by_step": "Node 생성 시 `kind=\"Sensor\"`가 kind parameter에 전달되고 dataclass instance의 kind field에 저장됩니다.",
-      "why_correct": "keyword argument는 이름이 같은 parameter에 지정된 값을 전달하기 때문입니다.",
+      "step_by_step": "1) `from dataclasses import dataclass`로 데코레이터를 가져옵니다.\n2) `class Node` 안의 `label: str`, `kind: str`는 두 필드를 선언합니다. `@dataclass`가 이 필드들을 초기화하는 `__init__`를 생성합니다.\n3) `Node(label=\"LiDAR\", kind=\"Sensor\")`를 호출하면 `\"LiDAR\"`는 `label` 매개변수에, `\"Sensor\"`는 `kind` 매개변수에 전달됩니다.\n4) 초기화된 객체의 `label`은 `\"LiDAR\"`, `kind`는 `\"Sensor\"`이며, `node`가 이 객체를 가리킵니다.\n5) `result = node.kind`는 이 객체의 `kind` 속성을 읽어 그 값인 `\"Sensor\"`를 `result`에 연결합니다.",
+      "why_correct": "마지막 줄은 `node.label`이 아니라 `node.kind`를 읽습니다. `kind`에는 같은 이름의 키워드 인자로 받은 문자열 `\"Sensor\"`가 저장되어 있으므로 정답은 Sensor입니다.",
       "common_wrong_choice": {
         "choice": "LiDAR",
-        "why_wrong": "LiDAR는 label keyword argument의 값입니다.",
-        "misread_step": "label과 kind 두 keyword를 서로 바꿔 읽은 경우입니다."
+        "why_wrong": "`\"LiDAR\"`는 `label=\"LiDAR\"`로 전달되어 `node.label`에 저장된 값입니다. 마지막 줄에서 읽는 속성은 `kind`입니다.",
+        "misread_step": "객체를 만들 때 전달한 첫 번째 값을 곧바로 답으로 고르고, 마지막 줄의 `.kind`가 어느 필드를 선택하는지 확인하지 않은 경우입니다."
       },
-      "takeaway": "dataclass 생성 호출은 **field 이름과 keyword argument를 이름 기준으로 대응**시킵니다."
+      "takeaway": "키워드 이름 → 같은 이름의 매개변수 → 객체의 필드 → 마지막에 읽는 속성 순서로 값을 추적하세요. 여기서는 `kind=\"Sensor\"` → `node.kind` → `result`가 모두 문자열 `\"Sensor\"`로 이어집니다."
     },
     "target_statement": "node = Node(label=\"LiDAR\", kind=\"Sensor\")",
     "focus_span": "kind=\"Sensor\"",
