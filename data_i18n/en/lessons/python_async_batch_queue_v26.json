@@ -699,18 +699,18 @@
                                     "common_mistake":  "It is easy to think the producer removes an item from the queue and processes it."
                                 },
         "teaching_example":  {
-                                 "code":  "import asyncio\nqueue=asyncio.Queue()\nasync def producer():\n    await queue.put(\"x\")",
-                                 "walkthrough":  "The producer adds x to the queue."
+                                 "code":  "import asyncio\n\nasync def main():\n    queue = asyncio.Queue()\n    for item in [\"x\", \"y\"]:\n        await queue.put(item)\n    print(queue.qsize())\n\nasyncio.run(main())",
+                                 "walkthrough":  "1) `import asyncio` imports the module used for asynchronous execution and the queue.\n2) `async def main()` defines an async function. Defining it does not execute its body.\n3) The final line, `asyncio.run(main())`, runs main.\n4) `queue = asyncio.Queue()` creates an empty queue.\n5) The for loop first binds item to \"x\".\n6) `await queue.put(item)` proceeds after the operation that adds \"x\" completes. It does not wait for a consumer to process \"x\".\n7) On the next iteration, item is \"y\", and the same await expression adds \"y\".\n8) After the loop, `queue.qsize()` is 2, so print outputs 2.\n\nFlow: empty queue → finish adding \"x\" → finish adding \"y\" → print the item count, 2. The default Queue has no size limit, so these additions do not wait for space. An await does not necessarily hand execution to another task."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "The key call within the producer loop is `queue.put(item)`, and `queue.get()` is executed on the consumer side.",
-                                   "why_correct":  "This is because the producer is responsible for supplying work items to the queue.",
+                                   "step_by_step":  "1) The shown code creates a queue and defines producer and consumer. It contains no calls that run them, so this snippet alone adds no items.\n2) When producer runs, `for item in items` binds item to each element of items in turn.\n3) On each iteration, `queue.put(item)` creates the asynchronous operation that adds the current item to the queue.\n4) `await` lets execution proceed to the next iteration after that addition completes. It does not wait for consumer processing to finish.\n5) Thus, on normal completion of the loop, each element of items has been added to the queue. The items collection is not added as a single item.\n6) In contrast, consumer uses `await queue.get()` to retrieve an item, `await process(item)` to process it, and then `queue.task_done()` to report completion.",
+                                   "why_correct":  "The correct answer is 'Add items to the queue'. The producer's data flow is `each element of items → item → await queue.put(item)`. Retrieval and processing appear in consumer instead.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Retrieve an item from the queue and process it.",
-                                                               "why_wrong":  "That operation corresponds to the consumer’s get/process stage.",
-                                                               "misread_step":  "This is a case where the roles of the producer and consumer have been reversed."
+                                                               "why_wrong":  "Retrieval is consumer's `queue.get()`, and processing is `process(item)`. The producer's `put(item)` moves an item in the opposite direction, into the queue.",
+                                                               "misread_step":  "This notices the shared await syntax but misses whether the following operation is put or get. Await waits for completion; the call after it determines the actual operation."
                                                            },
-                                   "takeaway":  "The producer-consumer pattern is broken down as follows: **produce → queue.put / consume → queue.get + process**."
+                                   "takeaway":  "`await queue.put(item)` means 'proceed after adding the item completes'. The producer supplies items; the consumer retrieves and processes them."
                                },
         "target_statement":  "await queue.put(item)",
         "focus_span":  "await queue.put(item)",

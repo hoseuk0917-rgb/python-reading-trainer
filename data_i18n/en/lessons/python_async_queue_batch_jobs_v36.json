@@ -455,18 +455,18 @@
                                     "common_mistake":  "It’s easy to assume that 3 refers to a 3-second wait time. The number in the semaphore constructor represents the number of concurrent access slots."
                                 },
         "teaching_example":  {
-                                 "code":  "import asyncio\n\nsem = asyncio.Semaphore(2)\n\nasync def work():\n    async with sem:\n        await asyncio.sleep(0)",
-                                 "walkthrough":  "Up to two tasks can run simultaneously within the semaphore context."
+                                 "code":  "import asyncio\n\nasync def main():\n    sem = asyncio.Semaphore(2)\n\n    async def work(job):\n        async with sem:\n            await asyncio.sleep(0)\n            return job\n\n    results = await asyncio.gather(work('A'), work('B'), work('C'))\n    print(results)\n\nasyncio.run(main())",
+                                 "walkthrough":  "1. `import asyncio` imports the asynchronous execution tools.\n2. `async def main()` defines the asynchronous function to run. Inside it, `Semaphore(2)` creates a shared semaphore, like two admission tickets.\n3. `async def work(job)` defines the worker function. `async with sem` acquires one slot before entering the block and waits if none is available.\n4. `await asyncio.sleep(0)` gives other tasks a chance to run. The current task still occupies its slot because it remains inside the block.\n5. `return job` returns the received value. Leaving the block automatically releases the slot.\n6. `gather(...)` runs the A, B, and C jobs together and waits for all of them to finish. At most two tasks can remain inside the block. When both slots are occupied, another task waits at the entrance.\n7. Results are collected in argument order, so `print(results)` prints `['A', 'B', 'C']`.\n8. The final `asyncio.run(main())` starts this execution. The 2 is the number of available concurrent slots, not a waiting time."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Semaphore manages three concurrent entry slots, and each task must be placed inside `async with sem` to perform API calls.",
-                                   "why_correct":  "Because the semaphore counter limits how many tasks can enter the context at the same time.",
+                                   "step_by_step":  "1. `Semaphore(3)` prepares three shared slots. Defining functions does not start jobs, so the shown code itself produces no output or actual calls.\n2. When `guarded_call(job)` runs, `async with sem` acquires one slot. If all three slots are occupied, it waits before entering the block.\n3. Once inside, the task executes `await call_api(job)`. In `call_api`, `await asyncio.sleep(0)` gives other tasks a chance to run, but the outer semaphore slot remains occupied.\n4. When `call_api` returns `job`, `guarded_call` returns that value too. Leaving the `async with` block automatically releases the slot.\n5. Therefore, at most three tasks sharing this semaphore can remain inside that block at any given time.",
+                                   "why_correct":  "The correct answer is 'Limit the number of tasks in the context to a maximum of three at any given time.' Slots are acquired on entry and released on exit, so additional tasks cannot enter while all three slots are occupied. This does not mean that exactly three tasks are created or run.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Always wait 3 seconds",
-                                                               "why_wrong":  "The number 3 in the constructor is not a unit of time.",
-                                                               "misread_step":  "This is an example of interpreting the number of concurrent connections as a time value."
+                                                               "why_wrong":  "The 3 in `Semaphore(3)` is the initial number of available slots, not seconds. A task can acquire an available slot; otherwise, it waits until a slot is released.",
+                                                               "misread_step":  "This misreads the concurrent entry allowance in `Semaphore(3)` as a waiting time."
                                                            },
-                                   "takeaway":  "Semaphore is interpreted as **concurrent access limit → context entry → execution of internal await**."
+                                   "takeaway":  "Three slots → acquire one on entry → keep it during the inner await → release it on exit. The limit applies to how many tasks occupy this block at once."
                                },
         "target_statement":  "async with sem:",
         "focus_span":  "async with sem:",
