@@ -30,24 +30,24 @@
     "primary_concept": "with_statement",
     "reading_goal_internal": "with 헤더가 open 호출로 파일 객체를 얻고 f에 연결한 뒤 들여쓴 블록이 끝날 때 context manager가 정리를 맡는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`with expression as name:` is a statement that allows resources managed by a context manager to be used within a block and ensures cleanup procedures are executed when the block is exited.",
-      "how_to_read": "First obtain the result of `open(...)`, bind it to `f`, and then read the indented lines as a block that uses that file object.",
-      "key_point": "The `f.read()` function, which reads the file, is executed within the `with` block, and the `with` block handles the cleanup of the file.",
-      "common_mistake": "It’s easy to view `with` as a simple variable assignment or to assume that the file remains open even outside the block."
+      "what_it_is": "Easy meaning: `with` lets you **use a resource such as a file for the needed block and hand cleanup to the resource manager when the block ends**.\nExact definition: A `with` statement uses a context manager's enter and exit protocol to prepare a context before the suite and perform the corresponding exit handling when the suite ends, including when an exception leaves the suite.",
+      "how_to_read": "Mental model: Open the door to a work room, do the needed work inside, then let the managed procedure close the room when you leave.\nReading the code: `open(...)` first prepares the file object. `as f` gives the block a name for the managed object. `f.read()` reads the contents, and leaving the `with` block performs the file's exit cleanup.",
+      "key_point": "Execution flow:\n`open(\"memo.txt\", ...)`\n↓\nprepare file context manager\n↓\n`as f` gives the block a file-object name\n↓\n`f.read()` → `\"hello\"`\n↓\nleave with block\n↓\nfile cleanup\n↓\n`print(text)` → `hello`",
+      "common_mistake": "It is easy to read `with ... as f` as ordinary assignment only, or to assume the file remains open indefinitely outside the block. The key idea is that **the context manager controls the resource lifetime and exit handling**."
     },
     "teaching_example": {
-      "code": "with open(\"note.txt\", \"r\", encoding=\"utf-8\") as f:\n    text = f.read()\nprint(text)",
-      "walkthrough": "Use the file object obtained via `open` as `f`, and after the indented read operation, exit the block and handle file cleanup."
+      "code": "with open(\"note.txt\", \"r\", encoding=\"utf-8\") as file:\n    first = file.read()\nprint(first)",
+      "walkthrough": "Line by line:\n1) `open(...)` prepares a file object for reading.\n2) `as file` gives the managed object the block-local working name `file`.\n3) `file.read()` reads the contents into `first`.\n4) Leaving the block runs the file's exit cleanup.\n5) The string already stored in `first` can still be used, so the outer `print(first)` displays it."
     },
     "answer_explanation": {
-      "step_by_step": "1) The `open(...)` call in the header is evaluated first. 2) `open` returns a file object. 3) `as f` binds that object to the name `f`, which is used within the block. 4) Inside the block, `f.read()` reads the contents of the file.",
-      "why_correct": "`as f` binds the file object provided by the context manager to a name that can be used within the block.",
+      "step_by_step": "Evaluate `open(...)` in the `with` header.\n↓\nPrepare the object used to manage the file context.\n↓\nBind the object provided for the block to the name `f`.\n↓\nRun `f.read()` inside the block.\n↓\nLeave the block and run the file's exit cleanup.",
+      "why_correct": "So `f` refers to the **file object made available through the managed `open(...)` context**, not to the path string itself.",
       "common_wrong_choice": {
-        "choice": "String memo.txt",
-        "why_wrong": "`memo.txt` is the path string passed to `open`; it is not the object that `f` refers to.",
-        "misread_step": "It’s easy to view `with` as a simple variable assignment or to assume that the file remains open even outside the block."
+        "choice": "the string memo.txt",
+        "why_wrong": "`\"memo.txt\"` is the path argument passed to `open()`. `f` is the file object used inside the managed block.",
+        "misread_step": "This confuses an input argument to a call with the object made available by that call/context."
       },
-      "takeaway": "The \"with\" statement is read in the following order: **context manager creation → assignment to `as` → block execution → cleanup upon block termination**."
+      "takeaway": "Read `with` as **prepare context manager → bind the `as` target → run suite → perform exit handling**."
     },
     "target_statement": "with open(\"memo.txt\", \"r\", encoding=\"utf-8\") as f:",
     "focus_span": "with open(\"memo.txt\", \"r\", encoding=\"utf-8\") as f:",
@@ -206,29 +206,31 @@
     "answer": "['A', 'B']",
     "explanation": "1) The first line is 'A\\n', and the result of strip() is 'A'. 2) 'A' becomes the first item in the new list. 3) The second line, 'B\\n', also becomes 'B' after using strip(). 4) The two results are combined to form ['A', 'B'].",
     "project_context": "It is connected to the preprocessing stage that cleanses text files line by line and passes them on for subsequent analysis.",
-    "side_card_ids": ["PYV162_A1_LIST_COMPREHENSION"],
+    "side_card_ids": [
+      "PYV162_A1_LIST_COMPREHENSION"
+    ],
     "authoring_version": "V2.3",
     "primary_concept": "list_comprehension",
     "reading_goal_internal": "lines를 하나씩 순회하고 현재 line.strip() 결과를 새 list 항목으로 추가하는 comprehension 평가 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "List comprehensions, in the form `[expression for item in iterable]`, collect the results of the iteration into a new list.",
-      "how_to_read": "First, it reads that `for line in lines` sets the current line, then evaluates the preceding `line.strip()` and adds it as a new list item.",
-      "key_point": "Instead of directly modifying the strings in the original lines, create a new, clean list using the results of `strip`.",
-      "common_mistake": "It’s easy to assume that `strip` directly modifies the original string object or that a comprehension is executed only once."
+      "what_it_is": "Easy meaning: A list comprehension applies the same kind of processing to several values and **collects the results into one new list**.\nExact definition: A list comprehension of the form `[expression for target in iterable]` iterates over the iterable, evaluates `expression` for each iteration, and appends those results in order to a newly created list.",
+      "how_to_read": "Mental model: Items move along a conveyor belt; take one item, perform the same operation, and place the result in a new box.\nReading the code: Start from the right side, `for line in lines`, to see each current `line`. Then read `line.strip()` as the expression whose result becomes the next item in the new list.",
+      "key_point": "Execution flow:\n`lines = [\"A\\n\", \"B\\n\"]`\n↓\nfirst `line` = `\"A\\n\"` → `line.strip()` = `\"A\"`\n↓\nadd `\"A\"` to new list\n↓\nsecond `line` = `\"B\\n\"` → `line.strip()` = `\"B\"`\n↓\nadd `\"B\"` to new list\n↓\n`clean = [\"A\", \"B\"]`",
+      "common_mistake": "It is easy to think the comprehension changes the original list or the original strings in place. Here `strip()` returns new strings, and the comprehension collects those return values into **a separate new list**."
     },
     "teaching_example": {
-      "code": "lines = [\" x\\n\", \"y\\n\"]\nclean = [line.strip() for line in lines]\nprint(clean)",
-      "walkthrough": "For each item, `strip` is executed, creating a new list ['x', 'y']."
+      "code": "names = [\"  Mina\", \"Joon  \"]\nclean = [name.strip() for name in names]\nprint(clean)",
+      "walkthrough": "Line by line:\n1) Take the first name `\"  Mina\"` and call `.strip()` to produce `\"Mina\"`.\n2) Put that result in the new list.\n3) Take `\"Joon  \"` and call `.strip()` to produce `\"Joon\"`.\n4) Collect both results in `clean`.\n\nResult: `['Mina', 'Joon']`.\nThis does not mutate the original `names` list in place."
     },
     "answer_explanation": {
-      "step_by_step": "1) The first line is 'A\\n', and the result of strip() is 'A'. 2) 'A' becomes the first item in the new list. 3) The second line, 'B\\n', also becomes 'B' after using strip(). 4) The two results are combined to form ['A', 'B'].",
-      "why_correct": "Since the return values of `strip` on each line are added to the new list in sequence, the result is ['A', 'B'].",
+      "step_by_step": "Take the first `line`, `\"A\\n\"`.\n↓\n`line.strip()` returns `\"A\"`.\n↓\nPlace `\"A\"` in the new list.\n↓\nTake the second `line`, `\"B\\n\"`.\n↓\n`line.strip()` returns `\"B\"`.\n↓\nPlace `\"B\"` in the new list.\n↓\nThe final `clean` is `['A', 'B']`.",
+      "why_correct": "Each iteration contributes the current string's `strip()` return value, so the new list contains the two strings without their trailing newlines.",
       "common_wrong_choice": {
         "choice": "['A\\n', 'B\\n']",
-        "why_wrong": "The value is the original `lines` before conversion, and the comprehension applies `strip` to each item.",
-        "misread_step": "It’s easy to assume that `strip` directly modifies the original string object or that a comprehension is executed only once."
+        "why_wrong": "That is the original input list. The comprehension evaluates `.strip()` for every item and stores those returned strings in the new list.",
+        "misread_step": "This skips the comprehension's expression `line.strip()` and treats the original items as if they were copied unchanged."
       },
-      "takeaway": "\"comprehension\" is read as **select an iterator → evaluate the preceding expression → add the result to the list → move to the next item**."
+      "takeaway": "Expand a list comprehension mentally as **choose one iteration value → evaluate the front expression → add result to new list → continue**."
     },
     "target_statement": "clean = [line.strip() for line in lines]",
     "focus_span": "[line.strip() for line in lines]",
@@ -1001,24 +1003,24 @@
     "primary_concept": "try_statement",
     "reading_goal_internal": "try가 예외 가능 코드를 실행하는 영역을 시작하고 그 안에서 ValueError가 발생하면 이후 try 줄이 중단되는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`try:` is a compound statement that executes statements where exceptions may occur and, if an exception occurs, allows it to be handled in the associated `except` clause.",
-      "how_to_read": "It reads that the `try` block is executed from the top down; when a real exception occurs on a line, the remaining lines in that `try` block are not executed.",
-      "key_point": "Since a ValueError occurs in `int('x')`, the `print(number)` line below it is never reached.",
-      "common_mistake": "It is easy to assume that the `try` block prevents errors in advance, so `int('x')` returns a valid value, or that every line inside the `try` block executes to the end."
+      "what_it_is": "Easy meaning: `try` means **run this code first, and if a problem occurs, look for a prepared way to handle that problem**.\nExact definition: A `try` statement executes its try suite; if an exception is raised, the remaining statements in that suite are skipped and Python searches the associated `except` handlers for a matching exception type.",
+      "how_to_read": "Mental model: Follow the normal road first; if an accident happens, move to a prepared detour.\nReading the code: Actually evaluate `int(\"x\")`. It cannot convert the string to an integer, so it raises `ValueError`. At that moment the assignment does not complete and `print(number)` is skipped. Control moves to `except ValueError:`.",
+      "key_point": "Execution flow:\nenter try\n↓\nrun `int(\"x\")`\n↓\nraise `ValueError`\n↓\nskip remaining `print(number)` in try suite\n↓\nmatch `except ValueError`\n↓\n`print(\"bad\")`\n↓\nresult: `bad`",
+      "common_mistake": "It is easy to think `try` prevents the error from happening or somehow makes `int(\"x\")` return a normal value. `try` **runs code that may raise and connects actual exceptions to handler paths**."
     },
     "teaching_example": {
       "code": "try:\n    value = int(\"bad\")\n    print(value)\nexcept ValueError:\n    print(\"invalid\")",
-      "walkthrough": "A ValueError occurs during the `int` call, causing the `try` block's `print` statement to be skipped and the execution to proceed to the `except` block."
+      "walkthrough": "Line by line:\n1) Run `int(\"bad\")` inside the try suite.\n2) Conversion fails and raises `ValueError`.\n3) `print(value)` in the rest of the try suite is skipped.\n4) `except ValueError:` matches the exception.\n5) The handler prints `invalid`.\n\nResult: `invalid`."
     },
     "answer_explanation": {
-      "step_by_step": "1) The first statement in the `try` block calls `int('x')`. 2) Since `x` cannot be converted to an integer, a `ValueError` is raised. 3) The `print(number)` statement following the `try` block is not executed. 4) The matching `except ValueError` block is executed and prints `bad`.",
-      "why_correct": "A ValueError that occurs inside a `try` block is passed to an `except` block of exactly the same type.",
+      "step_by_step": "Run the try suite from the top.\n↓\n`int(\"x\")` attempts integer conversion.\n↓\nConversion fails and raises `ValueError`.\n↓\nThe remaining `print(number)` in the try suite is skipped.\n↓\n`except ValueError:` handles the exception.\n↓\nPrint `bad`.",
+      "why_correct": "The raised exception is a `ValueError` and a matching handler exists, so control moves to that `except` clause and `bad` is printed.",
       "common_wrong_choice": {
         "choice": "x",
-        "why_wrong": "Since the conversion fails, there is no flow in which x is output as a normal result.",
-        "misread_step": "It is easy to assume that the `try` block prevents errors in advance, so `int('x')` returns a valid value, or that every line inside the `try` block executes to the end."
+        "why_wrong": "`int(\"x\")` does not return the original string. It raises `ValueError`, so there is no normal path that prints `x`.",
+        "misread_step": "This assumes the failed conversion still produced a normal return value."
       },
-      "takeaway": "\"try\" is interpreted as **execute the block → identify the point where an exception occurs → halt the remaining try code → search for a handler**."
+      "takeaway": "Read try/except as **run try suite → stop at raised exception → match exception type to a handler → run that handler**."
     },
     "target_statement": "try:",
     "focus_span": "try:",
@@ -1184,24 +1186,24 @@
     "primary_concept": "except_clause",
     "reading_goal_internal": "발생한 예외 타입이 ValueError와 일치하면 handler로 들어가며 실제 예외 객체가 e라는 이름에 바인딩되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`except ErrorType as name:` catches exceptions of that type and assigns the exception object to `name` so it can be used within the handler.",
-      "how_to_read": "First, identify the type of ValueError to catch and note that “`as e`” is a local name attached to the exception object.",
-      "key_point": "`e` refers to an actual `ValueError` instance, not the string `\"e\"`.",
-      "common_mistake": "It is easy to assume that `e` is the name of an exception type or that `int('x')` takes the input string `x` as-is."
+      "what_it_is": "Easy meaning: In `except ... as e`, `e` is a temporary name that points to **the actual error object that was just caught**.\nExact definition: When an `except ExceptionType as name:` handler is selected, the handled exception object is bound to `name` for use inside that handler suite.",
+      "how_to_read": "Mental model: When an error occurs, attach the temporary label `e` to that particular error so the handler can inspect it.\nReading the code: `int(\"x\")` raises a `ValueError` object. `except ValueError as e:` catches that type and binds the actual exception object to `e`. `type(e).__name__` then reads the name of its type, `ValueError`.",
+      "key_point": "Execution flow:\n`int(\"x\")`\n↓\nraise a `ValueError` object\n↓\nmatch `except ValueError`\n↓\nexception object → name `e`\n↓\n`type(e)` → `ValueError` class\n↓\n`.__name__` → string `\"ValueError\"`",
+      "common_mistake": "It is easy to think `e` is the literal string `'e'` or the input string `\"x\"`. `e` names **the caught exception object**. It should not be treated as an ordinary long-lived state variable outside the handler."
     },
     "teaching_example": {
       "code": "try:\n    int(\"bad\")\nexcept ValueError as err:\n    print(type(err).__name__)",
-      "walkthrough": "A ValueError object is bound to `err`, so `type(err).__name__` returns `ValueError`."
+      "walkthrough": "Line by line:\n1) `int(\"bad\")` raises `ValueError`.\n2) `except ValueError as err:` catches that exception.\n3) The actual exception object is bound to `err`.\n4) `type(err).__name__` reads the exception type name.\n\nResult: `ValueError`."
     },
     "answer_explanation": {
-      "step_by_step": "1) `int('x')` raises a `ValueError` object. 2) `except ValueError` catches the exception by matching the type. 3) `as e` assigns that exception object to the variable `e`. 4) `type(e).__name__` returns the object’s type name, `ValueError`.",
-      "why_correct": "Since `e` points to an actual `ValueError` instance, its type name is `ValueError`.",
+      "step_by_step": "`int(\"x\")` raises a `ValueError` object.\n↓\n`except ValueError` matches the exception type and selects the handler.\n↓\n`as e` binds the raised exception object to the name `e`.\n↓\n`type(e)` gets the object's type.\n↓\n`.__name__` returns the type name `ValueError`.",
+      "why_correct": "Because `e` refers to an actual `ValueError` instance, `type(e).__name__` evaluates to `ValueError`.",
       "common_wrong_choice": {
         "choice": "e",
-        "why_wrong": "\"e\" is a variable name used in the code, not the name of an object type.",
-        "misread_step": "It is easy to assume that `e` is the name of an exception type or that `int('x')` takes the input string `x` as-is."
+        "why_wrong": "`e` is only the source-code name used to refer to the exception object. It is not the object's type name.",
+        "misread_step": "This confuses a variable name with the type information of the object it refers to."
       },
-      "takeaway": "\"except-as\" is interpreted as **exception raised → type matching → exception object name binding → used in the handler**."
+      "takeaway": "Read `except T as e` as **match exception type `T` → bind the actual exception object to `e` → inspect/use it inside the handler**."
     },
     "target_statement": "except ValueError as e:",
     "focus_span": "except ValueError as e:",
@@ -1918,24 +1920,24 @@
     "primary_concept": "from_import_statement",
     "reading_goal_internal": "from-import 문장에서 출처 모듈 pathlib과 가져오는 이름 Path를 구분해 이후 `Path(...)`를 직접 호출할 수 있게 되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`from module import name` imports a specific name from a module so that it can be used directly in the current code.",
-      "how_to_read": "Distinguish between “pathlib” as the source module and “Path” as the name imported after “import.”",
-      "key_point": "After this sentence, you can write `pathlib.Path(...)` directly instead of `Path(...)`.",
-      "common_mistake": "It is easy to assume that the entire `pathlib` module is imported under the alias `Path`."
+      "what_it_is": "Easy meaning: `from pathlib import Path` takes **the name `Path` out of `pathlib` and makes it directly usable in the current file**.\nExact definition: `from module import name` locates and initializes the module as needed, obtains the object referenced by that name from the module, and binds it to the same name in the current scope.",
+      "how_to_read": "Mental model: Instead of carrying the whole toolbox `pathlib`, take out the one tool named `Path` and place it on your workbench.\nReading the code: `from pathlib` identifies the source module, and `import Path` identifies the name introduced into the current scope. The next line can therefore call `Path(...)` directly rather than `pathlib.Path(...)`.",
+      "key_point": "Execution flow:\nlocate module `pathlib`\n↓\nfind name `Path` in it\n↓\nbind `Path` in current scope\n↓\ncall `Path(\"data\")` directly\n↓\ncombine with `/ \"memo.txt\"`\n↓\n`path.name` → `memo.txt`",
+      "common_mistake": "It is easy to think the entire `pathlib` module is imported under the alias `Path`. That would be a different form such as `import pathlib as Path`. Here, **only the specific name `Path` is introduced directly into the current scope**."
     },
     "teaching_example": {
       "code": "from pathlib import Path\nfolder = Path(\"logs\")\nprint(folder.name)",
-      "walkthrough": "Since the `Path` name was taken directly, `Path(...)` is called without a module prefix."
+      "walkthrough": "Line by line:\n1) Import the name `Path` from the `pathlib` module.\n2) `Path(...)` can now be called directly in the current scope.\n3) `Path(\"logs\")` creates a path object stored in `folder`.\n4) `folder.name` reads the final path component `logs`.\n\nResult: `logs`."
     },
     "answer_explanation": {
-      "step_by_step": "1) \"pathlib\" after \"from\" is the source module. 2) \"Path\" after \"import\" is the name being imported. 3) The name \"Path\" becomes directly available in the current scope. 4) \"Path('data')\" on the next line calls that imported name.",
-      "why_correct": "In the `from import` statement, the `Path` written after `import` is the name that is imported into the current scope.",
+      "step_by_step": "Use `from pathlib` to identify the source module.\n↓\nUse `import Path` to select the name from that module.\n↓\nBind the name `Path` in the current scope.\n↓\nThe next line can call `Path(\"data\")` directly.",
+      "why_correct": "In `from module import name`, the name written after `import` is the one directly introduced into the current scope, so the answer is `Path`.",
       "common_wrong_choice": {
-        "choice": "pathlib object as a whole",
-        "why_wrong": "This is different from `import pathlib`, which imports the entire module.",
-        "misread_step": "It is easy to assume that the entire `pathlib` module is imported under the alias `Path`."
+        "choice": "the entire pathlib module object",
+        "why_wrong": "Importing the whole module under the name `pathlib` would use `import pathlib`. This statement imports one name, `Path`, directly.",
+        "misread_step": "This confuses the binding result of `import module` with `from module import name`."
       },
-      "takeaway": "\"from-import\" should be read as **check the source module → check the name to import → use directly in the current scope**."
+      "takeaway": "Read from-import as **identify source module → identify imported name → bind that name in the current scope → use it without a module prefix**."
     },
     "target_statement": "from pathlib import Path",
     "focus_span": "from pathlib import Path",
