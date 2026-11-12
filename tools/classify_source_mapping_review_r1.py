@@ -27,15 +27,17 @@ def digest(rows: list[dict]) -> str:
     ).hexdigest()
 
 
-def focus_signals(card: dict) -> tuple[list[str], list[str]]:
+def focus_signals(card: dict) -> tuple[list[str], list[str], set[str]]:
     focus = str(card.get("focus_span") or "")
     code = str(card.get("code") or "")
     tree = source_map.parse_code(code)
     aliases = source_map.imports_with_aliases(tree)
+    local_names = source_map.local_callable_names(tree)
 
+    # Important: classify only the declared focus span here.
+    # Falling back to every call in the card would let unrelated helper/print
+    # calls make a domain-focused card look like a Python/local-code card.
     calls = source_map.call_nodes(focus)
-    if not calls and tree is not None:
-        calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)]
 
     leaves = sorted({
         source_map.call_leaf(node)
@@ -47,10 +49,17 @@ def focus_signals(card: dict) -> tuple[list[str], list[str]]:
         for node in calls
         if source_map.call_root(node)
     })
-    return leaves, roots
+    return leaves, roots, local_names
 
 
-def classify(card: dict, authority: str, supplemental: list[str]) -> str:
+def classify(
+    card: dict,
+    authority: str,
+    supplemental: list[str],
+    *,
+    focus_leaves: list[str],
+    local_names: set[str],
+) -> str:
     bundles = set(supplemental)
 
     if authority == "STDLIB_API_AUTHORITY":
@@ -67,10 +76,11 @@ def classify(card: dict, authority: str, supplemental: list[str]) -> str:
         return "AUTHORITY_NORMALIZATION_REVIEW"
 
     if authority == "DOMAIN_AUTHORITY_REVIEW":
-        if "LOCAL_CODE_AUTHORITY" in bundles:
-            return "DOMAIN_LOCAL_CODE_REVIEW"
-        if bundles & {"PY_BUILTIN_FUNCTIONS", "PY_BUILTIN_TYPES"}:
-            return "DOMAIN_PYTHON_BUILTIN_REVIEW"
+        leaves = set(focus_leaves)
+        if leaves & local_names:
+            return "DOMAIN_LOCAL_FOCUS_REVIEW"
+        if leaves & (source_map.BUILTIN_CALLS | source_map.BUILTIN_TYPE_METHODS):
+            return "DOMAIN_PYTHON_BUILTIN_FOCUS_REVIEW"
         return "DOMAIN_CONTEXT_REVIEW"
 
     raise RuntimeError(f"unexpected SOURCE_MAPPING_REVIEW authority: {authority}")
@@ -88,8 +98,14 @@ def collect_rows() -> list[dict]:
         primary = str(card.get("primary_concept") or "")
         primary_bundle = source_map.PRIMARY_BUNDLES.get(primary)
         supplemental = source_map.supplemental_bundles(card)
-        leaves, roots = focus_signals(card)
-        resolution = classify(card, authority, supplemental)
+        leaves, roots, local_names = focus_signals(card)
+        resolution = classify(
+            card,
+            authority,
+            supplemental,
+            focus_leaves=leaves,
+            local_names=local_names,
+        )
 
         rows.append({
             "id": str(card["id"]),
