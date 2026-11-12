@@ -60,6 +60,14 @@ jobs:
 
           grep -F 'CARD_COUNT=1785' "$RUNNER_TEMP/local-evidence-full-plan.txt"
           grep -F 'LOCAL_EVIDENCE_COUNT=68' "$RUNNER_TEMP/local-evidence-full-plan.txt"
+          grep -F 'LOCAL_EVIDENCE_AUTHORITY_COUNTS={"AUTHORITY_REVIEW": 13, "DOMAIN_AUTHORITY_REVIEW": 55}' \
+            "$RUNNER_TEMP/local-evidence-full-plan.txt"
+          grep -F 'LOCAL_EVIDENCE_DISPOSITION_COUNTS={"CONCEPT_EXPLANATION_REWRITE": 48, "WALKTHROUGH_OR_ANSWER_REWRITE": 20}' \
+            "$RUNNER_TEMP/local-evidence-full-plan.txt"
+          grep -F 'LOCAL_EVIDENCE_TARGET_COUNTS={"answer_explanation": 10, "concept_explanation": 37, "concept_explanation+answer_explanation": 5, "concept_explanation+teaching_example": 10, "concept_explanation+teaching_example+answer_explanation": 2, "teaching_example+answer_explanation": 4}' \
+            "$RUNNER_TEMP/local-evidence-full-plan.txt"
+          grep -F 'LOCAL_EVIDENCE_SELECTION_SHA256=d0621cf4b8d15eb209b0c0c88744a23788a09297c044fc4344de9473cd087160' \
+            "$RUNNER_TEMP/local-evidence-full-plan.txt"
           grep -F 'LOCAL_EVIDENCE_FULL_PLAN_R1=PASS' "$RUNNER_TEMP/local-evidence-full-plan.txt"
 
   live:
@@ -201,8 +209,12 @@ jobs:
               raise SystemExit("local-evidence full non-HIGH rows: " + ",".join(non_high))
 
           selection_shas = {str(row.get("selection_sha256") or "") for row in rows}
-          if len(selection_shas) != 1 or "" in selection_shas:
-              raise SystemExit(f"selection SHA mismatch in results: {selection_shas}")
+          expected_selection_sha = "d0621cf4b8d15eb209b0c0c88744a23788a09297c044fc4344de9473cd087160"
+          if selection_shas != {expected_selection_sha}:
+              raise SystemExit(
+                  f"selection SHA mismatch in results: "
+                  f"expected={expected_selection_sha} actual={selection_shas}"
+              )
 
           print("LOCAL_EVIDENCE_FULL_RESULT_COUNT=68")
           print("LOCAL_EVIDENCE_FULL_HOLD_COUNT=0")
