@@ -567,24 +567,24 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "set_cookie 호출에서 HttpOnly security option이 이름 있는 argument로 설정되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`httponly=True`는 set_cookie 호출에서 HttpOnly 옵션을 켜는 keyword argument입니다.",
-      "how_to_read": "secure, samesite 등 다른 cookie option과 이름을 구분합니다.",
-      "key_point": "HttpOnly는 browser JavaScript가 해당 cookie를 직접 읽는 것을 제한하는 데 사용됩니다.",
-      "common_mistake": "HttpOnly가 HTTPS만 허용하고 HTTP를 막는 옵션이라고 생각하기 쉽습니다. 그 역할은 Secure flag와 다릅니다."
+      "what_it_is": "쉽게 말하면: `httponly=True`는 호출할 때 'httponly라는 이름으로 참 값을 전달한다'는 뜻입니다.\n정확한 정의: 이는 키워드 인자(keyword argument)이며, 이 코드에서는 `**options` 매개변수가 이를 딕셔너리의 `'httponly': True` 항목으로 받습니다.",
+      "how_to_read": "이름표가 붙은 값을 전달한다고 생각하세요. `class Response`는 클래스를 정의하고, `set_cookie`는 받은 옵션을 반환하는 메서드를 정의합니다. `response = Response()`는 객체를 만들고, `session_id = \"opaque\"`는 문자열을 연결합니다. 마지막 호출에서 `self`에는 `response`가 자동으로 전달되고, `key`, `value`, `httponly`, `secure`, `samesite`라는 이름의 인자들은 `options`에 모입니다. 특히 `value=session_id`는 문자열 `\"opaque\"`를, `httponly=True`는 불리언 값 `True`를 전달합니다.",
+      "key_point": "호출 → 이름 있는 인자들을 `options`에 모음 → `return options` → 반환된 딕셔너리를 `cookie`에 연결.\n결과는 `{'key': 'session', 'value': 'opaque', 'httponly': True, 'secure': True, 'samesite': 'lax'}`입니다. 출력은 없습니다. HttpOnly라는 옵션은 브라우저 JavaScript의 직접적인 쿠키 읽기를 제한하는 의미이지만, 이 예제 메서드는 딕셔너리만 반환하며 실제 브라우저 쿠키를 설정하지 않습니다.",
+      "common_mistake": "`httponly=True`를 변수 대입문이나 'HTTP만 허용한다'는 뜻으로 읽지 마세요. 여기서 `=`는 호출에 전달할 인자의 이름과 값을 연결합니다. HttpOnly의 JavaScript 접근 제한 역할과 Secure의 HTTPS 전송 관련 역할은 서로 다릅니다."
     },
     "teaching_example": {
       "code": "def make_cookie(*, httponly, secure):\n    return {\"httponly\":httponly,\"secure\":secure}\ncookie=make_cookie(httponly=True,secure=True)",
       "walkthrough": "서로 다른 두 security option을 이름으로 전달합니다."
     },
     "answer_explanation": {
-      "step_by_step": "set_cookie에 httponly=True를 넘겨 cookie option을 활성화합니다.",
-      "why_correct": "HttpOnly의 핵심 목적이 client-side script의 직접 cookie access를 제한하는 것이기 때문입니다.",
+      "step_by_step": "1) `Response()`로 객체를 만들고 `session_id`에 `\"opaque\"`를 연결합니다.\n2) `response.set_cookie(...)`를 호출하면서 `httponly`라는 이름으로 `True`를 전달합니다.\n3) `**options`가 이 값을 `'httponly': True`로 다른 인자들과 함께 받습니다.\n4) 메서드가 그 딕셔너리를 반환하고 `cookie`가 이를 가리킵니다.\n5) 질문은 이 옵션의 의미를 묻습니다. HttpOnly는 브라우저 JavaScript가 쿠키를 직접 읽는 것을 제한하는 옵션을 뜻합니다.",
+      "why_correct": "따라서 가장 가까운 선택지는 '브라우저 JS에서 쿠키를 직접 읽기 어렵게 한다'입니다. 다만 이 코드 자체가 그런 보호를 실행하는 것은 아닙니다. 보여 준 메서드는 옵션 값을 반환할 뿐입니다.",
       "common_wrong_choice": {
         "choice": "HTTP만 허용하고 HTTPS를 막는다",
-        "why_wrong": "HTTPS 전용 전송과 관련된 옵션은 Secure입니다.",
-        "misread_step": "HttpOnly와 Secure flag의 역할을 뒤바꾼 경우입니다."
+        "why_wrong": "HttpOnly는 HTTP와 HTTPS 중 하나를 선택하는 옵션이 아닙니다. HTTPS 전송과 관련된 옵션은 별도로 전달된 `secure`입니다.",
+        "misread_step": "`httponly`라는 이름을 'HTTP만'으로 해석하면서 옵션의 의미와 이름 있는 값 전달을 구분하지 않은 경우입니다."
       },
-      "takeaway": "cookie security는 **HttpOnly, Secure, SameSite 역할을 서로 분리**해서 읽습니다."
+      "takeaway": "먼저 `이름=값`이 어떤 값을 전달하는지 추적하고, 그다음 옵션의 의미를 읽으세요. 여기서는 `True`를 전달하지만 실제 실행 결과는 옵션 딕셔너리입니다."
     },
     "target_statement": "response.set_cookie(key=\"session\", value=session_id, httponly=True, secure=True, samesite=\"lax\")",
     "focus_span": "httponly=True",
