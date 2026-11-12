@@ -607,7 +607,7 @@ def openai_request(
                     "schema": schema,
                 },
             },
-            "max_output_tokens": 8000,
+            "max_output_tokens": 4000,
         }
         encoded = json.dumps(body, ensure_ascii=False).encode("utf-8")
 
