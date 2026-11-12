@@ -323,6 +323,15 @@ def validate_no_citation_artifacts(patch: dict[str, Any], cid: str, language: st
         )
 
 
+def response_citation_artifacts(response: dict[str, Any]) -> list[str]:
+    try:
+        text = base.extract_output_text(response)
+    except RuntimeError:
+        return []
+    forbidden = ("http://", "https://", "cite", "【", "】")
+    return [token for token in forbidden if token in text]
+
+
 def openai_source_request(
     *,
     api_key: str,
@@ -346,6 +355,12 @@ def openai_source_request(
                 "Search the required official source again, then return only the required JSON schema. "
                 "Keep every explanation field concise and do not include citations in the JSON."
             )
+            if last_error and "citation artifacts" in str(last_error):
+                attempt_prompt += (
+                    " The previous JSON included learner-facing citation artifacts. "
+                    "Do not write literal URLs, URI schemes such as http:// or https://, "
+                    "domain names, source names, or citation markers in any explanation field."
+                )
 
         body = {
             "model": model,
@@ -423,6 +438,15 @@ def openai_source_request(
                     f"OpenAI incomplete response: reason={reason} attempt={attempt}"
                 )
                 if reason == "max_output_tokens" and attempt < 3:
+                    time.sleep((2, 5, 10)[attempt - 1])
+                    continue
+
+            citation_artifacts = response_citation_artifacts(payload)
+            if citation_artifacts:
+                last_error = RuntimeError(
+                    f"OpenAI learner-facing citation artifacts: {citation_artifacts}"
+                )
+                if attempt < 3:
                     time.sleep((2, 5, 10)[attempt - 1])
                     continue
 
@@ -655,6 +679,18 @@ def self_test() -> int:
             "required_prefixes": [],
         },
     )
+    citation_retry_probe = {
+        "output": [{
+            "type": "message",
+            "content": [{
+                "type": "output_text",
+                "text": '{"ko":{"answer_explanation":"See https://example.com"}}',
+            }],
+        }]
+    }
+    if response_citation_artifacts(citation_retry_probe) != ["https://"]:
+        raise RuntimeError("source-backed citation retry detector failed")
+
     try:
         validate_web_sources(
             cid="SELF_TEST_LOOKALIKE_DOMAIN",
