@@ -157,8 +157,10 @@ def main() -> int:
         }
 
         anchors: list[dict] = []
+        concept_prereqs = sequence.explicit_concept_prereqs(card)
+        relevant_calls = sequence.relevant_pedagogic_call_targets(card)
 
-        for concept in sequence.explicit_concept_prereqs(card):
+        for concept in concept_prereqs:
             intro = concept_intro.get(concept)
             if not intro or intro[1] == cid:
                 continue
@@ -173,7 +175,7 @@ def main() -> int:
         focused_calls = sequence.pedagogic_focus_call_targets(
             str(card.get("focus_span", ""))
         )
-        for target in sequence.relevant_pedagogic_call_targets(card):
+        for target in relevant_calls:
             if target.split(".")[-1] in covered_call_targets:
                 continue
             intro = call_intro.get(target)
@@ -221,6 +223,8 @@ def main() -> int:
             "anchor_prerequisite": latest["prerequisite"] if latest else "",
             "same_level_anchor_count": len(same_level),
             "cross_level_anchor_count": len(cross_level),
+            "concept_prerequisites": concept_prereqs,
+            "relevant_call_targets": relevant_calls,
             "existing_order_rule": cid in rule_ids,
             "prelearn_support": bool(support),
         })
@@ -229,6 +233,25 @@ def main() -> int:
     target_counts = Counter(row["composition"] for row in rows)
     existing_rule_count = sum(row["existing_order_rule"] for row in rows)
     prelearn_count = sum(row["prelearn_support"] for row in rows)
+    cross_level_ready = [
+        row
+        for row in rows
+        if row["gap"] is None and row["cross_level_anchor_count"] > 0
+    ]
+    prelearn_only = [
+        row
+        for row in rows
+        if row["gap"] is None
+        and row["cross_level_anchor_count"] == 0
+        and row["prelearn_support"]
+    ]
+    no_tracked_anchor = [
+        row
+        for row in rows
+        if row["gap"] is None
+        and row["cross_level_anchor_count"] == 0
+        and not row["prelearn_support"]
+    ]
 
     with_gap = [row for row in rows if row["gap"] is not None]
     with_gap.sort(
@@ -273,6 +296,9 @@ def main() -> int:
     )
     print(f"EXISTING_ORDER_RULE_COUNT={existing_rule_count}")
     print(f"PRELEARN_SUPPORT_COUNT={prelearn_count}")
+    print(f"CROSS_LEVEL_READY_COUNT={len(cross_level_ready)}")
+    print(f"PRELEARN_ONLY_COUNT={len(prelearn_only)}")
+    print(f"NO_TRACKED_ANCHOR_COUNT={len(no_tracked_anchor)}")
 
     for row in with_gap[:max(0, args.limit)]:
         print(
@@ -287,6 +313,18 @@ def main() -> int:
             + row["anchor_prerequisite"] + "\t"
             + ("RULE" if row["existing_order_rule"] else "NO_RULE") + "\t"
             + ("PRELEARN" if row["prelearn_support"] else "NO_PRELEARN") + "\t"
+            + row["title"]
+        )
+
+    for row in no_tracked_anchor[:max(0, args.limit)]:
+        print(
+            "NO_TRACKED_ANCHOR\t"
+            + row["id"] + "\t"
+            + f"L{row['level']}" + "\t"
+            + row["composition"] + "\t"
+            + ("+".join(row["concept_prerequisites"]) or "-") + "\t"
+            + ("+".join(row["relevant_call_targets"]) or "-") + "\t"
+            + row["source"] + "\t"
             + row["title"]
         )
 
