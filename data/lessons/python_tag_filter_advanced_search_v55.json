@@ -686,14 +686,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "현재 filter state의 독립 복사본을 이름과 함께 list에 append해 나중에 재사용하는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`list.append(value)`는 list 끝에 value 하나를 추가하는 method call입니다.",
-      "how_to_read": "append되는 value의 구조와 그 안에 현재 상태를 복사하는 호출이 있는지 확인합니다.",
-      "key_point": "saved search는 자주 쓰는 복잡한 filter 조건을 다시 구성하지 않고 빠르게 복원하는 데 유용합니다.",
-      "common_mistake": "원본 filter_state 객체 자체를 저장하면 이후 수정과 무관하다고 생각하기 쉽습니다. 독립 snapshot이 필요하면 deepcopy 같은 복사를 고려할 수 있습니다."
+      "what_it_is": "쉽게 말하면: `append()`는 목록 맨 뒤에 값 하나를 넣으라는 요청입니다.\n정확한 정의: `list.append(value)`는 리스트 끝에 `value` 하나를 추가하는 메서드 호출입니다.",
+      "how_to_read": "이름표가 붙은 필터 상태를 한 묶음으로 만들어 목록에 넣는다고 생각하세요. 이 카드에서는 먼저 `copy.deepcopy(filter_state)`를 호출해 현재 필터 상태의 독립 복사본을 만듭니다. 그 복사본과 이름을 담은 딕셔너리가 `append(...)`에 전달되어 `saved_searches`에 항목 하나로 추가됩니다.",
+      "key_point": "현재 필터 `{\"wrong_only\": True, \"concept\": \"validation\"}` → `deepcopy`로 복사 → 이름 `\"오답 validation\"`과 함께 딕셔너리 구성 → `append`로 저장 목록에 추가합니다. 목록에는 항목이 하나 생기고, `saved_searches[0][\"name\"]`을 읽은 `saved_name`은 `\"오답 validation\"`입니다. 이처럼 이름과 필터 조건을 함께 보관하면 자주 쓰는 조건을 나중에 다시 사용하는 데 유용합니다. 이 코드는 저장과 이름 읽기까지만 수행합니다.",
+      "common_mistake": "`append()`가 필터 상태까지 자동으로 복사한다고 생각하기 쉽습니다. 여기서 복사하는 호출은 `copy.deepcopy(filter_state)`이고, `append()`는 완성된 딕셔너리를 목록에 추가합니다. 복사 없이 원본 `filter_state` 자체를 넣으면 이후 원본 수정과 무관한 독립 상태가 되지 않습니다."
     },
     "teaching_example": {
-      "code": "import copy\nstate = {\"level\": 9}\nsaved = []\nsaved.append({\"name\": \"L9\", \"state\": copy.deepcopy(state)})",
-      "walkthrough": "현재 state의 복사본이 이름과 함께 saved list 끝에 추가됩니다."
+      "code": "import copy\nstate = {\"level\": 9}\nsaved = []\nsaved.append({\"name\": \"L9\", \"state\": copy.deepcopy(state)})\nprint(saved[0][\"state\"])",
+      "walkthrough": "1) `import copy`로 `copy` 모듈을 사용할 수 있게 합니다.\n2) `state`에 `{\"level\": 9}` 딕셔너리를 연결합니다.\n3) `saved`를 빈 리스트로 만듭니다.\n4) `copy.deepcopy(state)`가 상태의 독립 복사본을 만듭니다. 그 복사본과 이름 `\"L9\"`를 담은 딕셔너리를 구성한 뒤, `saved.append(...)`가 이를 리스트 끝에 항목 하나로 추가합니다.\n5) `saved[0][\"state\"]`가 첫 항목의 상태를 읽고, `print`가 `{'level': 9}`를 출력합니다.\n흐름: 상태 복사 → 이름과 묶기 → 목록에 추가 → 저장된 상태 읽기."
     },
     "answer_explanation": {
       "step_by_step": "append되는 dict에는 saved search 이름과 현재 filter_state의 독립 복사본이 함께 들어갑니다.",
@@ -862,10 +862,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "fields 리스트의 문자열들을 separator인 공백 하나로 연결해 새 문자열을 만드는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`separator.join(iterable)`은 문자열 항목 사이에 separator를 넣어 새 문자열을 반환합니다.",
-      "how_to_read": "점 왼쪽 문자열이 separator이고 fields가 입력 iterable임을 구분합니다.",
-      "key_point": "learner 검색에서는 answer를 제외해 문제 정답 노출을 피할 수 있습니다.",
-      "common_mistake": "join이 리스트를 수정하거나 문자열을 분리하는 메서드라고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `join()`은 여러 문자열 사이에 정해 둔 구분자를 넣어 하나로 이어 주는 기능입니다.\n정확한 정의: `separator.join(iterable)`은 입력 iterable의 문자열 항목들을 순서대로 연결하고 항목 사이에 구분자 문자열 `separator`를 넣은 새 문자열을 반환하는 문자열 메서드 호출입니다.",
+      "how_to_read": "문자열 조각 사이에 연결 조각을 끼운다고 생각하세요. `\" \".join(fields)`에서 점 왼쪽의 `\" \"`는 공백 하나인 구분자이고, 괄호 안의 `fields`는 연결할 문자열들이 담긴 리스트입니다. 첫 줄은 세 문자열을 `fields`에 저장하고, 둘째 줄은 `join(fields)`를 호출해 연결 결과를 `search_text`에 저장합니다. 셋째 줄은 그 값을 출력합니다.",
+      "key_point": "`fields`의 세 항목 → 항목 사이에 공백 하나씩 넣어 연결 → `\"JSON 읽기 choices 검사 validation\"` 반환 → `search_text`에 저장 → `print(search_text)`가 `JSON 읽기 choices 검사 validation` 출력. 각 항목 안에 있던 공백도 그대로 남습니다.",
+      "common_mistake": "`join()`이 리스트 자체를 바꾸거나 문자열을 나누는 기능이라고 생각하기 쉽습니다. 여기서는 `fields`를 그대로 두고 새 문자열을 반환합니다. 따라서 `search_text`는 리스트도 마지막 항목만의 값도 아니라, 세 항목을 모두 연결한 문자열입니다."
     },
     "teaching_example": {
       "code": "fields=[\"title\",\"question\"]\nprint(\" \".join(fields))",

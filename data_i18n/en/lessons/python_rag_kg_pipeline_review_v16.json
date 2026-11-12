@@ -98,14 +98,14 @@
                                  "walkthrough":  "Since the left side is `None`, which is falsy, the right side, `b-1`, becomes the final value."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "The left-hand side, `row.get(\"doc_id\")`, is an empty string. Since an empty string is falsy, the `or` operator evaluates the right-hand side and returns `row.get(\"id\")` from `legacy-7`.",
-                                   "why_correct":  "This is because the Python `or` operator returns the value of the right-hand operand when the left-hand operand is falsy.",
+                                   "step_by_step":  "1. The first line binds `row` to a dictionary with \"doc_id\" set to \"\" and \"id\" set to \"legacy-7\".\n2. On the right side of the second line, Python first evaluates `row.get(\"doc_id\")`, producing the empty string \"\".\n3. An empty string is treated as false in a truth test (it is falsy), so `or` also evaluates `row.get(\"id\")` on the right.\n4. That call returns \"legacy-7\", which becomes the result of the `or` expression. This string is stored in the variable `doc_id`.",
+                                   "why_correct":  "When the left value is falsy, `or` uses the right operand's value as its result. Here the left value is \"\", so the string \"legacy-7\" obtained on the right is the correct answer.",
                                    "common_wrong_choice":  {
                                                                "choice":  "empty string \"\"",
-                                                               "why_wrong":  "An empty string is the leftmost median, but since it is falsy, it is not selected as the final result.",
-                                                               "misread_step":  "This is a case where the fallback evaluation at `or` was stopped after checking the value on the left."
+                                                               "why_wrong":  "\"\" is only the result of `row.get(\"doc_id\")`, not the result of the whole `or` expression. Even though the \"doc_id\" key exists, its value is an empty string, so the right side is evaluated.",
+                                                               "misread_step":  "This stops after finding a value in the first lookup and misses the step where `or` tests that value's truthiness."
                                                            },
-                                   "takeaway":  "`A or B` **If A is falsy, you can use B as a fallback value**."
+                                   "takeaway":  "`A or B` checks the truthiness of A's value, not whether A exists. If A is falsy, it evaluates B and uses that value."
                                },
         "target_statement":  "doc_id = row.get(\"doc_id\") or row.get(\"id\")",
         "focus_span":  "row.get(\"doc_id\") or row.get(\"id\")",
@@ -206,10 +206,10 @@
         "primary_concept":  "f_string",
         "reading_goal_internal":  "f-string의 format spec 04d가 정수 index를 0으로 채운 4자리 문자열로 만드는 과정을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "Formatted f-strings allow you to specify the display format of values using the format `{expression:format_spec}`.",
-                                    "how_to_read":  "Separate and interpret the values inside curly braces from the format spec after the colon.",
-                                    "key_point":  "`04d` represents an integer with at least 4 decimal digits, padding any leading zeros with zeros.",
-                                    "common_mistake":  "It’s easy to assume that `04d` means adding 4 to the index. However, this is not a numerical calculation but a string formatting rule."
+                                    "what_it_is":  "Easy meaning: An f-string lets you fill blanks in text with values and choose how those values look.\nExact definition: An f-string is a string literal prefixed with `f` that evaluates expressions in `{expression:format_spec}` and inserts their values into the string using the specified format.",
+                                    "how_to_read":  "Think of braces as blanks to fill with values. In this code, `{doc_id}` is the blank for the document name, and `::chunk::` is text that stays as written. `{index:04d}` inserts the value of `index` using the `04d` rule after the colon. `0` means pad the front with zeros, `4` means a minimum width of four, and `d` means display an integer in decimal.",
+                                    "key_point":  "Calling `make_chunk_id(\"doc_17\", 3)` gives `doc_id` the value `\"doc_17\"` and `index` the value `3`. The f-string displays `3` as `\"0003\"` and combines it with the fixed text to create `\"doc_17::chunk::0003\"`. `return` returns this string, and that value is assigned to `result`.",
+                                    "common_mistake":  "`04d` is not a calculation that adds 4 to `index`. It only specifies how the integer `3` is displayed, so `0003` goes into the string here. Without the format specification, `{index}` would insert `3`."
                                 },
         "teaching_example":  {
                                  "code":  "item_id = 7\nlabel = f\"item-{item_id:03d}\"",
@@ -277,14 +277,14 @@
                                  "walkthrough":  "It increases by 4 from 0 to just before 10, resulting in [0, 4, 8]."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "`range` starts at 0, increments by 4, and generates values up to just before 10. Therefore, the values are 0, 4, and 8.",
-                                   "why_correct":  "This is because the third argument, `batch_size`, is used as the step size.",
+                                   "step_by_step":  "1) Using 0 through 9 from `range(10)`, the first line creates 10 strings, \"t0\" through \"t9\", in `texts`.\n2) `batch_size` is 4, and `starts` is the empty list `[]`.\n3) `len(texts)` returns 10, so the loop's call becomes `range(0, 10, 4)`. The start is 0, the excluded stop is 10, and the step is 4.\n4) `start` takes the values 0, 4, and 8 in order. Each time, `starts.append(start)` adds that value to the end of the list: `[]` → `[0]` → `[0, 4]` → `[0, 4, 8]`.\n5) The next value, 12, is not less than 10, so the loop ends. The final value of `starts` is `[0, 4, 8]`.",
+                                   "why_correct":  "The three arguments passed to `range`, 0, 10, and 4, produce the values 0, 4, and 8, all below 10, in order. All three are appended to `starts`, so the answer is `[0, 4, 8]`.",
                                    "common_wrong_choice":  {
                                                                "choice":  "[0, 1, 2, 3]",
-                                                               "why_wrong":  "Step 4, not Step 1.",
-                                                               "misread_step":  "This is a case where the third positional argument of `range` is ignored."
+                                                               "why_wrong":  "`batch_size = 4` does not mean to select four consecutive integers starting at 0. Here, the value increases by 4 each time, so 1, 2, and 3 are not appended.",
+                                                               "misread_step":  "This reads the third argument of `range` as the number of values to produce rather than the step size."
                                                            },
-                                   "takeaway":  "The batch loop explains **how the start, stop, and step parameters interact with the slice range**."
+                                   "takeaway":  "A `range(start, stop, step)` call provides values at the specified interval, excluding the stop value. Trace each value appended by the loop to determine the final list."
                                },
         "target_statement":  "for start in range(0, len(texts), batch_size):",
         "focus_span":  "range(0, len(texts), batch_size)",
