@@ -330,11 +330,6 @@ def select_explicit(selection_ids: list[str]) -> list[dict[str, Any]]:
 
         if not row["_patch_targets"]:
             raise SystemExit(f"no patch target for explicit rewrite card: {cid}")
-        if "teaching_example" in row["_patch_targets"]:
-            raise SystemExit(
-                f"explicit local-evidence selection may not rewrite teaching examples: {cid}"
-            )
-
         selected.append(row)
 
     return selected
@@ -351,6 +346,7 @@ def local_evidence_instructions(authority: str) -> list[str]:
         "- Do not add or strengthen claims about real APIs, protocols, lifecycles, security properties, architecture best practices, or library behavior unless that behavior is explicitly encoded in the supplied card/support evidence.",
         "- For concept_explanation rewrites, preserve the current factual meaning and add the beginner bridge; do not broaden the claim.",
         "- For answer_explanation rewrites, derive every step from visible Python execution, local values, branches, calls, assignments, and returns.",
+        "- For teaching_example rewrites, demonstrate only Python or self-contained local-code behavior; do not invent external API/framework behavior.",
         "- Treat undefined helper names as opaque local functions. You may describe only the dataflow visible in this code, not their hidden implementation.",
         "- If a domain rationale is not derivable from the supplied evidence, omit that rationale and explain the Python/code-level reason instead.",
     ]
