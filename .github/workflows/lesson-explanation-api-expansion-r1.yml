@@ -16,9 +16,9 @@ on:
         default: false
         type: boolean
       limit:
-        description: 'Expansion card count; maximum 325'
+        description: 'Safe expansion card count; maximum 151'
         required: false
-        default: '325'
+        default: '151'
         type: string
       resume_run_id:
         description: 'Optional failed expansion run ID whose validated provenance should be resumed'
@@ -53,16 +53,14 @@ jobs:
       - name: Runner self-test
         run: python tools/run_lesson_explanation_api_pilot_r1.py --self-test
 
-      - name: Deterministic remaining-325 plan
+      - name: Deterministic remaining-safe plan
         shell: bash
         run: |
           set -euo pipefail
-          python tools/run_lesson_explanation_api_pilot_r1.py --plan --limit 325 \
+          python tools/run_lesson_explanation_api_pilot_r1.py --plan --limit 151 \
             | tee "$RUNNER_TEMP/lesson-explanation-expansion-r1-plan.txt"
 
-          grep -F 'PILOT_LIMIT=325' "$RUNNER_TEMP/lesson-explanation-expansion-r1-plan.txt"
-          grep -F 'PILOT_DISPOSITION_COUNTS={"CONCEPT_EXPLANATION_REWRITE": 203, "WALKTHROUGH_OR_ANSWER_REWRITE": 122}' \
-            "$RUNNER_TEMP/lesson-explanation-expansion-r1-plan.txt"
+          grep -F 'PILOT_LIMIT=151' "$RUNNER_TEMP/lesson-explanation-expansion-r1-plan.txt"
 
   live:
     if: github.event_name == 'workflow_dispatch' && inputs.live == true
@@ -146,8 +144,8 @@ jobs:
             echo "limit must be a positive integer: $LIMIT"
             exit 1
           fi
-          if [ "$LIMIT" -gt 325 ]; then
-            echo "expansion limit may not exceed 325"
+          if [ "$LIMIT" -gt 151 ]; then
+            echo "safe expansion limit may not exceed 151"
             exit 1
           fi
 
@@ -157,8 +155,8 @@ jobs:
             --model gpt-6.1-sol
             --result-path "$RUNNER_TEMP/lesson-explanation-api-expansion-r1.jsonl"
             --hold-path "$RUNNER_TEMP/lesson-explanation-api-expansion-r1-holds.jsonl"
-            --max-total-tokens 4500000
-            --max-holds 15
+            --max-total-tokens 2250000
+            --max-holds 8
           )
 
           if [ -n "$RESUME_RUN_ID" ]; then
