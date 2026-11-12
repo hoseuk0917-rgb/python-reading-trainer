@@ -592,12 +592,17 @@ def openai_request(
                 "schema": schema,
             },
         },
-        "max_output_tokens": 20000,
+        "max_output_tokens": 8000,
     }
 
     encoded = json.dumps(body, ensure_ascii=False).encode("utf-8")
 
     last_error: Exception | None = None
+    cumulative_input_tokens = 0
+    cumulative_output_tokens = 0
+    cumulative_reasoning_tokens = 0
+    cumulative_total_tokens = 0
+
     for attempt in range(1, 4):
         request = urllib.request.Request(
             OPENAI_RESPONSES_URL,
@@ -612,7 +617,42 @@ def openai_request(
 
         try:
             with urllib.request.urlopen(request, timeout=timeout) as response:
-                return json.loads(response.read().decode("utf-8"))
+                payload = json.loads(response.read().decode("utf-8"))
+
+            usage = payload.get("usage") or {}
+            details = usage.get("output_tokens_details") or {}
+            cumulative_input_tokens += int(usage.get("input_tokens") or 0)
+            cumulative_output_tokens += int(usage.get("output_tokens") or 0)
+            cumulative_reasoning_tokens += int(details.get("reasoning_tokens") or 0)
+            cumulative_total_tokens += int(
+                usage.get("total_tokens")
+                or (
+                    int(usage.get("input_tokens") or 0)
+                    + int(usage.get("output_tokens") or 0)
+                )
+            )
+
+            payload["_pilot_request_attempts"] = attempt
+            payload["_pilot_cumulative_usage"] = {
+                "input_tokens": cumulative_input_tokens,
+                "output_tokens": cumulative_output_tokens,
+                "total_tokens": cumulative_total_tokens,
+                "output_tokens_details": {
+                    "reasoning_tokens": cumulative_reasoning_tokens,
+                },
+            }
+
+            if payload.get("status") == "incomplete":
+                incomplete = payload.get("incomplete_details") or {}
+                reason = incomplete.get("reason") or "unknown"
+                last_error = RuntimeError(
+                    f"OpenAI incomplete response: reason={reason} attempt={attempt}"
+                )
+                if reason == "max_output_tokens" and attempt < 3:
+                    time.sleep((2, 5, 10)[attempt - 1])
+                    continue
+
+            return payload
         except urllib.error.HTTPError as exc:
             body_text = exc.read().decode("utf-8", errors="replace")
             message = f"OpenAI HTTP {exc.code}: {clean_space(body_text)[:1200]}"
@@ -1018,6 +1058,68 @@ def self_test() -> int:
     assert retry_attempts == 3
     assert retry_response["status"] == "completed"
 
+    incomplete_attempts = 0
+
+    class IncompleteThenSuccessResponse(FakeResponse):
+        def __init__(self, payload):
+            self.payload = payload
+
+        def read(self):
+            return json.dumps(self.payload).encode("utf-8")
+
+    def fake_incomplete_urlopen(request, timeout):
+        nonlocal incomplete_attempts
+        incomplete_attempts += 1
+        if incomplete_attempts < 3:
+            return IncompleteThenSuccessResponse(
+                {
+                    "status": "incomplete",
+                    "incomplete_details": {"reason": "max_output_tokens"},
+                    "usage": {
+                        "input_tokens": 100,
+                        "output_tokens": 8000,
+                        "total_tokens": 8100,
+                        "output_tokens_details": {"reasoning_tokens": 0},
+                    },
+                }
+            )
+        return IncompleteThenSuccessResponse(
+            {
+                "status": "completed",
+                "usage": {
+                    "input_tokens": 100,
+                    "output_tokens": 50,
+                    "total_tokens": 150,
+                    "output_tokens_details": {"reasoning_tokens": 0},
+                },
+            }
+        )
+
+    try:
+        urllib.request.urlopen = fake_incomplete_urlopen
+        time.sleep = lambda _: None
+        incomplete_response = openai_request(
+            api_key="test-key",
+            model="test-model",
+            prompt="test",
+            schema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": False,
+            },
+            timeout=1,
+        )
+    finally:
+        urllib.request.urlopen = original_urlopen
+        time.sleep = original_sleep
+
+    assert incomplete_attempts == 3
+    assert incomplete_response["status"] == "completed"
+    assert incomplete_response["_pilot_request_attempts"] == 3
+    assert incomplete_response["_pilot_cumulative_usage"]["input_tokens"] == 300
+    assert incomplete_response["_pilot_cumulative_usage"]["output_tokens"] == 16050
+
     print("LESSON_EXPLANATION_API_PILOT_R1_SELF_TEST=PASS")
     return 0
 
@@ -1120,11 +1222,12 @@ def live(
 
         if response.get("status") not in {"completed", None}:
             incomplete = response.get("incomplete_details") or {}
-            usage = response.get("usage") or {}
+            usage = response.get("_pilot_cumulative_usage") or response.get("usage") or {}
             details = usage.get("output_tokens_details") or {}
             raise RuntimeError(
                 f"{cid}: response status={response.get('status')} "
                 f"reason={incomplete.get('reason') or 'unknown'} "
+                f"attempts={response.get('_pilot_request_attempts') or 1} "
                 f"input_tokens={usage.get('input_tokens')} "
                 f"output_tokens={usage.get('output_tokens')} "
                 f"reasoning_tokens={details.get('reasoning_tokens')}"
@@ -1134,7 +1237,7 @@ def live(
         validate_patch(patch=generated["ko"], card=ko_card, targets=targets, language="ko")
         validate_patch(patch=generated["en"], card=en_card, targets=targets, language="en")
 
-        usage = response.get("usage") or {}
+        usage = response.get("_pilot_cumulative_usage") or response.get("usage") or {}
         input_tokens = int(usage.get("input_tokens") or 0)
         output_tokens = int(usage.get("output_tokens") or 0)
         reasoning_tokens = int(
@@ -1163,6 +1266,7 @@ def live(
             "side_card_ids": ko_card.get("side_card_ids") or [],
             "model": model,
             "response_id": response.get("id") or "",
+            "request_attempts": int(response.get("_pilot_request_attempts") or 1),
             "usage": {
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
