@@ -773,18 +773,18 @@
       "common_mistake": "It is easy to assume that as long as a citation field exists, the accuracy of the source is automatically guaranteed."
     },
     "teaching_example": {
-      "code": "def rerank(items): return list(reversed(items))\ndef validate(items): return [x for x in items if x[\"ok\"]]\nhits=[{\"id\":\"a\",\"ok\":True}]\nverified=validate(rerank(hits))",
-      "walkthrough": "First, reorder the candidates and retain only the verified items from the result."
+      "code": "def rerank(items):\n    return list(reversed(items))\n\ndef validate(items):\n    return [item for item in items if item[\"ok\"]]\n\nhits = [{\"id\": \"a\", \"ok\": False}, {\"id\": \"b\", \"ok\": True}]\nverified = validate(rerank(hits))\nprint(verified)",
+      "walkthrough": "1) The first definition creates `rerank`. When called, it returns a list with the supplied items in reverse order.\n2) The second definition creates `validate`. When called, it keeps only items whose `ok` value is true. This is a simple filter for this example, not an implementation of actual citation verification.\n3) `hits` contains two items in the order a, b.\n4) Execute the nested call from the inside out. `rerank(hits)` returns a list in the order b, a.\n5) That return value becomes the argument to `validate`. It keeps b and excludes a, returning `[{\"id\": \"b\", \"ok\": True}]`, which is bound to `verified`.\n6) The final line prints `[{'id': 'b', 'ok': True}]`. The outer function does not process first; it processes the result of the inner call."
     },
     "answer_explanation": {
-      "step_by_step": "After the candidate hits undergo reranking, they are passed to the citation validator.",
-      "why_correct": "This is because these are steps aimed at improving the quality of search results and the quality of evidence linking, respectively.",
+      "step_by_step": "1) `def` defines the function. Its body runs when `improve_retrieval(query, chunks)` is called.\n2) It calls `retrieve_with_embeddings(query, chunks)` and binds the return value to `hits`.\n3) In `validate_citations(rerank(hits))`, it first calls `rerank(hits)`.\n4) It calls `validate_citations` with that return value as its argument. This function's return value is bound to `verified_hits`.\n5) `return verified_hits` sends that value back to the caller. The visible flow is retrieval call → rerank call → citation-validation call → return. The specific resulting data cannot be determined without the helper implementations.",
+      "why_correct": "The correct answer is “Add embedding search or reranking and strengthen citation verification.” This choice matches the retrieval → rerank → validation direction shown in the code. These named calls are already present, so read the choice as strengthening this processing flow, not as proof that a new stage is necessarily missing.",
       "common_wrong_choice": {
         "choice": "Change it so that the answer is provided without justification.",
-        "why_wrong": "This is the exact opposite of RAG’s evidence-first approach.",
-        "misread_step": "This is an example of misunderstanding the purpose of improving retrieval quality."
+        "why_wrong": "The code does not immediately return the retrieval results; it passes the result of `rerank` to `validate_citations`. Providing an answer without justification does not match the direction of strengthening this validation step.",
+        "misread_step": "This misreading treats `hits` as the immediate final result and skips the nested calls in between."
       },
-      "takeaway": "We view RAG improvements as a separate process: **retrieve → rerank → citation validation → answer**."
+      "takeaway": "A nested call passes the inner result to the outer call: `hits` → `rerank` → `validate_citations` → return `verified_hits`."
     },
     "target_statement": "verified_hits = validate_citations(rerank(hits))",
     "focus_span": "validate_citations(rerank(hits))",
@@ -1562,18 +1562,18 @@
       "common_mistake": "It’s easy to think that a decorator wraps only the first line of a function’s body. However, it actually applies to the entire function object."
     },
     "teaching_example": {
-      "code": "class App:\n    def route(self, path):\n        def decorate(func):\n            func.path = path\n            return func\n        return decorate\n\napp = App()\n\n@app.route(\"/items\")\ndef items():\n    return []",
-      "walkthrough": "The decorator created by the `route` call is applied to the `items` function, attaching path information."
+      "code": "class App:\n    def route(self, path):\n        def decorate(func):\n            func.path = path\n            return func\n        return decorate\n\napp = App()\n\n@app.route(\"/items\")\ndef items():\n    return []\n\nprint(items.path)",
+      "walkthrough": "1. `class App` defines a class with a `route` method. The inner `decorate` function takes a function and attaches a path label to it.\n2. `app = App()` creates an object and binds it to `app`.\n3. Evaluating `app.route(\"/items\")` makes `path` equal to `\"/items\"`. `def decorate(func)` creates the inner function, and `return decorate` returns it. The body of `decorate` has not run yet.\n4. The function object created by `def items()` is passed to the returned decorator as `func`. `func.path = path` sets that function's `path` attribute to `\"/items\"`.\n5. `return func` returns the same function, and the result is bound to `items`. The `return []` inside `items` does not run because the function has not been called.\n6. `print(items.path)` reads the attached attribute and prints `/items`. Applying the decorator is therefore different from calling `items()`."
     },
     "answer_explanation": {
-      "step_by_step": "The decorator created by `@app.post('/api/search', ...)` records the method as POST and the path as /api/search.",
-      "why_correct": "This is because the actual call arguments of the decorator expression are used as route information.",
+      "step_by_step": "1. `app = App()` creates an object.\n2. Python evaluates `app.post(\"/api/search\", response_model=\"SearchResponse\")`. `path` becomes `\"/api/search\"`, `response_model` becomes `\"SearchResponse\"`, and `post` returns the inner function `decorate`.\n3. The `search` function object created immediately below is passed to `decorate` as `func`.\n4. `func.route = (\"POST\", path, response_model)` runs, storing `(\"POST\", \"/api/search\", \"SearchResponse\")` in the function's `route` attribute.\n5. `return func` returns the same function, which is bound to `search`. The body of `search` does not run during this process.\n6. The question asks for the HTTP method and path among the three stored values. The first two values are `(\"POST\", \"/api/search\")`.",
+      "why_correct": "`\"POST\"` is written directly as the first value of the tuple assigned to `func.route`, and the second value, `path`, contains the argument `\"/api/search\"`. `\"SearchResponse\"` is the third value, so it is not part of the requested pair.",
       "common_wrong_choice": {
         "choice": "(\"GET\", \"/api/search\")",
-        "why_wrong": "The method name used is ``post``.",
-        "misread_step": "This is a case where the HTTP method is not associated with the decorator name."
+        "why_wrong": "The path is right, but the assignment stores `\"POST\"`, not `\"GET\"`, as the first value.",
+        "misread_step": "This guesses the method without checking the first value in `func.route = (\"POST\", path, response_model)`."
       },
-      "takeaway": "An endpoint is read in the following order: **decorator name → route argument → the function immediately below it**."
+      "takeaway": "Follow the decorator call's arguments → the function passed to the returned decorator → the attribute assignment → the returned function. Here, `search.route` is set without calling `search`."
     },
     "target_statement": "@app.post(\"/api/search\", response_model=\"SearchResponse\")",
     "focus_span": "@app.post(\"/api/search\", response_model=\"SearchResponse\")",
