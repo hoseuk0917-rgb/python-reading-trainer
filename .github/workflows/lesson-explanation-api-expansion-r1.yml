@@ -1,0 +1,284 @@
+name: Lesson explanation API expansion R1
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'tools/run_lesson_explanation_api_pilot_r1.py'
+      - '.github/workflows/lesson-explanation-api-expansion-r1.yml'
+      - 'docs/LESSON_EXPLANATION_CONTRACT_V1.md'
+      - 'tools/audit_explanation_readiness_r1.py'
+  workflow_dispatch:
+    inputs:
+      live:
+        description: 'Run the remaining lesson explanation rewrite expansion'
+        required: false
+        default: false
+        type: boolean
+      limit:
+        description: 'Safe expansion card count; maximum 151'
+        required: false
+        default: '151'
+        type: string
+      resume_run_id:
+        description: 'Optional failed expansion run ID whose validated provenance should be resumed'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: lesson-explanation-api-expansion-r1
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Compile runner
+        run: python -m py_compile tools/run_lesson_explanation_api_pilot_r1.py
+
+      - name: Runner self-test
+        run: python tools/run_lesson_explanation_api_pilot_r1.py --self-test
+
+      - name: Deterministic remaining-safe plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/run_lesson_explanation_api_pilot_r1.py --plan --limit 151 \
+            | tee "$RUNNER_TEMP/lesson-explanation-expansion-r1-plan.txt"
+
+          grep -F 'PILOT_LIMIT=151' "$RUNNER_TEMP/lesson-explanation-expansion-r1-plan.txt"
+          grep -F 'PILOT_DISPOSITION_COUNTS={"CONCEPT_EXPLANATION_REWRITE": 75, "WALKTHROUGH_OR_ANSWER_REWRITE": 76}' \
+            "$RUNNER_TEMP/lesson-explanation-expansion-r1-plan.txt"
+          grep -F 'PILOT_AUTHORITY_COUNTS={"LOCAL_CODE_AUTHORITY": 37, "PYTHON_LANGUAGE_AUTHORITY": 114}' \
+            "$RUNNER_TEMP/lesson-explanation-expansion-r1-plan.txt"
+          grep -F 'PILOT_SELECTION_SHA256=a2fe17ac3d355ddb8696e3ca7aea9a4a526c1105df4f3a9a3cb55bd36d0fc5d2' \
+            "$RUNNER_TEMP/lesson-explanation-expansion-r1-plan.txt"
+
+  live:
+    if: github.event_name == 'workflow_dispatch' && inputs.live == true
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      EXPANSION_BRANCH: automation/lesson-explanation-api-expansion-r1
+
+    steps:
+      - name: Check out full repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Require API key
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${OPENAI_API_KEY:-}" ]; then
+            echo "OPENAI_API_KEY repository secret is missing."
+            exit 1
+          fi
+
+      - name: Prepare clean expansion branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin main
+
+          if git ls-remote --exit-code --heads origin "$EXPANSION_BRANCH" >/dev/null 2>&1; then
+            echo "Expansion branch already exists: $EXPANSION_BRANCH"
+            echo "Refusing to silently process a second expansion batch."
+            exit 1
+          fi
+
+          git checkout -b "$EXPANSION_BRANCH" origin/main
+
+      - name: Download resume provenance
+        if: inputs.resume_run_id != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          RESUME_RUN_ID="${{ inputs.resume_run_id }}"
+          if ! [[ "$RESUME_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "resume_run_id must be a numeric GitHub Actions run ID: $RESUME_RUN_ID"
+            exit 1
+          fi
+
+          mkdir -p "$RUNNER_TEMP/resume"
+          gh run download "$RESUME_RUN_ID" \
+            --repo "${{ github.repository }}" \
+            --name lesson-explanation-api-expansion-r1 \
+            --dir "$RUNNER_TEMP/resume"
+
+          test -f "$RUNNER_TEMP/resume/lesson-explanation-api-expansion-r1.jsonl"
+
+      - name: Run lesson explanation expansion
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          LIMIT="${{ inputs.limit }}"
+          RESUME_RUN_ID="${{ inputs.resume_run_id }}"
+
+          if ! [[ "$LIMIT" =~ ^[1-9][0-9]*$ ]]; then
+            echo "limit must be a positive integer: $LIMIT"
+            exit 1
+          fi
+          if [ "$LIMIT" -gt 151 ]; then
+            echo "safe expansion limit may not exceed 151"
+            exit 1
+          fi
+
+          ARGS=(
+            --live
+            --limit "$LIMIT"
+            --model gpt-6.1-sol
+            --result-path "$RUNNER_TEMP/lesson-explanation-api-expansion-r1.jsonl"
+            --hold-path "$RUNNER_TEMP/lesson-explanation-api-expansion-r1-holds.jsonl"
+            --max-total-tokens 2250000
+            --max-holds 8
+          )
+
+          if [ -n "$RESUME_RUN_ID" ]; then
+            ARGS+=(
+              --resume-result-path
+              "$RUNNER_TEMP/resume/lesson-explanation-api-expansion-r1.jsonl"
+            )
+          fi
+
+          python tools/run_lesson_explanation_api_pilot_r1.py "${ARGS[@]}"
+
+      - name: Rebuild runtime lesson bundles
+        run: python tools/build_runtime_lesson_bundle_v400_5.py
+
+      - name: Validate generated lessons
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/validate_lessons.py
+          python tools/validate_bilingual_lessons_v400_7.py
+          python tools/audit_explanation_readiness_r1.py --limit 0 \
+            | tee "$RUNNER_TEMP/explanation-readiness-after.txt"
+
+      - name: Verify bounded diff
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          result_path = Path(os.environ["RUNNER_TEMP"]) / "lesson-explanation-api-expansion-r1.jsonl"
+          rows = [
+              json.loads(line)
+              for line in result_path.read_text(encoding="utf-8").splitlines()
+              if line.strip()
+          ]
+
+          if not rows:
+              raise SystemExit("expansion result artifact is empty")
+
+          allowed = {
+              "data/runtime/lesson_bundle_v400_5.json",
+              "data_i18n/en/runtime/lesson_bundle_v400_5.json",
+          }
+          for row in rows:
+              filename = row["file"]
+              allowed.add(f"data/lessons/{filename}")
+              allowed.add(f"data_i18n/en/lessons/{filename}")
+
+          changed = {
+              line.strip()
+              for line in subprocess.check_output(
+                  ["git", "diff", "--name-only"],
+                  text=True,
+              ).splitlines()
+              if line.strip()
+          }
+
+          unexpected = sorted(changed - allowed)
+          missing_runtime = sorted(
+              {
+                  "data/runtime/lesson_bundle_v400_5.json",
+                  "data_i18n/en/runtime/lesson_bundle_v400_5.json",
+              }
+              - changed
+          )
+
+          if unexpected:
+              raise SystemExit(f"unexpected changed files: {unexpected}")
+          if missing_runtime:
+              raise SystemExit(f"runtime lesson bundle changes missing: {missing_runtime}")
+
+          print(f"EXPANSION_CHANGED_FILE_COUNT={len(changed)}")
+          print(f"EXPANSION_RESULT_ROW_COUNT={len(rows)}")
+          print("LESSON_EXPLANATION_API_EXPANSION_R1_DIFF_BOUNDARY=PASS")
+          PY
+
+          git diff --quiet -- \
+            data/runtime/support_bundle_v400_5.json \
+            data_i18n/en/runtime/support_bundle_v400_5.json
+
+          git diff --check
+
+      - name: Commit and push reviewed expansion candidate branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git add \
+            data/lessons \
+            data_i18n/en/lessons \
+            data/runtime/lesson_bundle_v400_5.json \
+            data_i18n/en/runtime/lesson_bundle_v400_5.json
+
+          if git diff --cached --quiet; then
+            echo "No expansion changes to commit."
+            exit 1
+          fi
+
+          git commit -m "Generate remaining lesson explanation expansion R1"
+          git push -u origin "$EXPANSION_BRANCH"
+
+          echo "EXPANSION_BRANCH_READY=$EXPANSION_BRANCH"
+
+      - name: Upload expansion provenance
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lesson-explanation-api-expansion-r1
+          path: |
+            ${{ runner.temp }}/lesson-explanation-api-expansion-r1.jsonl
+            ${{ runner.temp }}/lesson-explanation-api-expansion-r1-holds.jsonl
+            ${{ runner.temp }}/explanation-readiness-after.txt
+          if-no-files-found: warn
+          retention-days: 14

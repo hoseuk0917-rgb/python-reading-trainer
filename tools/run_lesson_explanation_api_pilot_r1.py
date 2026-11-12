@@ -219,8 +219,8 @@ def round_robin(rows: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
 
 
 def select_pilot(limit: int) -> list[dict[str, Any]]:
-    if limit < 1 or limit > 100:
-        raise SystemExit("pilot limit must be between 1 and 100")
+    if limit < 1 or limit > 425:
+        raise SystemExit("rewrite batch limit must be between 1 and 425")
 
     concept_rows: list[dict[str, Any]] = []
     answer_rows: list[dict[str, Any]] = []
@@ -1458,6 +1458,7 @@ def live(
     hold_path: Path,
     resume_result_path: Path | None,
     max_total_tokens: int,
+    max_holds: int,
 ) -> int:
     api_key = os.environ.get("OPENAI_API_KEY", "").strip()
     if not api_key:
@@ -1649,9 +1650,9 @@ def live(
                 f"{type(exc).__name__}|{clean_space(str(exc))[:500]}"
             )
 
-            if len(holds) > 5:
+            if len(holds) > max_holds:
                 raise RuntimeError(
-                    f"pilot hold limit exceeded: {len(holds)}>5"
+                    f"rewrite hold limit exceeded: {len(holds)}>{max_holds}"
                 ) from exc
 
             current_total = total_input_tokens + total_output_tokens
@@ -1771,6 +1772,7 @@ def main() -> int:
     parser.add_argument("--hold-path", type=Path, default=Path("lesson-explanation-api-pilot-r1-holds.jsonl"))
     parser.add_argument("--resume-result-path", type=Path)
     parser.add_argument("--max-total-tokens", type=int, default=1_500_000)
+    parser.add_argument("--max-holds", type=int, default=5)
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--plan", action="store_true")
     parser.add_argument("--live", action="store_true")
@@ -1792,6 +1794,7 @@ def main() -> int:
         hold_path=args.hold_path,
         resume_result_path=args.resume_result_path,
         max_total_tokens=args.max_total_tokens,
+        max_holds=args.max_holds,
     )
 
 
