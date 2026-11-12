@@ -31,7 +31,7 @@ STDLIB_ROOTS = {
 }
 THIRD_PARTY_ROOTS = {
     "fastapi","gradio","numpy","pandas","peft","pydantic","requests","sklearn","streamlit",
-    "torch","transformers","uvicorn","tqdm","cv2","pytesseract","fitz","pdfplumber","PIL",
+    "torch","transformers","uvicorn","cv2","pytesseract","fitz","pdfplumber","PIL",
 }
 
 SEMANTIC_CALL_LEAFS = {
