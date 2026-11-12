@@ -619,6 +619,10 @@ def openai_request(
             last_error = RuntimeError(message)
             if exc.code not in {408, 409, 429, 500, 502, 503, 504} or attempt == 3:
                 raise last_error from exc
+        except TimeoutError as exc:
+            last_error = RuntimeError(f"OpenAI read timeout: {exc}")
+            if attempt == 3:
+                raise last_error from exc
         except urllib.error.URLError as exc:
             last_error = RuntimeError(f"OpenAI URL error: {exc}")
             if attempt == 3:
@@ -970,6 +974,49 @@ def self_test() -> int:
         "concept_explanation",
         "answer_explanation",
     }
+
+    original_urlopen = urllib.request.urlopen
+    original_sleep = time.sleep
+    retry_attempts = 0
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return b'{"status":"completed"}'
+
+    def fake_urlopen(request, timeout):
+        nonlocal retry_attempts
+        retry_attempts += 1
+        if retry_attempts < 3:
+            raise TimeoutError("simulated read timeout")
+        return FakeResponse()
+
+    try:
+        urllib.request.urlopen = fake_urlopen
+        time.sleep = lambda _: None
+        retry_response = openai_request(
+            api_key="test-key",
+            model="test-model",
+            prompt="test",
+            schema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": False,
+            },
+            timeout=1,
+        )
+    finally:
+        urllib.request.urlopen = original_urlopen
+        time.sleep = original_sleep
+
+    assert retry_attempts == 3
+    assert retry_response["status"] == "completed"
 
     print("LESSON_EXPLANATION_API_PILOT_R1_SELF_TEST=PASS")
     return 0
