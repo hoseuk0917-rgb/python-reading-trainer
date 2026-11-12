@@ -24,7 +24,7 @@ EXPECTED_AUTO_DIRECT_OFFICIAL_IDS = {
     "PY12_L08_no_grad_001",
     "PY36_L07_task_001",
 }
-EXPECTED_CLAIM_SHA256 = ""  # Frozen after the first resolution CI pass.
+EXPECTED_CLAIM_SHA256 = "482342022af7a1a55ca3a806387684ffd77bb82d82373290ad4327b43d190ecc"
 
 
 def clean(value: object) -> str:
