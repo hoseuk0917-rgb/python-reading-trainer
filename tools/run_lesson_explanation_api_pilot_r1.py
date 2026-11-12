@@ -1002,9 +1002,17 @@ def validate_resume_results(
 
     validated: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
+    seen_indexes: set[int] = set()
 
-    for index, row in enumerate(rows, start=1):
-        selected_row = selected[index - 1]
+    for row in rows:
+        row_index = int(row.get("index") or 0)
+        if row_index < 1 or row_index > len(selected):
+            raise RuntimeError(f"resume index out of range: {row_index}")
+        if row_index in seen_indexes:
+            raise RuntimeError(f"duplicate resume index: {row_index}")
+        seen_indexes.add(row_index)
+
+        selected_row = selected[row_index - 1]
         cid = str(selected_row["id"])
         targets = list(selected_row["_patch_targets"])
 
@@ -1014,11 +1022,9 @@ def validate_resume_results(
             raise RuntimeError(f"{cid}: resume prompt version mismatch")
         if row.get("selection_sha256") != selection_sha:
             raise RuntimeError(f"{cid}: resume selection hash mismatch")
-        if int(row.get("index") or 0) != index:
-            raise RuntimeError(f"{cid}: resume index mismatch")
         if str(row.get("id") or "") != cid:
             raise RuntimeError(
-                f"resume id mismatch at {index}: expected={cid} actual={row.get('id')}"
+                f"resume id mismatch at {row_index}: expected={cid} actual={row.get('id')}"
             )
         if cid in seen_ids:
             raise RuntimeError(f"{cid}: duplicate resume result")
@@ -1075,7 +1081,7 @@ def validate_resume_results(
 
         validated.append(row)
 
-    return validated
+    return sorted(validated, key=lambda row: int(row["index"]))
 
 
 def load_resume_results(
@@ -1250,13 +1256,21 @@ def self_test() -> int:
 
     resume_selected = [
         {
+            "id": "RESUME_UNUSED",
+            "_patch_targets": ["concept_explanation"],
+            "_file": "resume.json",
+            "_authority": "PYTHON_LANGUAGE_AUTHORITY",
+            "_disposition": "CONCEPT_EXPLANATION_REWRITE",
+            "_reasons": ["EASY_BRIDGE_REVIEW"],
+        },
+        {
             "id": "RESUME_TEST",
             "_patch_targets": ["concept_explanation"],
             "_file": "resume.json",
             "_authority": "PYTHON_LANGUAGE_AUTHORITY",
             "_disposition": "CONCEPT_EXPLANATION_REWRITE",
             "_reasons": ["EASY_BRIDGE_REVIEW"],
-        }
+        },
     ]
     resume_ko_card = {
         "id": "RESUME_TEST",
@@ -1270,7 +1284,7 @@ def self_test() -> int:
         "schema": RESULT_SCHEMA,
         "prompt_version": PROMPT_VERSION,
         "selection_sha256": "resume-sha",
-        "index": 1,
+        "index": 2,
         "id": "RESUME_TEST",
         "file": "resume.json",
         "authority": "PYTHON_LANGUAGE_AUTHORITY",
@@ -1361,6 +1375,7 @@ def live(
     model: str,
     timeout: int,
     result_path: Path,
+    hold_path: Path,
     resume_result_path: Path | None,
     max_total_tokens: int,
 ) -> int:
@@ -1390,10 +1405,18 @@ def live(
     )
 
     result_path.parent.mkdir(parents=True, exist_ok=True)
+    hold_path.parent.mkdir(parents=True, exist_ok=True)
     if result_path.exists():
         result_path.unlink()
+    if hold_path.exists():
+        hold_path.unlink()
 
     results: list[dict[str, Any]] = list(resume_results)
+    result_by_index = {
+        int(row["index"]): row
+        for row in results
+    }
+    holds: list[dict[str, Any]] = []
     total_input_tokens = sum(
         int((row.get("usage") or {}).get("input_tokens") or 0)
         for row in results
@@ -1414,7 +1437,8 @@ def live(
                     json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n"
                 )
         print(f"PILOT_RESUME_COUNT={len(results)}")
-        print(f"PILOT_RESUME_LAST_ID={results[-1]['id']}")
+        print(f"PILOT_RESUME_LAST_INDEX={max(result_by_index)}")
+        print(f"PILOT_RESUME_LAST_ID={result_by_index[max(result_by_index)]['id']}")
 
     current_total = total_input_tokens + total_output_tokens
     if current_total > max_total_tokens:
@@ -1424,7 +1448,7 @@ def live(
         )
 
     for index, selected_row in enumerate(selected, start=1):
-        if index <= len(results):
+        if index in result_by_index:
             print(
                 f"PILOT_SKIP={index}/{limit}|{selected_row['id']}|"
                 "RESUME_VALIDATED"
@@ -1449,30 +1473,101 @@ def live(
             gold_reference=one_gold_reference(selected_row, ko_gold, en_cards),
         )
 
-        response = openai_request(
-            api_key=api_key,
-            model=model,
-            prompt=prompt,
-            schema=response_schema(targets),
-            timeout=timeout,
-        )
-
-        if response.get("status") not in {"completed", None}:
-            incomplete = response.get("incomplete_details") or {}
-            usage = response.get("_pilot_cumulative_usage") or response.get("usage") or {}
-            details = usage.get("output_tokens_details") or {}
-            raise RuntimeError(
-                f"{cid}: response status={response.get('status')} "
-                f"reason={incomplete.get('reason') or 'unknown'} "
-                f"attempts={response.get('_pilot_request_attempts') or 1} "
-                f"input_tokens={usage.get('input_tokens')} "
-                f"output_tokens={usage.get('output_tokens')} "
-                f"reasoning_tokens={details.get('reasoning_tokens')}"
+        response: dict[str, Any] | None = None
+        try:
+            response = openai_request(
+                api_key=api_key,
+                model=model,
+                prompt=prompt,
+                schema=response_schema(targets),
+                timeout=timeout,
             )
 
-        generated = json.loads(extract_output_text(response))
-        validate_patch(patch=generated["ko"], card=ko_card, targets=targets, language="ko")
-        validate_patch(patch=generated["en"], card=en_card, targets=targets, language="en")
+            if response.get("status") not in {"completed", None}:
+                incomplete = response.get("incomplete_details") or {}
+                usage = response.get("_pilot_cumulative_usage") or response.get("usage") or {}
+                details = usage.get("output_tokens_details") or {}
+                raise RuntimeError(
+                    f"{cid}: response status={response.get('status')} "
+                    f"reason={incomplete.get('reason') or 'unknown'} "
+                    f"attempts={response.get('_pilot_request_attempts') or 1} "
+                    f"input_tokens={usage.get('input_tokens')} "
+                    f"output_tokens={usage.get('output_tokens')} "
+                    f"reasoning_tokens={details.get('reasoning_tokens')}"
+                )
+
+            generated = json.loads(extract_output_text(response))
+            validate_patch(
+                patch=generated["ko"],
+                card=ko_card,
+                targets=targets,
+                language="ko",
+            )
+            validate_patch(
+                patch=generated["en"],
+                card=en_card,
+                targets=targets,
+                language="en",
+            )
+        except (RuntimeError, json.JSONDecodeError) as exc:
+            usage = {}
+            if response is not None:
+                usage = response.get("_pilot_cumulative_usage") or response.get("usage") or {}
+
+            hold_input_tokens = int(usage.get("input_tokens") or 0)
+            hold_output_tokens = int(usage.get("output_tokens") or 0)
+            hold_reasoning_tokens = int(
+                (usage.get("output_tokens_details") or {}).get("reasoning_tokens") or 0
+            )
+            total_input_tokens += hold_input_tokens
+            total_output_tokens += hold_output_tokens
+            total_reasoning_tokens += hold_reasoning_tokens
+
+            hold = {
+                "schema": RESULT_SCHEMA,
+                "prompt_version": PROMPT_VERSION,
+                "selection_sha256": selection_sha,
+                "index": index,
+                "id": cid,
+                "file": str(selected_row["_file"]),
+                "primary_concept": selected_row.get("primary_concept"),
+                "authority": selected_row["_authority"],
+                "disposition_before": selected_row["_disposition"],
+                "quality_reasons_before": selected_row["_reasons"],
+                "patch_targets": targets,
+                "model": model,
+                "status": "HOLD",
+                "error_type": type(exc).__name__,
+                "error": clean_space(str(exc))[:2000],
+                "usage": {
+                    "input_tokens": hold_input_tokens,
+                    "output_tokens": hold_output_tokens,
+                    "reasoning_tokens": hold_reasoning_tokens,
+                    "total_tokens": int(usage.get("total_tokens") or 0),
+                },
+            }
+            holds.append(hold)
+            with hold_path.open("a", encoding="utf-8", newline="\n") as handle:
+                handle.write(
+                    json.dumps(hold, ensure_ascii=False, separators=(",", ":")) + "\n"
+                )
+
+            print(
+                f"PILOT_HOLD={index}/{limit}|{cid}|"
+                f"{type(exc).__name__}|{clean_space(str(exc))[:500]}"
+            )
+
+            if len(holds) > 5:
+                raise RuntimeError(
+                    f"pilot hold limit exceeded: {len(holds)}>5"
+                ) from exc
+
+            current_total = total_input_tokens + total_output_tokens
+            if current_total > max_total_tokens:
+                raise RuntimeError(
+                    f"pilot token guard exceeded: {current_total}>{max_total_tokens}"
+                )
+            continue
 
         usage = response.get("_pilot_cumulative_usage") or response.get("usage") or {}
         input_tokens = int(usage.get("input_tokens") or 0)
@@ -1515,6 +1610,7 @@ def live(
             "quality": generated["quality"],
         }
         results.append(result)
+        result_by_index[index] = result
 
         with result_path.open("a", encoding="utf-8", newline="\n") as handle:
             handle.write(json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\n")
@@ -1531,6 +1627,12 @@ def live(
             raise RuntimeError(
                 f"pilot token guard exceeded: {current_total}>{max_total_tokens}"
             )
+
+    results.sort(key=lambda row: int(row["index"]))
+    successful_selected = [
+        selected[int(result["index"]) - 1]
+        for result in results
+    ]
 
     en_before = {cid: dict(card) for cid, card in en_cards.items()}
 
@@ -1550,14 +1652,21 @@ def live(
             language="en",
         )
 
-    validate_after_apply(selected=selected, en_cards_before=en_before)
+    validate_after_apply(selected=successful_selected, en_cards_before=en_before)
 
     print(f"PILOT_RESULT_COUNT={len(results)}")
+    print(f"PILOT_HOLD_COUNT={len(holds)}")
+    if holds:
+        print("PILOT_HOLD_IDS=" + ",".join(str(row["id"]) for row in holds))
     print(f"PILOT_TOTAL_INPUT_TOKENS={total_input_tokens}")
     print(f"PILOT_TOTAL_OUTPUT_TOKENS={total_output_tokens}")
     print(f"PILOT_TOTAL_REASONING_TOKENS={total_reasoning_tokens}")
     print(f"PILOT_RESULT_PATH={result_path}")
-    print("LESSON_EXPLANATION_API_PILOT_R1_LIVE=PASS")
+    print(f"PILOT_HOLD_PATH={hold_path}")
+    if holds:
+        print("LESSON_EXPLANATION_API_PILOT_R1_LIVE=PASS_WITH_HOLDS")
+    else:
+        print("LESSON_EXPLANATION_API_PILOT_R1_LIVE=PASS")
     return 0
 
 
@@ -1567,6 +1676,7 @@ def main() -> int:
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--result-path", type=Path, default=Path("lesson-explanation-api-pilot-r1.jsonl"))
+    parser.add_argument("--hold-path", type=Path, default=Path("lesson-explanation-api-pilot-r1-holds.jsonl"))
     parser.add_argument("--resume-result-path", type=Path)
     parser.add_argument("--max-total-tokens", type=int, default=1_500_000)
     parser.add_argument("--self-test", action="store_true")
@@ -1587,6 +1697,7 @@ def main() -> int:
         model=args.model,
         timeout=args.timeout,
         result_path=args.result_path,
+        hold_path=args.hold_path,
         resume_result_path=args.resume_result_path,
         max_total_tokens=args.max_total_tokens,
     )
