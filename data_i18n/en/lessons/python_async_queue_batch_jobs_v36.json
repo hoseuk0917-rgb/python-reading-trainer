@@ -641,14 +641,14 @@
                                  "walkthrough":  "The job is not considered successful; instead, it is added to the retry list."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since the current number of attempts is less than the limit, the retry branch is executed, and the job is added to the queue using `append`.",
-                                   "why_correct":  "This is because `retry_queue` acts as a queue for reprocessing failed tasks at a later time.",
+                                   "step_by_step":  "1) `job` is {\"id\": \"j1\", \"attempts\": 1}, and `MAX_ATTEMPTS` is 3. Both queues start as empty lists.\n2) `raise TransientError()` raises an exception, so the code under `except TransientError:` runs.\n3) `job[\"attempts\"] < MAX_ATTEMPTS` evaluates to `1 < 3`, which is true.\n4) Therefore, `retry_queue.append(job)` runs. It calls the `append` method of the `retry_queue` list with `job` as its argument, adding this job as one item at the end of the list.\n5) The result is `retry_queue = [{\"id\": \"j1\", \"attempts\": 1}]`. The `else` branch does not run, so `dead_letter_queue` remains `[]`.",
+                                   "why_correct":  "After the exception, the condition is true and the job is added to `retry_queue`. Thus, the correct answer is “Place failed operations in the retry queue.” This call does not itself run the job again.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Process the task as successful",
-                                                               "why_wrong":  "Registration for a retry is different from successful completion.",
-                                                               "misread_step":  "This is an example of confusion between \"retry scheduling\" and \"success state.\""
+                                                               "why_wrong":  "`append(job)` only adds the job to a list. This code contains no operation that processes the task as successful.",
+                                                               "misread_step":  "This misreads the step that adds the job to the retry queue as a step that successfully completes it."
                                                            },
-                                   "takeaway":  "\"retry logic\" is interpreted as **transient failure → check for attempts → retry/dead-letter branch**."
+                                   "takeaway":  "Handle the exception → check `1 < 3` → call `append(job)` → add the job to the retry list. Enqueuing a job is different from running it or processing it as successful."
                                },
         "target_statement":  "retry_queue.append(job)",
         "focus_span":  "retry_queue.append(job)",

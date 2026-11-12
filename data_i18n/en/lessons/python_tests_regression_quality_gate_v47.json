@@ -639,14 +639,14 @@
                                  "walkthrough":  "Since `missing` is truthy, a `SystemExit` occurs, and the assignment to `result` is never reached."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Because a file is missing, the `if` statement is executed and a `SystemExit` occurs. As a result, the process does not proceed to the commit stage.",
-                                   "why_correct":  "This is because it brings failures to light as early as possible, thereby preventing subsequent incorrect operations.",
+                                   "step_by_step":  "1. `missing_files` starts as `[\"lessons.json\"]`, and `commits` starts as `[]`.\n2. `def commit_changes()` defines the function; it does not yet execute `commits.append(\"committed\")`.\n3. At `if missing_files:`, the list is nonempty, so the condition is treated as true.\n4. `raise SystemExit(\"missing files\")` raises an exception. Nothing in this code handles it, so normal execution stops.\n5. The final `commit_changes()` call is not reached, so `\"committed\"` is not appended and `commits` remains `[]`.",
+                                   "why_correct":  "After checking that files are missing, the code stops before running the subsequent operation, `commit_changes()`. Therefore, the correct answer is 'Prevents subsequent steps from proceeding while the current one is in a broken state.'",
                                    "common_wrong_choice":  {
                                                                "choice":  "Hides errors and passes the test unconditionally",
-                                                               "why_wrong":  "\"Fail fast\" does not hide errors but reveals them immediately through failure.",
-                                                               "misread_step":  "This is a case of understanding early termination and error ignoring in reverse."
+                                                               "why_wrong":  "The code does not ignore the missing-file state: it raises `SystemExit(\"missing files\")` and prevents the later operation.",
+                                                               "misread_step":  "This misreads the final `commit_changes()` as still executing after `raise`. Even though the call is outside the `if` block, an earlier unhandled exception prevents execution from reaching that line."
                                                            },
-                                   "takeaway":  "\"Fail fast\" is interpreted as **checking mandatory conditions → immediate failure → preventing subsequent side effects**."
+                                   "takeaway":  "Check the condition → stop early with `raise` → never reach the subsequent call. Here, `commits` stays `[]`."
                                },
         "target_statement":  "raise SystemExit(\"missing files\")",
         "focus_span":  "raise SystemExit(\"missing files\")",
@@ -752,24 +752,24 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "여러 local check 결과를 all 함수로 묶어 commit 준비 여부를 계산하는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`all(iterable)` is a function call that returns True when every item in the iterable is truthy.",
-                                    "how_to_read":  "We trace all the way to the internal calls within the generator to see what boolean results are passed to `all`.",
-                                    "key_point":  "By passing multiple validation checks at once before committing, you can reduce the risk of broken JSON, duplicate IDs, or incorrect answers being added to the repository.",
-                                    "common_mistake":  "It’s easy to assume that if just one verification is True, then all are True. All items must be True."
+                                    "what_it_is":  "Easy meaning: `check()` runs a check, and `all(...)` checks whether every result passes.\nExact definition: A function call is an expression that executes a function and obtains its return value; `all(iterable)` is a Python built-in function call that returns `True` when every supplied item evaluates as true.",
+                                    "how_to_read":  "Picture a checklist examined in order. The `def` statements define the check functions, and `checks` stores those functions without running them. As `for check in checks` selects each function, `check()` calls it. `all` examines the returned values in order.",
+                                    "key_point":  "`json_validation()` → `True` → `duplicate_id_check()` → `True` → `answer_check()` → `False` → `all(...)` returns `False` → `ready_to_commit = False`. The code computes that not all checks passed.",
+                                    "common_mistake":  "It is easy to think that putting function names in `checks` runs the checks. But `answer_check`, the function itself, differs from `answer_check()`, which runs it and returns `False`. Also, the first two `True` results do not make `all` return `True` when the final result is `False`."
                                 },
         "teaching_example":  {
                                  "code":  "checks = [lambda: True, lambda: False]\nready = all(check() for check in checks)",
                                  "walkthrough":  "Since the second check is False, `ready` is False."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since all three validation functions are executed and one returns False, the `all` result is False. This means you can detect the problem before committing.",
-                                   "why_correct":  "Because the purpose of a pre-commit check is to block defects before incorrect changes enter the repository.",
+                                   "step_by_step":  "1) The three `def` statements define functions. Their bodies do not run yet.\n2) `checks` stores the three functions in order.\n3) As `all` requests results, `check()` first calls `json_validation()` and obtains `True`.\n4) Next, `duplicate_id_check()` returns `True`.\n5) Finally, `answer_check()` returns `False`.\n6) Since not every result is true, `all` returns `False`, which is stored in `ready_to_commit`.",
+                                   "why_correct":  "The correct choice is 'To catch broken files before they are committed,'. In this example, computing commit readiness reveals a failed check. This illustrates the purpose of finding problems before committing. The code itself does not perform or block a commit; it only computes readiness.",
                                    "common_wrong_choice":  {
                                                                "choice":  "To run tests only after deployment,",
-                                                               "why_wrong":  "As the name suggests, \"pre-commit\" refers to a check performed before a commit.",
-                                                               "misread_step":  "This is an example of misunderstanding the timing of the check."
+                                                               "why_wrong":  "The checks in this card are intended to find problems before committing, not to run only after deployment.",
+                                                               "misread_step":  "This misreads the checks that compute `ready_to_commit` as checks performed after deployment."
                                                            },
-                                   "takeaway":  "\"pre-commit\" is interpreted as **multiple local checks → check if all PASS → commit allowed**."
+                                   "takeaway":  "Function list → call each function with `check()` → examine return values with `all` → one result is `False`, so readiness is also `False`."
                                },
         "target_statement":  "ready_to_commit = all(check() for check in checks)",
         "focus_span":  "all(check() for check in checks)",
@@ -871,10 +871,10 @@
         "primary_concept":  "f_string",
         "reading_goal_internal":  "f-string의 고정 문자열과 중괄호 표현식을 구분해 현재 passed/failed 값을 한 줄 요약 문자열에 삽입한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "An f-string evaluates expressions within the string `{expression}` and inserts the results into the text.",
-                                    "how_to_read":  "Separate the fixed text from the two expressions `{passed}` and `{failed}`, then insert the current numbers.",
-                                    "key_point":  "An f-string represents a numeric value within a string but does not change the data type of the original integer variable.",
-                                    "common_mistake":  "It’s easy to assume that the curly braces will be printed as-is or that the two numbers will be added together."
+                                    "what_it_is":  "Easy meaning: An f-string builds a string by filling places in text with current values.\nExact definition: An f-string is a string notation with f before the opening quote that evaluates `{expression}` parts and inserts their results as text.",
+                                    "how_to_read":  "Picture the braces as places to fill with values. `passed=` and `, failed=` are fixed text, while `{passed}` and `{failed}` mark where current values go. Read `passed = 6` first, then `failed = 1`, and insert 6 and 1 into their respective places in the f-string.",
+                                    "key_point":  "The 6 from `passed` goes into the `{passed}` position, and the 1 from `failed` goes into the `{failed}` position. This creates the string `\"passed=6, failed=1\"`, which is assigned to `summary`. `print(summary)` displays its contents. The original values of `passed` and `failed` remain integers.",
+                                    "common_mistake":  "Do not read this as keeping the braces or adding the numbers to get 7. This f-string evaluates each expression in braces and inserts it as text in its position, producing one string: `\"passed=6, failed=1\"`."
                                 },
         "teaching_example":  {
                                  "code":  "passed=4\nfailed=2\nprint(f\"passed={passed}, failed={failed}\")",

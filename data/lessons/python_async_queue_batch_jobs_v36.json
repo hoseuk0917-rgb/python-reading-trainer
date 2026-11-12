@@ -641,14 +641,14 @@
       "walkthrough": "job이 성공한 것이 아니라 재시도 대상 list에 추가됩니다."
     },
     "answer_explanation": {
-      "step_by_step": "현재 attempts가 limit보다 작아 retry branch가 실행되고 append로 job이 queue에 들어갑니다.",
-      "why_correct": "retry_queue는 실패 작업을 나중에 다시 처리하기 위한 대기열 역할을 하기 때문입니다.",
+      "step_by_step": "1) `job`은 {\"id\": \"j1\", \"attempts\": 1}이고, `MAX_ATTEMPTS`는 3입니다. 두 대기열은 빈 리스트로 시작합니다.\n2) `raise TransientError()`가 예외를 발생시키면 `except TransientError:`의 코드가 실행됩니다.\n3) `job[\"attempts\"] < MAX_ATTEMPTS`는 `1 < 3`이므로 참입니다.\n4) 따라서 `retry_queue.append(job)`을 실행합니다. `retry_queue` 리스트의 `append` 메서드를 `job`을 인자로 전달해 호출하여, 리스트 끝에 이 작업을 하나의 항목으로 추가합니다.\n5) 결과는 `retry_queue = [{\"id\": \"j1\", \"attempts\": 1}]`입니다. `else`는 실행되지 않아 `dead_letter_queue`는 `[]`로 남습니다.",
+      "why_correct": "예외가 발생한 뒤 조건이 참이 되어 작업이 `retry_queue`에 추가됩니다. 따라서 정답은 ‘실패한 작업을 재시도 대기열에 넣는다’입니다. 이 호출 자체가 작업을 다시 실행하는 것은 아닙니다.",
       "common_wrong_choice": {
         "choice": "작업을 성공 처리한다",
-        "why_wrong": "재시도 대상 등록은 성공 완료와 다릅니다.",
-        "misread_step": "retry scheduling과 success state를 혼동한 경우입니다."
+        "why_wrong": "`append(job)`은 리스트에 작업을 추가할 뿐입니다. 이 코드에는 작업을 성공 처리하는 동작이 없습니다.",
+        "misread_step": "작업을 재시도 대기열에 추가하는 단계를 작업이 성공적으로 끝난 단계로 잘못 읽은 것입니다."
       },
-      "takeaway": "retry logic은 **transient failure → attempts check → retry/dead-letter 분기**로 읽습니다."
+      "takeaway": "예외 처리 → `1 < 3` 확인 → `append(job)` 호출 → 재시도 리스트에 작업 추가. 대기열에 넣는 것과 작업을 실행하거나 성공 처리하는 것은 다릅니다."
     },
     "target_statement": "retry_queue.append(job)",
     "focus_span": "retry_queue.append(job)",

@@ -384,10 +384,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "메서드 호출의 반환값과 재대입 이후 다음 모델 호출에 쓰이는 값을 순서대로 추적한다.",
     "concept_explanation": {
-      "what_it_is": "`object.method(...)` calls a method on an object and can receive its return value as the result.",
-      "how_to_read": "It reads as: \"First, call `batch.to(\"cuda\")`, and then store the return value back into the `batch` on the left.\"",
-      "key_point": "The `batch` in the next line refers to **the reassigned return value, not the variable’s value before the method call**.",
-      "common_mistake": "`.to()` It’s easy to overlook the left-hand reassignment when looking only at the call. In this code, the result of the call is reassigned to a variable with the same name, ``batch``."
+      "what_it_is": "Easy meaning: `batch.to(\"cuda\")` asks `batch` to do a job and receives the result.\nExact definition: `object.method(...)` is an expression that calls an object's method, and its return value becomes the result of that expression.",
+      "how_to_read": "Picture a name tag. `batch` is a name tag pointing to a value; assignment attaches that tag to the result obtained on the right.\n1) `for batch in batches:` binds this iteration's item to `batch`.\n2) `batch = batch.to(\"cuda\")` calls the current `batch` object's `to` method with the string `\"cuda\"` as an argument, then binds its return value back to `batch`.\n3) `output = model(batch)` calls `model` with the reassigned `batch` as its argument and stores that call's return value in `output`.",
+      "key_point": "Value flow in each iteration: current `batch` → call `batch.to(\"cuda\")` → return value → reassign to `batch` → pass to `model(batch)`.\nThus, the value used by `model(batch)` is the return value of `batch.to(\"cuda\")`.",
+      "common_mistake": "It is easy to assume that the same name means `batch` still holds the value from the start of the iteration. But the right-hand call runs first, and its result is stored back into `batch` on the left. `\"cuda\"` is an argument passed to the call, not the value directly assigned to `batch`."
     },
     "teaching_example": {
       "code": "class Batch:\n    def __init__(self, device):\n        self.device = device\n    def to(self, device):\n        return Batch(device)\n\nbatch = Batch(\"cpu\")\nbatch = batch.to(\"cuda\")\nprint(batch.device)",

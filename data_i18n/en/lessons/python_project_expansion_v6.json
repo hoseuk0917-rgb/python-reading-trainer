@@ -1437,24 +1437,24 @@
     "primary_concept": "call",
     "reading_goal_internal": "dict.get의 두 번째 argument가 missing key일 때 fallback value로 사용되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`mapping.get(key, default)` is a method call that returns the corresponding value if `key` exists, or `default` if it does not.",
-      "how_to_read": "Distinguish between the first argument (the key to search for) and the second argument (the fallback default).",
-      "key_point": "Since a new field added during migration may not exist in historical data, setting a default value allows you to preserve existing user data while expanding the structure.",
-      "common_mistake": "It’s easy to assume that `get` will always raise a `KeyError` if no key is provided. However, if a default value is provided, it returns that value."
+      "what_it_is": "Easy meaning: `get()` looks up a value by its label and returns a prepared value if the label is missing.\nExact definition: A dictionary's `get(key, default)` is a method call that returns the value for `key` if it exists, or `default` otherwise.",
+      "how_to_read": "Imagine looking in storage compartments with labels. The first argument is the label to find; the second is the value to use if it is missing. In this card, `old.get(\"confused\", {})` means to look for `\"confused\"` in `old` and return the empty dictionary `{}` if it is missing.",
+      "key_point": "`old` contains only `\"seen\"` and `\"correct\"`.\nNo `\"confused\"` key → `get(\"confused\", {})` returns `{}` → used as the `\"confused\"` value in the new dictionary being returned → `migrated[\"confused\"]` is `{}`.\nThis retrieves existing values while filling a missing field with a default.",
+      "common_mistake": "It is easy to confuse this with directly retrieving a missing key using `old[\"confused\"]`. Here, the `get()` call supplies a default, so a missing key returns the specified `{}` instead of raising an error."
     },
     "teaching_example": {
       "code": "old = {\"seen\": {\"c1\": True}}\nwrong = old.get(\"wrong\", {})",
       "walkthrough": "Since there is no \"wrong key,\" an empty dictionary is returned."
     },
     "answer_explanation": {
-      "step_by_step": "Since the `confused` key is missing in `old.get('confused', {})`, the second argument `{}` is returned.",
-      "why_correct": "This is because `dict.get` returns the default value specified for a missing key.",
+      "step_by_step": "1) `def` defines the function `migrate_progress`.\n2) Calling `migrate_progress({\"seen\": {\"c1\": True}, \"correct\": {}})` makes the supplied dictionary available as `old`.\n3) `old.get(\"seen\", {})` returns the existing value `{\"c1\": True}`, and `old.get(\"correct\", {})` returns the existing value `{}`.\n4) Because `old` has no `\"confused\"` key, `old.get(\"confused\", {})` returns its second argument, `{}`.\n5) The function returns `{\"seen\": {\"c1\": True}, \"correct\": {}, \"confused\": {}}`, which is bound to `migrated`.\n6) `migrated[\"confused\"]` retrieves `{}` and assigns it to `confused`.",
+      "why_correct": "The default `{}` returned by `get()` becomes the `\"confused\"` value in the new dictionary. The last line reads that value, so the answer is `{}`.",
       "common_wrong_choice": {
         "choice": "Error",
-        "why_wrong": "We are using `get` with a default value instead of `subscription`.",
-        "misread_step": "This is an example of confusion between `old['confused']` and `old.get(...)`."
+        "why_wrong": "The missing key is looked up using `old.get(\"confused\", {})`, which supplies a default. By the time `migrated[\"confused\"]` runs, the returned dictionary already contains that key.",
+        "misread_step": "This reads `old.get(\"confused\", {})` as though it were `old[\"confused\"]` and misses the step that creates the `\"confused\"` entry in the new dictionary."
       },
-      "takeaway": "The compatibility code reads as **possible missing field → get default → fill in new structure**."
+      "takeaway": "Distinguish the lookup key from the default: missing key → `get()` returns the default → store it in the new dictionary → read that value."
     },
     "target_statement": "\"confused\": old.get(\"confused\", {})",
     "focus_span": "old.get(\"confused\", {})",
