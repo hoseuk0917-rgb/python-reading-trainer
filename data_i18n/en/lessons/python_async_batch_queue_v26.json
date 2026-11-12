@@ -28,24 +28,24 @@
         "primary_concept":  "await_expression",
         "reading_goal_internal":  "async 함수 안에서 await가 비동기 호출 완료를 기다리고 그 결과를 표현식 값으로 만드는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "The `await expression` pauses the execution of the current async function at that point until the asynchronous operation is complete, then receives the result.",
-                                    "how_to_read":  "Treat `await api_get(item_id)` as a single expression, and interpret the value returned after the `api_get` operation completes as the result on the right-hand side of the assignment.",
-                                    "key_point":  "\"await\" is not a syntax that causes the entire program to pause, as with a regular function; rather, it is a construct used within an async flow to wait until the result of a given operation is ready.",
-                                    "common_mistake":  "It’s easy to read `await` as if it were simply a `sleep`. The key point is that it receives the result of the subsequent asynchronous call and makes it available for the next code to use."
+                                    "what_it_is":  "Easy meaning: `await` lets an async function **wait for an asynchronous operation's result and continue with that value when it is ready**.\nExact definition: `await expression` waits on an awaitable and produces its completion result; the coroutine containing that `await` may suspend at that point until the awaited operation can resume and complete.",
+                                    "how_to_read":  "Mental model: Place an order, then use the result when the kitchen signals it is ready; the order is not skipped or discarded.\nReading the code: `api_get(item_id)` produces/represents an asynchronous operation. `await` waits for that operation's completion result, allowing the current coroutine to suspend at that point. When the result is ready, it becomes the value on the right side and is stored in `data`.",
+                                    "key_point":  "Execution flow:\ncall `api_get(item_id)`\n↓\nobtain awaitable asynchronous operation\n↓\n`await` until its result is ready\n↓\nreceive completion result\n↓\n`data = result`\n↓\n`return data`",
+                                    "common_mistake":  "It is easy to treat `await` like a simple `sleep` that stops the whole program, or as syntax that skips the call. The important idea is that it is **a suspension point for the current coroutine while waiting for an asynchronous result**."
                                 },
         "teaching_example":  {
                                  "code":  "async def load_user(user_id):\n    user = await fetch_user(user_id)\n    return user",
-                                 "walkthrough":  "After the `fetch_user` operation is complete, the resulting `user` value is stored in a variable and returned."
+                                 "walkthrough":  "Line by line:\n1) `load_user` is an async function.\n2) `fetch_user(user_id)` represents an asynchronous operation.\n3) `await` waits for that operation's completion result.\n4) Once ready, the result is stored in `user`.\n5) `return user` sends the result back to the caller.\n\n`await` does not throw the result away; it lets later code use the completed value."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Inside the async function, start `api_get(item_id)`. `await` waits for the completion result of that asynchronous work. The ready value is stored in `data` and returned on the next line.",
-                                   "why_correct":  "This is because the value of the `await` expression is the result of the subsequent asynchronous operation being completed.",
+                                   "step_by_step":  "Call `api_get(item_id)` to obtain the awaitable operation.\n↓\n`await` waits for the operation's completion result.\n↓\nThe current coroutine may suspend at this point while waiting.\n↓\nWhen the operation completes, its result becomes the value of the `await` expression.\n↓\nStore that value in `data`.\n↓\nReturn `data` on the next line.",
+                                   "why_correct":  "So `await api_get(item_id)` does not skip the call; it **waits for the asynchronous operation to complete and yields its result to the surrounding expression**.",
                                    "common_wrong_choice":  {
-                                                               "choice":  "Skips the `api_get` call",
-                                                               "why_wrong":  "`await` does not skip a call; it waits until the call result is ready.",
-                                                               "misread_step":  "It is important not to overlook the fact that there is an actual call expression following `await`."
+                                                               "choice":  "It skips the api_get call",
+                                                               "why_wrong":  "The operation after `await` is the very operation whose result is needed. `await` waits for and receives that result.",
+                                                               "misread_step":  "This reads `await` as an execution-skip keyword rather than as part of an asynchronous result expression."
                                                            },
-                                   "takeaway":  "`x = await f()` This reads as: \"Once the asynchronous result of f is ready, its value is stored in x.\""
+                                   "takeaway":  "Read `x = await f()` as **start/obtain async operation → wait for completion result → receive value → store it in `x`**."
                                },
         "target_statement":  "data = await api_get(item_id)",
         "focus_span":  "await api_get(item_id)",

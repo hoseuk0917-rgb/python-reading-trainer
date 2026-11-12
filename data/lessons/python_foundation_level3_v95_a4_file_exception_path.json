@@ -30,24 +30,24 @@
     "primary_concept": "with_statement",
     "reading_goal_internal": "with 헤더가 open 호출로 파일 객체를 얻고 f에 연결한 뒤 들여쓴 블록이 끝날 때 context manager가 정리를 맡는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`with expression as name:`은 문맥 관리자가 관리하는 자원을 블록 동안 사용하고 블록을 벗어날 때 정리 절차를 실행하도록 하는 문장입니다.",
-      "how_to_read": "먼저 open(...) 호출 결과를 얻고 그것이 f에 연결된 뒤, 들여쓴 줄들이 그 파일 객체를 사용하는 블록이라고 읽습니다.",
-      "key_point": "파일을 읽는 `f.read()`는 with 블록 안에서 실행되고 파일 정리는 with가 맡습니다.",
-      "common_mistake": "with를 단순한 변수 대입으로 보거나 블록 밖에서도 파일이 계속 열린 상태라고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `with`는 파일 같은 자원을 **필요한 동안만 안전하게 쓰고, 블록이 끝나면 정리까지 맡기는 문법**입니다.\n정확한 정의: `with` statement는 context manager의 진입·종료 프로토콜을 사용해 블록 실행 전 자원을 준비하고, 블록이 끝날 때 정상 종료나 예외 여부와 관계없이 대응하는 종료 처리를 수행합니다.",
+      "how_to_read": "직관적 모델: 작업실 문을 열고 들어가 필요한 일을 한 뒤, 나올 때 문을 닫는 절차를 `with`가 관리한다고 생각하면 됩니다.\n코드 읽기: 먼저 `open(...)`이 파일 객체를 준비합니다. `as f`로 그 객체를 블록 안에서 `f`라는 이름으로 사용합니다. `f.read()`가 내용을 읽고 블록을 벗어나면 파일 정리 절차가 실행됩니다.",
+      "key_point": "실행 흐름:\n`open(\"memo.txt\", ...)`\n↓\n파일용 context manager 준비\n↓\n`as f`로 블록에서 사용할 파일 객체 연결\n↓\n`f.read()` 실행 → `\"hello\"`\n↓\nwith 블록 종료\n↓\n파일 정리\n↓\n`print(text)` → `hello`",
+      "common_mistake": "`with ... as f`를 단순한 대입문으로만 읽거나, 블록 밖에서도 파일이 계속 열린 상태라고 생각하기 쉽습니다. 핵심은 **자원의 사용 범위와 종료 처리를 context manager가 관리한다는 것**입니다."
     },
     "teaching_example": {
-      "code": "with open(\"note.txt\", \"r\", encoding=\"utf-8\") as f:\n    text = f.read()\nprint(text)",
-      "walkthrough": "open으로 얻은 파일 객체를 f로 사용하고, 들여쓴 읽기 작업 뒤 블록을 벗어나며 파일 정리를 맡깁니다."
+      "code": "with open(\"note.txt\", \"r\", encoding=\"utf-8\") as file:\n    first = file.read()\nprint(first)",
+      "walkthrough": "한 줄씩 읽기:\n1) `open(...)`이 읽기용 파일 객체를 준비합니다.\n2) `as file`로 그 객체를 블록 안에서 `file`이라는 이름으로 사용합니다.\n3) `file.read()`가 내용을 읽어 `first`에 저장합니다.\n4) 블록을 벗어나면서 파일 종료 처리가 실행됩니다.\n5) 읽어 둔 문자열 `first`는 이후에도 사용할 수 있어 바깥 `print(first)`가 출력합니다."
     },
     "answer_explanation": {
-      "step_by_step": "1) with 헤더의 open(...) 호출을 먼저 평가한다. 2) open이 파일 객체를 돌려준다. 3) as f가 그 객체를 블록에서 사용할 이름 f에 연결한다. 4) 블록 안에서 f.read()가 파일 내용을 읽는다.",
-      "why_correct": "`as f`는 context manager가 제공한 파일 객체를 블록에서 사용할 이름에 연결합니다.",
+      "step_by_step": "with 헤더의 `open(...)`을 먼저 평가한다.\n↓\n파일을 다루는 객체가 준비된다.\n↓\n`as f`가 블록 안에서 사용할 이름 `f`에 그 객체를 연결한다.\n↓\n`f.read()`가 파일 내용을 읽는다.\n↓\nwith 블록을 벗어나며 파일 정리 절차가 실행된다.",
+      "why_correct": "따라서 `f`가 가리키는 것은 경로 문자열이 아니라 **`open(...)`으로 준비되어 context manager를 통해 블록에서 사용하는 파일 객체**입니다.",
       "common_wrong_choice": {
         "choice": "문자열 memo.txt",
-        "why_wrong": "memo.txt는 open에 전달된 경로 문자열이고 f가 가리키는 객체 자체가 아닙니다.",
-        "misread_step": "with를 단순한 변수 대입으로 보거나 블록 밖에서도 파일이 계속 열린 상태라고 생각하기 쉽습니다."
+        "why_wrong": "`\"memo.txt\"`는 `open()`에 전달한 경로 argument이고, `f`는 그 경로를 이용해 연 파일 객체를 가리킵니다.",
+        "misread_step": "함수에 전달한 입력값과 함수 호출 결과 객체를 구분하지 않은 경우입니다."
       },
-      "takeaway": "with 문은 **문맥 관리자 생성 → as 이름 연결 → 블록 실행 → 블록 종료 시 정리** 순서로 읽습니다."
+      "takeaway": "`with`는 **context manager 준비 → `as` 이름 연결 → 블록 실행 → 종료 처리** 순서로 읽습니다."
     },
     "target_statement": "with open(\"memo.txt\", \"r\", encoding=\"utf-8\") as f:",
     "focus_span": "with open(\"memo.txt\", \"r\", encoding=\"utf-8\") as f:",
@@ -206,29 +206,31 @@
     "answer": "['A', 'B']",
     "explanation": "1) 첫 line은 'A\\n'이고 strip() 결과는 'A'다. 2) A가 새 list의 첫 항목이 된다. 3) 둘째 line 'B\\n'도 strip()으로 'B'가 된다. 4) 두 결과가 모여 ['A','B']가 된다.",
     "project_context": "텍스트 파일을 줄 단위로 정제해 후속 분석에 넘기는 전처리에 연결된다.",
-    "side_card_ids": ["PYV162_A1_LIST_COMPREHENSION"],
+    "side_card_ids": [
+      "PYV162_A1_LIST_COMPREHENSION"
+    ],
     "authoring_version": "V2.3",
     "primary_concept": "list_comprehension",
     "reading_goal_internal": "lines를 하나씩 순회하고 현재 line.strip() 결과를 새 list 항목으로 추가하는 comprehension 평가 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "list comprehension은 `[expression for item in iterable]` 형태로 반복 결과를 새 list에 모읍니다.",
-      "how_to_read": "먼저 `for line in lines`로 현재 line을 정한 뒤 앞쪽 `line.strip()`을 계산해 새 list 항목으로 넣는다고 읽습니다.",
-      "key_point": "원본 lines의 문자열을 직접 수정하는 것이 아니라 strip 결과들로 새 clean list를 만듭니다.",
-      "common_mistake": "strip이 원본 문자열 객체를 직접 바꾸거나 comprehension이 한 번만 실행된다고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: list comprehension은 여러 값에 같은 처리를 반복해서 적용하고 그 결과를 **새 리스트 하나로 모으는 짧은 문법**입니다.\n정확한 정의: `[expression for target in iterable]` 형태의 list comprehension은 iterable을 순회하면서 각 반복에서 expression을 평가해 그 결과들을 순서대로 새 list에 담습니다.",
+      "how_to_read": "직관적 모델: 컨베이어벨트에서 원본 항목을 하나씩 꺼내 같은 작업을 한 뒤 새 상자에 차곡차곡 담는 모습입니다.\n코드 읽기: 뒤쪽 `for line in lines`부터 '각 line을 하나씩 꺼낸다'고 잡고, 앞쪽 `line.strip()`을 '현재 line에 적용해 새 리스트에 넣을 값'으로 읽으면 쉽습니다.",
+      "key_point": "실행 흐름:\n`lines = [\"A\\n\", \"B\\n\"]`\n↓\n첫 `line` = `\"A\\n\"` → `line.strip()` = `\"A\"`\n↓\n새 list에 `\"A\"` 추가\n↓\n둘째 `line` = `\"B\\n\"` → `line.strip()` = `\"B\"`\n↓\n새 list에 `\"B\"` 추가\n↓\n`clean = [\"A\", \"B\"]`",
+      "common_mistake": "comprehension이 원본 리스트나 원본 문자열을 제자리에서 바꾼다고 생각하기 쉽습니다. 여기서는 `strip()`이 새 문자열을 반환하고, comprehension이 그 반환값들을 모아 **별도의 새 list**를 만듭니다."
     },
     "teaching_example": {
-      "code": "lines = [\" x\\n\", \"y\\n\"]\nclean = [line.strip() for line in lines]\nprint(clean)",
-      "walkthrough": "각 항목마다 strip이 실행되어 ['x', 'y'] 새 list가 만들어집니다."
+      "code": "names = [\"  Mina\", \"Joon  \"]\nclean = [name.strip() for name in names]\nprint(clean)",
+      "walkthrough": "한 줄씩 읽기:\n1) 첫 이름 `\"  Mina\"`를 꺼내 `.strip()`해 `\"Mina\"`를 만듭니다.\n2) 그 결과를 새 리스트에 넣습니다.\n3) 둘째 이름 `\"Joon  \"`도 `.strip()`해 `\"Joon\"`을 만듭니다.\n4) 두 결과가 새 리스트 `clean`에 모입니다.\n\n결과: `['Mina', 'Joon']`.\n원본 `names` 자체를 바꾸는 동작은 아닙니다."
     },
     "answer_explanation": {
-      "step_by_step": "1) 첫 line은 'A\\n'이고 strip() 결과는 'A'다. 2) A가 새 list의 첫 항목이 된다. 3) 둘째 line 'B\\n'도 strip()으로 'B'가 된다. 4) 두 결과가 모여 ['A','B']가 된다.",
-      "why_correct": "각 line의 strip 반환값이 차례로 새 list에 들어가므로 ['A','B']가 됩니다.",
+      "step_by_step": "첫 번째 `line`으로 `\"A\\n\"`을 꺼낸다.\n↓\n`line.strip()`이 `\"A\"`를 반환한다.\n↓\n새 list의 첫 항목으로 `\"A\"`를 넣는다.\n↓\n두 번째 `line`으로 `\"B\\n\"`을 꺼낸다.\n↓\n`line.strip()`이 `\"B\"`를 반환한다.\n↓\n새 list에 `\"B\"`를 넣는다.\n↓\n최종 `clean`은 `['A', 'B']`가 된다.",
+      "why_correct": "각 반복에서 현재 문자열의 `strip()` 반환값이 새 list에 들어가므로 줄바꿈이 제거된 두 문자열이 남습니다.",
       "common_wrong_choice": {
         "choice": "['A\\n', 'B\\n']",
-        "why_wrong": "그 값은 변환 전 원본 lines이고 comprehension은 각 항목에 strip을 적용합니다.",
-        "misread_step": "strip이 원본 문자열 객체를 직접 바꾸거나 comprehension이 한 번만 실행된다고 생각하기 쉽습니다."
+        "why_wrong": "그 값은 처리 전 원본 리스트입니다. comprehension은 각 원소에 `.strip()`을 적용한 반환값으로 새 리스트를 만듭니다.",
+        "misread_step": "반복 표현식 `line.strip()`을 건너뛰고 원본 원소가 그대로 복사된다고 읽은 경우입니다."
       },
-      "takeaway": "comprehension은 **반복값 선택 → 앞 표현식 평가 → 결과 list에 추가 → 다음 항목**으로 읽습니다."
+      "takeaway": "list comprehension은 **반복값 하나 선택 → 앞 표현식 평가 → 결과를 새 list에 추가 → 다음 값** 순서로 풀어 읽습니다."
     },
     "target_statement": "clean = [line.strip() for line in lines]",
     "focus_span": "[line.strip() for line in lines]",
@@ -1001,24 +1003,24 @@
     "primary_concept": "try_statement",
     "reading_goal_internal": "try가 예외 가능 코드를 실행하는 영역을 시작하고 그 안에서 ValueError가 발생하면 이후 try 줄이 중단되는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`try:`는 예외가 발생할 수 있는 문장들을 실행해 보고, 예외가 생기면 연결된 except 절에서 처리할 수 있게 하는 복합문입니다.",
-      "how_to_read": "try 블록을 위에서부터 실행하다 실제 예외가 나는 줄을 찾고, 그 순간 같은 try 블록의 남은 줄이 실행되지 않는다고 읽습니다.",
-      "key_point": "int('x')에서 ValueError가 나므로 그 아래 print(number)에는 도달하지 않습니다.",
-      "common_mistake": "try가 오류를 미리 막아 int('x')가 정상값을 만든다고 생각하거나 try 안의 모든 줄이 끝까지 실행된다고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `try`는 '이 코드를 먼저 해 보고, 문제가 생기면 그 문제를 처리할 길을 찾자'라고 Python에 알려주는 문법입니다.\n정확한 정의: `try` statement는 try suite를 실행하고, 실행 중 예외가 발생하면 남은 try suite 실행을 중단한 뒤 일치하는 `except` handler를 찾아 실행하도록 제어 흐름을 구성합니다.",
+      "how_to_read": "직관적 모델: 정상 도로로 먼저 가다가 사고가 나면 준비된 우회로로 빠지는 흐름입니다.\n코드 읽기: `int(\"x\")`를 실제로 실행해 봅니다. 숫자로 바꿀 수 없어 `ValueError`가 발생하는 순간 `number = ...` 대입은 완성되지 않고 아래 `print(number)`도 실행되지 않습니다. 그 대신 `except ValueError:`로 이동합니다.",
+      "key_point": "실행 흐름:\ntry 진입\n↓\n`int(\"x\")` 실행\n↓\n`ValueError` 발생\n↓\n같은 try 블록의 남은 `print(number)` 건너뜀\n↓\n`except ValueError`와 타입 일치\n↓\n`print(\"bad\")`\n↓\n결과: `bad`",
+      "common_mistake": "`try`가 오류 자체를 없애 주거나 `int(\"x\")`를 정상 값으로 바꿔 준다고 생각하기 쉽습니다. `try`는 **예외가 발생할 수 있는 코드를 실행하고, 실제 예외가 생겼을 때 처리 경로를 연결하는 구조**입니다."
     },
     "teaching_example": {
       "code": "try:\n    value = int(\"bad\")\n    print(value)\nexcept ValueError:\n    print(\"invalid\")",
-      "walkthrough": "int 호출에서 ValueError가 발생해 try의 print를 건너뛰고 except로 이동합니다."
+      "walkthrough": "한 줄씩 읽기:\n1) try 블록에서 `int(\"bad\")`를 실행합니다.\n2) 변환할 수 없어 `ValueError`가 발생합니다.\n3) 그 순간 try 블록의 `print(value)`는 실행되지 않습니다.\n4) `except ValueError:`가 예외 타입과 일치합니다.\n5) handler가 `invalid`를 출력합니다.\n\n결과: `invalid`."
     },
     "answer_explanation": {
-      "step_by_step": "1) try 블록 첫 실행문에서 int('x')를 호출한다. 2) x는 정수로 변환할 수 없어 ValueError가 발생한다. 3) try의 다음 print(number)는 실행되지 않는다. 4) 일치하는 except ValueError가 실행되어 bad를 출력한다.",
-      "why_correct": "try 안에서 발생한 ValueError가 정확히 같은 타입의 except로 전달됩니다.",
+      "step_by_step": "try 블록을 위에서부터 실행한다.\n↓\n`int(\"x\")`가 문자열을 정수로 변환하려 한다.\n↓\n변환할 수 없어 `ValueError`가 발생한다.\n↓\ntry 블록의 남은 `print(number)`는 실행되지 않는다.\n↓\n`except ValueError:`가 예외를 처리한다.\n↓\n`bad`를 출력한다.",
+      "why_correct": "발생한 예외 타입이 `ValueError`이고 해당 handler가 존재하므로 제어가 그 except 절로 이동해 `bad`를 출력합니다.",
       "common_wrong_choice": {
         "choice": "x",
-        "why_wrong": "변환에 실패하므로 x가 정상 결과로 출력되는 흐름은 없습니다.",
-        "misread_step": "try가 오류를 미리 막아 int('x')가 정상값을 만든다고 생각하거나 try 안의 모든 줄이 끝까지 실행된다고 생각하기 쉽습니다."
+        "why_wrong": "`int(\"x\")`는 `x`를 그대로 반환하지 않고 `ValueError`를 발생시킵니다. 따라서 `x`가 정상 결과로 출력되는 경로는 없습니다.",
+        "misread_step": "실패한 변환 호출이 값을 반환했다고 가정한 경우입니다."
       },
-      "takeaway": "try는 **블록 실행 → 예외 발생 지점 확인 → try 잔여 코드 중단 → handler 탐색**으로 읽습니다."
+      "takeaway": "try/except는 **try를 실제로 실행 → 예외 발생 지점에서 try 중단 → 예외 타입과 handler 매칭 → handler 실행**으로 읽습니다."
     },
     "target_statement": "try:",
     "focus_span": "try:",
@@ -1184,24 +1186,24 @@
     "primary_concept": "except_clause",
     "reading_goal_internal": "발생한 예외 타입이 ValueError와 일치하면 handler로 들어가며 실제 예외 객체가 e라는 이름에 바인딩되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`except ErrorType as name:`은 해당 타입의 예외를 잡고 발생한 예외 객체를 name에 연결해 handler 안에서 사용할 수 있게 합니다.",
-      "how_to_read": "먼저 잡을 타입 ValueError를 확인하고 `as e`가 예외 객체에 붙이는 지역 이름이라는 점을 구분합니다.",
-      "key_point": "e는 문자열 'e'가 아니라 실제 ValueError 인스턴스를 가리킵니다.",
-      "common_mistake": "e가 예외 타입 이름이거나 int('x')의 입력 문자열 x를 그대로 받는다고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `except ... as e`의 `e`는 방금 발생한 오류 자체를 잠시 가리키는 이름입니다.\n정확한 정의: `except ExceptionType as name:` handler가 선택되면 처리 중인 예외 객체가 `name`에 바인딩되어 해당 handler suite 안에서 그 객체의 타입·메시지 등의 정보를 사용할 수 있습니다.",
+      "how_to_read": "직관적 모델: 오류가 발생하면 그 오류에 `e`라는 임시 이름표를 붙여 handler 안에서 살펴보는 것입니다.\n코드 읽기: `int(\"x\")`가 `ValueError` 객체를 발생시킵니다. `except ValueError as e:`가 그 타입을 잡고 실제 예외 객체를 `e`에 연결합니다. `type(e).__name__`은 그 객체의 타입 이름 `ValueError`를 읽습니다.",
+      "key_point": "실행 흐름:\n`int(\"x\")`\n↓\n`ValueError` 객체 발생\n↓\n`except ValueError` 타입 매칭\n↓\n그 예외 객체 → 이름 `e`\n↓\n`type(e)` → `ValueError` 타입\n↓\n`.__name__` → 문자열 `\"ValueError\"`",
+      "common_mistake": "`e`가 문자열 `'e'`이거나 입력값 `\"x\"`를 가리킨다고 생각하기 쉽습니다. `e`는 **잡힌 예외 객체**를 가리키는 이름입니다. 또한 handler 밖까지 계속 써야 하는 일반 상태 변수로 생각하지 않는 편이 좋습니다."
     },
     "teaching_example": {
       "code": "try:\n    int(\"bad\")\nexcept ValueError as err:\n    print(type(err).__name__)",
-      "walkthrough": "ValueError 객체가 err에 연결되어 type(err).__name__은 ValueError를 만듭니다."
+      "walkthrough": "한 줄씩 읽기:\n1) `int(\"bad\")`가 `ValueError`를 발생시킵니다.\n2) `except ValueError as err:`가 그 예외를 잡습니다.\n3) 실제 예외 객체가 `err`에 연결됩니다.\n4) `type(err).__name__`이 그 객체의 타입 이름을 읽습니다.\n\n결과: `ValueError`."
     },
     "answer_explanation": {
-      "step_by_step": "1) int('x')가 ValueError 객체를 발생시킨다. 2) except ValueError가 타입을 일치시켜 예외를 잡는다. 3) `as e`가 그 예외 객체를 이름 e에 연결한다. 4) type(e).__name__은 객체의 타입 이름 ValueError를 반환한다.",
-      "why_correct": "e가 실제 ValueError 인스턴스를 가리키므로 그 타입 이름은 ValueError입니다.",
+      "step_by_step": "`int(\"x\")`가 `ValueError` 객체를 발생시킨다.\n↓\n`except ValueError`가 타입을 일치시켜 handler를 선택한다.\n↓\n`as e`가 발생한 예외 객체를 이름 `e`에 바인딩한다.\n↓\n`type(e)`가 그 객체의 타입을 구한다.\n↓\n`.__name__`이 타입 이름 `ValueError`를 반환한다.",
+      "why_correct": "`e`는 실제 `ValueError` 인스턴스를 가리키므로 `type(e).__name__`의 값은 `ValueError`입니다.",
       "common_wrong_choice": {
         "choice": "e",
-        "why_wrong": "e는 코드에서 사용하는 변수 이름이고 객체의 타입 이름이 아닙니다.",
-        "misread_step": "e가 예외 타입 이름이거나 int('x')의 입력 문자열 x를 그대로 받는다고 생각하기 쉽습니다."
+        "why_wrong": "`e`는 예외 객체를 가리키기 위한 코드상의 이름일 뿐, 그 객체의 타입 이름은 아닙니다.",
+        "misread_step": "변수 이름과 그 변수가 가리키는 객체의 타입 정보를 같은 것으로 본 경우입니다."
       },
-      "takeaway": "except-as는 **예외 발생 → 타입 매칭 → 예외 객체 이름 바인딩 → handler에서 사용**으로 읽습니다."
+      "takeaway": "`except T as e`는 **예외 타입 `T`와 매칭 → 실제 예외 객체를 `e`에 연결 → handler에서 오류 정보 사용**으로 읽습니다."
     },
     "target_statement": "except ValueError as e:",
     "focus_span": "except ValueError as e:",
@@ -1918,24 +1920,24 @@
     "primary_concept": "from_import_statement",
     "reading_goal_internal": "from-import 문장에서 출처 모듈 pathlib과 가져오는 이름 Path를 구분해 이후 `Path(...)`를 직접 호출할 수 있게 되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`from module import name`은 모듈 안의 특정 이름을 현재 코드에서 바로 사용할 수 있도록 가져옵니다.",
-      "how_to_read": "from 뒤 pathlib을 출처 모듈로, import 뒤 Path를 가져오는 이름으로 구분합니다.",
-      "key_point": "이 문장 뒤에는 `pathlib.Path(...)`가 아니라 `Path(...)`를 직접 쓸 수 있습니다.",
-      "common_mistake": "pathlib 전체를 Path라는 별명으로 import한다고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `from pathlib import Path`는 `pathlib` 안에서 **`Path`라는 이름만 꺼내 현재 파일에서 바로 쓰게 하는 문법**입니다.\n정확한 정의: `from module import name`은 지정한 모듈을 찾고 초기화한 뒤 그 모듈의 `name` 속성에 해당하는 객체를 현재 스코프의 동일한 이름에 바인딩하는 import statement입니다.",
+      "how_to_read": "직관적 모델: 큰 공구함 `pathlib` 전체를 들고 다니는 대신 그 안의 `Path` 공구 하나만 꺼내 작업대에 놓는다고 생각하면 됩니다.\n코드 읽기: `from pathlib`에서 출처 모듈을 확인하고 `import Path`에서 현재 코드로 들어올 이름을 확인합니다. 그래서 다음 줄에서 `pathlib.Path(...)`가 아니라 바로 `Path(...)`를 호출할 수 있습니다.",
+      "key_point": "실행 흐름:\n모듈 `pathlib` 확인\n↓\n그 안의 이름 `Path` 찾기\n↓\n현재 스코프에 이름 `Path` 바인딩\n↓\n`Path(\"data\")` 직접 호출 가능\n↓\n`/ \"memo.txt\"`로 경로 조합\n↓\n`path.name` → `memo.txt`",
+      "common_mistake": "`pathlib` 전체를 `Path`라는 별명으로 가져온다고 생각하기 쉽습니다. 그 문법은 `import pathlib as Path`와 다릅니다. 여기서는 **모듈 안의 특정 이름 `Path`만 현재 스코프로 가져옵니다.**"
     },
     "teaching_example": {
       "code": "from pathlib import Path\nfolder = Path(\"logs\")\nprint(folder.name)",
-      "walkthrough": "Path 이름을 직접 가져왔기 때문에 모듈 접두어 없이 Path(...)를 호출합니다."
+      "walkthrough": "한 줄씩 읽기:\n1) `pathlib` 모듈에서 `Path` 이름을 가져옵니다.\n2) 현재 스코프에서 `Path(...)`를 바로 호출할 수 있습니다.\n3) `Path(\"logs\")`가 경로 객체를 만들고 `folder`에 저장됩니다.\n4) `folder.name`이 마지막 경로 이름 `logs`를 읽습니다.\n\n결과: `logs`."
     },
     "answer_explanation": {
-      "step_by_step": "1) from 뒤의 pathlib이 출처 모듈이다. 2) import 뒤의 Path가 가져올 이름이다. 3) 현재 스코프에서 Path라는 이름을 직접 사용할 수 있게 된다. 4) 다음 줄의 Path('data')가 그 가져온 이름을 호출한다.",
-      "why_correct": "from-import 구문에서 import 뒤에 적힌 Path가 현재 스코프로 들어오는 이름입니다.",
+      "step_by_step": "`from pathlib`에서 가져올 대상이 있는 모듈을 정한다.\n↓\n`import Path`에서 그 모듈 안의 이름 `Path`를 선택한다.\n↓\n현재 코드의 스코프에 `Path`라는 이름을 바인딩한다.\n↓\n다음 줄에서 `Path(\"data\")`를 직접 호출한다.",
+      "why_correct": "`from module import name`에서 현재 스코프로 직접 들어오는 이름은 `import` 뒤에 적힌 이름이므로 정답은 `Path`입니다.",
       "common_wrong_choice": {
         "choice": "pathlib 전체 객체",
-        "why_wrong": "모듈 전체를 가져오는 `import pathlib`과 다른 형태입니다.",
-        "misread_step": "pathlib 전체를 Path라는 별명으로 import한다고 생각하기 쉽습니다."
+        "why_wrong": "모듈 전체를 이름 `pathlib`로 가져오려면 `import pathlib`을 사용합니다. 현재 코드는 `Path` 하나를 직접 가져오는 형태입니다.",
+        "misread_step": "`import module`과 `from module import name`의 바인딩 결과를 구분하지 않은 경우입니다."
       },
-      "takeaway": "from-import는 **출처 모듈 확인 → 가져올 이름 확인 → 현재 스코프에서 직접 사용**으로 읽습니다."
+      "takeaway": "from-import는 **출처 모듈 확인 → 가져올 이름 확인 → 현재 스코프에 그 이름 바인딩 → 접두어 없이 사용** 순서로 읽습니다."
     },
     "target_statement": "from pathlib import Path",
     "focus_span": "from pathlib import Path",
