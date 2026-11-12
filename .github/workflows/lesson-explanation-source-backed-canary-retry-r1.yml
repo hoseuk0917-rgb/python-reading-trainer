@@ -1,0 +1,289 @@
+name: Lesson explanation source-backed canary retry R1
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'tools/run_lesson_explanation_source_backed_r1.py'
+      - 'tools/run_lesson_explanation_api_pilot_r1.py'
+      - 'tools/plan_source_backed_explanation_r1.py'
+      - 'tools/audit_source_bundle_mapping_r1.py'
+      - 'tools/audit_explanation_readiness_r1.py'
+      - 'docs/LESSON_EXPLANATION_CONTRACT_V1.md'
+      - '.github/workflows/lesson-explanation-source-backed-canary-retry-r1.yml'
+  workflow_dispatch:
+    inputs:
+      live:
+        description: 'Retry only the three HOLD cards from the source-backed canary'
+        required: false
+        default: false
+        type: boolean
+      resume_run_id:
+        description: 'Required original canary run ID containing the three HOLD provenance rows'
+        required: true
+        default: ''
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: lesson-explanation-source-backed-canary-retry-r1
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Compile source-backed runner
+        run: python -m py_compile tools/run_lesson_explanation_source_backed_r1.py
+
+      - name: Source-backed runner self-test
+        run: python tools/run_lesson_explanation_source_backed_r1.py --self-test
+
+      - name: Deterministic three-HOLD retry plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOLD_IDS='PY42_L07_read_csv_sep_001,PY9_REVIEW_KALMAN_003,PY10_L08_dataclass_basic_001'
+          python tools/run_lesson_explanation_source_backed_r1.py \
+            --plan \
+            --limit 3 \
+            --selection-ids "$HOLD_IDS" \
+            | tee "$RUNNER_TEMP/source-backed-canary-retry-plan.txt"
+
+          grep -F 'SOURCE_READY_INVENTORY=89' "$RUNNER_TEMP/source-backed-canary-retry-plan.txt"
+          grep -F 'SOURCE_BACKED_LIMIT=3' "$RUNNER_TEMP/source-backed-canary-retry-plan.txt"
+          grep -F 'SOURCE_BACKED_EXPLICIT_SELECTION=YES' "$RUNNER_TEMP/source-backed-canary-retry-plan.txt"
+          grep -F 'SOURCE_BACKED_AUTHORITY_COUNTS={"STDLIB_API_AUTHORITY": 1, "THIRD_PARTY_API_AUTHORITY": 2}' \
+            "$RUNNER_TEMP/source-backed-canary-retry-plan.txt"
+          grep -F 'SOURCE_BACKED_DISPOSITION_COUNTS={"CONCEPT_EXPLANATION_REWRITE": 1, "WALKTHROUGH_OR_ANSWER_REWRITE": 2}' \
+            "$RUNNER_TEMP/source-backed-canary-retry-plan.txt"
+          grep -F 'SOURCE_BACKED_SELECTION_SHA256=2cf4d7344cd238f052ceb4d23f0fca2d420b2e3f4520b622cc340ecfb589ffac' \
+            "$RUNNER_TEMP/source-backed-canary-retry-plan.txt"
+
+      - name: Verify remaining source inventory
+        run: python tools/plan_source_backed_explanation_r1.py --limit 0
+
+  live:
+    if: github.event_name == 'workflow_dispatch' && inputs.live == true
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      SOURCE_BRANCH: automation/lesson-explanation-source-backed-canary-retry-r1
+
+    steps:
+      - name: Check out full repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Require API key
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${OPENAI_API_KEY:-}" ]; then
+            echo "OPENAI_API_KEY repository secret is missing."
+            exit 1
+          fi
+
+      - name: Require valid original canary run ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          RESUME_RUN_ID="${{ inputs.resume_run_id }}"
+          if ! [[ "$RESUME_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "resume_run_id must be numeric: $RESUME_RUN_ID"
+            exit 1
+          fi
+
+      - name: Prepare clean source-backed retry branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+
+          if git ls-remote --exit-code --heads origin "$SOURCE_BRANCH" >/dev/null 2>&1; then
+            echo "Source-backed retry branch already exists: $SOURCE_BRANCH"
+            exit 1
+          fi
+
+          git checkout -b "$SOURCE_BRANCH" origin/main
+
+      - name: Download original canary provenance
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          RESUME_RUN_ID="${{ inputs.resume_run_id }}"
+          mkdir -p "$RUNNER_TEMP/resume"
+          gh run download "$RESUME_RUN_ID" \
+            --repo "${{ github.repository }}" \
+            --name lesson-explanation-source-backed-canary-r1 \
+            --dir "$RUNNER_TEMP/resume"
+
+          test -f "$RUNNER_TEMP/resume/lesson-explanation-source-backed-canary-r1-holds.jsonl"
+
+      - name: Verify exact three-HOLD provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path(os.environ["RUNNER_TEMP"]) / "resume" / "lesson-explanation-source-backed-canary-r1-holds.jsonl"
+          rows = [
+              json.loads(line)
+              for line in path.read_text(encoding="utf-8").splitlines()
+              if line.strip()
+          ]
+          expected = [
+              (1, "PY42_L07_read_csv_sep_001"),
+              (2, "PY9_REVIEW_KALMAN_003"),
+              (10, "PY10_L08_dataclass_basic_001"),
+          ]
+          actual = [(int(row.get("index") or 0), str(row.get("id") or "")) for row in rows]
+          if actual != expected:
+              raise SystemExit(f"unexpected original HOLD identity/order: {actual}")
+          for row in rows:
+              if row.get("schema") != "python-reading-trainer/lesson-explanation-source-backed-r1":
+                  raise SystemExit("unexpected original HOLD schema")
+              if row.get("selection_sha256") != "c4fbb1b302d404e19950ca75d7ea915f8caa2f5db9d8ef106a03875ea688c393":
+                  raise SystemExit("unexpected original canary selection hash")
+              if row.get("status") != "HOLD":
+                  raise SystemExit("original provenance row is not HOLD")
+              if "required web search produced no source URLs" not in str(row.get("error") or ""):
+                  raise SystemExit("original HOLD reason changed")
+          print("SOURCE_BACKED_ORIGINAL_THREE_HOLD_PROVENANCE=PASS")
+          PY
+
+      - name: Run only three source-backed HOLD cards
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOLD_IDS='PY42_L07_read_csv_sep_001,PY9_REVIEW_KALMAN_003,PY10_L08_dataclass_basic_001'
+          python tools/run_lesson_explanation_source_backed_r1.py \
+            --live \
+            --limit 3 \
+            --selection-ids "$HOLD_IDS" \
+            --model gpt-6.1-sol \
+            --result-path "$RUNNER_TEMP/lesson-explanation-source-backed-canary-retry-r1.jsonl" \
+            --hold-path "$RUNNER_TEMP/lesson-explanation-source-backed-canary-retry-r1-holds.jsonl" \
+            --max-total-tokens 250000 \
+            --max-holds 3
+
+      - name: Rebuild runtime lesson bundles
+        run: python tools/build_runtime_lesson_bundle_v400_5.py
+
+      - name: Validate generated lessons
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/validate_lessons.py
+          python tools/validate_bilingual_lessons_v400_7.py
+          python tools/audit_explanation_readiness_r1.py --limit 0 \
+            | tee "$RUNNER_TEMP/explanation-readiness-after.txt"
+
+      - name: Verify bounded diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          result_path = Path(os.environ["RUNNER_TEMP"]) / "lesson-explanation-source-backed-canary-retry-r1.jsonl"
+          rows = [
+              json.loads(line)
+              for line in result_path.read_text(encoding="utf-8").splitlines()
+              if line.strip()
+          ]
+          if not rows:
+              raise SystemExit("source-backed canary retry produced no successful result rows")
+
+          allowed = {
+              "data/runtime/lesson_bundle_v400_5.json",
+              "data_i18n/en/runtime/lesson_bundle_v400_5.json",
+          }
+          for row in rows:
+              filename = row["file"]
+              allowed.add(f"data/lessons/{filename}")
+              allowed.add(f"data_i18n/en/lessons/{filename}")
+
+          changed = {
+              line.strip()
+              for line in subprocess.check_output(
+                  ["git", "diff", "--name-only"],
+                  text=True,
+              ).splitlines()
+              if line.strip()
+          }
+          unexpected = sorted(changed - allowed)
+          if unexpected:
+              raise SystemExit(f"unexpected changed files: {unexpected}")
+
+          print(f"SOURCE_BACKED_RETRY_CHANGED_FILE_COUNT={len(changed)}")
+          print(f"SOURCE_BACKED_RETRY_RESULT_ROW_COUNT={len(rows)}")
+          print("LESSON_EXPLANATION_SOURCE_BACKED_CANARY_RETRY_R1_DIFF_BOUNDARY=PASS")
+          PY
+
+          git diff --quiet -- \
+            data/runtime/support_bundle_v400_5.json \
+            data_i18n/en/runtime/support_bundle_v400_5.json
+          git diff --check
+
+      - name: Commit and push reviewed source-backed retry branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add \
+            data/lessons \
+            data_i18n/en/lessons \
+            data/runtime/lesson_bundle_v400_5.json \
+            data_i18n/en/runtime/lesson_bundle_v400_5.json
+
+          if git diff --cached --quiet; then
+            echo "No source-backed retry changes to commit."
+            exit 1
+          fi
+
+          git commit -m "Retry three source-backed lesson explanation HOLD cards R1"
+          git push -u origin "$SOURCE_BRANCH"
+          echo "SOURCE_BACKED_CANARY_RETRY_BRANCH_READY=$SOURCE_BRANCH"
+
+      - name: Upload source-backed retry provenance
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lesson-explanation-source-backed-canary-retry-r1
+          path: |
+            ${{ runner.temp }}/lesson-explanation-source-backed-canary-retry-r1.jsonl
+            ${{ runner.temp }}/lesson-explanation-source-backed-canary-retry-r1-holds.jsonl
+            ${{ runner.temp }}/explanation-readiness-after.txt
+          if-no-files-found: warn
+          retention-days: 14
