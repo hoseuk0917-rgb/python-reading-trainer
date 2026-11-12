@@ -266,10 +266,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "호출 괄호 안 `name=value` 형태가 top_k parameter를 이름으로 찾아 정수 5를 전달하는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A keyword argument is a specific parameter that is directly specified by name in a call, in the form ``parameter_name=value``.",
-      "how_to_read": "Read it as matching the name on the left side of the equals sign with a parameter in the function definition and passing the value of the expression on the right side to that parameter.",
-      "key_point": "top_k=5 passes the integer 5 to the top_k parameter of search_candidates.",
-      "common_mistake": "“5” should not be read as a five-second timeout or the index of the fifth result. This name refers to the limit on the number of candidates."
+      "what_it_is": "Easy meaning: When calling a function, you can name an input slot to specify the value it should receive.\nExact definition: A keyword argument uses `name=value` in a function call to pass the value of the expression on the right to the parameter with the matching name.",
+      "how_to_read": "Think of parameters as input slots with name tags. `def search_candidates(candidates, top_k=3)` defines two input slots, with 3 as the default when `top_k` is omitted. In the call, the six-item list goes into the first slot, `candidates`, and `top_k=5` passes 5 to the slot named `top_k`. In the function body, read `candidates[:top_k]` as `candidates[:5]`: select up to the first five items.",
+      "key_point": "Execution flow: the call passes the list → `candidates` and the integer 5 → `top_k` → evaluates `candidates[:5]` → returns `[\"A\", \"B\", \"C\", \"D\", \"E\"]` → binds it to `results` → `len(results)` produces 5 → `print` displays `5`. Because the input contains six items, five candidates are returned.",
+      "common_mistake": "Seeing `top_k=3` in the definition does not mean the function always returns three items. The definition's 3 is the default used when the argument is omitted; the call's `top_k=5` explicitly supplies the value for this execution. This call does not change the default itself. Also, `[:5]` stops before index 5 rather than including the item at index 5."
     },
     "teaching_example": {
       "code": "def take(values, limit=2):\n    return values[:limit]\nprint(take([1, 2, 3], limit=1))",
@@ -572,24 +572,24 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "검색 함수 호출의 filter keyword argument가 domain/doc_type 조건을 전달해 후보 범위를 줄이는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`filter={...}` is a keyword argument that names a function call and passes a metadata condition dictionary.",
-      "how_to_read": "We examine what each key/value pair in the `filter` dictionary represents in terms of search criteria.",
-      "key_point": "Applying the metadata filter first can help reduce search results from domains or document types unrelated to the query.",
-      "common_mistake": "It’s easy to assume that the `filter` function unconditionally increases the search score. Its primary role, however, is to narrow down the range of candidates."
+      "what_it_is": "Easy meaning: When calling the function, you pass a labeled checklist saying, “Choose documents that meet these conditions.”\nExact definition: `filter={...}` is a keyword argument that passes a dictionary value by name to the `filter` parameter of `search`.",
+      "how_to_read": "Picture the function's inputs as slots with name labels. In `search(query, filter={\"domain\": \"UAM\", \"doc_type\": \"standard\"})`, the first value binds to `query` by position, while the conditions dictionary binds to `filter` by name. Inside the function, this checklist is used to check whether each document belongs to the UAM domain and has the standard type.",
+      "key_point": "Pass the conditions dictionary → read its keys and values through `filter.items()` → use `all(...)` to check that every condition matches → include only passing documents in the list. The result is `[{\"id\": \"a\", \"domain\": \"UAM\", \"doc_type\": \"standard\"}]`, stored in `results`. This function body does not use the supplied `query`.",
+      "common_mistake": "It is easy to assume that the name `filter=` makes Python filter documents automatically. This syntax passes an argument; the comparisons and `all(...)` in the function body perform the filtering. Here, `filter` is a parameter name, not a call to the built-in `filter()`."
     },
     "teaching_example": {
       "code": "docs = [{\"id\": 1, \"type\": \"guide\"}, {\"id\": 2, \"type\": \"log\"}]\ndef search(filter):\n    return [doc for doc in docs if doc[\"type\"] == filter[\"type\"]]\nresults = search(filter={\"type\": \"guide\"})",
-      "walkthrough": "Only documents whose `type` is `guide` remain in the result."
+      "walkthrough": "1) The first line binds `docs` to a list containing a guide document and a log document.\n2) `def search(filter):` defines a function with an input named `filter`. Its body does not run yet.\n3) The `return` line specifies that, when called, the function compares each document's type with the supplied condition's type.\n4) On the last line, `filter={\"type\": \"guide\"}` passes the dictionary to the `filter` parameter, and the function body runs.\n5) Document 1 is included because `\"guide\" == \"guide\"`; document 2 is excluded because `\"log\" == \"guide\"` is false.\n6) The function returns `[{\"id\": 1, \"type\": \"guide\"}]`, which is stored in `results`. Nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "Because the filter dict passes only documents that are both UAM and `standard`, documents with other domains/types are excluded from the candidates.",
-      "why_correct": "This is because the metadata conditions are explicitly passed to the `search` call.",
+      "step_by_step": "1) `documents` holds documents a, b, and c, and `search` is defined.\n2) `query` is bound to `\"vertiport\"`.\n3) In the call, this string is passed to the `query` parameter, and the conditions dictionary is passed by name to the `filter` parameter.\n4) For each document, the function compares the conditions from `filter.items()`. For `all(...)` to be true, both the domain and doc_type conditions must match.\n5) a matches both UAM and standard, so it is included. b is excluded because its domain is Robotics; c is excluded because its doc_type is article.\n6) A list containing only a is returned and stored in `results`. This implementation does not check the search text.",
+      "why_correct": "Only a satisfies both the specified domain and document type, so the answer is “To narrow the search scope to the desired set of documents,”. The supplied conditions actually restrict which documents appear in the result.",
       "common_wrong_choice": {
         "choice": "To set all scores to 0,",
-        "why_wrong": "`filter` is a candidate condition; it is not a function that initializes `score`.",
-        "misread_step": "This is an example of confusion between the \"retrieval filter\" and the \"ranking score.\""
+        "why_wrong": "This code does not calculate or change scores. It only compares document attributes with conditions to decide whether to include each document.",
+        "misread_step": "This mistakes the equality comparisons performed after receiving the `filter` argument for operations that change scores."
       },
-      "takeaway": "The \"retrieval filter\" should be interpreted as **\"query + metadata conditions → a narrower set of candidates\"**."
+      "takeaway": "A keyword argument passes a value by name. Here, the function body checks the conditions passed as `filter` and returns only documents matching every condition."
     },
     "target_statement": "results = search(query, filter={\"domain\": \"UAM\", \"doc_type\": \"standard\"})",
     "focus_span": "filter={\"domain\": \"UAM\", \"doc_type\": \"standard\"}",
@@ -639,18 +639,18 @@
       "common_mistake": "It is easy to think of “rerank” as a step where new documents are collected. However, it is the step where the order of the existing candidate set is re-ranked."
     },
     "teaching_example": {
-      "code": "def rerank(candidates):\n    return sorted(candidates, key=lambda x: x[\"score\"], reverse=True)\nitems = [{\"id\":\"a\",\"score\":1},{\"id\":\"b\",\"score\":3}]\nranked = rerank(items)",
-      "walkthrough": "The two existing candidates have been reordered based on their scores, so \"b\" now appears first."
+      "code": "def rerank(candidates):\n    return sorted(candidates, key=lambda item: item[\"score\"], reverse=True)\nitems = [{\"id\": \"x\", \"score\": 2}, {\"id\": \"y\", \"score\": 7}]\nranked = rerank(items)\nprint(ranked[0][\"id\"])",
+      "walkthrough": "1) `def` defines `rerank`. Its body does not run yet.\n2) The `return` line describes what happens when called: use `item[\"score\"]` as the sorting key and `reverse=True` to return a new list with higher scores first.\n3) `items` holds two candidates in the order x (2), y (7).\n4) `rerank(items)` passes this list as the function's `candidates` and executes the body. The returned list, ordered y, x, is bound to `ranked`. The original order in `items` stays unchanged.\n5) `ranked[0][\"id\"]` is the first candidate's ID, `\"y\"`, so `print` displays y.\nFlow: x, y → function call → descending-score sort → y, x → output: y."
     },
     "answer_explanation": {
-      "step_by_step": "`rerank` takes existing candidates, reorders them based on their scores, and keeps only the top 5 results as the final output.",
-      "why_correct": "This is because it was written for the candidate re-ranking stage following the first retrieval.",
+      "step_by_step": "1) The two `def` statements define functions without executing their bodies yet.\n2) `query` is bound to `\"UAM standard\"`. Calling `retrieve_top_50(query)` returns the three candidates explicitly listed in this code: a (0.3), b (0.9), c (0.6). This list is bound to `candidates`.\n3) `rerank(query, candidates)` passes both values to the function and executes its body. `key=lambda item: item[\"score\"]` reads each candidate's score, and `reverse=True` puts higher scores first.\n4) The function returns a new list ordered b (0.9), c (0.6), a (0.3). This implementation receives `query` but does not use it in the body or calculate new relevance scores.\n5) `[:5]`, applied to the returned value, selects at most the first five items. There are only three, so all remain in `final`.\n6) `final[0][\"id\"]` is `\"b\"`, so `first_id` is `\"b\"`. There is no print statement.",
+      "why_correct": "The correct answer is “Move the option from the first set of candidates that best matches the question to the top.” The function reorders existing candidates to place higher-ranked ones first. In this example, however, the actual comparison uses the supplied `score` values rather than analyzing the question's content.",
       "common_wrong_choice": {
         "choice": "Delete all candidates without exception.",
-        "why_wrong": "Rather than deleting candidates, we re-evaluate their order and select the top few.",
-        "misread_step": "This is a case where \"ranking\" and \"deletion\" were confused."
+        "why_wrong": "`sorted` returns a new list containing the candidates in sorted order. The following `[:5]` also keeps all three candidates here, so none are deleted.",
+        "misread_step": "This confuses the function call's reordering and the subsequent top-item selection with deleting every candidate."
       },
-      "takeaway": "The RAG candidate flow is described as **retrieve → rerank → top-k selection**."
+      "takeaway": "Read the flow as input candidates → `rerank(...)` call → score-ordered return value → `[:5]` selection. Reranking changes order; slicing separately selects items from that result."
     },
     "target_statement": "final = rerank(query, candidates)[:5]",
     "focus_span": "rerank(query, candidates)",
@@ -694,24 +694,24 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "context-packing 함수 호출에서 keyword argument가 전체 token budget을 지정하는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`max_tokens=3000` This is a keyword argument that passes the number 3000 to a function call by specifying a parameter name.",
-      "how_to_read": "Let’s separate the meaning of the keyword “name” (which implies certain restrictions) from the actual numeric value.",
-      "key_point": "Since you cannot include an infinite number of chunks in the RAG context, you must select and include only the most important evidence within the token budget.",
-      "common_mistake": "It is easy to mistake `max_tokens` for the number of search candidates. Here, it refers to the token budget allowed for the context."
+      "what_it_is": "Easy meaning: `max_tokens=3000` passes a value when calling the function, saying ‘use 3000 as the limit.’\nExact definition: A keyword argument supplies a value by naming a parameter in a function call; here it binds the integer `3000` to the parameter `max_tokens`.",
+      "how_to_read": "Picture the function's input slots with name labels. `def pack(chunks, max_tokens)` defines two input names. `pack(chunks, max_tokens=3000)` supplies the `chunks` list by position and supplies `3000` to the input named `max_tokens`. Inside the function, `used + chunk[\"tokens\"] > max_tokens` uses that supplied value to check whether adding the next chunk would exceed the limit.",
+      "key_point": "`3000` → `max_tokens` inside the function → limit used to compare the cumulative token count.\nAdding `c1` makes `used=1200`; adding `c2` makes `used=2200`. Including `c3` would give `3600 > 3000`, so `break` ends the loop. The returned ID list `['c1', 'c2']` is stored in `context`. Because the comparison is `>`, a total of exactly 3000 is allowed.",
+      "common_mistake": "It is easy to think the name `max_tokens` itself activates a special Python limit. It is just a parameter chosen by this function; the comparison and `break` in the body enforce the limit. Also, 3000 is a budget for the sum of the chunks' `tokens` values, not a chunk count."
     },
     "teaching_example": {
       "code": "def pack(items, max_tokens):\n    return items[:max_tokens]\ncontext = pack([\"a\", \"b\", \"c\"], max_tokens=2)",
       "walkthrough": "By passing a limit of 2 with the name `max_tokens`, only the first two items are used."
     },
     "answer_explanation": {
-      "step_by_step": "A token limit of 3000 is passed to the `pack` call, and the function stops selection before cumulative tokens exceed that value.",
-      "why_correct": "This is because the keyword name itself specifies the context token budget.",
+      "step_by_step": "1) In `pack(chunks, max_tokens=3000)`, the list is passed to `chunks`, and `3000` is passed to `max_tokens`.\n2) The function starts with `selected=[]` and `used=0`.\n3) For `c1`, `0 + 1200 > 3000` is false, so it appends `'c1'` and sets `used` to 1200.\n4) For `c2`, `1200 + 1000 > 3000` is also false, so it appends `'c2'` and sets `used` to 2200.\n5) For `c3`, `2200 + 1400 > 3000` is true, so `break` ends the loop before the chunk is added.\n6) It returns `selected`, making `context` equal to `['c1', 'c2']`.",
+      "why_correct": "The value passed through `max_tokens=3000` is used as the upper bound in the cumulative token comparison, so the answer is ‘Limit the token budget for evidence to be included in the context.’ The name alone does not enforce a limit; the function body uses its value as the limit.",
       "common_wrong_choice": {
         "choice": "Include all documents without exception",
-        "why_wrong": "I will not select any chunks that exceed the budget.",
-        "misread_step": "This is an example where the context window limit was ignored."
+        "why_wrong": "Adding `c3` would bring the total to 3600 tokens, exceeding the limit of 3000, so this chunk is not selected.",
+        "misread_step": "This reads the `for` loop as adding every chunk unconditionally and overlooks the limit check and `break` that execute before `append`."
       },
-      "takeaway": "\"Context packing\" is interpreted as **candidate justification → token budget → selection within the budget**."
+      "takeaway": "Read keyword arguments as **identify the name and value in the call → connect the value to the matching parameter → trace where the function body uses that value**."
     },
     "target_statement": "context = pack(chunks, max_tokens=3000)",
     "focus_span": "max_tokens=3000",
@@ -764,17 +764,17 @@
     },
     "teaching_example": {
       "code": "report = {\"supported\": False}\naction = \"keep\"\nif not report[\"supported\"]:\n    action = \"revise\"",
-      "walkthrough": "Since `supported` is False, the result of `not` is True, and `action` changes to `revise`."
+      "walkthrough": "1) Bind a dictionary containing the check result to `report`. The value for `\"supported\"` is `False`.\n2) The initial value of `action` is `\"keep\"`.\n3) `report[\"supported\"]` retrieves `False`, and `not False` evaluates to `True`. Like a gate opening, the condition allows entry into the if block.\n4) The indented assignment runs, changing `action` to `\"revise\"`.\nResult: `action` is `\"revise\"`; nothing is printed. If the value were `True`, `not True` would be `False`, so the block would be skipped and `\"keep\"` would remain."
     },
     "answer_explanation": {
-      "step_by_step": "Since the `support` check returns `False`, ``not report['supported']`` returns `True`, and `revise_or_decline` is called.",
-      "why_correct": "This is because there is a guard that does not allow the program to proceed if evidence is missing.",
+      "step_by_step": "1) The three `def` statements define functions; their bodies do not run yet.\n2) `question` becomes `\"Q\"`, and `context` becomes `[\"evidence\"]`.\n3) `generate_answer(...)` returns `\"unverified answer\"`, which is assigned to `answer`.\n4) `check_evidence_support(...)` returns `{\"supported\": False}`, which is assigned to `report`.\n5) `report[\"supported\"]` → `False` → `not False` → `True`, so the if block runs.\n6) The return value of `revise_or_decline(...)` is reassigned to `answer`. Its final value is `\"근거가 부족해 답변을 보류합니다\"` (withholding the answer because evidence is insufficient). Nothing is printed.",
+      "why_correct": "This flow illustrates the choice about revising or withholding an answer according to evidence support, rather than keeping the generated answer unchanged. Here, withholding occurs. However, these functions return fixed example values; they do not actually retrieve or verify evidence. Even with `context` present, the support result can be `False`.",
       "common_wrong_choice": {
         "choice": "Making plausible claims without evidence",
-        "why_wrong": "The current code actually corrects or holds back answers that lack supporting evidence.",
-        "misread_step": "This is a case where the `support` check was ignored."
+        "why_wrong": "The initial answer is unverified, but the check result is `False`, so it is replaced with a withholding message rather than retained.",
+        "misread_step": "Stopping at the first assignment to `answer` misses the if block triggered by `not False` and the second assignment."
       },
-      "takeaway": "\"Grounding\" is interpreted as **generation → evidence support check → modification or hold if unsupported**."
+      "takeaway": "Generate → inspect support result → evaluate the condition with `not` → revise or withhold if unsupported. Having evidence is not the same as that evidence supporting the answer."
     },
     "target_statement": "if not report[\"supported\"]:",
     "focus_span": "if not report[\"supported\"]:",

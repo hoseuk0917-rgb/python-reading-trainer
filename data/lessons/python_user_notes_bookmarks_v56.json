@@ -572,14 +572,14 @@
       "walkthrough": "b만 saved set에 있으므로 id b인 dict 하나만 결과에 남습니다."
     },
     "answer_explanation": {
-      "step_by_step": "각 card id를 bookmark_set과 비교해 c2와 c3만 조건을 만족하므로 그 카드들만 남습니다.",
-      "why_correct": "filter condition이 bookmark membership 자체이기 때문입니다.",
+      "step_by_step": "1) `bookmarks`는 [\"c2\", \"c3\"]이고, `set(bookmarks)`는 이 두 ID를 담은 집합을 만듭니다.\n2) `cards`에는 ID가 c1, c2, c3인 카드 딕셔너리가 순서대로 있습니다.\n3) `for card in cards`로 카드를 하나씩 확인합니다. `card[\"id\"] in bookmark_set`은 현재 카드의 ID가 북마크 집합에 있는지 검사합니다.\n4) c1 → 조건이 False이므로 건너뜁니다. c2 → True이므로 앞쪽 표현식 `card`의 값, 즉 카드 딕셔너리 전체를 새 리스트에 넣습니다. c3 → True이므로 같은 방식으로 넣습니다.\n5) 따라서 `filtered`는 [{\"id\": \"c2\"}, {\"id\": \"c3\"}]입니다.\n6) 마지막 줄은 남은 카드에서 ID만 꺼내므로 `filtered_ids`는 [\"c2\", \"c3\"]이 됩니다.",
+      "why_correct": "북마크 집합에 ID가 있는 카드만 별도 리스트에 모으므로 정답은 '북마크한 카드만 따로 모아보기 위해'입니다. 이 코드는 그 목록을 준비하며, 직접 화면에 표시하지는 않습니다.",
       "common_wrong_choice": {
         "choice": "모든 카드를 삭제하기 위해",
-        "why_wrong": "코드는 원본 cards를 삭제하지 않고 새 filtered list를 만듭니다.",
-        "misread_step": "filter와 delete를 혼동한 경우입니다."
+        "why_wrong": "조건을 통과하지 못한 카드는 새 리스트에 포함되지 않을 뿐입니다. 원본 `cards`에는 세 카드가 모두 그대로 남습니다.",
+        "misread_step": "`if` 조건에서 제외되는 것을 원본 카드 삭제로 오해한 경우입니다. 이 comprehension은 삭제가 아니라 새 리스트 생성을 수행합니다."
       },
-      "takeaway": "bookmark filter는 **저장 ID set → membership 검사 → 개인 목록 생성**으로 읽습니다."
+      "takeaway": "카드 하나 선택 → ID가 북마크 집합에 있는지 검사 → True인 카드만 새 리스트에 넣기. 결과 순서는 `cards`의 순서를 따릅니다."
     },
     "target_statement": "filtered = [card for card in cards if card[\"id\"] in bookmark_set]",
     "focus_span": "[card for card in cards if card[\"id\"] in bookmark_set]",
@@ -862,14 +862,14 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "`*sources`가 source 리스트 하나를 넘기는 것이 아니라 안의 세 리스트를 각각 별도 위치 인자로 펼쳐 전달함을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "함수 호출에서 `*iterable`은 iterable 항목들을 여러 위치 인자로 펼친다.",
-      "how_to_read": "sources의 최상위 항목 수를 먼저 보고 `*`가 호출 인자 경계로 펼치는 모습을 읽는다.",
-      "key_point": "실제 queue builder에서는 같은 card ID를 stable ID로 deduplicate하고 priority 규칙을 별도 적용해야 한다.",
-      "common_mistake": "sources 전체가 첫 위치 인자 하나로 전달된다고 생각하기 쉽다."
+      "what_it_is": "쉽게 말하면: 호출할 때 `*sources`를 쓰면 안의 항목들을 하나씩 꺼내 함수의 입력 자리에 순서대로 전달합니다.\n정확한 정의: 함수 호출의 `*iterable`은 반복 가능한 객체의 항목들을 순서대로 펼쳐 각각 위치 인자로 전달하는 인자 언패킹 문법입니다.",
+      "how_to_read": "바깥 리스트를 세 묶음이 담긴 바구니라고 생각하세요. `*`는 바구니 안의 묶음을 각각 전달하지, 묶음 안까지 다시 펼치지는 않습니다. 이 카드의 호출은 `build_queue(sources[0], sources[1], sources[2])`와 같습니다. 따라서 `[\"c1\",\"c2\"]`는 `bookmarked`, `[\"c2\",\"c3\"]`는 `wrong`, `[\"c4\"]`는 `noted`에 연결됩니다.",
+      "key_point": "`sources`의 최상위 항목 세 개 → 위치 인자 3개 전달 → 세 매개변수에 순서대로 연결됩니다. 함수 안에서 리스트를 합치면 `ordered`는 `['c1', 'c2', 'c2', 'c3', 'c4']`입니다. `dict.fromkeys`가 처음 등장한 순서를 유지하며 중복 키를 하나로 모으고, `list(...)`가 키들을 리스트로 만듭니다. 반환값이 `queue`에 저장되어 `['c1', 'c2', 'c3', 'c4']`가 출력됩니다.",
+      "common_mistake": "변수 이름이 하나이므로 인자도 1개라고 생각하거나, 안쪽 문자열 다섯 개를 세어 5개라고 생각하기 쉽습니다. `*sources`는 바깥 리스트의 항목인 세 리스트만 펼칩니다. `build_queue(sources)`라면 인자는 하나지만, 이 함수에 필요한 나머지 두 인자가 없어 `TypeError`가 발생합니다."
     },
     "teaching_example": {
-      "code": "def count_groups(*groups):\n    return len(groups)\nsources=[[\"a\"],[\"b\"]]\nprint(count_groups(*sources))",
-      "walkthrough": "두 리스트가 별도 위치 인자로 펼쳐져 groups 길이는 2다."
+      "code": "def combine(first, second):\n    return first + second\n\nparts = [[\"a\", \"b\"], [\"c\"]]\nresult = combine(*parts)\nprint(result)",
+      "walkthrough": "1) `def combine(first, second):`는 두 입력 이름을 가진 함수를 정의합니다. 본문은 호출할 때 실행됩니다.\n2) `return first + second`는 전달받은 두 리스트를 합쳐 반환합니다.\n3) `parts = ...`는 리스트 두 개를 담은 바깥 리스트를 만듭니다.\n4) `combine(*parts)`는 `combine([\"a\", \"b\"], [\"c\"])`처럼 위치 인자 2개를 전달합니다. `first`는 `[\"a\", \"b\"]`, `second`는 `[\"c\"]`에 연결됩니다.\n5) 본문이 실행되어 `['a', 'b', 'c']`를 반환하고, 그 값이 `result`에 저장됩니다.\n6) `print(result)`는 `['a', 'b', 'c']`를 출력합니다. 안쪽 문자열은 세 개지만 전달한 위치 인자는 두 개입니다."
     },
     "answer_explanation": {
       "step_by_step": "1) sources 최상위 항목은 세 리스트다. 2) *가 세 항목을 펼친다. 3) 각 리스트가 bookmarked, wrong, noted에 들어간다. 4) 따라서 위치 인자 세 개다.",

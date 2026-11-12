@@ -740,10 +740,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "constructor call에서 이름이 붙은 keyword argument가 대응 parameter에 어떤 값을 전달하는지 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`name=value` Values passed to a call in this format are keyword arguments.",
-      "how_to_read": "Check the argument name on the left side of the equals sign and the actual value on the right side, and match them to the parameter with the same name.",
-      "key_point": "`batch_size=8` This is not a syntax that refers to 8 GPUs or 8 seconds; rather, it passes the integer 8 to the ``batch_size`` parameter.",
-      "common_mistake": "It’s easy to assume that since it’s the second argument in the call, you can ignore the parameter name. Keyword arguments are identified by their names."
+      "what_it_is": "Easy meaning: Giving a value an input-name label in a call sends it to the input with that name.\nExact definition: A keyword argument is specified as `name=expression` in a call and binds the evaluated expression's value to the parameter with that name.",
+      "how_to_read": "Imagine labeled input slots. In `__init__`, `dataset` and `batch_size` are input names, and `self` refers to the newly created object.\n`dataset = list(range(20))` creates a list from 0 through 19. In `DataLoader(dataset, batch_size=8)`, the first argument, `dataset`, goes to the `dataset` parameter, while the labeled value `8` goes to the `batch_size` parameter. The initialization body stores the list in an attribute with `self.dataset = dataset`, then stores 8 in an attribute with `self.batch_size = batch_size`.",
+      "key_point": "`batch_size=8` → the `batch_size` parameter of `__init__` receives the integer `8` → `self.batch_size = batch_size` executes → the initialized object is bound to `loader` → `loader.batch_size` is `8`. Passing a value in the call and storing it in an attribute in the body are separate steps.",
+      "common_mistake": "It is easy to think `loader.batch_size` is 20 because there are 20 data items. But this code does not calculate that value from the item count. A keyword argument matches by name rather than position, so `batch_size=8` passes 8 to `batch_size`, and the assignment in the body stores that value in the attribute."
     },
     "teaching_example": {
       "code": "class Reader:\n    def __init__(self, source, chunk_size):\n        self.chunk_size = chunk_size\n\nreader = Reader(\"docs\", chunk_size=4)",
@@ -801,10 +801,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "모델 로딩 호출에서 dtype이라는 이름의 keyword argument에 어떤 값이 전달되는지 읽는다.",
     "concept_explanation": {
-      "what_it_is": "Call arguments in the `name=value` format are keyword arguments.",
-      "how_to_read": "Check the name on the left side of the equal sign and the value on the right to see what value is being passed to the parameter with that name.",
-      "key_point": "The fact that `fp16` reduces memory usage is relevant to the project context; the direct meaning of this Python statement is to pass the value `float16` to the `dtype` parameter.",
-      "common_mistake": "It is easy to swap the `model_id` and dtype values. Keyword arguments map by name."
+      "what_it_is": "Easy meaning: When calling a function, you can name an input to send a value to that input slot.\nExact definition: A keyword argument is an argument specified as `name=value` in a function call that binds a value to the parameter with that name.",
+      "how_to_read": "Imagine the function's input slots have name tags. `def load_model(model_id, dtype)` defines two input names, `model_id` and `dtype`. Next, `model_id = \"local-llm\"` binds a string to the outer name. In `load_model(model_id, dtype=\"float16\")`, the first value, `\"local-llm\"`, goes to the first parameter, `model_id`, by position; `\"float16\"` goes to the parameter `dtype` by its explicitly specified name.",
+      "key_point": "Call → bind `\"local-llm\"` to `model_id` and `\"float16\"` to `dtype` → the function body's `return` returns `{\"model_id\": \"local-llm\", \"dtype\": \"float16\"}` → bind the returned dictionary to `model`. Therefore, `model[\"dtype\"]` is the string `\"float16\"`.",
+      "common_mistake": "In `dtype=\"float16\"`, `dtype` is the name of the parameter receiving the value, not the value being passed. The value is the string `\"float16\"` on the right. Also, the function in this code only puts that string in a dictionary; it does not actually load a model or convert a numeric format."
     },
     "teaching_example": {
       "code": "def load_asset(asset_id, precision):\n    return {\"asset_id\": asset_id, \"precision\": precision}\n\nasset = load_asset(\"A1\", precision=\"int8\")",
@@ -1340,10 +1340,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "dict를 `**`로 펼쳐 메서드 호출의 여러 keyword argument로 전달하는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`**mapping` unpacks the key/value pairs of a mapping—such as a `dict`—into keyword arguments and passes them to a function or method.",
-      "how_to_read": "I interpret this to mean that each key in the mapping becomes an argument name, and the value becomes the value of that argument.",
-      "key_point": "In this call, `input_ids` and `attention_mask` are derived from `**inputs`, while `max_new_tokens` is specified separately.",
-      "common_mistake": "It is easy to assume that the `inputs` dictionary itself is passed as a single positional argument. When `**` is appended, it expands into multiple keyword arguments."
+      "what_it_is": "Easy meaning: `**inputs` takes the names and values in a dictionary and passes each value as a named input.\nExact definition: In a call, `**mapping` is unpacking syntax that passes keyword arguments using the mapping's string keys as argument names and their corresponding values as argument values.",
+      "how_to_read": "Picture the dictionary as a bundle of labeled values. In the `generate` definition, `**kwargs` collects received keyword arguments into a dictionary, and `return kwargs` returns it. `model = Model()` creates an instance. The next line creates `inputs` with two entries. Read `**inputs` in the call as if `input_ids=[10, 20], attention_mask=[1, 1]` were written separately; `max_new_tokens=128` is also passed.",
+      "key_point": "Two entries in `inputs` → unpack into two keyword arguments → add `max_new_tokens=128` → collect three entries in `kwargs` → return it and bind it to `outputs`. The result is `{'input_ids': [10, 20], 'attention_mask': [1, 1], 'max_new_tokens': 128}`, so there are 3 keys. `self` receives the instance on which the method is called and is not included in this dictionary.",
+      "common_mistake": "Do not read `**inputs` as passing one dictionary as a positional argument. `**inputs` in the call unpacks, while `**kwargs` in the definition collects. Also, count dictionary keys, including the separately supplied `max_new_tokens`, not elements inside the lists."
     },
     "teaching_example": {
       "code": "def build(**kwargs):\n    return kwargs\n\noptions = {\"width\": 10, \"height\": 5}\nresult = build(**options, mode=\"fast\")",
@@ -1459,10 +1459,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "함수 호출의 첫 positional argument가 task parameter로 전달되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A value passed by position—without a name—within parentheses is called a positional argument.",
-      "how_to_read": "Determine the argument’s position from the left and match it to the corresponding parameter at the same position in the function definition.",
-      "key_point": "`text-classification` is passed as a string that specifies the task the pipeline will perform.",
-      "common_mistake": "It’s easy to mistake a string for a function name. In this context, it refers to the data passed to the `pipeline` function."
+      "what_it_is": "Easy meaning: A value you give a function when calling it is connected to an input name defined by that function.\nExact definition: A positional argument is a value supplied by position in a call and bound to the corresponding parameter in order.",
+      "how_to_read": "Think of parameters as input name tags. `def pipeline(task)` defines the input name `task`, and `pipeline(\"text-classification\")` connects the string to that name. The inner `def run(text)` defines a separate input name, `text`. `return run` returns that function without calling it, so `clf` refers to it. Later, calling `clf(\"hello\")` binds `\"hello\"` to `text`.",
+      "key_point": "`pipeline(\"text-classification\")` → bind `\"text-classification\"` to `task` → return the `run` function, which can still access that `task`, and bind it to `clf` → `clf(\"hello\")` binds `\"hello\"` to `text` → return `{\"task\": \"text-classification\", \"text\": \"hello\"}` → bind it to `result`. Therefore, `result[\"task\"]` is `\"text-classification\"`.",
+      "common_mistake": "It is easy to mix up the two calls and think `\"hello\"` replaces `task`. But the argument to `pipeline(...)` goes to `task`, while the argument to `clf(...)` goes to `run`'s `text`. Also, `\"text-classification\"` is string data, not the name of a function to execute."
     },
     "teaching_example": {
       "code": "def make_runner(task):\n    return lambda text: f\"{task}:{text}\"\n\nrunner = make_runner(\"summarize\")",
@@ -1520,14 +1520,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "여러 문장을 method call에 전달했을 때 각 문장에 대응하는 결과가 리스트로 반환되는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`model.encode(data)` This is a method call that passes `data` to the `encode` method of the `model` object.",
-      "how_to_read": "Check how many inputs the `argument` has and verify how the method transforms those inputs into a return value of a specific type.",
-      "key_point": "In the context of embedding search, you can think of it as creating a single vector representation for each sentence.",
-      "common_mistake": "It’s easy to assume that the entire input list is converted into a single vector. In this example, a result is generated for each sentence."
+      "what_it_is": "Easy meaning: `model.encode(...)` asks model to work on the data inside the parentheses and give back a result.\nExact definition: This expression is a method call that invokes the `encode` method of the `model` object, passes a list as an argument, and obtains the return value.",
+      "how_to_read": "Mental model: read a call as ‘pass input → run the defined work → receive a result.’ `model.encode([\"hello\", \"world\"])` passes one list. During the call, `self` refers to `model`, and `texts` refers to the supplied list. The method body reads the strings in `texts` one at a time and creates one numeric list for each string.",
+      "key_point": "`SentenceModel()` creates an object and binds it to `model`.\nCall `model.encode([\"hello\", \"world\"])` → supply two strings through `texts` → each string has length 5, so each produces `[5, 6]` → return `[[5, 6], [5, 6]]` → bind it to `vectors`.\nThus, the outer list in `vectors` has 2 elements. The numbers in this code are calculated from string lengths.",
+      "common_mistake": "Passing one list as an argument does not mean the result has only one element. The number of arguments and the number of elements in the returned list are different things. Here, the method body creates one result per input string. Neither the string length 5 nor the count of numbers inside the inner lists is the outer list's element count."
     },
     "teaching_example": {
       "code": "class Encoder:\n    def encode(self, texts):\n        return [[len(text)] for text in texts]\n\nencoder = Encoder()\nvectors = encoder.encode([\"a\", \"abcd\"])",
-      "walkthrough": "Each of the two input strings produces one result, so the length of `vectors` is 2."
+      "walkthrough": "Line by line:\n1) `class Encoder:` defines a class used to create objects.\n2) `def encode(self, texts):` defines a method. Its body does not run yet.\n3) `return ...` specifies that, when called, the method will put each string's length into a one-element list, collect those lists, and return them.\n4) `encoder = Encoder()` creates an object and binds it to `encoder`.\n5) `encoder.encode([\"a\", \"abcd\"])` calls the method. `self` refers to `encoder`, and `texts` refers to the supplied list. The method creates `[1]` from `\"a\"` and `[4]` from `\"abcd\"`, then returns `[[1], [4]]`. This value is bound to `vectors`.\nExecution flow: two strings → method call → create `[1]` and `[4]` → return `[[1], [4]]` → `vectors`.\nResult: `vectors` has 2 elements. There is no print statement, so nothing is displayed."
     },
     "answer_explanation": {
       "step_by_step": "The input texts contain two strings. Since the comprehension creates one vector for each string, the returned list contains two vectors.",
@@ -1880,14 +1880,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "OCR reader 객체의 메서드 호출 반환값이 결과 변수에 저장되는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`reader.readtext(path)` This is a method call that passes an image path value to a method of the `reader` object.",
-      "how_to_read": "After checking the calling object, method name, and argument values, see where the return value is stored.",
-      "key_point": "Since actual EasyOCR execution results may vary depending on the image and model, this card is treated as a local example with only the method calls and return structures fixed.",
-      "common_mistake": "It is easy to think the literal string `page.png` is stored in `results`. What is stored is the method’s return value."
+      "what_it_is": "Easy meaning: a method call asks an object to do a defined job with values you supply.\nExact definition: `reader.readtext(\"page.png\")` calls a method bound to `reader`, automatically passing `reader` as `self` and passing the string argument as `path`.",
+      "how_to_read": "Think input → run the job → receive the result. Inside `class OCRReader`, `def readtext` defines the job; the method body does not run yet. `reader = OCRReader()` creates an object. Calling `reader.readtext(\"page.png\")` then makes `path` equal to `\"page.png\"`, executes the `return` line, and binds the returned list to `results`.",
+      "key_point": "`\"page.png\"` → `path` → `return [(path, \"PYTHON\", 0.98), (path, \"RAG\", 0.91)]` → `results`.\nThe final value is `[(\"page.png\", \"PYTHON\", 0.98), (\"page.png\", \"RAG\", 0.91)]`. The outer list contains two tuples, so its item count is 2. This local code returns the specified list without opening an image, and nothing is printed.",
+      "common_mistake": "Do not assume that one supplied path means one returned item. The number of input arguments and the number of items in the returned list are separate. Although each tuple contains three values, each tuple counts as one item in the outer list."
     },
     "teaching_example": {
-      "code": "class Scanner:\n    def read(self, path):\n        return [f\"text-from:{path}\"]\n\nscanner = Scanner()\nitems = scanner.read(\"scan.png\")",
-      "walkthrough": "`scan.png` is passed to the method, and the return list is stored in `items`."
+      "code": "class Scanner:\n    def read(self, path):\n        return [(path, \"HELLO\"), (path, \"WORLD\")]\n\nscanner = Scanner()\nitems = scanner.read(\"scan.png\")",
+      "walkthrough": "1) `class Scanner:` defines a class used to create objects.\n2) `def read(self, path):` defines a method. Its body does not run yet.\n3) The `return` line specifies that a call will return a list of two tuples pairing the path with words.\n4) `scanner = Scanner()` creates an object and binds it to `scanner`.\n5) Calling `scanner.read(\"scan.png\")` passes `scanner` as `self` and `\"scan.png\"` as `path`. The `return` line now runs, and the returned list is bound to `items`.\nExecution flow: `\"scan.png\"` → method execution → `[(\"scan.png\", \"HELLO\"), (\"scan.png\", \"WORLD\")]` → `items`.\nResult: `items` contains 2 items. Nothing is printed."
     },
     "answer_explanation": {
       "step_by_step": "`reader.readtext('page.png')` It returns a list containing two tuples. The returned list is stored as-is in ``results``.",

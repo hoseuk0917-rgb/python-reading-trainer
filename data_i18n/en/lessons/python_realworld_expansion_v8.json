@@ -212,17 +212,17 @@
     },
     "teaching_example": {
       "code": "def load(ok):\n    if not ok:\n        return []\n    return [\"card\"]\n\nresult = load(False)",
-      "walkthrough": "Since `ok` is `False`, it returns an empty list."
+      "walkthrough": "1) `def load(ok):` defines the function. Its body runs when called.\n2) `result = load(False)` calls the function with `ok` set to `False`.\n3) In `if not ok:`, `not False` is `True`, so execution enters the indented block.\n4) `return []` sends an empty list back to the call site and immediately ends this function execution.\n5) Therefore, the next line, `return [\"card\"]`, is not executed.\n6) The value of the call `load(False)`, which is `[]`, is stored in `result`. There is no screen output.\n\nThink of `return` as an exit that hands back a result. With `load(True)`, the condition would be false, so execution would pass the first exit and return `[\"card\"]`."
     },
     "answer_explanation": {
-      "step_by_step": "Since `Response.ok` is False, the program enters the `if` block and the function ends at `return []`.",
-      "why_correct": "This is because the failure response branch explicitly returns an empty list.",
+      "step_by_step": "1) After defining the class and function, Python evaluates the right side of the final assignment.\n2) `Response(False, [\"card-a\"])` creates an object. Its `__init__` sets the object's `ok` to `False` and `data` to `[\"card-a\"]`.\n3) That object is passed to `parse_response`, where `response` refers to it.\n4) `if not response.ok:` evaluates to `not False`, which is `True`, so `return []` executes.\n5) The empty list is returned, and this function execution immediately ends. `return response.data` is not executed.\n6) The return value of `parse_response(...)`, which is `[]`, is stored in `result`.",
+      "why_correct": "The return statement actually executed is `return []`. Although the object stores `[\"card-a\"]`, execution never reaches the line that returns it, so the answer is `[]`.",
       "common_wrong_choice": {
         "choice": "[\"card-a\"]",
-        "why_wrong": "The `data` return statement is not executed because of the preceding `return`.",
-        "misread_step": "This is a case where the code following an `early return` is also executed."
+        "why_wrong": "`[\"card-a\"]` is the object's `data` value, but `return response.data` is not executed because the earlier `return []` ends the function.",
+        "misread_step": "This assumes the function continues after `return []` and the final return statement overwrites the earlier result."
       },
-      "takeaway": "Read partial-failure loading as **check state → return an early fallback → merge with the remaining results**."
+      "takeaway": "Read in order: check the condition → return the value at the `return` actually reached → end the current function execution → store the returned value at the call site. Here, `result` is `[]`."
     },
     "target_statement": "return []",
     "focus_span": "return []",
@@ -1393,24 +1393,24 @@
     "primary_concept": "comparison",
     "reading_goal_internal": "dict lookup 결과와 3을 >=로 비교해 Boolean을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`a >= b` is True when `a` is greater than or equal to `b`.",
-      "how_to_read": "First, look up the `occurrence_count` value, then compare it to the threshold of 3.",
-      "key_point": ">= includes cases where the values are exactly the same.",
-      "common_mistake": ">It’s easy to misunderstand that “read as 3” means False."
+      "what_it_is": "Easy meaning: `>=` asks whether the left value meets or exceeds the right-hand threshold. Exact definition: In this code, `>=` is a comparison operator that compares two integers and returns the Boolean (bool) value `True` if the left value is greater than or equal to the right value, and `False` otherwise.",
+      "how_to_read": "Picture checking whether a value has reached a threshold of 3. First retrieve 3 from the dictionary using `candidate[\"occurrence_count\"]`, then read `3 >= 3` as 'Is 3 at least 3?'",
+      "key_point": "The flow is dictionary lookup → integer 3 → `3 >= 3` → `True` → assignment to `count_ready` → output `True`. The comparison produces a truth value, not the original number 3.",
+      "common_mistake": "Reading `>=` as `>` can make you think equal values produce `False`. `3 > 3` is `False`, but `3 >= 3` is `True` because equality is included."
     },
     "teaching_example": {
       "code": "candidate={\"count\":3}\nprint(candidate[\"count\"] >= 3)",
       "walkthrough": "3 >= 3 is True."
     },
     "answer_explanation": {
-      "step_by_step": "1) The occurrence_count is 3. 2) The threshold is also 3. 3) >= includes equality. 4) Therefore, it is True.",
-      "why_correct": "Therefore, it is True.",
+      "step_by_step": "1) The first line creates a dictionary mapping `\"occurrence_count\"` to 3 and `\"has_definition\"` to `True`, and assigns it to `candidate`.\n2) On the right side of the second line, looking up `candidate[\"occurrence_count\"]` gives 3.\n3) Python evaluates `3 >= 3`. The values are equal, and `>=` includes equality, so the result is `True`.\n4) This comparison result is assigned to `count_ready`.\n5) On the third line, `print(count_ready)` outputs `True`.",
+      "why_correct": "The value being compared and the threshold are both 3, so the 'greater than or equal to' condition holds. The output is therefore `True`. The dictionary's `\"has_definition\"` value is not looked up or used in this comparison.",
       "common_wrong_choice": {
         "choice": "False",
-        "why_wrong": ">It’s easy to misunderstand that “read as 3” means False.",
-        "misread_step": "First, look up the `occurrence_count` value, then compare it to the threshold of 3."
+        "why_wrong": "`False` would mean this comparison does not hold. Here, 3 equals the threshold of 3, so the `>=` comparison holds.",
+        "misread_step": "At step 3, this misreads `>=` as `>`, excluding equality."
       },
-      "takeaway": ">= includes cases where the values are exactly the same."
+      "takeaway": "First retrieve the actual value from the dictionary, then compare it with the threshold. `>=` includes values equal to the threshold, and the assigned value is the comparison result, `True` or `False`, not the retrieved number."
     },
     "target_statement": "candidate[\"occurrence_count\"] >= 3",
     "focus_span": "candidate[\"occurrence_count\"] >= 3",
@@ -1518,18 +1518,18 @@
       "common_mistake": "It’s easy to assume that `exists` means the file will be deleted if it returns True. It merely checks whether the file exists."
     },
     "teaching_example": {
-      "code": "class Item:\n    def __init__(self, found): self.found = found\n    def exists(self): return self.found\n\nready = Item(True).exists()",
-      "walkthrough": "The `exists` method returns `True`."
+      "code": "class Item:\n    def __init__(self, found):\n        self.found = found\n    def exists(self):\n        return self.found\n\nready = Item(True).exists()",
+      "walkthrough": "1) `class Item` defines a template for creating objects.\n2) `__init__` stores the supplied `found` value in `self.found` when an object is created.\n3) `exists` is defined to return the stored `self.found` when called. Defining it does not execute its body.\n4) On the last line, `Item(True)` first creates an object, and `__init__` stores `True`.\n5) Calling `.exists()` on that object then returns `True`, which is stored in `ready`.\nFlow: create object → store value → call method → store returned value. The final value of `ready` is `True`; nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "Since `OutputPath.exists()` returns `True`, `should_resume` is also `True`, and `skip` is added to the body of the `if` statement.",
-      "why_correct": "This is because the code is structured to use existing output as a signal that the task is complete.",
+      "step_by_step": "1) The class definition sets `existing` to `{\"out_0042.json\"}` and defines the methods; `should_resume` is also defined.\n2) `actions = []` creates an empty list.\n3) Calling `should_resume(\"out_0042.json\")` gives that string to `output_path`.\n4) `OutputPath(output_path)` creates an object, and `__init__` stores the string in `self.path`.\n5) `.exists()` is called on that object. `self.existing` finds the class's set, and `self.path in self.existing` evaluates to `True`.\n6) `exists()` returns `True`, and `should_resume` returns that same value.\n7) The `if` condition is true, so `actions.append(\"skip\")` executes. The final value is `[\"skip\"]`.",
+      "why_correct": "The condition receives `True`, and the executed body adds `\"skip\"`. Here, the existence check tests membership in the set defined in the code, not the actual file system.",
       "common_wrong_choice": {
         "choice": "[\"run\"]",
-        "why_wrong": "The current branch specifies the condition for skipping when an output exists.",
-        "misread_step": "This is a case where the \"exists\" result and the \"resume action\" are connected in the opposite order."
+        "why_wrong": "No statement adds `\"run\"`. The body of the true condition adds `\"skip\"`.",
+        "misread_step": "This guesses that execution resumes from the name `should_resume` without checking the actual returned value and the `if` body."
       },
-      "takeaway": "The logic of the resume is interpreted as **check for existence of output → determine completion → skip duplicate tasks**."
+      "takeaway": "Do not guess behavior from names: trace object creation → method return value → function return value → `if` body."
     },
     "target_statement": "return OutputPath(output_path).exists()",
     "focus_span": "OutputPath(output_path).exists()",
@@ -1878,17 +1878,17 @@
     },
     "teaching_example": {
       "code": "known = {\"s1\", \"s2\"}\nmissing = []\nfor side_id in [\"s1\", \"s3\"]:\n    if side_id not in known:\n        missing.append(side_id)",
-      "walkthrough": "s1 is skipped in \"known\" and only s3 is missing, so it is classified as \"missing.\""
+      "walkthrough": "1. `known` is bound to the set of existing IDs {\"s1\", \"s2\"}. Think of it as a checklist.\n2. `missing = []` creates an empty list for IDs that are absent.\n3. The `for` loop binds `side_id` to \"s1\" and then \"s3\".\n4. On the first iteration, `\"s1\" not in known` is False. Because it is on the checklist, `append` does not run and `missing` stays [].\n5. On the next iteration, `\"s3\" not in known` is True. Because it is absent, `missing.append(side_id)` adds \"s3\".\n6. After the loop, `missing` is [\"s3\"]. `not in` is an expression that checks whether a value is absent, not a command that removes an existing item."
     },
     "answer_explanation": {
-      "step_by_step": "c1 references s1 and s9. Since s1 is in side_ids but s9 is not, only `('c1','s9')` is added to missing.",
-      "why_correct": "This is because `side_id not in side_ids` is True only in s9.",
+      "step_by_step": "1. `def` defines the function. Its body runs when the function is called on the last line.\n2. The call passes the one-card list as `cards` and {\"s1\", \"s2\"} as `side_ids`. The function starts with `missing = []`.\n3. The outer loop selects card \"c1\". Because this card has the key, `card.get(\"side_card_ids\", [])` retrieves [\"s1\", \"s9\"].\n4. The inner loop's first value is \"s1\". `\"s1\" not in side_ids` is False, so nothing is added. `missing` is still [].\n5. The next value is \"s9\". `\"s9\" not in side_ids` is True, so the tuple `(card[\"id\"], side_id)`, which is (\"c1\", \"s9\"), is appended. Now `missing` is [(\"c1\", \"s9\")].\n6. After both loops finish, `return missing` returns this list, and the call's result is bound to `result`. Thus, `result` is [(\"c1\", \"s9\")].",
+      "why_correct": "`not in` is True when the value on the left is absent from the set on the right. Of the two referenced IDs, only \"s9\" is absent, so only (\"c1\", \"s9\"), pairing the card ID with the missing reference ID, enters the result list.",
       "common_wrong_choice": {
         "choice": "[(\"c1\", \"s1\")]",
-        "why_wrong": "s1 exists in the actual set of side_ids.",
-        "misread_step": "This is an instance where the meaning of `not in` was interpreted incorrectly."
+        "why_wrong": "\"s1\" is in `side_ids`, so the condition is False and it is not appended.",
+        "misread_step": "Reading `side_id not in side_ids` as `side_id in side_ids` selects an existing reference instead of a missing one."
       },
-      "takeaway": "The reference QA reads as **reference value → membership in the actual ID set → record of missing items**."
+      "takeaway": "Check each reference ID → append (card ID, reference ID) only when `not in` is True → return the completed list."
     },
     "target_statement": "if side_id not in side_ids:",
     "focus_span": "side_id not in side_ids",

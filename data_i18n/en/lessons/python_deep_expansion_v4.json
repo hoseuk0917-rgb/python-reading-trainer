@@ -318,10 +318,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "original iterable의 항목들을 사용해 새 list 객체를 만들고 그 결과를 copy에 저장하므로 copy의 바깥 구조 변경이 original과 분리되는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`list(iterable)` is a constructor call that creates a new list object containing the items of the iterable in order.",
-      "how_to_read": "After verifying the items in the original input, note that while the results are identical, they are distinct external list objects.",
-      "key_point": "Since this is a shallow copy, the outer list remains independent, but it does not perform a deep copy that includes nested mutable elements.",
-      "common_mistake": "Since `list(original)` is simply an alias, it’s easy to assume that `copy.append` modifies `original` as well."
+      "what_it_is": "Easy meaning: `list(original)` puts the original list's items into a separate new list.\nExact definition: `list(iterable)` is a constructor call that returns a new list containing references to the iterable's items in order.",
+      "how_to_read": "Mental model: make a new container holding the same items, without making new copies of the items themselves.\nThe first line binds `original` to `['LiDAR']`. On the second line, `list(original)` receives `original` as its argument and creates a new list; `copy` refers to that result. The third line adds `'Radar'` only to `copy`. The last line prints the original list.",
+      "key_point": "`original`: `['LiDAR']` → call `list(original)` → bind `copy` to a separate `['LiDAR']` → `copy.append(\"Radar\")` → `copy` is `['LiDAR', 'Radar']`, while `original` is `['LiDAR']` → output: `['LiDAR']`.\nThis is a shallow copy. The outer list is new, but item references are shared, so nested mutable objects are not independently copied.",
+      "common_mistake": "It is easy to read `list(original)` as equivalent to `copy = original`. With `copy = original`, both names refer to the same list, so changes from `copy.append(...)` are visible through `original` too. Here, however, the constructor call returns a new list, so adding an item affects only `copy`."
     },
     "teaching_example": {
       "code": "original = [1]\ncopy = list(original)\ncopy.append(2)\nprint(original)",
@@ -1284,17 +1284,17 @@
     },
     "teaching_example": {
       "code": "cache = {\"a\": \"ready\"}\ndef get_value(key):\n    if key in cache:\n        return cache[key]\n    return \"new\"\nresult = get_value(\"a\")",
-      "walkthrough": "Because `a` is in the cache, `ready` is returned immediately and the later `return` does not execute."
+      "walkthrough": "1) `cache = {\"a\": \"ready\"}` creates a dictionary storing the value \"ready\" under the key \"a\".\n2) `def get_value(key):` defines the function. Its body does not run yet.\n3) On the last line, calling `get_value(\"a\")` starts the function body with `key` set to \"a\".\n4) `if key in cache:` checks whether \"a\" is a dictionary key. The result is `True`.\n5) In `return cache[key]`, Python reads the value \"ready\" from `cache[\"a\"]`, sends it back to the caller, and ends the function execution.\n6) Therefore, the later `return \"new\"` does not run. The assignment on the last line finishes, storing \"ready\" in `result`.\n\nFlow: call → check that the key exists → read the stored value → return and end the function → store in `result`. There is no screen output."
     },
     "answer_explanation": {
-      "step_by_step": "Since doc-1 is in the cache key, the first return statement is executed, and the cached summary becomes the function’s result.",
-      "why_correct": "This is because `return` immediately terminates function execution.",
+      "step_by_step": "1) `cache` contains the key \"doc-1\" and its associated value \"cached summary\". The two `def` statements only define functions; they do not run their bodies.\n2) Calling `get_summary(\"doc-1\")` sets `doc_id` to \"doc-1\".\n3) `doc_id in cache` checks the dictionary's keys, so it is `True`.\n4) In `return cache[doc_id]`, reading `cache[\"doc-1\"]` produces the string \"cached summary\".\n5) Returning that string ends this execution of `get_summary`. The call to `summarize(doc_id)`, the cache assignment, and the final `return summary` do not run.\n6) The call's result, \"cached summary\", is stored in `result`.",
+      "why_correct": "`cache[doc_id]` is not the key \"doc-1\" itself; it is the associated value \"cached summary\". The first `return` sends this value back to the caller, so the correct answer is `cached summary`.",
       "common_wrong_choice": {
         "choice": "new summary for doc-1",
-        "why_wrong": "Due to a cache hit, the program does not proceed to the point where `summarize` is called.",
-        "misread_step": "This is a case where the code is assumed to continue executing after the `return` statement."
+        "why_wrong": "Creating this string would require executing `summarize(\"doc-1\")`. Here, the stored value is returned first, so `summarize` is never called.",
+        "misread_step": "This reading assumes the function continues past `return cache[doc_id]` to execute `summary = summarize(doc_id)`. That return has already ended the current function execution."
       },
-      "takeaway": "The cache code is interpreted as **check for a hit → return immediately → skip expensive calculations**."
+      "takeaway": "`return` both sends back a value and ends the current function execution. Read it as: check the condition → evaluate the return value → send it to the caller → skip the remaining code."
     },
     "target_statement": "return cache[doc_id]",
     "focus_span": "cache[doc_id]",
@@ -1408,17 +1408,17 @@
     },
     "teaching_example": {
       "code": "items = []\nif not items:\n    result = \"empty\"\nelse:\n    result = \"ready\"",
-      "walkthrough": "An empty list is falsy, and applying `not` makes the condition True, so `result` becomes `empty`."
+      "walkthrough": "1) `items = []` binds an empty list to `items`.\n2) Read `if not items:` as a check asking, 'Are there no items?' An empty list is treated as false in a condition, so `not items` is `True`.\n3) Because the condition is true, the indented `result = \"empty\"` runs.\n4) Since the if branch was selected, `result = \"ready\"` under `else` does not run.\nExecution flow: empty list → `not items` is `True` → execute the if block → `result` is `\"empty\"`.\nDo not assume the block is skipped just because an empty list is treated as false. Here, `not` reverses the test."
     },
     "answer_explanation": {
-      "step_by_step": "Since an empty list is falsy, ``not docs`` evaluates to `True`. The first `return` statement is executed, returning a \"not found\" message.",
-      "why_correct": "This is because the `if guard` and `return` are executed before the LLM call below.",
+      "step_by_step": "1) The three `def` statements define functions. Their bodies do not run yet.\n2) Calling `answer(\"질문\", [])` gives `question` the value `\"질문\"` and `docs` the empty list `[]`.\n3) At `if not docs:`, the empty list is treated as false, so `not docs` is `True`.\n4) The if block therefore executes `return \"근거 문서가 부족합니다.\"`. This returns the string and ends the `answer` call.\n5) Execution never reaches `return call_llm(build_prompt(question, docs))`, so neither function is called.\n6) The returned string is assigned to `result`. Its final value is `\"근거 문서가 부족합니다.\"`.",
+      "why_correct": "Because `not docs` is true, the first `return` runs. Thus `result` contains the Korean string meaning 'There is insufficient supporting documentation.', corresponding to that answer choice.",
       "common_wrong_choice": {
         "choice": "generated",
-        "why_wrong": "The function terminates at the first `return` statement, so it does not proceed to `call_llm`.",
-        "misread_step": "This is the case where the code continues to execute after the `guard return`."
+        "why_wrong": "`\"generated\"` would be returned only if `call_llm` were called. Here, the earlier `return` ends the `answer` call, so `call_llm` does not run.",
+        "misread_step": "This misreads execution as continuing to the next line of the function after the if block executes `return`."
       },
-      "takeaway": "\"evidence guard\" is interpreted as **detecting an empty input → early return → skipping the model call**."
+      "takeaway": "Read the flow as: empty list → `not` makes the condition true → early return from the if block → skip the calls below → assign the returned value to `result`."
     },
     "target_statement": "if not docs:",
     "focus_span": "if not docs:",
@@ -1463,10 +1463,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "sort 호출의 reverse keyword argument가 score가 높은 후보를 앞에 두도록 순서를 뒤집는 의미를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`reverse=True` is a keyword argument passed by name to a function or method call.",
-      "how_to_read": "Check the keyword name and boolean value to see if the option is enabled.",
-      "key_point": "In the `sort` function, setting `reverse=True` sorts the list in descending order, which is the opposite of the default ascending order.",
-      "common_mistake": "It’s easy to assume that `reverse=True` simply creates a copy of the original list without sorting it. ``list.sort()`` reverses the order of the list itself."
+      "what_it_is": "Easy meaning: `reverse=True` passes a named setting that tells the sorting operation, “Put larger values first.”\nExact definition: `reverse=True` is a keyword argument that passes the Boolean value `True` to the `reverse` parameter; in `list.sort()`, it specifies descending order of the sort keys.",
+      "how_to_read": "Imagine giving a sorter named settings. `key` answers “What should be compared?” and `reverse` answers “Should larger values come first?”\nThe first line stores three (score, document name) pairs in `scored`. On the second line, `key=lambda pair: pair[0]` supplies the first value of each pair, its score, as the sorting criterion, and `reverse=True` requests larger scores first. On the third line, `scored[0][1]` extracts the second value, the document name, from the first sorted pair.",
+      "key_point": "The function passed to `key` supplies the scores `0.2`, `0.9`, and `0.5` as sort keys.\n↓\nWith `True` passed to `reverse`, `scored` itself is sorted into `[(0.9, \"doc-b\"), (0.5, \"doc-c\"), (0.2, \"doc-a\")]`.\n↓\n`scored[0]` → `(0.9, \"doc-b\")`\n↓\n`scored[0][1]` → `\"doc-b\"`\n↓\nThe value of `top_hit` is `\"doc-b\"`.",
+      "common_mistake": "It is easy to read `reverse=True` as simply reversing the list's current order. Here it requests descending order by the scores obtained through `key`, so the highest-scoring `doc-b` comes first, not `doc-c`, which was originally last. Also, `reverse=True` inside the call is an argument passing a value by name, not a separate variable assignment statement."
     },
     "teaching_example": {
       "code": "pairs = [(1, \"a\"), (3, \"b\"), (2, \"c\")]\npairs.sort(key=lambda pair: pair[0], reverse=True)\nfirst = pairs[0][1]",

@@ -31,14 +31,14 @@
         "primary_concept":  "class_definition",
         "reading_goal_internal":  "base class 표기와 subclass 내부의 같은 이름 메서드를 연결해 호출 시 어떤 구현이 선택되는지 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`class Child(Base):` This is a class definition where ``Child`` inherits from ``Base``.",
-                                    "how_to_read":  "After checking the base class in parentheses, see if a method with the same name is redefined in the subclass body.",
-                                    "key_point":  "Although Dog inherits from Animal, it directly redefines `speak()`, so Dog instances use Dog’s implementation.",
-                                    "common_mistake":  "It’s easy to assume that the parent method is always executed because it’s inherited. However, if a subclass overrides the same method, its implementation takes precedence."
+                                    "what_it_is":  "Easy meaning: A new kind can inherit features from an existing kind while defining different behavior where needed.\nExact definition: `class Dog(Animal):` defines `Dog` as a subclass of the base class `Animal`; defining a method in the subclass with the same name as a parent method is called method overriding.",
+                                    "how_to_read":  "Mental model: Ask the child for the behavior first; if the child does not define it, look in the parent.\nIn this code, `class Animal:` defines the parent class, whose `speak` returns `\"sound\"` when called. `class Dog(Animal):` means Dog inherits from Animal. Dog also contains `def speak(self):`, so it defines its own behavior. The `return` inside a method does not run during its definition; it runs later when the method is called.",
+                                    "key_point":  "`pet = Dog()` → create a Dog instance and bind it to `pet` → `pet.speak()` selects Dog's `speak` → execute `return \"bark\"` → pass the returned string to `print` → output `bark`. Animal's `speak` does not run for this call.",
+                                    "common_mistake":  "It is easy to think inheritance makes the parent method run first, or makes both methods run. Here, Dog overrides `speak`, so only Dog's implementation runs. Animal's method has not disappeared; if Dog did not define `speak`, it would use the inherited Animal method."
                                 },
         "teaching_example":  {
                                  "code":  "class Vehicle:\n    def kind(self):\n        return \"vehicle\"\n\nclass Bike(Vehicle):\n    def kind(self):\n        return \"bike\"\n\nitem = Bike()\nprint(item.kind())",
-                                 "walkthrough":  "Although `Bike` inherits from `Vehicle`, it overrides `kind()`, so `bike` is printed."
+                                 "walkthrough":  "1) `class Vehicle:` defines the parent class Vehicle.\n2) Its `def kind(self):` defines a method. `return \"vehicle\"` is the code to run when that method is called; it does not run during definition.\n3) `class Bike(Vehicle):` defines the child class Bike, which inherits from Vehicle.\n4) `def kind(self):` inside Bike overrides the method with the same name. Its `return \"bike\"` does not run yet either.\n5) `item = Bike()` creates a Bike instance and binds it to `item`.\n6) `print(item.kind())` first evaluates `item.kind()`. Bike's `kind` is selected, receives that instance as `self`, and returns `\"bike\"`.\n7) `print` displays the returned string.\nFlow: Bike instance → Bike's `kind()` → return `\"bike\"` → output `bike`. Vehicle's `kind` does not run."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "`Dog(Animal)` It establishes an inheritance relationship, and the Dog class redefines ``speak()``. Since ``pet`` is a Dog instance, ``pet.speak()`` uses Dog’s methods to return ``bark``.",
@@ -643,14 +643,14 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "execute 호출의 두 번째 positional argument가 SQL placeholder에 대응할 값들의 tuple이라는 점을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "Expressions passed in order without names within parentheses are called positional arguments.",
-                                    "how_to_read":  "Count the arguments from the left and verify the actual type and value of each expression.",
-                                    "key_point":  "The comma in `(source_name,)` indicates that this is a single-element tuple and is passed separately from the query string.",
-                                    "common_mistake":  "It’s easy to assume that just because there are parentheses, it’s a simple string. For a tuple, the trailing comma is key."
+                                    "what_it_is":  "Easy meaning: Values supplied in a call go into different input slots according to their order.\nExact definition: A positional argument is an argument supplied by position without a keyword name in a call; the evaluated value of its expression is passed.",
+                                    "how_to_read":  "Picture a call as input slots arranged in a row. In `conn.execute(query, (source_name,))`, the first slot is `query` and the second is `(source_name,)`. The comma inside the second slot creates a one-item tuple rather than separating another argument.",
+                                    "key_point":  "`query` refers to the SQL string, and `source_name` refers to `\"manual\"`. In the call, `query` → first argument, and `(source_name,)` → `(\"manual\",)` → second argument. Afterwards, `.fetchall()` is called on the returned object; it is not part of the second argument. The actual query results cannot be determined from this code alone.",
+                                    "common_mistake":  "`(source_name)` is the string value `\"manual\"` enclosed in parentheses, but `(source_name,)` is a tuple containing one string. Its item is the value the name refers to, not the variable name itself."
                                 },
         "teaching_example":  {
-                                 "code":  "def execute(query, params):\n    return params\n\nname = \"sensor\"\nparams = execute(\"SELECT ... WHERE name = ?\", (name,))",
-                                 "walkthrough":  "The second positional argument is the one-item tuple `(\"sensor\",)`."
+                                 "code":  "def show_params(query, params):\n    return params\n\nname = \"sensor\"\nresult = show_params(\"SELECT * FROM items WHERE source = ?\", (name,))\nprint(result)",
+                                 "walkthrough":  "1) `def` defines a function with input names `query` and `params`. Its body does not run yet.\n2) `return params` returns the second input unchanged when called.\n3) `name` is bound to `\"sensor\"`.\n4) `show_params(...)` passes the SQL string to `query` and the evaluated tuple `(name,)`, namely `(\"sensor\",)`, to `params`. The function returns this tuple, which is bound to `result`.\n5) `print(result)` displays `('sensor',)`. This example function only exposes the second argument; it does not execute SQL."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "`execute(query, (source_name,))` The first argument is `query`, and the second is ``(source_name,)``. Because of the trailing comma, the second argument is a tuple containing a single item.",
@@ -1054,10 +1054,10 @@
         "primary_concept":  "list_comprehension",
         "reading_goal_internal":  "문서 객체 전체가 아니라 각 doc의 id만 comprehension으로 추출하는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`[expression for item in items]` is a list comprehension that creates a new list from the result of applying `expression` to each item.",
-                                    "how_to_read":  "Distinguish between the `doc` object being iterated over and the expression `doc[\u0027id\u0027]`, which is included in the result each time.",
-                                    "key_point":  "Saving the answer along with its justification ID makes it easier to track which source was used.",
-                                    "common_mistake":  "It’s easy to assume that the entire `doc` dictionary is stored in `evidence_ids`. However, since `expression` is an ID lookup, only the ID values are stored."
+                                    "what_it_is":  "Easy meaning: This is a short way to take a needed value from each item and collect those values into a new list.\nExact definition: A list comprehension of the form `[expression for target in iterable]` iterates over the iterable, binds each item to target, and collects the results of evaluating expression into a new list in order.",
+                                    "how_to_read":  "Imagine picking up documents one at a time and collecting only their IDs in a new box. In this code, first read `for doc in docs` as 'use each dictionary in docs as doc in turn,' then read the front expression `doc[\"id\"]` as 'put the value at the current document’s \"id\" key into the new list.'",
+                                    "key_point":  "Calling `attach_evidence` passes two dictionaries as docs.\nFirst doc = {\"id\": \"d1\"} → doc[\"id\"] = \"d1\"\nSecond doc = {\"id\": \"d2\"} → doc[\"id\"] = \"d2\"\n→ New list [\"d1\", \"d2\"]\n→ Stored as the returned dictionary’s \"evidence_ids\" value.\nThe final result is {\"answer\": \"ok\", \"evidence_ids\": [\"d1\", \"d2\"]}.",
+                                    "common_mistake":  "Because the iteration visits documents, it is easy to assume the result contains entire document dictionaries. The front expression determines what is collected. `[doc for doc in docs]` would collect the documents themselves, but here `doc[\"id\"]` collects only their ID values. This does not modify the original docs."
                                 },
         "teaching_example":  {
                                  "code":  "rows = [{\"id\": \"a\"}, {\"id\": \"b\"}]\nids = [row[\"id\"] for row in rows]",
@@ -1188,17 +1188,17 @@
                                 },
         "teaching_example":  {
                                  "code":  "def route(task):\n    if task[\"type\"] == \"calc\":\n        return \"calculator\"\n    return \"chat\"\n\nresult = route({\"type\": \"calc\"})",
-                                 "walkthrough":  "Since the type is `calc`, it returns `calculator` in the first branch."
+                                 "walkthrough":  "1) `def route(task):` defines a function. Its body does not run yet.\n2) The last line calls `route({\"type\": \"calc\"})`, binding the supplied dictionary to `task`.\n3) Read `if` as a decision gate. `task[\"type\"]` is \"calc\", and `\"calc\" == \"calc\"` is `True`, so execution enters the indented block.\n4) `return \"calculator\"` returns the string and ends the function call. The following `return \"chat\"` therefore does not run.\n5) The returned value \"calculator\" is bound to `result`. Nothing is printed.\n\nFlow: \"calc\" → comparison gives `True` → first if block → return \"calculator\" → store in `result`."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since `task[\u0027type\u0027]` is `search`, the first `if` statement evaluates to `True` and immediately returns the result of calling `search_tool(task[\u0027query\u0027])`.",
-                                   "why_correct":  "This is because the `search task` was explicitly mapped to the `search_tool` branch.",
+                                   "step_by_step":  "1) The `def` statements define functions; defining them does not execute their bodies.\n2) The last line calls `route_task({\"type\": \"search\", \"query\": \"RAG\"})`. This dictionary is bound to `task`.\n3) In the first condition, `task[\"type\"]` is \"search\", so `\"search\" == \"search\"` is `True`.\n4) Execute `return search_tool(task[\"query\"])` in the first if block. It calls `search_tool` with the value of `task[\"query\"]`, \"RAG\", as its argument.\n5) `search_tool` evaluates `\"search:\" + \"RAG\"` and returns \"search:RAG\".\n6) `route_task` returns that value and ends. Execution never reaches the second if or the final `chat` call.\n7) The value of `result` is \"search:RAG\". Nothing is printed.",
+                                   "why_correct":  "The block executed when the condition is true contains the call `search_tool(...)`, so the answer is `search_tool`. The question asks for the name of the function called, not the returned string.",
                                    "common_wrong_choice":  {
                                                                "choice":  "chat",
-                                                               "why_wrong":  "`chat` is executed only when none of the preceding `search/write_file` branches match.",
-                                                               "misread_step":  "This is a case where the function termination caused by the first `return` was overlooked."
+                                                               "why_wrong":  "The final `chat(...)` is called only if execution reaches that line without returning from either preceding if block. Here, the first block already returns.",
+                                                               "misread_step":  "This misread overlooks that after the return expression is evaluated, the function ends; calls written below it do not keep executing."
                                                            },
-                                   "takeaway":  "The router operates as follows: **check intent/type → select branch → call tool → return**."
+                                   "takeaway":  "Read the flow as compare condition → enter the true block → call function → return its result. Once `return` executes, later statements in that function do not run."
                                },
         "target_statement":  "if task[\"type\"] == \"search\":",
         "focus_span":  "task[\"type\"] == \"search\"",
@@ -1309,18 +1309,18 @@
                                     "common_mistake":  "It’s easy to assume that both conditions must be met to skip. However, since each `if` statement returns `True`, the code will skip if either condition is met."
                                 },
         "teaching_example":  {
-                                 "code":  "def skip(item, seen):\n    if item[\"id\"] in seen:\n        return True\n    if item[\"score\"] \u003c 1:\n        return True\n    return False\n\nresult = skip({\"id\": \"a\", \"score\": 5}, {\"a\"})",
-                                 "walkthrough":  "Since `id` is already in `seen`, it returns `True` immediately in the first branch."
+                                 "code":  "def skip(item, seen):\n    if item[\"id\"] in seen:\n        return True\n    if item[\"score\"] < 1:\n        return True\n    return False\n\nresult = skip({\"id\": \"a\", \"score\": 5}, {\"a\"})",
+                                 "walkthrough":  "1) `def` defines the function `skip`. Its body does not run yet.\n2) The last line calls the function: `item` refers to the supplied dictionary, and `seen` refers to the set `{\"a\"}`.\n3) The first `if` tests `\"a\" in {\"a\"}`. This is `True`, so its indented `return True` runs.\n4) `return` sends back a value and ends the function call. The next `if item[\"score\"] < 1`, its `return True`, and the final `return False` are therefore not executed.\n5) The returned `True` is stored in `result`. Nothing is printed.\n\nFlow: check ID → true → `return True` → function ends → `result` is `True`. Both checks do not have to succeed: a true first condition ends the call immediately."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "If the URL is in `seen_urls`, the first condition returns `True`; otherwise, if the score is less than 0.5, the second condition returns `True`.",
-                                   "why_correct":  "This is because there are two independent early-return guards.",
+                                   "step_by_step":  "1) After `def` defines the function, the last line calls it with an item whose URL is `\"u1\"` and score is `0.9`, and the set `{\"u1\"}`.\n2) The first condition, `item[\"url\"] in seen_urls`, becomes `\"u1\" in {\"u1\"}`, which is `True`.\n3) The first `if` block executes `return True`, ending the function immediately. The score check is not executed, and `result` becomes `True`.\n4) To trace the general conditions, the second `if` is reached only when the URL is not in the set. `item.get(\"score\", 0)` retrieves the score, using 0 if the key is missing. If this value is less than `0.5`, the function returns `True`.\n5) The final `return False` is reached only when the URL is not in the set and the score check is also false.",
+                                   "why_correct":  "Therefore the correct choice is 'This URL has already been viewed, or the score is less than 0.5'. Either condition alone causes the function to return `True`, meaning skip. In the given call, the item is skipped because its URL has already been viewed, despite its score of 0.9.",
                                    "common_wrong_choice":  {
                                                                "choice":  "If the score is high, skip",
-                                                               "why_wrong":  "The comparison operator ``\u003c 0.5`` skips lines with low scores.",
-                                                               "misread_step":  "This is an example of a comparison where the direction was read in reverse."
+                                                               "why_wrong":  "The score condition is `< 0.5`, so it filters out scores below 0.5, not high scores. This call returns `True` because of the duplicate URL, not the high score.",
+                                                               "misread_step":  "This mistake overlooks that the function ends at the first `if` and treats the score of 0.9 as the reason for the returned value."
                                                            },
-                                   "takeaway":  "The curation filter is read as **dedup guard → score guard → final pass**."
+                                   "takeaway":  "Check each `if` from top to bottom and stop at an executed `return`. Duplicate URL → `True`; otherwise, low score → `True`; neither → `False`."
                                },
         "target_statement":  "if item[\"url\"] in seen_urls:",
         "focus_span":  "item[\"url\"] in seen_urls",

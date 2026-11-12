@@ -387,10 +387,10 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "sorted 호출의 reverse keyword argument가 rerank 결과 순서를 내림차순으로 바꾸는 의미를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`reverse=True` is a keyword argument that reverses the sort order in the `sorted` call.",
-                                    "how_to_read":  "We’ll look at how a key is used as a comparison criterion and examine the reverse boolean operation.",
-                                    "key_point":  "To list the most relevant candidates first, you typically sort them in descending order so that the highest scores appear at the top.",
-                                    "common_mistake":  "It is easy to assume that `reverse=True` changes the sign of the score itself. However, the score remains the same; it only reverses the order of the results."
+                                    "what_it_is":  "Easy meaning: `reverse=True` passes along a “put larger values first” setting when asking for a sort.\nExact definition: `reverse=True` is a keyword argument that passes the Boolean value `True` to the parameter named `reverse`; in `sorted`, it specifies descending order of the sort keys.",
+                                    "how_to_read":  "Picture handing data and settings to a sorting function. The first line binds `scored` to a list of three items. On the second line, `sorted(...)` receives `scored` as the data to sort, `key=lambda item: item[\"score\"]` as the way to obtain each item's comparison value, and `reverse=True` as the setting to place larger comparison values first. The returned new list is bound to `ranked`. The third line selects the first item with `ranked[0]`, then reads its ID with `[\"id\"]`.",
+                                    "key_point":  "Pass `scored` → the `key` function obtains comparison values `0.71`, `0.92`, and `0.80` → sort in descending order because `True` was passed to `reverse` → the ID order in `ranked` is `b`, `c`, `a` → `ranked[0][\"id\"]` is the string `'b'` → bind `first_id` to `'b'`. The original order of `scored` does not change.",
+                                    "common_mistake":  "Do not read `reverse=True` as simply reversing the original list. This code sorts by the scores obtained by `key`, so the order is `b`, `c`, `a`, not `c`, `b`, `a`. Also, `reverse=True` passes a setting in a call; it is not a statement assigning a value to a separate variable named `reverse`."
                                 },
         "teaching_example":  {
                                  "code":  "items = [{\"score\": 1}, {\"score\": 3}]\nranked = sorted(items, key=lambda x: x[\"score\"], reverse=True)",
@@ -924,24 +924,24 @@
         "primary_concept":  "comparison",
         "reading_goal_internal":  "저장 후 경과시간과 TTL을 비교해 cache freshness boolean을 만드는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`left \u003c right` is a comparison that checks whether the left-hand value is less than the right-hand value.",
-                                    "how_to_read":  "First, it calculates the elapsed time (age) and then compares it to ttl as a number.",
-                                    "key_point":  "If the request is within the TTL, the existing cache can be reused to reduce external API costs and latency.",
-                                    "common_mistake":  "It is easy to think of TTL as the absolute time at which the cache was stored. It usually refers to the period during which it remains valid."
+                                    "what_it_is":  "Easy meaning: `<` asks whether the number on the left is smaller than the number on the right.\nExact definition: In this code, `<` is a comparison operator that compares two integers and returns True if the left is smaller, and False otherwise.",
+                                    "how_to_read":  "Picture placing the elapsed time beside the validity-period boundary. `age < ttl` asks, “Is the time since saving shorter than the allowed period?” First calculate age as `1500 - 1200`, then compare it with 600.",
+                                    "key_point":  "Evaluation follows `1500 - 1200 → 300 → 300 < 600 → True`, and that result is assigned to is_fresh. `<` excludes equality, so an age of 600 would give False.",
+                                    "common_mistake":  "ttl is a period of validity, not the time of saving. Also, the comparison only computes true or false; it does not delete the cache or call fetch."
                                 },
         "teaching_example":  {
                                  "code":  "age = 50\nttl = 120\nvalid = age \u003c ttl",
                                  "walkthrough":  "Since 50 is less than 120, `valid` is `True`."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Calculate `age` as `1500 - 1200 = 300`, then evaluate `300 \u003c 600` to get True.",
-                                   "why_correct":  "This is because the time elapsed since it was saved is shorter than the TTL.",
+                                   "step_by_step":  "1. item holds the value \"cached-answer\" and the saved time 1200.\n2. now is assigned 1500, and ttl is assigned 600.\n3. item[\"saved_at\"] supplies 1200, so `1500 - 1200` makes age 300.\n4. `300 < 600` is True, so is_fresh becomes True.",
+                                   "why_correct":  "The elapsed time of 300 is shorter than the validity period of 600. Therefore, the answer is “It is True, and the elapsed time since saving is within the TTL.”",
                                    "common_wrong_choice":  {
                                                                "choice":  "It is false, and the cache is always cleared.",
-                                                               "why_wrong":  "The current age has not exceeded the TTL.",
-                                                               "misread_step":  "This is a case where the elapsed time calculation or the direction of comparison was read in the opposite way."
+                                                               "why_wrong":  "300 is smaller than 600, so the result is True. The code also contains no operation that clears the cache.",
+                                                               "misread_step":  "This reverses the direction of `age < ttl` or incorrectly adds a deletion action to the step that computes the comparison result."
                                                            },
-                                   "takeaway":  "The TTL code is interpreted as **saved_at → difference from the current time → TTL comparison**."
+                                   "takeaway":  "Read the flow as saved time → difference from the current time → comparison with the period → stored boolean."
                                },
         "target_statement":  "is_fresh = age \u003c ttl",
         "focus_span":  "age \u003c ttl",

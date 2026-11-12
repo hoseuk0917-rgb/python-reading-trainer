@@ -623,24 +623,24 @@
     "primary_concept": "call",
     "reading_goal_internal": "집계 함수가 개인 텍스트 없이 level과 accuracy 필드만 사용해 평균을 만드는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "함수 호출은 argument 값을 함수에 전달하고 반환값을 받는 표현식입니다.",
-      "how_to_read": "어떤 데이터와 기준이 argument로 들어가는지 확인한 뒤 함수가 어떤 결과를 반환하는지 추적합니다.",
-      "key_point": "privacy-safe metric 맥락에서는 원문 답안·메모 같은 개인 내용 대신 집계 가능한 최소 필드만 사용하는 설계를 생각할 수 있습니다.",
-      "common_mistake": "`aggregate`라는 이름만 보고 원본 events가 사라진다고 생각하기 쉽습니다. 이 예제에서는 함수가 별도 집계 dict를 반환합니다."
+      "what_it_is": "쉽게 말하면: 함수 호출은 준비된 작업에 재료를 건네고 결과를 받는 것입니다.\n정확한 정의: 함수 호출은 인자 표현식을 평가해 함수의 매개변수에 전달하고 함수 본문을 실행하여 반환값을 얻는 표현식입니다.",
+      "how_to_read": "함수를 ‘입력 → 처리 → 결과’ 작업대로 생각하세요. `def aggregate(...)`는 작업을 정의하며, 이때 본문이 실행되지는 않습니다. `aggregate(events, \"level\")`에서 실제로 호출하면 리스트 `events`가 매개변수 `events`에, 문자열 `\"level\"`이 `group_key`에 전달됩니다. 따라서 본문의 `event[group_key]`는 각 기록의 `event[\"level\"]`을 읽습니다. 함수가 돌려준 결과를 `avg_accuracy`라는 이름으로 사용합니다.",
+      "key_point": "호출 → `grouped = {}` 생성 → 각 기록의 level별로 accuracy를 모음 → `{9: [0.8, 1.0], 8: [0.6]}` → 각 목록의 합을 개수로 나눔 → `{9: 0.9, 8: 0.6}` 반환 → `avg_accuracy`에 연결. 따라서 `avg_accuracy[9]`는 `0.9`입니다.",
+      "common_mistake": "`\"level\"`을 전달한다고 해서 함수가 level 숫자 자체의 평균을 구하는 것은 아닙니다. 이 인자는 묶는 기준을 정합니다. 실제로 모아서 평균을 구하는 값은 `event[\"accuracy\"]`입니다. 또한 `aggregate`는 함수 자체를 가리키고, `aggregate(events, \"level\")`은 그 함수를 실행하는 호출입니다."
     },
     "teaching_example": {
       "code": "def average(values):\n    return sum(values) / len(values)\n\nresult = average([0.5, 1.0])",
       "walkthrough": "두 숫자의 평균 0.75가 result에 저장됩니다."
     },
     "answer_explanation": {
-      "step_by_step": "level 9 event 두 개의 accuracy가 0.8과 1.0입니다. 평균은 `(0.8 + 1.0) / 2 = 0.9`입니다.",
-      "why_correct": "aggregate 함수가 같은 level의 accuracy 목록을 만든 뒤 평균을 계산하기 때문입니다.",
+      "step_by_step": "1) `def`로 함수를 정의하고 세 기록이 담긴 `events` 리스트를 만듭니다.\n2) `aggregate(events, \"level\")`을 호출하면 `group_key`는 `\"level\"`을 가리키고, 함수 안에서 빈 딕셔너리 `grouped`를 만듭니다.\n3) 첫 기록의 key는 9입니다. `setdefault(key, [])`는 해당 키가 없으면 빈 목록을 넣고 그 목록을 반환합니다. 여기에 0.8을 추가하여 `{9: [0.8]}`이 됩니다.\n4) 두 번째 기록도 key가 9이므로 기존 목록에 1.0을 추가합니다. 세 번째 기록은 key가 8이므로 별도 목록에 0.6을 넣습니다. 이제 `{9: [0.8, 1.0], 8: [0.6]}`입니다.\n5) `return`의 딕셔너리 컴프리헨션은 각 그룹에 `sum(values) / len(values)`를 계산합니다. 9 그룹은 `(0.8 + 1.0) / 2 = 0.9`, 8 그룹은 `0.6 / 1 = 0.6`입니다.\n6) 반환된 `{9: 0.9, 8: 0.6}`이 `avg_accuracy`에 연결되므로 `avg_accuracy[9]`는 `0.9`입니다.",
+      "why_correct": "`avg_accuracy[9]`는 반환된 딕셔너리에서 키 9의 값을 읽습니다. 이 값은 level 9인 두 기록의 accuracy를 모두 사용한 평균이므로 정답은 `0.9`입니다.",
       "common_wrong_choice": {
         "choice": "0.8",
-        "why_wrong": "첫 번째 event 하나만 본 값이고 두 level 9 event를 모두 집계하지 않았습니다.",
-        "misread_step": "집계 함수가 여러 event를 묶는다는 점을 반영하지 않은 경우입니다."
+        "why_wrong": "`0.8`은 첫 번째 level 9 기록의 accuracy일 뿐입니다. 같은 그룹의 두 번째 값 `1.0`도 평균 계산에 포함됩니다.",
+        "misread_step": "반복문이 첫 기록 이후에도 계속 실행되어 같은 키의 목록에 값을 추가한다는 단계를 놓친 것입니다."
       },
-      "takeaway": "집계 함수는 **group 기준 → 해당 값 모으기 → 집계 계산** 순서로 읽습니다."
+      "takeaway": "함수 호출은 인자 → 매개변수 → 본문 실행 → 반환값 → 대입 순서로 읽으세요. 여기서는 그룹 기준이 `level`이고 평균을 구하는 값은 `accuracy`입니다."
     },
     "target_statement": "avg_accuracy = aggregate(events, \"level\")",
     "focus_span": "aggregate(events, \"level\")",
@@ -874,14 +874,14 @@
       "walkthrough": "off key에서 사용자가 끄는 위치를 읽습니다."
     },
     "answer_explanation": {
-      "step_by_step": "notice dict는 수집 항목, 목적, 끄는 방법을 각각 별도 field로 갖습니다.",
-      "why_correct": "privacy notice는 수집 사실뿐 아니라 목적과 사용자 통제 방법까지 알려야 의미가 있기 때문입니다.",
+      "step_by_step": "1) `notice`에 세 키와 문자열 값을 가진 딕셔너리를 대입합니다. `what_is_collected`는 익명 사용 이벤트, `why`는 학습 앱 개선, `how_to_disable`은 설정에서 분석을 끄는 방법을 설명합니다.\n2) `notice[\"how_to_disable\"]`은 키 이름으로 값을 찾는 딕셔너리 조회입니다. 결과는 키 자체가 아니라 연결된 문자열 `\"turn analytics off in settings\"`입니다.\n3) 이 문자열이 `opt_out_text`에 대입됩니다. 출력하거나 실제로 분석을 끄는 동작은 없습니다.",
+      "why_correct": "세 항목이 각각 무엇을 수집하는지, 왜 수집하는지, 어떻게 끄는지를 설명하므로 정답은 ‘무엇을 왜 수집하고 어떻게 끌 수 있는지에 대한 설명’입니다. 마지막 조회는 그중 끄는 방법에 해당하는 설명을 꺼냅니다.",
       "common_wrong_choice": {
         "choice": "검증 결과를 숨기기 위해",
-        "why_wrong": "privacy notice의 목적은 숨김이 아니라 투명한 설명입니다.",
-        "misread_step": "privacy와 concealment를 반대로 이해한 경우입니다."
+        "why_wrong": "딕셔너리에는 수집 항목, 목적, 끄는 방법에 대한 설명이 있으며 검증 결과를 숨기는 내용이나 동작은 없습니다.",
+        "misread_step": "실제 키와 값을 읽지 않고 privacy를 정보를 숨기는 동작으로 해석한 경우입니다."
       },
-      "takeaway": "privacy notice는 **무엇을 수집하는가 → 왜 필요한가 → 어떻게 끌 수 있는가**로 읽습니다."
+      "takeaway": "딕셔너리 조회는 **딕셔너리 확인 → 키 찾기 → 연결된 값 반환**으로 읽습니다. 여기서는 끄는 방법을 설명하는 문자열을 가져올 뿐, 설정을 바꾸지는 않습니다."
     },
     "target_statement": "opt_out_text = notice[\"how_to_disable\"]",
     "focus_span": "notice[\"how_to_disable\"]",
@@ -923,10 +923,10 @@
     "primary_concept": "literal",
     "reading_goal_internal": "privacy workflow의 단계가 어떤 순서로 배치돼 있는지 list 순서로 읽는다.",
     "concept_explanation": {
-      "what_it_is": "list literal은 여러 값을 순서대로 저장합니다.",
-      "how_to_read": "privacy flow에서는 첫 항목부터 마지막 항목까지 순서를 바꾸지 않고 읽습니다.",
-      "key_point": "동의 확인보다 수집이 먼저 오면 privacy flow의 기본 방향이 깨집니다.",
-      "common_mistake": "동의 철회는 최초 opt-in과 무관한 별도 기능이라고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: 사용할 값을 코드에 직접 적을 수 있고, 여기서는 단계 이름 네 개를 순서대로 묶어 적었습니다.\n정확한 정의: 리터럴(literal)은 값을 코드에 직접 표기하는 문법이며, 여기서 따옴표로 감싼 항목은 문자열 리터럴이고 이를 대괄호와 쉼표로 묶은 표현식은 새 리스트를 만드는 리스트 디스플레이입니다.",
+      "how_to_read": "대괄호를 단계 이름이 차례대로 놓인 줄로 생각하세요. 각 따옴표 안의 내용은 하나의 문자열 값입니다. 왼쪽부터 읽으면 목적 설명과 동의 확인 → 허용된 최소 이벤트만 수집 → 보호 조건을 둔 집계 → 철회와 삭제 요청 반영입니다.",
+      "key_point": "오른쪽의 문자열 네 개를 왼쪽부터 평가해 그 순서대로 담은 새 리스트를 만들고, 그 리스트를 privacy_flow라는 이름에 연결합니다. 결과는 네 문자열이 순서대로 들어 있는 리스트이며, 화면 출력이나 실제 개인정보 처리 단계의 실행은 일어나지 않습니다.",
+      "common_mistake": "문자열에 track이나 deletion 같은 단어가 있다고 수집이나 삭제가 실행되는 것은 아닙니다. 따옴표 안의 내용은 실행 명령이 아니라 단계 이름을 나타내는 데이터입니다. 이 문제의 순서는 실제 작업 실행이 아니라 리스트에 적힌 순서에서 읽습니다."
     },
     "teaching_example": {
       "code": "flow = [\"explain\", \"ask\", \"collect\", \"delete_on_request\"]\nfirst = flow[0]",

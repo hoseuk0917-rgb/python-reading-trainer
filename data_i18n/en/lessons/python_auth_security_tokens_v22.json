@@ -337,14 +337,14 @@
                                  "walkthrough":  "`user` The value of the key—`u9`—is stored in a variable."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "`payload[\u0027sub\u0027]` retrieves the `sub` key and returns its value, `user_123`.",
-                                   "why_correct":  "This is because a `dict` subscription returns the value associated with the specified key.",
+                                   "step_by_step":  "1) The first assignment creates a dictionary and binds it to `payload`. The key \"sub\" maps to \"user_123\", \"role\" to \"admin\", and \"exp\" to 1893456000.\n2) In `subject = payload[\"sub\"]`, Python first evaluates the right-hand side, `payload[\"sub\"]`.\n3) It uses \"sub\" inside the brackets as the key and retrieves the associated value, \"user_123\".\n4) It binds that string to `subject`. Therefore, the value of `subject` is \"user_123\".",
+                                   "why_correct":  "The dictionary subscription `payload[\"sub\"]` returns the value associated with the key, not the key itself. Since \"sub\" maps to the string \"user_123\", the correct answer is `user_123`.",
                                    "common_wrong_choice":  {
                                                                "choice":  "admin",
-                                                               "why_wrong":  "`admin` is the value of the `role` key.",
-                                                               "misread_step":  "This is the case where a different claim within the same payload was selected."
+                                                               "why_wrong":  "\"admin\" is the value associated with the key \"role\". This code looks up \"sub\", not \"role\".",
+                                                               "misread_step":  "This selects the value of another key in the same dictionary without checking the key \"sub\" inside the brackets."
                                                            },
-                                   "takeaway":  "When reading a claim, **make sure to accurately match the key name with its corresponding value**."
+                                   "takeaway":  "Read a dictionary lookup as **identify the dictionary → check the key inside the brackets → retrieve its associated value**. Here, the retrieved string \"user_123\" is stored in `subject`."
                                },
         "target_statement":  "subject = payload[\"sub\"]",
         "focus_span":  "payload[\"sub\"]",
@@ -387,10 +387,10 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "권한 검사 실패 시 예외 생성자에 403이 이름 있는 argument로 전달되는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`status_code=403` It is a keyword argument that passes a value by name in a call.",
-                                    "how_to_read":  "Check the parameter names on the left side of the equals sign and the values on the right to see what settings are passed to the constructor.",
-                                    "key_point":  "In the current permission check, the `status_code` of the exception raised when the user is not an admin is set to 403.",
-                                    "common_mistake":  "`403` It’s easy to mistake this number for a value used in the if statement. This number is the ``status_code`` argument of the exception constructor."
+                                    "what_it_is":  "Easy meaning: Naming an input in a call lets you pass a value to that specific input.\nExact definition: A keyword argument is specified as `name=value` in a call and binds the value to the parameter with that name.",
+                                    "how_to_read":  "Imagine input slots with name labels. `HTTPException(status_code=403, detail=\"forbidden\")` passes `403` to the `status_code` parameter of `__init__` and `\"forbidden\"` to `detail`. `self` automatically receives the instance being created. Then `self.status_code = status_code` stores the supplied `403` in an attribute of that instance.",
+                                    "key_point":  "In `require_admin(user)`, the `user` dictionary is passed to the function's `user` parameter.\n↓\n`\"viewer\" != \"admin\"` is true, so an exception is created.\n↓\n`status_code=403` → the `status_code` parameter of `__init__` → `403` stored in `self.status_code`\n↓\n`raise` raises that exception, and `except HTTPException as exc` receives the same exception instance.\n↓\n`status = exc.status_code` → the final value of `status` is the integer `403`.",
+                                    "common_mistake":  "Do not read `status_code=403` as a comparison or an assignment statement targeting an outside variable. Inside the call parentheses, it supplies an argument by name. Comparisons use `==`; the actual attribute storage here is performed by `self.status_code = status_code` inside `__init__`."
                                 },
         "teaching_example":  {
                                  "code":  "class AppError(Exception):\n    def __init__(self, code):\n        self.code = code\n\nerror = AppError(code=409)",
@@ -455,17 +455,17 @@
                                 },
         "teaching_example":  {
                                  "code":  "def valid(code):\n    return code == \"ok\"\n\nresult = []\nif not valid(\"bad\"):\n    result.append(\"rejected\")",
-                                 "walkthrough":  "Since `valid` is `False` and `not False` is `True`, `rejected` is added."
+                                 "walkthrough":  "1) `def valid(code):` defines a function. Its `return` runs when the function is called.\n2) `result = []` creates an empty list.\n3) In `if not valid(\"bad\"):`, first call `valid(\"bad\")`. Inside the function, `code == \"ok\"` becomes `\"bad\" == \"ok\"`, so the function returns `False`.\n4) `not False` is `True`. Like a gate opening, the condition allows the indented if body to run.\n5) `result.append(\"rejected\")` adds the string to the list.\nResult: `result` is `[\"rejected\"]`. Distinguish the function's `False` return value from the condition, which becomes `True` after applying `not`."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "`verify_password` returns `False`. The preceding `not` changes this to `True`, causing the `if` block to execute and a 401 exception to occur.",
-                                   "why_correct":  "This is because the final truth value of the if condition is True.",
+                                   "step_by_step":  "1) Define the `HTTPException` class. When this exception is created, `__init__` stores the supplied value in `self.status_code`. Also define `verify_password`; its body runs when called.\n2) `user[\"password_hash\"]` is `\"hash::correct\"`, and `password` is `\"wrong\"`.\n3) In the condition inside `try`, call `verify_password(\"wrong\", \"hash::correct\")`. The expression `f\"hash::{password}\"` produces `\"hash::wrong\"`, so the comparison is `\"hash::correct\" == \"hash::wrong\"`, and the return value is `False`.\n4) `not False` is `True`, so execute the if body.\n5) `HTTPException(status_code=401)` creates an exception whose `status_code` attribute is 401, and `raise` raises that exception.\n6) `except HTTPException as exc:` catches that exception under the name `exc`. Then `status = exc.status_code` assigns 401 to `status`.",
+                                   "why_correct":  "The answer is `401`. The true if condition leads to raising the exception, and the `except` block reads the stored 401 and assigns it to `status`.",
                                    "common_wrong_choice":  {
                                                                "choice":  "200",
-                                                               "why_wrong":  "Since the current password verification has failed, it will not proceed to the normal success flow.",
-                                                               "misread_step":  "This is a case where the `not` operator is not applied."
+                                                               "why_wrong":  "There is no line assigning 200 to `status`. The assignment that actually runs is `status = exc.status_code`, whose value is 401.",
+                                                               "misread_step":  "The mistake is assuming the if body is skipped because the verification function returns `False`. Applying `not` to that return value makes the condition `True`."
                                                            },
-                                   "takeaway":  "The validation branch calculates **the verification result → whether \"not applied\" applies → whether to enter the \"if\" statement** in that order."
+                                   "takeaway":  "Follow function return value → apply `not` → decide whether the if body runs → assignment in the exception handler. Here: `False` → `True` → raise exception → `status = 401`."
                                },
         "target_statement":  "if not verify_password(password, user[\"password_hash\"]):",
         "focus_span":  "if not verify_password(password, user[\"password_hash\"]):",
@@ -760,14 +760,14 @@
                                  "walkthrough":  "Since v2 and v3 are different, `old` is `True`."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since v1 != v2, the \"old key\" branch is executed and a 401 status is returned.",
-                                   "why_correct":  "This is because the `guard` is written to disallow `key` other than `active version`.",
+                                   "step_by_step":  "1) `ACTIVE_KEY_VERSION` stores \"v2\", the currently active version.\n2) `request` contains key version \"v1\". `request[\"key_version\"]` reads that value.\n3) `!=` compares whether two values differ. The condition is therefore `\"v1\" != \"v2\"` → `True`.\n4) Because the condition is true, the if block executes `status_code = 401`.\n5) The else block's `status_code = 200` is skipped. The final `status_code` is 401. This code only stores a status value; it does not itself send a response.",
+                                   "why_correct":  "In this code, the previous version \"v1\" differs from the active version \"v2\" and takes the 401 path representing rejection. Thus, `old key disabled` most closely means “Previous version keys are no longer accepted.”",
                                    "common_wrong_choice":  {
                                                                "choice":  "All keys are allowed.",
-                                                               "why_wrong":  "Explicitly rejects the old key in a not-equal condition.",
-                                                               "misread_step":  "This is an example where the purpose of revoking a rotation was missed."
+                                                               "why_wrong":  "A different version leads to storing 401 rather than 200, so this flow does not allow all keys.",
+                                                               "misread_step":  "This mistake treats `status_code = 200` under else as always executing last merely because it appears later. When the condition is true, only the if block runs and the else block is skipped."
                                                            },
-                                   "takeaway":  "\"secret rotation\" should be interpreted as **set new active version → verify old credentials → discard/reject**."
+                                   "takeaway":  "Read the request version → compare it with the active version using `!=` → choose 401 if true, or 200 if false. This request's previous version \"v1\" takes the 401 path."
                                },
         "target_statement":  "if request[\"key_version\"] != ACTIVE_KEY_VERSION:",
         "focus_span":  "request[\"key_version\"] != ACTIVE_KEY_VERSION",
@@ -818,14 +818,14 @@
                                  "walkthrough":  "Only indices 0–2 remain; \"short\" is \"abc.\""
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "`slice` creates `safe_query` by retaining only the first 2,000 characters of the string.",
-                                   "why_correct":  "This is because the Python slice stop is exclusive, and the remaining characters are discarded.",
+                                   "step_by_step":  "When the function is called with a string, execution proceeds as follows.\n1) In `user_query[:2000]`, the start is omitted, so reading begins at the start of the string.\n2) The stop position 2000 is excluded, so only existing characters at indexes 0–1999 are selected.\n3) If the input exceeds 2000 characters, the result contains only the first 2000; otherwise, it contains the whole string. The original string is unchanged.\n4) This result is assigned to `safe_query`.\n5) `return` returns a dictionary whose `\"user\"` value is `safe_query`. Thus, the returned user input contains at most 2000 characters.",
+                                   "why_correct":  "`[:2000]` is a slice that selects at most the first 2000 characters. Its result becomes the returned dictionary's `\"user\"` value, so the correct answer is 'Limit the length of user input.'",
                                    "common_wrong_choice":  {
                                                                "choice":  "Issue a token",
-                                                               "why_wrong":  "String slicing is unrelated to the issuance of authentication tokens.",
-                                                               "misread_step":  "This is an example of confusion between the concepts of “LLM token” and “auth token.”"
+                                                               "why_wrong":  "This expression only selects part of a string; it does not create or issue a token.",
+                                                               "misread_step":  "This reads the number in `[:2000]` as a token-processing setting. Here, 2000 is the string slice's stop boundary, limiting characters rather than tokens."
                                                            },
-                                   "takeaway":  "The prompt guard evaluates **a combination of multiple layers, such as input restrictions, system instructions, and retrieval policies**."
+                                   "takeaway":  "`text[:N]` selects at most the first N characters without changing the original. Shorter input stays intact, and the character at index N is excluded."
                                },
         "target_statement":  "safe_query = user_query[:2000]",
         "focus_span":  "user_query[:2000]",

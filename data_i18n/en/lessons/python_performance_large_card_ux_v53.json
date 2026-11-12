@@ -588,18 +588,18 @@
                                     "common_mistake":  "It is easy to assume that this includes items up to the `end index`. The `stop index` is not included."
                                 },
         "teaching_example":  {
-                                 "code":  "items = list(range(10))\nstart = 2\nend = 5\nchunk = items[start:end]",
-                                 "walkthrough":  "Only the three items at indices 2, 3, and 4 are included in the chunk."
+                                 "code":  "items = list(range(10))\nstart = 2\nend = 5\nchunk = items[start:end]\nchunk_size = len(chunk)",
+                                 "walkthrough":  "1) `items = list(range(10))` creates a list of 10 integers, from 0 through 9.\n2) `start = 2` sets the starting index to 2.\n3) `end = 5` sets the stopping boundary to 5.\n4) `items[start:end]` is `items[2:5]`. Think of copying a section: only the values at indexes 2, 3, and 4 go into a new list. Index 5 is excluded, so `chunk` is `[2, 3, 4]`. The original `items` stays unchanged.\n5) `len(chunk)` counts the selected items, so `chunk_size` is `3`. The last selected index, 4, is not the item count."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since `start=0, end=50`, ``cards[0:50]`` returns 50 items.",
-                                   "why_correct":  "This is because the stop index in a Python slice is not included.",
+                                   "step_by_step":  "1) `cards = list(range(120))` creates a list of 120 integers, from 0 through 119.\n2) `start = 0` and `size = 50`.\n3) `start + size` is 50, and `len(cards)` is 120. Therefore, `min(50, 120)` is 50, giving `end = 50`.\n4) `cards[start:end]` is `cards[0:50]`. It includes starting index 0 but excludes stopping boundary 50, selecting indexes 0 through 49.\n5) These 50 items form the new list `chunk`. The original `cards` still has length 120.\n6) `chunk_size = len(chunk)`, so the final value is `50`.",
+                                   "why_correct":  "`cards[0:50]` selects indexes 0 through 49 in steps of one. That is 50 items, so `len(chunk)`, which counts them, is also `50`.",
                                    "common_wrong_choice":  {
                                                                "choice":  "49",
-                                                               "why_wrong":  "Although the last index is 49, there are a total of 50 entries, ranging from 0 to 49.",
-                                                               "misread_step":  "This is an instance where the last index was confused with the number of items."
+                                                               "why_wrong":  "49 is the last selected index. The item at index 0 is included too, so there are 50 items.",
+                                                               "misread_step":  "This confuses the last index with the number of items when evaluating `len(chunk)`."
                                                            },
-                                   "takeaway":  "\"Incremental render\" is interpreted as **full list → chunk range calculation → slice → partial render**."
+                                   "takeaway":  "Read in this order: calculate the boundaries → slice with start included and end excluded → count the selected items. This code creates a partial list; it does not actually perform rendering."
                                },
         "target_statement":  "chunk = cards[start:end]",
         "focus_span":  "cards[start:end]",
@@ -647,18 +647,18 @@
                                     "common_mistake":  "It is easy to confuse passing the result of an immediately executed callback (using parentheses) with passing the function object itself."
                                 },
         "teaching_example":  {
-                                 "code":  "scheduled = []\ndef draw(): return \"drawn\"\ndef schedule(callback):\n    scheduled.append(callback.__name__)\nschedule(draw)",
-                                 "walkthrough":  "Instead of executing `draw` immediately, the function object itself is passed to `schedule` to register its name."
+                                 "code":  "scheduled = []\ndef draw():\n    return \"drawn\"\ndef schedule(callback):\n    scheduled.append(callback.__name__)\nschedule(draw)",
+                                 "walkthrough":  "1) `scheduled = []` creates an empty list for registered names.\n2) `def draw():` defines a function. Its `return \"drawn\"` runs only if draw is called.\n3) `def schedule(callback):` defines a function that adds the supplied function's name to the list. `__name__` is the function's name.\n4) `schedule(draw)` passes the function itself rather than executing draw, and executes schedule. callback refers to draw, so `\"draw\"` is added to the list.\nResult: scheduled is `[\"draw\"]`. With no explicit return, schedule returns None. draw does not run, and nothing is printed. This example simplifies scheduling to recording a name; it has no mechanism for running the function later."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "It is registered with the scheduler by passing it as a function object without calling `render_visible_cards`.",
-                                   "why_correct":  "The core role of `requestAnimationFrame` is also to schedule a callback to match the browser\u0027s rendering timing.",
+                                   "step_by_step":  "1) `scheduled_callbacks = []` creates an empty list.\n2) The two def statements define functions without executing their bodies yet.\n3) `request_animation_frame(render_visible_cards)` passes the render_visible_cards function itself as an argument and calls request_animation_frame. There are no parentheses after render_visible_cards, so that render function is not called.\n4) callback refers to render_visible_cards. `callback.__name__` is the string `\"render_visible_cards\"`, so append adds that name to the list.\n5) The same string is returned and bound to scheduled.\nResult: scheduled_callbacks is `[\"render_visible_cards\"]`, and scheduled is `\"render_visible_cards\"`. `\"rendered\"` is not returned, and nothing is printed.",
+                                   "why_correct":  "The correct answer is “Schedule a render callback in accordance with the browser’s screen refresh flow.” It expresses the intent of handing a render function to a scheduling function instead of calling it immediately. However, this Python code is a simplified model that records a name. It implements neither a browser connection nor later callback execution. The actual requestAnimationFrame described in the support material asks the browser to invoke the callback before the next repaint.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Delete all cards",
-                                                               "why_wrong":  "Registering a callback and deleting data are entirely different operations.",
-                                                               "misread_step":  "This is an example of a case where the role of the render scheduler was misunderstood as a data change."
+                                                               "why_wrong":  "The code changes the scheduled_callbacks list by adding one function name. It contains no operation that deletes cards.",
+                                                               "misread_step":  "This assumes that card data changes immediately based only on the name render_visible_cards. In fact, the function itself is passed, and only its name is recorded."
                                                            },
-                                   "takeaway":  "Read render scheduling as **callback object → scheduler call → schedule execution for the next frame**."
+                                   "takeaway":  "Pass a function → call the scheduling function → record and return the name. The render function does not run here; distinguish this model from actual browser scheduling."
                                },
         "target_statement":  "scheduled = request_animation_frame(render_visible_cards)",
         "focus_span":  "request_animation_frame(render_visible_cards)",

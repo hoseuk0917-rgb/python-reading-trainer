@@ -625,17 +625,17 @@
                                 },
         "teaching_example":  {
                                  "code":  "def load():\n    return [\"doc\"]\n\ndef split(docs):\n    return [docs[0] + \":chunk\"]\n\ndef encode(chunks):\n    return [chunks[0] + \":vec\"]\n\nitems = load()\nchunks = split(items)\nvectors = encode(chunks)",
-                                 "walkthrough":  "load 결과가 split으로, split 결과가 encode로 순서대로 전달됩니다."
+                                 "walkthrough":  "1) 세 `def` 문은 함수를 정의합니다. 아직 함수 본문은 실행하지 않습니다.\n2) `items = load()`에서 `load()`를 호출합니다. `[\"doc\"]`를 반환하면 그 값이 `items`에 연결됩니다.\n3) `split(items)`는 그 리스트를 매개변수 `docs`로 받습니다. `docs[0]`인 `\"doc\"`에 `\":chunk\"`를 붙여 `[\"doc:chunk\"]`를 반환하고, 이 값이 `chunks`에 연결됩니다.\n4) `encode(chunks)`는 그 리스트를 매개변수 `chunks`로 받습니다. 첫 문자열에 `\":vec\"`를 붙여 `[\"doc:chunk:vec\"]`를 반환하고, 이 값이 `vectors`에 연결됩니다.\n앞 단계의 결과를 다음 단계에 건네는 흐름은 `load → split → encode`입니다. 최종 `vectors`는 `[\"doc:chunk:vec\"]`이며 화면 출력은 없습니다."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "run 함수의 대입문이 위에서 아래로 실행되어 docs, chunks, vectors가 순차적으로 만들어집니다.",
-                                   "why_correct":  "각 다음 함수 호출이 바로 앞 단계 변수를 argument로 사용하기 때문입니다.",
+                                   "step_by_step":  "1) 함수 정의 후 `result = run()`이 `run`의 본문 실행을 시작합니다.\n2) `docs = load_documents()`는 `[\"doc-a\"]`를 반환받아 `docs`에 연결합니다.\n3) `make_chunks(docs)`는 그 리스트를 받아 첫 문자열에 `\":chunk\"`를 붙입니다. 반환값 `[\"doc-a:chunk\"]`가 `chunks`에 연결됩니다.\n4) `embed_chunks(chunks)`는 이제 만들어진 `chunks`를 받아 첫 문자열에 `\":vector\"`를 붙입니다. 반환값 `[\"doc-a:chunk:vector\"]`가 `vectors`에 연결됩니다.\n5) `return vectors`가 이 리스트를 반환하여 `result`에 연결합니다. 화면 출력은 없습니다.",
+                                   "why_correct":  "`run()`의 문장은 위에서 아래로 실행되고, 각 대입에서는 오른쪽 호출이 완료된 뒤 반환값이 왼쪽 이름에 연결됩니다. 따라서 호출 순서는 `load_documents → make_chunks → embed_chunks`입니다.",
                                    "common_wrong_choice":  {
                                                                "choice":  "embed_chunks → load_documents → make_chunks",
-                                                               "why_wrong":  "embed_chunks가 사용할 chunks가 아직 만들어지기 전입니다.",
-                                                               "misread_step":  "data dependency를 무시하고 함수 이름만 임의 순서로 읽은 경우입니다."
+                                                               "why_wrong":  "`run()`의 첫 호출은 `load_documents()`입니다. `embed_chunks(chunks)`에 전달할 지역 변수 `chunks`는 두 번째 호출이 끝난 뒤에야 값을 갖습니다.",
+                                                               "misread_step":  "마지막 처리 단계에 주목해 먼저 실행된다고 생각하고, `run()` 안의 문장 순서와 입력값이 만들어지는 과정을 건너뛴 경우입니다."
                                                            },
-                                   "takeaway":  "pipeline은 **각 단계의 반환값이 다음 호출의 argument가 되는지** 추적합니다."
+                                   "takeaway":  "함수 정의 위치가 아니라 실제 호출문을 따라 읽으세요. 각 호출의 반환값이 어느 이름에 연결되고 다음 호출의 입력으로 전달되는지 추적합니다."
                                },
         "target_statement":  "vectors = embed_chunks(chunks)",
         "focus_span":  "embed_chunks(chunks)",

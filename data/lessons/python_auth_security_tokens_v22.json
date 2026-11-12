@@ -337,14 +337,14 @@
       "walkthrough": "`user` key의 value `u9`가 변수에 저장됩니다."
     },
     "answer_explanation": {
-      "step_by_step": "`payload['sub']`는 sub key를 조회하고 그 value `user_123`을 반환합니다.",
-      "why_correct": "dict subscription은 지정한 key의 value를 반환하기 때문입니다.",
+      "step_by_step": "1) 첫 대입문은 딕셔너리를 만들어 `payload`에 연결합니다. 키 \"sub\"에는 \"user_123\", \"role\"에는 \"admin\", \"exp\"에는 1893456000이 연결되어 있습니다.\n2) `subject = payload[\"sub\"]`에서는 오른쪽 `payload[\"sub\"]`를 먼저 평가합니다.\n3) 대괄호 안의 \"sub\"를 키로 사용해 연결된 값 \"user_123\"을 가져옵니다.\n4) 그 문자열을 `subject`에 연결합니다. 따라서 `subject`의 값은 \"user_123\"입니다.",
+      "why_correct": "딕셔너리의 `payload[\"sub\"]`는 키 자체가 아니라 그 키에 연결된 값을 반환합니다. \"sub\"에 연결된 문자열이 \"user_123\"이므로 정답은 `user_123`입니다.",
       "common_wrong_choice": {
         "choice": "admin",
-        "why_wrong": "`admin`은 role key의 value입니다.",
-        "misread_step": "같은 payload 안의 다른 claim을 선택한 경우입니다."
+        "why_wrong": "\"admin\"은 \"role\" 키에 연결된 값입니다. 이 코드는 \"role\"이 아니라 \"sub\"를 조회합니다.",
+        "misread_step": "대괄호 안의 키 \"sub\"를 확인하지 않고 같은 딕셔너리에 있는 다른 키의 값을 선택한 경우입니다."
       },
-      "takeaway": "claim을 읽을 때는 **key 이름과 대응 value를 정확히 짝지어** 봅니다."
+      "takeaway": "딕셔너리 조회는 **딕셔너리 확인 → 대괄호 안의 키 확인 → 연결된 값 가져오기** 순서로 읽습니다. 여기서는 가져온 \"user_123\"이 `subject`에 저장됩니다."
     },
     "target_statement": "subject = payload[\"sub\"]",
     "focus_span": "payload[\"sub\"]",
@@ -387,10 +387,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "권한 검사 실패 시 예외 생성자에 403이 이름 있는 argument로 전달되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`status_code=403`은 호출에서 이름을 붙여 값을 전달하는 keyword argument입니다.",
-      "how_to_read": "등호 왼쪽 parameter 이름과 오른쪽 값을 확인해 생성자에 어떤 설정이 전달되는지 봅니다.",
-      "key_point": "현재 권한 검사에서는 admin이 아닐 때 생성되는 예외의 status_code에 403이 들어갑니다.",
-      "common_mistake": "`403`이 if 비교에 쓰이는 값이라고 생각하기 쉽습니다. 이 숫자는 예외 생성자의 `status_code` argument입니다."
+      "what_it_is": "쉽게 말하면: 호출할 때 입력 이름을 붙이면 그 이름에 맞춰 값을 전달할 수 있습니다.\n정확한 정의: keyword argument(키워드 인자)는 호출에서 `이름=값` 형태로 지정하며, 해당 이름의 parameter(매개변수)에 값을 바인딩합니다.",
+      "how_to_read": "입력 자리에 이름표가 붙어 있다고 생각하세요. `HTTPException(status_code=403, detail=\"forbidden\")`은 `__init__`의 `status_code` 자리에 `403`을, `detail` 자리에 `\"forbidden\"`을 전달합니다. `self`는 생성되는 인스턴스를 자동으로 받습니다. 이어서 `self.status_code = status_code`는 전달받은 `403`을 그 인스턴스의 속성에 저장합니다.",
+      "key_point": "`require_admin(user)`에서 `user` 딕셔너리가 함수의 `user` 매개변수로 전달됩니다.\n↓\n`\"viewer\" != \"admin\"`이 참이므로 예외를 생성합니다.\n↓\n`status_code=403` → `__init__`의 `status_code` → `self.status_code`에 `403` 저장\n↓\n`raise`가 그 예외를 발생시키고, `except HTTPException as exc`가 같은 예외 인스턴스를 받습니다.\n↓\n`status = exc.status_code` → 최종적으로 `status`는 정수 `403`입니다.",
+      "common_mistake": "`status_code=403`을 비교식이나 바깥 변수에 대한 대입문으로 읽지 마세요. 호출 괄호 안에서는 이름을 지정해 인자를 전달하는 문법입니다. 비교는 `==`를 사용하며, 여기서 실제 속성 저장은 `__init__` 안의 `self.status_code = status_code`가 수행합니다."
     },
     "teaching_example": {
       "code": "class AppError(Exception):\n    def __init__(self, code):\n        self.code = code\n\nerror = AppError(code=409)",
@@ -455,17 +455,17 @@
     },
     "teaching_example": {
       "code": "def valid(code):\n    return code == \"ok\"\n\nresult = []\nif not valid(\"bad\"):\n    result.append(\"rejected\")",
-      "walkthrough": "valid는 False이고 not False가 True라 rejected가 추가됩니다."
+      "walkthrough": "1) `def valid(code):`는 함수를 정의합니다. 안의 `return`은 호출될 때 실행됩니다.\n2) `result = []`는 빈 리스트를 만듭니다.\n3) `if not valid(\"bad\"):`에서 먼저 `valid(\"bad\")`를 호출합니다. 함수 안의 `code == \"ok\"`는 `\"bad\" == \"ok\"`이므로 `False`를 반환합니다.\n4) `not False`는 `True`입니다. 조건이 문을 열어 주듯, 들여쓴 if 본문이 실행됩니다.\n5) `result.append(\"rejected\")`가 리스트에 문자열을 추가합니다.\n결과: `result`는 `[\"rejected\"]`입니다. 함수의 반환값이 `False`여도 `not`을 적용한 조건은 `True`라는 점을 구분하세요."
     },
     "answer_explanation": {
-      "step_by_step": "verify_password는 False를 반환합니다. 앞의 `not`이 이를 True로 바꿔 if 본문이 실행되고 401 예외가 발생합니다.",
-      "why_correct": "if 조건의 최종 truth value가 True이기 때문입니다.",
+      "step_by_step": "1) `HTTPException` 클래스를 정의합니다. 이 예외를 만들면 `__init__`이 전달받은 값을 `self.status_code`에 저장합니다. `verify_password` 함수도 정의되며, 본문은 호출될 때 실행됩니다.\n2) `user[\"password_hash\"]`는 `\"hash::correct\"`이고, `password`는 `\"wrong\"`입니다.\n3) `try` 안의 조건에서 `verify_password(\"wrong\", \"hash::correct\")`를 호출합니다. `f\"hash::{password}\"`는 `\"hash::wrong\"`이므로 비교는 `\"hash::correct\" == \"hash::wrong\"`이고, 반환값은 `False`입니다.\n4) `not False`는 `True`이므로 if 본문을 실행합니다.\n5) `HTTPException(status_code=401)`은 `status_code` 속성이 401인 예외를 만들고, `raise`가 그 예외를 발생시킵니다.\n6) `except HTTPException as exc:`가 해당 예외를 받아 `exc`라는 이름으로 사용합니다. `status = exc.status_code`가 실행되어 `status`에 401이 대입됩니다.",
+      "why_correct": "정답은 `401`입니다. 참이 된 if 조건이 예외 발생으로 이어지고, 예외에 저장된 401을 `except` 블록에서 읽어 `status`에 대입하기 때문입니다.",
       "common_wrong_choice": {
         "choice": "200",
-        "why_wrong": "현재 비밀번호 검증이 실패하므로 정상 성공 흐름으로 가지 않습니다.",
-        "misread_step": "`not` 연산을 반영하지 않은 경우입니다."
+        "why_wrong": "이 코드에는 `status`에 200을 대입하는 줄이 없습니다. 실제로 실행되는 대입은 `status = exc.status_code`이며 그 값은 401입니다.",
+        "misread_step": "검증 함수가 `False`를 반환하므로 if 본문을 건너뛴다고 읽는 실수입니다. 함수의 반환값에 `not`을 적용하면 조건은 `True`가 됩니다."
       },
-      "takeaway": "인증 분기는 **검증 결과 → not 적용 → if 진입 여부**를 순서대로 계산합니다."
+      "takeaway": "함수 반환값 → `not` 적용 → if 본문 실행 여부 → 예외 처리 안의 대입 순서로 따라가세요. 여기서는 `False` → `True` → 예외 발생 → `status = 401`입니다."
     },
     "target_statement": "if not verify_password(password, user[\"password_hash\"]):",
     "focus_span": "if not verify_password(password, user[\"password_hash\"]):",
@@ -760,14 +760,14 @@
       "walkthrough": "v2와 v3가 달라 old는 True입니다."
     },
     "answer_explanation": {
-      "step_by_step": "v1 != v2이므로 old key branch가 실행되고 401 상태로 처리됩니다.",
-      "why_correct": "active version 외 key를 허용하지 않도록 guard가 작성돼 있기 때문입니다.",
+      "step_by_step": "1) `ACTIVE_KEY_VERSION`에 현재 활성 버전인 \"v2\"를 저장합니다.\n2) `request`에는 키 버전 \"v1\"이 들어 있습니다. `request[\"key_version\"]`으로 이 값을 읽습니다.\n3) `!=`는 두 값이 다른지 비교합니다. 따라서 조건은 `\"v1\" != \"v2\"` → `True`입니다.\n4) 조건이 참이므로 if 블록의 `status_code = 401`을 실행합니다.\n5) else 블록의 `status_code = 200`은 건너뜁니다. 최종 `status_code`는 401입니다. 이 코드는 상태 값을 저장할 뿐, 응답을 직접 보내지는 않습니다.",
+      "why_correct": "이 코드에서 활성 버전 \"v2\"와 다른 이전 버전 \"v1\"은 거부를 나타내는 401 경로로 갑니다. 따라서 `old key disabled`는 “이전 버전 키는 더 이상 허용하지 않는다”에 가장 가깝습니다.",
       "common_wrong_choice": {
         "choice": "모든 키를 허용한다",
-        "why_wrong": "not-equal 조건에서 old key를 명시적으로 거부합니다.",
-        "misread_step": "rotation의 revocation 목적을 놓친 경우입니다."
+        "why_wrong": "버전이 다르면 200이 아니라 401을 저장하므로 모든 키를 허용하는 흐름이 아닙니다.",
+        "misread_step": "else 아래에 `status_code = 200`이 있다는 이유로 항상 마지막에 실행된다고 읽은 경우입니다. 조건이 참이면 if 블록만 실행하고 else 블록은 건너뜁니다."
       },
-      "takeaway": "secret rotation은 **new active version 설정 → old credential 판별 → 폐기/거부**로 읽습니다."
+      "takeaway": "요청 버전 읽기 → 활성 버전과 `!=` 비교 → 참이면 401, 거짓이면 200. 이 요청의 이전 버전 \"v1\"은 401 경로를 택합니다."
     },
     "target_statement": "if request[\"key_version\"] != ACTIVE_KEY_VERSION:",
     "focus_span": "request[\"key_version\"] != ACTIVE_KEY_VERSION",
@@ -818,14 +818,14 @@
       "walkthrough": "index 0~2만 남아 short는 abc입니다."
     },
     "answer_explanation": {
-      "step_by_step": "slice가 문자열 앞부분 최대 2000자만 남겨 safe_query로 만듭니다.",
-      "why_correct": "Python slice stop은 exclusive이고 나머지 문자는 버려지기 때문입니다.",
+      "step_by_step": "함수가 문자열을 받아 호출되면 다음 순서로 실행됩니다.\n1) `user_query[:2000]`에서 시작 위치가 생략되었으므로 문자열 처음부터 읽습니다.\n2) 끝 위치 2000은 포함하지 않으므로, 존재하는 인덱스 0~1999의 문자만 선택합니다.\n3) 입력이 2000자를 넘으면 앞 2000자만, 그 이하이면 전체 문자열을 결과로 얻습니다. 원본 문자열은 바뀌지 않습니다.\n4) 이 결과를 `safe_query`에 대입합니다.\n5) `return`은 `\"user\"` 값이 `safe_query`인 딕셔너리를 반환합니다. 따라서 반환되는 사용자 입력은 최대 2000자입니다.",
+      "why_correct": "`[:2000]`은 앞에서 최대 2000자를 선택하는 슬라이스입니다. 그 결과가 반환 딕셔너리의 `\"user\"` 값으로 들어가므로 정답은 '사용자 입력 길이를 제한한다'입니다.",
       "common_wrong_choice": {
         "choice": "토큰을 발급한다",
-        "why_wrong": "문자열 slice는 인증 token 발급과 무관합니다.",
-        "misread_step": "LLM token과 auth token 개념을 혼동한 경우입니다."
+        "why_wrong": "이 표현식은 문자열의 일부를 선택할 뿐, 토큰을 만들거나 발급하지 않습니다.",
+        "misread_step": "`[:2000]`의 숫자를 토큰 처리 설정으로 읽은 경우입니다. 여기서 2000은 문자열 슬라이스의 끝 경계이며, 토큰 수가 아닌 문자 수를 제한합니다."
       },
-      "takeaway": "prompt guard는 **입력 제한·system instruction·retrieval policy 등 여러 층을 조합**해서 봅니다."
+      "takeaway": "`text[:N]`은 원본을 변경하지 않고 앞부분을 최대 N자 선택합니다. 짧은 입력은 그대로이며, N번째 인덱스의 문자는 포함하지 않습니다."
     },
     "target_statement": "safe_query = user_query[:2000]",
     "focus_span": "user_query[:2000]",

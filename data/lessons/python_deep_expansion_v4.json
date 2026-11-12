@@ -318,10 +318,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "original iterable의 항목들을 사용해 새 list 객체를 만들고 그 결과를 copy에 저장하므로 copy의 바깥 구조 변경이 original과 분리되는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`list(iterable)`은 iterable의 항목을 순서대로 담은 새 list 객체를 만드는 생성자 호출입니다.",
-      "how_to_read": "입력 original의 항목을 확인한 뒤 결과가 같은 내용이지만 별도 바깥 list 객체라는 점을 구분합니다.",
-      "key_point": "이것은 얕은 복사이므로 바깥 list는 독립적이지만 중첩된 mutable 원소까지 깊게 복사하는 것은 아닙니다.",
-      "common_mistake": "`list(original)`도 단순 alias라서 copy.append가 original까지 바꾼다고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `list(original)`은 원래 목록의 항목들을 별도의 새 목록에 담아 줍니다.\n정확한 정의: `list(iterable)`은 순회 가능한 객체의 항목 참조를 순서대로 담은 새 리스트를 반환하는 생성자 호출입니다.",
+      "how_to_read": "직관적 모델: 같은 항목을 담되 그릇은 새로 만드는 것입니다. 항목 자체까지 새로 만드는 것은 아닙니다.\n첫 줄은 `original`을 `['LiDAR']`에 연결합니다. 둘째 줄의 `list(original)`은 `original`을 인자로 받아 새 리스트를 만들고, `copy`는 그 결과를 가리킵니다. 셋째 줄은 `copy`에만 `'Radar'`를 추가합니다. 마지막 줄은 원래 리스트를 출력합니다.",
+      "key_point": "`original`: `['LiDAR']` → `list(original)` 호출 → 별도의 `['LiDAR']`를 `copy`에 연결 → `copy.append(\"Radar\")` → `copy`는 `['LiDAR', 'Radar']`, `original`은 `['LiDAR']` → 출력: `['LiDAR']`.\n이것은 얕은 복사입니다. 바깥 리스트는 새 객체지만 항목 참조는 공유하므로, 중첩된 변경 가능한 객체까지 독립적으로 복사하지는 않습니다.",
+      "common_mistake": "`list(original)`을 `copy = original`과 같다고 읽기 쉽습니다. `copy = original`은 두 이름이 같은 리스트를 가리키므로 `copy.append(...)`가 `original`에도 보입니다. 하지만 이 코드의 생성자 호출은 새 리스트를 반환하므로 항목 추가는 `copy`에만 영향을 줍니다."
     },
     "teaching_example": {
       "code": "original = [1]\ncopy = list(original)\ncopy.append(2)\nprint(original)",
@@ -1284,17 +1284,17 @@
     },
     "teaching_example": {
       "code": "cache = {\"a\": \"ready\"}\ndef get_value(key):\n    if key in cache:\n        return cache[key]\n    return \"new\"\nresult = get_value(\"a\")",
-      "walkthrough": "a가 cache에 있어 ready가 바로 반환되고 아래 return은 실행되지 않습니다."
+      "walkthrough": "1) `cache = {\"a\": \"ready\"}`는 키 \"a\"에 값 \"ready\"를 저장한 딕셔너리를 만듭니다.\n2) `def get_value(key):`는 함수를 정의합니다. 아직 함수 본문은 실행하지 않습니다.\n3) 마지막 줄에서 `get_value(\"a\")`를 호출하면 `key`가 \"a\"인 상태로 함수 본문을 실행합니다.\n4) `if key in cache:`는 \"a\"가 딕셔너리의 키인지 검사합니다. 결과는 `True`입니다.\n5) `return cache[key]`에서 `cache[\"a\"]`의 값 \"ready\"를 읽어 호출한 곳으로 돌려주고 함수 실행을 끝냅니다.\n6) 따라서 아래의 `return \"new\"`는 실행되지 않습니다. 마지막 줄의 대입이 완료되어 `result`에는 \"ready\"가 저장됩니다.\n\n흐름: 호출 → 키 존재 확인 → 저장된 값 읽기 → 반환하고 함수 종료 → `result`에 저장. 화면 출력은 없습니다."
     },
     "answer_explanation": {
-      "step_by_step": "doc-1이 cache key에 있으므로 첫 return이 실행되고 cached summary가 함수 결과가 됩니다.",
-      "why_correct": "return이 함수 실행을 즉시 종료하기 때문입니다.",
+      "step_by_step": "1) `cache`에는 키 \"doc-1\"과 그에 대응하는 값 \"cached summary\"가 있습니다. 두 `def` 문은 함수를 정의할 뿐, 본문을 실행하지 않습니다.\n2) `get_summary(\"doc-1\")`을 호출하면 `doc_id`가 \"doc-1\"이 됩니다.\n3) `doc_id in cache`는 딕셔너리의 키를 검사하므로 `True`입니다.\n4) `return cache[doc_id]`에서 `cache[\"doc-1\"]`을 읽으면 문자열 \"cached summary\"가 나옵니다.\n5) 그 문자열이 반환되면서 이번 `get_summary` 실행이 끝납니다. `summarize(doc_id)` 호출, 캐시 저장, 마지막 `return summary`는 실행되지 않습니다.\n6) 호출 결과인 \"cached summary\"가 `result`에 저장됩니다.",
+      "why_correct": "`cache[doc_id]`는 키 \"doc-1\" 자체가 아니라 그 키에 연결된 값 \"cached summary\"입니다. 첫 번째 `return`이 이 값을 호출한 곳으로 전달하므로 정답은 `cached summary`입니다.",
       "common_wrong_choice": {
         "choice": "new summary for doc-1",
-        "why_wrong": "cache hit 때문에 summarize 호출 지점까지 내려가지 않습니다.",
-        "misread_step": "return 이후 코드가 계속 실행된다고 본 경우입니다."
+        "why_wrong": "이 문자열은 `summarize(\"doc-1\")`이 실행되어야 만들어집니다. 여기서는 저장된 값을 먼저 반환하므로 `summarize`를 호출하지 않습니다.",
+        "misread_step": "`return cache[doc_id]` 뒤에도 함수가 계속 내려가 `summary = summarize(doc_id)`를 실행한다고 읽은 것입니다. 이 반환으로 현재 함수 실행은 이미 끝났습니다."
       },
-      "takeaway": "cache 코드는 **hit 검사 → 즉시 return → 비싼 계산 생략**으로 읽습니다."
+      "takeaway": "`return`은 값을 돌려주는 동시에 현재 함수 실행을 끝냅니다. 조건 확인 → 반환할 값 계산 → 호출한 곳으로 전달 → 남은 코드 건너뛰기 순서로 읽으세요."
     },
     "target_statement": "return cache[doc_id]",
     "focus_span": "cache[doc_id]",
@@ -1408,17 +1408,17 @@
     },
     "teaching_example": {
       "code": "items = []\nif not items:\n    result = \"empty\"\nelse:\n    result = \"ready\"",
-      "walkthrough": "빈 리스트는 falsy이고 not을 적용하면 True라 result는 empty입니다."
+      "walkthrough": "1) `items = []`는 빈 리스트를 `items`에 연결합니다.\n2) `if not items:`는 '항목이 없는가?'를 확인하는 문처럼 읽습니다. 빈 리스트는 조건 판단에서 거짓으로 취급되므로 `not items`는 `True`입니다.\n3) 조건이 참이므로 들여쓴 `result = \"empty\"`가 실행됩니다.\n4) 이미 if 쪽이 선택되었으므로 `else` 아래의 `result = \"ready\"`는 실행하지 않습니다.\n실행 흐름: 빈 리스트 → `not items`가 `True` → if 블록 실행 → `result`는 `\"empty\"`.\n빈 리스트가 거짓으로 취급된다는 이유만으로 블록을 건너뛴다고 읽으면 안 됩니다. 여기서는 `not`이 판단을 뒤집습니다."
     },
     "answer_explanation": {
-      "step_by_step": "빈 리스트는 falsy이므로 `not docs`가 True입니다. 첫 return이 실행되어 근거 부족 메시지를 반환합니다.",
-      "why_correct": "if guard와 return이 아래 LLM 호출보다 먼저 실행되기 때문입니다.",
+      "step_by_step": "1) 세 `def` 문은 함수를 정의합니다. 이때 함수 본문은 아직 실행하지 않습니다.\n2) `answer(\"질문\", [])`를 호출하면 `question`은 `\"질문\"`, `docs`는 빈 리스트 `[]`를 받습니다.\n3) `if not docs:`에서 빈 리스트는 거짓으로 취급되고, `not docs`는 `True`가 됩니다.\n4) 따라서 if 블록의 `return \"근거 문서가 부족합니다.\"`가 실행됩니다. 이 문자열을 반환하면서 `answer` 호출이 끝납니다.\n5) 아래의 `return call_llm(build_prompt(question, docs))`에는 도달하지 않으므로 두 함수 모두 호출하지 않습니다.\n6) 반환된 문자열이 `result`에 대입됩니다. 최종 값은 `\"근거 문서가 부족합니다.\"`입니다.",
+      "why_correct": "`not docs`가 참이어서 첫 번째 `return`이 실행되므로, `result`는 선택지 `근거 문서가 부족합니다.`에 해당하는 문자열입니다.",
       "common_wrong_choice": {
         "choice": "generated",
-        "why_wrong": "첫 return에서 함수가 종료돼 call_llm까지 내려가지 않습니다.",
-        "misread_step": "guard return 이후 코드가 계속 실행된다고 본 경우입니다."
+        "why_wrong": "`\"generated\"`는 `call_llm`이 호출되어야 반환됩니다. 여기서는 앞의 `return`에서 `answer` 호출이 끝나므로 `call_llm`은 실행되지 않습니다.",
+        "misread_step": "if 블록에서 `return`을 실행한 뒤에도 함수의 다음 줄로 계속 진행한다고 잘못 읽은 경우입니다."
       },
-      "takeaway": "evidence guard는 **빈 입력 판단 → 조기 return → 모델 호출 생략**으로 읽습니다."
+      "takeaway": "빈 리스트 → `not`으로 조건이 참 → if 블록의 조기 반환 → 아래 호출 생략 → 반환값을 `result`에 대입하는 순서로 읽습니다."
     },
     "target_statement": "if not docs:",
     "focus_span": "if not docs:",
@@ -1463,10 +1463,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "sort 호출의 reverse keyword argument가 score가 높은 후보를 앞에 두도록 순서를 뒤집는 의미를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`reverse=True`는 함수나 메서드 호출에 이름으로 전달되는 keyword argument입니다.",
-      "how_to_read": "keyword 이름과 boolean 값을 확인해 해당 옵션이 활성화되는지 봅니다.",
-      "key_point": "sort에서 reverse=True이면 기본 오름차순의 반대인 내림차순으로 정렬합니다.",
-      "common_mistake": "reverse=True가 리스트 원본을 정렬하지 않고 복사본만 만든다고 생각하기 쉽습니다. `list.sort()`는 리스트 자체 순서를 바꿉니다."
+      "what_it_is": "쉽게 말하면: `reverse=True`는 정렬 작업에 “큰 값부터 놓아 주세요”라는 설정을 이름표와 함께 전달합니다.\n정확한 정의: `reverse=True`는 호출에서 `reverse` 매개변수에 불리언 값 `True`를 전달하는 키워드 인자이며, `list.sort()`에서는 정렬 기준값의 내림차순 정렬을 지정합니다.",
+      "how_to_read": "정렬기에 이름 붙은 설정을 전달한다고 생각하세요. `key`는 “무엇을 비교할까?”, `reverse`는 “큰 값부터 놓을까?”에 해당합니다.\n첫 줄은 (점수, 문서 이름) 쌍 세 개를 `scored`에 저장합니다. 둘째 줄에서 `key=lambda pair: pair[0]`는 각 쌍의 첫 값인 점수를 정렬 기준으로 전달하고, `reverse=True`는 큰 점수부터 정렬하도록 지정합니다. 셋째 줄의 `scored[0][1]`은 정렬된 첫 쌍에서 두 번째 값인 문서 이름을 꺼냅니다.",
+      "key_point": "`key`에 전달된 함수가 각 쌍의 점수 `0.2`, `0.9`, `0.5`를 정렬 기준값으로 제공합니다.\n↓\n`reverse`에 전달된 `True`에 따라 `scored` 자체가 `[(0.9, \"doc-b\"), (0.5, \"doc-c\"), (0.2, \"doc-a\")]` 순서로 정렬됩니다.\n↓\n`scored[0]` → `(0.9, \"doc-b\")`\n↓\n`scored[0][1]` → `\"doc-b\"`\n↓\n`top_hit`의 값은 `\"doc-b\"`입니다.",
+      "common_mistake": "`reverse=True`를 현재 리스트의 순서를 단순히 뒤집으라는 뜻으로 읽기 쉽습니다. 여기서는 `key`로 구한 점수를 기준으로 내림차순 정렬하므로, 원래 마지막에 있던 `doc-c`가 아니라 점수가 가장 큰 `doc-b`가 맨 앞에 옵니다. 또한 호출 안의 `reverse=True`는 별도의 변수 대입문이 아니라 이름으로 값을 전달하는 인자입니다."
     },
     "teaching_example": {
       "code": "pairs = [(1, \"a\"), (3, \"b\"), (2, \"c\")]\npairs.sort(key=lambda pair: pair[0], reverse=True)\nfirst = pairs[0][1]",

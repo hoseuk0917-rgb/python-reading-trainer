@@ -232,24 +232,24 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "router 등록 method 호출에서 prefix keyword argument가 경로 앞부분을 결정하는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`prefix=\u0027/api\u0027`는 메서드 호출에서 이름을 붙여 문자열 값을 전달하는 keyword argument입니다.",
-                                    "how_to_read":  "keyword 이름이 어떤 옵션인지, 오른쪽 문자열이 실제로 어떤 값을 전달하는지 봅니다.",
-                                    "key_point":  "FastAPI의 include_router에서 prefix는 router가 가진 경로들 앞에 공통 경로를 붙이는 데 사용됩니다.",
-                                    "common_mistake":  "prefix가 서버 포트나 DB 이름을 바꾸는 설정이라고 생각하기 쉽습니다. URL path 앞부분과 관련된 옵션입니다."
+                                    "what_it_is":  "쉽게 말하면: 호출할 때 입력 이름을 적어, 그 이름에 값을 전달합니다.\n정확한 정의: keyword argument(키워드 인자)는 함수나 메서드 호출에서 `이름=값` 형태로 지정하여 해당 매개변수에 값을 바인딩하는 인자입니다.",
+                                    "how_to_read":  "입력 자리에 이름표가 붙어 있다고 생각하세요. `app.include_router(router, prefix=\"/api\")`에서 `self`에는 `app`이 자동으로 연결되고, 위치로 전달한 `router`는 매개변수 `router`에, 이름으로 전달한 `\"/api\"`는 매개변수 `prefix`에 연결됩니다. 이어서 메서드 본문이 이 값들을 어떻게 사용하는지 읽습니다.",
+                                    "key_point":  "`prefix=\"/api\"` → 메서드 안의 `prefix`는 `\"/api\"` → 각 `path`에 대해 `prefix + path` 계산 → `app.routes`는 `[\"/api/health\", \"/api/items\"]` → `[0]`은 `\"/api/health\"`입니다. 경로를 합치는 동작은 키워드 이름 자체가 아니라 이 코드의 메서드 본문이 수행합니다.",
+                                    "common_mistake":  "`prefix=\"/api\"`를 비교식으로 읽거나, 전달된 값이 경로 전체를 대체한다고 생각하기 쉽습니다. 여기서 `=`는 인자를 이름으로 전달하는 문법이며, 본문의 `prefix + path`는 접두 문자열 뒤에 원래 경로를 붙입니다."
                                 },
         "teaching_example":  {
-                                 "code":  "class App:\n    def include(self, router, prefix):\n        return prefix + router[\"path\"]\n\napp = App()\nroute = app.include({\"path\": \"/items\"}, prefix=\"/v1\")",
-                                 "walkthrough":  "prefix /v1이 router path /items 앞에 붙어 /v1/items가 됩니다."
+                                 "code":  "def make_route(path, prefix):\n    return prefix + path\n\nroute = make_route(\"/users\", prefix=\"/v2\")\nprint(route)",
+                                 "walkthrough":  "1) `def make_route(path, prefix):`는 두 입력 이름을 가진 함수를 정의합니다. 이때 본문은 아직 실행되지 않습니다.\n2) `return prefix + path`는 호출되면 두 문자열을 이 순서로 합쳐 반환합니다.\n3) `route = make_route(\"/users\", prefix=\"/v2\")`에서 위치 인자 `\"/users\"`는 `path`에, 키워드 인자 `\"/v2\"`는 `prefix`에 연결됩니다. 본문이 `\"/v2\" + \"/users\"`를 계산하여 `\"/v2/users\"`를 반환하고, 그 값이 `route`에 저장됩니다.\n4) `print(route)`는 `/v2/users`를 출력합니다."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "router의 `/health` 앞에 prefix `/api`가 붙어 `/api/health`가 routes에 추가됩니다.",
-                                   "why_correct":  "include_router 호출의 prefix keyword argument가 공통 경로 앞부분을 지정하기 때문입니다.",
+                                   "step_by_step":  "1) `class App`은 초기화 메서드와 `include_router` 메서드를 정의합니다.\n2) `router`에 `[\"/health\", \"/items\"]`가 연결됩니다.\n3) `app = App()`은 객체를 만들고 `__init__`을 실행하여 `app.routes`를 빈 리스트로 만듭니다.\n4) `app.include_router(router, prefix=\"/api\")`를 호출하면 `self`는 `app`, `router`는 전달된 리스트, `prefix`는 `\"/api\"`에 연결됩니다.\n5) `extend`가 생성된 문자열들을 차례대로 추가합니다. 첫 `path`는 `\"/health\"`이므로 `prefix + path`는 `\"/api/health\"`이고, 다음은 `\"/api/items\"`입니다.\n6) 따라서 `app.routes`는 `[\"/api/health\", \"/api/items\"]`입니다. `app.routes[0]`은 첫 항목이므로 `first_route`는 `\"/api/health\"`입니다.",
+                                   "why_correct":  "키워드 인자가 `prefix`에 `\"/api\"`를 전달하고, 메서드가 이를 첫 경로 `\"/health\"` 앞에 붙입니다. 인덱스 `0`이 이 첫 결과를 선택하므로 정답은 `/api/health`입니다.",
                                    "common_wrong_choice":  {
                                                                "choice":  "/health",
-                                                               "why_wrong":  "그 값은 router 내부 원래 경로이고 prefix 적용 후 최종 경로가 아닙니다.",
-                                                               "misread_step":  "prefix 옵션을 반영하지 않은 경우입니다."
+                                                               "why_wrong":  "이는 원래 리스트의 첫 경로입니다. `app.routes`에는 `prefix + path`로 만든 문자열이 들어가므로 접두 문자열을 포함해야 합니다.",
+                                                               "misread_step":  "호출에서 전달된 `prefix`를 메서드 본문의 `prefix + path`에 대입하는 단계를 빠뜨린 경우입니다."
                                                            },
-                                   "takeaway":  "분리된 API route는 **router path + include prefix = 최종 URL**로 읽습니다."
+                                   "takeaway":  "호출의 `이름=값`을 해당 매개변수에 연결한 뒤 본문을 따라가세요. 여기서는 `prefix + path` 순서로 합친 결과 중 첫 항목을 선택합니다."
                                },
         "target_statement":  "app.include_router(router, prefix=\"/api\")",
         "focus_span":  "prefix=\"/api\"",
@@ -292,10 +292,10 @@
         "primary_concept":  "arithmetic",
         "reading_goal_internal":  "문자열 addition으로 main prefix와 router path가 하나의 최종 URL이 되는 과정을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "문자열에서 `left + right`는 두 문자열을 이어 붙이는 addition입니다.",
-                                    "how_to_read":  "왼쪽과 오른쪽 문자열의 실제 값을 순서대로 연결합니다.",
-                                    "key_point":  "router를 분리해도 최종 URL은 router path와 include prefix를 합쳐서 추적해야 합니다.",
-                                    "common_mistake":  "health 함수 이름이 URL 전체를 자동으로 정한다고 생각하기 쉽습니다. path와 prefix 설정이 URL을 결정합니다."
+                                    "what_it_is":  "쉽게 말하면: 문자열의 `+`는 두 글 조각을 순서대로 이어 붙입니다. 정확한 정의: 두 문자열에 대한 `+` 연산은 왼쪽 문자열 뒤에 오른쪽 문자열을 연결한 새 문자열을 만듭니다.",
+                                    "how_to_read":  "두 글 조각을 나란히 붙인다고 생각하세요. 첫 줄은 `prefix`에 `\"/api\"`를, 둘째 줄은 `route_path`에 `\"/health\"`를 연결합니다. 셋째 줄의 `prefix + route_path`는 이름을 실제 값으로 바꿔 `\"/api\" + \"/health\"`로 읽습니다.",
+                                    "key_point":  "`\"/api\"` → `\"/health\"`를 뒤에 연결 → `\"/api/health\"` 생성 → `final_path`에 대입합니다. 원래 두 문자열은 바뀌지 않으며, 이 코드는 값을 출력하지 않습니다.",
+                                    "common_mistake":  "`+`가 경로를 알아서 정리하거나 `/`를 추가한다고 생각하지 마세요. 문자열의 문자를 그대로 연결하므로, 여기서 가운데 `/`는 `\"/health\"`의 첫 문자에서 옵니다."
                                 },
         "teaching_example":  {
                                  "code":  "prefix = \"/v1\"\npath = \"/users\"\nfull = prefix + path",
@@ -658,24 +658,24 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "cache storage 객체의 open method에 이름을 전달해 특정 cache를 얻는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`obj.open(name)`은 객체의 open 메서드에 name을 전달하는 method call입니다.",
-                                    "how_to_read":  "점 왼쪽 객체가 cache storage인지, 괄호 안 문자열이 어떤 cache 이름인지 확인합니다.",
-                                    "key_point":  "Service Worker install 단계에서는 앱 shell 같은 자원을 저장할 cache 공간을 준비하는 패턴이 흔합니다.",
-                                    "common_mistake":  "`caches.open`이 브라우저 탭이나 데이터베이스를 연다고 생각하기 쉽습니다. 여기서는 named cache storage를 가리킵니다."
+                                    "what_it_is":  "쉽게 말하면: `caches.open(\"app-v1\")`은 `caches`에게 이름을 전달해 일을 시키고 결과를 받는 표현입니다.\n정확한 정의: 이는 객체에 연결된 메서드를 실행하는 메서드 호출로, 여기서는 `caches`가 `self`에, 문자열 `\"app-v1\"`이 `name`에 전달되고 반환값은 딕셔너리입니다.",
+                                    "how_to_read":  "입력 → 작업 → 결과의 흐름으로 생각하세요. 점 앞의 `caches`는 일을 할 객체, `open`은 실행할 메서드, 괄호 안의 `\"app-v1\"`은 전달할 값입니다. 이 코드에 직접 정의된 `open`은 이름을 집합에 추가한 뒤 그 이름이 담긴 딕셔너리를 돌려줍니다.",
+                                    "key_point":  "`\"app-v1\"` → `name` → `self.names.add(name)`으로 이름 기록 → `return {\"name\": name}` → `{\"name\": \"app-v1\"}` → `cache`에 바인딩. 따라서 `cache[\"name\"]`은 `\"app-v1\"`입니다.",
+                                    "common_mistake":  "`cache`라는 변수 이름이 반환된 딕셔너리의 값이 된다고 생각하지 마세요. 값은 변수 이름이 아니라 메서드에 전달한 문자열에서 옵니다. 또한 여기서 `open`의 동작은 이름 자체가 아니라 제시된 메서드 본문으로 결정됩니다."
                                 },
         "teaching_example":  {
-                                 "code":  "class CacheStore:\n    def open(self, name):\n        return {\"name\": name}\nstore = CacheStore()\ncache = store.open(\"assets-v2\")",
-                                 "walkthrough":  "open에 assets-v2 이름이 전달되고 그 cache를 나타내는 값이 반환됩니다."
+                                 "code":  "class CacheStore:\n    def open(self, name):\n        return {\"name\": name}\nstore = CacheStore()\ncache = store.open(\"assets-v2\")\nprint(cache[\"name\"])",
+                                 "walkthrough":  "1) `class CacheStore:`는 클래스 정의를 시작합니다.\n2) `def open(self, name):`은 객체와 이름을 받을 메서드를 정의합니다. 본문은 아직 실행되지 않습니다.\n3) `return {\"name\": name}`은 호출될 때 이름이 담긴 딕셔너리를 반환하도록 정합니다.\n4) `store = CacheStore()`는 객체를 만들고 `store`에 연결합니다.\n5) `store.open(\"assets-v2\")`를 호출하면 `self`는 `store` 객체, `name`은 `\"assets-v2\"`가 됩니다. 본문이 실행되어 `{\"name\": \"assets-v2\"}`를 반환하고, `cache`가 그 딕셔너리에 연결됩니다.\n6) `print(cache[\"name\"])`은 키 `\"name\"`의 값을 읽어 `assets-v2`를 출력합니다."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "`caches.open(\u0027app-v1\u0027)` 호출에서 app-v1 문자열이 cache 이름으로 전달되고 반환 dict에도 같은 이름이 들어갑니다.",
-                                   "why_correct":  "open method가 named cache를 선택/생성하는 역할로 모델링됐기 때문입니다.",
+                                   "step_by_step":  "1) 클래스 정의로 `__init__`과 `open` 메서드가 준비됩니다.\n2) `CacheStorage()`로 객체를 만들면 `__init__`이 실행되어 `self.names`가 빈 집합이 됩니다. `caches`가 이 객체에 연결됩니다.\n3) `caches.open(\"app-v1\")`은 이 객체를 `self`로, `\"app-v1\"`을 `name`으로 사용해 `open`을 실행합니다.\n4) `self.names.add(name)`이 집합에 `\"app-v1\"`을 추가합니다.\n5) `return {\"name\": name}`이 `{\"name\": \"app-v1\"}`을 반환합니다.\n6) `cache`가 반환된 딕셔너리에 연결됩니다. 따라서 `cache[\"name\"]`은 문자열 `\"app-v1\"`입니다.",
+                                   "why_correct":  "키 `\"name\"`에 대응하는 값은 매개변수 `name`의 값이고, 이 호출에서 그 값은 `\"app-v1\"`이므로 정답은 `app-v1`입니다.",
                                    "common_wrong_choice":  {
-                                                               "choice":  "install",
-                                                               "why_wrong":  "install은 lifecycle 맥락이고 cache 이름은 app-v1입니다.",
-                                                               "misread_step":  "이벤트 이름과 cache 이름을 혼동한 경우입니다."
+                                                               "choice":  "None",
+                                                               "why_wrong":  "`self.names.add(name)` 자체는 `None`을 반환하지만, `open`은 그 결과를 반환하지 않습니다. 다음 줄에서 딕셔너리를 명시적으로 반환합니다.",
+                                                               "misread_step":  "메서드 내부의 중간 호출 결과를 전체 `open` 호출의 반환값으로 착각한 것입니다."
                                                            },
-                                   "takeaway":  "PWA cache 코드는 **cache storage 객체 → open 이름 → versioned cache**로 읽습니다."
+                                   "takeaway":  "메서드 호출은 전달된 값 → 본문 실행 → 실제 `return` 값 → 대입 순서로 따라가세요."
                                },
         "target_statement":  "cache = caches.open(\"app-v1\")",
         "focus_span":  "caches.open(\"app-v1\")",
@@ -781,14 +781,14 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "object.method(...) 구조에서 호출 대상 client와 메서드 invoke_model, 전달 인자를 구분하고 반환값이 result에 저장되는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "메서드 호출은 object.method(arguments) 형태로 특정 객체가 제공하는 동작을 실행하는 표현식입니다.",
-                                    "how_to_read":  "점 왼쪽 client를 먼저 확인하고 점 오른쪽 invoke_model을 메서드 이름으로 읽은 뒤 괄호 안 인자를 확인합니다.",
-                                    "key_point":  "model_id나 body_json은 메서드를 호출하는 대상이 아니라 invoke_model에 전달되는 인자입니다.",
-                                    "common_mistake":  "invoke_model을 독립 함수로 읽거나 model_id가 호출 대상 객체라고 혼동하기 쉽습니다."
+                                    "what_it_is":  "쉽게 말하면: 메서드 호출은 특정 객체에게 그 객체가 제공하는 일을 시키는 것입니다.\n정확한 정의: 이 코드의 `object.method(...)`는 객체에서 찾은 메서드를 호출하며, 해당 객체는 `self`로 자동 전달되고 괄호 안의 인자들도 전달됩니다.",
+                                    "how_to_read":  "직관적 모델: ‘누구에게 → 무슨 일을 → 어떤 재료로’ 요청하는지 나누어 봅니다. `client.invoke_model(...)`에서 `client`는 요청을 받는 객체, `invoke_model`은 실행할 메서드입니다. `modelId=model_id`는 `model_id`의 값을 `modelId` 매개변수에 전달한다는 뜻입니다. 나머지 두 인자도 같은 방식으로 읽습니다. 여기서는 직접 정의한 메서드가 실행될 뿐, 외부 서비스에 요청하지 않습니다.",
+                                    "key_point":  "`client = BedrockClient()`로 객체를 만듭니다. 호출 시 그 객체가 `self`로 전달되고, `modelId`에는 `\"demo-model\"`, `contentType`에는 `\"application/json\"`, `body`에는 문자열 `'{\"prompt\":\"hello\"}'`가 전달됩니다.\n메서드 실행 → 세 값을 담은 딕셔너리 반환 → `result`에 연결 → `result[\"modelId\"]` 읽기 → `demo-model` 출력.\n따라서 호출 대상 객체를 가리키는 이름은 `client`입니다.",
+                                    "common_mistake":  "`model_id`를 호출 대상이라고 생각하기 쉽지만, 이는 괄호 안에서 전달하는 값의 이름입니다. 점 왼쪽의 `client`가 대상 객체이고, `result`는 호출이 끝난 뒤 반환값을 받는 이름입니다. 또한 `body_json`은 이 코드에서 딕셔너리로 변환되지 않고 문자열 그대로 전달됩니다."
                                 },
         "teaching_example":  {
-                                 "code":  "class Client:\n    def send(self, payload):\n        return {\"sent\": payload}\n\nclient = Client()\nprint(client.send(\"ping\"))",
-                                 "walkthrough":  "client가 메서드 호출 대상이고 send가 메서드이며 ping이 인자로 전달됩니다."
+                                 "code":  "class Client:\n    def send(self, payload):\n        return {\"sent\": payload}\n\nclient = Client()\nmessage = \"ping\"\nresult = client.send(payload=message)\nprint(result[\"sent\"])",
+                                 "walkthrough":  "1) `class Client:`는 객체를 만들기 위한 클래스를 정의합니다.\n2) `def send(self, payload):`는 `send` 메서드를 정의합니다. 정의할 때는 아직 본문을 실행하지 않습니다.\n3) `return {\"sent\": payload}`는 메서드가 호출되면 전달받은 값을 딕셔너리에 담아 반환할 부분입니다.\n4) `client = Client()`는 객체를 만들고 `client`라는 이름에 연결합니다.\n5) `message = \"ping\"`은 전달할 문자열을 준비합니다.\n6) `client.send(payload=message)`는 `client`의 메서드를 호출합니다. `self`는 자동으로 `client` 객체를 받고, `payload`는 `\"ping\"`을 받습니다. 본문이 실행되어 `{'sent': 'ping'}`을 반환하고, 그 값이 `result`에 연결됩니다.\n7) `print(result[\"sent\"])`는 반환된 딕셔너리에서 값을 꺼내 `ping`을 출력합니다.\n흐름: `client`의 `send` 호출 → `\"ping\"` 전달 → 딕셔너리 반환 → `result` → `ping` 출력."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "1) 점 표기법 client.invoke_model에서 점 왼쪽 이름을 확인한다. 2) client가 메서드 호출 대상 객체다. 3) invoke_model은 그 객체에서 찾는 메서드 이름이다. 4) 괄호 안 modelId, contentType, body 값들은 메서드에 전달되는 인자다.",
