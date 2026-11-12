@@ -10,6 +10,7 @@ on:
       - 'data/side_cards/**'
       - 'tools/validate_lessons.py'
       - 'tools/audit_learning_sequence_r1.py'
+      - 'tools/audit_composite_delivery_proximity_r1.py'
       - 'tools/verify_learning_sequence_runtime_r1.py'
       - 'tools/audit_explanation_readiness_r1.py'
       - 'tools/audit_source_bundle_mapping_r1.py'
@@ -23,6 +24,7 @@ on:
       - 'data/side_cards/**'
       - 'tools/validate_lessons.py'
       - 'tools/audit_learning_sequence_r1.py'
+      - 'tools/audit_composite_delivery_proximity_r1.py'
       - 'tools/verify_learning_sequence_runtime_r1.py'
       - 'tools/audit_explanation_readiness_r1.py'
       - 'tools/audit_source_bundle_mapping_r1.py'
@@ -66,6 +68,14 @@ jobs:
           set -o pipefail
           python tools/verify_learning_sequence_runtime_r1.py 2>&1 | tee learning-sequence-runtime-r1.txt
 
+      - name: Audit composite delivery proximity R1
+        id: composite_proximity
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          python tools/audit_composite_delivery_proximity_r1.py --limit 200 2>&1 | tee composite-delivery-proximity-r1.txt
+
       - name: Audit explanation readiness R1
         id: explanation_readiness
         continue-on-error: true
@@ -90,9 +100,10 @@ jobs:
             lesson-validation.txt
             learning-sequence-r1.txt
             learning-sequence-runtime-r1.txt
+            composite-delivery-proximity-r1.txt
             explanation-readiness-r1.txt
           retention-days: 7
 
       - name: Fail when validation failed
-        if: steps.validate.outcome == 'failure' || steps.sequence.outcome == 'failure' || steps.sequence_runtime.outcome == 'failure' || steps.explanation_readiness.outcome == 'failure' || steps.source_bundle_mapping.outcome == 'failure'
+        if: steps.validate.outcome == 'failure' || steps.sequence.outcome == 'failure' || steps.sequence_runtime.outcome == 'failure' || steps.composite_proximity.outcome == 'failure' || steps.explanation_readiness.outcome == 'failure' || steps.source_bundle_mapping.outcome == 'failure'
         run: exit 1
