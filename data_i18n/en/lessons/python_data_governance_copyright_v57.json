@@ -210,10 +210,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "dict의 get 메서드 호출이 source_url key 값을 반환하는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A method call is a syntax that invokes an action provided by an object in the form `object.method(...)`.",
-      "how_to_read": "`item.get(...)` is read as: the get method of the item object is called, the key inside the parentheses is passed as an argument, and the return value is received.",
-      "key_point": "Preserving the source URL is relevant to data tracking, and the focus of the Python syntax is on the call to the `get` method of a dictionary.",
-      "common_mistake": "It’s easy to think of `get` as a function that retrieves a URL from the Internet. Here, however, it is a method that reads values stored in a dictionary named `item` using those values as keys."
+      "what_it_is": "Easy meaning: A method call asks an object to do a job; here, it asks `item` to find a stored value by its label.\nExact definition: A method call is an expression of the form `object.method(...)` that executes an object's method with arguments; here, `item.get(\"source_url\")` returns the value associated with that dictionary key.",
+      "how_to_read": "Picture a dictionary as a collection of values with labels. The first line stores values under the keys `\"text\"` and `\"source_url\"`. On the second line, `item.get(\"source_url\")` calls the `get` method of `item`, passing the label to look for, `\"source_url\"`, as an argument. The returned URL string is stored in the variable `source_url`, and the third line prints that variable's value.",
+      "key_point": "Value flow: the `\"source_url\"` key in `item` → call `get(\"source_url\")` → return `\"https://example.com/original\"` → store it in the variable `source_url` → `print(source_url)` outputs `https://example.com/original`. The string inside the parentheses is the key to find; the call's result is the value associated with that key.",
+      "common_mistake": "It is easy to think that `get` retrieves a URL from the Internet. Here, it does not access the Internet: it looks up a value already stored in the `item` dictionary using a key. It therefore returns the associated URL string, not the key name `source_url` itself."
     },
     "teaching_example": {
       "code": "record = {\"path\": \"data.json\"}\npath = record.get(\"path\")\nprint(path)",
@@ -572,24 +572,24 @@
     "primary_concept": "assignment",
     "reading_goal_internal": "license 값이 falsy일 때 조건부 attribute assignment로 항목 상태가 보류 상태로 바뀌는 과정을 추적한다.",
     "concept_explanation": {
-      "what_it_is": "`obj.attr = value` is an attribute assignment that changes the value of an object’s attribute.",
-      "how_to_read": "After checking the condition for the assignment statement, I assume the value on the right is stored as an attribute of that object.",
-      "key_point": "If the license field is empty, the process is to change the status to \"Pending\" because the terms of use have not been verified.",
-      "common_mistake": "It is easy to assume that `not item.license` deletes the `license` string. This expression only evaluates to a truth value."
+      "what_it_is": "Easy meaning: `item.status = value` stores a value in the status entry attached to item.\nExact definition: Attribute assignment evaluates the right-hand expression and assigns its result to the specified attribute of the object on the left.",
+      "how_to_read": "Picture an object with named entries. `item.status` is its status entry. The code first stores \"ready\", then stores \"hold_license_unknown\" in the same entry if `if not item.license` is true.",
+      "key_point": "`item.license` is \"\" → the empty string evaluates as false → `not` produces True → the conditional assignment runs → `item.status` changes from \"ready\" to \"hold_license_unknown\".",
+      "common_mistake": "`not item.license` does not delete license. It only evaluates a condition; the statement that changes a value is `item.status = \"hold_license_unknown\"`."
     },
     "teaching_example": {
       "code": "class Record:\n    pass\n\nrecord = Record()\nrecord.source = \"\"\nrecord.status = \"ready\"\nif not record.source:\n    record.status = \"hold\"",
-      "walkthrough": "Since `source` is an empty string, the condition evaluates to True, and `status` changes to `hold`."
+      "walkthrough": "1) `class Record:` defines a class; `pass` does nothing.\n2) `record = Record()` creates an object and binds it to record.\n3) The source attribute is assigned the empty string \"\".\n4) The status attribute is assigned \"ready\".\n5) The empty string evaluates as false, so `not record.source` is True.\n6) The indented assignment runs, replacing \"ready\" with \"hold\" in status.\nThe final value of `record.status` is \"hold\"."
     },
     "answer_explanation": {
-      "step_by_step": "Since an empty string is falsy, ``not item.license`` evaluates to True. The `if` statement is executed, and `status` is updated to a new string.",
-      "why_correct": "This is because, when the condition is true, the attribute assignment overwrites the existing value of `ready`.",
+      "step_by_step": "1) `class Item:` and `pass` define a class.\n2) `item = Item()` creates an object and binds it to item.\n3) `item.license = \"\"` stores an empty string in license.\n4) `item.status = \"ready\"` stores the initial status.\n5) The empty string evaluates as false, so `not item.license` is True.\n6) The assignment in the if body runs, changing status to \"hold_license_unknown\".",
+      "why_correct": "The second assignment to the same status attribute executes and replaces \"ready\", so the final value is \"hold_license_unknown\".",
       "common_wrong_choice": {
         "choice": "ready",
-        "why_wrong": "`ready` is the initial state before the `if` statement is executed.",
-        "misread_step": "This is a case where the state after a conditional assignment has not been reflected."
+        "why_wrong": "\"ready\" is the value before the conditional executes; it is replaced in the body of the true condition.",
+        "misread_step": "This misses the execution of the indented assignment after the condition becomes True."
       },
-      "takeaway": "The `guard` code is read as **condition evaluation → assignment of the pending state → final state**."
+      "takeaway": "When an attribute is assigned more than once, trace execution order and use the value from the last assignment that actually runs."
     },
     "target_statement": "item.status = \"hold_license_unknown\"",
     "focus_span": "item.status = \"hold_license_unknown\"",
@@ -693,14 +693,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "카드 dict의 두 출처 필드가 함수 argument로 전달돼 표시용 문자열이 만들어지는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`function(a, b)` is a function call that passes two argument values to the function and receives a return value.",
-      "how_to_read": "Calculate the actual values of each argument expression from left to right, then check the function’s return value.",
-      "key_point": "\"Attribution\" is information that allows users to verify the source of a card’s evidence.",
-      "common_mistake": "It’s easy to assume that only the URL is passed to the function. The code actually has two arguments: the source name and the URL."
+      "what_it_is": "Easy meaning: a function call hands values to a prepared task and gets a result back.\nExact definition: a function call is an expression that evaluates argument expressions, binds their values to parameters, executes the function body, and obtains a return value.",
+      "how_to_read": "Picture the function as a workbench with two input slots. Here, `card[\"source_name\"]` is read first to obtain `\"Python Docs\"`, then `card[\"source_url\"]` is read to obtain `\"https://docs.python.org\"`. In the call, the first value is bound to `name` and the second to `url`.",
+      "key_point": "`def` defines the function; the call on the last line executes its body.\nLook up two values → pass them to `name` and `url` → build `\"Python Docs | https://docs.python.org\"` with the f-string → return it with `return` → store it in `attribution`.\nThere is no code that displays output.",
+      "common_mistake": "The strings `\"source_name\"` and `\"source_url\"` themselves are not passed. They are keys used to look up dictionary values. The function receives the retrieved values, so the result is not `source_name | source_url`."
     },
     "teaching_example": {
       "code": "def render(name, url):\n    return f\"{name} <{url}>\"\n\ninfo = {\"name\": \"Docs\", \"url\": \"/docs\"}\ntext = render(info[\"name\"], info[\"url\"])",
-      "walkthrough": "Two dict values are passed to the function, which generates the string ``Docs </docs>``."
+      "walkthrough": "1) `def render(name, url):` defines a function that accepts two values. Its body does not run yet.\n2) The `return` line will combine the two values in the format `name <URL>` and return it when called.\n3) `info = ...` creates a dictionary containing the name and URL.\n4) On the last line, the two lookup expressions are evaluated from left to right, yielding `\"Docs\"` and `\"/docs\"`. These are passed to `name` and `url`, respectively, and the body runs.\n5) The function returns `\"Docs </docs>\"`, and that value is stored in `text`. Nothing is displayed."
     },
     "answer_explanation": {
       "step_by_step": "It retrieves two values from the `card` and passes them to the function in order. The function returns a string in the format `name | url`.",

@@ -446,10 +446,10 @@
         "primary_concept":  "attribute_access",
         "reading_goal_internal":  "ModuleNotFoundError에서 현재 interpreter와 패키지 설치 환경이 다른지 진단하는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`module.attribute`는 모듈 객체에 정의된 attribute 값을 읽는 접근입니다.",
-                                    "how_to_read":  "점 왼쪽 모듈과 점 오른쪽 attribute 이름을 구분해 봅니다.",
-                                    "key_point":  "`sys.executable`은 현재 프로세스를 실행한 Python interpreter 경로를 확인하는 데 사용할 수 있습니다.",
-                                    "common_mistake":  "설치된 모든 Python 경로를 반환한다고 생각하기 쉽습니다. 현재 실행 중인 interpreter 하나의 경로를 가리킵니다."
+                                    "what_it_is":  "쉽게 말하면: `sys.executable`은 `sys`에서 `executable`이라는 이름의 값을 읽는 표현입니다.\n정확한 정의: 속성 접근(attribute access) `object.attribute`는 점 왼쪽 객체에서 점 오른쪽 이름의 속성 값을 조회하며, 여기서는 `sys` 모듈의 `executable` 속성을 읽습니다.",
+                                    "how_to_read":  "직관적 모델: `sys`에 이름표가 붙은 정보 칸들이 있고, 점은 그중 어느 칸을 읽을지 지정한다고 생각하세요.\n첫 줄 `import sys`는 `sys` 모듈을 사용할 수 있게 합니다. 둘째 줄에서는 먼저 오른쪽 `sys.executable`로 현재 코드를 실행하는 Python 실행 파일의 경로 값을 읽고, 그 값을 왼쪽 이름 `python_path`에 연결합니다. 괄호가 없으므로 함수 호출이 아니라 속성 값 읽기입니다.",
+                                    "key_point":  "실행 흐름: `import sys` → `sys.executable` 조회 → 읽은 값을 `python_path`에 대입.\n결과: 보통 `python_path`는 현재 Python 실행 파일의 절대 경로 문자열을 가리킵니다. 실제 경로는 실행 환경에 따라 달라지며, 경로를 알아낼 수 없으면 값이 빈 문자열이나 `None`일 수 있습니다. 이 코드는 출력하지 않습니다.\n질문의 상황에서는 이 경로가 가리키는 실행 Python과 패키지를 설치한 Python/가상환경(venv)이 같은 환경인지 먼저 대조합니다.",
+                                    "common_mistake":  "`sys.executable`이 설치된 모든 Python이나 패키지의 위치를 알려준다고 생각하기 쉽습니다. 이 속성은 현재 실행 중인 Python의 실행 파일 경로를 위한 값입니다. 또한 값을 읽어 `python_path`에 대입해도 실행 환경이 바뀌거나 패키지가 설치되지는 않습니다. 환경 불일치는 확인할 원인 중 하나이지, 이 코드만으로 확정되는 진단은 아닙니다."
                                 },
         "teaching_example":  {
                                  "code":  "import os\nseparator = os.sep",
@@ -515,14 +515,14 @@
                                  "walkthrough":  "missing.json key의 value는 404입니다."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "missing.json 경로에 연결된 value가 404로 정의되어 있습니다.",
-                                   "why_correct":  "dict lookup은 지정한 path key의 status value를 반환하기 때문입니다.",
+                                   "step_by_step":  "1) `responses`에 두 경로와 값의 쌍을 담은 딕셔너리가 대입됩니다. `\"/data/lessons/missing.json\"`에는 `404`, `\"/src/pwa/app.js\"`에는 `200`이 연결됩니다.\n2) 마지막 줄의 오른쪽 표현식은 대괄호 안의 키 `\"/data/lessons/missing.json\"`을 `responses`에서 찾습니다.\n3) 그 키에 연결된 값 `404`를 꺼냅니다.\n4) 이 값이 `missing_status`에 대입되므로 최종 값은 정수 `404`입니다.",
+                                   "why_correct":  "`responses[\"/data/lessons/missing.json\"]`은 지정한 키에 연결된 값 `404`로 평가됩니다. 따라서 그 결과를 대입받는 `missing_status`의 값도 `404`입니다.",
                                    "common_wrong_choice":  {
                                                                "choice":  "200",
-                                                               "why_wrong":  "200은 app.js 경로에 연결된 다른 응답입니다.",
-                                                               "misread_step":  "서로 다른 두 요청의 status를 혼동한 경우입니다."
+                                                               "why_wrong":  "`200`은 `\"/src/pwa/app.js\"` 키에 연결된 값입니다. 이 코드가 조회하는 키는 `\"/data/lessons/missing.json\"`입니다.",
+                                                               "misread_step":  "대괄호 안의 키를 확인하지 않고 다른 경로에 연결된 값을 선택한 경우입니다."
                                                            },
-                                   "takeaway":  "HTTP 로그는 **요청 경로와 그 경로의 status code를 짝지어** 읽습니다."
+                                   "takeaway":  "딕셔너리 조회는 `딕셔너리 확인 → 대괄호 안의 키 찾기 → 연결된 값 읽기` 순서로 읽습니다. 여기서는 읽은 값 `404`가 `missing_status`에 대입됩니다."
                                },
         "target_statement":  "missing_status = responses[\"/data/lessons/missing.json\"]",
         "focus_span":  "responses[\"/data/lessons/missing.json\"]",
@@ -623,10 +623,10 @@
         "primary_concept":  "membership_test",
         "reading_goal_internal":  "서버 bind 실패 맥락을 고정 port 집합 membership으로 표현해 포트 사용 여부를 판단한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`value in set`은 set 안에 같은 value가 있는지 검사합니다.",
-                                    "how_to_read":  "검사할 포트 번호와 현재 사용 중인 포트 집합을 비교합니다.",
-                                    "key_point":  "`Address already in use`는 bind하려는 주소/포트가 이미 점유된 상황과 연결됩니다.",
-                                    "common_mistake":  "이 오류가 Python 미설치라는 뜻이라고 생각하기 쉽습니다. 문제는 interpreter 존재 여부가 아니라 socket bind 대상의 충돌입니다."
+                                    "what_it_is":  "쉽게 말하면: `in`은 “이 값이 모음 안에 있나?”를 확인합니다.\n정확한 정의: 집합에 대한 멤버십 검사 `value in a_set`은 왼쪽 값이 오른쪽 집합의 원소로 포함되어 있는지 평가하여 불리언 값 `True` 또는 `False`를 만듭니다.",
+                                    "how_to_read":  "집합을 포트 번호가 적힌 명단이라고 생각하세요. 첫 줄은 `8000`, `8790`, `9000`을 담은 집합을 만들어 `active_ports`에 연결합니다. 둘째 줄에서는 먼저 오른쪽의 `active_ports`가 어떤 명단인지 보고, `8790 in active_ports`를 “이 명단에 8790이 있는가?”로 읽습니다. 그 검사 결과를 `port_in_use`에 저장합니다.",
+                                    "key_point":  "`8790` → `active_ports`에 포함되는지 검사 → `True` → `port_in_use`에 대입됩니다. 출력문은 없으므로 화면에 출력되지는 않습니다. 이 카드에서는 집합이 사용 중인 포트들을 나타내므로, 8790을 다른 프로세스가 이미 사용 중일 수 있다는 해석이 `Address already in use`와 연결됩니다.",
+                                    "common_mistake":  "`in`이 실제 컴퓨터의 포트 사용 상태를 조사한다고 생각하지 마세요. 이 코드는 직접 작성한 집합에 숫자가 있는지만 검사하며, 포트를 열거나 실제 점유 상태를 확인하지 않습니다. 따라서 `True`는 여기서는 '8790이 이 집합에 있다'는 뜻입니다."
                                 },
         "teaching_example":  {
                                  "code":  "active_ports = {8000, 8080}\nport_busy = 8080 in active_ports",
@@ -855,10 +855,10 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "함수 호출에서 `name=value` 형태의 keyword argument가 같은 이름의 매개변수에 어떤 값을 전달하는지 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "키워드 인자는 함수 호출에서 `parameter=value` 형태로 받을 매개변수 이름을 직접 지정해 값을 전달합니다.",
-                                    "how_to_read":  "`source=\u0027index\u0027`를 보면 source라는 매개변수에 문자열 index를 전달한다고 바로 연결합니다.",
-                                    "key_point":  "따옴표 안 `index`는 매개변수 이름이 아니라 **source에 전달되는 문자열 값**입니다.",
-                                    "common_mistake":  "호출 괄호 안의 `source=\u0027index\u0027`를 함수 내부 대입문으로 읽기 쉽습니다. 여기서는 호출 인자를 이름으로 지정하는 문법입니다."
+                                    "what_it_is":  "쉽게 말하면: 함수를 부를 때 입력 자리의 이름을 적어 그 자리에 값을 전달하는 방법입니다.\n정확한 정의: 키워드 인자(keyword argument)는 함수 호출에서 `name=value` 형태로 지정하며, 오른쪽 표현식을 평가한 값을 해당 이름의 매개변수(parameter)에 바인딩합니다.",
+                                    "how_to_read":  "매개변수를 이름표가 붙은 입력 자리라고 생각하세요. `def restore_plan(path, source)`는 `path`와 `source`라는 입력 자리를 정의합니다. 호출의 첫 값 `\"src/pwa/app.js\"`는 위치에 따라 `path`에 연결됩니다. `source=\"index\"`는 이름표로 자리를 골라 문자열 `\"index\"`를 `source`에 연결합니다. 함수 본문의 `{path}`와 `{source}`는 이렇게 받은 값으로 채워집니다.",
+                                    "key_point":  "`restore_plan(...)` 호출 → `path`에 `\"src/pwa/app.js\"`, `source`에 `\"index\"` 전달 → 함수가 `\"src/pwa/app.js <- index\"` 반환 → 반환값을 `plan`에 저장 → `print(plan)`이 `src/pwa/app.js <- index` 출력.\n따라서 질문에서 묻는 `source`에 전달되는 값은 문자열 `\"index\"`입니다.",
+                                    "common_mistake":  "`source=\"index\"`의 왼쪽 `source`를 전달되는 값으로 읽지 마세요. 왼쪽은 받을 매개변수의 이름이고, 오른쪽 `\"index\"`가 실제 값입니다. 또한 여기의 `=`는 함수 본문에 있는 대입문이 아니라 호출에서 인자를 이름으로 지정하는 문법입니다."
                                 },
         "teaching_example":  {
                                  "code":  "def plan(path, source):\n    return f\"{path} \u003c- {source}\"\n\ntext = plan(\"config.json\", source=\"backup\")\nprint(text)",

@@ -318,10 +318,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "original iterable의 항목들을 사용해 새 list 객체를 만들고 그 결과를 copy에 저장하므로 copy의 바깥 구조 변경이 original과 분리되는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`list(iterable)` is a constructor call that creates a new list object containing the items of the iterable in order.",
-      "how_to_read": "After verifying the items in the original input, note that while the results are identical, they are distinct external list objects.",
-      "key_point": "Since this is a shallow copy, the outer list remains independent, but it does not perform a deep copy that includes nested mutable elements.",
-      "common_mistake": "Since `list(original)` is simply an alias, it’s easy to assume that `copy.append` modifies `original` as well."
+      "what_it_is": "Easy meaning: `list(original)` puts the original list's items into a separate new list.\nExact definition: `list(iterable)` is a constructor call that returns a new list containing references to the iterable's items in order.",
+      "how_to_read": "Mental model: make a new container holding the same items, without making new copies of the items themselves.\nThe first line binds `original` to `['LiDAR']`. On the second line, `list(original)` receives `original` as its argument and creates a new list; `copy` refers to that result. The third line adds `'Radar'` only to `copy`. The last line prints the original list.",
+      "key_point": "`original`: `['LiDAR']` → call `list(original)` → bind `copy` to a separate `['LiDAR']` → `copy.append(\"Radar\")` → `copy` is `['LiDAR', 'Radar']`, while `original` is `['LiDAR']` → output: `['LiDAR']`.\nThis is a shallow copy. The outer list is new, but item references are shared, so nested mutable objects are not independently copied.",
+      "common_mistake": "It is easy to read `list(original)` as equivalent to `copy = original`. With `copy = original`, both names refer to the same list, so changes from `copy.append(...)` are visible through `original` too. Here, however, the constructor call returns a new list, so adding an item affects only `copy`."
     },
     "teaching_example": {
       "code": "original = [1]\ncopy = list(original)\ncopy.append(2)\nprint(original)",
@@ -558,10 +558,10 @@
     "primary_concept": "raise_statement",
     "reading_goal_internal": "`raise exception`이 예외를 발생시키는 순간 현재 정상 실행 흐름이 중단되고 가까운 handler를 찾는 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`raise exception` This is a statement that immediately raises a specified exception, interrupting the current normal flow of execution.",
-      "how_to_read": "First, check the conditions for reaching `raise`, and then determine whether the next normal statement in the same function executes after an exception occurs.",
-      "key_point": "After a `raise`, the program does not proceed to a normal `return` but instead searches the call stack for the appropriate `except` handler.",
-      "common_mistake": "It is easy to assume that `raise` simply prints an error message to the screen while the function continues to execute."
+      "what_it_is": "Easy meaning: `raise` signals a problem and stops the work currently in progress.\nExact definition: `raise exception` is a Python statement that raises the specified exception, interrupting the current normal execution flow.",
+      "how_to_read": "Picture leaving the normal path and moving to a place that handles the problem. Here, `validate(-1)` passes -1 to `score`, and `score < 0` is true, so execution reaches `raise ValueError(...)`. Instead of proceeding to `return score`, execution searches for a matching `except` handler in the calling code.",
+      "key_point": "`-1 < 0` → a `ValueError` is raised → `return score` is skipped → the outer `except ValueError as exc` catches the exception and binds it to `exc`. Since `type(exc).__name__` is the exception's type name, `print` outputs `ValueError`.",
+      "common_mistake": "It is easy to think that `raise` only prints a message and then continues to the next line. Here, `raise` raises an exception; the `print` inside the catching `except` performs the screen output. The output is the type name `ValueError`, not the message `score must be >= 0`."
     },
     "teaching_example": {
       "code": "def check(value):\n    if value == \"\":\n        raise ValueError(\"empty\")\n    return value\ntry:\n    check(\"\")\nexcept ValueError as exc:\n    print(type(exc).__name__)",
@@ -737,14 +737,14 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "`delimiter='\\t'` keyword argument가 TSV의 컬럼 경계를 정하는 의미를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A keyword argument specifies the name of the argument to clearly indicate which setting value is being passed.",
-      "how_to_read": "Read the name `delimiter` and the fact that `\\t` is a tab character together.",
-      "key_point": "`delimiter='\\t'` This specifies that DictReader should use tabs instead of commas as column delimiters.",
-      "common_mistake": "`\\t` Do not interpret “`\\t`” as two characters: a backslash followed by a “t.” In Python strings, “” is a tab character."
+      "what_it_is": "Easy meaning: Write a setting name and its value together in a call to say, “Read using this rule.”\nExact definition: A keyword argument is an argument supplied as `name=value` in a call; here, `delimiter='\\t'` supplies one tab character as the field-separator setting.",
+      "how_to_read": "Mental model: Think of `delimiter` as a label meaning “character to use as a column boundary.”\nReading the code: In `csv.DictReader(f, delimiter='\\t')`, `f` is the input to read, and `delimiter='\\t'` requests tabs as separators. DictReader passes this setting to its underlying reader. The value of the string literal `'\\t'` is one tab character.",
+      "key_point": "Execution flow: `f` contains tab-separated text → create the reader with a tab value supplied for `delimiter` → `next(reader)` uses `title` and `level` from the first line as keys and reads the next line → `row` is `{'title': 'JSONL', 'level': '6'}` → `row['title']` is `'JSONL'` → `print` displays `JSONL`.",
+      "common_mistake": "Inside the call parentheses, `delimiter='\\t'` is a named argument, not an assignment statement that creates a separate variable called `delimiter`. Also, `'\\t'` is one tab, not a backslash followed by t, and this setting does not add tabs after values."
     },
     "teaching_example": {
-      "code": "import csv\nfrom io import StringIO\nf = StringIO('name\\tscore\\nA\\t3\\n')\nreader = csv.DictReader(f, delimiter='\\t')\nprint(next(reader)['score'])",
-      "walkthrough": "`delimiter='\\t'` Therefore, the name and score columns are separated by tabs."
+      "code": "import csv\nfrom io import StringIO\nf = StringIO('name\\tscore\\nA\\t3\\n')\nreader = csv.DictReader(f, delimiter='\\t')\nrow = next(reader)\nprint(row['score'])",
+      "walkthrough": "1) `import csv`: Import the module used to read data separated by delimiters.\n2) `from io import StringIO`: Import a tool that lets a string be read like an in-memory text file.\n3) `f = StringIO(...)`: Prepare text with tabs between `name` and `score` and between `A` and `3`, with `\\n` separating the lines.\n4) `csv.DictReader(f, delimiter='\\t')`: Supply the input `f` and the tab-separator setting, then bind the created reader to `reader`.\n5) `row = next(reader)`: Use the first line as column names and read the next line, binding `{'name': 'A', 'score': '3'}` to `row`.\n6) `print(row['score'])`: Retrieve the string `'3'` and display `3`. No conversion to a number occurs.\nResult: `3`."
     },
     "answer_explanation": {
       "step_by_step": "1) StringIO contains tab-separated TSV text. 2) When calling ``csv.DictReader``, ``delimiter='\\t'`` is passed as a keyword argument. 3) `DictReader` uses tabs as column delimiters. 4) Each row is read as a dictionary with header names as keys.",
@@ -914,14 +914,14 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "HTTP 호출 안의 `timeout=10`을 특정 매개변수에 값을 전달하는 keyword argument로 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A keyword argument is a syntax where values are passed in the form `parameter_name=value` when calling a function.",
-      "how_to_read": "Check the function name and the arguments inside the parentheses; in `timeout=10`, read the left side as the parameter name and the right side as the value to be passed.",
-      "key_point": "The \"10-second timeout\" refers to how the requests library works, while the Python syntax focus is on passing keyword arguments.",
-      "common_mistake": "`timeout=10` It is easier to read as a variable assignment outside the function. Inside the call parentheses, it is a keyword argument."
+      "what_it_is": "Easy meaning: This is a way to attach a destination label to a value when sending it to a function.\nExact definition: A keyword argument is an argument supplied by name using `name=expression` in a function call; the evaluated value of the expression is passed as the input corresponding to that name.",
+      "how_to_read": "Mental model: Imagine attaching a destination label to a value sent to a function. In this card, `requests.get(...)` is a call, and the URL string is the first positional argument. Read `timeout=10` as 'pass the integer 10 to the input named timeout.' `timeout` is the destination name, and `10` is the value being passed.",
+      "key_point": "Execution flow: import `requests` → prepare the URL string and integer `10` as arguments → call `requests.get`, passing `10` under the name `timeout` → if the call returns normally, bind its return value to `response`. `10` is neither a call count nor a value assigned directly to `response`. Whether the network call succeeds and what it returns cannot be determined from this code alone.",
+      "common_mistake": "Do not read `timeout=10` as an assignment statement storing a value in an outside variable. Here it is inside the call parentheses, so it is a keyword argument. In contrast, the outer `=` in `response = requests.get(...)` is an assignment that binds the normally returned value to `response`."
     },
     "teaching_example": {
       "code": "def fetch(path, timeout):\n    return timeout\n\nseconds = fetch(\"/health\", timeout=5)\nprint(seconds)",
-      "walkthrough": "Since the call `timeout=5` passes 5 to the `timeout` parameter, the function returns 5."
+      "walkthrough": "Line by line:\n1) `def fetch(path, timeout):` defines a function with input names (parameters) `path` and `timeout`. Its body does not run yet.\n2) `return timeout` means that when the function is called, it returns the value passed to `timeout`.\n3) In `seconds = fetch(\"/health\", timeout=5)`, the call on the right runs first. The positional argument `\"/health\"` binds to `path`, and the value `5` in the keyword argument `timeout=5` binds to `timeout`.\n4) The function body runs, and `return timeout` returns `5`. The outer assignment then binds `seconds` to `5`.\n5) `print(seconds)` displays `5`.\n\nValue flow: `timeout=5` → `timeout` inside the function is `5` → `return 5` → `seconds` is `5` → output `5`.\nThis example's `fetch` only returns the supplied value; it makes no network request."
     },
     "answer_explanation": {
       "step_by_step": "The call begins with `requests.get(`. The URL is the first positional argument. `timeout=10` is the second argument, where the parameter name is specified explicitly.",
@@ -1095,10 +1095,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "`logging.error(message)` 호출에서 호출 대상과 전달된 메시지, 로그 레벨을 구분해 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A call in the form of `object.name(...)` locates the name within an object or module and then passes arguments to execute it.",
-      "how_to_read": "`logging.error(\"failed\")` This reads as: \"`logging`\" passes the string \"`failed`\" to the ``error`` call.",
-      "key_point": "`error` is the name of the call that selects the log level, not the message content itself.",
-      "common_mistake": "`logging.error()` It is easy to assume that this automatically raises a Python exception. This call simply logs an ERROR-level message."
+      "what_it_is": "Easy meaning: a function call selects a named action and runs it; here, it records \"failed\" at an error severity level.\nExact definition: `logging.error(\"failed\")` is an expression that calls the `logging` module's `error` function, passing the string argument `\"failed\"` to log an ERROR-level message on the root logger.",
+      "how_to_read": "Mental model: imagine handing a message and a severity label to a record keeper. `error` selects the ERROR label, and `\"failed\"` inside the parentheses supplies the content.\nReading the code:\n1) `import logging` makes the logging functionality available.\n2) `logging.basicConfig(level=logging.INFO)` requests a basic configuration that handles INFO and higher levels.\n3) `logging.info(\"started\")` logs `\"started\"` at INFO level.\n4) `logging.error(\"failed\")` finds the `logging.error` function and runs it with the string `\"failed\"` as its argument.",
+      "key_point": "Execution flow: select the `logging.error` function → pass `\"failed\"` as an argument → log an ERROR-level message.\nWhen this code runs without an existing logging configuration, ERROR also passes the INFO threshold, so `INFO:root:started` and `ERROR:root:failed` appear in that order. The level of the final call asked about is **ERROR**.",
+      "common_mistake": "Do not read `level=logging.INFO` as changing every message to INFO. It sets the minimum severity to handle; here, the `info` or `error` function determines each message's level. Also, `logging.error(\"failed\")` logs an error; the call does not itself raise a Python exception."
     },
     "teaching_example": {
       "code": "import logging\nlogging.basicConfig(level=logging.ERROR)\nlogging.error(\"save failed\")",
@@ -1284,17 +1284,17 @@
     },
     "teaching_example": {
       "code": "cache = {\"a\": \"ready\"}\ndef get_value(key):\n    if key in cache:\n        return cache[key]\n    return \"new\"\nresult = get_value(\"a\")",
-      "walkthrough": "Because `a` is in the cache, `ready` is returned immediately and the later `return` does not execute."
+      "walkthrough": "1) `cache = {\"a\": \"ready\"}` creates a dictionary storing the value \"ready\" under the key \"a\".\n2) `def get_value(key):` defines the function. Its body does not run yet.\n3) On the last line, calling `get_value(\"a\")` starts the function body with `key` set to \"a\".\n4) `if key in cache:` checks whether \"a\" is a dictionary key. The result is `True`.\n5) In `return cache[key]`, Python reads the value \"ready\" from `cache[\"a\"]`, sends it back to the caller, and ends the function execution.\n6) Therefore, the later `return \"new\"` does not run. The assignment on the last line finishes, storing \"ready\" in `result`.\n\nFlow: call → check that the key exists → read the stored value → return and end the function → store in `result`. There is no screen output."
     },
     "answer_explanation": {
-      "step_by_step": "Since doc-1 is in the cache key, the first return statement is executed, and the cached summary becomes the function’s result.",
-      "why_correct": "This is because `return` immediately terminates function execution.",
+      "step_by_step": "1) `cache` contains the key \"doc-1\" and its associated value \"cached summary\". The two `def` statements only define functions; they do not run their bodies.\n2) Calling `get_summary(\"doc-1\")` sets `doc_id` to \"doc-1\".\n3) `doc_id in cache` checks the dictionary's keys, so it is `True`.\n4) In `return cache[doc_id]`, reading `cache[\"doc-1\"]` produces the string \"cached summary\".\n5) Returning that string ends this execution of `get_summary`. The call to `summarize(doc_id)`, the cache assignment, and the final `return summary` do not run.\n6) The call's result, \"cached summary\", is stored in `result`.",
+      "why_correct": "`cache[doc_id]` is not the key \"doc-1\" itself; it is the associated value \"cached summary\". The first `return` sends this value back to the caller, so the correct answer is `cached summary`.",
       "common_wrong_choice": {
         "choice": "new summary for doc-1",
-        "why_wrong": "Due to a cache hit, the program does not proceed to the point where `summarize` is called.",
-        "misread_step": "This is a case where the code is assumed to continue executing after the `return` statement."
+        "why_wrong": "Creating this string would require executing `summarize(\"doc-1\")`. Here, the stored value is returned first, so `summarize` is never called.",
+        "misread_step": "This reading assumes the function continues past `return cache[doc_id]` to execute `summary = summarize(doc_id)`. That return has already ended the current function execution."
       },
-      "takeaway": "The cache code is interpreted as **check for a hit → return immediately → skip expensive calculations**."
+      "takeaway": "`return` both sends back a value and ends the current function execution. Read it as: check the condition → evaluate the return value → send it to the caller → skip the remaining code."
     },
     "target_statement": "return cache[doc_id]",
     "focus_span": "cache[doc_id]",
@@ -1338,10 +1338,10 @@
     "primary_concept": "f_string",
     "reading_goal_internal": "f-string의 중괄호에 현재 context와 question 값을 넣어 최종 prompt 문자열을 구성하는 과정을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "An f-string creates a new string by inserting the result of an expression into the positions marked with ``{expression}`` within the string.",
-      "how_to_read": "Find the current value of the name inside the curly braces and combine it with the remaining fixed text in the string.",
-      "key_point": "Here, the search document is placed in the \"Context\" field, and the user’s question is placed in the \"Question\" field.",
-      "common_mistake": "`{context}` It’s easy to assume that this will be printed verbatim. In an f-string, it is replaced with the actual variable value."
+      "what_it_is": "Easy meaning: An f-string fills blanks in text with current values to make a string. Exact definition: An f-string is Python syntax in which a string prefixed with f evaluates expressions inside braces and inserts their results into the string.",
+      "how_to_read": "Picture the braces as blanks to fill. In this call, question is \"캐시란?\", and context is a string joining the two sentences in docs with a newline. Thus {context} receives the joined sentences, and {question} receives the question. Context: and Question: are fixed text, and \\n is a newline.",
+      "key_point": "The flow is: join docs → finish the context value → insert context and question into the f-string → return the completed string → assign it to prompt. The value of prompt is \"Context:\\n캐시는 결과를 저장한다.\\n반복 계산을 줄인다.\\n\\nQuestion: 캐시란?\".",
+      "common_mistake": "It is easy to think {question} or {context} stays as literal text. Because the string has the f prefix, the braced parts receive the current values. Question is a fixed label; the actual question string is \"캐시란?\"."
     },
     "teaching_example": {
       "code": "topic = \"Python\"\ntext = f\"Topic: {topic}\"",
@@ -1408,17 +1408,17 @@
     },
     "teaching_example": {
       "code": "items = []\nif not items:\n    result = \"empty\"\nelse:\n    result = \"ready\"",
-      "walkthrough": "An empty list is falsy, and applying `not` makes the condition True, so `result` becomes `empty`."
+      "walkthrough": "1) `items = []` binds an empty list to `items`.\n2) Read `if not items:` as a check asking, 'Are there no items?' An empty list is treated as false in a condition, so `not items` is `True`.\n3) Because the condition is true, the indented `result = \"empty\"` runs.\n4) Since the if branch was selected, `result = \"ready\"` under `else` does not run.\nExecution flow: empty list → `not items` is `True` → execute the if block → `result` is `\"empty\"`.\nDo not assume the block is skipped just because an empty list is treated as false. Here, `not` reverses the test."
     },
     "answer_explanation": {
-      "step_by_step": "Since an empty list is falsy, ``not docs`` evaluates to `True`. The first `return` statement is executed, returning a \"not found\" message.",
-      "why_correct": "This is because the `if guard` and `return` are executed before the LLM call below.",
+      "step_by_step": "1) The three `def` statements define functions. Their bodies do not run yet.\n2) Calling `answer(\"질문\", [])` gives `question` the value `\"질문\"` and `docs` the empty list `[]`.\n3) At `if not docs:`, the empty list is treated as false, so `not docs` is `True`.\n4) The if block therefore executes `return \"근거 문서가 부족합니다.\"`. This returns the string and ends the `answer` call.\n5) Execution never reaches `return call_llm(build_prompt(question, docs))`, so neither function is called.\n6) The returned string is assigned to `result`. Its final value is `\"근거 문서가 부족합니다.\"`.",
+      "why_correct": "Because `not docs` is true, the first `return` runs. Thus `result` contains the Korean string meaning 'There is insufficient supporting documentation.', corresponding to that answer choice.",
       "common_wrong_choice": {
         "choice": "generated",
-        "why_wrong": "The function terminates at the first `return` statement, so it does not proceed to `call_llm`.",
-        "misread_step": "This is the case where the code continues to execute after the `guard return`."
+        "why_wrong": "`\"generated\"` would be returned only if `call_llm` were called. Here, the earlier `return` ends the `answer` call, so `call_llm` does not run.",
+        "misread_step": "This misreads execution as continuing to the next line of the function after the if block executes `return`."
       },
-      "takeaway": "\"evidence guard\" is interpreted as **detecting an empty input → early return → skipping the model call**."
+      "takeaway": "Read the flow as: empty list → `not` makes the condition true → early return from the if block → skip the calls below → assign the returned value to `result`."
     },
     "target_statement": "if not docs:",
     "focus_span": "if not docs:",
@@ -1463,10 +1463,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "sort 호출의 reverse keyword argument가 score가 높은 후보를 앞에 두도록 순서를 뒤집는 의미를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`reverse=True` is a keyword argument passed by name to a function or method call.",
-      "how_to_read": "Check the keyword name and boolean value to see if the option is enabled.",
-      "key_point": "In the `sort` function, setting `reverse=True` sorts the list in descending order, which is the opposite of the default ascending order.",
-      "common_mistake": "It’s easy to assume that `reverse=True` simply creates a copy of the original list without sorting it. ``list.sort()`` reverses the order of the list itself."
+      "what_it_is": "Easy meaning: `reverse=True` passes a named setting that tells the sorting operation, “Put larger values first.”\nExact definition: `reverse=True` is a keyword argument that passes the Boolean value `True` to the `reverse` parameter; in `list.sort()`, it specifies descending order of the sort keys.",
+      "how_to_read": "Imagine giving a sorter named settings. `key` answers “What should be compared?” and `reverse` answers “Should larger values come first?”\nThe first line stores three (score, document name) pairs in `scored`. On the second line, `key=lambda pair: pair[0]` supplies the first value of each pair, its score, as the sorting criterion, and `reverse=True` requests larger scores first. On the third line, `scored[0][1]` extracts the second value, the document name, from the first sorted pair.",
+      "key_point": "The function passed to `key` supplies the scores `0.2`, `0.9`, and `0.5` as sort keys.\n↓\nWith `True` passed to `reverse`, `scored` itself is sorted into `[(0.9, \"doc-b\"), (0.5, \"doc-c\"), (0.2, \"doc-a\")]`.\n↓\n`scored[0]` → `(0.9, \"doc-b\")`\n↓\n`scored[0][1]` → `\"doc-b\"`\n↓\nThe value of `top_hit` is `\"doc-b\"`.",
+      "common_mistake": "It is easy to read `reverse=True` as simply reversing the list's current order. Here it requests descending order by the scores obtained through `key`, so the highest-scoring `doc-b` comes first, not `doc-c`, which was originally last. Also, `reverse=True` inside the call is an argument passing a value by name, not a separate variable assignment statement."
     },
     "teaching_example": {
       "code": "pairs = [(1, \"a\"), (3, \"b\"), (2, \"c\")]\npairs.sort(key=lambda pair: pair[0], reverse=True)\nfirst = pairs[0][1]",

@@ -152,10 +152,10 @@
     "primary_concept": "boolean_operation",
     "reading_goal_internal": "안쪽 get 호출 결과를 먼저 구하고 `not`이 그 truth value를 반대로 바꾸는 평가 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`not expression` It inverts the truth value of an expression to produce a Boolean result.",
-      "how_to_read": "First evaluate the expression to the right of `not` completely to determine whether it is truthy or falsy, then reverse that result.",
-      "key_point": "Since the key \"c2\" is not found in \"seen,\" `get` returns `False`, and ``not False`` returns `True`.",
-      "common_mistake": "It is easy to think that `not` deletes a key from a dictionary or appends the character `not` to a string."
+      "what_it_is": "Easy meaning: `not` turns 'yes' into 'no' and 'no' into 'yes'.\nExact definition: `not` is a logical operator that inverts its operand's truth value, returning `False` if the operand is considered true and `True` if it is considered false.",
+      "how_to_read": "Picture `not` as a reversing switch after the lookup result. First evaluate the expression on its right, `seen.get(card[\"id\"], False)`. `card[\"id\"]` is `\"c2\"`, and since this key is missing from `seen`, `get` returns the default value `False`. Then `not` reverses that value.",
+      "key_point": "The execution flow is `card[\"id\"]` → `\"c2\"` → `seen.get(\"c2\", False)` → `False` → `not False` → `True`. The `return` statement sends `True` back to the caller, and `print` displays `True`.",
+      "common_mistake": "Do not read the `False` returned by `get` as the function's final return value. The outer `not` must still be applied, so the result is `True`. Also, this code inverts the truth value of the lookup result rather than only checking whether the key exists. Even if the key exists, a stored value of `False` also produces `True`."
     },
     "teaching_example": {
       "code": "seen = {\"a\": True}\nprint(not seen.get(\"b\", False))",
@@ -279,17 +279,17 @@
     },
     "teaching_example": {
       "code": "def label(temp):\n    if temp >= 30:\n        return \"hot\"\n    if temp >= 20:\n        return \"warm\"\n    return \"cool\"\n\nresult = label(24)",
-      "walkthrough": "Since the first condition is false and the second is true, 24 returns `warm`."
+      "walkthrough": "1) `def label(temp):` defines the function. Its body does not run yet.\n2) Calling `label(24)` runs the body with `temp` equal to 24.\n3) `temp >= 30` is `False`, so `return \"hot\"` is skipped.\n4) `temp >= 20` is `True`, so `return \"warm\"` runs.\n5) The function ends immediately, so `return \"cool\"` does not run.\n6) The returned string `\"warm\"` is stored in `result`. Nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "Since 65 is less than 80, the first `if` statement is skipped. However, since it is 50 or greater, the program enters the second `if` statement and returns ``review``.",
-      "why_correct": "This is because the second condition becomes true for the first time, and the `return` statement in that block terminates the function.",
+      "step_by_step": "1) `def` defines the `label_score` function.\n2) Calling `label_score(65)` makes `score` equal to 65.\n3) `65 >= 80` is `False`, so `return \"good\"` is skipped.\n4) The second condition, `65 >= 50`, is `True`, so `return \"review\"` runs.\n5) The function ends immediately without reaching `return \"retry\"`.\n6) The string `\"review\"` returned by the call is stored in `result`.",
+      "why_correct": "The correct choice is therefore `review`. `result` stores the string `\"review\"` from the executed `return`, not the input value 65.",
       "common_wrong_choice": {
         "choice": "retry",
-        "why_wrong": "`retry` is the final return value that is reached only when both if statements evaluate to false.",
-        "misread_step": "This is a case where the true result of the second condition was missed."
+        "why_wrong": "In this code, `\"retry\"` is returned only when both conditions are false. Since 65 satisfies the second condition, the function ends before that point.",
+        "misread_step": "This misreads execution as continuing after `return \"review\"`, allowing the final `return` to overwrite it. A `return` sends back a value and ends the function immediately."
       },
-      "takeaway": "A sequence of `if` statements followed by `return` statements **is evaluated from top to bottom and terminates at the first `return` that is executed**."
+      "takeaway": "Check conditions from top to bottom, but stop when a `return` runs. Its value becomes the call's result and is stored in `result`."
     },
     "target_statement": "if score >= 50:",
     "focus_span": "if score >= 50:",
@@ -460,18 +460,18 @@
       "common_mistake": "It’s easy to assume that if there are no errors, the function automatically returns `None`. However, because there is an explicit `return errors`, an empty list is returned."
     },
     "teaching_example": {
-      "code": "def validate(value):\n    errors = []\n    if value < 0:\n        errors.append(\"negative\")\n    return errors\nresult = validate(3)",
-      "walkthrough": "Since the condition is False, `errors` is an empty list and `result` is []."
+      "code": "def validate(value):\n    errors = []\n    if value < 0:\n        errors.append(\"negative\")\n    return errors\n\nresult = validate(3)",
+      "walkthrough": "1) `def validate(value):` defines the function. Its body does not run yet.\n2) Calling `validate(3)` runs the body with `value` set to 3.\n3) `errors = []` creates an empty error list.\n4) `value < 0` is `3 < 0`, which is False, so `errors.append(\"negative\")` is skipped.\n5) `return errors` is outside the if block, so it runs. It sends the current list, `[]`, back to the call site and ends the function.\n6) The returned list is stored in `result`. Its final value is `[]`, and nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "Since neither of the two `if` conditions raises an error, `errors` remains in the ``[]`` state and is returned as-is by the final `return` statement.",
-      "why_correct": "This is because the explicit return value is the current `errors` list.",
+      "step_by_step": "1) Calling `validate_card(...)` makes the supplied dictionary available as `card`.\n2) `errors = []` creates an empty list.\n3) The dictionary has an `\"id\"` key, so `\"id\" not in card` is False. `\"missing id\"` is not appended.\n4) `card.get(\"answer\")` returns `\"A\"`, and `card.get(\"choices\", [])` returns `[\"A\", \"B\"]`. Since the `\"choices\"` key exists, the default `[]` is not used.\n5) `\"A\"` is in `[\"A\", \"B\"]`, so the second condition is also False. `\"bad answer\"` is not appended either.\n6) `return errors`, outside both if blocks, runs. It returns the unchanged `[]` and ends the function.\n7) The call's return value is stored in `result`, so its final value is `[]`.",
+      "why_correct": "`return errors` returns the current `errors` list whether or not any errors were found. No items were appended in this call, so the correct answer is `[]`.",
       "common_wrong_choice": {
         "choice": "None",
-        "why_wrong": "There is an explicit `return errors` at the end of the function.",
-        "misread_step": "This is an instance where the \"no error\" state was confused with the \"no return\" state."
+        "why_wrong": "An empty list is still a value that can be returned. This function executes `return errors`, so it returns `[]`, not `None`.",
+        "misread_step": "This overlooks `return errors`, which still runs after both if bodies are skipped, and reads 'no errors' as 'no return value'."
       },
-      "takeaway": "Read a validation function as **accumulate errors by condition → return the final error collection**."
+      "takeaway": "Track how each condition changes the list, then follow how `return` sends that list back to the call site and the assignment stores it."
     },
     "target_statement": "return errors",
     "focus_span": "return errors",
@@ -515,10 +515,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "parser 함수 내부에서 JSON 문자열이 json.loads 호출을 거쳐 Python 데이터로 바뀌는 입력-출력 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`json.loads(text)` is a function call that converts a JSON-formatted string into a Python value.",
-      "how_to_read": "Distinguish between the format of the input text and the data type of the return value.",
-      "key_point": "A JSON object can be parsed as a structure corresponding to a Python dictionary, and a JSON array can be parsed as a structure corresponding to a Python list.",
-      "common_mistake": "`loads` It’s easy to assume that this directly opens a file path. Here, however, it receives a string that is already in memory."
+      "what_it_is": "Easy meaning: `json.loads(text)` reads text written in JSON and gives back a value Python can use.\nExact definition: `json.loads(text)` is a call expression that passes `text` as an argument to the `json.loads` function, which deserializes a JSON document into a Python object.",
+      "how_to_read": "Mental model: think of a function call as a request that supplies input and receives a result. `text` inside the parentheses is the input; the value of the whole call is the returned result.\nReading the code: `import json` imports the module, and `def` defines the function. Its body does not run yet. When the last line calls `parse_card_json(...)`, the string is bound to the parameter `text`. Inside the function, `json.loads(text)` reads that string and returns a dictionary, which `data` then refers to. `return data` sends the result back to the caller, and `card` refers to that same dictionary.",
+      "key_point": "Execution flow: string `'{\"id\": \"c1\", \"level\": 9}'` → `text` → `json.loads(text)` → dictionary `{'id': 'c1', 'level': 9}` → `data` → `return data` → `card`.\nThe top-level structure of this JSON document is a JSON object containing name-value pairs, so the default conversion produces a Python `dict`. Therefore, `card` has type `dict`; no code prints anything.",
+      "common_mistake": "It is easy to assume that `card` is also a `str` because the input is enclosed in quotes. But the input string and the call's return value are different. `json.loads(text)` does not change the original string itself; it returns a Python value obtained by interpreting its contents. Here, that dictionary passes through `return` and is bound to `card`."
     },
     "teaching_example": {
       "code": "import json\ntext = '{\"value\": 3}'\ndata = json.loads(text)",
@@ -576,10 +576,10 @@
     "primary_concept": "f_string",
     "reading_goal_internal": "escape된 title 값이 f-string의 중괄호에 삽입되어 최종 HTML 문자열이 만들어지는 과정을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "An f-string creates a new string by inserting the result of an expression into the `{expression}` position within a string.",
-      "how_to_read": "First, check the current value of the variable inside the curly braces, then combine it with the fixed text.",
-      "key_point": "This function does not use the original title directly but first uses the result from ``html.escape``.",
-      "common_mistake": "It’s easy to assume that the text `{title}` remains unchanged. In f-strings, it is replaced with the variable’s value."
+      "what_it_is": "Easy meaning: An f-string builds a string by placing values between fixed pieces of text. Exact definition: An f-string is a string literal prefixed with `f` that evaluates expressions inside curly braces and inserts their results into the string.",
+      "how_to_read": "Think of the braces as a blank to fill with a value. In `f\"<h2>{title}</h2>\"`, first check the current value of `title`, then read it with `<h2>` before it and `</h2>` after it.",
+      "key_point": "The value `\"A < B\"` from `card[\"title\"]` passes through `str()` to `escape()`, and the result `\"A &lt; B\"` is stored in `title`. The f-string inserts this value to produce `\"<h2>A &lt; B</h2>\"`, and this string returned by the function is stored in `html`.",
+      "common_mistake": "It is easy to think the text `{title}` stays unchanged. Because the string has the `f` prefix, the brace section is replaced with the value of `title`. Here, that value is not the original `\"A < B\"`, but `\"A &lt; B\"`, which has already passed through `escape()`."
     },
     "teaching_example": {
       "code": "title = \"Hello\"\nhtml = f\"<h1>{title}</h1>\"",

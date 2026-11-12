@@ -141,10 +141,10 @@
     "primary_concept": "literal",
     "reading_goal_internal": "tuple literal의 세 위치가 RDF subject-predicate-object 순서와 어떻게 대응하는지 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`(a, b, c)`, with comma-separated values inside parentheses, is a tuple literal.",
-      "how_to_read": "Check the values in the first, second, and third positions from the left, in that order.",
-      "key_point": "In RDF, these three positions are interpreted semantically as subject, predicate, and object, but in Python syntax itself, they are a tuple containing three strings.",
-      "common_mistake": "It is easy to interpret schematic representations like `LiDAR --produces--> PointCloud` as Python expressions. Actual Python code must be explicitly written using data structures such as tuples."
+      "what_it_is": "Easy meaning: A literal writes the value you want directly in the code.\nExact definition: A literal is notation that directly represents a value; here, a tuple expression containing three comma-separated string literals (often called a tuple literal) creates an ordered tuple.",
+      "how_to_read": "Imagine filling three numbered slots from left to right. Inside the parentheses on the first line, the first slot is \"LiDAR\", the second is \"produces\", and the third is \"PointCloud\". This tuple is given the name triple. The second line unpacks the tuple in the same order, binding its values to subject, predicate, and object_ respectively.",
+      "key_point": "The flow is: three strings → create a tuple → bind it to triple → unpack its values by position. The results are subject = \"LiDAR\", predicate = \"produces\", and object_ = \"PointCloud\", so the second value is \"produces\". Here the positions are interpreted as RDF subject–predicate–object, but the values Python handles are three strings.",
+      "common_mistake": "triple is a name referring to the tuple, not a value inside it. Also, \"produces\" is a quoted string, not a command to execute. The second line only binds these strings to names by position; it does not change the tuple's order."
     },
     "teaching_example": {
       "code": "triple = (\"Python\", \"used_for\", \"Automation\")",
@@ -803,14 +803,14 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "메서드 호출의 두 번째 positional argument가 SQL 문자열과 분리된 parameter tuple이라는 점을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A positional argument is a value passed to a parameter based on its order within the call parentheses.",
-      "how_to_read": "Distinguish between the first and second arguments and verify the values produced by each expression.",
-      "key_point": "In the context of SQL injection prevention, user values are passed as separate parameter arguments rather than being concatenated directly into the SQL string. The focus of the Python syntax is on the second positional argument.",
-      "common_mistake": "It’s easy to mistake `(user_name,)` for a string enclosed in parentheses by ignoring the comma. However, the presence of the comma indicates that it is a tuple with a single element."
+      "what_it_is": "Easy meaning: Values in a call go into input slots from left to right, and a collection can itself be passed as one value.\nExact definition: A positional argument is an actual value bound to a parameter according to its position in a call; here, `(user_name,)` is a one-item tuple passed as the second positional argument.",
+      "how_to_read": "Picture two input slots. In the final `execute` call, the first holds the SQL string and the second holds a collection of values. The `?` inside the string is an SQL value placeholder, not a Python argument. The whole expression `(user_name,)` is the second argument; its inner comma creates a tuple rather than separating another call argument.",
+      "key_point": "`user_name = \"alice\"` → evaluating `(user_name,)` produces `('alice',)` → this tuple is passed as the second argument → its item is bound to the SQL `?`. The passed value is therefore a tuple containing one string value, not the name itself or an integer id. The code has no print statement.",
+      "common_mistake": "Do not read `(user_name,)` as merely a parenthesized string. `(user_name)` is the string `\"alice\"`, but `(user_name,)` is the tuple `('alice',)`. Also, `cursor` is the object that owns the method, not the first explicitly supplied argument here."
     },
     "teaching_example": {
-      "code": "params = []\ndef run(query, values):\n    params.append(values)\n\nname = \"Mina\"\nrun(\"SELECT * FROM users WHERE name = ?\", (name,))",
-      "walkthrough": "The second positional argument is a tuple containing a single value, `name`."
+      "code": "def show(query, values):\n    print(values)\n\nname = \"Mina\"\nshow(\"SELECT id FROM users WHERE name = ?\", (name,))",
+      "walkthrough": "1) `def show(query, values):` defines a function with two input names. Its body does not run yet.\n2) `print(values)` is the body that will display the second input when called.\n3) `name = \"Mina\"` binds the string to `name`.\n4) In `show(...)`, the SQL string binds to `query` as the first argument. `(name,)` evaluates to `('Mina',)` and binds to `values` as the second argument.\n5) The body runs, and `print(values)` displays `('Mina',)`.\nFlow: `name` → `\"Mina\"` → `('Mina',)` → `values` → output. This function does not execute SQL; it only displays the tuple it receives."
     },
     "answer_explanation": {
       "step_by_step": "The first argument in the call is the query string, and `(user_name,)` is the second positional argument. The comma inside the parentheses makes it a one-item tuple.",
@@ -1349,10 +1349,10 @@
     "primary_concept": "await_expression",
     "reading_goal_internal": "async 함수 안에서 `await`가 coroutine의 완료를 기다리고 반환값을 이어받는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`await expression` is an expression used inside an async function to pause the current coroutine until the awaitable operation completes and then receive its result.",
-      "how_to_read": "First, check the coroutine call on the right, and read that ``await`` receives the result of that operation.",
-      "key_point": "The comparison of threads, processes, and asynchronous operations is in the context of concurrency, and the focus on Python syntax is that `await` is an expression that receives asynchronous results.",
-      "common_mistake": "`await` It’s easy to assume that it automatically creates a separate OS process. ``await`` itself is a syntax used in a coroutine to wait for an `awaitable` to complete."
+      "what_it_is": "Easy meaning: `await` lets you receive a task's returned value when it finishes and continue using that value.\nExact definition: An `await` expression obtains the completion result of an awaitable—an object that can be awaited—and may suspend the current coroutine (a task whose execution can pause and resume) while waiting.",
+      "how_to_read": "Mental model: Receive the finished work's result, rather than the work request itself, and pass it to the next step.\nIn this code, the two `async def` lines define functions. When the body of `main` later runs, `fetch_data()` creates a coroutine object, and `await` runs that coroutine to obtain its completion result. The `return \"done\"` in `fetch_data` determines that result, and `result = ...` stores the received value. Finally, `return result` returns that value.",
+      "key_point": "When the body of `main` runs, the flow is: `fetch_data()` → coroutine object → run it with `await` → `return \"done\"` → the `await` expression's value is the string `\"done\"` → store it in `result` → `main` also returns `\"done\"`.\nThis task has no intervening waiting code, so `await` does not necessarily suspend execution. The snippet itself only defines the functions; it does not run `main`.",
+      "common_mistake": "It is easy to read the call `fetch_data()` itself as immediately giving the string `\"done\"`. However, calling a function defined with `async def` first produces a coroutine object. Here, `await` obtains that coroutine's completion result, `\"done\"`, so `result` stores the string, not a function name or a coroutine object."
     },
     "teaching_example": {
       "code": "async def get_name():\n    return \"kim\"\n\nasync def main():\n    name = await get_name()\n    return name",
@@ -1657,14 +1657,14 @@
       "walkthrough": "Reads the available range, which is the value of the `window` key."
     },
     "answer_explanation": {
-      "step_by_step": "The value of the `context_window` key describes the entire token range of a single request.",
-      "why_correct": "This is because it corresponds exactly to the \"range of tokens that can be processed at once\" as asked in the question.",
+      "step_by_step": "1) The first assignment creates a dictionary pairing concept names with description strings and binds it to `concepts`.\n2) `concepts[\"context_window\"]` uses `\"context_window\"` like a label to find the value associated with that key. It does not look up a position number.\n3) The lookup returns `\"total token range available for one request\"`.\n4) This string is bound to `meaning`. There is no print statement, so nothing is displayed.\n5) This description means the total token range available for a single request, so the concept is Context window.",
+      "why_correct": "The description associated with the `\"context_window\"` key matches the question's range of tokens that can be processed in a single request. Therefore, the answer is Context window.",
       "common_wrong_choice": {
         "choice": "Prompt",
-        "why_wrong": "A prompt is the actual instruction or input provided to the model.",
-        "misread_step": "This is a case of confusing the content being passed with the concept of processing capacity."
+        "why_wrong": "In this dictionary, the description for `\"prompt\"` is `\"model instructions and input\"`, meaning the instructions and input provided to the model. It does not describe a token range.",
+        "misread_step": "This confuses the content provided to the model with the token range for one request, rather than following the key `\"context_window\"` inside the brackets to its value."
       },
-      "takeaway": "In LLM design, the **prompt content and context window size are treated separately**."
+      "takeaway": "Trace a dictionary lookup as **identify the dictionary → find the key inside the brackets → read its associated value**. Here, `meaning` holds the concept's description string, not its name."
     },
     "target_statement": "meaning = concepts[\"context_window\"]",
     "focus_span": "concepts[\"context_window\"]",
@@ -1717,14 +1717,14 @@
       "walkthrough": "The value of the `use_source` role is `Grounding`."
     },
     "answer_explanation": {
-      "step_by_step": "The `role` key is linked to the `grounding` string.",
-      "why_correct": "This is because “grounding” refers to the process of linking this answer to external evidence.",
+      "step_by_step": "1) First, a dictionary mapping three roles to concept names is created and assigned to `roles`.\n2) `roles[\"bind_answer_to_external_evidence\"]` uses the string inside the brackets as a key to look up the corresponding value.\n3) The value associated with this key in the dictionary is the string `\"Grounding\"`.\n4) This value is assigned to `concept`. The final value of `concept` is `\"Grounding\"`; there is no code that prints it.",
+      "why_correct": "The role described in the question—linking answers to external evidence—corresponds to the key `\"bind_answer_to_external_evidence\"`. Looking up this key returns `\"Grounding\"`, so the correct answer is Grounding.",
       "common_wrong_choice": {
         "choice": "Citation",
-        "why_wrong": "A citation serves more to indicate the source of the information to the user.",
-        "misread_step": "This is an example where the use of evidence and the presentation of evidence are treated as the same concept."
+        "why_wrong": "In this dictionary, `\"Citation\"` is associated with `\"show_source_location\"`. The key being looked up represents tying an answer to external evidence, not showing the evidence's location.",
+        "misread_step": "This confuses tying an answer to evidence with showing where evidence is located, instead of checking the exact key inside the brackets."
       },
-      "takeaway": "In RAG, **grounding and citation are distinguished by their respective roles**."
+      "takeaway": "Read a dictionary lookup as `identify the dictionary → find the key inside the brackets → retrieve its associated value`. Here, `\"Grounding\"` is retrieved and assigned to `concept`."
     },
     "target_statement": "concept = roles[\"bind_answer_to_external_evidence\"]",
     "focus_span": "roles[\"bind_answer_to_external_evidence\"]",
@@ -1896,14 +1896,14 @@
       "walkthrough": "Since the value of the `slow_change` key is `Drift`, its name is `Drift`."
     },
     "answer_explanation": {
-      "step_by_step": "Since the `slow_error_change` key is linked to `Drift`, the lookup result is `Drift`.",
-      "why_correct": "This is because drift refers to an error that gradually shifts over time.",
+      "step_by_step": "1) The first assignment creates a dictionary pairing phenomenon-description keys with concept-name values and binds it to `terms`.\n2) On the right side of `phenomenon = ...`, Python evaluates `terms[\"slow_error_change\"]`. The string inside the brackets is the key to look up.\n3) The dictionary contains the pair `\"slow_error_change\": \"Drift\"`, so the lookup returns the string `\"Drift\"`.\n4) That value is bound to `phenomenon`. Its final value is `\"Drift\"`; the code does not print anything.",
+      "why_correct": "The question's error that gradually accumulates over time corresponds to `\"slow_error_change\"` in this card. The value associated with that key is `\"Drift\"`, so the answer is Drift.",
       "common_wrong_choice": {
         "choice": "Noise",
-        "why_wrong": "Noise is typically an error component that varies irregularly over a short period of time.",
-        "misread_step": "This is a case where short-term random variations and long-term cumulative changes were not distinguished."
+        "why_wrong": "`\"Noise\"` is associated with the key `\"random_short_error\"`. This code looks up `\"slow_error_change\"`, so it does not return Noise.",
+        "misread_step": "This focuses only on both being errors and misses that the key specified in brackets refers to slowly changing error, not short-term random error."
       },
-      "takeaway": "Sensor errors are interpreted by **distinguishing between the temporal characteristics of noise and drift**."
+      "takeaway": "Read dictionary lookup as **identify the key inside the brackets → find its associated value → return that value**. Here the value flow is `\"slow_error_change\"` → `\"Drift\"` → `phenomenon`."
     },
     "target_statement": "phenomenon = terms[\"slow_error_change\"]",
     "focus_span": "terms[\"slow_error_change\"]",

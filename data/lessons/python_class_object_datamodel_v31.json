@@ -148,10 +148,10 @@
     "primary_concept": "attribute_access",
     "reading_goal_internal": "메서드 안에서 self가 현재 인스턴스를 가리키고 점 접근이 그 객체의 상태를 읽는 흐름을 이해한다.",
     "concept_explanation": {
-      "what_it_is": "`object.attribute`는 객체가 가진 속성을 읽는 attribute access입니다. 인스턴스 메서드의 `self`는 그 메서드를 호출한 현재 객체를 가리킵니다.",
-      "how_to_read": "`self.seen`은 현재 Progress 객체 안의 `seen` 속성을 읽는다고 해석합니다.",
-      "key_point": "`seen`은 전역 상태가 아니라 **현재 self 인스턴스에 붙어 있는 속성**입니다.",
-      "common_mistake": "`self`를 특별한 전역 객체라고 생각하기 쉽습니다. 실제로는 메서드를 호출한 각 인스턴스가 self로 전달됩니다."
+      "what_it_is": "쉽게 말하면: `self.seen`은 지금 다루는 Progress 객체에 붙어 있는 `seen`이라는 값을 가리킵니다.\n정확한 정의: 속성 접근(attribute access) 표현식 `object.attribute`는 객체의 해당 이름 속성을 조회하며, 여기서 `self.seen`은 `self`가 가리키는 현재 인스턴스의 `seen` 속성 값을 읽습니다.",
+      "how_to_read": "각 Progress 객체에 `seen`이라는 이름표가 붙은 보관 칸이 있다고 생각하세요. `self`는 현재 객체를 가리키고, `.seen`은 그 객체의 칸을 지정합니다. `__init__`의 `self.seen = set()`은 빈 집합을 만들어 이 속성에 저장합니다. `mark_seen`의 `self.seen.add(card_id)`는 같은 속성에서 집합을 읽은 뒤, 그 집합에 `card_id`를 추가합니다.",
+      "key_point": "호출될 때의 흐름: 인스턴스 초기화 → `set()`으로 빈 집합 생성 → `self.seen`에 저장. 이후 `mark_seen`이 호출되면 현재 인스턴스 → `seen` 속성의 집합 조회 → `add(card_id)`로 그 집합에 항목 추가 순서입니다. 따라서 `self.seen`은 현재 Progress 인스턴스의 `seen` 속성을 가리킵니다. 제시된 코드 자체는 클래스만 정의하므로 아직 인스턴스를 만들거나 항목을 추가하지 않으며, 출력도 없습니다.",
+      "common_mistake": "`self.seen`을 전역 변수 `seen`으로 읽지 마세요. 점 왼쪽의 `self`가 어느 객체의 속성인지 정합니다. `self`는 특별한 전역 객체가 아니라, 일반적인 인스턴스 메서드 호출에서 해당 인스턴스를 전달받는 매개변수 이름입니다. 여기서는 각 인스턴스가 초기화될 때 별도의 빈 집합을 자신의 `seen` 속성으로 받습니다."
     },
     "teaching_example": {
       "code": "class Basket:\n    def __init__(self):\n        self.items = []\n\n    def count(self):\n        return len(self.items)",
@@ -219,14 +219,14 @@
       "walkthrough": "두 객체는 같은 `name` 속성을 가지지만 `u1.name`은 `\"Ana\"`, `u2.name`은 `\"Bo\"`처럼 값이 따로 저장됩니다."
     },
     "answer_explanation": {
-      "step_by_step": "생성자 호출에서 `a`와 `b`의 title 속성에 서로 다른 문자열이 저장됩니다. 이후 각 객체에서 title을 읽으면 저장된 값이 그대로 나옵니다.",
-      "why_correct": "인스턴스 attribute는 각 객체에 따로 저장될 수 있기 때문입니다.",
+      "step_by_step": "1) `class Card`는 클래스를 정의합니다. `__init__` 안의 대입은 각 객체를 초기화할 때 실행됩니다.\n2) `a = Card(\"c1\", \"A\")`는 새 객체를 만듭니다. 초기화 중 `self`는 이 객체를 가리키며, `self.card_id = card_id`는 \"c1\"을, `self.title = title`은 \"A\"를 저장합니다. `a`는 이 객체를 가리킵니다.\n3) `b = Card(\"c2\", \"B\")`는 별도의 객체를 만듭니다. 이번에는 `self`가 새 객체를 가리키므로 그 객체에 `card_id`는 \"c2\", `title`은 \"B\"로 저장됩니다. `a.title`은 바뀌지 않습니다.\n4) `title_a = a.title`은 `a`가 가리키는 객체의 `title` 값 \"A\"를 읽어 `title_a`에 대입합니다.\n5) `title_b = b.title`은 `b`가 가리키는 객체의 `title` 값 \"B\"를 읽어 `title_b`에 대입합니다.\n결과: `title_a`는 \"A\", `title_b`는 \"B\"입니다.",
+      "why_correct": "`a.title`과 `b.title`은 이름이 같은 속성이지만 서로 다른 객체에서 값을 읽습니다. 각 객체에 저장된 값이 각각 \"A\"와 \"B\"이므로 정답은 'A와 B'입니다.",
       "common_wrong_choice": {
         "choice": "둘 다 A",
-        "why_wrong": "`b`는 별도 인스턴스로 생성되며 생성자에서 title에 `\"B\"`를 저장합니다.",
-        "misread_step": "클래스 공유와 인스턴스 상태 공유를 같은 것으로 본 경우입니다."
+        "why_wrong": "`b`의 초기화에서는 `title` 인자로 \"B\"를 받아 `b`가 가리키는 객체에 저장합니다. 따라서 `b.title`을 읽으면 \"A\"가 아니라 \"B\"입니다.",
+        "misread_step": "두 객체가 같은 클래스로 만들어졌다는 이유로 `self.title`도 하나의 공유된 저장 공간이라고 생각한 것입니다. 여기서 `self`는 각 초기화 대상 객체를 가리킵니다."
       },
-      "takeaway": "같은 클래스라도 **인스턴스별 attribute 값은 서로 다를 수 있습니다.**"
+      "takeaway": "점 앞의 객체부터 확인하세요. 같은 속성 이름이라도 `a.title`과 `b.title`은 각 객체에 저장된 값을 따로 읽습니다."
     },
     "target_statement": "title_a = a.title",
     "focus_span": "a.title",
@@ -330,14 +330,14 @@
     "primary_concept": "decorator",
     "reading_goal_internal": "class 바로 위의 decorator가 아래 class definition에 적용된다는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "class 바로 위의 `@decorator`는 아래 class 객체를 decorator 함수로 처리하는 class decorator 문법입니다.",
-      "how_to_read": "`@...` 줄과 바로 다음 class definition을 한 묶음으로 봅니다.",
-      "key_point": "`@dataclass`는 아래 `Card` class에 적용됩니다.",
-      "common_mistake": "decorator가 첫 field인 id에만 적용된다고 생각하기 쉽습니다. class 전체에 적용됩니다."
+      "what_it_is": "쉽게 말하면: `@dataclass`는 바로 아래에 정의한 클래스에 데이터 처리를 위한 기능을 붙입니다.\n정확한 정의: 클래스 데코레이터는 생성된 클래스 객체를 인자로 받아 호출되고, 그 반환값이 클래스 이름에 연결되도록 하는 문법입니다.",
+      "how_to_read": "클래스를 만든 뒤 데코레이터에게 넘겨 처리받는 흐름으로 생각하세요. 이 카드에서는 `@dataclass` 바로 아래의 `class Card:`가 대상입니다. 들여쓴 `id: str`, `level: int`, `title: str`는 그 클래스 안의 필드 선언입니다.",
+      "key_point": "클래스 본문 실행 → `Card` 클래스 객체 생성 → `dataclass`에 전달 → 반환값을 `Card`라는 이름에 연결하는 순서입니다. 여기서 `dataclass`는 필드 정보를 이용해 메서드를 추가하고 같은 클래스 객체를 반환합니다. 따라서 직접 적용되는 대상은 `Card class`입니다. 인스턴스를 만들거나 화면에 출력하는 코드는 없습니다.",
+      "common_mistake": "`id`가 첫 번째 필드라고 해서 `@dataclass`가 `id`에만 적용되는 것은 아닙니다. 필드들은 데코레이터가 살펴보는 정보이고, 직접 전달받는 대상은 클래스 객체입니다. 위의 `import` 문에 적용되는 것도 아닙니다."
     },
     "teaching_example": {
       "code": "from dataclasses import dataclass\n\n@dataclass\nclass User:\n    name: str",
-      "walkthrough": "`@dataclass`는 아래 User class definition 전체에 적용됩니다."
+      "walkthrough": "1. `from dataclasses import dataclass`: 데코레이터로 사용할 `dataclass`를 가져옵니다.\n2. `@dataclass`: 바로 뒤에 정의할 `User` 클래스를 `dataclass`로 처리하도록 지정합니다. 이 줄에서 처리가 이미 끝나는 것은 아닙니다.\n3. `class User:`: 클래스 본문을 실행하고 `User` 클래스 객체를 만듭니다.\n4. `name: str`: 본문에서 `name`의 타입 주석을 기록합니다. `dataclass`는 이를 필드 정보로 사용하며, 이 줄은 이름 값을 대입하거나 사용자를 만들지 않습니다.\n5. 클래스 객체가 만들어지면 `dataclass`가 그 객체를 받아 처리하고 같은 객체를 반환합니다. 반환값이 `User`라는 이름에 연결됩니다.\n결과: `name` 필드를 가진 데이터 클래스 `User`가 정의됩니다. 데코레이터의 직접 대상은 `name` 필드가 아니라 `User` 클래스이며, 화면 출력은 없습니다."
     },
     "answer_explanation": {
       "step_by_step": "`@dataclass` 바로 아래에 `class Card:`가 있으므로 decorator는 Card class definition에 적용됩니다.",
@@ -389,24 +389,24 @@
     "primary_concept": "type_annotation",
     "reading_goal_internal": "class field의 이름과 `list[str]` annotation을 분리해 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`name: type`은 변수나 field가 어떤 타입의 값을 기대하는지 표시하는 type annotation입니다.",
-      "how_to_read": "콜론 왼쪽 이름과 오른쪽 타입 표현식을 구분합니다.",
-      "key_point": "`list[str]`은 리스트의 각 항목을 문자열로 기대한다는 타입 표현입니다.",
-      "common_mistake": "`choices` 자체가 str 하나라고 생각하기 쉽습니다. 바깥 타입은 list입니다."
+      "what_it_is": "쉽게 말하면: 이름 옆에 어떤 종류의 값을 담을지 적어 둔 안내표입니다.\n정확한 정의: 타입 어노테이션(type annotation)은 이름에 기대하는 타입을 표시하는 표기이며, `choices: list[str]`은 choices 필드가 문자열을 요소로 갖는 리스트를 기대함을 나타냅니다.",
+      "how_to_read": "리스트를 항목을 담는 상자라고 생각하세요. `choices`는 상자의 이름이고, 콜론 오른쪽 `list[str]`은 상자와 내용물의 종류를 설명하는 표지입니다. 바깥 `list`를 먼저 읽어 '리스트', 안쪽 `str`을 읽어 '각 요소는 문자열'로 합칩니다. 예를 들어 `['Yes', 'No']`는 이 설명에 맞는 값입니다.",
+      "key_point": "클래스 본문의 `choices: list[str]`은 타입 정보를 선언하고, `@dataclass`는 이처럼 어노테이션이 있는 이름을 필드로 인식합니다. 이 줄은 리스트를 만들거나 choices에 값을 대입하지 않습니다. 코드에는 인스턴스 생성이나 출력도 없으며, 읽어 낼 타입 구조는 '문자열 리스트'입니다.",
+      "common_mistake": "`str`만 보고 문자열 하나라고 읽거나, 어노테이션이 문자열만 허용하도록 실행 중 자동 검사한다고 생각하기 쉽습니다. `list[str]`의 바깥 타입은 리스트이며, 이 어노테이션 자체는 요소의 타입을 강제하지 않습니다. 리스트의 길이도 지정하지 않으므로 빈 리스트도 가능합니다."
     },
     "teaching_example": {
       "code": "class Quiz:\n    tags: list[str]",
       "walkthrough": "tags는 문자열 하나가 아니라 문자열 여러 개를 담는 list로 annotation되어 있습니다."
     },
     "answer_explanation": {
-      "step_by_step": "`list[str]`에서 list는 컨테이너 타입이고 str은 그 안 항목 타입입니다.",
-      "why_correct": "Python의 generic type annotation이 리스트 요소 타입을 대괄호 안에 표현하기 때문입니다.",
+      "step_by_step": "1. `from dataclasses import dataclass`는 클래스에 사용할 데코레이터를 가져옵니다.\n2. `class Card:`의 본문에서 필드 이름과 타입 어노테이션을 선언합니다.\n3. `choices: list[str]`에서 콜론 왼쪽 `choices`는 필드 이름입니다.\n4. 오른쪽의 바깥 `list`는 값 전체가 리스트임을, 안쪽 `str`은 각 요소에 기대하는 타입이 문자열임을 나타냅니다.\n5. 클래스가 정의되면 `@dataclass`가 이 선언을 필드로 인식합니다. 실제 choices 값은 여기서 만들어지지 않으며, 질문에서 묻는 타입 구조는 '문자열 리스트'입니다.",
+      "why_correct": "`list[str]`은 '문자열을 요소로 갖는 리스트'를 나타내는 타입 표기입니다. 따라서 정답은 '문자열 리스트'입니다. 이는 실제로 저장된 값을 검사한 결과가 아니라 선언된 타입 구조를 읽은 결과입니다.",
       "common_wrong_choice": {
         "choice": "문자열 하나",
-        "why_wrong": "str만 적힌 것이 아니라 `list[str]`로 감싸져 있습니다.",
-        "misread_step": "안쪽 요소 타입만 보고 바깥 container 타입을 놓친 경우입니다."
+        "why_wrong": "문자열 하나를 기대한다면 `choices: str`이라고 씁니다. 여기서는 바깥에 `list`가 있으므로 전체 값은 리스트를 기대합니다.",
+        "misread_step": "타입 표현식에서 안쪽 `str`만 읽고 전체 구조를 결정하는 바깥 `list`를 건너뛴 것입니다."
       },
-      "takeaway": "generic annotation은 **바깥 container 타입과 안쪽 element 타입**을 함께 읽습니다."
+      "takeaway": "`이름: list[요소 타입]`은 이름 → 리스트 → 각 요소의 타입 순서로 읽습니다. 타입 선언과 실제 값의 생성·검사는 구분하세요."
     },
     "target_statement": "choices: list[str]",
     "focus_span": "choices: list[str]",
@@ -459,14 +459,14 @@
       "walkthrough": "opened와 closed 두 field가 하나의 Session class에 묶여 있습니다."
     },
     "answer_explanation": {
-      "step_by_step": "class body의 annotation 줄은 seen, correct, confused 세 개입니다.",
-      "why_correct": "세 줄 모두 같은 Progress class body에 직접 정의돼 있기 때문입니다.",
+      "step_by_step": "`from dataclasses import dataclass`는 데코레이터를 가져오는 줄이며 상태 field가 아닙니다.\n↓\n`class Progress:`의 들여쓴 본문에서 field 이름을 확인합니다.\n↓\n`seen: set[str]`는 첫 번째 field `seen`을 선언합니다.\n↓\n`correct: set[str]`는 두 번째 field `correct`를 선언합니다.\n↓\n`confused: set[str]`는 세 번째 field `confused`를 선언합니다.\n↓\n클래스가 만들어진 뒤 `@dataclass`가 이 세 선언을 field로 처리합니다.\n↓\n직접 정의된 상태 field는 총 3개입니다.",
+      "why_correct": "세 선언은 모두 같은 `Progress` 본문에 있으며, 각각 서로 다른 field 이름을 가집니다. `set[str]`는 각 field의 타입 표기이지 추가 field가 아닙니다. 따라서 정답은 `3개`입니다.",
       "common_wrong_choice": {
         "choice": "2개",
-        "why_wrong": "confused field를 빠뜨린 값입니다.",
-        "misread_step": "class body의 field를 끝까지 세지 않은 경우입니다."
+        "why_wrong": "`seen`과 `correct`뿐 아니라 마지막 줄의 `confused`도 같은 들여쓰기 수준에서 선언된 field이므로 포함해야 합니다.",
+        "misread_step": "클래스 본문을 끝까지 확인하지 않고 앞의 두 field만 센 경우입니다."
       },
-      "takeaway": "class 모델은 **이름 → body의 field/메서드 → 하나의 타입으로 묶인 구조**로 읽습니다."
+      "takeaway": "이 코드에서는 클래스 본문의 `이름: 타입` 선언을 하나씩 세면 됩니다. field 수를 세는 것이지 집합 안 원소 수를 세는 것이 아니며, 타입 표기만으로 빈 집합이 생성되지는 않습니다."
     },
     "target_statement": "class Progress:",
     "focus_span": "class Progress:",
@@ -510,10 +510,10 @@
     "primary_concept": "attribute_access",
     "reading_goal_internal": "같은 의미의 title 값을 dict와 object에서 서로 다른 접근 문법으로 읽는 차이를 비교한다.",
     "concept_explanation": {
-      "what_it_is": "`obj.attr`은 object instance의 attribute를 읽는 문법입니다.",
-      "how_to_read": "점 왼쪽 객체를 확인하고 그 객체에 저장된 attr 값을 찾습니다.",
-      "key_point": "dict는 key lookup `card_dict['title']`, object는 attribute access `card_obj.title`로 같은 역할의 값을 읽을 수 있습니다.",
-      "common_mistake": "object에도 `card_obj['title']`이 자동으로 된다고 생각하기 쉽습니다. 일반 object와 dict는 접근 문법이 다릅니다."
+      "what_it_is": "쉽게 말하면: `card_obj.title`은 `card_obj`에 붙어 있는 `title`이라는 이름의 값을 읽습니다.\n정확한 정의: 속성 접근(attribute access) `obj.attr`은 객체의 속성 조회 규칙에 따라 해당 이름의 값을 조회하는 표현식이며, 이 코드에서는 인스턴스에 저장한 `title` 값을 읽습니다.",
+      "how_to_read": "객체에 이름표가 붙은 칸이 있다고 생각하세요. 점 왼쪽은 어떤 객체인지, 오른쪽은 어떤 이름의 칸을 읽는지 알려줍니다.\n`class Card`는 객체를 만드는 클래스를 정의합니다. `__init__`의 `self`는 초기화 중인 객체를 가리키며, `self.title = title`은 전달받은 값을 그 객체의 `title` 속성에 저장합니다.\n`card_dict`를 만드는 줄과 `dict_title = card_dict[\"title\"]`은 딕셔너리에서 키로 값을 읽는 별도 흐름입니다. 이후 `card_obj = Card(\"object 카드\")`가 객체를 만들고 초기화하며, 마지막 `card_obj.title`은 그 객체의 `title` 속성을 읽습니다.",
+      "key_point": "`Card(\"object 카드\")` 호출 → `__init__`의 `title`에 `\"object 카드\"` 전달 → `self.title = title`로 객체에 저장 → `card_obj.title`로 조회 → `object_title`에 `\"object 카드\"` 저장.\n반면 `card_dict[\"title\"]`이 읽는 값은 `\"dict 카드\"`입니다. 두 값은 이름이 비슷해도 서로 다른 곳에서 읽습니다.",
+      "common_mistake": "`title`이라는 이름이 같다고 딕셔너리의 값을 읽거나 문자열 `\"title\"` 자체를 결과로 얻는 것은 아닙니다. `card_obj.title`은 지정된 객체의 속성 값을 읽습니다. 또한 이 `Card` 클래스는 대괄호 접근을 정의하지 않았으므로 `card_obj[\"title\"]`로 바꾸면 같은 값을 읽는 것이 아니라 `TypeError`가 발생합니다."
     },
     "teaching_example": {
       "code": "class User:\n    def __init__(self, name):\n        self.name = name\n\nuser_dict = {\"name\": \"Kim\"}\nuser_obj = User(\"Lee\")\na = user_dict[\"name\"]\nb = user_obj.name",
@@ -578,18 +578,18 @@
       "common_mistake": "from_dict가 원본 dict를 그대로 반환한다고 생각하기 쉽습니다."
     },
     "teaching_example": {
-      "code": "class User:\n    def __init__(self,name): self.name=name\n    @classmethod\n    def from_dict(cls,data):\n        return cls(name=data[\"name\"])\nuser=User.from_dict({\"name\":\"A\"})",
-      "walkthrough": "dict의 name value를 constructor에 전달해 User 객체를 만듭니다."
+      "code": "class User:\n    def __init__(self, name):\n        self.name = name\n\n    @classmethod\n    def from_dict(cls, data):\n        return cls(name=data[\"name\"])\n\nuser = User.from_dict({\"name\": \"A\"})\nprint(user.name)",
+      "walkthrough": "딕셔너리에서 값을 꺼내 새 객체를 만드는 흐름입니다.\n1) `class User:`는 User 클래스를 정의합니다.\n2) `def __init__(self, name):`는 새 객체를 초기화할 메서드를 정의합니다. 실행되면 `self.name = name`이 전달받은 값을 객체의 name 속성에 저장합니다.\n3) `@classmethod`는 from_dict를 클래스 메서드로 만듭니다. `def from_dict(cls, data):`는 클래스와 딕셔너리를 받을 매개변수를 정의합니다. 이때 메서드 본문은 아직 실행되지 않습니다.\n4) `User.from_dict({\"name\": \"A\"})`를 호출하면 cls에는 User가, data에는 이 딕셔너리가 전달됩니다.\n5) `data[\"name\"]`에서 \"A\"를 꺼냅니다. 따라서 `cls(name=data[\"name\"])`는 여기서 `User(name=\"A\")`를 호출하는 것과 같습니다. 새 User 객체가 만들어지고 __init__이 그 객체의 name을 \"A\"로 설정합니다.\n6) `return`이 새 객체를 돌려주고 user가 그 객체를 가리킵니다.\n7) `print(user.name)`은 A를 출력합니다.\n\n실행 흐름: 딕셔너리 → \"A\" 조회 → User(name=\"A\") 호출 → 새 객체 반환 → user에 연결 → A 출력. 원본 딕셔너리를 그대로 반환하는 것이 아닙니다."
     },
     "answer_explanation": {
-      "step_by_step": "data의 두 field가 cls constructor arguments가 되고 새 instance가 반환됩니다.",
-      "why_correct": "factory method가 외부 mapping을 domain object 생성 입력으로 변환하기 때문입니다.",
+      "step_by_step": "1) dataclass를 가져오고 Card 클래스를 정의합니다. `@dataclass`는 선언된 id와 title 필드를 받아 초기화하는 __init__ 메서드를 생성합니다.\n2) 마지막 줄의 `Card.from_dict({\"id\": \"c1\", \"title\": \"Dict 읽기\"})`를 호출합니다. `@classmethod` 때문에 cls에는 Card가 전달되고, data에는 이 딕셔너리가 전달됩니다.\n3) `data[\"id\"]`는 \"c1\", `data[\"title\"]`은 \"Dict 읽기\"입니다.\n4) 따라서 초점 표현식 `cls(id=data[\"id\"], title=data[\"title\"])`는 여기서 `Card(id=\"c1\", title=\"Dict 읽기\")`를 호출하는 것과 같습니다.\n5) 이 호출이 새 Card 객체를 만들고 두 필드를 초기화합니다. `return`이 그 객체를 돌려주며 card가 그 객체를 가리킵니다.\n결과: card.id는 \"c1\", card.title은 \"Dict 읽기\"입니다. print 호출은 없으므로 화면 출력은 없습니다.",
+      "why_correct": "from_dict는 딕셔너리의 값을 꺼내 Card 생성 호출의 인자로 전달하고 새 Card 객체를 반환합니다. 따라서 정답은 'dict를 Card 객체로 바꾼다'입니다. 원본 딕셔너리 자체가 Card로 변하거나 그대로 반환되는 것은 아닙니다.",
       "common_wrong_choice": {
         "choice": "Git 로그를 읽는다",
-        "why_wrong": "Git 관련 호출이 전혀 없고 constructor를 호출합니다.",
-        "misread_step": "factory method의 data conversion 역할을 놓친 경우입니다."
+        "why_wrong": "코드는 딕셔너리의 두 키를 조회하고 Card를 호출할 뿐입니다. Git 로그를 읽는 동작은 없습니다.",
+        "misread_step": "메서드 이름만 보고 역할을 추측하고, `data[...]`에서 꺼낸 값이 `cls(...)`의 인자로 전달되어 새 객체가 만들어지는 단계를 놓친 경우입니다."
       },
-      "takeaway": "from_dict는 **mapping field lookup → constructor call → object**로 읽습니다."
+      "takeaway": "`from_dict`의 본문을 따라 읽으세요: 딕셔너리 값 조회 → 클래스 호출의 인자로 전달 → 새 객체 생성 및 반환. 이 코드에서는 cls가 Card입니다."
     },
     "target_statement": "return cls(id=data[\"id\"], title=data[\"title\"])",
     "focus_span": "cls(id=data[\"id\"], title=data[\"title\"])",
@@ -633,24 +633,24 @@
     "primary_concept": "literal",
     "reading_goal_internal": "object state를 JSON/API에 적합한 dict 구조로 바꾸는 to_dict 반환값을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`{'id': self.id, 'title': self.title}`는 object attribute 값을 넣어 만드는 dict literal입니다.",
-      "how_to_read": "각 dict key가 어떤 instance attribute에서 값을 가져오는지 봅니다.",
-      "key_point": "to_dict는 domain object를 serialization-friendly mapping으로 바꾸는 흔한 패턴입니다.",
-      "common_mistake": "to_dict가 원본 객체를 삭제하거나 dict class로 바꿔버린다고 생각하기 쉽습니다. 새 dict 값을 반환합니다."
+      "what_it_is": "쉽게 말하면: 객체에 들어 있는 값을 이름표가 붙은 목록으로 모으는 표현입니다.\n정확한 정의: `{\"id\": self.id, \"title\": self.title}`는 키와 값의 쌍을 지정하여 새 딕셔너리(dict)를 만드는 딕셔너리 리터럴입니다.",
+      "how_to_read": "각 항목을 ‘이 이름표에 이 값을 연결한다’고 생각하세요. 콜론 왼쪽의 `\"id\"`와 `\"title\"`은 키이고, 오른쪽의 `self.id`와 `self.title`은 현재 객체에서 읽는 값입니다.",
+      "key_point": "`card.to_dict()`에서 객체의 값 `\"c1\"`, `\"Title\"`을 읽어 `{\"id\": \"c1\", \"title\": \"Title\"}`을 만듭니다. `return`이 이 새 dict를 반환하고, `data`가 그 값을 가리킵니다.",
+      "common_mistake": "`to_dict()`가 원래 객체 자체를 dict로 바꾸거나 삭제한다고 읽지 마세요. 이 코드는 객체의 속성을 읽어 새 dict를 반환하며, `card`는 그대로 Card 객체를 가리킵니다."
     },
     "teaching_example": {
-      "code": "class Item:\n    def __init__(self,id): self.id=id\n    def to_dict(self): return {\"id\":self.id}\nitem=Item(\"x\")\ndata=item.to_dict()",
-      "walkthrough": "instance의 id를 새 dict에 복사해 반환합니다."
+      "code": "class Item:\n    def __init__(self, item_id):\n        self.id = item_id\n\n    def to_dict(self):\n        return {\"id\": self.id}\n\nitem = Item(\"x\")\ndata = item.to_dict()",
+      "walkthrough": "`class Item`은 Item 클래스를 정의합니다. `__init__`의 `self.id = item_id`는 생성할 때 받은 값을 객체의 `id`에 저장합니다. `to_dict`의 `return {\"id\": self.id}`는 호출되면 속성 값을 읽어 새 dict를 반환합니다.\n`item = Item(\"x\")`를 실행하면 `item.id`는 `\"x\"`가 됩니다. 다음 줄에서 `item.to_dict()`를 호출하면 `self.id`가 `\"x\"`로 평가되어 `{\"id\": \"x\"}`가 만들어집니다. 이 값이 반환되어 `data`에 연결됩니다. 출력문은 없습니다."
     },
     "answer_explanation": {
-      "step_by_step": "self.id와 self.title이 새 dict의 value가 되어 반환됩니다.",
-      "why_correct": "dict는 JSON serialization과 API response에 쉽게 사용할 수 있는 구조이기 때문입니다.",
+      "step_by_step": "1. `Card(\"c1\", \"Title\")`이 객체를 만들고 `__init__`이 `self.id`에 `\"c1\"`, `self.title`에 `\"Title\"`을 저장합니다.\n2. `card.to_dict()`를 호출하면 `self`는 그 Card 객체를 가리킵니다.\n3. 딕셔너리 리터럴에서 `self.id`와 `self.title`을 읽어 `{\"id\": \"c1\", \"title\": \"Title\"}`을 만듭니다.\n4. `return`이 새 dict를 반환하고 `data`가 그 값을 가리킵니다.",
+      "why_correct": "따라서 ‘객체를 dict 형태로 바꾼다’가 정답입니다. 여기서 바꾼다는 것은 객체 자체의 자료형을 바꾸는 것이 아니라, 객체의 속성을 담은 새 dict를 만든다는 뜻입니다.",
       "common_wrong_choice": {
         "choice": "dict를 삭제한다",
-        "why_wrong": "오히려 새 dict를 생성해 반환합니다.",
-        "misread_step": "serialization과 deletion을 혼동한 경우입니다."
+        "why_wrong": "이 코드는 dict를 삭제하지 않고, `{...}`로 새 dict를 만들어 반환합니다.",
+        "misread_step": "`return {\"id\": self.id, \"title\": self.title}`에서 중괄호 표현식이 dict를 생성하고 `return`이 그 값을 돌려준다는 점을 놓친 것입니다."
       },
-      "takeaway": "to_dict는 **object attributes → mapping → serialization boundary**로 읽습니다."
+      "takeaway": "키는 콜론 왼쪽, 가져올 값은 오른쪽입니다. 객체 속성 읽기 → 새 dict 생성 → 반환 → `data`에 연결 순서로 읽으세요."
     },
     "target_statement": "return {\"id\": self.id, \"title\": self.title}",
     "focus_span": "{\"id\": self.id, \"title\": self.title}",
@@ -822,18 +822,18 @@
       "common_mistake": "add()가 호출될 때마다 count가 다시 0으로 초기화된다고 생각하기 쉽습니다."
     },
     "teaching_example": {
-      "code": "class Score:\n    def __init__(self): self.value=5\n    def add(self): self.value += 1\nscore=Score()\nscore.add()",
-      "walkthrough": "기존 5가 6으로 바뀌며 instance 안에 유지됩니다."
+      "code": "class Score:\n    def __init__(self):\n        self.value = 5\n\n    def add(self):\n        self.value += 1\n\nscore = Score()\nscore.add()\nresult = score.value",
+      "walkthrough": "1. `class Score:`는 객체의 데이터와 동작을 정의합니다.\n2. `def __init__(self):`는 새 객체를 초기화할 동작을 정의합니다. `self.value = 5`는 초기화할 때 그 객체의 `value`에 5를 저장합니다.\n3. `def add(self):`는 나중에 호출할 동작을 정의합니다. 이때는 아직 `self.value += 1`을 실행하지 않습니다.\n4. `score = Score()`가 객체를 만들고 초기화하므로 `score.value`는 5입니다.\n5. `score.add()`를 호출하면 `self`는 `score`가 가리키는 객체입니다. `self.value += 1`은 기존 정수 5를 읽고 1을 더한 결과 6을 같은 속성에 저장합니다.\n6. `result = score.value`는 저장된 6을 읽어 `result`에 연결합니다. 최종적으로 `score.value`와 `result`는 모두 6이며, 화면 출력은 없습니다."
     },
     "answer_explanation": {
-      "step_by_step": "constructor에서 0으로 시작한 count에 add()가 1을 더하므로 결과는 1입니다.",
-      "why_correct": "augmented assignment가 기존 instance state를 실제로 갱신하기 때문입니다.",
+      "step_by_step": "1. `class Counter:` 안에서 `__init__`와 `add`를 정의합니다. 메서드 본문은 정의만으로 실행되지 않습니다.\n2. `counter = Counter()`가 객체를 만들고 `__init__`를 실행합니다. `self.count = 0`으로 그 객체의 `count`가 0이 됩니다.\n3. `counter.add()`가 같은 객체의 `add`를 한 번 실행합니다. 여기서 `self`는 `counter`가 가리키는 객체입니다.\n4. `self.count += 1`은 현재 값 0을 읽고, `0 + 1`을 계산한 뒤, 결과 1을 그 객체의 `count`에 저장합니다.\n5. 호출이 끝나도 `counter.count`는 1로 유지됩니다. `result = counter.count`는 그 값을 읽으므로 `result`도 1입니다.",
+      "why_correct": "이 코드의 `+= 1`은 기존 정수 값에 1을 더해 같은 속성에 다시 저장하는 복합 대입입니다. 따라서 `add()`를 한 번 호출하면 `self.count`가 0에서 1로 바뀌므로 정답은 '1 증가한다'입니다.",
       "common_wrong_choice": {
         "choice": "항상 0이 된다",
-        "why_wrong": "0은 초기값이고 add 호출 뒤에는 변경됩니다.",
-        "misread_step": "constructor 초기화와 method 상태 변경 순서를 구분하지 않은 경우입니다."
+        "why_wrong": "0은 객체를 초기화할 때 저장한 값입니다. `add()`는 `__init__`를 다시 실행하지 않고, 이미 저장된 값에 1을 더합니다.",
+        "misread_step": "`counter.add()` 호출 때도 `self.count = 0`이 다시 실행된다고 읽은 것입니다. 실제로 호출되는 메서드의 본문은 `self.count += 1`입니다."
       },
-      "takeaway": "stateful object는 **initial state → method mutation → retained state**로 읽습니다."
+      "takeaway": "객체의 속성에 대한 `+= 1`은 이 코드에서 '기존 값 읽기 → 1 더하기 → 같은 속성에 저장하기'로 읽습니다. 초기값 0이 호출 후 1로 유지됩니다."
     },
     "target_statement": "self.count += 1",
     "focus_span": "self.count += 1",
@@ -937,14 +937,14 @@
     "primary_concept": "class_definition",
     "reading_goal_internal": "관련된 domain state를 하나의 StudySession class로 묶은 모델의 의미를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`class StudySession:`은 현재 학습 세션이라는 domain concept를 표현하는 class definition입니다.",
-      "how_to_read": "class field 이름이 현실/제품의 어떤 상태를 나타내는지 연결합니다.",
-      "key_point": "domain model은 단순 data bag을 넘어 제품에서 함께 움직이는 핵심 개념을 코드에 명시할 수 있습니다.",
-      "common_mistake": "StudySession을 서버 HTTP session과 같은 개념이라고 생각하기 쉽습니다. 여기서는 학습 세션 domain model입니다."
+      "what_it_is": "쉽게 말하면: `class StudySession:`은 한 번의 학습에 필요한 정보를 함께 담을 새로운 종류를 정의합니다.\n정확한 정의: 클래스 정의는 본문을 새 이름 공간에서 실행하여 클래스 객체를 만들며, 여기서는 `@dataclass`가 타입 주석이 붙은 필드를 바탕으로 초기화 메서드 등을 추가한 뒤 그 클래스를 `StudySession`이라는 이름에 연결합니다.",
+      "how_to_read": "직관적 모델: 카드, 진행상태, 현재 위치라는 세 칸이 있는 학습 기록 양식을 만든다고 생각하세요. 양식을 정의하는 것과 실제 기록 하나를 만드는 것은 다릅니다.\n코드 읽기: `class StudySession:`이 새로운 종류를 정의합니다. 들여쓴 `cards: list[Card]`는 카드 목록, `progress: Progress`는 진행상태, `current_index: int`는 정수로 나타내는 현재 위치를 필드로 선언합니다. 이 이름들을 함께 읽으면 현재 학습 세션의 상태를 묶은 모델임을 알 수 있습니다.",
+      "key_point": "실행 흐름: `dataclass` 가져오기 → 클래스 본문의 필드 주석 처리 → 클래스 객체 생성 → `@dataclass`가 초기화 메서드 등을 추가 → `StudySession`에 연결.\n`Card`와 `Progress` 타입이 주변 코드에서 제공된다는 전제입니다. 이 조각에는 `StudySession(...)` 호출이 없으므로 실제 세션 인스턴스나 필드 값은 아직 만들어지지 않으며, 출력도 없습니다. 정의되는 것은 카드·진행상태·위치를 함께 표현하는 클래스입니다.",
+      "common_mistake": "`current_index: int`를 현재 위치에 값을 넣는 대입문으로 읽지 마세요. 타입 주석은 `0` 같은 초기값을 지정하지 않으며, 자동으로 학습을 시작하거나 진행상태를 갱신하지도 않습니다. 실제 값을 가진 인스턴스를 만들려면 별도의 클래스 호출이 필요합니다."
     },
     "teaching_example": {
-      "code": "from dataclasses import dataclass\n@dataclass\nclass Cart:\n    items: list\n    current_index: int",
-      "walkthrough": "장바구니라는 domain concept에 관련 state를 함께 묶습니다."
+      "code": "from dataclasses import dataclass\n\n@dataclass\nclass ReadingPosition:\n    book: str\n    page: int\n\nposition = ReadingPosition(\"Python\", 12)\nprint(position.page)",
+      "walkthrough": "1) `from dataclasses import dataclass`는 데코레이터를 가져옵니다.\n2) `@dataclass`는 바로 아래에서 정의할 클래스를 처리하도록 지정합니다.\n3) `class ReadingPosition:`은 책의 읽기 위치를 표현하는 클래스를 정의하기 시작합니다.\n4) `book: str`는 책 이름 필드와 그 타입 주석을 선언합니다. 아직 책 이름 값은 넣지 않습니다.\n5) `page: int`는 페이지 필드와 그 타입 주석을 선언합니다. 본문이 끝나면 클래스가 만들어지고 데코레이터가 초기화 메서드 등을 추가한 뒤 `ReadingPosition`에 연결됩니다.\n6) `ReadingPosition(\"Python\", 12)`는 인스턴스를 만들고 생성된 초기화 메서드가 `book`에 `\"Python\"`, `page`에 `12`를 저장합니다. `position`은 이 인스턴스를 가리킵니다.\n7) `print(position.page)`는 저장된 페이지 값을 읽어 `12`를 출력합니다.\n흐름: 클래스 정의 → 클래스 호출 → 두 필드 초기화 → 페이지 읽기 → 출력 `12`."
     },
     "answer_explanation": {
       "step_by_step": "StudySession은 cards, progress, current_index 세 field를 가지므로 현재 학습 세션의 콘텐츠·진행상태·위치를 함께 나타냅니다.",

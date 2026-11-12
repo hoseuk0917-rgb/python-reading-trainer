@@ -498,10 +498,10 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "constructor 호출의 keyword argument 이름과 list 값을 연결해 LoRA 적용 대상 설정을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`target_modules=[...]` is a keyword argument that specifies a name for the call and passes a list value.",
-                                    "how_to_read":  "Check the setting associated with the keyword on the left and verify the actual items in the list on the right.",
-                                    "key_point":  "Here, the two module names, `q_proj` and `v_proj`, are passed as configuration values to ``target_modules``.",
-                                    "common_mistake":  "It is easy to misinterpret `r=16` or `lora_alpha=32` as having the same meaning as `target_modules`. Each keyword name has a different role."
+                                    "what_it_is":  "Easy meaning: You attach a name tag to a value in a call to say which input it is for.\nExact definition: A keyword argument is specified as `name=expression` in a call and passes the evaluated value of the expression under that name.",
+                                    "how_to_read":  "Picture each value as a package with a name tag. Inside `LoraConfig(...)`, `r=16` passes 16 under `r`, and `lora_alpha=32` passes 32 under `lora_alpha`. Read `target_modules=[\"q_proj\", \"v_proj\"]` as passing one list containing two strings with the name tag `target_modules`.",
+                                    "key_point":  "Evaluate `[\"q_proj\", \"v_proj\"]` → create a list containing two strings → pass that list as the `target_modules` keyword argument → bind the configuration object returned by `LoraConfig(...)` to `config`. The directly passed value is therefore `[\"q_proj\", \"v_proj\"]`. The two strings are not passed as separate arguments.",
+                                    "common_mistake":  "Do not read the nearby numbers 16 or 32 as the value for `target_modules`. Pair each keyword name with the expression immediately to its right. Also, `target_modules=...` inside the call names an argument; it is not an assignment statement that creates an outside variable named `target_modules`."
                                 },
         "teaching_example":  {
                                  "code":  "def AdapterConfig(target_layers):\n    return target_layers\n\nlayers = AdapterConfig(target_layers=[\"attn_in\", \"attn_out\"])",
@@ -915,10 +915,10 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "학습 함수 호출에서 keyword argument의 이름을 기준으로 값이 어느 매개변수에 전달되는지 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "A keyword argument specifies which parameter receives a value in a function call by using the form `name=value`.",
-                                    "how_to_read":  "Within the call, keyword names are evaluated first and matched with parameters of the same name. Since the matching is based on names rather than positions, ``learning_rate=0.001`` passes 0.001 to `learning_rate`.",
-                                    "key_point":  "Regardless of the meanings of epoch, batch size, and learning rate, the first Python reading task is to match each `keyword name → value` binding correctly.",
-                                    "common_mistake":  "It’s easy to assume that the three numbers correspond strictly to their order from left to right. However, with keyword arguments, it’s the names—not the order in which they’re written—that determine which parameter each name corresponds to."
+                                    "what_it_is":  "Easy meaning: When sending a value to a function, you attach a name tag to show which input slot should receive it.\nExact definition: A keyword argument is an argument written as `name=value` in a function call that passes a value to the parameter with that name.",
+                                    "how_to_read":  "Think of parameters as labeled input slots. `def train(epochs, batch_size, learning_rate)` defines three input names. In the call, match by name: `epochs=3` connects `3` to `epochs`, `batch_size=8` connects `8` to `batch_size`, and `learning_rate=0.001` connects `0.001` to `learning_rate`. You can read these name-to-value connections without knowing what the training-setting terms mean.",
+                                    "key_point":  "Call `train(...)` → pass `3` to `epochs`, `8` to `batch_size`, and `0.001` to `learning_rate` → the function puts these values into a dictionary and returns it → bind the returned dictionary to `config` → retrieve `0.001` with `config[\"learning_rate\"]` → `print` displays `0.001`.",
+                                    "common_mistake":  "It is easy to match numbers only by their left-to-right positions, but keyword arguments use the written names to determine their destinations. `8` is the value for `batch_size`, not `learning_rate`. Also, `config[\"learning_rate\"]` retrieves the value `0.001` associated with that key; it does not print the name string itself."
                                 },
         "teaching_example":  {
                                  "code":  "def build(width, height):\n    return width, height\n\nsize = build(height=9, width=4)\nprint(size)",
@@ -1344,14 +1344,14 @@
                                  "walkthrough":  "\"quantization,\" the value of the `small_memory` key, is selected."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "In `strategy_map`, the `latest_knowledge` key is linked to a RAG value, so the query result is RAG.",
-                                   "why_correct":  "This is because the requirement to retrieve the latest external documents and incorporate them into the answer context is directly linked to RAG.",
+                                   "step_by_step":  "1) First, Python creates a dictionary pairing requirement strings with strategy strings and binds it to `strategy_map`.\n2) On the last line, it evaluates the right-hand expression `strategy_map[\"latest_knowledge\"]`. The string inside the brackets is the key to look up.\n3) It finds the pair `\"latest_knowledge\": \"RAG\"` and returns the value `\"RAG\"`.\n4) That string is assigned to `strategy`. The final value of `strategy` is `\"RAG\"`; nothing is printed and no actual retrieval is performed.",
+                                   "why_correct":  "This code's mapping associates `\"latest_knowledge\"`, representing the latest-knowledge requirement, with `\"RAG\"`, so the answer is RAG. RAG finds relevant documents and passes them to the model before it answers, but this code only looks up the strategy's name.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Unconditional full fine-tuning",
-                                                               "why_wrong":  "It may be inefficient to address the need for updates to the latest knowledge solely through re-training model parameters.",
-                                                               "misread_step":  "This is an example where the issues of “knowledge freshness” and “behavior adaptation” were not distinguished."
+                                                               "why_wrong":  "The value associated with the requested key is `\"RAG\"`, not full fine-tuning. This code does not unconditionally choose one strategy for every requirement.",
+                                                               "misread_step":  "This skips finding the key inside the brackets and reading its associated value, instead choosing a strategy based on a prior assumption."
                                                            },
-                                   "takeaway":  "The AI strategy is determined by **mapping requirement types to appropriate techniques**."
+                                   "takeaway":  "Read a dictionary lookup as **identify the dictionary → find the key → return its associated value**. Here the value flows from `\"latest_knowledge\"` → `\"RAG\"` → `strategy`."
                                },
         "target_statement":  "strategy = strategy_map[\"latest_knowledge\"]",
         "focus_span":  "strategy_map[\"latest_knowledge\"]",

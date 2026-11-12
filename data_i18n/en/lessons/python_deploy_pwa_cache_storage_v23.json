@@ -210,10 +210,10 @@
     "primary_concept": "f_string",
     "reading_goal_internal": "f-string의 중괄호 표현식 값과 고정 문자열이 어떤 순서로 합쳐져 최종 URL이 되는지 읽는다.",
     "concept_explanation": {
-      "what_it_is": "An f-string evaluates `{expression}` within a string and inserts the result into the string.",
-      "how_to_read": "It reads as: \"The final string is created by concatenating the fixed string and the variable values inside the curly braces from left to right.\"",
-      "key_point": "In this example, it is assumed that `path` already contains `query`, so ``&v=`` is included as a fixed string.",
-      "common_mistake": "It’s easy to assume that the name of the curly brace itself remains in the URL. However, it is actually replaced with the actual variable value."
+      "what_it_is": "Easy meaning: An f-string builds one string by filling blanks in text with values.\nExact definition: An f-string is a string literal prefixed with `f` that evaluates `{expression}` fields and inserts their results into the string.",
+      "how_to_read": "Picture the braces as blanks to fill with values. The first line binds `APP_DATA_VERSION` to `\"20260529_v22\"`, and the second binds `path` to `\"/lesson.json?lang=ko\"`. Read the third line from left to right: the value of `{path}`, the fixed text `&v=`, then the value of `{APP_DATA_VERSION}`.",
+      "key_point": "The pieces combine in this order: the value of `path`, `/lesson.json?lang=ko` → the fixed text `&v=` → the value of `APP_DATA_VERSION`, `20260529_v22`. The existing `?lang=ko` remains, and the completed string `/lesson.json?lang=ko&v=20260529_v22` is stored in `url`.",
+      "common_mistake": "It is easy to think `{APP_DATA_VERSION}` inserts the variable name itself. Here, Python looks up the name and inserts its value, `20260529_v22`. Outside the braces, `&v=` is literal text, not a variable name to evaluate."
     },
     "teaching_example": {
       "code": "path = \"/cards.json?lang=en\"\nversion = \"v3\"\nurl = f\"{path}&v={version}\"",
@@ -397,14 +397,14 @@
     "primary_concept": "await_expression",
     "reading_goal_internal": "여러 coroutine을 gather에 넘기고 await했을 때 하나의 실패가 전체 await 결과에 어떻게 영향을 주는지 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`await expression` `await` suspends the execution of the current async function until the awaitable operation completes and returns its result.",
-      "how_to_read": "Check what kind of awaitable is created on the right side of `await`, and see how the completion result or exception is propagated.",
-      "key_point": "`asyncio.gather()` It can wait for multiple awaitables simultaneously, and by default, a single exception can be propagated to the caller.",
-      "common_mistake": "It’s easy to assume that even if a single operation fails, only the remaining results are quietly returned. The default `gather` can propagate exceptions to the caller."
+      "what_it_is": "Easy meaning: `await` waits for a task's result so you can use it, but also receives the error if the task fails.\nExact definition: `await expression` obtains an awaitable's completion result, may suspend the current coroutine, and can propagate an exception from the awaited operation.",
+      "how_to_read": "Mental model: Imagine a counter where you wait for several orders together. Normal completion gives you a bundle of results, but here a failed order is reported as an error.\nIn this code, the `load_json(path)` calls create coroutine objects, and `*` unpacks them into separate arguments to `gather`. `gather` schedules them to run, and `await` waits for the combined result. Despite its name, `load_json` only checks the path; it does not read an actual file.",
+      "key_point": "Execute `await main()` → create coroutines for three paths → pass them to `gather` → the `bad.json` task raises `RuntimeError(\"load failed\")` → the exception propagates through the `await` waiting on default `gather`.\nIn this code, no result is assigned to `lesson_arrays`, and `return lesson_arrays` is not reached. The exception reaches the caller awaiting `main()`.",
+      "common_mistake": "It is easy to assume that `await` turns failures into successful values, or that `gather` automatically replaces a failed item with an empty list. This code does neither. Also, exception propagation does not by itself mean that all remaining tasks are automatically cancelled."
     },
     "teaching_example": {
-      "code": "import asyncio\n\nasync def one():\n    return 1\n\nasync def two():\n    return 2\n\nasync def main():\n    values = await asyncio.gather(one(), two())\n    return values",
-      "walkthrough": "We wait for both coroutines to complete and receive the result ``[1, 2]``."
+      "code": "import asyncio\n\nasync def item(ok):\n    if not ok:\n        raise RuntimeError(\"item failed\")\n    return 7\n\nasync def main():\n    values = await asyncio.gather(item(True), item(False))\n    return values",
+      "walkthrough": "1) `import asyncio` imports the module containing `gather`.\n2) `async def item(ok)` defines an async function. Calling it creates a coroutine object; its body proceeds when it runs.\n3) `if not ok` checks whether `ok` is false. For `False`, the next line raises `RuntimeError(\"item failed\")`.\n4) `return 7` provides the result when no error is raised.\n5) `async def main()` defines the function that will wait for two tasks.\n6) Executing `await main()` passes the coroutines created by `item(True)` and `item(False)` to `gather` and waits with `await`. The first task returns `7`; the second raises an exception.\n7) That exception propagates through `await`, so no list is assigned to `values` and `return values` is not executed. The final outcome is a `RuntimeError` passed to the caller, not `[7, ...]`."
     },
     "answer_explanation": {
       "step_by_step": "Of the three coroutines, loading `bad.json` raises a `RuntimeError`. The default `asyncio.gather()` `await` statement can pass this exception to the caller.",
@@ -458,10 +458,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "Python dict가 json.dumps 호출을 거쳐 storage에 저장 가능한 JSON 문자열로 바뀌는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`json.dumps(value)` is a function call that serializes a Python object into a JSON-formatted string.",
-      "how_to_read": "Let’s see how the type of the input object differs from the type of the return value.",
-      "key_point": "The core concept of the original “`JSON.stringify(progress)`” is also to convert objects into strings and store them.",
-      "common_mistake": "It’s easy to assume that `dumps` automatically creates a file. `json.dumps` returns a string."
+      "what_it_is": "Easy meaning: `json.dumps(progress)` asks Python to turn the contents of progress into JSON text.\nExact definition: `json.dumps(progress)` is a function call that passes the progress object as an argument and serializes it to a JSON-formatted `str`.",
+      "how_to_read": "Mental model: a function call hands over ingredients and receives the result of a job. Here, you hand over a dictionary and receive a string representing its contents.\nRead line by line:\n1) `import json` makes the json module available.\n2) `progress` is bound to a dictionary whose two values are lists.\n3) `json.dumps` is the function to use, and `(progress)` calls that function with progress as its input. The call on the right runs first, and its returned string is bound to `raw`.",
+      "key_point": "Value flow: the dictionary referenced by `progress` → call `json.dumps(progress)` → return JSON text → bind it to `raw`.\nThe value of `raw` is the string containing the JSON text `{\"seen\": [\"PY1_001\"], \"unknown\": []}`. Therefore, the type of `raw` is `str`. This code does not display output or save a file.",
+      "common_mistake": "It is easy to assume that a dictionary input means a dictionary result. However, the result type depends on what the function returns. `json.dumps` returns a string representing the dictionary's contents, not the dictionary itself. The `{}` and `[]` inside the string are part of the text; they do not make raw a dictionary or list."
     },
     "teaching_example": {
       "code": "import json\nsettings = {\"dark\": True}\nraw = json.dumps(settings)",

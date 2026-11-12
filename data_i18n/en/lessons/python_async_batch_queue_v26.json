@@ -456,14 +456,14 @@
         "primary_concept":  "except_clause",
         "reading_goal_internal":  "try 안 호출에서 Exception이 발생했을 때만 except가 실행되어 현재 item을 실패 목록에 넣는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`except Exception:` This is a `typed except` clause that executes when an exception of that type is raised within a `try` block.",
-                                    "how_to_read":  "First, we check which statements in the `try` block might raise an exception, and then apply the `except` block only to the iteration where an exception actually occurred.",
-                                    "key_point":  "The failure queue contains only the items where an exception occurred, not all items.",
-                                    "common_mistake":  "It’s easy to think that the `except` block always runs for every iteration. If the `try` block completes successfully, the `except` block is skipped."
+                                    "what_it_is":  "Easy meaning: `except Exception:` is the error-handling part that runs only when the attempted work raises an error.\nExact definition: An `except Exception:` clause catches an exception raised in its associated `try` block and executes its body if the exception is an instance of `Exception` or one of its subclasses.",
+                                    "how_to_read":  "Picture a side path entered only when an error occurs. `failed = []` creates an empty list, and `for` assigns each string to `item` in turn. Inside `try`, `item == \"bad\"` is checked, and only when it is true does `raise` raise `RuntimeError`. Because `RuntimeError` is a subclass of `Exception`, `except Exception:` catches it and executes `failed.append(item)`.",
+                                    "key_point":  "`\"ok-1\"` → condition is false → no exception → nothing added.\n`\"bad\"` → condition is true → `RuntimeError` raised → `except` runs → `failed` becomes `[\"bad\"]`.\nAfter handling the exception, execution proceeds to the next iteration. `\"ok-2\"` also causes no exception, so the final value is `[\"bad\"]`.",
+                                    "common_mistake":  "It is easy to think that `except` runs on every iteration or catches only exceptions whose exact type name is `Exception`. It does not run when `try` finishes normally, and here it also catches the subclass `RuntimeError`. This code only collects failed items; it does not retry them."
                                 },
         "teaching_example":  {
                                  "code":  "failed = []\nfor item in [1, 0, 2]:\n    try:\n        10 / item\n    except ZeroDivisionError:\n        failed.append(item)",
-                                 "walkthrough":  "Since a ZeroDivisionError occurs only when the value is 0, \"failed\" contains only the number 0."
+                                 "walkthrough":  "1) `failed = []` creates an empty list.\n2) `for` assigns `1`, `0`, and `2` to `item` in turn.\n3) `try:` runs the enclosed `10 / item` expression.\n4) When `item` is `1`, division produces `10.0`. That value is not stored, and `except` is skipped because no exception occurs.\n5) When `item` is `0`, `10 / item` raises `ZeroDivisionError`. `except ZeroDivisionError:` catches it, and `failed.append(item)` adds `0`.\n6) On the next iteration, `item` is `2` and division produces `5.0`. That value is also not stored, and `except` is skipped.\nFinal result: `failed` is `[0]`. Nothing is printed."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "Of the three iterations, a RuntimeError occurs only in `bad`. The `except Exception:` block handles that exception and adds `bad` to `failed`.",
@@ -516,24 +516,24 @@
         "primary_concept":  "except_clause",
         "reading_goal_internal":  "background job 실패가 status=error 기록과 예외 재전파로 이어지는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`except Exception as e:` is an `except` clause that binds the raised exception object to `e` for handling.",
-                                    "how_to_read":  "After an exception occurs, save the current state, and then check whether the exception is caught or rethrown.",
-                                    "key_point":  "Long-running tasks are easier to manage when their status (running, done, or error) is visible in the UI.",
-                                    "common_mistake":  "It’s easy to assume that the function ends successfully if an error state has been saved. However, because of the final `raise`, the failure continues to propagate."
+                                    "what_it_is":  "Easy meaning: `except` is where you write what to do if an error occurs during a task.\nExact definition: An `except Exception as e:` clause catches an exception raised in its associated `try` if it is an instance of `Exception` or a subclass, binds it to `e`, and executes the handling code.",
+                                    "how_to_read":  "Picture an error switching execution from the normal route to an error-handling route. In this card, calling `start_job(job_id)` first records running. When `run_long_task` raises `RuntimeError`, execution skips the done entry and moves to `except Exception as e:`. This clause matches because `RuntimeError` is a subclass of `Exception`.",
+                                    "key_point":  "Flow when called: record running → raise `RuntimeError(\"failed\")` → skip recording done → catch the exception as `e` and record error with the message `\"failed\"` → re-raise the same exception with the final `raise`. Here, saving means appending an entry to the `events` list, not updating a database.",
+                                    "common_mistake":  "It is easy to assume that catching the error and recording error makes the function finish normally. However, the final `raise` propagates the exception again; it does not undo the error entry already appended."
                                 },
         "teaching_example":  {
-                                 "code":  "events=[]\ntry:\n    raise RuntimeError(\"bad\")\nexcept Exception as e:\n    events.append((\"error\", str(e)))",
-                                 "walkthrough":  "It catches the exception as `e` and logs the error status and message."
+                                 "code":  "events = []\ntry:\n    raise RuntimeError(\"bad\")\n    events.append((\"done\", \"\"))\nexcept Exception as e:\n    events.append((\"error\", str(e)))",
+                                 "walkthrough":  "1) `events = []` creates an empty list of entries.\n2) `try:` starts the code section whose exceptions will be checked.\n3) `raise RuntimeError(\"bad\")` raises an exception.\n4) The next line, which appends done, does not execute.\n5) `except Exception as e:` catches the `RuntimeError` and binds that object to `e`.\n6) `str(e)` is `\"bad\"`, so it appends `(\"error\", \"bad\")`.\nResult: `events` is `[(\"error\", \"bad\")]`. This example has no re-raising `raise`, so exception handling finishes."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "An exception occurs, causing the `except` branch to execute, and the `error` state is saved.",
-                                   "why_correct":  "except because the call to update_job specifies status=\u0027error\u0027.",
+                                   "step_by_step":  "The supplied code defines functions but does not call them. Follow what happens when `start_job(job_id)` is called, as the question assumes.\n1) `update_job(job_id, status=\"running\", progress=0)` appends `(job_id, {\"status\": \"running\", \"progress\": 0})` to `events`.\n2) `run_long_task(job_id)` raises `RuntimeError(\"failed\")`.\n3) Execution skips the remaining line in `try` that would record done.\n4) `except Exception as e:` catches the exception.\n5) `str(e)` is `\"failed\"`, and `update_job` appends `(job_id, {\"status\": \"error\", \"error\": \"failed\"})`.\n6) The final `raise` propagates the same exception again. Both entries remain in the list.",
+                                   "why_correct":  "The exception handler records an entry using `status=\"error\"`, so the correct answer is “It is saved as an error.” The last status entry is error, and re-raising the exception does not undo it.",
                                    "common_wrong_choice":  {
                                                                "choice":  "It is saved as \"done.\"",
-                                                               "why_wrong":  "done The `save` statement is executed only if the `try` block completes successfully.",
-                                                               "misread_step":  "This is a case where control flow was lost after an exception occurred."
+                                                               "why_wrong":  "The done entry can only be reached if `run_long_task(job_id)` returns normally. Here, that call raises an exception.",
+                                                               "misread_step":  "This assumes execution continues to the next line in `try` after an exception. Instead, it skips the remaining lines and moves to the matching `except`."
                                                            },
-                                   "takeaway":  "The background job reads the state transitions **running → success=done / failure=error**."
+                                   "takeaway":  "An exception skips the remaining code in `try`. This code records error after running, then reports the failure back to the caller by re-raising."
                                },
         "target_statement":  "except Exception as e:",
         "focus_span":  "except Exception as e:",
@@ -575,10 +575,10 @@
         "primary_concept":  "boolean_operation",
         "reading_goal_internal":  "터미널과 분리된 뒤에도 long-running session이 살아 있는 상태를 boolean으로 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`left and right` is a boolean operation that evaluates to True when both conditions are truthy.",
-                                    "how_to_read":  "Check the two flags, \"detached\" and \"alive,\" respectively.",
-                                    "key_point":  "The key feature of `tmux detach` is that it allows you to maintain your session and process even after leaving the terminal view.",
-                                    "common_mistake":  "It’s easy to assume that `detach` means to terminate a process."
+                                    "what_it_is":  "Easy meaning: `and` checks the right condition only when the left condition holds. Exact definition: Python's Boolean operator `and` evaluates the left operand first and returns it if it is treated as false (falsy); otherwise, it evaluates and returns the right operand.",
+                                    "how_to_read":  "Imagine passing through two checkpoints in order. The first line binds `session` to a dictionary of session information, with both `detached` and `alive` set to `True`. On the second line, read `session[\"detached\"]` first. Since its value is `True`, Python also reads the next checkpoint, `session[\"alive\"]`, and uses that value, `True`, as the result of `and`.",
+                                    "key_point":  "The flow is: look up `detached` → `True` → look up `alive` → return `True` → assign `True` to `keeps_running`. This card represents a session that is detached and still alive. The code only checks stored state; it does not itself detach a session or change whether it is running. There is no printed output.",
+                                    "common_mistake":  "`detached` being `True` does not mean the session has ended: `alive` is also `True` here. Also, do not assume that `and` always checks both sides or necessarily returns a Boolean. If the left side were `False`, it would skip the right-hand lookup and return `False`."
                                 },
         "teaching_example":  {
                                  "code":  "session={\"detached\":True,\"alive\":True}\nrunning=session[\"detached\"] and session[\"alive\"]",
@@ -699,18 +699,18 @@
                                     "common_mistake":  "It is easy to think the producer removes an item from the queue and processes it."
                                 },
         "teaching_example":  {
-                                 "code":  "import asyncio\nqueue=asyncio.Queue()\nasync def producer():\n    await queue.put(\"x\")",
-                                 "walkthrough":  "The producer adds x to the queue."
+                                 "code":  "import asyncio\n\nasync def main():\n    queue = asyncio.Queue()\n    for item in [\"x\", \"y\"]:\n        await queue.put(item)\n    print(queue.qsize())\n\nasyncio.run(main())",
+                                 "walkthrough":  "1) `import asyncio` imports the module used for asynchronous execution and the queue.\n2) `async def main()` defines an async function. Defining it does not execute its body.\n3) The final line, `asyncio.run(main())`, runs main.\n4) `queue = asyncio.Queue()` creates an empty queue.\n5) The for loop first binds item to \"x\".\n6) `await queue.put(item)` proceeds after the operation that adds \"x\" completes. It does not wait for a consumer to process \"x\".\n7) On the next iteration, item is \"y\", and the same await expression adds \"y\".\n8) After the loop, `queue.qsize()` is 2, so print outputs 2.\n\nFlow: empty queue → finish adding \"x\" → finish adding \"y\" → print the item count, 2. The default Queue has no size limit, so these additions do not wait for space. An await does not necessarily hand execution to another task."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "The key call within the producer loop is `queue.put(item)`, and `queue.get()` is executed on the consumer side.",
-                                   "why_correct":  "This is because the producer is responsible for supplying work items to the queue.",
+                                   "step_by_step":  "1) The shown code creates a queue and defines producer and consumer. It contains no calls that run them, so this snippet alone adds no items.\n2) When producer runs, `for item in items` binds item to each element of items in turn.\n3) On each iteration, `queue.put(item)` creates the asynchronous operation that adds the current item to the queue.\n4) `await` lets execution proceed to the next iteration after that addition completes. It does not wait for consumer processing to finish.\n5) Thus, on normal completion of the loop, each element of items has been added to the queue. The items collection is not added as a single item.\n6) In contrast, consumer uses `await queue.get()` to retrieve an item, `await process(item)` to process it, and then `queue.task_done()` to report completion.",
+                                   "why_correct":  "The correct answer is 'Add items to the queue'. The producer's data flow is `each element of items → item → await queue.put(item)`. Retrieval and processing appear in consumer instead.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Retrieve an item from the queue and process it.",
-                                                               "why_wrong":  "That operation corresponds to the consumer’s get/process stage.",
-                                                               "misread_step":  "This is a case where the roles of the producer and consumer have been reversed."
+                                                               "why_wrong":  "Retrieval is consumer's `queue.get()`, and processing is `process(item)`. The producer's `put(item)` moves an item in the opposite direction, into the queue.",
+                                                               "misread_step":  "This notices the shared await syntax but misses whether the following operation is put or get. Await waits for completion; the call after it determines the actual operation."
                                                            },
-                                   "takeaway":  "The producer-consumer pattern is broken down as follows: **produce → queue.put / consume → queue.get + process**."
+                                   "takeaway":  "`await queue.put(item)` means 'proceed after adding the item completes'. The producer supplies items; the consumer retrieves and processes them."
                                },
         "target_statement":  "await queue.put(item)",
         "focus_span":  "await queue.put(item)",
@@ -824,14 +824,14 @@
                                  "walkthrough":  "Since 2 is on the completed list, `done` is True."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since the `completed list` is ``[31, 32]``, both shards are recorded as completed.",
-                                   "why_correct":  "Because the `completed` field in the manifest serves as a collection of completed shard IDs.",
+                                   "step_by_step":  "1. The first assignment creates the manifest dictionary, storing the list [31, 32] under \"completed\".\n2. On the last line, reading manifest[\"completed\"] gives [31, 32].\n3. 32 in [31, 32] asks, “Is 32 in this list?” Since it is, the result is True.\n4. That result is assigned to shard_32_done. The list itself contains 31 and 32, so the answer is that both shards are recorded as completed.",
+                                   "why_correct":  "In this card, \"completed\" holds the numbers of completed shards. Its value is [31, 32], so the correct answer is “Shards 31 and 32 were recorded as completed.” The in test only checks this record; it does not run a shard or mark one as completed.",
                                    "common_wrong_choice":  {
-                                                               "choice":  "330,000 completed",
-                                                               "why_wrong":  "33 is not on the completed list.",
-                                                               "misread_step":  "This is a case where the \"full list of shards\" was confused with the \"completed subset.\""
+                                                               "choice":  "All shards have failed",
+                                                               "why_wrong":  "This code contains no record that all shards have failed. Instead, completed contains 31 and 32, and the membership test for 32 returns True.",
+                                                               "misread_step":  "This misreads the entries in completed as failed shard numbers rather than completed shard numbers."
                                                            },
-                                   "takeaway":  "`manifest` reads by **separating the entire task list from the completed subset**."
+                                   "takeaway":  "Distinguish shards, the full shard list, from completed, the completion record. value in manifest[\"completed\"] returns True or False to tell you whether that value is in the completed list."
                                },
         "target_statement":  "shard_32_done = 32 in manifest[\"completed\"]",
         "focus_span":  "32 in manifest[\"completed\"]",
@@ -882,18 +882,18 @@
                                     "common_mistake":  "It’s easy to think that `break` terminates the entire program. It actually exits the current loop."
                                 },
         "teaching_example":  {
-                                 "code":  "saved=[]\nfor x in [1,2,3]:\n    if x==2:\n        saved.append(\"checkpoint\")\n        break",
-                                 "walkthrough":  "It sets a checkpoint at `x=2` and exits the loop."
+                                 "code":  "saved = []\nfor x in [1, 2, 3]:\n    if x == 2:\n        saved.append(\"checkpoint\")\n        break\nprint(saved)",
+                                 "walkthrough":  "Think of `break` as an exit from repeated work. When executed, it ends the current loop.\n1. `saved = []` creates an empty list.\n2. The `for` loop first assigns 1 to `x`. Since `x == 2` is false, neither line inside the `if` runs.\n3. Next, `x` is 2. The condition is true, so `saved.append(\"checkpoint\")` adds the string to the list.\n4. Then `break` ends the loop. The iteration with `x` equal to 3 never runs.\n5. Outside the loop, `print(saved)` runs and prints `['checkpoint']`. `break` ends the current loop, not the whole program."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since the `abort` flag is True, the `break` statement is executed after calling the checkpoint save function.",
-                                   "why_correct":  "This is because the \"graceful shutdown\" sequence is implemented as a loop that terminates after saving.",
+                                   "step_by_step":  "1. Initially, `stop_requested` is `True`, `items` is `[\"a\", \"b\", \"c\"]`, `processed` is `[]`, and `checkpoint_saved` is `False`.\n2. `def` defines the function. Its body does not run yet.\n3. On the first iteration, `item` is `\"a\"`. Since `if stop_requested` is true, Python calls `save_checkpoint()`.\n4. Inside the function, `global checkpoint_saved` makes the following assignment update that name outside the function. `checkpoint_saved = True` runs, and the function call finishes.\n5. Next, `break` ends the `for` loop. The following `processed.append(item)` does not run, and there are no iterations for `\"b\"` or `\"c\"`.\n6. The final state is `checkpoint_saved == True` and `processed == []`. There is no print statement.",
+                                   "why_correct":  "Execution follows the order save-function call → `break`, so the answer is 'Save the checkpoint and exit the loop'. Here, saving is represented by setting `checkpoint_saved` to `True`; no code actually writes a file.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Continue processing all items",
-                                                               "why_wrong":  "`break` immediately terminates the current loop.",
-                                                               "misread_step":  "This is an example of failing to recognize the control flow effect of `break`."
+                                                               "why_wrong":  "`break` runs on the very first iteration. Even the line that would append the first item is skipped, so no items are processed.",
+                                                               "misread_step":  "This misreads `break` as ending only the `if` block and continuing to `processed.append(item)`. It actually exits the entire `for` loop."
                                                            },
-                                   "takeaway":  "\"graceful cancel\" is read in the order **stop flag → checkpoint → break**."
+                                   "takeaway":  "Check the stop condition → run the save function → exit the loop with `break`. The remaining loop body after `break` does not run."
                                },
         "target_statement":  "break",
         "focus_span":  "break",

@@ -209,10 +209,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "점 왼쪽 root Path 객체, 점 오른쪽 joinpath 메서드, 괄호 안 두 경로 조각을 구분하고 새 Path 반환값을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A method call in the form `object.method(arguments)` executes behavior belonging to a particular object and receives a return value.",
-      "how_to_read": "Read in the following order: target object → method name → arguments → return value.",
-      "key_point": "`joinpath` returns a new `Path` that concatenates `data/lessons` without modifying the root itself.",
-      "common_mistake": "It’s easy to assume that simply calling `joinpath` will actually create those folders on disk."
+      "what_it_is": "Easy meaning: `root.joinpath(\"data\", \"lessons\")` asks for a new path with two names appended to the existing path.\nExact definition: A method call is an expression that executes a method obtained from an object with supplied arguments; here, `joinpath` returns a new `Path` combining the two relative path segments in order.",
+      "how_to_read": "Mental model: imagine reading a path on paper and writing a longer path on a new sheet. Writing a path is different from creating actual folders.\nLine by line:\n1) `from pathlib import Path` makes `Path` available.\n2) `root = Path(\"project\")` binds `root` to a path object representing `project`.\n3) `root.joinpath(\"data\", \"lessons\")` passes two strings as positional arguments to the `joinpath` method on `root`. The returned new path is bound to `lesson_dir`.\n4) `print(lesson_dir.parts)` prints the new path's components as a tuple.",
+      "key_point": "Execution flow: `root` represents `project` → pass `\"data\"` and `\"lessons\"` to `joinpath` → return a new `Path` with the three segments joined in order → bind it to `lesson_dir` → print `.parts`.\nResult: `('project', 'data', 'lessons')`.\n`root` still represents `project`. The call returns a new `Path`; the printed tuple is that path's `.parts` value.",
+      "common_mistake": "It is easy to assume that two arguments mean two folders are actually created and `2` is returned. This call only computes a path; it does not create folders on disk. It also returns a new path rather than changing `root` or setting it to `None`."
     },
     "teaching_example": {
       "code": "from pathlib import Path\nbase = Path(\"project\")\njoined = base.joinpath(\"reports\", \"daily\")\nprint(joined.parts[-2:])",
@@ -393,10 +393,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "`mkdir()` 호출 안 `exist_ok=True`를 keyword argument로 읽고, 이미 존재하는 디렉터리를 허용하는 옵션이라는 의미를 구분한다.",
     "concept_explanation": {
-      "what_it_is": "The ``name=value`` within the call is a keyword argument that passes a value to the parameter of that name.",
-      "how_to_read": "Read `exist_ok` on the left side of the equals sign as the parameter name and `True` on the right side as the value passed.",
-      "key_point": "`exist_ok=True` This option does not mean to delete or overwrite the existing directory; rather, it means **not to raise an error simply because the directory already exists**.",
-      "common_mistake": "It is easy to overinterpret PowerShell’s `-Force` and Python’s `exist_ok=True` as “overwrite unconditionally.” Here, the focus is on the meaning of allowing directory existence errors."
+      "what_it_is": "Easy meaning: You supply a desired value by naming an option in a call.\nExact definition: A keyword argument supplies a value to the corresponding parameter by specifying its name using `name=value` in a call.",
+      "how_to_read": "Picture putting a value into a labeled input slot. `exist_ok=True` puts the Boolean value `True` into the slot named `exist_ok`. The first line imports `Path`; the next binds `backup_dir` to a path pointing to `backup` under `tmp`. The last line calls that path's `mkdir()`, passing `True` to each of `parents` and `exist_ok`.",
+      "key_point": "Execution flow: build the path → call `mkdir()` → pass `True` to the `exist_ok` parameter → if the target is already a directory, do not raise an error merely because it exists. If absent, creation is attempted; `parents=True` separately requests creation of necessary parent directories. On success, the target directory exists, and no code prints anything.",
+      "common_mistake": "`exist_ok=True` does not mean delete existing contents or ignore every error. A regular file at the target still causes an error. Also, `=` inside this call passes a value by name; it does not assign to an outside variable named `exist_ok`."
     },
     "teaching_example": {
       "code": "from pathlib import Path\n\ncache_dir = Path(\"tmp\") / \"cache\"\ncache_dir.mkdir(parents=True, exist_ok=True)",
@@ -454,10 +454,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "텍스트 파일 open 호출에서 encoding keyword argument가 UTF-8 decoding/encoding을 명시하는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`encoding=\"utf-8\"` is a keyword argument that provides a name for a function call.",
-      "how_to_read": "Check which option the keyword name configures and what value the string on the right specifies.",
-      "key_point": "Specifying UTF-8 can reduce the risk of garbled Korean and special characters caused by differences in the system’s default encoding.",
-      "common_mistake": "It is easy to assume that the `encoding` option automatically translates the file’s contents. It specifies the character interpretation rules between `bytes` and `text`."
+      "what_it_is": "Easy meaning: `encoding=\"utf-8\"` passes a named setting that tells Python to use UTF-8 rules when reading and writing characters in a file.\nExact definition: A keyword argument supplies a value by parameter name in a function call; here it passes the string `\"utf-8\"` to the `encoding` parameter of `open()`.",
+      "how_to_read": "Think of it as a setting with a name tag. `encoding` names the setting, and `\"utf-8\"` is the value supplied for it.\nThe first line opens `README.md` in read mode (`\"r\"`) and specifies UTF-8. On the second line, `src.read()` returns a string decoded from the file's bytes using UTF-8, and that value is stored in `text`. The third line opens `out.txt` in write mode (`\"w\"`) and passes the same setting. On the fourth line, `dst.write(text)` encodes that string as UTF-8 bytes and writes it.",
+      "key_point": "Argument flow: in both `open()` calls, `\"utf-8\"` → the `encoding` parameter.\nExecution flow: bytes in `README.md` → decode using UTF-8 → string `text` → encode using UTF-8 → write to `out.txt`.\nIf the input is valid UTF-8 and the file operations succeed, the text read is saved using UTF-8. This applies consistent character conversion rules to Korean and special characters rather than relying on the system's default encoding.",
+      "common_mistake": "It is easy to read the `=` in `encoding=\"utf-8\"` as an ordinary assignment that creates an outside variable named `encoding`. Here it passes an argument by name inside a call. This setting also does not translate the contents or automatically detect the input encoding. If the file uses another encoding, specifying UTF-8 does not guarantee that it will be read correctly."
     },
     "teaching_example": {
       "code": "with open(\"note.txt\", \"r\", encoding=\"utf-8\") as f:\n    text = f.read()",
@@ -574,24 +574,24 @@
     "primary_concept": "call",
     "reading_goal_internal": "tmp에 먼저 새 내용을 저장한 뒤 최종 경로로 교체하는 안전 write 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`obj.replace(a, b)` is a method call that passes two paths to the object’s `replace` method.",
-      "how_to_read": "Check which path is the draft and which is the final version.",
-      "key_point": "If you first complete the new data in `tmp` and then replace it, you can reduce the risk of the original data being only partially written during the write operation.",
-      "common_mistake": "It’s easy to assume that simply using `tmp` guarantees a fully atomic write on any filesystem. In reality, atomicity depends on the replacement method and filesystem conditions."
+      "what_it_is": "Easy meaning: `store.replace(tmp, out)` asks `store` to move the contents at tmp to out.\nExact definition: This method call passes `store` as `self` and the values of `tmp` and `out` as `src` and `dst`, then executes the defined `replace` body.",
+      "how_to_read": "Picture the dictionary as storage compartments labeled with paths. The call is a work request; check the method definition to see the actual work. Here, `src` is `\"data/cards.tmp.json\"` and `dst` is `\"data/cards.json\"`. `self.files.pop(src)` removes the source entry and returns its value, and `self.files[dst] = ...` stores that value at the destination. This code changes a dictionary, not actual files.",
+      "key_point": "`write(tmp, \"new-json\")` → store `\"new-json\"` under the temporary path key → `replace(tmp, out)` → `pop(src)` retrieves `\"new-json\"` and removes the temporary key → overwrite the destination's `\"old\"` with `\"new-json\"` → `final_text` is `\"new-json\"`.",
+      "common_mistake": "It is easy to think the code reads the value returned by `replace`. This method has no explicit `return`, so it returns `None`, but it changes the dictionary during the call. The last line reads the changed dictionary, not the call's return value. Also, this code contains no validation or actual file replacement step."
     },
     "teaching_example": {
-      "code": "class Store:\n    def __init__(self): self.files = {}\n    def replace(self, src, dst): self.files[dst] = self.files.pop(src)\n\nstore = Store()\nstore.files[\"tmp\"] = \"new\"\nstore.replace(\"tmp\", \"final\")",
-      "walkthrough": "The new content in `tmp` is moved to `final_key`."
+      "code": "class Store:\n    def __init__(self):\n        self.files = {\"final\": \"old\", \"draft\": \"fresh\"}\n    def replace(self, src, dst):\n        self.files[dst] = self.files.pop(src)\n\nstore = Store()\nstore.replace(\"draft\", \"final\")\nresult = store.files[\"final\"]",
+      "walkthrough": "1) `class Store` defines the operations its objects can use.\n2) `__init__` stores two entries in `files` when an object is created.\n3) The `replace` definition specifies that a call removes the source value and stores it at the destination. Defining it does not perform that operation yet.\n4) `store = Store()` creates and initializes an object with `{\"final\": \"old\", \"draft\": \"fresh\"}`.\n5) `store.replace(\"draft\", \"final\")` runs the body with `self=store`, `src=\"draft\"`, and `dst=\"final\"`. `pop` returns `\"fresh\"` and removes the `\"draft\"` key; that value then overwrites `\"old\"` at `\"final\"`.\n6) The last line reads the value at `\"final\"`, so `result` is `\"fresh\"`. The final dictionary is `{\"final\": \"fresh\"}`, and nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "First, `new-json` is stored in `tmp`, and the `replace` call moves that value to the `out` path.",
-      "why_correct": "This is because the `replace` method definition retrieves the value from `src` and stores it in `dst`.",
+      "step_by_step": "1) The object created by `FileStore()` initially has `files` equal to `{\"data/cards.json\": \"old\"}`.\n2) `tmp` and `out` refer to the temporary and final path strings, respectively.\n3) `store.write(tmp, \"new-json\")` runs with `path=tmp` and `text=\"new-json\"`, storing the new value under the temporary path key. The final path still holds `\"old\"`.\n4) `store.replace(tmp, out)` runs with `src=tmp` and `dst=out`. On the right-hand side, `self.files.pop(src)` returns `\"new-json\"` and removes the temporary key.\n5) That value is assigned to `self.files[dst]`, overwriting `\"old\"`.\n6) `final_text = store.files[out]` reads the updated final path value, so `final_text` is `\"new-json\"`.",
+      "why_correct": "The defined `replace` method assigns the temporary path's `\"new-json\"` value to the final path, so the answer is `new-json`.",
       "common_wrong_choice": {
         "choice": "old",
-        "why_wrong": "\"old\" refers to the original content of \"out\" before it was replaced.",
-        "misread_step": "This is a case where the final state after the `replace` operation has not been reflected."
+        "why_wrong": "`old` is the final path's value before replacement. The `replace` call overwrites it.",
+        "misread_step": "This remembers only the initial state and misses the dictionary change performed by the body of `store.replace(tmp, out)`."
       },
-      "takeaway": "\"safe write\" is read in the order of **tmp write → validation → final replacement**."
+      "takeaway": "A method call connects argument values to parameters and then executes the body. Track the state changed by the body, not just its return value."
     },
     "target_statement": "store.replace(tmp, out)",
     "focus_span": "store.replace(tmp, out)",
@@ -634,10 +634,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "공백을 포함한 전체 경로 문자열이 하나의 constructor argument로 전달되어 Path 객체가 되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`Path(text)` is a constructor call that takes a path string and creates a Path object.",
-      "how_to_read": "Check that the entire string inside the parentheses is a single argument.",
-      "key_point": "Since spaces within a Python string are part of the string, “`my test project`” remains a single path segment name.",
-      "common_mistake": "It’s easy to assume that Python automatically splits a string into multiple arguments because of the spaces. However, a string literal itself is a single value."
+      "what_it_is": "Easy meaning: `Path(...)` turns a path written as text into a value Python can handle as a path.\nExact definition: `Path(\"D:/projects/my test project\")` is a constructor call that passes one string, including its spaces, as an argument to create a Path object.",
+      "how_to_read": "Mental model: think of the parentheses as an input entrance. The entire quoted string enters as one input, and a path object comes out as the result.\nRead line by line:\n1) `from pathlib import Path` makes `Path` available.\n2) Call `Path(\"D:/projects/my test project\")` and bind the resulting object to `project_dir`. The spaces in `my test project` are part of its name.\n3) `/ \"scripts\" / \"run job.py\"` appends two path components in order and binds the result to `script_path`.\n4) `script_path.name` reads the entire name of the final component and binds it to `script_name`. This is attribute access without parentheses, not a call.",
+      "key_point": "Execution flow: one string → `Path(...)` constructor call → the path object bound to `project_dir` → append `scripts`, then `run job.py` → read the final name with `.name` → `script_name` holds the string `\"run job.py\"`.\nSpaces split neither the argument passed to the constructor nor the final filename.",
+      "common_mistake": "It is easy to read the three words in `my test project` as separate arguments, or expect `.name` to return only `run`. But spaces inside quotation marks are part of the string. This call receives one string argument, and the final name retains its space."
     },
     "teaching_example": {
       "code": "from pathlib import Path\nfolder = Path(\"data/my files\")\nname = folder.name",
@@ -871,14 +871,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "함수 호출 괄호 안에 현재 raw 값이 전달되고 호출 결과가 clean에 저장되어 다음 단계의 입력으로 이어지는 실행 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`function(argument)` calls the function by passing the value inside the parentheses and returns the value returned by the function as the result of the call expression.",
-      "how_to_read": "Before a call, check what value the argument name currently refers to, and after the call, track where the return value goes—whether it is assigned to a variable or used in the next call.",
-      "key_point": "`normalize_cards(raw)` itself is not a statement that changes the name “raw” to “clean,” but rather a **call expression that uses the `raw` value as input to return a new result**.",
-      "common_mistake": "Since function names and variable names serve similar purposes, it’s easy to assume that simply calling the function will automatically update the `raw` variable. In this code, the return value is stored in a separate variable named `clean`."
+      "what_it_is": "Easy meaning: a function call gives a function input, asks it to do a job, and receives a result.\nExact definition: `normalize_cards(raw)` is a call expression that evaluates the argument expression `raw`, binds the resulting object to the parameter `cards`, executes the function, and yields its return value.",
+      "how_to_read": "Think of input → processing → result. Inside the parentheses of `normalize_cards(raw)`, `raw` currently refers to `[\" A \", \" B \"]`. Inside the function, `cards` refers to this same list, and the function builds a new list with leading and trailing whitespace removed from each string. Only after the function returns does `clean` refer to that result.",
+      "key_point": "Pass the value of `raw`, `[\" A \", \" B \"]` → execute the function body → return `[\"A\", \"B\"]` → bind it to `clean` → bind `write_payload` to the same result list → `print(write_payload)` displays `['A', 'B']`. The input passed in and the result returned are different. This function does not change the original `raw` list.",
+      "common_mistake": "Having `clean =` on the left does not mean the already-cleaned `[\"A\", \"B\"]` is passed to the function. The right-hand side, `normalize_cards(raw)`, runs first, so the input is `[\" A \", \" B \"]`, with spaces still present. `clean` is the name bound to the return value after the call finishes, not an argument to this call."
     },
     "teaching_example": {
-      "code": "def normalize(values):\n    return [value.strip() for value in values]\n\nraw = [\" A \", \" B \"]\nclean = normalize(raw)\nprint(clean)",
-      "walkthrough": "The raw list is passed to the `normalize` function, and the new list returned is stored in `clean`."
+      "code": "def normalize(values):\n    return [value.strip() for value in values]\n\nsource = [\" C \", \" D \"]\nresult = normalize(source)\nprint(result)",
+      "walkthrough": "1) `def normalize(values):` defines the function. Its body does not run yet.\n2) The indented `return` line specifies that, when called, the function returns a new list with leading and trailing whitespace removed from each string.\n3) `source = [\" C \", \" D \"]` binds the list containing spaces to `source`.\n4) In `result = normalize(source)`, the current list referred to by `source` is passed first, so `values` refers to that same list. The body now runs and returns `[\"C\", \"D\"]`, and that result is bound to `result`. `source` is unchanged.\n5) `print(result)` displays `['C', 'D']`.\nFlow: `[\" C \", \" D \"]` input → execute function → return `[\"C\", \"D\"]` → `result` → output."
     },
     "answer_explanation": {
       "step_by_step": "1) `raw` is [\"A\", \"B\"]. 2) Since the name `raw` appears inside the calling parentheses, the current value of that name is passed as an argument. 3) Inside the function, `strip` is executed, returning `[\"A\", \"B\"]`. 4) That return value is stored in `clean` after the call.",

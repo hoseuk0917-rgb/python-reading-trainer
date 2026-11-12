@@ -148,10 +148,10 @@
         "primary_concept":  "attribute_access",
         "reading_goal_internal":  "메서드 안에서 self가 현재 인스턴스를 가리키고 점 접근이 그 객체의 상태를 읽는 흐름을 이해한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`object.attribute` is attribute access that reads an attribute of an object. In an instance method, `self` refers to the current object that called the method.",
-                                    "how_to_read":  "`self.seen` This is interpreted as reading the ``seen`` attribute within the `Progress` object.",
-                                    "key_point":  "`seen` is not a global variable but **an attribute attached to the current `self` instance**.",
-                                    "common_mistake":  "`self` It is easy to think of `self` as a special global object. In reality, the instance that called the method is passed as `self`."
+                                    "what_it_is":  "Easy meaning: `self.seen` refers to the value named `seen` attached to the Progress object currently being used.\nExact definition: An attribute access expression, `object.attribute`, looks up the named attribute on an object; here, `self.seen` reads the `seen` attribute value of the current instance referred to by `self`.",
+                                    "how_to_read":  "Imagine each Progress object has a storage slot labeled `seen`. `self` points to the current object, and `.seen` identifies that object's slot. In `__init__`, `self.seen = set()` creates an empty set and stores it in this attribute. In `mark_seen`, `self.seen.add(card_id)` reads the set from the same attribute, then adds `card_id` to that set.",
+                                    "key_point":  "Flow when called: instance initialization → `set()` creates an empty set → store it in `self.seen`. Later, when `mark_seen` is called: current instance → retrieve the set from its `seen` attribute → add an item to that set with `add(card_id)`. Thus, `self.seen` refers to the current Progress instance's `seen` attribute. The shown code itself only defines the class, so it does not yet create an instance or add any items, and it produces no output.",
+                                    "common_mistake":  "Do not read `self.seen` as a global variable named `seen`. The `self` to the left of the dot determines whose attribute is accessed. `self` is not a special global object; it is the parameter name that receives the instance in a normal instance-method call. Here, each instance receives a separate empty set as its own `seen` attribute when initialized."
                                 },
         "teaching_example":  {
                                  "code":  "class Basket:\n    def __init__(self):\n        self.items = []\n\n    def count(self):\n        return len(self.items)",
@@ -219,14 +219,14 @@
                                  "walkthrough":  "Although both objects have the same ``name`` attribute, ``u1.name`` is stored as ``\"Ana\"``, and ``u2.name`` is stored as ``\"Bo\"``."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "In the constructor calls, different strings are stored in the `title` attributes of ``a`` and ``b``. When the `title` is subsequently read from each object, the stored value is returned as-is.",
-                                   "why_correct":  "This is because instance attributes can be stored separately for each object.",
+                                   "step_by_step":  "1) `class Card` defines the class. The assignments inside `__init__` run when each object is initialized.\n2) `a = Card(\"c1\", \"A\")` creates a new object. During initialization, `self` refers to this object: `self.card_id = card_id` stores \"c1\", and `self.title = title` stores \"A\". `a` refers to this object.\n3) `b = Card(\"c2\", \"B\")` creates a separate object. This time, `self` refers to the new object, so its `card_id` is set to \"c2\" and its `title` to \"B\". `a.title` does not change.\n4) `title_a = a.title` reads \"A\" from the `title` attribute of the object referenced by `a` and assigns it to `title_a`.\n5) `title_b = b.title` reads \"B\" from the `title` attribute of the object referenced by `b` and assigns it to `title_b`.\nResult: `title_a` is \"A\" and `title_b` is \"B\".",
+                                   "why_correct":  "`a.title` and `b.title` use the same attribute name but read values from different objects. Those objects store \"A\" and \"B\", respectively, so the correct choice is 'A and B.'.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Both are A",
-                                                               "why_wrong":  "`b` is created as a separate instance, and the constructor sets the `title` to ``\"B\"``.",
-                                                               "misread_step":  "This is an example where class sharing and instance state sharing are treated as the same thing."
+                                                               "why_wrong":  "When `b` is initialized, the `title` argument is \"B\", which is stored on the object referenced by `b`. Reading `b.title` therefore gives \"B\", not \"A\".",
+                                                               "misread_step":  "This treats `self.title` as one shared storage location because both objects come from the same class. Here, `self` refers to the particular object being initialized."
                                                            },
-                                   "takeaway":  "Even within the same class, **attribute values may differ from one instance to another.**"
+                                   "takeaway":  "Check the object before the dot first. Even with the same attribute name, `a.title` and `b.title` read the values stored on their respective objects."
                                },
         "target_statement":  "title_a = a.title",
         "focus_span":  "a.title",
@@ -330,14 +330,14 @@
         "primary_concept":  "decorator",
         "reading_goal_internal":  "class 바로 위의 decorator가 아래 class definition에 적용된다는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "The `@decorator` immediately above the class is class decorator syntax that treats the class object below as a decorator function.",
-                                    "how_to_read":  "`@...` Treat the line and the immediately following class definition as a single unit.",
-                                    "key_point":  "`@dataclass` is applied to the `Card` class below.",
-                                    "common_mistake":  "It’s easy to assume that a decorator applies only to the first field, `id`. However, it applies to the entire class."
+                                    "what_it_is":  "Easy meaning: `@dataclass` adds data-handling features to the class defined immediately below it.\nExact definition: Class decorator syntax calls a decorator with the newly created class object as its argument and binds the decorator's return value to the class name.",
+                                    "how_to_read":  "Picture creating a class and then handing it to the decorator for processing. In this card, the target is `class Card:`, immediately below `@dataclass`. The indented lines `id: str`, `level: int`, and `title: str` declare fields inside that class.",
+                                    "key_point":  "The flow is: execute the class body → create the `Card` class object → pass it to `dataclass` → bind the return value to the name `Card`. Here, `dataclass` uses the field information to add methods and returns the same class object. Therefore, the direct target is `Card class`. No code creates an instance or prints anything.",
+                                    "common_mistake":  "Being the first field does not make `id` the sole target of `@dataclass`. The fields provide information that the decorator examines; the object it directly receives is the class object. It does not apply to the earlier `import` statement either."
                                 },
         "teaching_example":  {
                                  "code":  "from dataclasses import dataclass\n\n@dataclass\nclass User:\n    name: str",
-                                 "walkthrough":  "`@dataclass` applies to the entire User class definition below."
+                                 "walkthrough":  "1. `from dataclasses import dataclass`: Import `dataclass` to use as a decorator.\n2. `@dataclass`: Specify that the upcoming `User` class is to be processed by `dataclass`. Processing is not already complete at this line.\n3. `class User:`: Execute the class body and create the `User` class object.\n4. `name: str`: Within the body, record a type annotation for `name`. `dataclass` uses this as field information; this line neither assigns a name value nor creates a user.\n5. Once the class object exists, `dataclass` receives it, processes it, and returns the same object. That return value is bound to the name `User`.\nResult: A data class named `User` with a `name` field is defined. The decorator's direct target is the `User` class, not the `name` field, and there is no screen output."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "`@dataclass` Since ``class Card:`` appears immediately below, the decorator is applied to the `Card` class definition.",
@@ -389,24 +389,24 @@
         "primary_concept":  "type_annotation",
         "reading_goal_internal":  "class field의 이름과 `list[str]` annotation을 분리해 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`name: type` is a type annotation that indicates what type of value a variable or field expects.",
-                                    "how_to_read":  "The colon separates the name on the left from the type expression on the right.",
-                                    "key_point":  "`list[str]` is a type notation that specifies that each item in the list is expected to be a string.",
-                                    "common_mistake":  "`choices` It’s easy to think of `itself` as a single `str`. However, its outer type is a `list`."
+                                    "what_it_is":  "Easy meaning: It is a label beside a name describing what kind of value belongs there.\nExact definition: A type annotation indicates the expected type associated with a name; `choices: list[str]` indicates that the choices field expects a list whose elements are strings.",
+                                    "how_to_read":  "Picture a list as a box holding items. `choices` names the box, and `list[str]` to the right of the colon labels the kind of box and its contents. Read the outer `list` first as 'a list', then the inner `str` as 'each element is a string'. For example, `['Yes', 'No']` fits this description.",
+                                    "key_point":  "In the class body, `choices: list[str]` declares type information, and `@dataclass` recognizes names with annotations like this as fields. This line does not create a list or assign a value to choices. The code also contains no instance creation or output; the type structure to read is 'List of strings'.",
+                                    "common_mistake":  "It is easy to focus only on `str` and read this as one string, or to think the annotation automatically checks at runtime that only strings are allowed. The outer type of `list[str]` is a list, and this annotation itself does not enforce element types. It does not specify a length either, so an empty list is also possible."
                                 },
         "teaching_example":  {
                                  "code":  "class Quiz:\n    tags: list[str]",
                                  "walkthrough":  "\"tags\" is annotated as a list containing multiple strings, not a single string."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "In `list[str]`, `list` is a container type and `str` is the type of the items it contains.",
-                                   "why_correct":  "This is because Python’s generic type annotation represents the type of a list element inside square brackets.",
+                                   "step_by_step":  "1. `from dataclasses import dataclass` imports the decorator used for the class.\n2. The body of `class Card:` declares field names and their type annotations.\n3. In `choices: list[str]`, `choices` to the left of the colon is the field name.\n4. On the right, the outer `list` says the whole value is expected to be a list, and the inner `str` says each element is expected to be a string.\n5. Once the class is defined, `@dataclass` recognizes this declaration as a field. No actual choices value is created here; the type structure asked about is 'List of strings'.",
+                                   "why_correct":  "`list[str]` is type notation for 'a list whose elements are strings'. Therefore, the correct answer is 'List of strings'. This follows from reading the declared type structure, not from inspecting an actual stored value.",
                                    "common_wrong_choice":  {
                                                                "choice":  "A single string",
-                                                               "why_wrong":  "It is not just `str` written on its own, but is wrapped in `list[str]`.",
-                                                               "misread_step":  "This is a case where the outer container type was overlooked while focusing only on the inner element type."
+                                                               "why_wrong":  "To indicate that one string is expected, the declaration would be `choices: str`. Here, the outer `list` indicates that the whole value is expected to be a list.",
+                                                               "misread_step":  "This mistake reads only the inner `str` and skips the outer `list`, which determines the overall structure."
                                                            },
-                                   "takeaway":  "A generic annotation reads both the **outer container type and the inner element type**."
+                                   "takeaway":  "Read `name: list[element type]` as name → list → type of each element. Distinguish a type declaration from creating or checking an actual value."
                                },
         "target_statement":  "choices: list[str]",
         "focus_span":  "choices: list[str]",
@@ -459,14 +459,14 @@
                                  "walkthrough":  "The two fields, `opened` and `closed`, are grouped together in a single `Session` class."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "The annotation lines for the `class body` consist of three entries: \"seen,\" \"correct,\" and \"confused.\"",
-                                   "why_correct":  "This is because all three lines are defined directly within the same Progress class body.",
+                                   "step_by_step":  "`from dataclasses import dataclass` imports the decorator; it is not a state field.\n↓\nLook for field names in the indented body of `class Progress:`.\n↓\n`seen: set[str]` declares the first field, `seen`.\n↓\n`correct: set[str]` declares the second field, `correct`.\n↓\n`confused: set[str]` declares the third field, `confused`.\n↓\nAfter the class is created, `@dataclass` processes these three declarations as fields.\n↓\nThere are 3 directly defined state fields.",
+                                   "why_correct":  "All three declarations are in the same `Progress` body, and each has a distinct field name. `set[str]` is the type annotation for each field, not an additional field. Therefore, the correct answer is `3`.",
                                    "common_wrong_choice":  {
                                                                "choice":  "2",
-                                                               "why_wrong":  "This is a value where the `confused` field was omitted.",
-                                                               "misread_step":  "This is a case where the fields in the class body were not counted to the end."
+                                                               "why_wrong":  "Besides `seen` and `correct`, the final line declares `confused` at the same indentation level, so it must also be counted.",
+                                                               "misread_step":  "This counts only the first two fields without reading to the end of the class body."
                                                            },
-                                   "takeaway":  "A class model is read as **a structure consisting of a name → fields/methods in the body → a single type**."
+                                   "takeaway":  "In this code, count each `name: type` declaration in the class body. Count fields, not elements inside sets; a type annotation alone does not create an empty set."
                                },
         "target_statement":  "class Progress:",
         "focus_span":  "class Progress:",
@@ -510,10 +510,10 @@
         "primary_concept":  "attribute_access",
         "reading_goal_internal":  "같은 의미의 title 값을 dict와 object에서 서로 다른 접근 문법으로 읽는 차이를 비교한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`obj.attr` This is the syntax for reading an attribute of an object instance.",
-                                    "how_to_read":  "Check the object to the left of the dot and find the `attr` value stored in that object.",
-                                    "key_point":  "A dict can read a value with key lookup `card_dict[\u0027title\u0027]`, while an object can read a value serving the same role with attribute access `card_obj.title`.",
-                                    "common_mistake":  "It’s easy to assume that `card_obj[\u0027title\u0027]` is automatically applied to `object` as well. However, the access syntax differs between regular `object`s and `dict`s."
+                                    "what_it_is":  "Easy meaning: `card_obj.title` reads the value attached to `card_obj` under the name `title`.\nExact definition: Attribute access `obj.attr` is an expression that looks up a named value using the object's attribute lookup rules; here it reads the `title` value stored on the instance.",
+                                    "how_to_read":  "Imagine an object with labeled fields. The left side of the dot identifies the object, and the right side names the field to read.\n`class Card` defines a class for creating objects. In `__init__`, `self` refers to the object being initialized, and `self.title = title` stores the supplied value in that object's `title` attribute.\nThe line creating `card_dict` and `dict_title = card_dict[\"title\"]` form a separate flow that reads a dictionary value by key. Next, `card_obj = Card(\"object 카드\")` creates and initializes an object, and the final `card_obj.title` reads that object's `title` attribute.",
+                                    "key_point":  "Call `Card(\"object 카드\")` → pass `\"object 카드\"` to the `title` parameter of `__init__` → store it on the object with `self.title = title` → retrieve it with `card_obj.title` → store `\"object 카드\"` in `object_title`.\nBy contrast, `card_dict[\"title\"]` reads `\"dict 카드\"`. Similar names do not mean the values come from the same place.",
+                                    "common_mistake":  "Sharing the name `title` does not make this read the dictionary's value or produce the literal string `\"title\"`. `card_obj.title` reads the attribute value of the specified object. Also, this `Card` class does not define square-bracket access, so replacing it with `card_obj[\"title\"]` raises a `TypeError` rather than reading the same value."
                                 },
         "teaching_example":  {
                                  "code":  "class User:\n    def __init__(self, name):\n        self.name = name\n\nuser_dict = {\"name\": \"Kim\"}\nuser_obj = User(\"Lee\")\na = user_dict[\"name\"]\nb = user_obj.name",
@@ -578,18 +578,18 @@
                                     "common_mistake":  "It is easy to assume that `from_dict` returns the original `dict` as-is."
                                 },
         "teaching_example":  {
-                                 "code":  "class User:\n    def __init__(self,name): self.name=name\n    @classmethod\n    def from_dict(cls,data):\n        return cls(name=data[\"name\"])\nuser=User.from_dict({\"name\":\"A\"})",
-                                 "walkthrough":  "A `User` object is created by passing the name-value pair from the `dict` to the constructor."
+                                 "code":  "class User:\n    def __init__(self, name):\n        self.name = name\n\n    @classmethod\n    def from_dict(cls, data):\n        return cls(name=data[\"name\"])\n\nuser = User.from_dict({\"name\": \"A\"})\nprint(user.name)",
+                                 "walkthrough":  "The flow takes a value from a dictionary and uses it to create a new object.\n1) `class User:` defines the User class.\n2) `def __init__(self, name):` defines the method that initializes a new object. When executed, `self.name = name` stores the supplied value in the object's name attribute.\n3) `@classmethod` makes from_dict a class method. `def from_dict(cls, data):` defines parameters for the class and dictionary. The method body does not run yet.\n4) Calling `User.from_dict({\"name\": \"A\"})` supplies User as cls and this dictionary as data.\n5) `data[\"name\"]` retrieves \"A\". Thus, `cls(name=data[\"name\"])` is equivalent here to calling `User(name=\"A\")`. A new User object is created, and __init__ sets its name to \"A\".\n6) `return` sends back the new object, and user refers to it.\n7) `print(user.name)` outputs A.\n\nExecution flow: dictionary → retrieve \"A\" → call User(name=\"A\") → return new object → bind user → output A. The original dictionary is not returned as-is."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "The two fields of `data` become arguments to the `cls` constructor, and a new instance is returned.",
-                                   "why_correct":  "This is because the factory method converts an external mapping into input for creating a domain object.",
+                                   "step_by_step":  "1) The code imports dataclass and defines Card. `@dataclass` generates an __init__ method that accepts and initializes the declared id and title fields.\n2) The final line calls `Card.from_dict({\"id\": \"c1\", \"title\": \"Dict 읽기\"})`. Because of `@classmethod`, cls receives Card, and data receives this dictionary.\n3) `data[\"id\"]` is \"c1\", and `data[\"title\"]` is \"Dict 읽기\".\n4) Therefore, the focused expression `cls(id=data[\"id\"], title=data[\"title\"])` is equivalent here to calling `Card(id=\"c1\", title=\"Dict 읽기\")`.\n5) This call creates a new Card object and initializes its two fields. `return` sends that object back, and card refers to it.\nResult: card.id is \"c1\", and card.title is \"Dict 읽기\". There is no print call, so nothing is displayed.",
+                                   "why_correct":  "from_dict retrieves values from the dictionary, passes them as arguments to the Card creation call, and returns a new Card object. This is the role described by the correct choice, 'Replace `dict` with `Card` objects'. The original dictionary itself does not become a Card and is not returned as-is.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Read the Git log.",
-                                                               "why_wrong":  "There is no Git-related call at all; the code calls a constructor.",
-                                                               "misread_step":  "This is a case of missing the data-conversion role of the factory method."
+                                                               "why_wrong":  "The code only looks up two dictionary keys and calls Card. It performs no operation that reads a Git log.",
+                                                               "misread_step":  "This mistake guesses the role from the method name instead of following the values from `data[...]` into the arguments of `cls(...)`, which creates a new object."
                                                            },
-                                   "takeaway":  "\"from_dict\" is interpreted as **mapping field lookup → constructor call → object**."
+                                   "takeaway":  "Read the body of `from_dict`: look up dictionary values → pass them as arguments to a class call → create and return a new object. In this code, cls is Card."
                                },
         "target_statement":  "return cls(id=data[\"id\"], title=data[\"title\"])",
         "focus_span":  "cls(id=data[\"id\"], title=data[\"title\"])",
@@ -633,24 +633,24 @@
         "primary_concept":  "literal",
         "reading_goal_internal":  "object state를 JSON/API에 적합한 dict 구조로 바꾸는 to_dict 반환값을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`{\u0027id\u0027: self.id, \u0027title\u0027: self.title}` is a dictionary literal created by specifying object attribute values.",
-                                    "how_to_read":  "Let’s see which instance attribute each dict key retrieves its value from.",
-                                    "key_point":  "`to_dict` is a common pattern for converting domain objects into serialization-friendly mappings.",
-                                    "common_mistake":  "It’s easy to think that `to_dict` deletes the original object or converts it to a `dict` class. It returns a new `dict` value."
+                                    "what_it_is":  "Easy meaning: This expression gathers values stored in an object into a collection with labels.\nExact definition: `{\"id\": self.id, \"title\": self.title}` is a dictionary literal that creates a new dictionary (dict) by specifying key-value pairs.",
+                                    "how_to_read":  "Think of each entry as ‘associate this label with this value.’ The strings `\"id\"` and `\"title\"` on the left of the colons are keys; `self.id` and `self.title` on the right are values read from the current object.",
+                                    "key_point":  "`card.to_dict()` reads the object's values `\"c1\"` and `\"Title\"` to create `{\"id\": \"c1\", \"title\": \"Title\"}`. `return` returns this new dict, and `data` refers to it.",
+                                    "common_mistake":  "Do not read `to_dict()` as changing the original object itself into a dict or deleting it. This code reads the object's attributes and returns a new dict; `card` still refers to the Card object."
                                 },
         "teaching_example":  {
-                                 "code":  "class Item:\n    def __init__(self,id): self.id=id\n    def to_dict(self): return {\"id\":self.id}\nitem=Item(\"x\")\ndata=item.to_dict()",
-                                 "walkthrough":  "It copies the instance\u0027s ID into a new dictionary and returns it."
+                                 "code":  "class Item:\n    def __init__(self, item_id):\n        self.id = item_id\n\n    def to_dict(self):\n        return {\"id\": self.id}\n\nitem = Item(\"x\")\ndata = item.to_dict()",
+                                 "walkthrough":  "`class Item` defines the Item class. Inside `__init__`, `self.id = item_id` stores the value received during creation in the object's `id`. Inside `to_dict`, `return {\"id\": self.id}` reads the attribute and returns a new dict when called.\nExecuting `item = Item(\"x\")` makes `item.id` equal to `\"x\"`. On the next line, calling `item.to_dict()` evaluates `self.id` to `\"x\"`, creating `{\"id\": \"x\"}`. This value is returned and bound to `data`. There is no print statement."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "`self.id` and `self.title` become the values in the new dictionary and are returned.",
-                                   "why_correct":  "This is because `dict` is a structure that can be easily used for JSON serialization and API responses.",
+                                   "step_by_step":  "1. `Card(\"c1\", \"Title\")` creates an object, and `__init__` stores `\"c1\"` in `self.id` and `\"Title\"` in `self.title`.\n2. When `card.to_dict()` is called, `self` refers to that Card object.\n3. The dictionary literal reads `self.id` and `self.title` to create `{\"id\": \"c1\", \"title\": \"Title\"}`.\n4. `return` returns the new dict, and `data` refers to it.",
+                                   "why_correct":  "Therefore, “Convert the object to a dict.” is correct. Here, conversion means creating a new dict containing the object's attributes, not changing the type of the object itself.",
                                    "common_wrong_choice":  {
                                                                "choice":  "Delete the `dict`.",
-                                                               "why_wrong":  "Instead, it creates and returns a new dict.",
-                                                               "misread_step":  "This is a case where \"serialization\" and \"deletion\" were confused."
+                                                               "why_wrong":  "This code does not delete a dict; it creates a new dict with `{...}` and returns it.",
+                                                               "misread_step":  "This misses that the brace expression in `return {\"id\": self.id, \"title\": self.title}` creates a dict and that `return` sends that value back."
                                                            },
-                                   "takeaway":  "Read `to_dict` as **object attributes → mapping → serialization boundary**."
+                                   "takeaway":  "Keys are on the left of colons; values to retrieve are on the right. Read the flow as: read object attributes → create a new dict → return it → bind it to `data`."
                                },
         "target_statement":  "return {\"id\": self.id, \"title\": self.title}",
         "focus_span":  "{\"id\": self.id, \"title\": self.title}",
@@ -822,18 +822,18 @@
                                     "common_mistake":  "It is easy to assume that count is reset to 0 every time add() is called."
                                 },
         "teaching_example":  {
-                                 "code":  "class Score:\n    def __init__(self): self.value=5\n    def add(self): self.value += 1\nscore=Score()\nscore.add()",
-                                 "walkthrough":  "The existing value of 5 changes to 6 and is retained within the instance."
+                                 "code":  "class Score:\n    def __init__(self):\n        self.value = 5\n\n    def add(self):\n        self.value += 1\n\nscore = Score()\nscore.add()\nresult = score.value",
+                                 "walkthrough":  "1. `class Score:` defines the object's data and behavior.\n2. `def __init__(self):` defines how a new object is initialized. During initialization, `self.value = 5` stores 5 in that object's `value` attribute.\n3. `def add(self):` defines an action to call later. It does not execute `self.value += 1` yet.\n4. `score = Score()` creates and initializes an object, so `score.value` is 5.\n5. Calling `score.add()` makes `self` refer to the object referenced by `score`. `self.value += 1` reads the existing integer 5, adds 1, and stores the result, 6, back in the same attribute.\n6. `result = score.value` reads the stored 6 and binds it to `result`. Finally, both `score.value` and `result` are 6; nothing is printed."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since `add()` adds 1 to `count`, which started at 0 in the constructor, the result is 1.",
-                                   "why_correct":  "This is because the `augmented assignment` actually updates the existing instance state.",
+                                   "step_by_step":  "1. Inside `class Counter:`, the code defines `__init__` and `add`. Defining these methods does not execute their bodies.\n2. `counter = Counter()` creates an object and runs `__init__`. `self.count = 0` sets that object's `count` to 0.\n3. `counter.add()` runs `add` once on the same object. Here, `self` refers to the object referenced by `counter`.\n4. `self.count += 1` reads the current value, 0, calculates `0 + 1`, and stores the result, 1, in that object's `count` attribute.\n5. After the call, `counter.count` remains 1. `result = counter.count` reads that value, so `result` is also 1.",
+                                   "why_correct":  "In this code, `+= 1` is augmented assignment: it adds 1 to the existing integer value and stores the result back in the same attribute. One call to `add()` therefore changes `self.count` from 0 to 1, matching the choice '1 increases'.",
                                    "common_wrong_choice":  {
                                                                "choice":  "It is always 0",
-                                                               "why_wrong":  "0 is the initial value and changes after the add call.",
-                                                               "misread_step":  "This is an example where the order of constructor initialization and method state changes is not distinguished."
+                                                               "why_wrong":  "0 is the value stored during initialization. `add()` does not run `__init__` again; it adds 1 to the value already stored.",
+                                                               "misread_step":  "This misreads `counter.add()` as also executing `self.count = 0` again. The body of the method actually called is `self.count += 1`."
                                                            },
-                                   "takeaway":  "A \"stateful object\" is described as **initial state → method mutation → retained state**."
+                                   "takeaway":  "For the object's attribute in this code, read `+= 1` as 'read the existing value → add 1 → store in the same attribute.' The initial 0 becomes 1 and remains stored after the call."
                                },
         "target_statement":  "self.count += 1",
         "focus_span":  "self.count += 1",
@@ -937,14 +937,14 @@
         "primary_concept":  "class_definition",
         "reading_goal_internal":  "관련된 domain state를 하나의 StudySession class로 묶은 모델의 의미를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`class StudySession:` is a class definition that represents the domain concept of a current study session.",
-                                    "how_to_read":  "Establish a connection between the class field name and the state it represents in the real world or in the product.",
-                                    "key_point":  "A domain model goes beyond a simple \"data bag\" to explicitly define in the code the core concepts that drive the product.",
-                                    "common_mistake":  "It is easy to think of `StudySession` as a concept similar to a server HTTP session. Here, it refers to the learning session domain model."
+                                    "what_it_is":  "Easy meaning: `class StudySession:` defines a new kind of object for keeping the information needed for one study session together.\nExact definition: A class definition executes its body in a new namespace to create a class object; here, `@dataclass` adds an initializer and other methods based on annotated fields before the class is bound to the name `StudySession`.",
+                                    "how_to_read":  "Mental model: Imagine designing a study record form with three spaces: cards, progress, and current position. Defining the form is different from creating an actual record.\nReading the code: `class StudySession:` defines the new kind of object. The indented declarations introduce fields: `cards: list[Card]` for the card list, `progress: Progress` for progress state, and `current_index: int` for the current position represented as an integer. Read together, these names describe a model grouping the current learning session's state.",
+                                    "key_point":  "Execution flow: import `dataclass` → process field annotations in the class body → create the class object → `@dataclass` adds an initializer and other methods → bind to `StudySession`.\nThis assumes the surrounding code provides the `Card` and `Progress` types. This snippet has no `StudySession(...)` call, so it creates no actual session instance or field values and produces no output. It defines the class that represents cards, progress state, and position together.",
+                                    "common_mistake":  "Do not read `current_index: int` as an assignment giving the position a value. A type annotation supplies no initial value such as `0`, and it does not automatically start studying or update progress. Creating an instance with actual values requires a separate class call."
                                 },
         "teaching_example":  {
-                                 "code":  "from dataclasses import dataclass\n@dataclass\nclass Cart:\n    items: list\n    current_index: int",
-                                 "walkthrough":  "We group the relevant state together under the domain concept of “shopping cart.”"
+                                 "code":  "from dataclasses import dataclass\n\n@dataclass\nclass ReadingPosition:\n    book: str\n    page: int\n\nposition = ReadingPosition(\"Python\", 12)\nprint(position.page)",
+                                 "walkthrough":  "1) `from dataclasses import dataclass` imports the decorator.\n2) `@dataclass` specifies that it will process the class defined immediately below.\n3) `class ReadingPosition:` begins defining a class representing a reading position in a book.\n4) `book: str` declares the book-name field and its type annotation. It does not supply a book-name value yet.\n5) `page: int` declares the page field and its type annotation. After the body ends, the class is created, the decorator adds an initializer and other methods, and the class is bound to `ReadingPosition`.\n6) `ReadingPosition(\"Python\", 12)` creates an instance, and the generated initializer stores `\"Python\"` in `book` and `12` in `page`. `position` refers to this instance.\n7) `print(position.page)` reads the stored page value and prints `12`.\nFlow: define class → call class → initialize both fields → read page → output `12`."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "Since `StudySession` has three fields—`cards`, `progress`, and `current_index`—it represents the content, progress, and position of the current learning session.",

@@ -458,14 +458,14 @@
     "primary_concept": "except_clause",
     "reading_goal_internal": "try 안 호출에서 Exception이 발생했을 때만 except가 실행되어 현재 item을 실패 목록에 넣는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`except Exception:`은 try 블록에서 해당 예외 타입 계열이 발생했을 때 실행되는 typed except 절입니다.",
-      "how_to_read": "먼저 try의 어떤 문장이 예외를 낼 수 있는지 보고, 실제 예외가 발생한 반복에서만 except 본문을 적용합니다.",
-      "key_point": "실패 queue에는 모든 item이 아니라 예외가 발생한 item만 들어갑니다.",
-      "common_mistake": "except가 for 반복마다 항상 실행된다고 생각하기 쉽습니다. try가 정상 완료되면 except는 건너뜁니다."
+      "what_it_is": "쉽게 말하면: `except Exception:`은 앞에서 시도한 작업에 오류가 생겼을 때만 실행하는 오류 처리 부분입니다.\n정확한 정의: `except Exception:` 절은 연결된 `try` 블록에서 발생한 예외가 `Exception` 또는 그 하위 클래스의 인스턴스이면 그 예외를 잡아 본문을 실행합니다.",
+      "how_to_read": "오류가 났을 때만 들어가는 옆길이라고 생각하세요. `failed = []`로 빈 목록을 만들고, `for`가 각 문자열을 차례로 `item`에 연결합니다. `try` 안에서 `item == \"bad\"`를 검사하고, 참일 때만 `raise`가 `RuntimeError`를 발생시킵니다. `RuntimeError`는 `Exception`의 하위 클래스이므로 `except Exception:`이 잡고 `failed.append(item)`을 실행합니다.",
+      "key_point": "`\"ok-1\"` → 조건이 거짓 → 예외 없음 → 추가하지 않음.\n`\"bad\"` → 조건이 참 → `RuntimeError` 발생 → `except` 실행 → `failed`가 `[\"bad\"]`가 됨.\n처리가 끝나면 다음 반복으로 진행합니다. `\"ok-2\"`에서도 예외가 없으므로 최종 값은 `[\"bad\"]`입니다.",
+      "common_mistake": "`except`가 매 반복마다 실행되거나, `Exception`이라는 정확한 이름의 예외만 잡는다고 생각하기 쉽습니다. 정상적으로 끝난 `try`에서는 실행되지 않으며, 여기서는 하위 클래스인 `RuntimeError`도 잡습니다. 이 코드는 실패 항목을 모을 뿐 다시 시도하지는 않습니다."
     },
     "teaching_example": {
       "code": "failed = []\nfor item in [1, 0, 2]:\n    try:\n        10 / item\n    except ZeroDivisionError:\n        failed.append(item)",
-      "walkthrough": "0에서만 ZeroDivisionError가 발생하므로 failed에는 0 하나만 들어갑니다."
+      "walkthrough": "1) `failed = []`는 빈 목록을 만듭니다.\n2) `for`는 `1`, `0`, `2`를 차례로 `item`에 연결합니다.\n3) `try:`는 그 안의 `10 / item`을 실행합니다.\n4) `item`이 `1`이면 나눗셈 결과는 `10.0`입니다. 이 값은 저장하지 않으며, 예외가 없으므로 `except`를 건너뜁니다.\n5) `item`이 `0`이면 `10 / item`이 `ZeroDivisionError`를 발생시킵니다. `except ZeroDivisionError:`가 이를 잡고 `failed.append(item)`이 `0`을 추가합니다.\n6) 다음 반복에서 `item`은 `2`이고 나눗셈 결과는 `5.0`입니다. 이 값도 저장하지 않으며 `except`를 건너뜁니다.\n최종 결과: `failed`는 `[0]`입니다. 화면에 출력되는 것은 없습니다."
     },
     "answer_explanation": {
       "step_by_step": "세 반복 중 `bad`에서만 RuntimeError가 발생합니다. `except Exception:`이 그 예외를 처리하면서 `bad`를 failed에 추가합니다.",
@@ -520,24 +520,24 @@
     "primary_concept": "except_clause",
     "reading_goal_internal": "background job 실패가 status=error 기록과 예외 재전파로 이어지는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`except Exception as e:`는 발생한 예외 객체를 e에 바인딩해 처리하는 except clause입니다.",
-      "how_to_read": "예외가 발생한 뒤 어떤 상태를 저장하고, 이후 예외를 삼키는지 다시 던지는지 확인합니다.",
-      "key_point": "장기 작업은 UI에서 running/done/error 상태를 볼 수 있어야 운영하기 쉽습니다.",
-      "common_mistake": "error 상태를 저장했으면 함수가 정상 성공으로 끝난다고 생각하기 쉽습니다. 마지막 raise 때문에 실패는 계속 전파됩니다."
+      "what_it_is": "쉽게 말하면: `except`는 작업 도중 오류가 나면 실행할 대처 방법을 적는 부분입니다.\n정확한 정의: `except Exception as e:` 절은 연결된 `try`에서 발생한 예외가 `Exception` 또는 그 하위 클래스의 인스턴스이면 이를 잡아 `e`에 바인딩하고 처리 코드를 실행합니다.",
+      "how_to_read": "오류가 나면 정상 경로에서 빠져나와 오류 처리 경로로 갈아탄다고 생각하세요. 이 카드에서 `start_job(job_id)`를 호출하면 먼저 running을 기록합니다. `run_long_task`가 `RuntimeError`를 발생시키면 done 기록은 건너뛰고 `except Exception as e:`로 이동합니다. `RuntimeError`는 `Exception`의 하위 클래스이므로 이 절이 선택됩니다.",
+      "key_point": "호출 시 흐름: running 기록 → `RuntimeError(\"failed\")` 발생 → done 기록 건너뜀 → `e`로 예외를 받아 error와 메시지 `\"failed\"` 기록 → 마지막 `raise`로 같은 예외 재전파. 여기서 저장은 데이터베이스 갱신이 아니라 `events` 리스트에 기록을 추가하는 것입니다.",
+      "common_mistake": "오류를 잡아 error를 기록했으니 함수가 정상 종료한다고 생각하기 쉽습니다. 하지만 마지막 `raise`가 예외를 다시 전파하며, 이미 추가한 error 기록을 취소하지는 않습니다."
     },
     "teaching_example": {
-      "code": "events=[]\ntry:\n    raise RuntimeError(\"bad\")\nexcept Exception as e:\n    events.append((\"error\", str(e)))",
-      "walkthrough": "예외를 e로 받아 error 상태와 메시지를 기록합니다."
+      "code": "events = []\ntry:\n    raise RuntimeError(\"bad\")\n    events.append((\"done\", \"\"))\nexcept Exception as e:\n    events.append((\"error\", str(e)))",
+      "walkthrough": "1) `events = []`가 빈 기록 리스트를 만듭니다.\n2) `try:`가 오류를 감시할 코드 구간을 시작합니다.\n3) `raise RuntimeError(\"bad\")`가 예외를 발생시킵니다.\n4) 다음 done 추가 줄은 실행하지 않습니다.\n5) `except Exception as e:`가 `RuntimeError`를 잡고 그 객체를 `e`에 연결합니다.\n6) `str(e)`는 `\"bad\"`이므로 `(\"error\", \"bad\")`를 추가합니다.\n결과: `events`는 `[(\"error\", \"bad\")]`입니다. 이 예제에는 재전파하는 `raise`가 없어 예외 처리가 끝납니다."
     },
     "answer_explanation": {
-      "step_by_step": "예외가 발생해 except branch가 실행되고 error 상태가 저장됩니다.",
-      "why_correct": "except 안 update_job 호출이 status='error'를 명시하기 때문입니다.",
+      "step_by_step": "제시된 코드는 함수를 정의할 뿐 직접 호출하지는 않습니다. 질문처럼 `start_job(job_id)`를 호출했을 때를 따라갑니다.\n1) `update_job(job_id, status=\"running\", progress=0)`이 `(job_id, {\"status\": \"running\", \"progress\": 0})`을 `events`에 추가합니다.\n2) `run_long_task(job_id)`가 `RuntimeError(\"failed\")`를 발생시킵니다.\n3) `try`의 남은 done 기록 줄은 건너뜁니다.\n4) `except Exception as e:`가 예외를 잡습니다.\n5) `str(e)`는 `\"failed\"`이고, `update_job`은 `(job_id, {\"status\": \"error\", \"error\": \"failed\"})`를 추가합니다.\n6) 마지막 `raise`가 같은 예외를 다시 전파합니다. 두 기록은 리스트에 남습니다.",
+      "why_correct": "예외 처리 절에서 `status=\"error\"`를 전달하여 기록하므로 정답은 'error로 저장된다'입니다. 마지막 상태 기록은 error이며, 예외 재전파가 이 기록을 되돌리지 않습니다.",
       "common_wrong_choice": {
         "choice": "done으로 저장된다",
-        "why_wrong": "done 저장은 try가 끝까지 성공했을 때만 실행됩니다.",
-        "misread_step": "예외 발생 후 제어 흐름을 놓친 경우입니다."
+        "why_wrong": "done 기록은 `run_long_task(job_id)`가 정상적으로 반환해야 도달할 수 있습니다. 여기서는 그 호출이 예외를 발생시킵니다.",
+        "misread_step": "예외가 발생해도 `try`의 다음 줄을 계속 실행한다고 읽은 것입니다. 실제로는 남은 줄을 건너뛰고 일치하는 `except`로 이동합니다."
       },
-      "takeaway": "background job은 **running → success=done / failure=error** 상태 전이를 읽습니다."
+      "takeaway": "예외가 발생하면 `try`의 남은 코드는 건너뜁니다. 이 코드는 running 다음에 error를 기록하고, 실패를 호출한 쪽으로 다시 알립니다."
     },
     "target_statement": "except Exception as e:",
     "focus_span": "except Exception as e:",
@@ -581,10 +581,10 @@
     "primary_concept": "boolean_operation",
     "reading_goal_internal": "터미널과 분리된 뒤에도 long-running session이 살아 있는 상태를 boolean으로 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`left and right`는 두 조건이 모두 truthy일 때 True가 되는 boolean operation입니다.",
-      "how_to_read": "detached와 alive 두 flag를 각각 확인합니다.",
-      "key_point": "tmux detach의 핵심은 터미널 view에서 빠져나와도 session/process를 계속 유지할 수 있다는 점입니다.",
-      "common_mistake": "detach가 process 종료를 뜻한다고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `and`는 왼쪽 조건이 맞을 때만 오른쪽 조건까지 확인합니다. 정확한 정의: Python의 불리언 연산자 `and`는 왼쪽 값을 먼저 평가해 거짓으로 취급되는 값(falsy)이면 그 값을 반환하고, 그렇지 않으면 오른쪽을 평가해 그 값을 반환합니다.",
+      "how_to_read": "두 확인 지점을 차례로 통과한다고 생각하세요. 첫 줄은 세션 정보를 담은 딕셔너리를 `session`에 연결하며, `detached`와 `alive`는 모두 `True`입니다. 둘째 줄에서는 먼저 `session[\"detached\"]`를 읽습니다. 값이 `True`이므로 다음 확인 지점인 `session[\"alive\"]`도 읽고, 그 값 `True`를 `and`의 결과로 사용합니다.",
+      "key_point": "`detached` 조회 → `True` → `alive` 조회 → `True` 반환 → `keeps_running`에 `True` 대입 순서입니다. 이 카드는 '분리되어 있으면서 살아 있는 세션'을 나타냅니다. 코드는 저장된 상태를 확인할 뿐, 직접 세션을 분리하거나 실행 상태를 바꾸지는 않습니다. 출력문은 없습니다.",
+      "common_mistake": "`detached`가 `True`라고 해서 세션이 종료되었다는 뜻은 아닙니다. 여기서는 `alive`도 `True`입니다. 또한 `and`가 항상 양쪽을 확인하거나 반드시 불리언 값만 반환한다고 생각하지 마세요. 왼쪽이 `False`라면 오른쪽 조회를 건너뛰고 `False`를 반환합니다."
     },
     "teaching_example": {
       "code": "session={\"detached\":True,\"alive\":True}\nrunning=session[\"detached\"] and session[\"alive\"]",
@@ -709,18 +709,18 @@
       "common_mistake": "producer가 queue에서 item을 꺼내 처리한다고 생각하기 쉽습니다."
     },
     "teaching_example": {
-      "code": "import asyncio\nqueue=asyncio.Queue()\nasync def producer():\n    await queue.put(\"x\")",
-      "walkthrough": "producer는 x를 queue에 넣습니다."
+      "code": "import asyncio\n\nasync def main():\n    queue = asyncio.Queue()\n    for item in [\"x\", \"y\"]:\n        await queue.put(item)\n    print(queue.qsize())\n\nasyncio.run(main())",
+      "walkthrough": "1) `import asyncio`는 비동기 실행과 queue에 사용할 모듈을 가져옵니다.\n2) `async def main()`은 비동기 함수를 정의합니다. 정의만으로 본문이 실행되지는 않습니다.\n3) 마지막 줄의 `asyncio.run(main())`이 main을 실행합니다.\n4) `queue = asyncio.Queue()`는 빈 queue를 만듭니다.\n5) `for`가 먼저 \"x\"를 item에 연결합니다.\n6) `await queue.put(item)`은 \"x\"를 넣는 작업이 완료된 뒤 진행합니다. await는 소비자가 \"x\"를 처리할 때까지 기다린다는 뜻이 아닙니다.\n7) 다음 반복에서 item은 \"y\"가 되고, 같은 await 표현식으로 \"y\"를 넣습니다.\n8) 반복이 끝나면 `queue.qsize()`는 2이므로 `print`는 2를 출력합니다.\n\n흐름: 빈 queue → \"x\" 추가 완료 → \"y\" 추가 완료 → 항목 수 2 출력. 기본 Queue에는 크기 제한이 없으므로 여기서는 빈자리를 기다리지 않습니다. await가 있다고 반드시 실행을 다른 작업에 넘기는 것은 아닙니다."
     },
     "answer_explanation": {
-      "step_by_step": "producer loop 안의 핵심 호출은 `queue.put(item)`이고 consumer 쪽에서 `queue.get()`이 수행됩니다.",
-      "why_correct": "producer는 queue에 work item을 공급하는 역할이기 때문입니다.",
+      "step_by_step": "1) 제시된 코드는 queue를 만들고 producer와 consumer를 정의합니다. 둘을 실행하는 호출은 없으므로 이 코드만으로 항목이 추가되지는 않습니다.\n2) producer가 실행될 때를 읽으면, `for item in items`가 items의 항목을 하나씩 item에 연결합니다.\n3) 각 반복에서 `queue.put(item)`은 현재 항목을 queue에 넣는 비동기 작업을 만듭니다.\n4) `await`는 그 넣기 작업이 완료된 뒤 다음 반복으로 진행하게 합니다. 소비자의 처리 완료를 기다리는 것은 아닙니다.\n5) 따라서 정상적으로 반복을 마치면 items의 각 항목을 queue에 넣게 됩니다. items 자체를 하나의 항목으로 넣는 것이 아닙니다.\n6) 반대로 consumer에는 `await queue.get()`으로 항목을 꺼내고, `await process(item)`으로 처리한 뒤 `queue.task_done()`으로 완료를 알리는 단계가 있습니다.",
+      "why_correct": "정답은 'items를 queue에 넣는다'입니다. producer의 데이터 흐름은 `items의 각 항목 → item → await queue.put(item)`이며, 꺼내서 처리하는 코드는 consumer에 있습니다.",
       "common_wrong_choice": {
         "choice": "queue에서 item을 꺼내 처리한다",
-        "why_wrong": "그 동작은 consumer의 get/process 단계입니다.",
-        "misread_step": "producer와 consumer 역할을 뒤바꾼 경우입니다."
+        "why_wrong": "꺼내기는 consumer의 `queue.get()`이고 처리는 `process(item)`입니다. producer의 `put(item)`은 반대 방향으로 항목을 넣습니다.",
+        "misread_step": "`await`가 있다는 공통점만 보고, 뒤따르는 작업이 put인지 get인지 구분하지 않은 경우입니다. await는 작업의 완료를 기다리고, 실제 작업의 종류는 뒤의 호출이 정합니다."
       },
-      "takeaway": "producer-consumer는 **produce→queue.put / consume→queue.get+process**로 나눠 읽습니다."
+      "takeaway": "`await queue.put(item)`은 '항목 넣기 완료 후 진행'입니다. producer는 공급하고, consumer는 꺼내서 처리합니다."
     },
     "target_statement": "await queue.put(item)",
     "focus_span": "await queue.put(item)",
@@ -834,14 +834,14 @@
       "walkthrough": "2가 completed list에 있어 done은 True입니다."
     },
     "answer_explanation": {
-      "step_by_step": "completed list가 `[31, 32]`이므로 두 shard가 완료된 것으로 기록돼 있습니다.",
-      "why_correct": "manifest의 completed field가 완료된 shard id collection 역할을 하기 때문입니다.",
+      "step_by_step": "1. 첫 대입문은 manifest 딕셔너리를 만들며, \"completed\"에 목록 [31, 32]를 저장합니다.\n2. 마지막 줄에서 manifest[\"completed\"]를 읽으면 [31, 32]를 얻습니다.\n3. 32 in [31, 32]는 “이 목록에 32가 있는가?”를 검사합니다. 32가 있으므로 결과는 True입니다.\n4. 이 결과가 shard_32_done에 대입됩니다. 목록 자체에는 31과 32가 있으므로, 두 shard가 완료된 것으로 기록되어 있다는 답이 됩니다.",
+      "why_correct": "\"completed\"는 이 카드에서 완료된 shard 번호를 담는 목록입니다. 값이 [31, 32]이므로 정답은 “31, 32 shard는 완료된 것으로 기록됐다”입니다. in 검사는 이 기록을 확인할 뿐, shard를 실제로 실행하거나 완료 상태로 바꾸지는 않습니다.",
       "common_wrong_choice": {
-        "choice": "33만 완료됐다",
-        "why_wrong": "33은 completed list에 없습니다.",
-        "misread_step": "shards 전체 목록과 completed subset을 혼동한 경우입니다."
+        "choice": "모든 shard가 실패했다",
+        "why_wrong": "이 코드에는 모든 shard가 실패했다는 기록이 없습니다. 오히려 completed에는 31과 32가 있고, 32에 대한 포함 여부 검사도 True입니다.",
+        "misread_step": "completed의 항목을 완료된 shard 번호가 아니라 실패한 shard 번호로 잘못 읽은 것입니다."
       },
-      "takeaway": "manifest는 **전체 작업 목록과 완료 subset을 분리**해서 읽습니다."
+      "takeaway": "전체 shard 목록인 shards와 완료 기록인 completed를 구분하세요. 값 in manifest[\"completed\"]는 그 값이 완료 목록에 있는지를 True 또는 False로 알려줍니다."
     },
     "target_statement": "shard_32_done = 32 in manifest[\"completed\"]",
     "focus_span": "32 in manifest[\"completed\"]",
@@ -892,18 +892,18 @@
       "common_mistake": "break가 프로그램 전체를 종료한다고 생각하기 쉽습니다. 현재 loop를 빠져나옵니다."
     },
     "teaching_example": {
-      "code": "saved=[]\nfor x in [1,2,3]:\n    if x==2:\n        saved.append(\"checkpoint\")\n        break",
-      "walkthrough": "x=2에서 checkpoint를 남기고 loop를 종료합니다."
+      "code": "saved = []\nfor x in [1, 2, 3]:\n    if x == 2:\n        saved.append(\"checkpoint\")\n        break\nprint(saved)",
+      "walkthrough": "`break`는 반복 작업의 출구라고 생각하면 됩니다. 실행되면 현재 반복문을 끝냅니다.\n1. `saved = []`는 빈 리스트를 만듭니다.\n2. `for`는 먼저 `x`에 1을 연결합니다. `x == 2`가 거짓이므로 `if` 안의 두 줄은 실행하지 않습니다.\n3. 다음에는 `x`가 2입니다. 조건이 참이므로 `saved.append(\"checkpoint\")`가 문자열을 리스트에 추가합니다.\n4. 이어서 `break`가 실행되어 반복문을 끝냅니다. 따라서 `x`가 3인 반복은 실행하지 않습니다.\n5. 반복문 밖의 `print(saved)`는 실행되어 `['checkpoint']`를 출력합니다. `break`는 프로그램 전체가 아니라 현재 반복문을 끝냅니다."
     },
     "answer_explanation": {
-      "step_by_step": "중단 flag가 True라 checkpoint 저장 호출 후 break가 실행됩니다.",
-      "why_correct": "graceful shutdown 순서가 저장 후 반복 종료로 작성돼 있기 때문입니다.",
+      "step_by_step": "1. `stop_requested`는 `True`, `items`는 `[\"a\", \"b\", \"c\"]`, `processed`는 `[]`, `checkpoint_saved`는 `False`로 시작합니다.\n2. `def`는 함수를 정의합니다. 이 시점에는 함수 본문을 실행하지 않습니다.\n3. 첫 반복에서 `item`은 `\"a\"`입니다. `if stop_requested`가 참이므로 `save_checkpoint()`를 호출합니다.\n4. 함수의 `global checkpoint_saved`는 다음 대입이 함수 바깥의 해당 이름을 바꾸도록 합니다. `checkpoint_saved = True`가 실행되고 함수 호출이 끝납니다.\n5. 이어서 `break`가 `for` 반복문을 끝냅니다. 아래의 `processed.append(item)`은 실행되지 않고, `\"b\"`와 `\"c\"`로도 반복하지 않습니다.\n6. 최종 상태는 `checkpoint_saved == True`, `processed == []`입니다. 출력문은 없습니다.",
+      "why_correct": "코드가 저장 함수 호출 → `break` 순서로 실행되므로 정답은 'checkpoint를 저장하고 루프를 빠져나간다'입니다. 여기서 저장은 `checkpoint_saved`를 `True`로 바꾸는 것으로 표현되어 있으며, 실제 파일을 쓰는 코드는 없습니다.",
       "common_wrong_choice": {
         "choice": "모든 item을 계속 처리한다",
-        "why_wrong": "break가 현재 loop를 즉시 종료합니다.",
-        "misread_step": "break의 제어 흐름 효과를 놓친 경우입니다."
+        "why_wrong": "첫 반복에서 이미 `break`가 실행됩니다. 첫 항목을 추가하는 줄도 건너뛰므로 처리된 항목은 없습니다.",
+        "misread_step": "`break`가 `if` 블록만 끝내고 `processed.append(item)`으로 진행한다고 잘못 읽은 경우입니다. 실제로는 `for` 반복문 전체를 빠져나갑니다."
       },
-      "takeaway": "graceful cancel은 **stop flag → checkpoint → break** 순서로 읽습니다."
+      "takeaway": "중단 조건 확인 → 저장 함수 실행 → `break`로 반복 종료 순서입니다. `break` 뒤에 남은 반복문 본문은 실행하지 않습니다."
     },
     "target_statement": "break",
     "focus_span": "break",

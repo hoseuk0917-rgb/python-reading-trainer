@@ -569,24 +569,24 @@
         "primary_concept":  "except_clause",
         "reading_goal_internal":  "렌더 함수의 예외가 typed except로 전달되고 fallback 호출로 복구되는 실행 순서를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`except Exception:` is a typed `except` statement that executes when an exception of the `Exception` class occurs within a `try` block.",
-                                    "how_to_read":  "It seems to check which call to `try` raises an exception and executes the `except` block only in that case.",
-                                    "key_point":  "By isolating a single card failure with a fallback, you can minimize the risk of the rest of the screen crashing along with it.",
-                                    "common_mistake":  "It’s easy to think that the `except` block always executes, even if the `try` block succeeds. If no exception occurs, the `except` block is skipped."
+                                    "what_it_is":  "Easy meaning: `except Exception:` sets an alternative path to run if the attempted work fails.\nExact definition: `except Exception:` is an exception-handling clause that runs its handler when an exception propagated during the associated `try` block is an instance of `Exception` or one of its subclasses.",
+                                    "how_to_read":  "Picture switching from the normal path to an alternative path when an error occurs. In this card, `try` calls `render_card(card)`, and the `RuntimeError` raised inside that function propagates to the call site. `except Exception:` matches it, so `render_card_fallback(card[\"id\"])` runs.",
+                                    "key_point":  "Check `\"bad\"` → raise `RuntimeError` → never reach the normal `append` → handle with `except Exception:` → pass `\"bad\"` to the fallback → append `\"fallback:bad\"`. The final `rendered` is `[\"fallback:bad\"]`.",
+                                    "common_mistake":  "It is easy to think handling an exception resumes execution at the line immediately after the failure. Here, execution of `render_card` stops, so its normal `append` never runs. If `try` finished without an exception, the `except` body would be skipped."
                                 },
         "teaching_example":  {
-                                 "code":  "events = []\ntry:\n    raise ValueError(\"bad\")\nexcept ValueError:\n    events.append(\"fallback\")",
-                                 "walkthrough":  "A ValueError occurs, causing the `except` block to execute and the fallback to be logged."
+                                 "code":  "events = []\ntry:\n    raise RuntimeError(\"failed\")\n    events.append(\"normal\")\nexcept Exception:\n    events.append(\"fallback\")",
+                                 "walkthrough":  "1) `events = []` creates an empty list.\n2) `try:` starts the attempted work.\n3) `raise RuntimeError(\"failed\")` raises an exception.\n4) Execution transfers to exception handling, skipping `events.append(\"normal\")`.\n5) `except Exception:` matches because `RuntimeError` is a subclass of `Exception`.\n6) The handler appends `\"fallback\"`.\nResult: `events` is `[\"fallback\"]`."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "A RuntimeError occurs on the \"bad\" card, so the normal append operation is not executed. The `except` clause catches the exception and calls the fallback function.",
-                                   "why_correct":  "RuntimeError is part of the Exception class, which is why it can be handled using `typed except`.",
+                                   "step_by_step":  "1) Start with `rendered = []`. The two `def` statements define functions without running their bodies yet.\n2) Bind `card` to `{\"id\": \"bad\"}`.\n3) The `try` block calls `render_card(card)`.\n4) `card[\"id\"] == \"bad\"` is true, so `RuntimeError(\"render failed\")` is raised. The function's normal `append` does not run, leaving the list empty.\n5) The exception propagates to the call site. `except Exception:` handles it because `RuntimeError` is a subclass of `Exception`.\n6) `render_card_fallback(card[\"id\"])` receives `\"bad\"`. The f-string becomes `\"fallback:bad\"`, and that string is appended to the list.\nFinal value: `[\"fallback:bad\"]`.",
+                                   "why_correct":  "The exception prevents the normal append, and only the fallback call in the handler adds a string. `\"render failed\"` is the exception message, not a value appended to the list.",
                                    "common_wrong_choice":  {
                                                                "choice":  "[\"bad\"]",
-                                                               "why_wrong":  "`render_card` raises an exception before `append`.",
-                                                               "misread_step":  "This assumes that the statement following the point where the exception occurred is executed."
+                                                               "why_wrong":  "`raise` stops the function before it reaches the line that would append `\"bad\"`.",
+                                                               "misread_step":  "This assumes catching an exception resumes the failed function at its next line."
                                                            },
-                                   "takeaway":  "The error boundary flow is read as **failure point → except → fallback UI**."
+                                   "takeaway":  "Exception raised → current normal path stops → matching `except` runs. Handling does not return execution to the failure point."
                                },
         "target_statement":  "except Exception:",
         "focus_span":  "except Exception:",
@@ -691,10 +691,10 @@
         "primary_concept":  "boolean_operation",
         "reading_goal_internal":  "왼쪽 값이 falsy일 때 or가 오른쪽 기본값을 선택하는 safe-default 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`left or right` is a boolean operation that returns `left` if `left` is truthy, and `right` if `left` is falsy.",
-                                    "how_to_read":  "First, check the actual truth value of the expression on the left.",
-                                    "key_point":  "Setting default values for optional fields allows the UI to continue functioning even if some values are missing.",
-                                    "common_mistake":  "If you always override required fields with default values, you may hide corrupted data. Required values require separate validation."
+                                    "what_it_is":  "Easy meaning: `or` checks the left value first and chooses the replacement on the right if the left value counts as false.\nExact definition: `left or right` is a Boolean operation that returns the left operand if it is truthy (treated as true); otherwise, it evaluates the right expression and returns its value.",
+                                    "how_to_read":  "Picture `or` as a fork deciding whether to keep the left value or use the replacement on the right. On the first line, `card` contains only `title`. On the second line, `card.get(\"choices\")` returns `None` because that key is absent. Since `None` is falsy, `or` selects `[]` on the right. On the third line, `card.get(\"title\")` returns the nonempty string `\"예제\"`, so this truthy value is kept.",
+                                    "key_point":  "The value flow for `choices` is `card.get(\"choices\")` → `None` → falsy check → select `[]` → assign to `choices`. Thus, `choices` is `[]`, and `title` is `\"예제\"`. Here, `or` supplies a default to use instead of the retrieved value.",
+                                    "common_mistake":  "Do not conclude that `choices` is `None` just because `get()` returns `None`. Python evaluates `or []` before assignment, so the final value is `[]`. Also, `or` does not return only true or false: here, it returns the selected value itself."
                                 },
         "teaching_example":  {
                                  "code":  "config = {}\nname = config.get(\"name\") or \"unknown\"",
@@ -749,14 +749,14 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "내부 진단 로그와 사용자에게 전달할 메시지를 서로 다른 함수 호출로 분리하는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`show_error(message)` is a function call that passes the value `message` to the function.",
-                                    "how_to_read":  "Check which function is being called and the actual message inside the parentheses.",
-                                    "key_point":  "It is recommended to separate sensitive diagnostic information—such as internal stack traces or tokens—from user-facing guidance.",
-                                    "common_mistake":  "It’s easy to assume that showing users the entire contents of the debug log is helpful for debugging. However, this could expose internal or sensitive information."
+                                    "what_it_is":  "Easy meaning: a function call hands a value to a named task and asks it to run.\nExact definition: a function call is an expression that uses parentheses after a function to pass arguments and execute it; for the user-defined functions here, the supplied value is bound to a parameter before the function body runs.",
+                                    "how_to_read":  "Imagine a function as a service desk. The parentheses contain the value you hand over, and the function body gives instructions for where to put it.\nFirst, the code creates two empty lists. The two `def` statements define tasks but do not yet add strings. At `log_error(\"TimeoutError at search.py:42\")`, the string is bound to `error`, and `developer_logs.append(error)` runs. Next, `show_error(\"문제가 발생했습니다\")` binds its string to `message` and runs `user_messages.append(message)`.",
+                                    "key_point":  "`log_error(...)` → `error` → added to `developer_logs`.\n`show_error(\"문제가 발생했습니다\")` → `message` → added to `user_messages`.\nThe final values are `developer_logs == [\"TimeoutError at search.py:42\"]` and `user_messages == [\"문제가 발생했습니다\"]`. Despite its name, `show_error` in this code stores a value in a list rather than displaying it on screen.",
+                                    "common_mistake":  "It is easy to assume that the error string passed earlier automatically goes to the next function too. Each call instead passes the value inside its own parentheses. Determine which list changes by checking the target of `append` in the body, not just the function's name."
                                 },
         "teaching_example":  {
-                                 "code":  "messages = []\ndef show(message):\n    messages.append(message)\nshow(\"다시 시도해 주세요\")",
-                                 "walkthrough":  "The message string is passed to the function and recorded in `messages`."
+                                 "code":  "messages = []\ndef show(message):\n    messages.append(message)\nshow(\"다시 시도해 주세요\")\nshow(\"잠시 기다려 주세요\")",
+                                 "walkthrough":  "1) `messages = []` creates an empty list.\n2) `def show(message):` defines a function with a parameter named `message`. Its body does not run yet.\n3) `messages.append(message)` is the task that will add the supplied value to the end of the list when called.\n4) The first `show(...)` call binds `\"다시 시도해 주세요\"` to `message` and runs the body. The list becomes `[\"다시 시도해 주세요\"]`.\n5) The second call binds `\"잠시 기다려 주세요\"` to `message` and runs the same body again.\nFlow: each call's string → `message` → `messages.append(message)`.\nThe final `messages` is `[\"다시 시도해 주세요\", \"잠시 기다려 주세요\"]`. Nothing is printed."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "The first call logs an internal string to `developer_logs`. The second `show_error(...)` adds a message for the user to a separate `user_messages` list.",

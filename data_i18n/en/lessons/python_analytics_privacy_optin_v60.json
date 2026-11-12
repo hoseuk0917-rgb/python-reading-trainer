@@ -562,10 +562,10 @@
     "primary_concept": "literal",
     "reading_goal_internal": "학습앱 metric 이름과 수치를 key/value 쌍으로 묶은 dict literal을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A dictionary literal directly creates a single mapping value consisting of multiple key/value pairs.",
-      "how_to_read": "Check each key name and its corresponding value one pair at a time.",
-      "key_point": "You can group metrics of different types—such as accuracy, retry rate, and completion rate—into a single `metrics` dictionary.",
-      "common_mistake": "It’s easy to think of these three values as simply a list ordered by their sequence. In a dict, each value is associated with a named key."
+      "what_it_is": "Easy meaning: This is a way to group name labels and numbers into pairs. Exact definition: A dict literal is an expression that creates a dictionary by directly writing key/value pairs in the form `{key: value, ...}`.",
+      "how_to_read": "Picture a collection of numbers with name labels. Inside `{}`, the key is left of the colon and the value is right of it; commas separate pairs. Here, read `\"accuracy_rate\": 0.82`, `\"retry_rate\": 0.15`, and `\"completion_rate\": 0.74` as one pair each.",
+      "key_point": "The dict literal on the right creates a dictionary connecting three metric names to their numbers, and `=` binds that dictionary to `metrics`. Its directly included keys are `accuracy_rate`, `retry_rate`, and `completion_rate`: 3 keys.",
+      "common_mistake": "Do not read this as a list of three numbers grouped only by position. Each number here is connected to a named key. `metrics` is the variable name referring to the dictionary, not one of its internal keys."
     },
     "teaching_example": {
       "code": "stats = {\"success_rate\": 0.9, \"error_rate\": 0.1}",
@@ -623,24 +623,24 @@
     "primary_concept": "call",
     "reading_goal_internal": "집계 함수가 개인 텍스트 없이 level과 accuracy 필드만 사용해 평균을 만드는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A function call is an expression that passes argument values to a function and receives a return value.",
-      "how_to_read": "First identify which data and criteria are passed as arguments, then trace what result the function returns.",
-      "key_point": "In a privacy-safe metric context, you can design around only the minimum aggregatable fields rather than personal content such as raw answers or notes.",
-      "common_mistake": "`aggregate` Based on the name alone, it’s easy to assume that the original `events` will be lost. In this example, the function returns a separate aggregation dictionary."
+      "what_it_is": "Easy meaning: A function call hands inputs to a prepared task and gets a result back.\nExact definition: A function call is an expression that evaluates argument expressions, passes their values to the function's parameters, and executes the function body to obtain a return value.",
+      "how_to_read": "Think of a function as an input → processing → result workstation. `def aggregate(...)` defines the task; it does not execute the body yet. Calling `aggregate(events, \"level\")` passes the list `events` to the parameter `events` and the string `\"level\"` to `group_key`. Thus, `event[group_key]` in the body reads each record's `event[\"level\"]`. The name `avg_accuracy` then refers to the result returned by the function.",
+      "key_point": "Call → create `grouped = {}` → collect accuracy values by each record's level → `{9: [0.8, 1.0], 8: [0.6]}` → divide each list's sum by its count → return `{9: 0.9, 8: 0.6}` → bind it to `avg_accuracy`. Therefore, `avg_accuracy[9]` is `0.9`.",
+      "common_mistake": "Passing `\"level\"` does not mean the function averages the level numbers themselves. This argument selects the grouping criterion. The values collected and averaged are `event[\"accuracy\"]`. Also, `aggregate` refers to the function itself, whereas `aggregate(events, \"level\")` calls it."
     },
     "teaching_example": {
       "code": "def average(values):\n    return sum(values) / len(values)\n\nresult = average([0.5, 1.0])",
       "walkthrough": "The average of the two numbers, 0.75, is stored in `result`."
     },
     "answer_explanation": {
-      "step_by_step": "Level 9 event: The two accuracy scores are 0.8 and 1.0. The average is `(0.8 + 1.0) / 2 = 0.9`.",
-      "why_correct": "This is because the aggregate function creates a list of accuracy values at the same level and then calculates the average.",
+      "step_by_step": "1) `def` defines the function, and the `events` list is created with three records.\n2) Calling `aggregate(events, \"level\")` makes `group_key` refer to `\"level\"`, and the function creates an empty dictionary, `grouped`.\n3) The first record's key is 9. `setdefault(key, [])` inserts an empty list if that key is absent and returns the list. Appending 0.8 produces `{9: [0.8]}`.\n4) The second record also has key 9, so 1.0 is appended to the existing list. The third record has key 8, so 0.6 goes into a separate list. The result is now `{9: [0.8, 1.0], 8: [0.6]}`.\n5) The dictionary comprehension in `return` calculates `sum(values) / len(values)` for each group. For group 9, `(0.8 + 1.0) / 2 = 0.9`; for group 8, `0.6 / 1 = 0.6`.\n6) The returned dictionary `{9: 0.9, 8: 0.6}` is bound to `avg_accuracy`, so `avg_accuracy[9]` is `0.9`.",
+      "why_correct": "`avg_accuracy[9]` reads the value at key 9 in the returned dictionary. That value averages the accuracy values from both level 9 records, so the correct answer is `0.9`.",
       "common_wrong_choice": {
         "choice": "0.8",
-        "why_wrong": "This value is based on only the first event and does not include the two Level 9 events.",
-        "misread_step": "This is an example where the fact that aggregate functions group multiple events was not reflected."
+        "why_wrong": "`0.8` is only the accuracy of the first level 9 record. The second value in that group, `1.0`, also contributes to the average.",
+        "misread_step": "This misses that the loop continues after the first record and appends values to the list for the same key."
       },
-      "takeaway": "Aggregate functions are read in the following order: **group criterion → collect corresponding values → calculate aggregate**."
+      "takeaway": "Read a function call as arguments → parameters → body execution → return value → assignment. Here, `level` selects the groups, while `accuracy` supplies the values being averaged."
     },
     "target_statement": "avg_accuracy = aggregate(events, \"level\")",
     "focus_span": "aggregate(events, \"level\")",
@@ -683,10 +683,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "list.append 호출이 기존 event queue의 끝에 새 event를 추가하는 상태 변화를 추적한다.",
     "concept_explanation": {
-      "what_it_is": "`list.append(value)` is a method call that adds a single value to the end of a list.",
-      "how_to_read": "Check the list state and argument value before the call, then see where the new item is added after the call.",
-      "key_point": "In offline analytics, you can set up a workflow that stores events in a queue rather than discarding them when network transmission is not possible.",
-      "common_mistake": "It’s easy to think that `append()` replaces the existing queue with a single new event. Instead, it preserves the existing items and appends the new one to the end."
+      "what_it_is": "Easy meaning: `append()` puts one new item at the end of an existing list.\nExact definition: `list.append(value)` is a method call that adds `value` as one item at the end of that list.",
+      "how_to_read": "Think of a list as a shelf with items arranged in a row: calling `append()` asks it to place one more item at the end.\nThe first line creates `event_queue` containing one dictionary whose `\"type\"` is `\"open\"`. The second line binds a dictionary whose `\"type\"` is `\"answer\"` to `event`. On the third line, `event_queue.append(event)` calls the list's `append` method with `event` as the argument inside the parentheses, adding that dictionary to the end of the list.",
+      "key_point": "Execution flow: 1 existing item → prepare the `event` dictionary → call `append(event)` → add one dictionary after the existing item → final item count: 2.\nCreating `event` alone does not add it to the list. The actual list change happens in the `append(event)` call.",
+      "common_mistake": "It is easy to think `append(event)` replaces the existing item with `event`. The existing `\"open\"` item stays, and the new `\"answer\"` item goes at the end. Also, even though the dictionary has two keys, the dictionary itself is added as just one list item."
     },
     "teaching_example": {
       "code": "queue = [{\"id\": 1}]\nitem = {\"id\": 2}\nqueue.append(item)",
@@ -811,17 +811,17 @@
     },
     "teaching_example": {
       "code": "def no_tracking_when_disabled():\n    enabled = False\n    events = [] if not enabled else [\"view\"]\n    return len(events) == 0\n\nassert no_tracking_when_disabled()",
-      "walkthrough": "Since the `events` array is empty while `tracking` is disabled, the `assert` passes."
+      "walkthrough": "1. `def` defines the function. The code inside it does not run yet.\n2. The final line, `assert no_tracking_when_disabled()`, calls the function to obtain the value to check.\n3. `enabled = False` sets the tracking state to disabled.\n4. `not enabled` is True, so the conditional expression selects `[]`, making `events` an empty list.\n5. `len(events)` is 0, so `0 == 0` is True. `return` sends this value back to the caller.\n6. `assert` receives True and passes without printing anything. If the checked result is false, it raises AssertionError. Thus, `assert` is a check on the result, not a switch that disables tracking.\nThis describes normal execution with assertions enabled. Optimized execution can omit assert statements."
     },
     "answer_explanation": {
-      "step_by_step": "The `opt-out` function returns whether `events` is empty when `consent=False`, and `assert` enforces that condition.",
-      "why_correct": "This is because analytics events must not be generated without user consent in order for privacy preferences to be truly respected.",
+      "step_by_step": "1. The two `def` statements define functions without running their bodies yet.\n2. `assert no_event_when_opted_out()` calls the first function. `consent = False` → `not consent` is True → `events = []` → `len(events) == 0` is True → True is returned, so the first check passes.\n3. `assert event_when_opted_in()` calls the second function. `consent = True` → the conditional expression selects `[\"lesson_open\"]` → `len(events) == 1` is True → True is returned, so the second check also passes.\n4. In normal execution with assertions enabled, both checks pass and there is no output.",
+      "why_correct": "The first check verifies that the event list is empty without consent, so the correct answer is 'To verify that events are not collected without consent,'. The second check also verifies that there is one event with consent. This code tests those conditions using local lists; it does not inspect an actual external collection system.",
       "common_wrong_choice": {
         "choice": "To hide the verification results,",
-        "why_wrong": "`assert` does not hide condition violations but reveals them as failures.",
-        "misread_step": "This is an example where \"quality gate\" and \"suppression\" were interpreted in reverse."
+        "why_wrong": "When assertions are enabled, a false condition exposes a failure by raising AssertionError. Having no output on success does not mean the purpose is to hide results.",
+        "misread_step": "This mistakes the step where assert checks the function's returned True for a step that hides the verification result."
       },
-      "takeaway": "Privacy QA covers the entire process from **user selection → actual data collection status → behavior verification via assert**."
+      "takeaway": "Consent value → event list → count comparison → assert checks the returned true/false value. assert verifies the result rather than blocking collection, and optimized execution can omit it, so it cannot replace actual consent controls."
     },
     "target_statement": "assert no_event_when_opted_out()",
     "focus_span": "assert no_event_when_opted_out()",
@@ -874,14 +874,14 @@
       "walkthrough": "Reads the position where the user clicks to close the window."
     },
     "answer_explanation": {
-      "step_by_step": "Note that the `dict` has separate fields for the items collected, the purpose, and how to turn it off.",
-      "why_correct": "This is because a privacy notice is meaningful only when it discloses not only the fact that data is collected, but also the purpose of collection and the methods by which users can exercise control.",
+      "step_by_step": "1) `notice` is assigned a dictionary with three keys and string values. `what_is_collected` describes anonymous usage events, `why` describes improving the learning app, and `how_to_disable` describes turning analytics off in settings.\n2) `notice[\"how_to_disable\"]` is a dictionary lookup by key. Its result is not the key itself but the associated string, `\"turn analytics off in settings\"`.\n3) That string is assigned to `opt_out_text`. Nothing is printed, and analytics is not actually disabled.",
+      "why_correct": "The three entries explain what is collected, why it is collected, and how to turn it off, so the choice covering those three topics is the intended answer. The final lookup retrieves the explanation of how to turn it off.",
       "common_wrong_choice": {
         "choice": "To hide the verification results,",
-        "why_wrong": "The purpose of a privacy notice is transparent explanation, not concealment.",
-        "misread_step": "This is an example of misunderstanding the difference between “privacy” and “concealment.”"
+        "why_wrong": "The dictionary contains explanations of collection, purpose, and disabling analytics; it contains no content or operation that hides verification results.",
+        "misread_step": "This interprets privacy as an operation that hides information instead of reading the actual keys and values."
       },
-      "takeaway": "The \"privacy notice\" is interpreted as **What is collected → Why is it necessary → How can it be disabled**."
+      "takeaway": "Read a dictionary lookup as **identify the dictionary → find the key → return its associated value**. Here it retrieves an instruction string; it does not change any settings."
     },
     "target_statement": "opt_out_text = notice[\"how_to_disable\"]",
     "focus_span": "notice[\"how_to_disable\"]",
@@ -923,10 +923,10 @@
     "primary_concept": "literal",
     "reading_goal_internal": "privacy workflow의 단계가 어떤 순서로 배치돼 있는지 list 순서로 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A list literal stores multiple values in order.",
-      "how_to_read": "In the \"privacy flow,\" read from the first item to the last without changing the order.",
-      "key_point": "If collection happens before consent is checked, the basic direction of the privacy flow is broken.",
-      "common_mistake": "It is easy to think that withdrawing consent is a separate feature unrelated to the initial opt-in."
+      "what_it_is": "Easy meaning: You can write values directly in code; here, four step names are grouped in order.\nExact definition: A literal is syntax that directly represents a value in code; here, each quoted item is a string literal, and the expression grouping them with square brackets and commas is a list display that creates a new list.",
+      "how_to_read": "Picture the square brackets as a row of step names. Everything inside each pair of quotes is one string value. Reading left to right gives: explain the purpose and obtain consent → collect only the minimum permitted events → aggregate data subject to protection conditions → implement withdrawal and deletion requests.",
+      "key_point": "Python evaluates the four strings on the right from left to right, creates a new list containing them in that order, and binds that list to the name privacy_flow. The result is a list of four ordered strings; nothing is printed, and no actual privacy-processing steps are performed.",
+      "common_mistake": "Words such as track or deletion inside a string do not cause collection or deletion to run. The quoted text is data naming a step, not an executable instruction. Read this question's sequence from the list's order, not from actual task execution."
     },
     "teaching_example": {
       "code": "flow = [\"explain\", \"ask\", \"collect\", \"delete_on_request\"]\nfirst = flow[0]",

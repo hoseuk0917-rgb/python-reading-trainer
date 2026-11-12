@@ -88,10 +88,10 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "dict의 keys() 결과를 한 record가 가진 column/field 이름 목록으로 해석한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "The ``keys()`` method call on a `dict` provides a view of the keys present in that `dict`.",
-                                    "how_to_read":  "Assuming that `row` represents a single record, read the key names of that record as field names such as `user_id`, `card_id`, and `correct_count`.",
-                                    "key_point":  "A row is a set of values for a single record, and a column is a field name that recurs with the same meaning across multiple rows.",
-                                    "common_mistake":  "Do not mistake the values u1, c101, and 3 in the row for column names. These are the values contained in a single row for each column."
+                                    "what_it_is":  "Easy meaning: `row.keys()` tells you what the items in this row are named.\nExact definition: Calling a dictionary's `keys()` method returns a view of the keys in that dictionary.",
+                                    "how_to_read":  "Picture the headings above the values in a table row. Here, `row` represents one record, and the keys `user_id`, `card_id`, and `correct_count` correspond to column/field names. The parentheses in `row.keys()` call the method that provides these keys, and the surrounding `list(...)` turns its result into a list.",
+                                    "key_point":  "`row` stores the names and values for one row → `row.keys()` returns a view of the keys → `list(...)` creates `['user_id', 'card_id', 'correct_count']` → this list is assigned to `columns` and printed. The result is therefore a list of column/field names, not the values of one row.",
+                                    "common_mistake":  "Do not confuse `'u1'`, `'c101'`, and `3` with column names. These are the values for that row; the keys correspond to column names. Also, `row.keys()` itself returns a view, not a list; `list(...)` performs that conversion here."
                                 },
         "teaching_example":  {
                                  "code":  "row = {\"name\": \"Mina\", \"score\": 90}\ncolumns = list(row.keys())\nprint(columns)",
@@ -522,14 +522,14 @@
                                  "walkthrough":  "Only the row for 2026-01-02 will remain; the row for 2025-12-31 will be excluded."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since 2025-12-20 is earlier than the cutoff date, it is excluded, while 2026-01-01 and 2026-02-10 are on or after the cutoff date, so they remain.",
-                                   "why_correct":  "This is because the condition for \"comprehension\" was defined as `created_at \u003e= cutoff`.",
+                                   "step_by_step":  "1) Initially, wrong_answers contains the dictionaries for IDs 1, 2, and 3 in order, and cutoff is \"2026-01-01\".\n2) `for row in wrong_answers` takes each row from the existing list, and `if row[\"created_at\"] >= cutoff` tests whether to keep it. For the fixed-format YYYY-MM-DD strings here, string comparison order matches date order.\n3) ID 1: \"2025-12-20\" >= \"2026-01-01\" is False → do not add it to the new list.\n4) ID 2: \"2026-01-01\" >= \"2026-01-01\" is True → the front expression `row` adds this dictionary to the new list.\n5) ID 3: \"2026-02-10\" >= \"2026-01-01\" is True → add this dictionary too.\n6) The completed new list is assigned to wrong_answers. The remaining IDs are 2 and 3, in that order.",
+                                   "why_correct":  "`>=` includes equality, so ID 2, whose date equals the cutoff, stays too. Only the dictionaries for IDs 2 and 3 pass the condition and enter the new list, so the answer is '2 and 3'. This creates a new list and rebinds the name rather than deleting items from the original list in place.",
                                    "common_wrong_choice":  {
-                                                               "choice":  "10,000",
-                                                               "why_wrong":  "ID 1 is actually before the cutoff, so it is the item to remove.",
-                                                               "misread_step":  "This is a case where the conditions to be removed and those to be retained were interpreted in reverse."
+                                                               "choice":  "1, 2, 3 all",
+                                                               "why_wrong":  "The date comparison for ID 1 is False, so it is not included in the new list.",
+                                                               "misread_step":  "This reads only `for row in wrong_answers` as copying every row, overlooking that the following `if` decides whether each row is included."
                                                            },
-                                   "takeaway":  "When translating “DELETE” as a filter, verify the **retention condition**—which is the opposite of the deletion condition."
+                                   "takeaway":  "Read a filtered list comprehension as 'take one item → test the condition → only if True, add the front expression's value to the new list'. `>=` keeps the boundary value too."
                                },
         "target_statement":  "wrong_answers = [row for row in wrong_answers if row[\"created_at\"] \u003e= cutoff]",
         "focus_span":  "[row for row in wrong_answers if row[\"created_at\"] \u003e= cutoff]",
@@ -580,17 +580,17 @@
                                 },
         "teaching_example":  {
                                  "code":  "scores = {\"a\": 1}\nkey = \"a\"\nif key in scores:\n    scores[key] = 2\nelse:\n    scores[key] = 1",
-                                 "walkthrough":  "Since `a` already exists, only the `if` branch is executed, and the value is updated to 2."
+                                 "walkthrough":  "1) `scores = {\"a\": 1}` creates a dictionary with key \"a\" and value 1.\n2) `key = \"a\"` sets the key to check.\n3) `if key in scores:` checks whether \"a\" is a dictionary key. It already is, so the result is `True`.\n4) In the selected if block, `scores[key] = 2` replaces the existing value 1 with 2.\n5) `scores[key] = 1` in the else block does not run. Think of if/else as a fork that selects only one of two paths.\nResult: `scores` is {\"a\": 2}, and `scores[key]` is 2."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since `key` is already in `progress`, the condition is True. The assignment in the `if` branch is executed, and `score` is set to 3.",
-                                   "why_correct":  "This is because the `existing-key` path in `upsert` acts as an `update`.",
+                                   "step_by_step":  "1) `progress` contains the tuple key (\"u1\", \"c1\"), associated with the dictionary {\"score\": 1}.\n2) `key` is (\"u1\", \"c1\"), and `new_score` is 3.\n3) `key in progress` checks whether this key exists in the outer dictionary. It already exists, so the result is `True`.\n4) The if block executes `progress[key][\"score\"] = new_score`. It finds the inner dictionary through `progress[key]` and changes its \"score\" value from 1 to 3.\n5) The else block is skipped. Reading `progress[key][\"score\"]` afterward therefore gives 3.",
+                                   "why_correct":  "The condition is true, so the if block that changes the existing score runs. The assigned value is 3, the value of `new_score`, so the correct answer is `3`.",
                                    "common_wrong_choice":  {
                                                                "choice":  "1",
-                                                               "why_wrong":  "1 is the existing value before the update.",
-                                                               "misread_step":  "This is a case where the state after executing the `if` branch has not been reflected."
+                                                               "why_wrong":  "1 is the score before execution. An existing key does not mean nothing happens: the if block changes its score to 3.",
+                                                               "misread_step":  "This misses applying the selected if block's assignment to the final state after confirming that the condition is true."
                                                            },
-                                   "takeaway":  "`upsert` is interpreted as **check if `key` exists → select branch → final row state**."
+                                   "takeaway":  "Follow: check key membership → determine True/False → execute only one block → read the changed value. Here, the existing key's score changes from 1 → 3."
                                },
         "target_statement":  "if key in progress:",
         "focus_span":  "if key in progress:",
@@ -755,10 +755,10 @@
         "primary_concept":  "except_clause",
         "reading_goal_internal":  "정상 conn으로 commit이 실행된 테스트와 두 번째 execute에서 실패해 `except Exception:`으로 이동하는 경로를 구분하고, rollback/re-raise 검증에 실패 입력이 필요함을 판단한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`except Exception:` is executed only when an Exception-class error occurs within the `try` block. Since the `else` block is executed in the success case, the rollback behavior of the `except` path is not observed.",
-                                    "how_to_read":  "Check which `execute` in the current test fixture raises an exception. If there are no exceptions, the `target except` is not reached; to verify the rollback, you need a fixture that intentionally causes an intermediate failure.",
-                                    "key_point":  "Currently, `happy connection` successfully executes both `execute` statements, so the events are `write1`, `write2`, and `commit`. `rollback` is never executed.",
-                                    "common_mistake":  "It is easy to assume that just because a transaction success test passes, atomic failure handling is also proven. The rollback path must be tested by actually triggering a failure to observe its behavior."
+                                    "what_it_is":  "Easy meaning: `except Exception:` marks the response to run if the attempted work encounters that kind of error.\nExact definition: An `except Exception:` clause is an exception handler selected when an exception raised during execution of its associated `try` block is an instance of `Exception` or one of its subclasses.",
+                                    "how_to_read":  "Picture a detour taken when an error occurs. Here, the two `execute` calls inside `try` are attempted in order. With the current `fail_second=False`, both calls append their names to `events`, execution skips `except`, and `commit()` runs in `else`. With a fresh `Conn(fail_second=True)`, the first call succeeds, but the second raises an exception before appending its name. Execution then moves to `except Exception:`, runs `rollback()`, and uses bare `raise` to propagate the exception being handled back to the caller.",
+                                    "key_point":  "Current flow: `fail_second=False` → append `\"write1\"` → append `\"write2\"` → no exception → append `\"commit\"` in `else` → print `['write1', 'write2', 'commit']`.\nFailure-check flow: fresh `Conn(fail_second=True)` → append `\"write1\"` → second call raises `Exception(\"write2 failed\")` → append `\"rollback\"` in `except` → re-raise the same exception. Here, `events` is `['write1', 'rollback']`, and `commit()` does not run. The test must catch the propagated exception to check both the exception and the recorded events.",
+                                    "common_mistake":  "It is easy to assume that a passing success test, or the mere presence of an `except` line, verifies error handling. Repeating normal input still does not execute this code's `except` path. Also, `rollback()` here only records `\"rollback\"`; it does not remove the previously recorded `\"write1\"`."
                                 },
         "teaching_example":  {
                                  "code":  "events = []\ntry:\n    events.append(\"write\")\nexcept Exception:\n    events.append(\"rollback\")\nelse:\n    events.append(\"commit\")\nprint(events)",

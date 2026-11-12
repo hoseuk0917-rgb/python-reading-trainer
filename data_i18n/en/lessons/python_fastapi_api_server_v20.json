@@ -202,10 +202,10 @@
         "primary_concept":  "parameter_definition",
         "reading_goal_internal":  "함수 정의의 `name=default` 형태를 읽고 호출에서 해당 argument가 빠졌을 때 어떤 값이 parameter에 들어가는지 추적한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`parameter=default` in a function definition is syntax that specifies the default value to use when the caller omits that argument.",
-                                    "how_to_read":  "First, check the default value in the definition, then verify whether that argument is present in the actual call. If it is not present, use the default value specified in the definition.",
-                                    "key_point":  "This connects to Pydantic default field values, but the direct Python syntax focus of this card is `top_k=5` in the function parameter definition.",
-                                    "common_mistake":  "It is easy to think a parameter automatically becomes `None` when no value is passed in the call. If a default value is defined, that default is used."
+                                    "what_it_is":  "Easy meaning: you prepare a value to use when no value is supplied for an input.\nExact definition: In a function definition, `parameter=default` specifies the default value used when the corresponding argument is omitted from a call.",
+                                    "how_to_read":  "Picture an input slot with a backup value ready. `def make_request(query, top_k=5):` defines the input names `query` and `top_k`, with 5 as the default for `top_k`. The `return` line puts both values into a dictionary and returns it. On the last line, `make_request(\"python\")` supplies only the first input, `query`, so `top_k` uses the prepared value 5.",
+                                    "key_point":  "Call `make_request(\"python\")` → `query` is `\"python\"` and omitted `top_k` uses its default `5` → return `{\"query\": \"python\", \"top_k\": 5}` → store it in `request`. Thus the value of `top_k` asked about is `5`; nothing is printed.",
+                                    "common_mistake":  "Omitting an argument does not automatically produce `None`. Here it uses the default 5. A default is not a forced, unchangeable value either: explicitly supplying a value, as in `make_request(\"python\", 2)`, makes `top_k` equal to 2."
                                 },
         "teaching_example":  {
                                  "code":  "def make_job(name, retries=3):\n    return {\"name\": name, \"retries\": retries}\n\njob = make_job(\"index\")",
@@ -264,10 +264,10 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "함수 호출에서 `name=value` 형태가 keyword argument이며 오른쪽 객체가 지정한 parameter로 전달되는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "The `parameter=value` form inside a call is a keyword argument that names the parameter directly when passing the value.",
-                                    "how_to_read":  "Read the code by distinguishing the parameter name on the left side of the equals sign from the actual value passed on the right side.",
-                                    "key_point":  "FastAPI’s response schema is a domain-specific concept, and the focus of the Python syntax is on passing the keyword argument `response_model=SearchResponse`.",
-                                    "common_mistake":  "The `=` inside a call is easy to read as a standard variable assignment. Inside function call parentheses, it is keyword argument syntax used to specify parameter names."
+                                    "what_it_is":  "Easy meaning: When calling a function, you can name an input slot to specify which value goes there.\nExact definition: A keyword argument uses the form `name=expression` in a function call to bind the evaluated value of the expression to the parameter specified by name.",
+                                    "how_to_read":  "Think of parameters as labeled input slots. `class SearchResponse:` creates a class object, and `pass` does nothing in its body. `def register_route(path, *, response_model):` defines two input slots; `response_model`, after `*`, must be supplied by keyword. In the call, `\"/answer\"` goes to the first slot, `path`, while the value on the right of `response_model=SearchResponse` goes to `response_model`. Here, `SearchResponse` refers to the class object itself.",
+                                    "key_point":  "Execution flow: call `register_route(...)` → bind `\"/answer\"` to `path` and the `SearchResponse` class object to `response_model` → obtain the class-name string `\"SearchResponse\"` from `response_model.__name__` → return `{\"path\": \"/answer\", \"schema\": \"SearchResponse\"}` → bind the returned dictionary to `route`. Thus, the value passed is the class object; its name string is obtained later inside the function.",
+                                    "common_mistake":  "Do not read `SearchResponse` as `SearchResponse()`. Without parentheses, it passes the class object itself rather than calling it to create an instance. Also, `response_model=...` inside the call is a keyword argument, whereas the outer `route = ...` is an assignment that binds the returned value to a name."
                                 },
         "teaching_example":  {
                                  "code":  "class UserSchema:\n    pass\n\ndef register(path, *, model):\n    return model.__name__\n\nschema_name = register(\"/users\", model=UserSchema)",
@@ -384,24 +384,24 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "입력 validation 실패 시 HTTPException 생성자에 400이 keyword argument로 전달되는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`status_code=400` is a keyword argument that specifies the parameter name when passing a value in a call.",
-                                    "how_to_read":  "We’ll separate the name on the left side of the equals sign from the actual value on the right to see which settings are determined by the constructor.",
-                                    "key_point":  "An empty query can be classified as a client request error—resulting from the client failing to provide the required input—rather than an internal server failure.",
-                                    "common_mistake":  "It’s easy to assume that all API errors are handled as 500 errors. However, you can distinguish between input validation failures and internal server errors."
+                                    "what_it_is":  "Easy meaning: You can pass a value by labeling which input it belongs to.\nExact definition: A keyword argument is an argument supplied as `name=value` in a call and bound to the parameter with that name.",
+                                    "how_to_read":  "Picture input slots with name labels. `HTTPException(status_code=400, detail=\"query required\")` passes the integer `400` to the `status_code` slot of `__init__` and the string `\"query required\"` to its `detail` slot. `self` refers to the object being created and is supplied automatically. Then `self.status_code = status_code` stores the received value in an attribute of that object.",
+                                    "key_point":  "`query` is an empty string → `not query` is `True` → create the exception object → bind argument `400` to parameter `status_code` → store `400` in `self.status_code` → raise and handle the exception → store the value `400` from `exc.status_code` in `status`.",
+                                    "common_mistake":  "It is easy to read `status_code=400` inside the call as a comparison or an assignment to an outside variable. Here it passes an argument by name. The actual object attribute assignment happens in `self.status_code = status_code` inside `__init__`."
                                 },
         "teaching_example":  {
                                  "code":  "class AppError(Exception):\n    def __init__(self, status_code):\n        self.status_code = status_code\n\nerror = AppError(status_code=422)",
                                  "walkthrough":  "The value 422 for the `status_code` keyword argument is stored in `error.status_code`."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "An empty query triggers the `if` block and raises an `HTTPException` with `status_code=400`. The `except` block catches the 400 error.",
-                                   "why_correct":  "This is because the actual value passed to the constructor as a keyword argument is 400.",
+                                   "step_by_step":  "1) The class definition sets up `HTTPException` and its initialization method, `__init__`.\n2) Since `query = \"\"`, `not query` is `True`, so the `if` body runs.\n3) In the `HTTPException(...)` call, `400` is passed to `status_code`, and `\"query required\"` is passed to `detail`.\n4) `__init__` stores `400` in `self.status_code` and the string in `self.detail`.\n5) `raise` raises this object as an exception. `except HTTPException as exc` catches it and refers to that object as `exc`.\n6) `status = exc.status_code` reads the attribute value `400` and stores it in `status`.",
+                                   "why_correct":  "`400` flows from the call argument to the parameter and then to the exception object's attribute. The final assignment reads that attribute, so the answer is the integer `400`.",
                                    "common_wrong_choice":  {
                                                                "choice":  "500",
-                                                               "why_wrong":  "500 is a status code that can be used for internal server errors, and the current branch is the \"missing client input\" branch.",
-                                                               "misread_step":  "This is an example where the cause of the error and the role of the status code were not distinguished."
+                                                               "why_wrong":  "Raising an exception does not automatically change the value to `500`. The value passed and stored by this code is `400`.",
+                                                               "misread_step":  "This mistake notices `raise` but does not track the value passed by `status_code=400` and stored in the attribute."
                                                            },
-                                   "takeaway":  "HTTP status codes are read in conjunction with the **actual cause of the branch and the constructor argument**."
+                                   "takeaway":  "Match keyword arguments by name: `status_code=400` → parameter `status_code` → attribute `exc.status_code` → value `400` in `status`."
                                },
         "target_statement":  "raise HTTPException(status_code=400, detail=\"query required\")",
         "focus_span":  "status_code=400",
@@ -444,24 +444,24 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "middleware 설정 호출에서 frontend origin 목록이 이름 있는 argument로 전달되는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`allow_origins=[...]` is a keyword argument that passes a list value to the call.",
-                                    "how_to_read":  "Check the keyword name and the list item to its right.",
-                                    "key_point":  "Since an origin is a combination of scheme, host, and port, that origin must be included in the list to allow access to the localhost:8790 frontend.",
-                                    "common_mistake":  "It is easy to think CORS permission also provides user authentication. CORS is configuration related to browser cross-origin rules."
+                                    "what_it_is":  "Easy meaning: Giving an input name in a call sends a value to the matching input slot.\nExact definition: A keyword argument is specified as `name=value` in a function or method call, and its value is bound to the parameter with that name.",
+                                    "how_to_read":  "Think of parameters as labeled input slots. In `add_middleware(self, name, allow_origins)`, `self` automatically receives the object being called on, `app`. The first positional argument, `\"CORSMiddleware\"`, binds to `name`; the list in `allow_origins=[\"http://localhost:8790\"]` binds to the matching parameter `allow_origins`. The body, `self.middleware[name] = allow_origins`, then stores that list in the dictionary.",
+                                    "key_point":  "Create `[\"http://localhost:8790\"]` → pass it to `allow_origins` → store it at `app.middleware[\"CORSMiddleware\"]` → retrieve it using the same key → `allowed` becomes `[\"http://localhost:8790\"]`. The origin string inside the list is `http://localhost:8790`. This code only stores and retrieves values; it does not enforce actual network access.",
+                                    "common_mistake":  "Do not read `allow_origins=` as an assignment to a variable outside the call. Here it specifies a method input name. Also, because a list is passed, `allowed` refers to the list containing the string, not to the string alone."
                                 },
         "teaching_example":  {
                                  "code":  "class App:\n    def configure(self, allow_origins):\n        return allow_origins\n\napp = App()\norigins = app.configure(allow_origins=[\"http://localhost:3000\"])",
                                  "walkthrough":  "A list containing a single `origin` is passed to the `allow_origins` keyword argument."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "The only item in the list passed to `allow_origins` is `http://localhost:8790`, and that list is stored in the configuration.",
-                                   "why_correct":  "This is because the keyword argument value itself is a list of allowed origins.",
+                                   "step_by_step":  "1) After the class definition, `app = App()` creates an object, and `__init__` initializes `app.middleware` as an empty dictionary.\n2) In the `app.add_middleware(...)` call, `self` binds to `app`, `name` to `\"CORSMiddleware\"`, and `allow_origins` to `[\"http://localhost:8790\"]`.\n3) The method body stores this list at `app.middleware[\"CORSMiddleware\"]`.\n4) The last line retrieves the list using the same key and binds it to `allowed`.\n5) Thus, the value of `allowed` is `[\"http://localhost:8790\"]`, and its only origin is `http://localhost:8790`.",
+                                   "why_correct":  "The choices ask for the origin inside the list, not the entire list. Its only item is `http://localhost:8790`, and storing and retrieving it does not change that item, so this is the correct choice.",
                                    "common_wrong_choice":  {
                                                                "choice":  "All source",
-                                                               "why_wrong":  "The current code specifies only one specific origin, not a wildcard.",
-                                                               "misread_step":  "This is a case where the origin setting was confused with other settings, such as the wildcard in `allow_methods/headers`."
+                                                               "why_wrong":  "The list passed and stored contains only `http://localhost:8790`. There is no value representing every origin and no operation that expands the list.",
+                                                               "misread_step":  "This guesses from the name `allow_origins` without checking the actual list to the right of `=` and the method's storage operation."
                                                            },
-                                   "takeaway":  "The CORS settings specify the **exact origin strings** to be allowed."
+                                   "takeaway":  "Match each input name to its supplied value, then trace where the body stores that value. Distinguish the list itself from the string inside it."
                                },
         "target_statement":  "app.add_middleware(\"CORSMiddleware\", allow_origins=[\"http://localhost:8790\"])",
         "focus_span":  "allow_origins=[\"http://localhost:8790\"]",
@@ -505,10 +505,10 @@
         "primary_concept":  "parameter_definition",
         "reading_goal_internal":  "함수 parameter의 default expression이 dependency provider와 연결되는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`parameter=expression` is a parameter definition with a default value used when an argument is omitted in a call.",
-                                    "how_to_read":  "Distinguish between parameter names and default expressions on the right side of the equals sign.",
-                                    "key_point":  "In FastAPI, `Depends` is a mechanism that resolves dependencies before an endpoint is executed and provides them as arguments, such as a database.",
-                                    "common_mistake":  "It’s easy to assume that using dependency injection automatically handles authorization checks. However, the role varies depending on which dependencies are defined."
+                                    "what_it_is":  "Easy meaning: `db=Depends(get_db)` prepares an object to use when the input is omitted.\nExact definition: `db` is a parameter with a default value; its default expression `Depends(get_db)` is evaluated once when the function definition executes, and that result is used in calls that omit the argument.",
+                                    "how_to_read":  "Picture a default as a value prepared beside an input slot. `db` is the input name, and `Depends(get_db)` is the expression that produces its default. The locally defined `Depends` calls the supplied `get_db` function through `provider()`, and `get_db` returns a `DB()` object. That object is stored as the default for `db`.",
+                                    "key_point":  "At definition time: `Depends(get_db)` → `provider()` → `get_db()` → a `DB()` object → the default for `db`.\nAt call time: `list_items()` → no argument, so bind the stored object to `db` → `db.list_items()` → return `[\"a\", \"b\"]` → store it in `result`.",
+                                    "common_mistake":  "The default expression does not run again on every `list_items()` call. This code reuses the same default object created when the function was defined. Also, `get_db` passes the function itself; the actual call happens through `provider()` inside `Depends`."
                                 },
         "teaching_example":  {
                                  "code":  "def provide():\n    return \"service\"\n\ndef Inject(provider):\n    return provider()\n\ndef run(service=Inject(provide)):\n    return service\n\nresult = run()",
@@ -567,24 +567,24 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "method call에 함수 객체와 query 값을 전달해 나중에 실행할 작업 정보를 등록하는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`obj.add_task(func, arg)` A method call is a way to pass a function and its arguments to an object’s method for execution.",
-                                    "how_to_read":  "Distinguish whether the first argument is a callable and whether the subsequent argument is a value to be passed to that callable.",
-                                    "key_point":  "In practice, FastAPI BackgroundTasks can be used to register small additional tasks to be executed after a response is sent.",
-                                    "common_mistake":  "It’s easy to assume that `save_log` is executed immediately when `add_task` is called. The key point is that the task is registered."
+                                    "what_it_is":  "Easy meaning: this call hands a function itself and a value to a helper that records them in a list.\nExact definition: `background_tasks.add_task(...)` is an instance method call in which the object is automatically bound to `self` and the two positional arguments are passed to `func` and `arg`.",
+                                    "how_to_read":  "Mental model: imagine writing a function's name and a value on a record and placing it in a list. The locally defined `add_task` method only records information.\nIn `add_task(save_log, request[\"query\"])`, `save_log` is the function itself, and `request[\"query\"]` evaluates to the string `\"rag\"`. The method receives these and constructs `(func.__name__, arg)`.",
+                                    "key_point":  "The `save_log` function object and `\"rag\"` → `func` and `arg` → `(\"save_log\", \"rag\")` → append to `tasks` → assign `tasks[0]` to `registered`. The result is `(\"save_log\", \"rag\")`. This code also contains no later step that executes the recorded function.",
+                                    "common_mistake":  "Passing `save_log` differs from calling `save_log(...)`. Here the function itself is passed, not executed, so the stored value is not the `None` that a function ending with `pass` would return."
                                 },
         "teaching_example":  {
-                                 "code":  "class Tasks:\n    def __init__(self): self.items = []\n    def add_task(self, func, arg): self.items.append((func.__name__, arg))\n\ndef save(value): pass\n\ntasks = Tasks()\ntasks.add_task(save, \"x\")",
-                                 "walkthrough":  "The function name `save` and the argument `x` are added to the task list."
+                                 "code":  "class Tasks:\n    def __init__(self):\n        self.items = []\n    def add_task(self, func, arg):\n        self.items.append((func.__name__, arg))\n\ndef save(value):\n    pass\n\ntasks = Tasks()\ntasks.add_task(save, \"x\")\nfirst = tasks.items[0]",
+                                 "walkthrough":  "1) `class Tasks` defines the object's behavior. `__init__` initializes `items` to an empty list when an object is created.\n2) The body of `add_task` is defined to build a tuple containing a function name and a value and append it to `items`. Defining the method does not execute its body.\n3) `def save(value)` defines a function. `pass` would do nothing if executed, but this function is not called here.\n4) `tasks = Tasks()` creates and initializes an object, so `tasks.items` becomes `[]`.\n5) Calling `tasks.add_task(save, \"x\")` binds `self` to `tasks`, `func` to the `save` function, and `arg` to `\"x\"`. Since `func.__name__` is `\"save\"`, the list becomes `[(\"save\", \"x\")]`.\n6) `tasks.items[0]` retrieves the first tuple. Thus `first` is `(\"save\", \"x\")`. There is no printed output."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "`add_task` takes a `save_log` function object and the string ``rag``, and stores the function name and argument as a tuple.",
-                                   "why_correct":  "This is because the method definition appends `(func.__name__, arg)` to the task list.",
+                                   "step_by_step":  "1) Define the class and the `save_log` function. The body of `save_log` does not execute.\n2) `request = {\"query\": \"rag\"}` prepares the value to look up.\n3) `BackgroundTasks()` creates an object, and `__init__` initializes `tasks` to `[]`.\n4) Evaluate the two call arguments: `save_log` is a function object, and `request[\"query\"]` is `\"rag\"`.\n5) Inside `add_task`, `self` is `background_tasks`, `func` is `save_log`, and `arg` is `\"rag\"`.\n6) `(func.__name__, arg)` becomes `(\"save_log\", \"rag\")`. Appending it makes the list `[(\"save_log\", \"rag\")]`.\n7) `tasks[0]` retrieves the first item, so `registered` is `(\"save_log\", \"rag\")`.",
+                                   "why_correct":  "The method body's `(func.__name__, arg)` determines the storage order. The first value is the function-name string `\"save_log\"`, and the second is the looked-up string `\"rag\"`, so the answer is `(\"save_log\", \"rag\")`.",
                                    "common_wrong_choice":  {
-                                                               "choice":  "(\"rag\", \"save_log\")",
-                                                               "why_wrong":  "The order of argument passing is function, then query.",
-                                                               "misread_step":  "This is a case where the order of the positional arguments in a method call has been reversed."
+                                                               "choice":  "(\"save_log\", None)",
+                                                               "why_wrong":  "`arg` receives `\"rag\"` from `request[\"query\"]`, not `None`. `save_log` is not called, so its return value is not used.",
+                                                               "misread_step":  "This reads the argument `save_log` as the result of a function call rather than the function itself."
                                                            },
-                                   "takeaway":  "Registering a background task is described as **callable → argument → task queue registration**."
+                                   "takeaway":  "A function name without call parentheses passes the function itself. Follow the receiving method's body to see what it actually stores or executes."
                                },
         "target_statement":  "background_tasks.add_task(save_log, request[\"query\"])",
         "focus_span":  "background_tasks.add_task(save_log, request[\"query\"])",
@@ -993,10 +993,10 @@
         "primary_concept":  "attribute_access",
         "reading_goal_internal":  "`object.attr`에서 점 왼쪽 인스턴스를 확인하고 그 인스턴스에 저장된 속성값을 읽어 다음 접근에 사용하는 흐름을 추적한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`object.attr` This is attribute access, where an attribute with the name `attr` is read from the object pointed to by `object`.",
-                                    "how_to_read":  "First identify the object to the left of the dot, then find the current value stored in that object’s `attr` attribute.",
-                                    "key_point":  "`service.repo` This is not syntax for creating a new independent variable called `repo`, but rather **an expression that reads the value of the `repo` attribute stored within the `service` instance**.",
-                                    "common_mistake":  "In `service.repo`, `repo` is easy to read as a module or global variable. It is a value belonging to the `service` object to the left of the dot."
+                                    "what_it_is":  "Easy meaning: `service.repo` reads the value stored under the name `repo` on the `service` object.\nExact definition: `object.attr` is an attribute access expression that looks up the attribute value named `attr` on an object.",
+                                    "how_to_read":  "Imagine an object with labeled fields. The left side of the dot tells you which object to use; the right side tells you which named value to read. In this code, `Repository(\"main\")` stores \"main\" in its `name` attribute through `self.name = name`. That object is passed to `SearchService`, where `self.repo = repo` stores it in the service instance's `repo` attribute. Thus, `service.repo.name` first reads the Repository object through `service.repo`, then reads that object's `name`.",
+                                    "key_point":  "Create `Repository(\"main\")` → pass that object to `SearchService` → store it with `self.repo = repo` → `service.repo` reads the stored Repository object → `.name` reads \"main\" → `print` outputs main. The value of `service.repo` itself is a Repository object, not a string.",
+                                    "common_mistake":  "Do not read `repo` in `service.repo` as an independent global variable or module name. Here it is an attribute name on the `service` instance. Also, `service.repo` reads an already stored value; it is not an assignment that creates a new variable."
                                 },
         "teaching_example":  {
                                  "code":  "class Worker:\n    def __init__(self, queue):\n        self.queue = queue\n\nworker = Worker(\"jobs\")\nprint(worker.queue)",

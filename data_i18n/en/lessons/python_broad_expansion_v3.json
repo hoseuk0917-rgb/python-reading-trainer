@@ -203,10 +203,10 @@
     "primary_concept": "lambda_expression",
     "reading_goal_internal": "lambda의 parameter row가 sorted가 검사하는 현재 dict를 받고 `row['score']` 값을 짧은 함수 결과로 내놓는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`lambda parameters: expression` is a short, unnamed function that returns the result of a single expression.",
-      "how_to_read": "Check what value the parameter to the left of the colon receives, then evaluate the expression on the right using that value to obtain the function’s result.",
-      "key_point": "This lambda function does not compare the entire row but instead provides the score value (0.7 or 0.9) of each row as the key.",
-      "common_mistake": "It is easy to assume that `lambda` directly compares the two rows or stores the `score` value back into the original dictionary."
+      "what_it_is": "Easy meaning: `lambda` makes a small function that performs a short calculation or lookup on its input and gives back the result.\nExact definition: `lambda parameters: expression` is an expression that creates an unnamed function object which, when called, evaluates one expression using its parameter values and returns the result.",
+      "how_to_read": "Picture a tool that extracts a sorting number from each row. First, `rows` contains the dictionaries for A and B. The function created by lambda is passed through `key=`. When `sorted` passes each dictionary to this function, `row` on the left of the colon receives that dictionary, and `row[\"score\"]` on the right retrieves and returns its score.",
+      "key_point": "A's dictionary → `row[\"score\"]` → `0.7`; B's dictionary → `row[\"score\"]` → `0.9`. Thus, the value the lambda provides is the `score value`. With `reverse=True`, `sorted` creates a new list containing the original dictionaries in descending score order. The order in `ranked` is B, A, and `print(ranked[0][\"label\"])` prints `B`.",
+      "common_mistake": "Do not read `row` as a row number or assume the lambda directly compares two rows and returns True/False. Here, `row` is one dictionary, and the lambda returns only its score. `sorted` does the work of ordering by those scores. The returned scores do not replace the items in the result list."
     },
     "teaching_example": {
       "code": "rows = [{\"name\":\"A\",\"age\":20},{\"name\":\"B\",\"age\":18}]\nranked = sorted(rows, key=lambda row: row[\"age\"])\nprint(ranked[0][\"name\"])",
@@ -387,10 +387,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "메서드 체인에서 앞 호출의 반환값이 다음 메서드 호출의 receiver가 되는 실행 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "In a method call chain, you can call the next `object.method(...)` directly from the object returned by the previous `.method(...)`.",
-      "how_to_read": "After each call, check how the `receiver` has changed, and then apply the argument and return rules of the next method.",
-      "key_point": "The default value `{}` for the first `get` is used only when the `meta` key itself does not exist; in this example, an empty dictionary—which is the actual `meta` value—is returned.",
-      "common_mistake": "It’s easy to assume that both `get` functions are executed simultaneously, or that the first `get` always returns the default value of ``{}``."
+      "what_it_is": "Easy meaning: This code asks for one operation, then asks the value it gets back to perform the next operation.\nExact definition: A method call chain uses the object returned by one call as the target (receiver) of the next method call, and `dict.get(key, default)` returns the value for an existing key or the specified default if the key is absent.",
+      "how_to_read": "Mental model: Think of a relay where the first operation hands you an object and you perform the next operation on that object.\nThe first line, `row = {\"meta\": {}}`, creates a dictionary whose `\"meta\"` value is an empty dictionary. On the second line, `row.get(\"meta\", {})` returns that actual empty dictionary. The following `.get(\"score\", 0)` searches for `\"score\"` in the dictionary just returned, not in `row`. The key is absent, so it returns `0`, which is stored in the variable `score`. The third line, `print(score)`, outputs `0`.",
+      "key_point": "`row` → first `get(\"meta\", {})` → actual `\"meta\"` value `{}` → `get(\"score\", 0)` on that dictionary → `0` → stored in `score` → output `0`.\nThe first default `{}` is returned only if the `\"meta\"` key is absent. Here that key exists, so its default is not used; the second default, `0`, is the final return value.",
+      "common_mistake": "It is easy to read both `get()` calls as searching for keys in `row`. The second call targets the dictionary returned by the first call. Also, an empty dictionary is still an actual stored value: being empty does not cause it to be replaced by the default. The default for `get()` is returned when the key is absent."
     },
     "teaching_example": {
       "code": "data = {\"config\": {}}\nlimit = data.get(\"config\", {}).get(\"limit\", 5)\nprint(limit)",
@@ -685,10 +685,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "메서드 호출 안의 `default=100`을 keyword argument로 읽고 옵션 생략 시 사용되는 값과 연결한다.",
     "concept_explanation": {
-      "what_it_is": "A keyword argument is syntax that passes a value to a specific parameter in a function call using the form `name=value`.",
-      "how_to_read": "`default=100` It treats this as a single unit and interprets it as passing 100 to the “default” setting.",
-      "key_point": "The meaning of `argparse` options refers to library functionality, while the Python syntax focus is on passing keyword arguments, such as ``default=100``.",
-      "common_mistake": "It’s easy to assume that 100 always overrides user input. “default” refers to the default value used when that option is omitted."
+      "what_it_is": "Easy meaning: `default=100` passes 100 with a label meaning “the value to use when omitted.”\nExact definition: A keyword argument passes a value by name using `name=value` in a function or method call; here it passes the integer `100` to `add_argument` as the default setting.",
+      "how_to_read": "Mental model: Think of registering an option as filling in a settings sheet. `\"--limit\"` names the option, `type=int` sets the rule for converting input to an integer, and `default=100` sets the value for omission.\nReading the code: `import argparse` loads the tool, and `ArgumentParser()` creates a parser. The next two calls register required options `--input` and `--output`. The final call registers `--limit`, passing `int` under the name `type` and `100` under the name `default`.",
+      "key_point": "Execution flow: `100` → passed as the keyword argument `default` → registered as the default for `--limit`.\nThis code only registers settings; it does not yet parse command-line input or print a value. When `parse_args()` is later called with the required options supplied, omitting `--limit` makes `limit` the integer `100`. Supplying `--limit 20` makes it the integer `20`.",
+      "common_mistake": "`default=100` does not force `--limit` to be 100 or overwrite user input. Here, `=` passes an argument by name inside a call rather than assigning a separate variable. The value 100 is used when the `--limit` option itself is omitted."
     },
     "teaching_example": {
       "code": "parser.add_argument(\"--count\", type=int, default=5)",
@@ -744,10 +744,10 @@
     "primary_concept": "attribute_access",
     "reading_goal_internal": "subprocess 실행 결과 객체에서 `.stdout` 속성으로 캡처된 표준 출력을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`object.name` is the syntax used to access an object’s attributes.",
-      "how_to_read": "First, note that `result` is an object representing the result of a `subprocess` execution, and read `stdout` after the dot as the output attribute of that object.",
-      "key_point": "`capture_output` is a subprocess function, and the focus of the Python syntax is on accessing the `stdout` attribute of the result object.",
-      "common_mistake": "`result.stdout` It’s easy to assume that this calls a function named `stdout`. Since there are no parentheses, it is actually reading the value of an attribute."
+      "what_it_is": "Easy meaning: `result.stdout` reads the output collected in the execution result.\nExact definition: Attribute access `object.name` looks up the named attribute on an object; here it reads the `stdout` attribute of the `CompletedProcess` object referenced by `result`.",
+      "how_to_read": "Mental model: Think of `result` as an execution report and `stdout` as its “standard output” field. Standard output is the channel through which the executed program sends ordinary output.\nReading the code: `import subprocess` imports the module. `subprocess.run(...)` executes the command specified by `[\"python\", \"--version\"]` and waits for it to finish. `capture_output=True` captures output, and `text=True` handles it as text strings. The returned result object is named `result`. The final line first reads `result.stdout`, then passes that value to `print`.",
+      "key_point": "Execution flow: execute command → capture output → return result object → bind it to `result` → read the captured standard output string through `result.stdout` → display it with `print`.\nThe value read is therefore “Standard output captured in the result object.” The exact version string depends on the execution environment, so no particular version number is guaranteed.",
+      "common_mistake": "Do not read `result.stdout` as the command list or as a call to a function named `stdout`. The command list is input passed to `run`; `result.stdout` is a value read from the result object afterward. This expression only looks up the attribute: it does not execute the command again or call `stdout`."
     },
     "teaching_example": {
       "code": "result = FakeResult()\nprint(result.returncode)",
@@ -1093,24 +1093,24 @@
     "primary_concept": "attribute_access",
     "reading_goal_internal": "sequence index로 객체를 고른 뒤 그 instance attribute 값을 읽는 중첩 표현식을 추적한다.",
     "concept_explanation": {
-      "what_it_is": "`obj.attr` is an attribute access that reads the value of an object’s instance attribute.",
-      "how_to_read": "First, evaluate the expression to the left of the dot to determine what kind of object it is, and then retrieve the value of that object’s attribute.",
-      "key_point": "In `nodes[1].label`, the program first selects the second node and then reads its label.",
-      "common_mistake": "`nodes[1]` It’s easy to think of this string as “`n002`.” In reality, it is an entire Node object, and ``.label`` retrieves the label value of that object."
+      "what_it_is": "Easy meaning: Dot notation reads a named value from the object you selected.\nExact definition: Attribute access `obj.attr` looks up the name `attr` according to the object's attribute lookup rules; in this card, it reads the selected instance's `label` attribute.",
+      "how_to_read": "Imagine the list as a row of object cards. First choose one card, then read a named field on that card. In `nodes[1].label`, indexing starts at 0, so `nodes[1]` selects the second Node object, and `.label` reads that object's `label` value.",
+      "key_point": "`nodes` → select the second object with `[1]` → object with `id=\"n002\", label=\"Radar\"` → look up `.label` → string `\"Radar\"` → assign to `selected_label`. The list index selects the object; the name after the dot selects the attribute to read.",
+      "common_mistake": "It is easy to think `nodes[1]` is the string `\"n002\"`. However, the list item is a Node object with both `id` and `label` values. `nodes[1].id` is `\"n002\"`, whereas this code's `nodes[1].label` is `\"Radar\"`."
     },
     "teaching_example": {
       "code": "from dataclasses import dataclass\n\n@dataclass\nclass Item:\n    name: str\n\nitems = [Item(\"A\"), Item(\"B\")]\nname = items[0].name",
-      "walkthrough": "`items[0]` selects the first `Item` object, and ``.name`` returns `A`."
+      "walkthrough": "1) `from dataclasses import dataclass` imports `dataclass`.\n2) `class Item:` with `@dataclass` and `name: str` defines a class with a `name` field. Here, the generated initializer stores the value supplied during construction in the instance's `name` attribute.\n3) `items = [Item(\"A\"), Item(\"B\")]` creates two objects whose names are `\"A\"` and `\"B\"`, and puts them in a list in that order.\n4) In `name = items[0].name`, `items[0]` first selects the first object. Then `.name` reads that object's string `\"A\"`, which is assigned to the variable `name` on the left.\nResult: `name` has the value `\"A\"`. Nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "`nodes[1]` selects the `Node('n002', 'Radar')` object. The `label` attribute of that object is `Radar`.",
-      "why_correct": "This is because attribute access returns the value of the corresponding attribute stored in the selected instance.",
+      "step_by_step": "1) Import `dataclass` and define Node with fields in the order `id`, `label`. In this code, the generated initializer accepts arguments in that order.\n2) `Node(\"n001\", \"LiDAR\")` creates an object with `id=\"n001\"` and `label=\"LiDAR\"`.\n3) `Node(\"n002\", \"Radar\")` creates an object with `id=\"n002\"` and `label=\"Radar\"`. The `nodes` list contains these two objects in that order.\n4) On the right side of the final assignment, evaluate `nodes[1]`. Index 0 selects the first object, so index 1 selects the second.\n5) `.label` reads the selected object's `label` value, `\"Radar\"`.\n6) That string is assigned to `selected_label`.",
+      "why_correct": "The second Node object's `label` is `\"Radar\"`, and the final expression reads exactly that attribute. Therefore, `selected_label` holds the string `\"Radar\"`, so the correct choice is Radar.",
       "common_wrong_choice": {
         "choice": "n002",
-        "why_wrong": "n002 is the id attribute of the same object, and the attribute currently being accessed is label.",
-        "misread_step": "This is a case where two fields of an object were read in the wrong order."
+        "why_wrong": "`\"n002\"` is the selected object's `id` value. The code reads `label`, not `id`.",
+        "misread_step": "This selects the object with `nodes[1]` but then reads its `id` value instead of following `.label`."
       },
-      "takeaway": "The nested access is evaluated in the order of **selecting an object from a container → reading the object's attribute**."
+      "takeaway": "Distinguish `[index]`, which selects an object from the list, from `.attribute`, which reads a value from that object: select object → look up specified attribute → assign result."
     },
     "target_statement": "selected_label = nodes[1].label",
     "focus_span": "nodes[1].label",
@@ -1154,24 +1154,24 @@
     "primary_concept": "class_definition",
     "reading_goal_internal": "class 정의의 base 목록을 읽어 Item이 BaseModel 계열 schema class임을 식별한다.",
     "concept_explanation": {
-      "what_it_is": "`class Child(Base):` This is a class definition that inherits from another class.",
-      "how_to_read": "Distinguish between the new class name and the base class name in parentheses to verify the inheritance relationship.",
-      "key_point": "Pydantic’s `class Item(BaseModel):` also uses the same Python inheritance syntax.",
-      "common_mistake": "It is easy to mistake `BaseModel` for the name of a field in an `Item` instance. Within parentheses, it refers to the base class."
+      "what_it_is": "Easy meaning: `class Item(BaseModel):` creates a new kind called `Item` that inherits behavior from the existing `BaseModel`.\nExact definition: This class definition executes its body in a new namespace, then creates a class object with `BaseModel` as its direct base class and binds it to the name `Item`.",
+      "how_to_read": "Think of making a new blueprint based on an existing one. `Item` after `class` is the new class name; `BaseModel` in parentheses is the class it inherits from. In the body, `title: str` and `score: float` are attribute type annotations, not an inheritance list.",
+      "key_point": "The flow is: define `BaseModel` → define `Item` inheriting from `BaseModel` → call `Item(...)` → run the inherited `__init__`. `values` contains `title=\"news\"` and `score=0.8`; the loop and `setattr` store these as instance attributes. Thus, `result` is `0.8`. Here, `BaseModel` is defined locally in the code; the type annotations alone do not perform validation or conversion.",
+      "common_mistake": "Seeing `score: float` can make you think `Item` inherits from `float`. Read inheritance from the parentheses in the class header, and distinguish it from the type annotation after the colon."
     },
     "teaching_example": {
-      "code": "class Record:\n    pass\n\nclass User(Record):\n    name: str",
-      "walkthrough": "`User` is a subclass based on `Record`."
+      "code": "class Record:\n    def label(self):\n        return \"record\"\n\nclass User(Record):\n    pass\n\nuser = User()\nresult = user.label()",
+      "walkthrough": "1) `class Record:` defines the existing class.\n2) `def label(self):` defines a method. It has not been called, so `return \"record\"` does not run yet.\n3) `class User(Record):` defines `User` with `Record` as its direct base class.\n4) `pass` adds no new behavior.\n5) `user = User()` creates a `User` instance.\n6) `user.label()` finds the method in the base class `Record`, since it is not defined in `User`, and calls it. Now `return \"record\"` executes.\nResult: `result` is the string `\"record\"`. The direct base class of `User` is `Record`."
     },
     "answer_explanation": {
-      "step_by_step": "`class Item(BaseModel):` Here, the new class name is `Item`, and the name in parentheses is the base class it inherits from.",
-      "why_correct": "This is because, in Python’s class definition syntax, the class inside parentheses refers to a list of base classes.",
+      "step_by_step": "1) The `BaseModel` class is defined first. Its `__init__` is defined to store supplied names and values as attributes.\n2) In `class Item(BaseModel):`, `BaseModel` is evaluated, and `Item` is created with it as its direct base class.\n3) The body contains the type annotations `title: str` and `score: float`; these do not add base classes.\n4) `Item(title=\"news\", score=0.8)` uses the inherited `BaseModel.__init__`. Its loop uses `setattr` to store the `title` and `score` attributes.\n5) `item.score` is `0.8`, so `result` is also `0.8`. The direct base class that supplies this behavior is `BaseModel`.",
+      "why_correct": "`BaseModel` is the only base class specified in parentheses after the class name in `class Item(BaseModel):`, so the answer is `BaseModel`.",
       "common_wrong_choice": {
         "choice": "float",
-        "why_wrong": "`float` is the type used in the `score: float` type annotation; it is not a base class.",
-        "misread_step": "This is an example of confusion between class inheritance and field type annotation."
+        "why_wrong": "`float` is the attribute type annotation in `score: float`. It is not in the base list in the class header.",
+        "misread_step": "This mistakes a type annotation in the class body for the inheritance list in the class header."
       },
-      "takeaway": "When reading a schema class, examine the **class name → base class → field annotation** separately."
+      "takeaway": "Read direct inheritance from `class NewName(Base):`. Type annotations in the body and later instance creation are separate steps."
     },
     "target_statement": "class Item(BaseModel):",
     "focus_span": "class Item(BaseModel):",
@@ -1215,10 +1215,10 @@
     "primary_concept": "parameter_definition",
     "reading_goal_internal": "함수 정의에서 타입 annotation과 기본값을 분리해 default parameter의 의미를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`name: type = default` This is a parameter definition that includes both a type annotation and a default value.",
-      "how_to_read": "Treat parameter names, type annotations, and default values on the right side of `=` as separate elements.",
-      "key_point": "`limit: int = 10` indicates that `limit` should be treated as an `int`, and if omitted in a call, the value 10 is used.",
-      "common_mistake": "`10` It’s easy to assume that this is always enforced. If the caller passes a `limit` value, that value overrides the default."
+      "what_it_is": "Easy meaning: writing a default value beside a function's input name lets you leave that input out when calling it.\nExact definition: `limit: int = 10` defines a parameter with the type annotation `int` and default value `10`; when its argument is omitted in a call, the default value is bound to `limit`.",
+      "how_to_read": "Picture an input slot with a backup value ready. On the `def` line, `q: str` is an input without a default; split `limit: int = 10` into the name `limit`, type annotation `int`, and default `10`. The `return` line puts both input values into a dictionary and returns it. On the final line, `search(\"rag\")` supplies a value only for `q`.",
+      "key_point": "`search(\"rag\")` → `q` is `\"rag\"` and omitted `limit` is `10` → return `{\"query\": \"rag\", \"limit\": 10}` → store it in `result`. Therefore, `result[\"limit\"]` is the integer `10`.",
+      "common_mistake": "`int` does not choose a default or automatically convert a value. In this ordinary Python function, the type annotation does not enforce a type; `= 10` specifies the default. Nor is `10` always used: in `search(\"rag\", 3)`, `limit` is `3`."
     },
     "teaching_example": {
       "code": "def list_items(category: str, page: int = 1):\n    return page\n\nresult = list_items(\"python\")",
@@ -1277,14 +1277,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "DB connection 객체의 execute 메서드에 SQL 문자열이 전달되고 반환 cursor가 저장되는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`obj.method(arg)` is a method call that passes an argument to an object’s method.",
-      "how_to_read": "Check the calling object, method name, and arguments in parentheses in that order.",
-      "key_point": "`LIMIT 10` is a rule within an SQL string, and in Python syntax, the entire string serves as the input to the `execute` method.",
-      "common_mistake": "It’s easy to assume that SQL strings are automatically executed in Python. The actual execution request occurs in the ``conn.execute(...)`` call."
+      "what_it_is": "Easy meaning: `conn.execute(...)` asks `conn` to do a defined job and hands it the value inside the parentheses.\nExact definition: This method call executes the `execute` method of `conn`, binding `conn` to `self` and the supplied string to the parameter `sql`.",
+      "how_to_read": "Think input → processing → returned value. `conn.execute(\"SELECT title FROM items LIMIT 10\")` supplies the entire string as input. Inside `execute`, that string is named `sql`, and `return {\"sql\": sql}` returns a dictionary containing it.",
+      "key_point": "`Connection()` creates an object → `conn` refers to it → `execute` is called → `sql` receives the SQL string → `{\"sql\": \"SELECT title FROM items LIMIT 10\"}` is returned → `cursor` refers to it. Thus, `cursor[\"sql\"]` is the original string, whose `LIMIT 10` specifies at most 10 rows. This code itself does not query a database.",
+      "common_mistake": "The method name `execute` or the variable name `cursor` may suggest that a real database query happens. Check the method body, not just its name. Here it only returns a dictionary containing the string, and `cursor` actually refers to that dictionary."
     },
     "teaching_example": {
-      "code": "class Connection:\n    def execute(self, sql):\n        return sql\n\nconn = Connection()\nquery = conn.execute(\"SELECT id FROM users LIMIT 5\")",
-      "walkthrough": "An SQL string is passed to the `execute` method, and the same string is returned."
+      "code": "class Connection:\n    def execute(self, sql):\n        return {\"sql\": sql}\n\nconn = Connection()\nresult = conn.execute(\"SELECT id FROM users LIMIT 5\")\nprint(result[\"sql\"])",
+      "walkthrough": "1) `class Connection:` defines the class used to create objects.\n2) `def execute(self, sql):` defines a method. Its body does not run yet.\n3) `return {\"sql\": sql}` is the part that will return a dictionary containing the input string when called.\n4) `conn = Connection()` creates an object and binds it to `conn`.\n5) Calling `conn.execute(...)` supplies `conn` as `self` and `\"SELECT id FROM users LIMIT 5\"` as `sql`. The method body runs and returns `{\"sql\": \"SELECT id FROM users LIMIT 5\"}`, and `result` is bound to this dictionary.\n6) `print(result[\"sql\"])` retrieves the string from the dictionary and prints it.\nOutput: `SELECT id FROM users LIMIT 5`\nThe flow is string input → method execution → dictionary returned → string printed. No actual database query takes place."
     },
     "answer_explanation": {
       "step_by_step": "The string passed to `conn.execute(...)` is `SELECT title FROM items LIMIT 10`. The SQL clause `LIMIT 10` means at most 10 rows.",
@@ -1398,14 +1398,14 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "vector search call에서 top_k keyword가 반환 후보 수 상한을 지정하는 의미를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`top_k=5` is a keyword argument that passes the number 5 as the value for the `top_k` parameter in a `search` call.",
-      "how_to_read": "Distinguish between what `query_vector` and `top_k` are responsible for—the search query and the number of results, respectively.",
-      "key_point": "`top_k` determines how many of the highest-ranked candidates are requested in similarity search.",
-      "common_mistake": "\"top_k=5\" is easy to read as meaning that the search is repeated 5 times."
+      "what_it_is": "Easy meaning: `top_k=5` passes a named setting asking the search for up to 5 top candidates.\nExact definition: `top_k=5` is a keyword argument that passes the value `5` to the parameter named `top_k` in a call.",
+      "how_to_read": "Picture input slots with name tags. In `index.search(query_vector, top_k=5)`, `query_vector` is the search input passed by position, while `5` is the count setting passed by the name `top_k`. In this card's search, read it as requesting up to 5 top candidates.",
+      "key_point": "`def` defines the function without immediately executing its body. When `retrieve` is called, the flow is `question` → `embedder.encode(question)` → `query_vector` → `index.search(query_vector, top_k=5)` → `hits` → return. The actual candidates and their count cannot be determined from the supplied code alone.",
+      "common_mistake": "`top_k=5` does not mean repeating the search 5 times or guaranteeing exactly 5 results. The call syntax passes a value by name; this search function determines its meaning as a candidate limit."
     },
     "teaching_example": {
-      "code": "class Index:\n    def search(self, vector, top_k):\n        return list(range(top_k))\n\nindex=Index()\nhits=index.search([0.1,0.2], top_k=3)",
-      "walkthrough": "Since `top_k=3`, request a maximum of 3 search result candidates."
+      "code": "def select_top(candidates, top_k):\n    return candidates[:top_k]\n\nhits = select_top(['A', 'B', 'C', 'D'], top_k=3)\nprint(hits)",
+      "walkthrough": "1) `def` defines a function accepting a candidate list and a count limit. Assume the candidates are already ranked best first.\n2) `return candidates[:top_k]` returns up to `top_k` items from the start of the list. This line runs when the function is called.\n3) In the call, the list binds to `candidates`, and the keyword argument `3` binds to `top_k`.\n4) The function evaluates `candidates[:3]` and returns `['A', 'B', 'C']`, which is stored in `hits`.\n5) `print(hits)` displays `['A', 'B', 'C']`."
     },
     "answer_explanation": {
       "step_by_step": "Since the `top_k` parameter in the `index.search` call is set to 5, the search engine is asked to return up to 5 top candidates.",

@@ -625,17 +625,17 @@
     },
     "teaching_example": {
       "code": "def load():\n    return [\"doc\"]\n\ndef split(docs):\n    return [docs[0] + \":chunk\"]\n\ndef encode(chunks):\n    return [chunks[0] + \":vec\"]\n\nitems = load()\nchunks = split(items)\nvectors = encode(chunks)",
-      "walkthrough": "The result of `load` is passed to `split`, and the result of `split` is passed to `encode`, in that order."
+      "walkthrough": "1) The three `def` statements define functions. Their bodies do not execute yet.\n2) `items = load()` calls `load()`. It returns `[\"doc\"]`, which is bound to `items`.\n3) `split(items)` receives that list through its parameter `docs`. It appends `\":chunk\"` to `docs[0]`, which is `\"doc\"`, and returns `[\"doc:chunk\"]`. This value is bound to `chunks`.\n4) `encode(chunks)` receives that list through its parameter `chunks`. It appends `\":vec\"` to the first string and returns `[\"doc:chunk:vec\"]`. This value is bound to `vectors`.\nLike handing each stage's result to the next, the flow is `load → split → encode`. The final value of `vectors` is `[\"doc:chunk:vec\"]`; nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "The assignment statements in the `run` function execute from top to bottom, creating `docs`, `chunks`, and `vectors` sequentially.",
-      "why_correct": "This is because each subsequent function call uses the variables from the immediately preceding step as arguments.",
+      "step_by_step": "1) After the function definitions, `result = run()` starts executing the body of `run`.\n2) `docs = load_documents()` receives `[\"doc-a\"]` and binds it to `docs`.\n3) `make_chunks(docs)` receives that list and appends `\":chunk\"` to its first string. Its return value, `[\"doc-a:chunk\"]`, is bound to `chunks`.\n4) `embed_chunks(chunks)` receives the now-available `chunks` and appends `\":vector\"` to its first string. Its return value, `[\"doc-a:chunk:vector\"]`, is bound to `vectors`.\n5) `return vectors` returns this list, which is bound to `result`. Nothing is printed.",
+      "why_correct": "Statements in `run()` execute from top to bottom. In each assignment, the call on the right finishes before its return value is bound to the name on the left. Therefore, the call order is `load_documents → make_chunks → embed_chunks`.",
       "common_wrong_choice": {
         "choice": "embed_chunks → load_documents → make_chunks",
-        "why_wrong": "The `chunks` that `embed_chunks` will use have not been created yet.",
-        "misread_step": "This is an example where data dependencies were ignored and only the function names were read in a random order."
+        "why_wrong": "The first call in `run()` is `load_documents()`. The local variable `chunks`, needed for `embed_chunks(chunks)`, only gets its value after the second call finishes.",
+        "misread_step": "This focuses on the final processing stage as if it ran first, skipping the statement order in `run()` and the steps that produce its input."
       },
-      "takeaway": "A pipeline tracks **whether the return value of each step becomes an argument for the next call**."
+      "takeaway": "Follow actual call statements, not where functions are defined. Track which name receives each return value and how that value becomes the next call's input."
     },
     "target_statement": "vectors = embed_chunks(chunks)",
     "focus_span": "embed_chunks(chunks)",
@@ -808,17 +808,17 @@
     },
     "teaching_example": {
       "code": "events = []\ntry:\n    raise ValueError(\"bad\")\nexcept ValueError:\n    events.append(\"recorded\")\n    raise",
-      "walkthrough": "After recording it, the original ValueError is propagated again."
+      "walkthrough": "1. `events = []` creates an empty list for records.\n2. Inside `try`, `raise ValueError(\"bad\")` raises an exception, moving execution to `except ValueError`.\n3. `events.append(\"recorded\")` runs, making the list `[\"recorded\"]`.\n4. The final bare `raise` (raise with no exception written after it) re-raises the very exception currently being handled. Recording a failure is different from removing it.\n5. Since no outer code catches the exception, this code ends with an unhandled `ValueError: bad`. The record was added, but execution did not finish normally."
     },
     "answer_explanation": {
-      "step_by_step": "A RuntimeError is caught by `except`, `finalize` saves the state, and then the same error is propagated again via a `bare raise`.",
-      "why_correct": "This is because reraise enables both logging and failure propagation simultaneously.",
+      "step_by_step": "1. `events` starts as an empty list. Defining the functions does not execute their bodies.\n2. The outer `try` calls `main()`, and `main()` calls `run_pipeline()`.\n3. `run_pipeline()` raises `RuntimeError(\"boom\")`. Therefore, the next line, `finalize(status=\"ok\")`, does not run.\n4. `except Exception as e` catches this exception. Since `str(e)` is `\"boom\"`, `finalize(status=\"error\", error=str(e))` adds `{'status': 'error', 'error': 'boom'}` to `events`.\n5. The bare `raise` re-raises the same exception currently being handled. Instead of returning normally, `main()` passes the failure to its caller.\n6. The outer `except RuntimeError as caught` catches it and stores `\"boom\"` in `caught_message`. The final `events` is `[{'status': 'error', 'error': 'boom'}]`, and there are no print statements.",
+      "why_correct": "The correct choice is 'After logging the error, to notify the caller of the failure as well,'. `finalize` records the error information in the list, and the bare `raise` passes the original exception back to the caller. Thus, the code both records and propagates the failure.",
       "common_wrong_choice": {
         "choice": "To completely hide errors,",
-        "why_wrong": "A bare `raise` does the opposite of hiding an exception: it re-raises it.",
-        "misread_step": "This is a case where the learner missed the final `raise` statement, focusing only on the fact that `except` caught the exception."
+        "why_wrong": "A bare `raise` does not hide the exception; it re-raises it. The outer `except RuntimeError` actually receives that exception.",
+        "misread_step": "This overlooks the final `raise` that passes the failure onward, focusing only on the fact that `except` caught and recorded it."
       },
-      "takeaway": "\"exception boundary\" is interpreted as **logging/organizing → re-raise → propagating the failure to a higher level**."
+      "takeaway": "Record the error → re-raise the same exception with bare `raise` → handle it in the caller. Recording a failure does not turn it into success."
     },
     "target_statement": "raise",
     "focus_span": "raise",

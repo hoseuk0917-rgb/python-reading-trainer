@@ -870,18 +870,18 @@
       "common_mistake": "It is easy to think that if a new card itself parses normally, the entire existing app is automatically safe."
     },
     "teaching_example": {
-      "code": "def validate():\n    return False\npassed=validate()\nif not passed:\n    status=\"blocked\"",
-      "walkthrough": "Since validation failed, the release is blocked."
+      "code": "def validate():\n    return False\n\npassed = validate()\nstatus = \"ready\"\nif not passed:\n    status = \"blocked\"\nprint(status)",
+      "walkthrough": "1) `def validate():` defines a function. Its `return False` runs when the function is called.\n2) `passed = validate()` calls the function and stores the returned `False` in `passed`.\n3) `status = \"ready\"` sets the initial status.\n4) `if not passed:` tests `not False`, which is `True`. Like opening a checkpoint gate, this leads into the indented block.\n5) `status = \"blocked\"` runs and changes the status.\n6) Outside the block, `print(status)` prints `blocked`.\nFlow: return `False` → `not False` is `True` → execute the if block → print `blocked`. If `passed` were `True`, the block would be skipped and `ready` would be printed."
     },
     "answer_explanation": {
-      "step_by_step": "If the lesson validator fails, an exception is raised, blocking the release process.",
-      "why_correct": "This is because a regression test is a test that verifies that new changes have not broken existing behavior or data contracts.",
+      "step_by_step": "1) Define an exception type named `RegressionError`. Here, `pass` performs no additional action.\n2) Define `validate_lessons`. In this example, its body always returns `False` without actually checking a file.\n3) Calling `validate_lessons(\"data/lesson_manifest.json\")` stores `False` in `validation_passed`.\n4) `if not validation_passed:` evaluates `not False`, which is `True`, so the indented block runs.\n5) `raise RegressionError(\"lesson regression detected\")` raises an exception. Nothing in this code handles it, so normal execution stops.",
+      "why_correct": "The correct choice is 'To verify that adding a new card did not corrupt existing app data,'. A regression test checks whether a new change has broken previously working data or behavior. This code illustrates that structure by representing validation failure as `False`, using `if` to select the failure path, and raising an exception. The actual checks are not implemented in this short example.",
       "common_wrong_choice": {
         "choice": "To delete all cards,",
-        "why_wrong": "The purpose of the inspection is data protection and regression detection, not deletion.",
-        "misread_step": "This is an instance where \"failure gate\" was confused with \"destructive action.\""
+        "why_wrong": "There is no instruction to delete cards. The action taken on failure is raising an exception to report a problem.",
+        "misread_step": "This confuses the `raise` inside the `if` block with a data-deletion operation. That line reports failure and interrupts normal execution; it does not delete cards."
       },
-      "takeaway": "\"Authoring regression\" is interpreted as **new content → whole-system validation → release gate**."
+      "takeaway": "Validation result → use `not` to test for failure → execute the if block on failure. Regression tests check whether a new change has broken existing data or behavior."
     },
     "target_statement": "if not validation_passed:",
     "focus_span": "if not validation_passed:",
@@ -929,18 +929,18 @@
       "common_mistake": "It’s easy to assume that if the `publish` call was successful, the actual release verification is complete."
     },
     "teaching_example": {
-      "code": "events=[]\ndef draft(): events.append(\"draft\")\ndef review(): events.append(\"review\")\ndef publish(): events.append(\"publish\")\ndraft(); review(); publish()",
-      "walkthrough": "Function calls accumulate the workflow state in a top-to-bottom order."
+      "code": "steps = []\ndef draft_cards(): steps.append(\"draft\")\ndef human_review_cards(): steps.append(\"review\")\ndef validate_approved_cards(): steps.append(\"validation\")\ndef publish_cards(): steps.append(\"publish\")\ndef verify_release_and_log_evidence(): steps.append(\"evidence\")\n\ndraft_cards()\nhuman_review_cards()\nvalidate_approved_cards()\npublish_cards()\nverify_release_and_log_evidence()\nprint(steps)",
+      "walkthrough": "First, draft_cards() records draft. human_review_cards() and validate_approved_cards() then record review and validation in order. publish_cards() records publish, and the final verify_release_and_log_evidence() call records evidence. The steps list therefore preserves the same five-stage call order."
     },
     "answer_explanation": {
-      "step_by_step": "The code executes five function calls in exactly that order.",
-      "why_correct": "Because each stage serves as a prerequisite for the next stage.",
+      "step_by_step": "First, draft_cards() runs the drafting stage. human_review_cards() performs human review, then validate_approved_cards() validates the approved cards. publish_cards() performs publication, and finally verify_release_and_log_evidence() checks the release result and records evidence. Python executes these five calls from top to bottom.",
+      "why_correct": "The five stages in the correct choice match the execution order of the five function calls in the code.",
       "common_wrong_choice": {
         "choice": "To hide the verification results,",
-        "why_wrong": "The final step involves recording the evidence, thereby leaving a record of the verification results.",
-        "misread_step": "This is an example of misunderstanding the purpose of traceability."
+        "why_wrong": "The final step does the opposite: it checks the release result and records evidence so the outcome can be traced.",
+        "misread_step": "This reverses the purpose of the verify_release_and_log_evidence() call that comes after publish."
       },
-      "takeaway": "The authoring workflow is **draft → human review → validation → publish → release evidence**."
+      "takeaway": "The authoring workflow executes and records **draft → human review → validation → publish → release evidence** in that order."
     },
     "target_statement": "verify_release_and_log_evidence()",
     "focus_span": "verify_release_and_log_evidence()",

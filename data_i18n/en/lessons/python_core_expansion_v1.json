@@ -788,10 +788,10 @@
     "primary_concept": "parameter_definition",
     "reading_goal_internal": "함수 정의의 `**name` parameter가 호출에서 전달된 이름 있는 추가 인자들을 하나의 dict로 수집하는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "The `**kwargs` in a function definition is a parameter that collects keyword arguments that are not explicitly matched into key-value pairs and accepts them in the form of a dictionary.",
-      "how_to_read": "Check the `name=value` arguments of the call and read that each name becomes a key in the kwargs dictionary, and the passed value becomes the value.",
-      "key_point": "The name \"kwargs\" is merely a convention; the core syntax is ``**`` before the parameters.",
-      "common_mistake": "It is easy to assume that `**kwargs` means you must explicitly pass a dictionary when calling a function, or that it simply groups the values into a list."
+      "what_it_is": "Easy meaning: `**kwargs` receives values passed with names as one collection that keeps those names.\nExact definition: In a function definition, `**kwargs` is a parameter that collects keyword arguments not matched to other parameters into a new dictionary (`dict`), with argument names as keys and supplied values as values.",
+      "how_to_read": "Mental model: imagine gathering labeled values into a collection where you can look them up by label.\n1) `def show_config(**kwargs):` defines the function and makes the collected dictionary available inside it as `kwargs`. The body does not run yet.\n2) `print(kwargs[\"mode\"])` is the line that will look up and print the value under the key `\"mode\"` when the function is called.\n3) When `show_config(mode=\"fast\", limit=10)` is called, `\"mode\"` and `\"limit\"` become keys, and `\"fast\"` and `10` become their respective values.",
+      "key_point": "Execution flow: `show_config(mode=\"fast\", limit=10)` → collect both keyword arguments into a dictionary → `kwargs` refers to `{\"mode\": \"fast\", \"limit\": 10}` → `kwargs[\"mode\"]` reads `\"fast\"` → `print` outputs `fast`. The question asks for the whole dictionary held by `kwargs` before the body runs, not the printed value. The name `kwargs` is conventional; the `**` before the name specifies collection.",
+      "common_mistake": "It is easy to think `kwargs` is just the values `[\"fast\", 10]` or the lookup result `\"fast\"`. `**kwargs` receives a dictionary that preserves the names, while `kwargs[\"mode\"]` retrieves just one value from it. You can supply `name=value` arguments as this call does; you do not have to pass a dictionary directly."
     },
     "teaching_example": {
       "code": "def settings(**options):\n    return options[\"mode\"]\n\nprint(settings(mode=\"safe\", retries=2))",
@@ -847,10 +847,10 @@
     "primary_concept": "lambda_expression",
     "reading_goal_internal": "lambda 표현식에서 parameter와 콜론 오른쪽 결과 표현식을 분리하고 입력 하나에 대해 어떤 값을 반환하는지 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`lambda` creates a short anonymous function in the form `lambda parameters: expression` that returns the result of a single expression.",
-      "how_to_read": "First, check the parameter following `lambda`, and then calculate what result is produced when that value is substituted into the expression to the right of the colon during the call.",
-      "key_point": "The `lambda` itself does not sort; rather, in this case, it is a **function that retrieves the score from each row and returns a sort key**.",
-      "common_mistake": "It is easy to assume that `lambda` receives the entire `rows` list at once or returns the `score` string itself."
+      "what_it_is": "Easy meaning: `lambda` is a way to make a small function that takes input and gives back the result of a short calculation or lookup.\nExact definition: `lambda parameters: expression` is an expression that creates an anonymous function object which, when called, binds arguments to parameters, evaluates the single expression after the colon, and returns its result.",
+      "how_to_read": "Picture a small task: input → lookup → result. In `lambda x: x[\"score\"]`, `x` names the input, and the part after the colon determines the value to return. Given `{'score': 3}`, `x[\"score\"]` retrieves the value `3` associated with `\"score\"` in that dictionary.",
+      "key_point": "The first line creates a list containing two dictionaries. On the second line, `sorted` passes each dictionary to the lambda to obtain the sort keys `3` and `1`. The lambda does not sort: `sorted` returns a new list ordered by those values, and that list is bound to `rows`. Thus, the lambda returns `3` for the question's input `{'score': 3}`, but the final line prints `1` after sorting.",
+      "common_mistake": "Do not assume the lookup runs as soon as the lambda expression creates the function. The function is created first; the lookup runs when it is called. Here it receives one dictionary at a time, not the entire list, and returns the value associated with the key, not the key string `\"score\"`."
     },
     "teaching_example": {
       "code": "items = [{\"size\": 8}, {\"size\": 3}]\nkey_fn = lambda item: item[\"size\"]\nprint(key_fn(items[0]))",
@@ -906,14 +906,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "`Path.glob('*.jsonl')` 호출이 확장자 패턴과 일치하는 파일만 선택하는 범위를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "The `Path.glob(pattern)` method call returns an iterable containing Paths that match the pattern under the current path.",
-      "how_to_read": "Check the filename created under `root` and compare it with the extension condition in the pattern `*.jsonl`.",
-      "key_point": "`*.jsonl` selects only items with the exact extension .jsonl.",
-      "common_mistake": "Do not assume that the `*` in `glob` automatically performs a recursive search down into subfolders. Recursion is typically indicated by `**`."
+      "what_it_is": "Easy meaning: `root.glob(\"*.jsonl\")` asks to find entries in the root folder whose names end in `.jsonl`.\nExact definition: `Path.glob(pattern)` is a method call that yields matching paths as Path objects, using the directory represented by that Path as its base.",
+      "how_to_read": "Picture a sieve that filters names. `root` specifies where to look, and `\"*.jsonl\"` inside the parentheses supplies the search condition. Here, `*` stands for the beginning of the name, while the ending `.jsonl` must match. Of the three files created, `a.jsonl` and `c.jsonl` pass through; `b.json` does not.",
+      "key_point": "Create three files → iterate over `root.glob(\"*.jsonl\")` → extract name strings from the two matching Paths with `path.name` → build a sorted list with `sorted()` → store it in `matches` → `print(matches)` displays `['a.jsonl', 'c.jsonl']`. `glob()` itself neither returns a list of names nor sorts them.",
+      "common_mistake": "The presence of `*` does not select every file or automatically search inside subfolders. `*.jsonl` applies to names directly inside root; `b.json` is excluded because its ending differs. The pattern for searching subfolders too is `**/*.jsonl`. Also, `glob()` does not inspect file contents or file formats; matching directory names can be included too."
     },
     "teaching_example": {
       "code": "from pathlib import Path\nfrom tempfile import TemporaryDirectory\nwith TemporaryDirectory() as folder:\n    root = Path(folder)\n    (root / \"one.csv\").touch()\n    (root / \"two.txt\").touch()\n    print([p.name for p in root.glob(\"*.csv\")])",
-      "walkthrough": "Among the files in the `root` directory, only `one.csv`, which matches the `.csv` pattern, is included in the glob results."
+      "walkthrough": "1) The first line imports `Path` for working with paths.\n2) The second imports `TemporaryDirectory` for creating a temporary folder.\n3) The `with` line creates a temporary folder and binds its path string to `folder`.\n4) `Path(folder)` creates a path object representing that folder and binds it to `root`.\n5) `root / \"one.csv\"` builds a file path inside the folder, and `.touch()` creates an empty file there.\n6) The next line creates `two.txt` in the same way.\n7) On the final line, iterating over `root.glob(\"*.csv\")` yields only the Path for `one.csv`. The list comprehension extracts its name with `p.name`, building `['one.csv']`, and `print()` displays that list.\nFlow: two files → select names with `*.csv` → Path for `one.csv` → name list → output `['one.csv']`.\nWhen the `with` block ends, the temporary folder and its files are cleaned up."
     },
     "answer_explanation": {
       "step_by_step": "1) Create three files in the temporary root directory. 2) Create only the paths that match root.glob('*.jsonl'). 3) The generator extracts the name from each path. 4) The sorted results are output in the order a.jsonl, c.jsonl.",
@@ -1147,10 +1147,10 @@
     "primary_concept": "attribute_access",
     "reading_goal_internal": "parse_args 결과 객체에서 `args.input` attribute를 읽어 옵션 값이 어디에 저장되는지 추적한다.",
     "concept_explanation": {
-      "what_it_is": "Attribute access is an expression used to read an object’s attributes or members, in the form `object.name`.",
-      "how_to_read": "`args.input` Here, it appears that the code first checks what kind of object `args` is and then reads the value of that object’s `input` attribute.",
-      "key_point": "The CLI rules of argparse are library functionality; the Python syntax focus is attribute access that reads a value from the parsed result object.",
-      "common_mistake": "It’s easy to assume that `input` refers to Python’s built-in `input` function. However, since `args` appears before the dot here, it refers to the `input` attribute of the `args` object."
+      "what_it_is": "Easy meaning: `args.input` reads the value stored under the name `input` on the object that `args` refers to.\nExact definition: Attribute access `object.name` is an expression that first evaluates `object`, then looks up the attribute named `name` on the resulting object.",
+      "how_to_read": "Mental model: Imagine `args` as a results sheet with labeled fields for options. `args.input` reads the field labeled `input`.\nReading the code: `import argparse` imports the module. `ArgumentParser()` creates an object for parsing options, and `add_argument(\"--input\")` registers the option. `parse_args([\"--input\", \"data.json\"])` parses the supplied list and returns a result object whose `input` attribute holds the string `\"data.json\"`. `args` refers to this object, and the last line reads the value with `args.input` and prints it.",
+      "key_point": "Value flow: `[\"--input\", \"data.json\"]` → parsing stores `\"data.json\"` in the result object's `input` attribute → `args` refers to the result object → `args.input` reads `\"data.json\"` → `print` outputs `data.json`. `--input` is the option name; the attribute holds the value supplied after it.",
+      "common_mistake": "Do not read `args.input` as a call to the built-in function `input()`. Here, `input` after the dot is an attribute name on the `args` object, and there are no call parentheses. This expression does not request new input; it reads the string `\"data.json\"` already parsed and stored."
     },
     "teaching_example": {
       "code": "import argparse\n\nparser = argparse.ArgumentParser()\nparser.add_argument(\"--name\")\noptions = parser.parse_args([\"--name\", \"Mina\"])\nprint(options.name)",
@@ -1446,10 +1446,10 @@
     "primary_concept": "class_definition",
     "reading_goal_internal": "class body 안 __init__과 attribute assignment를 함께 보며 Node instance가 어떤 상태를 갖는지 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`class Name:` is the Python syntax used to define a new class.",
-      "how_to_read": "After checking the class name, look at the methods and attribute settings in the indented body.",
-      "key_point": "The `__init__` method of the `Node` class stores the label passed at creation in `self.label`.",
-      "common_mistake": "It is easy to think of `self.label` as a single value shared by the entire class. Here, however, it is an attribute of each Node instance."
+      "what_it_is": "Easy meaning: `class` defines a blueprint for creating objects of the same kind.\nExact definition: A Python class definition executes its body in a new namespace, uses that namespace to create a class object, and binds that object to the class name.",
+      "how_to_read": "Distinguish a blueprint from an individual item made from it. Here, `Node` is the class, and `node` is an individual object made from it, called an instance.\n`class Node:` starts the class definition. The indented `def __init__(self, label):` defines a method for setting an instance's initial state. Its body, `self.label = label`, does not execute yet.\nLater, when `node = Node(\"LiDAR\")` creates and initializes an instance, `self` refers to that instance and `label` refers to the supplied string `\"LiDAR\"`. `self.label = label` stores the string in that instance's `label` attribute. Finally, `result = node.label` reads the stored value.",
+      "key_point": "Execute `class Node:` → create the class object containing the `__init__` method → bind it to `Node` → call `Node(\"LiDAR\")` to create and initialize an instance → store `\"LiDAR\"` in `self.label` → bind the instance to `node` → read `node.label` and assign it to `result`.\nThus, both `node.label` and `result` have the string value `\"LiDAR\"`.",
+      "common_mistake": "`class Node:` alone does not create the `node` instance or execute `self.label = label`. Class definition and instance creation are separate steps. Also, `self.label` here is an attribute stored on the created instance, not a single value shared by the whole class."
     },
     "teaching_example": {
       "code": "class Sensor:\n    def __init__(self, name):\n        self.name = name\n\nsensor = Sensor(\"Camera\")\nresult = sensor.name",
@@ -1506,24 +1506,24 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "dataclass instance 생성 호출에서 field 이름을 붙인 keyword argument가 해당 field 값으로 전달되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`name=value` If you pass a value to a call in this format, it is a keyword argument.",
-      "how_to_read": "Look at the name on the left side of the equals sign to see which parameter or field it corresponds to, and then check the actual value on the right side.",
-      "key_point": "`kind=\"Sensor\"` passes the string \"Sensor\" to the `kind` parameter of the Node constructor.",
-      "common_mistake": "It’s easy to assume that “Sensor” appears in the first field label just by looking at the position of the keyword argument. However, since the name is “kind,” it corresponds to “kind.”"
+      "what_it_is": "Easy meaning: Attach a name tag to a value to specify which input slot receives it.\nExact definition: A keyword argument written as `name=value` in a call passes the value of the right-hand expression to the parameter named `name`.",
+      "how_to_read": "Picture input slots with names. In `kind=\"Sensor\"`, `kind` names the receiving slot, while `\"Sensor\"` is the string value being sent. In this card, `@dataclass` automatically generates an initialization method, `__init__`, from the `label` and `kind` fields. Thus, `Node(label=\"LiDAR\", kind=\"Sensor\")` passes each value to the parameter with the matching name and stores it in the new object's field.",
+      "key_point": "`kind=\"Sensor\"`\n↓\npass `\"Sensor\"` to the generated `__init__` parameter `kind`\n↓\nstore it in the new object's `kind` field\n↓\nreading `node.kind` gives `\"Sensor\"`\n↓\n`result` holds the string `\"Sensor\"`",
+      "common_mistake": "The name `kind` itself is not the stored value. In the call, `kind` on the left of `=` specifies the receiving parameter; `\"Sensor\"` on the right is the actual value. Also, `\"LiDAR\"` is passed to `label`, so reading `node.kind` does not select it."
     },
     "teaching_example": {
       "code": "from dataclasses import dataclass\n\n@dataclass\nclass Device:\n    name: str\n    kind: str\n\ndevice = Device(name=\"Cam\", kind=\"Sensor\")",
       "walkthrough": "Since `kind=\"Sensor\"` is passed to the kind field, `device.kind` is `Sensor`."
     },
     "answer_explanation": {
-      "step_by_step": "When the `Node` is created, `kind=\"Sensor\"` is passed to the `kind` parameter and stored in the `kind` field of the dataclass instance.",
-      "why_correct": "This is because a keyword argument passes a value to a parameter with the same name.",
+      "step_by_step": "1) `from dataclasses import dataclass` imports the decorator.\n2) Inside `class Node`, `label: str` and `kind: str` declare two fields. `@dataclass` generates an `__init__` method that initializes them.\n3) Calling `Node(label=\"LiDAR\", kind=\"Sensor\")` passes `\"LiDAR\"` to the `label` parameter and `\"Sensor\"` to the `kind` parameter.\n4) The initialized object's `label` is `\"LiDAR\"` and its `kind` is `\"Sensor\"`; `node` refers to this object.\n5) `result = node.kind` reads this object's `kind` attribute and binds its value, `\"Sensor\"`, to `result`.",
+      "why_correct": "The final line reads `node.kind`, not `node.label`. The `kind` field holds the string `\"Sensor\"` received through the matching keyword argument, so the correct choice is Sensor.",
       "common_wrong_choice": {
         "choice": "LiDAR",
-        "why_wrong": "LiDAR is the value of the `label` keyword argument.",
-        "misread_step": "This is an example where the two keywords “label” and “kind” were read in the wrong order."
+        "why_wrong": "`\"LiDAR\"` is passed through `label=\"LiDAR\"` and stored in `node.label`. The attribute read on the final line is `kind`.",
+        "misread_step": "This selects the first value passed when creating the object without checking which field `.kind` selects on the final line."
       },
-      "takeaway": "The dataclass constructor **maps field names to keyword arguments based on their names**."
+      "takeaway": "Trace keyword name → matching parameter → object field → attribute read at the end. Here, `kind=\"Sensor\"` → `node.kind` → `result` all lead to the string `\"Sensor\"`."
     },
     "target_statement": "node = Node(label=\"LiDAR\", kind=\"Sensor\")",
     "focus_span": "kind=\"Sensor\"",
@@ -1576,14 +1576,14 @@
       "walkthrough": "`@route(\"/hello\")` It is applied to the `hello` function, and the path and function name are recorded in the registry."
     },
     "answer_explanation": {
-      "step_by_step": "The decorator takes the search function object below and stores `search`—which is ``func.__name__``—in `routes`.",
-      "why_correct": "This is because the function decorator is applied to the function definition immediately below it.",
+      "step_by_step": "1. When `app = App()` runs, `app.routes` becomes an empty dictionary `{}`.\n2. `app.get(\"/api/search\")` receives `\"/api/search\"` as `path` and returns the inner function `decorate`.\n3. Once the function `search` below is created, the returned `decorate` runs with that function object as `func`.\n4. `func.__name__` is the string `\"search\"`, so `self.routes[path] = func.__name__` stores `\"search\"` at `app.routes[\"/api/search\"]`.\n5. `return func` returns the same function object, which is bound to the name `search`. The body of `search()` does not run during this process.\n6. The last line reads the dictionary value for the key `\"/api/search\"`, so `registered` receives `\"search\"`.",
+      "why_correct": "The answer is `search`. The value stored in the dictionary is neither the path nor the method name: it is `func.__name__`, the name of the function received by `decorate`, which is `\"search\"`.",
       "common_wrong_choice": {
         "choice": "get",
-        "why_wrong": "`get` is the name of the method that creates and returns a decorator, while the actual decorated function is `search`.",
-        "misread_step": "This is an instance where the \"decorator factory\" and the \"decorated function\" were confused."
+        "why_wrong": "`get` is the method that returns `decorate`. The function actually passed to `decorate` is `search`, so the stored name is `\"search\"`, not `\"get\"`.",
+        "misread_step": "This confuses the name of the method called on the `@` line with the name of the function defined immediately below and passed to the decorator."
       },
-      "takeaway": "A decorator is read in the following order: **`@` expression → the function immediately below it → the result of applying the decorator**."
+      "takeaway": "Trace the function returned by the `@` expression → the function object passed from below → the value stored in the dictionary. Here, the stored value is the name string `\"search\"`, not the function object itself."
     },
     "target_statement": "@app.get(\"/api/search\")",
     "focus_span": "@app.get(\"/api/search\")",
@@ -1628,14 +1628,14 @@
     "primary_concept": "await_expression",
     "reading_goal_internal": "async 함수 안에서 await가 비동기 호출의 완료 결과를 받는 위치를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`await expression` is an expression that yields the current coroutine’s execution until an awaitable asynchronous operation completes and receives the result.",
-      "how_to_read": "Look at the async call to the right of `await` and see where the completion result is stored.",
-      "key_point": "`await client.get(...)` does not wait for a file to be deleted or a loop to terminate; rather, it waits for the result of an asynchronous client call.",
-      "common_mistake": "It is easy to assume that `await` halts the entire program, thereby suspending all other asynchronous tasks as well."
+      "what_it_is": "Easy meaning: `await` waits for an asynchronous operation's result so the following code can use that value.\nExact definition: `await expression` obtains the completion result of an awaitable—an object that can be awaited—and the current coroutine (the running async function) may suspend while waiting.",
+      "how_to_read": "Think of it as a point where a result is needed before moving to the next step. In this card, first call `client.get(\"/api/items\")`, then use `await` to receive that operation's completion result. Once ready, the result is stored in `response`, and execution moves to the next line.",
+      "key_point": "Call `client.get(\"/api/items\")` → obtain an awaitable → await its completion result → store the result in `response` → return it with `return response`. What is awaited is the asynchronous operation's result; its specific value is not shown in this code.",
+      "common_mistake": "It is easy to read `await` as stopping the entire program and all other asynchronous tasks. What may suspend here while waiting is the progress of the current coroutine executing this `await`."
     },
     "teaching_example": {
       "code": "class Client:\n    async def fetch(self):\n        return \"ready\"\n\nasync def run(client):\n    result = await client.fetch()\n    return result",
-      "walkthrough": "Use `await` to wait for the `ready` result from `client.fetch` and store it in `result`."
+      "walkthrough": "1) `class Client:` defines a class for the example.\n2) `async def fetch(self):` defines an asynchronous method.\n3) `return \"ready\"` specifies the value that method returns when executed.\n4) `async def run(client):` defines an asynchronous function that uses the supplied `client`.\n5) When `run` executes with a `Client` instance, it calls `client.fetch()` and uses `await` to receive its completion result. The `\"ready\"` returned by `fetch` is stored in `result`.\n6) `return result` returns `\"ready\"`.\nFlow: `client.fetch()` → receive the result with `await` → `result = \"ready\"` → return `\"ready\"`. This code itself only defines the class and functions; without a call, it does not print a result."
     },
     "answer_explanation": {
       "step_by_step": "`fetch_data` runs as a coroutine, and the response is received when `await client.get(...)` completes.",

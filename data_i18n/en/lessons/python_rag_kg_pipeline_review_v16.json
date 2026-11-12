@@ -98,14 +98,14 @@
                                  "walkthrough":  "Since the left side is `None`, which is falsy, the right side, `b-1`, becomes the final value."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "The left-hand side, `row.get(\"doc_id\")`, is an empty string. Since an empty string is falsy, the `or` operator evaluates the right-hand side and returns `row.get(\"id\")` from `legacy-7`.",
-                                   "why_correct":  "This is because the Python `or` operator returns the value of the right-hand operand when the left-hand operand is falsy.",
+                                   "step_by_step":  "1. The first line binds `row` to a dictionary with \"doc_id\" set to \"\" and \"id\" set to \"legacy-7\".\n2. On the right side of the second line, Python first evaluates `row.get(\"doc_id\")`, producing the empty string \"\".\n3. An empty string is treated as false in a truth test (it is falsy), so `or` also evaluates `row.get(\"id\")` on the right.\n4. That call returns \"legacy-7\", which becomes the result of the `or` expression. This string is stored in the variable `doc_id`.",
+                                   "why_correct":  "When the left value is falsy, `or` uses the right operand's value as its result. Here the left value is \"\", so the string \"legacy-7\" obtained on the right is the correct answer.",
                                    "common_wrong_choice":  {
                                                                "choice":  "empty string \"\"",
-                                                               "why_wrong":  "An empty string is the leftmost median, but since it is falsy, it is not selected as the final result.",
-                                                               "misread_step":  "This is a case where the fallback evaluation at `or` was stopped after checking the value on the left."
+                                                               "why_wrong":  "\"\" is only the result of `row.get(\"doc_id\")`, not the result of the whole `or` expression. Even though the \"doc_id\" key exists, its value is an empty string, so the right side is evaluated.",
+                                                               "misread_step":  "This stops after finding a value in the first lookup and misses the step where `or` tests that value's truthiness."
                                                            },
-                                   "takeaway":  "`A or B` **If A is falsy, you can use B as a fallback value**."
+                                   "takeaway":  "`A or B` checks the truthiness of A's value, not whether A exists. If A is falsy, it evaluates B and uses that value."
                                },
         "target_statement":  "doc_id = row.get(\"doc_id\") or row.get(\"id\")",
         "focus_span":  "row.get(\"doc_id\") or row.get(\"id\")",
@@ -206,10 +206,10 @@
         "primary_concept":  "f_string",
         "reading_goal_internal":  "f-string의 format spec 04d가 정수 index를 0으로 채운 4자리 문자열로 만드는 과정을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "Formatted f-strings allow you to specify the display format of values using the format `{expression:format_spec}`.",
-                                    "how_to_read":  "Separate and interpret the values inside curly braces from the format spec after the colon.",
-                                    "key_point":  "`04d` represents an integer with at least 4 decimal digits, padding any leading zeros with zeros.",
-                                    "common_mistake":  "It’s easy to assume that `04d` means adding 4 to the index. However, this is not a numerical calculation but a string formatting rule."
+                                    "what_it_is":  "Easy meaning: An f-string lets you fill blanks in text with values and choose how those values look.\nExact definition: An f-string is a string literal prefixed with `f` that evaluates expressions in `{expression:format_spec}` and inserts their values into the string using the specified format.",
+                                    "how_to_read":  "Think of braces as blanks to fill with values. In this code, `{doc_id}` is the blank for the document name, and `::chunk::` is text that stays as written. `{index:04d}` inserts the value of `index` using the `04d` rule after the colon. `0` means pad the front with zeros, `4` means a minimum width of four, and `d` means display an integer in decimal.",
+                                    "key_point":  "Calling `make_chunk_id(\"doc_17\", 3)` gives `doc_id` the value `\"doc_17\"` and `index` the value `3`. The f-string displays `3` as `\"0003\"` and combines it with the fixed text to create `\"doc_17::chunk::0003\"`. `return` returns this string, and that value is assigned to `result`.",
+                                    "common_mistake":  "`04d` is not a calculation that adds 4 to `index`. It only specifies how the integer `3` is displayed, so `0003` goes into the string here. Without the format specification, `{index}` would insert `3`."
                                 },
         "teaching_example":  {
                                  "code":  "item_id = 7\nlabel = f\"item-{item_id:03d}\"",
@@ -277,14 +277,14 @@
                                  "walkthrough":  "It increases by 4 from 0 to just before 10, resulting in [0, 4, 8]."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "`range` starts at 0, increments by 4, and generates values up to just before 10. Therefore, the values are 0, 4, and 8.",
-                                   "why_correct":  "This is because the third argument, `batch_size`, is used as the step size.",
+                                   "step_by_step":  "1) Using 0 through 9 from `range(10)`, the first line creates 10 strings, \"t0\" through \"t9\", in `texts`.\n2) `batch_size` is 4, and `starts` is the empty list `[]`.\n3) `len(texts)` returns 10, so the loop's call becomes `range(0, 10, 4)`. The start is 0, the excluded stop is 10, and the step is 4.\n4) `start` takes the values 0, 4, and 8 in order. Each time, `starts.append(start)` adds that value to the end of the list: `[]` → `[0]` → `[0, 4]` → `[0, 4, 8]`.\n5) The next value, 12, is not less than 10, so the loop ends. The final value of `starts` is `[0, 4, 8]`.",
+                                   "why_correct":  "The three arguments passed to `range`, 0, 10, and 4, produce the values 0, 4, and 8, all below 10, in order. All three are appended to `starts`, so the answer is `[0, 4, 8]`.",
                                    "common_wrong_choice":  {
                                                                "choice":  "[0, 1, 2, 3]",
-                                                               "why_wrong":  "Step 4, not Step 1.",
-                                                               "misread_step":  "This is a case where the third positional argument of `range` is ignored."
+                                                               "why_wrong":  "`batch_size = 4` does not mean to select four consecutive integers starting at 0. Here, the value increases by 4 each time, so 1, 2, and 3 are not appended.",
+                                                               "misread_step":  "This reads the third argument of `range` as the number of values to produce rather than the step size."
                                                            },
-                                   "takeaway":  "The batch loop explains **how the start, stop, and step parameters interact with the slice range**."
+                                   "takeaway":  "A `range(start, stop, step)` call provides values at the specified interval, excluding the stop value. Trace each value appended by the loop to determine the final list."
                                },
         "target_statement":  "for start in range(0, len(texts), batch_size):",
         "focus_span":  "range(0, len(texts), batch_size)",
@@ -326,10 +326,10 @@
         "primary_concept":  "list_comprehension",
         "reading_goal_internal":  "hit dict 목록을 순회하며 chunk_id field만 새 list로 만드는 comprehension을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`[expression for item in items]` This is a list comprehension that applies an expression to each item to create a new list.",
-                                    "how_to_read":  "Distinguish between the iteration target and the expression to be included in the new list.",
-                                    "key_point":  "If you extract only the necessary identifiers from the search results rather than the entire object, subsequent logging and evidence linking will be clearer.",
-                                    "common_mistake":  "It’s easy to assume that `hits` are returned as-is. However, the comprehension extracts only the `chunk_id` from each `hit`."
+                                    "what_it_is":  "Easy meaning: This short syntax takes a needed value from each item and collects those values in a new list.\nExact definition: A list comprehension of the form `[expression for item in iterable]` iterates over the iterable, binds each item to `item`, and collects the evaluated results of `expression` in order in a new list.",
+                                    "how_to_read":  "Picture taking just one name tag from each record and putting it in a new box. The first line binds `hits` to a list containing two dictionaries. On the second line, read `for hit in hits` first to see that the dictionaries are visited one at a time, then read the front expression, `hit[\"chunk_id\"]`, as the value taken from the current dictionary and placed in the new list.",
+                                    "key_point":  "First dictionary → `hit[\"chunk_id\"]` is `\"c7\"` → add it to the new list.\nSecond dictionary → `hit[\"chunk_id\"]` is `\"c2\"` → add it next.\nThe completed new list is assigned to `chunk_ids`, so the result is `[\"c7\", \"c2\"]`. The original order is preserved, and `hits` is unchanged.",
+                                    "common_mistake":  "It is easy to think that each whole `hit` or its `score` is collected. The new list contains the results of the expression at the front, so here only the values under the `\"chunk_id\"` key are collected. `[hit[\"score\"] for hit in hits]` would collect the scores, but that is not this code."
                                 },
         "teaching_example":  {
                                  "code":  "rows = [{\"id\": \"a\"}, {\"id\": \"b\"}]\nids = [row[\"id\"] for row in rows]",
@@ -387,10 +387,10 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "sorted 호출의 reverse keyword argument가 rerank 결과 순서를 내림차순으로 바꾸는 의미를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`reverse=True` is a keyword argument that reverses the sort order in the `sorted` call.",
-                                    "how_to_read":  "We’ll look at how a key is used as a comparison criterion and examine the reverse boolean operation.",
-                                    "key_point":  "To list the most relevant candidates first, you typically sort them in descending order so that the highest scores appear at the top.",
-                                    "common_mistake":  "It is easy to assume that `reverse=True` changes the sign of the score itself. However, the score remains the same; it only reverses the order of the results."
+                                    "what_it_is":  "Easy meaning: `reverse=True` passes along a “put larger values first” setting when asking for a sort.\nExact definition: `reverse=True` is a keyword argument that passes the Boolean value `True` to the parameter named `reverse`; in `sorted`, it specifies descending order of the sort keys.",
+                                    "how_to_read":  "Picture handing data and settings to a sorting function. The first line binds `scored` to a list of three items. On the second line, `sorted(...)` receives `scored` as the data to sort, `key=lambda item: item[\"score\"]` as the way to obtain each item's comparison value, and `reverse=True` as the setting to place larger comparison values first. The returned new list is bound to `ranked`. The third line selects the first item with `ranked[0]`, then reads its ID with `[\"id\"]`.",
+                                    "key_point":  "Pass `scored` → the `key` function obtains comparison values `0.71`, `0.92`, and `0.80` → sort in descending order because `True` was passed to `reverse` → the ID order in `ranked` is `b`, `c`, `a` → `ranked[0][\"id\"]` is the string `'b'` → bind `first_id` to `'b'`. The original order of `scored` does not change.",
+                                    "common_mistake":  "Do not read `reverse=True` as simply reversing the original list. This code sorts by the scores obtained by `key`, so the order is `b`, `c`, `a`, not `c`, `b`, `a`. Also, `reverse=True` passes a setting in a call; it is not a statement assigning a value to a separate variable named `reverse`."
                                 },
         "teaching_example":  {
                                  "code":  "items = [{\"score\": 1}, {\"score\": 3}]\nranked = sorted(items, key=lambda x: x[\"score\"], reverse=True)",
@@ -924,24 +924,24 @@
         "primary_concept":  "comparison",
         "reading_goal_internal":  "저장 후 경과시간과 TTL을 비교해 cache freshness boolean을 만드는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`left \u003c right` is a comparison that checks whether the left-hand value is less than the right-hand value.",
-                                    "how_to_read":  "First, it calculates the elapsed time (age) and then compares it to ttl as a number.",
-                                    "key_point":  "If the request is within the TTL, the existing cache can be reused to reduce external API costs and latency.",
-                                    "common_mistake":  "It is easy to think of TTL as the absolute time at which the cache was stored. It usually refers to the period during which it remains valid."
+                                    "what_it_is":  "Easy meaning: `<` asks whether the number on the left is smaller than the number on the right.\nExact definition: In this code, `<` is a comparison operator that compares two integers and returns True if the left is smaller, and False otherwise.",
+                                    "how_to_read":  "Picture placing the elapsed time beside the validity-period boundary. `age < ttl` asks, “Is the time since saving shorter than the allowed period?” First calculate age as `1500 - 1200`, then compare it with 600.",
+                                    "key_point":  "Evaluation follows `1500 - 1200 → 300 → 300 < 600 → True`, and that result is assigned to is_fresh. `<` excludes equality, so an age of 600 would give False.",
+                                    "common_mistake":  "ttl is a period of validity, not the time of saving. Also, the comparison only computes true or false; it does not delete the cache or call fetch."
                                 },
         "teaching_example":  {
                                  "code":  "age = 50\nttl = 120\nvalid = age \u003c ttl",
                                  "walkthrough":  "Since 50 is less than 120, `valid` is `True`."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Calculate `age` as `1500 - 1200 = 300`, then evaluate `300 \u003c 600` to get True.",
-                                   "why_correct":  "This is because the time elapsed since it was saved is shorter than the TTL.",
+                                   "step_by_step":  "1. item holds the value \"cached-answer\" and the saved time 1200.\n2. now is assigned 1500, and ttl is assigned 600.\n3. item[\"saved_at\"] supplies 1200, so `1500 - 1200` makes age 300.\n4. `300 < 600` is True, so is_fresh becomes True.",
+                                   "why_correct":  "The elapsed time of 300 is shorter than the validity period of 600. Therefore, the answer is “It is True, and the elapsed time since saving is within the TTL.”",
                                    "common_wrong_choice":  {
                                                                "choice":  "It is false, and the cache is always cleared.",
-                                                               "why_wrong":  "The current age has not exceeded the TTL.",
-                                                               "misread_step":  "This is a case where the elapsed time calculation or the direction of comparison was read in the opposite way."
+                                                               "why_wrong":  "300 is smaller than 600, so the result is True. The code also contains no operation that clears the cache.",
+                                                               "misread_step":  "This reverses the direction of `age < ttl` or incorrectly adds a deletion action to the step that computes the comparison result."
                                                            },
-                                   "takeaway":  "The TTL code is interpreted as **saved_at → difference from the current time → TTL comparison**."
+                                   "takeaway":  "Read the flow as saved time → difference from the current time → comparison with the period → stored boolean."
                                },
         "target_statement":  "is_fresh = age \u003c ttl",
         "focus_span":  "age \u003c ttl",

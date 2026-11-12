@@ -576,14 +576,14 @@
                                  "walkthrough":  "Since `items` is not empty, `max` is executed and `b` with a score of 3 is selected."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "Since `cards` is truthy, the `max` branch is selected. The `c1` score is 5 and the `c2` score is 8, so `c2` is the maximum result.",
-                                   "why_correct":  "This is because the conditional expression selects the `max` call, and the `key` function returns a larger value for `c2`.",
+                                   "step_by_step":  "1. `cards` contains two dictionaries, so the condition `if cards` evaluates as true. Therefore, `max(cards, key=score_card)` runs instead of selecting `None`.\n2. `max` passes each card to `score_card` to obtain a score for comparison. For c1, this is `2 + 1 + 2 = 5`; for c2, it is `4 + 3 + 1 = 8`.\n3. Since 8 is larger, `max` returns the c2 dictionary, which is assigned to `next_card`. It does not assign the score 8 itself.\n4. `next_card` is a nonempty dictionary, so the next condition is also true. `next_card[\"id\"]` is selected, and the string `\"c2\"` is assigned to `next_id`.",
+                                   "why_correct":  "Both conditional expressions select their first expression. The first obtains the highest-scoring dictionary, c2; the second obtains its `\"id\"` value, `\"c2\"`. Therefore, the answer is c2.",
                                    "common_wrong_choice":  {
                                                                "choice":  "c1",
-                                                               "why_wrong":  "The total score of 5 in c1 is less than the 8 in c2.",
-                                                               "misread_step":  "This is a case where the sum of the three items in `score_card` was not calculated all the way to the end."
+                                                               "why_wrong":  "Although c1 is the first card in the list, its score is 5, less than c2's 8, so it is not selected.",
+                                                               "misread_step":  "Reading `max(cards, key=score_card)` as selecting the first card skips the step of adding and comparing each card's three values."
                                                            },
-                                   "takeaway":  "The recommended code reads as **check for candidates → calculate score → select top candidate or fallback**."
+                                   "takeaway":  "Read a conditional expression by checking its condition first and following only the selected side. Here: check `cards` → compare scores → select the c2 dictionary → extract `\"id\"` → `next_id = \"c2\"`."
                                },
         "target_statement":  "next_card = max(cards, key=score_card) if cards else None",
         "focus_span":  "max(cards, key=score_card) if cards else None",
@@ -686,24 +686,24 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "sorted 호출의 reverse keyword argument가 높은 review score를 앞에 배치하는 역할을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`reverse=True` is a keyword argument passed by name to a function call.",
-                                    "how_to_read":  "Check the keyword names and boolean values to see how the sorting direction options change.",
-                                    "key_point":  "The higher the review priority, the sooner it should be reviewed; this requires descending sort order.",
-                                    "common_mistake":  "`reverse=True` It’s easy to think that this reverses the score calculation formula. The score remains the same; only the final sort order is reversed."
+                                    "what_it_is":  "Easy meaning: `reverse=True` is a named setting that tells sorting to “put larger values first.”\nExact definition: A keyword argument supplies a value by parameter name in a function call; here, it supplies `True` to the `reverse` parameter of `sorted` to specify descending order by the sort keys.",
+                                    "how_to_read":  "Picture handing a sorter both the items and its settings. In `sorted(cards, key=review_priority, reverse=True)`, `cards` supplies the items, `key=review_priority` supplies the function that calculates each card's comparison score, and `reverse=True` requests higher scores first. Because `review_priority` has no parentheses here, the function itself is passed rather than called directly. Then `sorted` passes each card as that function's `card` argument to obtain its score.",
+                                    "key_point":  "Each card in `cards` → calculate its score with `review_priority(card)` → recent scores -3 and urgent scores 18 → `reverse=True` puts urgent, with 18, first → read `\"id\"` from the first card in the new list `queue` → `first_id` is `\"urgent\"`. The cards are sorted by their scores; the scores themselves are not the returned items, and the original `cards` order is unchanged.",
+                                    "common_mistake":  "It is easy to read `reverse=True` as simply reversing the original list or reversing the score formula. It actually requests sorting from larger to smaller calculated keys. With `reverse=False`, the same scores would be used, but recent, with -3, would come first."
                                 },
         "teaching_example":  {
                                  "code":  "items = [{\"name\": \"a\", \"score\": 2}, {\"name\": \"b\", \"score\": 5}]\nranked = sorted(items, key=lambda item: item[\"score\"], reverse=True)\nfirst = ranked[0][\"name\"]",
                                  "walkthrough":  "Since `reverse=True`, b (with a score of 5) comes first."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "\"recent\" is `0*2 + 0*3 - 3 = -3`, and \"urgent\" is `5*2 + 3*3 - 1 = 18`. With `reverse=True`, 18 comes first.",
-                                   "why_correct":  "This is because `sorted` arranges the results of the `key` function in descending order.",
+                                   "step_by_step":  "1) `cards` stores the two cards, recent and urgent.\n2) `def review_priority(card)` defines the scoring function. No scores are calculated yet.\n3) The `sorted` call receives `cards`, the key function `review_priority`, and the direction setting `reverse=True`.\n4) `sorted` passes each card to the key function. The score for recent is `0 * 2 + 0 * 3 - 3 = -3`; the score for urgent is `5 * 2 + 3 * 3 - 1 = 18`.\n5) Descending order produces a new list containing urgent, then recent, which is stored in `queue`.\n6) `queue[0]` is the urgent card, and its `[\"id\"]` is the string `\"urgent\"`. Therefore, `first_id = \"urgent\"`.",
+                                   "why_correct":  "`reverse=True` puts cards with larger scores returned by the `key` function first. Since 18 is greater than -3, the urgent card comes first, and its ID, `\"urgent\"`, is the answer.",
                                    "common_wrong_choice":  {
                                                                "choice":  "recent",
-                                                               "why_wrong":  "The priority score for “recent” is much lower than that for “urgent.”",
-                                                               "misread_step":  "This refers to cases where `reverse=True` is interpreted as the opposite of the actual score calculation."
+                                                               "why_wrong":  "The score for recent is -3, lower than urgent's 18, so it comes second in this descending sort.",
+                                                               "misread_step":  "This overlooks `reverse=True` and reads the sort as the default ascending order, with smaller scores first."
                                                            },
-                                   "takeaway":  "A priority queue is read in the following order: **score function → key → sort order → first card**."
+                                   "takeaway":  "Check the items and named settings passed to the call: `cards` → calculate scores with the `key` function → use `reverse=True` to put larger scores first → read the first card's ID."
                                },
         "target_statement":  "queue = sorted(cards, key=review_priority, reverse=True)",
         "focus_span":  "reverse=True",

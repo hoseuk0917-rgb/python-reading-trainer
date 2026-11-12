@@ -26,10 +26,10 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "중첩 호출에서 checks.values() 결과가 all 함수에 전달되고 모두 참인지 bool로 반환되는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`all(iterable)` is a function that returns True if every item in the iterable evaluates to True.",
-                                    "how_to_read":  "First, check the values passed to `all` and see if any of them are `False`.",
-                                    "key_point":  "\"all\" being True does not mean that every detail has been thoroughly verified. In Python syntax, it simply means that all the given \"check\" values are true.",
-                                    "common_mistake":  "It’s easy to assume that the condition is true if there are at least a certain number of True values. However, with `all`, if even one value is False, the entire expression evaluates to False."
+                                    "what_it_is":  "Easy meaning: `all()` gives one answer to whether the supplied values are all true.\nExact definition: `all(iterable)` is a Python built-in function that tests whether every item in an iterable evaluates as true and returns the `bool` value `True` or `False`.",
+                                    "how_to_read":  "Mental model: the inner call prepares the values, and the outer call makes a judgment using those values.\nThe first line binds `checks` to a dictionary whose four values are all `True`. In `all(checks.values())` on the second line, `checks.values()` is called first to obtain the dictionary's values, not its key names. That result is passed to `all()`, and the returned judgment is stored in `smoke_ok`. The third line prints `smoke_ok`.",
+                                    "key_point":  "Value flow: `checks.values()` → four `True` values → `all(...)` returns `True` → `smoke_ok = True` → `print(smoke_ok)` outputs `True`.\nThis result means that the supplied check values are all true, not that every detail of every feature has been thoroughly verified.",
+                                    "common_mistake":  "It is easy to think that `all()` returns `True` when there are enough `True` values. But with Boolean values as in this code, even one `False` makes the result `False`. Also, `all()` does not return the count of true values; it returns `True` or `False` to indicate whether all values are true."
                                 },
         "teaching_example":  {
                                  "code":  "results = [True, True, False]\nprint(all(results))",
@@ -456,14 +456,14 @@
                                  "walkthrough":  "The actual failure data identifier is read as \"x7\" in the `item_id` key."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "The `card_id` field in the `failure` dictionary refers to the actual data card identifier, and its value is `PY31_L09_dict_vs_object_001`.",
-                                   "why_correct":  "The test name and exception type indicate the location and type of the failure, and card_id identifies the data to be modified.",
+                                   "step_by_step":  "1) `failure = {...}` creates a dictionary storing the test name, exception name, message, and card ID as key–value pairs.\n2) `failure[\"card_id\"]` looks for the key `\"card_id\"` in `failure`, like finding a label.\n3) The value associated with this key is the string `\"PY31_L09_dict_vs_object_001\"`, so the lookup returns that string.\n4) This value, obtained from the right side of the assignment, is bound to `target_card_id`. Its final value is therefore `\"PY31_L09_dict_vs_object_001\"`. There is no code that prints it.",
+                                   "why_correct":  "The question asks for the card ID to fix, and the value directly retrieved using the `\"card_id\"` key is `PY31_L09_dict_vs_object_001`, so that is the correct answer.",
                                    "common_wrong_choice":  {
                                                                "choice":  "AssertionError",
-                                                               "why_wrong":  "That value is an exception type, not a card identifier.",
-                                                               "misread_step":  "This is an instance where the error type was confused with the error target ID."
+                                                               "why_wrong":  "`\"AssertionError\"` is the exception name associated with the `\"exception\"` key. It is not the value of `\"card_id\"`, which the code looks up.",
+                                                               "misread_step":  "This reads the value describing the error type as the target card ID without checking the key inside the brackets."
                                                            },
-                                   "takeaway":  "Read failure logs by distinguishing between **the test location → the error message → the actual data identifiers**."
+                                   "takeaway":  "Read dictionary lookup as **identify the dictionary → find the key inside the brackets → retrieve its associated value**. Here, that value is assigned to `target_card_id`."
                                },
         "target_statement":  "target_card_id = failure[\"card_id\"]",
         "focus_span":  "failure[\"card_id\"]",
@@ -627,10 +627,10 @@
         "primary_concept":  "generator_expression",
         "reading_goal_internal":  "generator가 모든 파일의 HTTP availability를 True로 만든다는 사실과, total count mismatch가 True라는 사실을 함께 읽고 각 evidence가 어떤 주장까지 증명하는지 구분한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "The generator expression produces Booleans sequentially by comparing each `status` with 200. Even if all comparisons are True, that is evidence about the request-success range; other properties such as completeness of data aggregation require a separate gate.",
-                                    "how_to_read":  "Do not combine PASS/FAIL into a single line; instead, verify the operands of each gate. The HTTP status gate directly checks availability, and the total count gate directly checks the expected integration count.",
-                                    "key_point":  "Currently, `load_checks` is [True, True, True], but since `total_cards=102` and `expected_total=103`, `count_mismatch=True`. Therefore, the claim that the file is accessible is supported, but the claim of complete integration cannot be accepted.",
-                                    "common_mistake":  "Just because there are several prominent PASS results, you should not ignore more direct FAIL evidence. You should prioritize the gate that measures the attribute corresponding to the claim."
+                                    "what_it_is":  "Easy meaning: It takes values in order, performs the same calculation on each, and supplies results one at a time when needed.\nExact definition: A generator expression creates a generator object that produces the results of applying an expression to items from an iterable as those results are requested.",
+                                    "how_to_read":  "Picture a workstation supplying one result at a time. Read `status == 200 for status in statuses` by first following `for status in statuses` to take each value, then calculating `status == 200` for that value. The first line prepares `[200, 200, 200]`. On the second line, a generator is created, and `list(...)` requests its results until it is exhausted, collecting `True`, `True`, `True` into a list bound to `load_checks`. This code compares numbers already supplied; it does not send HTTP requests.",
+                                    "key_point":  "`200, 200, 200` → compare each with `== 200` → `True, True, True` → `list(...)` → `[True, True, True]`. Next, `previous_total` is 100 and `new_file_card_count` is 3, so `expected_total` is 103. Since `total_cards` is 102, `102 != 103` is `True`, and the final output is `[True, True, True] True`. The supplied status values support file accessibility, but the card count is one below the expectation, so full integration cannot be approved.",
+                                    "common_mistake":  "`status == 200` is not a filter that keeps only items equal to 200; it calculates `True` or `False` for each item. For example, a status of 404 would produce `False` in that position rather than omit the item. Also, the generator itself is not a list; here, `list(...)` collects its results. Three `True` comparison results do not cancel the separately calculated card-count mismatch."
                                 },
         "teaching_example":  {
                                  "code":  "statuses = [200, 200]\nchecks = list(status == 200 for status in statuses)\nexpected = 10\nactual = 9\nprint(checks, actual != expected)",
@@ -724,14 +724,14 @@
                                  "walkthrough":  "Since there is no \u0027C\u0027, the result is True."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "1) The answer is C. 2) The choices are A and B. 3) C is not in the list. 4) The result of `not in` is True.",
-                                   "why_correct":  "C is not among the choices.",
+                                   "step_by_step":  "1) The first line creates a dictionary whose \"answer\" value is \"C\" and whose \"choices\" value is [\"A\", \"B\"], and binds it to card.\n2) On the second line, card[\"answer\"] evaluates to \"C\", and card[\"choices\"] evaluates to [\"A\", \"B\"].\n3) \"C\" not in [\"A\", \"B\"] asks, “Is there no item equal to \"C\" in this list?” \"C\" equals neither \"A\" nor \"B\", so the result is True.\n4) This Boolean value True is assigned to invalid, and print(invalid) outputs True.",
+                                   "why_correct":  "`not in` produces True when the value being sought is absent from the list, and False when it is present. Here, \"C\" is absent from [\"A\", \"B\"], so the test produces True, which passes through invalid to the output.",
                                    "common_wrong_choice":  {
                                                                "choice":  "C",
-                                                               "why_wrong":  "C is the operand, and the overall result is a Boolean.",
-                                                               "misread_step":  "It is easy to assume that the \"answer\" string itself is the result of the membership check."
+                                                               "why_wrong":  "\"C\" is the value being tested, not the test result. The whole `not in` expression produces the Boolean value True, not a string.",
+                                                               "misread_step":  "This stops after reading card[\"answer\"] and misses the `not in` test against the list on the right and the assignment of its result."
                                                            },
-                                   "takeaway":  "\"not in\" follows the order: check for the value → search the collection → return True if not found."
+                                   "takeaway":  "Read: value to find → test whether no equal item is in the list → store the Boolean result → print it. Absence gives True; presence gives False."
                                },
         "target_statement":  "card[\"answer\"] not in card[\"choices\"]",
         "focus_span":  "card[\"answer\"] not in card[\"choices\"]",
@@ -778,18 +778,18 @@
                                     "common_mistake":  "It’s easy to assume that the loop ends after checking only the first `sid`."
                                 },
         "teaching_example":  {
-                                 "code":  "card={\"side_card_ids\":[\"s1\",\"s2\"]}\nseen=[]\nfor sid in card.get(\"side_card_ids\",[]):\n    seen.append(sid)\nprint(seen)",
-                                 "walkthrough":  "Iterate over both s1 and s2."
+                                 "code":  "card = {\"side_card_ids\": [\"s1\", \"s2\"]}\nseen = []\nfor sid in card.get(\"side_card_ids\", []):\n    seen.append(sid)\nprint(seen)",
+                                 "walkthrough":  "1) `card` stores the ID list `['s1', 's2']`.\n2) `seen` starts as an empty list.\n3) `for` takes items from the list returned by `card.get(\"side_card_ids\", [])` and assigns them to `sid` one at a time.\n4) On the first iteration, `sid = 's1'`. `seen.append(sid)` runs, making `seen` equal to `['s1']`.\n5) On the second iteration, `sid = 's2'`. The same body runs again, making `seen` equal to `['s1', 's2']`.\n6) With no items left, the loop ends. Outside the loop, `print(seen)` runs once and prints `['s1', 's2']`.\nThe whole list is not assigned to `sid` at once; its items are assigned one by one in order."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "1) s1 exists, so exclude it. 2) The next sid is s2. 3) s2 is not in side_ids, so add it. 4) The final missing entry is [\u0027s2\u0027].",
-                                   "why_correct":  "Check all references and collect only s2s that are not in the actual list.",
+                                   "step_by_step":  "1) The value of `side_card_ids` in `card` is `['s1', 's2']`, `side_ids` is `{'s1'}`, and `missing` is `[]`.\n2) `card.get(\"side_card_ids\", [])` returns `['s1', 's2']`.\n3) On the first iteration, `sid` is `'s1'`. `'s1' not in side_ids` is false, so `append` is skipped. `missing` remains `[]`.\n4) On the next iteration, `sid` is `'s2'`. `'s2' not in side_ids` is true, so `missing.append(sid)` runs. `missing` becomes `['s2']`.\n5) After all items are processed, the loop ends, and `print(missing)` prints `['s2']`.",
+                                   "why_correct":  "The `for` loop checks both IDs, but `append` runs only when the `not in` condition is true. Only `'s2'`, which is absent from `side_ids`, is added, so the answer is `['s2']`.",
                                    "common_wrong_choice":  {
-                                                               "choice":  "[\u0027s1\u0027]",
-                                                               "why_wrong":  "s1 is a normal reference.",
-                                                               "misread_step":  "It’s easy to assume that the loop ends after checking only the first `sid`."
+                                                               "choice":  "['s1']",
+                                                               "why_wrong":  "`'s1'` is in `side_ids`, so the `not in` condition is false. It is therefore not added to `missing`.",
+                                                               "misread_step":  "This reads `not in` as though it were `in`, assuming that an ID already present should be added."
                                                            },
-                                   "takeaway":  "A `for` loop repeats the same check on every item in an iterable."
+                                   "takeaway":  "For each item, assign it to the loop variable and then check the condition. This code does not add every item it checks; it adds only items whose condition is true."
                                },
         "target_statement":  "for sid in card.get(\"side_card_ids\", []):",
         "focus_span":  "for sid in card.get(\"side_card_ids\", []):",

@@ -207,14 +207,14 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "호출 괄호 안 두 인자를 왼쪽부터 parameter 순서에 맞춰 전달해 두 번째 문자열이 key parameter에 들어가는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "A positional argument corresponds to a parameter in a function definition in the order in which it is written in the function call.",
-                                    "how_to_read":  "Place the parameter order in the function definition side-by-side with the actual call argument order, and match them one by one from the left.",
-                                    "key_point":  "The first argument, `messages`, is passed to the first parameter, `messages`, and the second string, `button.next`, is passed to the second parameter, `key`.",
-                                    "common_mistake":  "It is easy to assume that the second string is a function name or an independent expression unrelated to the key name."
+                                    "what_it_is":  "Easy meaning: Values supplied when calling a function connect to its input slots from left to right.\nExact definition: A positional argument is a value supplied by position in a call and is bound to a parameter in the function definition in order.",
+                                    "how_to_read":  "Picture the function definition as two named input slots. In `def translate(messages, key)`, the first slot is `messages` and the second is `key`. Line up `translate(messages, \"button.next\")` with it: the first argument's dictionary connects to `messages`, and the second argument's string `\"button.next\"` connects to `key`.",
+                                    "key_point":  "Call `translate(messages, \"button.next\")` → bind the dictionary to parameter `messages` → bind `\"button.next\"` to parameter `key` → `messages[key]` looks up `\"Next\"` → bind the returned value to `label` → `print(label)` displays `Next`.",
+                                    "common_mistake":  "Do not read `\"button.next\"` as a function name or assume its text determines which parameter receives it. It goes to `key` because it is second here. `translate` is the function name, and `label` receives the returned value after the call finishes."
                                 },
         "teaching_example":  {
-                                 "code":  "def lookup(mapping, key):\n    return mapping[key]\nmessages = {\"button.ok\": \"OK\"}\nprint(lookup(messages, \"button.ok\"))",
-                                 "walkthrough":  "The first argument is placed in the mapping, and the second argument is placed in the key, in the order they appear."
+                                 "code":  "def lookup(mapping, key):\n    return mapping[key]\n\nmessages = {\"button.ok\": \"OK\"}\nprint(lookup(messages, \"button.ok\"))",
+                                 "walkthrough":  "1) `def lookup(mapping, key):` defines a function whose first parameter is `mapping` and whose second is `key`. Its body does not run yet.\n2) `return mapping[key]` is the body that will look up and return the value for that key when called.\n3) `messages = {\"button.ok\": \"OK\"}` creates a dictionary and binds it to `messages`.\n4) On the last line, `lookup(messages, \"button.ok\")` runs first. The first argument's dictionary binds to `mapping`, and the second argument's string binds to `key`.\n5) In the body, `mapping[key]` means `mapping[\"button.ok\"]`, so it returns `\"OK\"`.\n6) The outer `print(...)` receives the returned value and displays `OK`."
                              },
         "answer_explanation":  {
                                    "step_by_step":  "1) The parameter order in the function definition is `messages`, `key`. 2) The first argument of the call, `messages`, is assigned to the first parameter, `messages`. 3) The second argument, the string `button.next`, is assigned to the second parameter, `key`. 4) The function looks up `messages[key]` and returns `Next`.",
@@ -334,17 +334,17 @@
                                 },
         "teaching_example":  {
                                  "code":  "messages = {\"en-US\": {\"retry\": None}, \"ko-KR\": {\"retry\": \"다시 시도\"}}\nlocale = \"en-US\"\nkey = \"retry\"\ntext = messages[locale].get(key) or messages[\"ko-KR\"][key]",
-                                 "walkthrough":  "Since the value on the left is `None`, which is falsy, the result is ``다시 시도`` on the right."
+                                 "walkthrough":  "1. The first line stores None for \"en-US\" → \"retry\" and \"다시 시도\" for \"ko-KR\" → \"retry\".\n2. locale is assigned \"en-US\", and key is assigned \"retry\".\n3. On the last line, messages[locale] is {\"retry\": None}, and .get(key) returns None.\n4. Read or as a selector that checks the left candidate first. None is treated as false (falsy), so the right expression, messages[\"ko-KR\"][key], is evaluated.\n5. The right-hand value, \"다시 시도\", becomes the result of or and is stored in text. The selected value itself is stored, not True or False."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "The result of the first lookup is an empty string, which is falsy. Therefore, `or` evaluates the expression on the right and selects the string `학습 시작` as the final value.",
-                                   "why_correct":  "This is because the Python `or` operator returns the value of the right-hand operand when the left-hand operand is falsy.",
+                                   "step_by_step":  "1. messages contains \"\" for the \"en-US\" title and \"학습 시작\" for the \"ko-KR\" title. locale is \"en-US\", and key is \"title\".\n2. messages.get(locale, {}) returns {\"title\": \"\"} because that key exists. The default {} is not selected.\n3. The following .get(key) returns the title value: the empty string \"\".\n4. An empty string is treated as false (falsy), so or evaluates messages[\"ko-KR\"][key] on the right.\n5. That lookup returns \"학습 시작\". This string becomes the result of or and is stored in text.",
+                                   "why_correct":  "The left lookup succeeds, but its value is an empty string. Because or returns the right-hand value when the left value is falsy, text becomes \"학습 시작\", corresponding to the choice “Start Learning.”",
                                    "common_wrong_choice":  {
                                                                "choice":  "empty string \"\"",
-                                                               "why_wrong":  "An empty string is a candidate on the left, but since it is falsy, it is not retained as the final result of the `or` operation.",
-                                                               "misread_step":  "This is an example of viewing the short-circuit evaluation rules for `or` solely as simple Boolean combinations."
+                                                               "why_wrong":  "The empty string is only the intermediate result of the left lookup. It is falsy, so or selects the right-hand value, making the final result \"학습 시작\".",
+                                                               "misread_step":  "This assumes that finding the key means its value is stored unchanged, skipping the step where or checks the retrieved value's truthiness."
                                                            },
-                                   "takeaway":  "`A or B` You can use **the value of A if A is truthy, or B if A is falsy** as the result."
+                                   "takeaway":  "A successful lookup and the retrieved value's truthiness are different things. A or B returns A if A is truthy; otherwise, it evaluates B and returns that value."
                                },
         "target_statement":  "text = messages.get(locale, {}).get(key) or messages[\"ko-KR\"][key]",
         "focus_span":  "messages.get(locale, {}).get(key) or messages[\"ko-KR\"][key]",
@@ -580,14 +580,14 @@
                                  "walkthrough":  "\"dark\" is stored in the theme key."
                              },
         "answer_explanation":  {
-                                   "step_by_step":  "The locale value \"en-US\" on the right is stored in the `locale` key of `settings` and then retrieved.",
-                                   "why_correct":  "This is because the `subscription` assignment sets the value of that key to `en-US`.",
+                                   "step_by_step":  "1) `settings = {}` creates an empty dictionary and binds it to `settings`.\n2) `locale = \"en-US\"` makes the value of `locale` the string `\"en-US\"`.\n3) `settings[\"locale\"] = locale` reads the current value of the right-hand variable `locale`, `\"en-US\"`, and stores it under the dictionary key `\"locale\"`. Now `settings` is `{\"locale\": \"en-US\"}`.\n4) `saved_locale = settings[\"locale\"]` retrieves the value `\"en-US\"` stored under that key and binds it to `saved_locale`.\nTherefore, the value of `saved_locale` is `\"en-US\"`.",
+                                   "why_correct":  "The value stored under the key `\"locale\"` and retrieved on the last line is `\"en-US\"`, so the answer is `en-US`.",
                                    "common_wrong_choice":  {
-                                                               "choice":  "ko-KR",
-                                                               "why_wrong":  "The locale value currently saved by the user is `en-US`.",
-                                                               "misread_step":  "This is an instance where the default fallback value was confused with the user\u0027s actual saved selection."
+                                                               "choice":  "locale",
+                                                               "why_wrong":  "`\"locale\"` is the dictionary key used to find a value; the value stored under it is `\"en-US\"`. The unquoted `locale` on the right also evaluates to its current value, `\"en-US\"`, not the letters of its name.",
+                                                               "misread_step":  "This skips reading the variable's current value when storing, or retrieving the value associated with the key when looking it up, and treats the name or key itself as the result."
                                                            },
-                                   "takeaway":  "Saving settings **accurately tracks the key and the currently selected value**."
+                                   "takeaway":  "Trace: read the right-hand variable's current value → store it under the key → retrieve the value using the same key. Keep the key distinct from its stored value."
                                },
         "target_statement":  "settings[\"locale\"] = locale",
         "focus_span":  "settings[\"locale\"] = locale",
@@ -630,10 +630,10 @@
         "primary_concept":  "boolean_operation",
         "reading_goal_internal":  "브라우저 언어 문자열의 truth value에 따라 실제 값 또는 ko-KR fallback을 선택하는 or 표현식을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`left or right` uses `left` as the result when it is truthy, and `right` when `left` is falsy.",
-                                    "how_to_read":  "First, determine the truth value of the left-hand side.",
-                                    "key_point":  "If browser language information is available, you can estimate the locale that the user is most likely familiar with as the default value.",
-                                    "common_mistake":  "It is easy to assume that the \"browser language\" is the user\u0027s confirmed preference. However, it is merely an initial default value, and users should be able to change it themselves."
+                                    "what_it_is":  "Easy meaning: `or` checks the left value first, keeping it if it counts as true and otherwise using the right value.\nExact definition: Python's Boolean operator `or` uses short-circuit evaluation: it evaluates the left operand and returns that value if it is truthy (treated as true); otherwise, it evaluates and returns the right operand.",
+                                    "how_to_read":  "Picture a selector that gives the left value the first chance to pass. The first line binds the string `\"ja-JP\"` to `browser_language`. In the expression on the right of the second assignment, Python first checks the value of `browser_language`. `\"ja-JP\"` is a nonempty string, so it is truthy. Python therefore selects that value without evaluating `\"ko-KR\"`. The selected value is then bound to `default_locale`.",
+                                    "key_point":  "The value flow is `browser_language` → `\"ja-JP\"` → nonempty, so truthy → `or` produces `\"ja-JP\"` → `default_locale`. The final value is the string `\"ja-JP\"`. If the left value were the empty string `\"\"`, it would be falsy, so the right value `\"ko-KR\"` would be selected.",
+                                    "common_mistake":  "Do not assume that `or` always returns `True` or `False`. It tests truth value but returns the actual value of the selected operand. Here the result is `\"ja-JP\"`, not `True` or the string `\"browser_language\"` spelling the variable's name."
                                 },
         "teaching_example":  {
                                  "code":  "browser = \"\"\nlocale = browser or \"en-US\"",
@@ -688,10 +688,10 @@
         "primary_concept":  "subscription",
         "reading_goal_internal":  "개념 이름과 locale을 순서대로 key lookup해 번역 문자열을 얻는 중첩 subscription을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`mapping[a][b]` is an expression that looks up a key repeatedly when the first lookup result is another mapping.",
-                                    "how_to_read":  "Calculate the actual value one step at a time, starting from the outside.",
-                                    "key_point":  "When translating technical terms, it is necessary to ensure that the conceptual meaning is preserved even more strictly than when translating UI text.",
-                                    "common_mistake":  "It’s easy to miss which mapping is being looked up when reading the first and second keys at the same time."
+                                    "what_it_is":  "Easy meaning: Consecutive square brackets let you find a value by its label, then find another value inside that result.\nExact definition: Dictionary subscription `d[key]` returns the value associated with the given key, and `d[a][b]` performs another subscription with key `b` on the result of `d[a]`.",
+                                    "how_to_read":  "Mental model: Think of a dictionary as labeled slots. If a slot holds another dictionary, you can look for a label inside that dictionary next.\nThe first line binds `terms` to the outer dictionary. Its `\"cache\"` slot holds `{\"ko\": \"캐시\", \"en\": \"cache\"}`.\nRead `terms[\"cache\"][\"ko\"]` on the second line as first finding the inner dictionary with `terms[\"cache\"]`, then finding `\"캐시\"` in that result with `[\"ko\"]`.",
+                                    "key_point":  "Value flow: `terms` → look up key `\"cache\"` → `{\"ko\": \"캐시\", \"en\": \"cache\"}` → look up key `\"ko\"` → `\"캐시\"`.\nThe final value of the right-hand expression is assigned to `korean_term`, so its value is the string `\"캐시\"`. There is no code that prints it.",
+                                    "common_mistake":  "Do not mistake the result of `[\"ko\"]` for the key `\"ko\"` itself. The result is its associated value, `\"캐시\"`. Also, the two keys are not both looked up in the outer dictionary: the second lookup uses the inner dictionary returned by the first lookup."
                                 },
         "teaching_example":  {
                                  "code":  "labels = {\"save\": {\"ko\": \"저장\", \"en\": \"save\"}}\nko = labels[\"save\"][\"ko\"]",
@@ -746,10 +746,10 @@
         "primary_concept":  "f_string",
         "reading_goal_internal":  "한국어 term과 영어 원어를 f-string에 삽입해 bilingual label을 만드는 출력을 예측한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "An f-string creates a new string by inserting the current value into the `{expression}` placeholder.",
-                                    "how_to_read":  "Find the actual value of the variable inside each set of curly braces and combine it with the fixed bracket characters.",
-                                    "key_point":  "In development training, displaying both the Korean meaning and the original English terms makes it easier to connect them to the English terminology used in actual code and documentation.",
-                                    "common_mistake":  "It’s easy to assume that curly braces are printed as-is. In f-strings, they are replaced with actual values."
+                                    "what_it_is":  "Easy meaning: An f-string makes a string by filling blanks in text with values.\nExact definition: An f-string is a string prefixed with f or F that inserts the results of evaluating expressions inside curly braces at runtime.",
+                                    "how_to_read":  "Picture the curly braces as blanks to fill with values. The first line binds ko_term to \"캐시\", and the second binds en_term to \"cache\". On the third line, f\"{ko_term}({en_term})\" fills the first blank with \"캐시\" and the second with \"cache\", leaving the parentheses outside the curly braces unchanged.",
+                                    "key_point":  "The pieces form a new string in the order \"캐시\" + \"(\" + \"cache\" + \")\", and \"캐시(cache)\" is bound to label. The Korean term comes first and the English term goes inside parentheses, so both terms appear together.",
+                                    "common_mistake":  "You might expect the variable names inside the curly braces to remain as text. Here, the leading f makes {ko_term} and {en_term} insert their current values instead. Unlike the curly braces marking value insertion, the parentheses remain in the string."
                                 },
         "teaching_example":  {
                                  "code":  "ko = \"목록\"\nen = \"list\"\nlabel = f\"{ko}({en})\"",

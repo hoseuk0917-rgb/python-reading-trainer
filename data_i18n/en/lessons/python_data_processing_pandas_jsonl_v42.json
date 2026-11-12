@@ -28,10 +28,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "keyword argument `delimiter='\\t'`가 TSV 열 구분자를 탭으로 설정하는 의미를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A keyword argument specifies the value of a particular parameter by name when the function is called.",
-      "how_to_read": "I interpret this as a setting where the reader determines which character to use to delimit columns based on the name “delimiter” and the value `\\t`.",
-      "key_point": "Since CSV and TSV use different delimiters, you must check the delimiter value when calling the parser to ensure accurate column separation.",
-      "common_mistake": "Do not assume that Python automatically infers tab delimiters just because a file has a .tsv extension. You must check the parser settings."
+      "what_it_is": "Easy meaning: When calling a function, you label a setting and pass the value you want it to use.\nExact definition: A keyword argument is an argument supplied as `name=value` in a call; here, `delimiter=\"\\t\"` passes one tab character to `csv.reader` as the column delimiter.",
+      "how_to_read": "Mental model: Imagine putting a value into a labeled settings slot. `delimiter` names the ‘character that separates columns’ setting, and `\"\\t\"` is a string containing one tab character.\nReading the code: The two import lines prepare the required tools. `StringIO(...)` creates a stream for reading the text containing tabs and newlines. `csv.reader(stream, delimiter=\"\\t\")` takes `stream` as input and creates a reader that uses tabs as column delimiters.",
+      "key_point": "Execution flow: tab character value → passed as the `delimiter` setting → `list(reader)` reads the stream's rows → `rows` becomes `[['name', 'score'], ['Mina', '90']]` → `rows[1]` selects the second row → `print(rows[1])` displays `['Mina', '90']`.",
+      "common_mistake": "Do not read the `=` in `delimiter=\"\\t\"` as a standalone variable assignment. Inside this call, it passes a value under the setting name `delimiter`. It does not add tabs to line endings or request numeric conversion. In this code, `'90'` remains a string."
     },
     "teaching_example": {
       "code": "import csv\nfrom io import StringIO\nstream = StringIO(\"a|b\\n1|2\\n\")\nreader = csv.reader(stream, delimiter=\"|\")\nprint(next(reader))",
@@ -268,10 +268,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "함수 호출에서 `sep=\"\\t\"`가 어떤 매개변수에 어떤 값을 전달하는지 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A keyword argument is syntax that passes a value to a specific parameter in a function call using the form `name=value`.",
-      "how_to_read": "When looking at `sep=\"\\t\"`, the program first checks whether the parameter name is `sep` and then reads that the value on the right, `\"\\t\"`, is a tab character.",
-      "key_point": "The feature that splits TSV files by tabs is a function of pandas, and the Python syntax focus is on the keyword argument `sep`, which is used to pass a value.",
-      "common_mistake": "It is easy to mistake `sep` for an assignment that creates a new variable. However, `sep=\"\\t\"` inside the function call parentheses is not a local variable assignment but the passing of a call argument."
+      "what_it_is": "Easy meaning: When giving a function a value, you label it with the name of the input that should receive it.\nExact definition: A keyword argument is specified as `name=expression` in a function call and passes the evaluated value of the expression to the parameter with that name.",
+      "how_to_read": "Mental model: Picture attaching a destination label to a value. Here, the tab character is sent with the label `sep`.\nReading the code: First, the code imports `StringIO` and pandas. `source = StringIO(...)` prepares text containing tabs and line breaks for reading. In `pd.read_csv(source, sep=\"\\t\")`, `source` is the first positional argument, while `sep=\"\\t\"` is a keyword argument passed by name. `sep` names the receiving parameter, and `\"\\t\"` is a string containing one tab character.",
+      "key_point": "Execution flow: the text in `source` and the tab character passed to `sep` → pandas reads the table using tabs as separators → `id` and `score` in the first line become column names → the returned table is bound to `df` → `list(df.columns)` creates a list of column names → `print(...)` displays `['id', 'score']`.\nPython call syntax passes the value by name; pandas supplies the behavior that uses that value as a separator.",
+      "common_mistake": "Seeing `=` does not always mean an assignment statement that creates a variable. Inside this call, `sep=\"\\t\"` passes a value to the `sep` parameter; it neither creates a global variable named `sep` nor reads an attribute of `df`. By contrast, `df = ...` outside the call is an assignment that binds the returned table to the name `df`."
     },
     "teaching_example": {
       "code": "from io import StringIO\nimport pandas as pd\n\nsource = StringIO(\"name|score\\nMina|90\\n\")\nframe = pd.read_csv(source, sep=\"|\")\nprint(list(frame.columns))",
@@ -574,24 +574,24 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "`subset=[\"id\"]`가 중복 판정에 사용할 field 목록을 메서드에 전달한다는 의미를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`subset=[\"id\"]` passes a list value as a named keyword argument.",
-      "how_to_read": "Separate the keyword name from the value on the right to see which option is being set to which value.",
-      "key_point": "Here, rather than checking whether the entire row is exactly the same, we use the `id` field as the criterion for duplicates.",
-      "common_mistake": "It is easy to think of `subset` as a list of columns to include in the results. In this context, however, it is a list of columns used to determine duplicates."
+      "what_it_is": "Easy meaning: `subset=[\"id\"]` sends `[\"id\"]` to the method's input named `subset`.\nExact definition: A keyword argument supplies a value by naming a parameter in a call; here, the list `[\"id\"]` is bound to the parameter `subset`.",
+      "how_to_read": "Picture an input slot with a name tag. `subset` is the slot's name, and `[\"id\"]` is the supplied value. Here, `key = subset[0]` extracts the first item, `\"id\"`, so `row[key]` reads each row's `id` value.",
+      "key_point": "The flow is `[\"id\"]` → `subset` → `subset[0]` → `\"id\"` → compare each row's `id`. Only the rows with the first occurrences of 1 and 2 are added, leaving 2 items. This implementation uses only the first item in the supplied list.",
+      "common_mistake": "Do not read `subset` as a list of fields to keep in the result. Here it selects the comparison key, while `result.append(row)` adds the entire row, including `name`. This meaning comes from the method body, not the argument name itself."
     },
     "teaching_example": {
-      "code": "class Table:\n    def dedup(self, subset):\n        return subset\n\ntable = Table()\nkeys = table.dedup(subset=[\"email\"])",
-      "walkthrough": "Emails are forwarded to the duplicate detection criteria list."
+      "code": "def first_key(subset):\n    return subset[0]\n\nkey = first_key(subset=[\"email\"])\nprint(key)",
+      "walkthrough": "1) `def` defines a function that accepts `subset`; its body does not run yet.\n2) `first_key(subset=[\"email\"])` passes the list to the matching parameter `subset`.\n3) `return subset[0]` returns the first item, `\"email\"`.\n4) The returned value is bound to `key`.\n5) `print(key)` displays `email`."
     },
     "answer_explanation": {
-      "step_by_step": "The subset is specified based on the id. The first id=1 remains, the second id=1 is removed, and id=2 remains.",
-      "why_correct": "This is because the key used to determine duplicates is a single ID.",
+      "step_by_step": "1) The `__init__` called by `Frame(...)` binds the three rows to `self.rows`.\n2) In the method call, `self` refers to `frame` and `subset` to `[\"id\"]`.\n3) `key` becomes `\"id\"`; `seen` starts as an empty set and `result` as an empty list.\n4) The first row's id, 1, is new, so 1 is recorded in `seen` and row A is appended.\n5) The second row's id, 1, is already present, so `continue` skips appending row B.\n6) The third row's id, 2, is new, so 2 is recorded and row C is appended.\n7) The two-row `result` is returned and bound to `deduped`.",
+      "why_correct": "`deduped` is `[{\"id\": 1, \"name\": \"A\"}, {\"id\": 2, \"name\": \"C\"}]`, so the correct answer is `2`.",
       "common_wrong_choice": {
         "choice": "3",
-        "why_wrong": "Since `id=1` appears twice, one instance is removed.",
-        "misread_step": "This is an example that does not reflect duplicate removal based on subsets."
+        "why_wrong": "Although the names differ, only `id` values are compared, so the second row is not added to the result.",
+        "misread_step": "This misses the step from `subset=[\"id\"]` to `key = \"id\"` and instead compares entire rows."
       },
-      "takeaway": "The dedup code starts by reading **which field is used as the key**."
+      "takeaway": "Match a keyword argument to its input by name, then trace how the supplied value is used in the body."
     },
     "target_statement": "deduped = frame.drop_duplicates(subset=[\"id\"])",
     "focus_span": "subset=[\"id\"]",
@@ -635,24 +635,24 @@
     "primary_concept": "call",
     "reading_goal_internal": "status field 이름을 메서드에 전달해 같은 값을 가진 row들이 어떤 그룹으로 묶이는지 읽는다.",
     "concept_explanation": {
-      "what_it_is": "The `obj.groupby(field)` form is a method call that passes the grouping criterion `field` to the object’s `groupby` method.",
-      "how_to_read": "It checks which field the `argument` string refers to and groups the values based on that field for each row.",
-      "key_point": "The `.size()` that follows in the original pandas code is the step that counts the number of rows in each status group created in this way.",
-      "common_mistake": "It’s easy to think of this call as simply sorting the `status` values. The key is to group values with the same `status` together."
+      "what_it_is": "Easy meaning: `table.groupby(\"status\")` asks the table to collect rows that have the same status value.\nExact definition: This expression calls the locally defined `Table.groupby` method, automatically passing `table` as `self` and passing the string `\"status\"` as `field`.",
+      "how_to_read": "Picture sorting rows into labeled baskets. `table.groupby` identifies the method to run, and `\"status\"` inside the parentheses names the field to group by. Calling it executes the method body, which puts each row into the list for its `row[\"status\"]` value.",
+      "key_point": "`\"status\"` → `field` → read PASS, FAIL, PASS from the rows → append rows to the matching lists → return the dictionary → bind it to `groups`. `groups[\"PASS\"]` is a list containing two rows. The call itself does not return a count.",
+      "common_mistake": "Do not read `\"status\"` as the value being collected. It names the field; the actual group keys are PASS and FAIL. Determine this behavior from the `groupby` body defined here, not just from its name."
     },
     "teaching_example": {
-      "code": "class Table:\n    def __init__(self, rows): self.rows = rows\n    def groupby(self, field):\n        result = {}\n        for row in self.rows:\n            result.setdefault(row[field], []).append(row)\n        return result\n\ntable = Table([{\"kind\": \"A\"}, {\"kind\": \"B\"}, {\"kind\": \"A\"}])\ngroups = table.groupby(\"kind\")",
-      "walkthrough": "Two rows of type A and one row of type B are grouped together under the same key."
+      "code": "class Table:\n    def __init__(self, rows):\n        self.rows = rows\n    def groupby(self, field):\n        result = {}\n        for row in self.rows:\n            result.setdefault(row[field], []).append(row)\n        return result\n\ntable = Table([{\"kind\": \"A\"}, {\"kind\": \"B\"}, {\"kind\": \"A\"}])\ngroups = table.groupby(\"kind\")",
+      "walkthrough": "1) `class Table` defines the class, and the two `def` statements define methods. Their bodies run when called.\n2) Creating an object with `Table(...)` runs `self.rows = rows` in `__init__`, storing the three rows.\n3) Calling `table.groupby(\"kind\")` makes `self` refer to `table` and sets `field` to `\"kind\"`.\n4) `result = {}` creates an empty dictionary, and `for` visits each row in order.\n5) `setdefault` returns the list for the key, first inserting an empty list if the key is missing. `append(row)` adds the current row to that list. Processing A → B → A puts two rows under A and one under B.\n6) `return result` returns the dictionary, and `groups` refers to it. The result is `{'A': [{'kind': 'A'}, {'kind': 'A'}], 'B': [{'kind': 'B'}]}`. Nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "Of the three rows, the first and third have status PASS. `groupby` collects those two rows under the `PASS` key.",
-      "why_correct": "This is because the status was passed via the grouping field.",
+      "step_by_step": "1) `Table(...)` stores the three rows in `table.rows`.\n2) Calling `table.groupby(\"status\")` passes `\"status\"` as `field`.\n3) Start with an empty `result`. The first row creates the PASS list and is appended to it: PASS has 1 item.\n4) The second row creates the FAIL list and is appended to it: FAIL has 1 item.\n5) The third row reuses the existing PASS list and is appended: PASS now has 2 items.\n6) The result of `return result` is bound to `groups`. `groups[\"PASS\"]` is the list containing the first and third rows.",
+      "why_correct": "The PASS list contains two rows whose content is `{\"status\": \"PASS\"}`, so the correct answer is `2`.",
       "common_wrong_choice": {
         "choice": "1",
-        "why_wrong": "`PASS` appears not only in the first row but also in the third row.",
-        "misread_step": "This is a case where the grouping key for all rows has not been checked."
+        "why_wrong": "There is one PASS key, but its list contains two rows. Rows with identical contents are still added each time `append` runs.",
+        "misread_step": "This misses the third row being added to the existing PASS list, or confuses one group key with one list item."
       },
-      "takeaway": "\"groupby\" is read as **\"group by field → values in each row → grouping rows with the same values\"**."
+      "takeaway": "Read a method call as arguments → body execution → use of the returned value. The number of group keys differs from the number of items in each group's list."
     },
     "target_statement": "groups = table.groupby(\"status\")",
     "focus_span": "table.groupby(\"status\")",
@@ -696,24 +696,24 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "merge 호출에서 왼쪽과 오른쪽 데이터의 서로 다른 field 이름이 join key로 지정되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`left_on=\"node_id\"` is a keyword argument that specifies the key name for the data on the left side of the merge function.",
-      "how_to_read": "Distinguish between the keyword name, which serves as the option name, and the string on the right, which is the actual field name.",
-      "key_point": "Rows are connected when the `node_id` of the left nodes matches the `to_node_id` value of the right edges.",
-      "common_mistake": "It’s easy to assume that `left_on` and `right_on` must have identical strings to be joined. Even if the field names are different, the fields can be joined if the actual values within them are the same."
+      "what_it_is": "Easy meaning: When calling a function, you can name an input to specify which value it receives.\nExact definition: A keyword argument supplies a value using `name=value` in a call and binds that value to the parameter with that name.",
+      "how_to_read": "Think of parameters as labeled input slots. The definition of `merge_rows` establishes the slots; the call connects `nodes` and `edges` to `left` and `right` by position. `left_on=\"node_id\"` supplies the string `\"node_id\"` to the `left_on` slot. Thus, read `left_row[left_on]` in the body as `left_row[\"node_id\"]`.",
+      "key_point": "`left_on` → `\"node_id\"`, `right_on` → `\"to_node_id\"`\n↓\nCompare values with `left_row[\"node_id\"] == right_row[\"to_node_id\"]`.\n↓\n`n1` has no matching right row; `n2` matches the `e1` row.\n↓\n`merged` holds each left row paired with its list of matches. `how=\"left\"` is also passed, but this function body does not use `how`.",
+      "common_mistake": "Do not read `left_on` itself as the dictionary key. It is a parameter name; the actual left key is the supplied string `\"node_id\"`. Different key names can still yield matching values."
     },
     "teaching_example": {
       "code": "def join(left_on, right_on):\n    return left_on, right_on\n\nkeys = join(left_on=\"user_id\", right_on=\"owner_id\")",
       "walkthrough": "The left side uses the field name `user_id`, while the right side uses the different field name `owner_id`."
     },
     "answer_explanation": {
-      "step_by_step": "Since `left_on=\"node_id\"` is specified, the `node_id` field from the left-hand data is used for comparison.",
-      "why_correct": "The keyword `name` specifies the field name of the left join key.",
+      "step_by_step": "1) The call binds `nodes` to `left` and `edges` to `right`.\n2) `left_on=\"node_id\"` supplies the string `\"node_id\"` to `left_on`.\n3) The loop reads each dictionary in `nodes` as `left_row`.\n4) In the comparison, `left_row[left_on]` becomes `left_row[\"node_id\"]`, retrieving `\"n1\"` and then `\"n2\"`.\n5) These are compared with the right-side value `\"n2\"`, so the left comparison field is `node_id`.",
+      "why_correct": "The supplied string `\"node_id\"` is actually used inside the function as the key for looking up values in the left dictionary, so the answer is `node_id`.",
       "common_wrong_choice": {
         "choice": "to_node_id",
-        "why_wrong": "`to_node_id` is the right-hand data field specified at `right_on`.",
-        "misread_step": "This is an example of where `left_on` and `right_on` were read in the wrong order."
+        "why_wrong": "`\"to_node_id\"` is supplied to `right_on` and is the key used to look up values in the right-side `edges` dictionary.",
+        "misread_step": "This swaps the values supplied to `left_row[left_on]` and `right_row[right_on]`."
       },
-      "takeaway": "For a merge, **check the left key name and right key name separately**."
+      "takeaway": "Trace the keyword argument in the call → the value bound to the parameter → where the body uses that value."
     },
     "target_statement": "merged = merge_rows(nodes, edges, left_on=\"node_id\", right_on=\"to_node_id\", how=\"left\")",
     "focus_span": "left_on=\"node_id\"",
@@ -758,24 +758,24 @@
     "primary_concept": "list_comprehension",
     "reading_goal_internal": "각 row의 status를 비교해 FAIL인 항목만 별도 리스트에 수집하는 filtering 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A filtered list comprehension places only iteration items whose `if` condition is true into the new list.",
-      "how_to_read": "Check the field used for comparison and the comparison value in each row.",
-      "key_point": "In Python lists, the same functionality as a pandas boolean mask can be expressed using a list comprehension.",
-      "common_mistake": "It’s easy to assume that rows that are not “FAIL” are retained. The comparison operator is ``==``."
+      "what_it_is": "Easy meaning: Check items one by one and collect only those that match a condition into a new list.\nExact definition: A filtered list comprehension `[expression for target in iterable if condition]` iterates over the iterable and, only when the condition is true, evaluates expression and collects its result into a new list in order.",
+      "how_to_read": "Picture putting only items that pass a checkpoint into a new basket. First, `rows = [...]` creates a list containing three dictionaries. Read the next line as: take each item with `for row in rows`, check `if row[\"status\"] == \"FAIL\"`, and, if it passes, put the whole `row` from the front expression into the new list.",
+      "key_point": "a: PASS → condition False → skip\nb: FAIL → condition True → add b's dictionary\nc: FAIL → condition True → add c's dictionary\nThe completed new list is assigned to `failed`. Its IDs are b, c in that order; `score` is not checked.",
+      "common_mistake": "It is easy to think the list stores the comparison results True/False or just the ID strings. The front expression is `row`, so it stores whole dictionaries. It creates a new list but neither changes `rows` nor copies the dictionaries."
     },
     "teaching_example": {
       "code": "rows = [{\"state\": \"OK\"}, {\"state\": \"ERROR\"}]\nerrors = [row for row in rows if row[\"state\"] == \"ERROR\"]",
       "walkthrough": "Only the second row, where the `state` is `ERROR`, remains in `errors`."
     },
     "answer_explanation": {
-      "step_by_step": "The condition is ``row['status'] == 'FAIL'``. Only `b` and `c` satisfy this condition.",
-      "why_correct": "This is because a filtered list comprehension collects only the rows where the equality condition is True.",
+      "step_by_step": "1) `rows` contains dictionaries with IDs a, b, c in order.\n2) a's `status` is `\"PASS\"`. `\"PASS\" == \"FAIL\"` is False, so skip it.\n3) b's `status` is `\"FAIL\"`. The comparison is True, so add b's dictionary.\n4) c's comparison is also True, so add c's dictionary.\n5) That new list becomes `failed`.",
+      "why_correct": "`failed` contains the dictionaries for b and c in their original order, so the answer is 'b and c'.",
       "common_wrong_choice": {
         "choice": "a only",
-        "why_wrong": "Since `a`’s status is `PASS`, the condition is `False`.",
-        "misread_step": "This is an example of reading the comparison string backward."
+        "why_wrong": "a is PASS, so it does not satisfy the condition of being equal to FAIL. The matching items are b and c.",
+        "misread_step": "This reads `if` as a rule for excluding matching items. Here, items whose condition is True are retained."
       },
-      "takeaway": "Filtering is described as **field lookup → comparison → collecting rows where the result is True**."
+      "takeaway": "Read it as: choose an item → look up the field → check the condition → when True, add the front expression's value to the new list."
     },
     "target_statement": "failed = [row for row in rows if row[\"status\"] == \"FAIL\"]",
     "focus_span": "[row for row in rows if row[\"status\"] == \"FAIL\"]",

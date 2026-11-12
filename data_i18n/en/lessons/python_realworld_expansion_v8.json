@@ -212,17 +212,17 @@
     },
     "teaching_example": {
       "code": "def load(ok):\n    if not ok:\n        return []\n    return [\"card\"]\n\nresult = load(False)",
-      "walkthrough": "Since `ok` is `False`, it returns an empty list."
+      "walkthrough": "1) `def load(ok):` defines the function. Its body runs when called.\n2) `result = load(False)` calls the function with `ok` set to `False`.\n3) In `if not ok:`, `not False` is `True`, so execution enters the indented block.\n4) `return []` sends an empty list back to the call site and immediately ends this function execution.\n5) Therefore, the next line, `return [\"card\"]`, is not executed.\n6) The value of the call `load(False)`, which is `[]`, is stored in `result`. There is no screen output.\n\nThink of `return` as an exit that hands back a result. With `load(True)`, the condition would be false, so execution would pass the first exit and return `[\"card\"]`."
     },
     "answer_explanation": {
-      "step_by_step": "Since `Response.ok` is False, the program enters the `if` block and the function ends at `return []`.",
-      "why_correct": "This is because the failure response branch explicitly returns an empty list.",
+      "step_by_step": "1) After defining the class and function, Python evaluates the right side of the final assignment.\n2) `Response(False, [\"card-a\"])` creates an object. Its `__init__` sets the object's `ok` to `False` and `data` to `[\"card-a\"]`.\n3) That object is passed to `parse_response`, where `response` refers to it.\n4) `if not response.ok:` evaluates to `not False`, which is `True`, so `return []` executes.\n5) The empty list is returned, and this function execution immediately ends. `return response.data` is not executed.\n6) The return value of `parse_response(...)`, which is `[]`, is stored in `result`.",
+      "why_correct": "The return statement actually executed is `return []`. Although the object stores `[\"card-a\"]`, execution never reaches the line that returns it, so the answer is `[]`.",
       "common_wrong_choice": {
         "choice": "[\"card-a\"]",
-        "why_wrong": "The `data` return statement is not executed because of the preceding `return`.",
-        "misread_step": "This is a case where the code following an `early return` is also executed."
+        "why_wrong": "`[\"card-a\"]` is the object's `data` value, but `return response.data` is not executed because the earlier `return []` ends the function.",
+        "misread_step": "This assumes the function continues after `return []` and the final return statement overwrites the earlier result."
       },
-      "takeaway": "Read partial-failure loading as **check state → return an early fallback → merge with the remaining results**."
+      "takeaway": "Read in order: check the condition → return the value at the `return` actually reached → end the current function execution → store the returned value at the call site. Here, `result` is `[]`."
     },
     "target_statement": "return []",
     "focus_span": "return []",
@@ -266,10 +266,10 @@
     "primary_concept": "lambda_expression",
     "reading_goal_internal": "lambda가 각 card에서 `(level, id)` tuple을 만들어 `sorted()`의 정렬 기준으로 제공하는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`lambda x: expression` is an expression that creates a short, unnamed function.",
-      "how_to_read": "It reads that when the parameter `card` is passed, the expression following the colon is evaluated to return a `(level, id)` tuple.",
-      "key_point": "When sorting tuples by key, the first element is compared first; if they are equal, the next element is compared. Therefore, when the level is the same, the id becomes the second criterion.",
-      "common_mistake": "It’s easy to assume that `lambda` performs the sorting itself. However, `lambda` creates the sort key for each card, while the actual sorting is performed by `sorted()`."
+      "what_it_is": "Easy meaning: `lambda` creates a small function right where it is needed, taking input and returning a short calculation's result.\nExact definition: `lambda parameters: expression` is an expression that creates an unnamed function which, when called, evaluates the expression after the colon and returns its value.",
+      "how_to_read": "Imagine attaching a comparison label to each card. First, `cards` contains two dictionaries in B-then-A order. On the next line, read `lambda card: (card[\"level\"], card[\"id\"])` as 'take one card as `card` and return a tuple containing its level value followed by its id value.' `key=` passes this function to `sorted()` to produce a comparison value for each card.",
+      "key_point": "When `sorted()` calls the function for each card, the B card produces `(2, \"B\")` and the A card produces `(2, \"A\")`. Tuples are compared from the first element onward, so the equal first values, `2`, lead to comparing the next values: the id strings. Since `\"A\"` comes before `\"B\"`, `ordered` becomes `[{\"level\": 2, \"id\": \"A\"}, {\"level\": 2, \"id\": \"B\"}]`. The original order of `cards` is unchanged.",
+      "common_mistake": "It is easy to think that `lambda` itself sorts the cards, or that equal levels always preserve input order. This function only returns comparison tuples; `sorted()` performs the sorting. Here, the second elements—the ids—differ and determine the order. Input order is preserved when the entire sorting keys are equal."
     },
     "teaching_example": {
       "code": "items = [{\"group\": 1, \"name\": \"b\"}, {\"group\": 1, \"name\": \"a\"}]\nordered = sorted(items, key=lambda item: (item[\"group\"], item[\"name\"]))",
@@ -567,10 +567,10 @@
     "primary_concept": "f_string",
     "reading_goal_internal": "f-string 안 중괄호 표현식 version을 평가해 현재 정수 21을 문자열에 삽입하고 최종 URL을 만드는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "An f-string evaluates expressions within the string (`{expression}`) and inserts the results into the string.",
-      "how_to_read": "Separate the literal text from the expressions inside braces, convert the current values of those expressions to strings, and combine them.",
-      "key_point": "Since the version is 21, the final string ends with \"`?_v=21`.\"",
-      "common_mistake": "It’s easy to assume that the text “{version}” will remain as-is or that the variable name “version” itself will be inserted."
+      "what_it_is": "Easy meaning: An f-string fills places in text with current values. Exact definition: An f-string is a string literal prefixed with `f` that evaluates expressions inside braces and inserts their results into the string.",
+      "how_to_read": "Think of the braces as a place to fill with a value. First, `version = 21` binds `version` to 21. In the next line's f-string, `http://localhost:8787/index.html?_v=` stays unchanged, while `{version}` is filled with the current value 21 as text.",
+      "key_point": "The flow is: `version` has value 21 → evaluate `{version}` → insert `21` into the string → store `http://localhost:8787/index.html?_v=21` in `url`. `print(url)` prints this string, and the last query value is `21`.",
+      "common_mistake": "Do not read `{version}` or the variable name `version` as text that stays in the result. This f-string inserts the value the name refers to, 21, not the name itself. `8787` is part of the fixed text, not the value inserted at `{version}`."
     },
     "teaching_example": {
       "code": "build = 7\nurl = f\"/app.js?_v={build}\"\nprint(url)",
@@ -1277,10 +1277,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "append의 receiver, 인자, 실행 뒤 list 상태를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "object.method(...) calls a method of a specific object.",
-      "how_to_read": "The citation to the left of the dot is the receiver, and the entire dict is a single argument.",
-      "key_point": "Distinguish between the number of fields in a `dict` and the number of items appended to a list.",
-      "common_mistake": "It is easy to misunderstand that since `doc_id` and `chunk_id` are two fields, two items are added to the list."
+      "what_it_is": "Easy meaning: `citations.append(...)` asks `citations` to add the single value inside the parentheses to its end.\nExact definition: `object.method(...)` is an expression that calls a method of a specific object; here, the list method `append` adds its one argument as one item at the end of the list.",
+      "how_to_read": "Imagine the list as a shelf and the dictionary as a box containing several pieces of information. Even with two pieces of information inside, it is still one box on the shelf.\nThe first line puts two values in `chunk`, and the second creates the empty list `citations`. In the call, `citations` to the left of the dot is the object being acted on (the receiver), `append` is the method to run, and the entire dictionary inside the parentheses is one argument. Python reads `\"d1\"` from `chunk[\"doc_id\"]` and `\"c7\"` from `chunk[\"id\"]`, builds the dictionary, and then adds it.",
+      "key_point": "Read values from `chunk` → create `{\"doc_id\": \"d1\", \"chunk_id\": \"c7\"}` → call `append` → `citations` becomes `[{\"doc_id\": \"d1\", \"chunk_id\": \"c7\"}]`.\nThus, `len(citations)` is `1`, and `citations[0][\"chunk_id\"]` is `\"c7\"`, the first item's `\"chunk_id\"` value. The final output is `1 c7`.",
+      "common_mistake": "It is easy to think that the two dictionary fields, `doc_id` and `chunk_id`, add two items to the list. But the value passed to `append` is one dictionary. Distinguish the number of fields inside the dictionary from the number of items added to the list."
     },
     "teaching_example": {
       "code": "items=[]\nitems.append({\"id\":\"c1\"})\nprint(len(items))",
@@ -1336,24 +1336,24 @@
     "primary_concept": "f_string",
     "reading_goal_internal": "중괄호 표현식의 현재 값을 Markdown 문자열에 삽입하는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "An f-string evaluates {expression} and inserts the result into the string.",
-      "how_to_read": "Read the text by separating the fixed strings from the node/evidence query expressions.",
-      "key_point": "Code inside curly braces is not treated as a string but is substituted with its actual value.",
-      "common_mistake": "It is easy to misunderstand that the text {node[\"label\"]} is printed exactly as is."
+      "what_it_is": "Easy meaning: An f-string fills slots in text with values computed by code. Exact definition: An f-string is a string literal prefixed with f that evaluates expressions inside braces and inserts their results into the string.",
+      "how_to_read": "Picture braces as slots for values. After the fixed '# ', insert 'LiDAR' from node['label']; later, insert 'Laser-based sensing.' from evidence[0]['snippet']. Each \\n is a line break.",
+      "key_point": "Inserting the retrieved values makes page equal to '# LiDAR\\n\\n## Definition\\nLaser-based sensing.'. splitlines()[0] selects its first line, '# LiDAR'.",
+      "common_mistake": "Do not read node['label'] inside the braces as text that stays unchanged. In this f-string, its evaluated value 'LiDAR' is inserted, while the '# ' outside the braces stays unchanged."
     },
     "teaching_example": {
       "code": "item={\"name\":\"LiDAR\"}\ntext=f\"# {item['name']}\"\nprint(text)",
       "walkthrough": "The output is # LiDAR."
     },
     "answer_explanation": {
-      "step_by_step": "1) The node label is LiDAR. 2) An f-string inserts a value. 3) # is a fixed string. 4) The first line is # LiDAR.",
-      "why_correct": "The first line is # LiDAR.",
+      "step_by_step": "1) node stores 'LiDAR' under 'label'.\n2) The first item in evidence stores 'Laser-based sensing.' under 'snippet'.\n3) The f-string inserts both values to create page. Its lines are '# LiDAR', a blank line, '## Definition', and 'Laser-based sensing.'.\n4) page.splitlines() separates the lines, and [0] selects the first one.\n5) print outputs # LiDAR.",
+      "why_correct": "Before the first line break are the fixed '# ' and the inserted 'LiDAR'. Therefore, selecting the first line with [0] produces '# LiDAR'.",
       "common_wrong_choice": {
         "choice": "## Definition",
-        "why_wrong": "It is easy to misunderstand that the text {node[\"label\"]} is printed exactly as is.",
-        "misread_step": "Read the text by separating the fixed strings from the node/evidence query expressions."
+        "why_wrong": "'## Definition' is the third line, after two line breaks, not the first line.",
+        "misread_step": "This skips the first line formed by '# ' and {node['label']} and selects the later heading instead."
       },
-      "takeaway": "Code inside curly braces is not treated as a string but is substituted with its actual value."
+      "takeaway": "First fill the f-string's braces with actual values, then check the line breaks and the first line selected by [0]."
     },
     "target_statement": "f\"# {node['label']}\\n\\n## Definition\\n{evidence[0]['snippet']}\"",
     "focus_span": "f\"# {node['label']}\\n\\n## Definition\\n{evidence[0]['snippet']}\"",
@@ -1393,24 +1393,24 @@
     "primary_concept": "comparison",
     "reading_goal_internal": "dict lookup 결과와 3을 >=로 비교해 Boolean을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`a >= b` is True when `a` is greater than or equal to `b`.",
-      "how_to_read": "First, look up the `occurrence_count` value, then compare it to the threshold of 3.",
-      "key_point": ">= includes cases where the values are exactly the same.",
-      "common_mistake": ">It’s easy to misunderstand that “read as 3” means False."
+      "what_it_is": "Easy meaning: `>=` asks whether the left value meets or exceeds the right-hand threshold. Exact definition: In this code, `>=` is a comparison operator that compares two integers and returns the Boolean (bool) value `True` if the left value is greater than or equal to the right value, and `False` otherwise.",
+      "how_to_read": "Picture checking whether a value has reached a threshold of 3. First retrieve 3 from the dictionary using `candidate[\"occurrence_count\"]`, then read `3 >= 3` as 'Is 3 at least 3?'",
+      "key_point": "The flow is dictionary lookup → integer 3 → `3 >= 3` → `True` → assignment to `count_ready` → output `True`. The comparison produces a truth value, not the original number 3.",
+      "common_mistake": "Reading `>=` as `>` can make you think equal values produce `False`. `3 > 3` is `False`, but `3 >= 3` is `True` because equality is included."
     },
     "teaching_example": {
       "code": "candidate={\"count\":3}\nprint(candidate[\"count\"] >= 3)",
       "walkthrough": "3 >= 3 is True."
     },
     "answer_explanation": {
-      "step_by_step": "1) The occurrence_count is 3. 2) The threshold is also 3. 3) >= includes equality. 4) Therefore, it is True.",
-      "why_correct": "Therefore, it is True.",
+      "step_by_step": "1) The first line creates a dictionary mapping `\"occurrence_count\"` to 3 and `\"has_definition\"` to `True`, and assigns it to `candidate`.\n2) On the right side of the second line, looking up `candidate[\"occurrence_count\"]` gives 3.\n3) Python evaluates `3 >= 3`. The values are equal, and `>=` includes equality, so the result is `True`.\n4) This comparison result is assigned to `count_ready`.\n5) On the third line, `print(count_ready)` outputs `True`.",
+      "why_correct": "The value being compared and the threshold are both 3, so the 'greater than or equal to' condition holds. The output is therefore `True`. The dictionary's `\"has_definition\"` value is not looked up or used in this comparison.",
       "common_wrong_choice": {
         "choice": "False",
-        "why_wrong": ">It’s easy to misunderstand that “read as 3” means False.",
-        "misread_step": "First, look up the `occurrence_count` value, then compare it to the threshold of 3."
+        "why_wrong": "`False` would mean this comparison does not hold. Here, 3 equals the threshold of 3, so the `>=` comparison holds.",
+        "misread_step": "At step 3, this misreads `>=` as `>`, excluding equality."
       },
-      "takeaway": ">= includes cases where the values are exactly the same."
+      "takeaway": "First retrieve the actual value from the dictionary, then compare it with the threshold. `>=` includes values equal to the threshold, and the assigned value is the comparison result, `True` or `False`, not the retrieved number."
     },
     "target_statement": "candidate[\"occurrence_count\"] >= 3",
     "focus_span": "candidate[\"occurrence_count\"] >= 3",
@@ -1452,24 +1452,24 @@
     "primary_concept": "arithmetic",
     "reading_goal_internal": "shard 번호와 shard 크기를 곱해 데이터 범위의 시작 index를 구하는 계산을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`a * b` is a multiplication expression that multiplies two numbers.",
-      "how_to_read": "It performs the calculation by substituting the current values of each variable.",
-      "key_point": "In fixed-size shards, as the shard_id increases, the starting index shifts by the shard_size unit.",
-      "common_mistake": "It’s easy to assume that since `shard_id 3` is the third shard, `start` is 400. This function uses 0-based shard IDs."
+      "what_it_is": "Easy meaning: Multiplying a piece's number by the size of one piece gives its starting position.\nExact definition: In this code, `*` and `+` are arithmetic operators that compute the product and sum, respectively, of integer operands.",
+      "how_to_read": "Picture pieces of size 200 arranged in a row. Number 0 starts at position 0, and number 1 starts at position 200. `shard_id * shard_size` moves by one piece's size for each unit of the number, so read it here as `3 * 200`. Then add the piece's size to the starting position to get the ending position.",
+      "key_point": "Values flow as `3 * 200` → `start = 600` → `600 + 200` → `end = 800`. `return start, end` returns both values as the tuple `(600, 800)`, which is assigned to `result`.",
+      "common_mistake": "Do not interpret `shard_id` 3 as 'the third piece' and subtract 1. This expression multiplies the supplied number directly. Since number 0 starts at 0, number 3 starts at 600, not 400."
     },
     "teaching_example": {
       "code": "shard_id = 2\nshard_size = 50\nstart = shard_id * shard_size",
       "walkthrough": "Because `2 * 50 = 100`, `start` is 100."
     },
     "answer_explanation": {
-      "step_by_step": "It sets `start` to 600 (3 × 200), adds 200 to that to make `end` equal to 800, and then returns a tuple.",
-      "why_correct": "This is because the `shard start` calculation is defined as multiplication.",
+      "step_by_step": "1. The `def` statement defines the function without running the calculations inside it yet.\n2. Calling `shard_range(3, 200)` sets `shard_id` to 3 and `shard_size` to 200.\n3. `start = shard_id * shard_size` calculates `3 * 200` and assigns 600 to `start`.\n4. `end = start + shard_size` calculates `600 + 200` and assigns 800 to `end`.\n5. `return start, end` returns the tuple `(600, 800)`.\n6. That returned value is assigned to `result`.",
+      "why_correct": "The returned values are the calculated `start` and `end`, not the two inputs. They are 600 and 800, so the answer is `(600, 800)`.",
       "common_wrong_choice": {
-        "choice": "(200, 400)",
-        "why_wrong": "That range is close to when shard_id=1.",
-        "misread_step": "This is a case where shard_id 3 has not been included in the calculation."
+        "choice": "(3, 200)",
+        "why_wrong": "These are the inputs passed to the function. The function does not return them unchanged; it calculates new values using multiplication and addition.",
+        "misread_step": "This mistakes the call's arguments `3, 200` for the return value, skipping the two lines calculating `start` and `end` and the statement `return start, end`."
       },
-      "takeaway": "The shard range is read as **ID * size → start → start+size → end**."
+      "takeaway": "Read the flow as inputs → number × size for the start → start + size for the end → return both values as a tuple."
     },
     "target_statement": "start = shard_id * shard_size",
     "focus_span": "shard_id * shard_size",
@@ -1518,18 +1518,18 @@
       "common_mistake": "It’s easy to assume that `exists` means the file will be deleted if it returns True. It merely checks whether the file exists."
     },
     "teaching_example": {
-      "code": "class Item:\n    def __init__(self, found): self.found = found\n    def exists(self): return self.found\n\nready = Item(True).exists()",
-      "walkthrough": "The `exists` method returns `True`."
+      "code": "class Item:\n    def __init__(self, found):\n        self.found = found\n    def exists(self):\n        return self.found\n\nready = Item(True).exists()",
+      "walkthrough": "1) `class Item` defines a template for creating objects.\n2) `__init__` stores the supplied `found` value in `self.found` when an object is created.\n3) `exists` is defined to return the stored `self.found` when called. Defining it does not execute its body.\n4) On the last line, `Item(True)` first creates an object, and `__init__` stores `True`.\n5) Calling `.exists()` on that object then returns `True`, which is stored in `ready`.\nFlow: create object → store value → call method → store returned value. The final value of `ready` is `True`; nothing is printed."
     },
     "answer_explanation": {
-      "step_by_step": "Since `OutputPath.exists()` returns `True`, `should_resume` is also `True`, and `skip` is added to the body of the `if` statement.",
-      "why_correct": "This is because the code is structured to use existing output as a signal that the task is complete.",
+      "step_by_step": "1) The class definition sets `existing` to `{\"out_0042.json\"}` and defines the methods; `should_resume` is also defined.\n2) `actions = []` creates an empty list.\n3) Calling `should_resume(\"out_0042.json\")` gives that string to `output_path`.\n4) `OutputPath(output_path)` creates an object, and `__init__` stores the string in `self.path`.\n5) `.exists()` is called on that object. `self.existing` finds the class's set, and `self.path in self.existing` evaluates to `True`.\n6) `exists()` returns `True`, and `should_resume` returns that same value.\n7) The `if` condition is true, so `actions.append(\"skip\")` executes. The final value is `[\"skip\"]`.",
+      "why_correct": "The condition receives `True`, and the executed body adds `\"skip\"`. Here, the existence check tests membership in the set defined in the code, not the actual file system.",
       "common_wrong_choice": {
         "choice": "[\"run\"]",
-        "why_wrong": "The current branch specifies the condition for skipping when an output exists.",
-        "misread_step": "This is a case where the \"exists\" result and the \"resume action\" are connected in the opposite order."
+        "why_wrong": "No statement adds `\"run\"`. The body of the true condition adds `\"skip\"`.",
+        "misread_step": "This guesses that execution resumes from the name `should_resume` without checking the actual returned value and the `if` body."
       },
-      "takeaway": "The logic of the resume is interpreted as **check for existence of output → determine completion → skip duplicate tasks**."
+      "takeaway": "Do not guess behavior from names: trace object creation → method return value → function return value → `if` body."
     },
     "target_statement": "return OutputPath(output_path).exists()",
     "focus_span": "OutputPath(output_path).exists()",
@@ -1570,10 +1570,10 @@
     "primary_concept": "arithmetic",
     "reading_goal_internal": "두 변수의 실제 숫자를 확인하고 multiplication 결과를 계산해 대입 결과를 예측한다.",
     "concept_explanation": {
-      "what_it_is": "`a * b` is an arithmetic expression that multiplies two values to produce a new numerical result.",
-      "how_to_read": "First, check the current value of each variable, then multiply those numbers.",
-      "key_point": "This line does not model the entire API billing policy. It only performs the multiplication `number of requests × cost per request`.",
-      "common_mistake": "It is easy to add 1000 and 0.02 or to convert 0.02 separately as a percentage. You must apply the `*` operation as written in the code."
+      "what_it_is": "Easy meaning: `*` multiplies two numbers, as when you use a quantity and a price per item to find a total cost.\nExact definition: Used with numbers, `*` is an arithmetic operator that produces the product of two operands (the values used in the calculation).",
+      "how_to_read": "Imagine entering “quantity × price per item” into a calculator. The first line binds `num_requests` to the request count `1000`, and the second binds `cost_per_request` to the cost per request `0.02`. On the third line, replace the variable names mentally with their current values to read `1000 * 0.02`: calculate the product first, then bind the result to `total_cost`. The last line prints that result.",
+      "key_point": "The value flow is `1000` and `0.02` → multiplication → `20.0` → `total_cost` → output. Here, multiplying the integer `1000` by the floating-point number (float) `0.02` produces the float `20.0`, so the displayed output is `20.0`.",
+      "common_mistake": "Do not read `0.02` as `0.2` or treat it as a percentage and divide it by 100 again. In this code, `0.02` is the number to multiply as written. `*` means multiplication, not addition, so calculate `1000 * 0.02`."
     },
     "teaching_example": {
       "code": "items = 250\nunit_price = 0.04\ntotal = items * unit_price",
@@ -1697,14 +1697,14 @@
       "walkthrough": "Since it contains \"robot,\" the first condition is True, so `matched` is also True."
     },
     "answer_explanation": {
-      "step_by_step": "If the `title` is converted to lowercase, `vertiport` is included, causing the second `membership test` to evaluate to `True`, which triggers the execution of the UAM branch.",
-      "why_correct": "This is because the condition is true as a whole if either of the two subconditions is true.",
+      "step_by_step": "1. Calling classify_domain(\"Vertiport operation guide\") gives title this string.\n2. title.lower() produces \"vertiport operation guide\", which is assigned to text.\n3. \"uam\" in text is False. Since the left side is False, or also evaluates the right side.\n4. \"vertiport\" in text is True, so the whole condition is True.\n5. return \"UAM\" runs and immediately ends the function. The robot check and return \"Other\" do not run.\n6. The returned string \"UAM\" is assigned to result.",
+      "why_correct": "The second of the two membership tests joined by or is True. Therefore, the first if body runs, and result has the value \"UAM\".",
       "common_wrong_choice": {
         "choice": "Other",
-        "why_wrong": "The keyword “vertiport” is explicitly included in the UAM requirements.",
-        "misread_step": "This is a case where the second condition of `or` was not checked."
+        "why_wrong": "Even though \"uam\" is absent, \"vertiport\" is present, so the first condition is true. Execution never reaches return \"Other\".",
+        "misread_step": "Treating the first False test as making the whole condition False skips the test on the right of or."
       },
-      "takeaway": "Rule classifiers read in the following order: **preprocessing → keyword conditions → branch order**."
+      "takeaway": "When the left side is False, or checks the right side. Here the flow is False or True → return \"UAM\" → result = \"UAM\"."
     },
     "target_statement": "if \"uam\" in text or \"vertiport\" in text:",
     "focus_span": "\"uam\" in text or \"vertiport\" in text",
@@ -1755,17 +1755,17 @@
     },
     "teaching_example": {
       "code": "def choose(item):\n    if item.get(\"urgent\"):\n        return \"urgent\"\n    if item.get(\"normal\"):\n        return \"normal\"\n\nresult = choose({\"urgent\": True, \"normal\": True})",
-      "walkthrough": "Since the first condition is True, it returns “urgent” and does not proceed to the second branch."
+      "walkthrough": "1) `def choose(item):` defines the function. Its body does not run yet.\n2) The final line calls `choose(...)`, passing the dictionary whose two values are both `True` as `item`.\n3) In the first `if`, `item.get(\"urgent\")` is `True`, so execution enters the indented body.\n4) `return \"urgent\"` returns the string `\"urgent\"` and immediately ends this function call.\n5) Therefore, the next `if item.get(\"normal\"):` is not tested, and its `return \"normal\"` does not run.\n6) The returned value is assigned to `result`. Its final value is `\"urgent\"`.\n\nFlow: function call → first condition is `True` → `return \"urgent\"` → function ends → `result = \"urgent\"`. Although both condition values are true, the first `return` prevents execution from reaching the second condition here."
     },
     "answer_explanation": {
-      "step_by_step": "Since `item.get(\"regulation\")` is True, the first `if` statement returns `regulation` and the function terminates.",
-      "why_correct": "This is because the return statement in the first matching branch prevents the subsequent condition from being executed.",
+      "step_by_step": "1) After defining `choose_lens`, the code calls `choose_lens({\"regulation\": True, \"risk\": True})`.\n2) Inside the function, the passed dictionary is named `item`.\n3) The first condition, `item.get(\"regulation\")`, retrieves the dictionary value `True`.\n4) Because the condition is true, the indented `return \"regulation\"` runs.\n5) It returns the string `\"regulation\"` and immediately ends the function call. Execution reaches neither the second `if` nor the final `return \"technology\"`.\n6) The returned string is assigned to `result`, so its final value is `\"regulation\"`.",
+      "why_correct": "The first condition is true and its body's `return` runs, so the call produces `\"regulation\"`. Therefore, the correct choice is `regulation`.",
       "common_wrong_choice": {
         "choice": "risk",
-        "why_wrong": "Although `risk` is also `True`, the program does not reach the second `if` statement.",
-        "misread_step": "This is a case of missing the immediate-termination effect of `return`."
+        "why_wrong": "The value of `risk` is also `True`, but the function ends before reaching the second `if` that would test it.",
+        "misread_step": "This misread assumes execution continues after the first `return` and a later result overwrites the earlier one. `return` sends back a result and ends the function call."
       },
-      "takeaway": "In a classification function, **the order of conditions and early returns can determine the priority**."
+      "takeaway": "Read conditions from top to bottom, but stop when a `return` runs. In this code, the return under the first true condition determines the result."
     },
     "target_statement": "if item.get(\"regulation\"):",
     "focus_span": "if item.get(\"regulation\"):",
@@ -1878,17 +1878,17 @@
     },
     "teaching_example": {
       "code": "known = {\"s1\", \"s2\"}\nmissing = []\nfor side_id in [\"s1\", \"s3\"]:\n    if side_id not in known:\n        missing.append(side_id)",
-      "walkthrough": "s1 is skipped in \"known\" and only s3 is missing, so it is classified as \"missing.\""
+      "walkthrough": "1. `known` is bound to the set of existing IDs {\"s1\", \"s2\"}. Think of it as a checklist.\n2. `missing = []` creates an empty list for IDs that are absent.\n3. The `for` loop binds `side_id` to \"s1\" and then \"s3\".\n4. On the first iteration, `\"s1\" not in known` is False. Because it is on the checklist, `append` does not run and `missing` stays [].\n5. On the next iteration, `\"s3\" not in known` is True. Because it is absent, `missing.append(side_id)` adds \"s3\".\n6. After the loop, `missing` is [\"s3\"]. `not in` is an expression that checks whether a value is absent, not a command that removes an existing item."
     },
     "answer_explanation": {
-      "step_by_step": "c1 references s1 and s9. Since s1 is in side_ids but s9 is not, only `('c1','s9')` is added to missing.",
-      "why_correct": "This is because `side_id not in side_ids` is True only in s9.",
+      "step_by_step": "1. `def` defines the function. Its body runs when the function is called on the last line.\n2. The call passes the one-card list as `cards` and {\"s1\", \"s2\"} as `side_ids`. The function starts with `missing = []`.\n3. The outer loop selects card \"c1\". Because this card has the key, `card.get(\"side_card_ids\", [])` retrieves [\"s1\", \"s9\"].\n4. The inner loop's first value is \"s1\". `\"s1\" not in side_ids` is False, so nothing is added. `missing` is still [].\n5. The next value is \"s9\". `\"s9\" not in side_ids` is True, so the tuple `(card[\"id\"], side_id)`, which is (\"c1\", \"s9\"), is appended. Now `missing` is [(\"c1\", \"s9\")].\n6. After both loops finish, `return missing` returns this list, and the call's result is bound to `result`. Thus, `result` is [(\"c1\", \"s9\")].",
+      "why_correct": "`not in` is True when the value on the left is absent from the set on the right. Of the two referenced IDs, only \"s9\" is absent, so only (\"c1\", \"s9\"), pairing the card ID with the missing reference ID, enters the result list.",
       "common_wrong_choice": {
         "choice": "[(\"c1\", \"s1\")]",
-        "why_wrong": "s1 exists in the actual set of side_ids.",
-        "misread_step": "This is an instance where the meaning of `not in` was interpreted incorrectly."
+        "why_wrong": "\"s1\" is in `side_ids`, so the condition is False and it is not appended.",
+        "misread_step": "Reading `side_id not in side_ids` as `side_id in side_ids` selects an existing reference instead of a missing one."
       },
-      "takeaway": "The reference QA reads as **reference value → membership in the actual ID set → record of missing items**."
+      "takeaway": "Check each reference ID → append (card ID, reference ID) only when `not in` is True → return the completed list."
     },
     "target_statement": "if side_id not in side_ids:",
     "focus_span": "side_id not in side_ids",

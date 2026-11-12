@@ -861,10 +861,10 @@
     "primary_concept": "attribute_access",
     "reading_goal_internal": "객체의 instance attribute를 읽어 배열의 행·열 크기 tuple을 얻는 구조를 이해한다.",
     "concept_explanation": {
-      "what_it_is": "`object.attribute` is an attribute-access expression that reads the current value of an attribute owned by the object.",
-      "how_to_read": "First, identify what kind of object it is, and then determine what information is provided by the attribute name following the dot.",
-      "key_point": "In NumPy, the `shape` of an ndarray provides the size of each axis as a tuple. Since there are no parentheses, this is attribute access rather than a method call.",
-      "common_mistake": "`x.shape()` It’s easy to think of this as a function call. The current code reads the attribute value without parentheses."
+      "what_it_is": "Easy meaning: `x.shape` looks up and reads size information for array `x` by name.\nExact definition: Attribute access `object.attribute` retrieves the named attribute value from an object; a NumPy array's `shape` attribute is a tuple containing the sizes of its axes in order.",
+      "how_to_read": "Mental model: Imagine the array has a size-information label named `shape`. To the left of the dot, `x` identifies the array; to the right, `shape` identifies the information to read.\nReading the code: `import numpy as np` makes NumPy available under the name `np`. On the next line, `np.array(...)` creates a 2-row, 3-column array, and `x` refers to it. The final line reads the size information using `x.shape` on the right, then binds that value to the name `shape` on the left.",
+      "key_point": "Execution flow: 2-row, 3-column array `x` → read `x.shape` → axis-size tuple `(2, 3)` → assign it to the name `shape`.\nFor this two-dimensional array, the row count comes first and the column count second. Therefore, `shape` stores `(2, 3)`; this does not change the array itself or display anything.",
+      "common_mistake": "It is easy to think that `x.shape` needs to be called as `x.shape()`. Here, the attribute value is read without call parentheses. Also, the result is neither the total element count `6` nor the list `[2, 3]`, but the tuple `(2, 3)` containing the row and column sizes."
     },
     "teaching_example": {
       "code": "import numpy as np\n\ny = np.array([[1, 2], [3, 4], [5, 6]])\nshape = y.shape",
@@ -920,10 +920,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "연속된 메서드 호출에서 groupby 결과에 다시 size()를 적용해 각 그룹의 행 개수를 얻는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`object.method()` is the syntax for calling a method on an object. Here, `groupby()` is called again on the result object returned by `size()`.",
-      "how_to_read": "It reads that the inner `df.groupby(\"kind\")` is evaluated first to create a group object, and then `.size()` is called on that result.",
-      "key_point": "Regardless of the domain-specific meaning of “pandas aggregation,” in Python code reading, the **sequence in which the result of an inner call becomes the argument for an outer method call** is key.",
-      "common_mistake": "`.size()` It’s easy to assume that this counts only the total number of rows in the DataFrame. However, since it is called by the preceding ``groupby()`` result, it counts the number of rows per group."
+      "what_it_is": "Easy meaning: This code asks for one task, then asks the returned result to perform the next task.\nExact definition: A method call is an expression that invokes an object's method using parentheses; `df.groupby(\"kind\").size()` calls the `size()` method on the object returned by `groupby(\"kind\")`.",
+      "how_to_read": "Mental model: imagine sorting rows into labeled baskets, then asking how many rows each basket contains.\nReading the code: `import pandas as pd` makes pandas available under the name `pd`. The next line creates a table whose `kind` column contains `\"A\"`, `\"B\"`, and `\"A\"`, and binds it to `df`. On the last line, `df.groupby(\"kind\")` returns a GroupBy object that groups rows with the same kind value. Then `.size()` is called on that object to obtain the row count for each group, and the result is bound to `summary`.",
+      "key_point": "Execution flow: kind values `A, B, A` in `df` → call `groupby(\"kind\")` → object representing the groups → call that object's `size()` → result containing A: 2 and B: 1 → bind to `summary`.\nTherefore, `summary[\"A\"]` retrieves the count `2` for the group labeled A. The first call's result is the object on which the next method is called, not an argument passed to that call.",
+      "common_mistake": "It is easy to read `.size()` as returning the original table's total row count, `3`. Here, however, its target is the object returned by `groupby(\"kind\")`, not `df`, so it returns row counts per group. Empty parentheses `()` still indicate a call: the task runs even though no arguments are explicitly passed."
     },
     "teaching_example": {
       "code": "import pandas as pd\n\ndf = pd.DataFrame({\"team\": [\"red\", \"blue\", \"red\"]})\ncounts = df.groupby(\"team\").size()",
@@ -1050,14 +1050,14 @@
       "walkthrough": "The value \"safe\" of the `profile` key is stored in a variable."
     },
     "answer_explanation": {
-      "step_by_step": "`config['mode']` It finds the `mode` key and returns its value`fast`.",
-      "why_correct": "This is because a `dict` subscription reads the actual value associated with the key.",
+      "step_by_step": "1) A dictionary is created and assigned to `config`. Its key–value pairs are `\"input\"` → `\"nodes.jsonl\"`, `\"limit\"` → `100`, and `\"mode\"` → `\"fast\"`.\n2) The last line evaluates the right-hand side, `config[\"mode\"]`, first. The `\"mode\"` inside the brackets is the key to look up.\n3) The lookup retrieves the associated string, `\"fast\"`.\n4) That value is assigned to the variable `mode` on the left. Thus, `mode` has the value `\"fast\"`.",
+      "why_correct": "A dictionary lookup returns the value associated with the key, not the key itself. The value associated with `\"mode\"` is `\"fast\"`, so the answer is fast.",
       "common_wrong_choice": {
-        "choice": "100",
-        "why_wrong": "100 is the value of the `limit` key.",
-        "misread_step": "This is a case where the values of different config keys were confused."
+        "choice": "mode",
+        "why_wrong": "`\"mode\"` is the lookup key; the lookup result is the string `\"fast\"`.",
+        "misread_step": "This mistakes the key inside the brackets for the lookup result. The variable on the left is also named `mode`, but it receives the value retrieved on the right."
       },
-      "takeaway": "When reading config files, follow the pattern: **key name → corresponding value → usage location**."
+      "takeaway": "Read this as: identify the dictionary → find the key inside the brackets → retrieve its value → assign it to the variable on the left."
     },
     "target_statement": "mode = config[\"mode\"]",
     "focus_span": "config[\"mode\"]",

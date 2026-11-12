@@ -322,10 +322,10 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "generator가 만든 여러 membership 결과를 all()이 하나의 boolean으로 합치는 순서를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "all(iterable)은 iterable의 모든 항목이 truthy일 때 True를 반환하는 함수 호출입니다.",
-                                    "how_to_read":  "괄호 안에서 각 필드의 포함 여부가 먼저 만들어지고, 그 결과들을 all()이 모두 참인지 확인한다고 읽습니다.",
-                                    "key_point":  "response schema는 도메인 맥락이고, Python 초점은 여러 검증 결과를 all() 호출 하나로 합치는 것입니다.",
-                                    "common_mistake":  "필수 필드 중 하나만 있으면 True라고 생각하기 쉽습니다. all()은 모든 항목이 참이어야 True입니다."
+                                    "what_it_is":  "쉽게 말하면: `all()`은 여러 검사 결과가 전부 참인지 한 번에 답해 주는 기능입니다.\n정확한 정의: `all(iterable)`은 순회 가능한 객체의 모든 항목이 참으로 평가되는지 검사하여 bool 값을 반환하는 Python 내장 함수 호출입니다.",
+                                    "how_to_read":  "직관적 모델: `all()`을 체크리스트의 모든 칸이 통과했는지 확인하는 검사자로 보세요.\n첫 줄은 필요한 필드 이름 세 개를 정하고, 둘째 줄은 `data` 딕셔너리를 만듭니다. 셋째 줄의 생성자 표현식은 필드 이름을 하나씩 꺼내 `field in data`로 키가 있는지 검사하며, `all()`은 그 결과를 차례로 받아 확인합니다.",
+                                    "key_point":  "`\"answer\" in data` → `True`\n`\"used_concepts\" in data` → `True`\n`\"student_check\" in data` → `True`\n모두 참 → `all()`이 `True` 반환 → `valid`에 `True` 저장.",
+                                    "common_mistake":  "필수 필드 하나만 있어도 `True`라고 생각하기 쉽지만, 모든 검사 결과가 참이어야 합니다. 여기서 `field in data`는 딕셔너리의 값이 아니라 키의 존재 여부를 검사합니다."
                                 },
         "teaching_example":  {
                                  "code":  "required = [\"id\", \"title\"]\ndata = {\"id\": 1, \"title\": \"card\"}\nvalid = all(name in data for name in required)",
@@ -815,10 +815,10 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "`**arguments`가 query를 keyword argument로 펼쳐 search_docs를 실제 호출하는 것은 확인하되, downstream_received=False와 성능 측정 부재 때문에 end-to-end/performance 주장은 아직 성립하지 않음을 판단한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`**mapping`은 dict의 key-value를 keyword arguments로 펼쳐 실제 함수 호출에 전달합니다. 로컬 함수 호출 성공은 그 함수 경계까지의 evidence이지 이후 전달·외부 처리·성능까지 자동으로 증명하지 않습니다.",
-                                    "how_to_read":  "arguments 내용을 확인하고 target call이 반환한 result를 봅니다. 그 다음 downstream 전달 상태와 성능 metric이 실제로 존재하는지 별도로 확인합니다.",
-                                    "key_point":  "search_docs는 query를 받아 hits=2 결과를 반환하므로 로컬 tool 실행은 확인됩니다. 하지만 downstream_received=False이고 benchmark가 없으므로 end-to-end 성공과 성능 개선은 미증명입니다.",
-                                    "common_mistake":  "tool 함수가 호출됐다는 사실만으로 네트워크 전달, 모델 재수신, 사용자 응답 반영, 성능 개선까지 모두 성공했다고 말하면 안 됩니다."
+                                    "what_it_is":  "쉽게 말하면: `**arguments`는 이름표가 붙은 값들을 풀어서 함수의 같은 이름 입력 자리에 전달합니다.\n정확한 정의: 함수 호출의 `**mapping`은 문자열 키를 가진 매핑의 항목들을 키워드 인자로 펼치며, 이 코드에서는 `\"query\"` 키의 값이 `query` 매개변수에 바인딩됩니다.",
+                                    "how_to_read":  "함수의 입력 자리에 이름표가 있다고 생각하세요. `arguments = {\"query\": \"cosine similarity\"}`는 `query`라는 이름표에 값을 연결합니다. `set(arguments) == {\"query\"}`는 키가 정확히 `query` 하나인지 검사합니다. 이어서 `search_docs(**arguments)`를 `search_docs(query=\"cosine similarity\")`로 읽으세요. 함수 안의 `query`는 전달받은 문자열이고, 함수는 이를 담은 딕셔너리를 반환합니다.",
+                                    "key_point":  "실행 흐름: 키 집합 비교 → `validated = True` → `**arguments`로 `query=\"cosine similarity\"` 전달 → 함수가 `{\"query\": \"cosine similarity\", \"hits\": 2}` 반환 → `result`에 연결 → `downstream_received = False` → `True 2 False` 출력.\n키 검사는 값의 자료형이나 내용을 검증하지 않습니다. 로컬 호출과 반환은 확인되지만, 이 코드는 후속 단계로 전달하는 작업이나 성능 측정을 하지 않습니다. 따라서 후속 수신이나 전체 과정의 성공, 성능 개선은 입증되지 않습니다.",
+                                    "common_mistake":  "`**arguments`를 딕셔너리 자체를 하나의 인자로 넘기는 것으로 읽기 쉽습니다. `search_docs(arguments)`라면 `query`에 딕셔너리 자체가 들어가지만, `search_docs(**arguments)`에서는 `query`에 문자열이 들어갑니다. 또한 `hits`의 `2`는 함수에 직접 적힌 반환값이지, 실제 외부 검색이나 후속 전달 성공의 증거가 아닙니다. `downstream_received`도 여기서는 수신을 검사한 결과가 아니라 직접 `False`로 대입한 값입니다."
                                 },
         "teaching_example":  {
                                  "code":  "def tool(query):\n    return {\"query\":query}\nargs={\"query\":\"python\"}\nresult=tool(**args)\nprint(result)",
@@ -958,10 +958,10 @@
         "primary_concept":  "class_definition",
         "reading_goal_internal":  "class 이름 뒤 괄호 안의 LLMAdapter가 새 클래스가 상속받는 base class라는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`class Child(Base):`는 Child라는 새 클래스를 정의하면서 Base를 base class로 지정하는 헤더입니다.",
-                                    "how_to_read":  "class 뒤 새 이름과 괄호 안 base 이름을 구분하고 콜론 아래가 새 클래스 본문이라는 점을 봅니다.",
-                                    "key_point":  "이 구조로 provider adapter가 공통 interface와 동작을 상속하거나 재정의할 수 있습니다.",
-                                    "common_mistake":  "괄호 안 LLMAdapter를 QwenAdapter 생성 시 전달하는 일반 함수 인자라고 생각하기 쉽습니다."
+                                    "what_it_is":  "쉽게 말하면: `class Child(Base):`는 기존 종류의 기능을 물려받는 새 종류를 만드는 선언입니다.\n정확한 정의: 이 클래스 정의 헤더는 `Child`를 새 클래스 이름으로, `Base`를 상속받을 기반 클래스(base class)로 지정합니다.",
+                                    "how_to_read":  "기존 설계도를 바탕으로 새 설계도를 만든다고 생각하세요. 먼저 `class LLMAdapter:`가 기반 클래스를 정의합니다. 이어서 `class QwenAdapter(LLMAdapter):`는 `LLMAdapter`를 상속하는 새 클래스 `QwenAdapter`를 정의합니다. 각 본문의 `def generate`는 메서드를 정의하며, 자식 클래스의 정의는 같은 이름의 부모 메서드를 재정의합니다.",
+                                    "key_point":  "`LLMAdapter` 정의 → 이를 기반 클래스로 지정해 `QwenAdapter` 정의 → `issubclass(QwenAdapter, LLMAdapter)`가 상속 관계를 검사해 `True` 반환 → `print`가 `True` 출력. `generate`는 호출되지 않으므로 `NotImplementedError`도 발생하지 않고 `\"qwen result\"`도 반환되지 않습니다.",
+                                    "common_mistake":  "괄호가 있다고 해서 `LLMAdapter`가 인스턴스를 만들 때 전달하는 일반 인자는 아닙니다. 여기서는 `class` 정의의 일부로 기반 클래스를 지정합니다. 클래스 정의와 인스턴스 생성은 다르며, 이 코드에는 `QwenAdapter()` 호출이 없습니다."
                                 },
         "teaching_example":  {
                                  "code":  "class Animal:\n    pass\n\nclass Dog(Animal):\n    pass\n\nprint(issubclass(Dog, Animal))",
@@ -1019,10 +1019,10 @@
         "primary_concept":  "f_string",
         "reading_goal_internal":  "f-string 안 중괄호 표현식의 현재 값을 평가하고 해당 위치에 문자열 형태로 삽입해 전체 prompt를 만드는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "f-string은 접두사 `f`가 붙은 문자열에서 `{expression}`을 평가해 그 결과를 문자열 안에 삽입합니다.",
-                                    "how_to_read":  "문자열의 고정 부분과 `{question}`, `{context}` 두 표현식을 분리하고 각 현재 값을 해당 위치에 넣습니다.",
-                                    "key_point":  "중괄호 이름 자체가 출력되는 것이 아니라 **그 이름이 현재 가리키는 값**이 들어갑니다.",
-                                    "common_mistake":  "일반 문자열처럼 `{question}` 글자가 그대로 남는다고 생각하기 쉽습니다."
+                                    "what_it_is":  "쉽게 말하면: f-string은 문장 속 빈자리에 변수의 값을 채워 넣는 문자열입니다.\n정확한 정의: f-string은 접두사 `f`가 붙은 문자열 리터럴로, 중괄호 안의 표현식을 평가하고 그 결과를 문자열 형태로 해당 위치에 삽입합니다.",
+                                    "how_to_read":  "값을 채울 칸이 있는 문장으로 생각하세요. 먼저 `question`에는 `What is RAG?`, `context`에는 `RAG retrieves evidence before generation.`이 대입됩니다. 이어서 f-string의 `{question}`과 `{context}` 자리에 각각 그 값을 넣습니다. 고정된 글자는 그대로 두고, `\\n`에서는 줄을 바꾸므로 세 줄짜리 문자열이 만들어집니다.",
+                                    "key_point":  "값 삽입 → 완성된 문자열을 `prompt`에 대입 → `splitlines()`로 줄을 나눔 → `[0]`으로 첫 줄 선택 순서입니다. 따라서 `print()`는 `Question: What is RAG?`를 출력합니다.",
+                                    "common_mistake":  "`{question}`이 그대로 남는다고 읽기 쉽습니다. 하지만 앞에 `f`가 있으므로 중괄호 안의 이름이 가리키는 값이 들어갑니다. 이 코드에서 `f`가 없는 일반 문자열이라면 `{question}` 글자가 그대로 남습니다."
                                 },
         "teaching_example":  {
                                  "code":  "name = \"Mina\"\ntext = f\"Hello {name}\"\nprint(text)",

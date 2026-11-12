@@ -84,10 +84,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "`execute(sql, params)` 호출에서 두 번째 positional argument가 SQL placeholder에 넣을 값 묶음임을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A positional argument is a syntax in which values are passed in order of position, without specifying names, when calling a function or method.",
-      "how_to_read": "As in `conn.execute(sql, params)`, when there are two arguments, we look at the order in which the first and second values are passed to their respective parameters. The comma in `(item_id,)` creates a one-element tuple.",
-      "key_point": "In SQL, `?` indicates a placeholder where the driver binds a value, and in Python code, that tuple of values is passed as the second positional argument.",
-      "common_mistake": "It’s easy to assume that `(item_id)` alone represents a tuple with a single element. Parentheses alone do not form a tuple; a comma is required, as in `(item_id,)`."
+      "what_it_is": "Easy meaning: This call supplies the SQL to run first, then a collection of values for the SQL to use.\nExact definition: A positional argument is a value supplied by position without a parameter name in a call; here, the second argument `(item_id,)` is a tuple containing one value to bind to the SQL `?`.",
+      "how_to_read": "Think of the SQL as a request with a blank, and the tuple as the collection of values corresponding to its blanks. In `conn.execute(\"SELECT title FROM items WHERE id = ?\", (item_id,))`, the first argument is the SQL request string. The second argument, `(item_id,)`, is a tuple containing the current value of `item_id`, `\"item_001\"`. The entire tuple is passed as one argument, and its contained value is connected to the SQL `?`.",
+      "key_point": "Execution flow: The earlier INSERT stores the row `(\"item_001\", \"Python 읽기\")` → `item_id = \"item_001\"` → evaluating `(item_id,)` produces `(\"item_001\",)` → pass this tuple as the second argument → bind its contained value to the SELECT's `?` → retrieve the matching row's title → `fetchone()` returns `(\"Python 읽기\",)` → `print(row[0])` displays `Python 읽기`. The SQL string and the collection of values are passed separately.",
+      "common_mistake": "It is easy to read `(item_id)` as a one-element tuple, but it is only the string value enclosed in parentheses. The comma in `(item_id,)` creates the one-element tuple. Also, the comma inside the tuple does not add another argument to `execute()`. This call has two arguments: the SQL string and the tuple."
     },
     "teaching_example": {
       "code": "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\nconn.execute(\"CREATE TABLE users (id TEXT, name TEXT)\")\nconn.execute(\"INSERT INTO users VALUES (?, ?)\", (\"u1\", \"Mina\"))\nuser_id = \"u1\"\ncursor = conn.execute(\"SELECT name FROM users WHERE id = ?\", (user_id,))\nprint(cursor.fetchone()[0])\nconn.close()",
@@ -144,10 +144,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "`conn.commit()` 메서드 호출이 현재 트랜잭션의 변경을 확정하는 시점을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "The `object.method()` syntax is used to call a method belonging to an object. `conn.commit()` calls the `commit` method of the DB connection object.",
-      "how_to_read": "First, verify that `conn` is the current database connection object, and then explain that calling `commit()` commits the changes made in the current transaction.",
-      "key_point": "`commit()` is not a call that creates a new SQL statement, but rather a call that commits changes already made within a transaction boundary.",
-      "common_mistake": "It is easy to think that because `execute()` succeeded, `commit()` has nothing left to do. On a connection that uses transactions, the two calls have different roles."
+      "what_it_is": "Easy meaning: `conn.commit()` asks the database connection to “confirm the changes made earlier now.”\nExact definition: `conn.commit()` calls the `commit` method of the SQLite connection object referenced by `conn` to commit the current transaction—the changes grouped into one unit of work.",
+      "how_to_read": "Mental model: think of adding a row and confirming that change as separate steps.\nReading the code: `import sqlite3` loads the module, and `connect(\":memory:\")` connects to an in-memory database, with `conn` referring to that connection. The first `execute()` creates the `items` table. The next `execute()` supplies `\"item_001\"` and `\"LiDAR basics\"` for the two `?` placeholders, respectively, and adds a row. The final line looks up the `commit` method on `conn` and calls it with `()`. The empty parentheses mean no explicit arguments are supplied.",
+      "key_point": "Execution flow: connect to an in-memory database → create the table → add a row with INSERT → call `conn.commit()` → commit the current transaction's changes.\nResult: the addition of the row `(\"item_001\", \"LiDAR basics\")` is committed. Nothing is displayed because there is no print statement. This database is in memory, so committing does not save it to a disk file.",
+      "common_mistake": "It is easy to assume that a successful `execute()` also finishes committing the changes. In this code, executing INSERT and committing the transaction are separate steps. Also, `conn.commit` references the method, whereas `conn.commit()` actually calls it. This call does not delete the table or assign a new value to `conn`."
     },
     "teaching_example": {
       "code": "import sqlite3\n\nconn = sqlite3.connect(\":memory:\")\nconn.execute(\"CREATE TABLE notes (id INTEGER, text TEXT)\")\nconn.execute(\"INSERT INTO notes VALUES (?, ?)\", (1, \"memo\"))\nconn.commit()",
@@ -509,14 +509,14 @@
       "walkthrough": "The value `email` for the column key is stored in the variable."
     },
     "answer_explanation": {
-      "step_by_step": "`index_meta['column']` returns the `source_url` string associated with the \"column\" key.",
-      "why_correct": "This is because the actual columns to be indexed were stored as separate values in the metadata dictionary.",
+      "step_by_step": "1) The first assignment creates a dictionary with four key-value pairs and binds it to `index_meta`. The key `\"column\"` has the value `\"source_url\"`.\n2) On the last line, Python first evaluates `index_meta[\"column\"]` on the right of `=`. Inside the brackets, `\"column\"` is the key used to find the value.\n3) The lookup retrieves the string `\"source_url\"` associated with that key.\n4) That result is bound to the name `indexed_column` on the left. The stored string is therefore `\"source_url\"`.",
+      "why_correct": "`index_meta[\"column\"]` returns the value associated with the key, not the key `\"column\"` itself. Since the code contains `\"column\": \"source_url\"`, the answer is `source_url`.",
       "common_wrong_choice": {
         "choice": "idx_items_source",
-        "why_wrong": "That value is the name of the index, not the target column.",
-        "misread_step": "This is an instance where the index name and the indexed column were confused."
+        "why_wrong": "`\"idx_items_source\"` is the value associated with the key `\"name\"`. This code looks up `\"column\"`, not `\"name\"`.",
+        "misread_step": "This selects the value representing the index name without checking the key inside the brackets."
       },
-      "takeaway": "When reading a DB index, **distinguish between the index name and the actual target column**."
+      "takeaway": "Read a dictionary lookup as **check the key inside the brackets → retrieve its associated value → bind it to the assignment target**."
     },
     "target_statement": "indexed_column = index_meta[\"column\"]",
     "focus_span": "index_meta[\"column\"]",
@@ -858,10 +858,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "`object.method(...)` 형태에서 호출 대상 객체와 메서드 이름, 전달 인자를 분리해 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A method call is an expression of the form `object.method(arguments)` that invokes behavior belonging to an object.",
-      "how_to_read": "`query.eq(\"id\", item_id)` When looking at this, first identify what kind of object is on the left side of the dot (`query`), then recognize that the part on the right side of the dot (`eq`) is the method to be called, and read the values inside the parentheses as arguments.",
-      "key_point": "The Python focus of this card is on distinguishing **which method of which object is being called with which arguments**, rather than on Supabase features themselves.",
-      "common_mistake": "It is easy to misread `eq` as an independent function name or mistake the string `id` for a method name. You should distinguish between what comes before and after the dot and the call parentheses."
+      "what_it_is": "Easy meaning: A method call asks an object to perform an action attached to it.\nExact definition: `object.method(arguments)` is an expression that looks up the method named `method` on an object and calls it with the arguments inside the parentheses.",
+      "how_to_read": "Picture ‘target → action → values to pass.’ The first line binds `item_id` to `\"item_42\"`. The second binds `query` to the result of `supabase.table(\"items\").select(\"id,title,source_url\")`. In the last line, `query.eq(\"id\", item_id)`, `query` is the target, `eq` is the method name, and `\"id\"` and `item_id` are the arguments.",
+      "key_point": "Execution flow: object referenced by `query` → look up its `eq` method → pass `\"id\"` and `\"item_42\"` → call. Therefore, the call target is `query`. Making this distinction does not require knowledge of Supabase features.",
+      "common_mistake": "It is easy to mistake `item_id` inside the parentheses for the call target, but it supplies a value to pass. `\"id\"` is also a string argument, not the method name. The target is `query` to the left of the dot; the method name is `eq` to the right."
     },
     "teaching_example": {
       "code": "filters = query\nstatus = \"ready\"\nfilters.eq(\"status\", status)",

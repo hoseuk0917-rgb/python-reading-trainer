@@ -337,14 +337,14 @@
       "walkthrough": "`user` key의 value `u9`가 변수에 저장됩니다."
     },
     "answer_explanation": {
-      "step_by_step": "`payload['sub']`는 sub key를 조회하고 그 value `user_123`을 반환합니다.",
-      "why_correct": "dict subscription은 지정한 key의 value를 반환하기 때문입니다.",
+      "step_by_step": "1) 첫 대입문은 딕셔너리를 만들어 `payload`에 연결합니다. 키 \"sub\"에는 \"user_123\", \"role\"에는 \"admin\", \"exp\"에는 1893456000이 연결되어 있습니다.\n2) `subject = payload[\"sub\"]`에서는 오른쪽 `payload[\"sub\"]`를 먼저 평가합니다.\n3) 대괄호 안의 \"sub\"를 키로 사용해 연결된 값 \"user_123\"을 가져옵니다.\n4) 그 문자열을 `subject`에 연결합니다. 따라서 `subject`의 값은 \"user_123\"입니다.",
+      "why_correct": "딕셔너리의 `payload[\"sub\"]`는 키 자체가 아니라 그 키에 연결된 값을 반환합니다. \"sub\"에 연결된 문자열이 \"user_123\"이므로 정답은 `user_123`입니다.",
       "common_wrong_choice": {
         "choice": "admin",
-        "why_wrong": "`admin`은 role key의 value입니다.",
-        "misread_step": "같은 payload 안의 다른 claim을 선택한 경우입니다."
+        "why_wrong": "\"admin\"은 \"role\" 키에 연결된 값입니다. 이 코드는 \"role\"이 아니라 \"sub\"를 조회합니다.",
+        "misread_step": "대괄호 안의 키 \"sub\"를 확인하지 않고 같은 딕셔너리에 있는 다른 키의 값을 선택한 경우입니다."
       },
-      "takeaway": "claim을 읽을 때는 **key 이름과 대응 value를 정확히 짝지어** 봅니다."
+      "takeaway": "딕셔너리 조회는 **딕셔너리 확인 → 대괄호 안의 키 확인 → 연결된 값 가져오기** 순서로 읽습니다. 여기서는 가져온 \"user_123\"이 `subject`에 저장됩니다."
     },
     "target_statement": "subject = payload[\"sub\"]",
     "focus_span": "payload[\"sub\"]",
@@ -387,10 +387,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "권한 검사 실패 시 예외 생성자에 403이 이름 있는 argument로 전달되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`status_code=403`은 호출에서 이름을 붙여 값을 전달하는 keyword argument입니다.",
-      "how_to_read": "등호 왼쪽 parameter 이름과 오른쪽 값을 확인해 생성자에 어떤 설정이 전달되는지 봅니다.",
-      "key_point": "현재 권한 검사에서는 admin이 아닐 때 생성되는 예외의 status_code에 403이 들어갑니다.",
-      "common_mistake": "`403`이 if 비교에 쓰이는 값이라고 생각하기 쉽습니다. 이 숫자는 예외 생성자의 `status_code` argument입니다."
+      "what_it_is": "쉽게 말하면: 호출할 때 입력 이름을 붙이면 그 이름에 맞춰 값을 전달할 수 있습니다.\n정확한 정의: keyword argument(키워드 인자)는 호출에서 `이름=값` 형태로 지정하며, 해당 이름의 parameter(매개변수)에 값을 바인딩합니다.",
+      "how_to_read": "입력 자리에 이름표가 붙어 있다고 생각하세요. `HTTPException(status_code=403, detail=\"forbidden\")`은 `__init__`의 `status_code` 자리에 `403`을, `detail` 자리에 `\"forbidden\"`을 전달합니다. `self`는 생성되는 인스턴스를 자동으로 받습니다. 이어서 `self.status_code = status_code`는 전달받은 `403`을 그 인스턴스의 속성에 저장합니다.",
+      "key_point": "`require_admin(user)`에서 `user` 딕셔너리가 함수의 `user` 매개변수로 전달됩니다.\n↓\n`\"viewer\" != \"admin\"`이 참이므로 예외를 생성합니다.\n↓\n`status_code=403` → `__init__`의 `status_code` → `self.status_code`에 `403` 저장\n↓\n`raise`가 그 예외를 발생시키고, `except HTTPException as exc`가 같은 예외 인스턴스를 받습니다.\n↓\n`status = exc.status_code` → 최종적으로 `status`는 정수 `403`입니다.",
+      "common_mistake": "`status_code=403`을 비교식이나 바깥 변수에 대한 대입문으로 읽지 마세요. 호출 괄호 안에서는 이름을 지정해 인자를 전달하는 문법입니다. 비교는 `==`를 사용하며, 여기서 실제 속성 저장은 `__init__` 안의 `self.status_code = status_code`가 수행합니다."
     },
     "teaching_example": {
       "code": "class AppError(Exception):\n    def __init__(self, code):\n        self.code = code\n\nerror = AppError(code=409)",
@@ -455,17 +455,17 @@
     },
     "teaching_example": {
       "code": "def valid(code):\n    return code == \"ok\"\n\nresult = []\nif not valid(\"bad\"):\n    result.append(\"rejected\")",
-      "walkthrough": "valid는 False이고 not False가 True라 rejected가 추가됩니다."
+      "walkthrough": "1) `def valid(code):`는 함수를 정의합니다. 안의 `return`은 호출될 때 실행됩니다.\n2) `result = []`는 빈 리스트를 만듭니다.\n3) `if not valid(\"bad\"):`에서 먼저 `valid(\"bad\")`를 호출합니다. 함수 안의 `code == \"ok\"`는 `\"bad\" == \"ok\"`이므로 `False`를 반환합니다.\n4) `not False`는 `True`입니다. 조건이 문을 열어 주듯, 들여쓴 if 본문이 실행됩니다.\n5) `result.append(\"rejected\")`가 리스트에 문자열을 추가합니다.\n결과: `result`는 `[\"rejected\"]`입니다. 함수의 반환값이 `False`여도 `not`을 적용한 조건은 `True`라는 점을 구분하세요."
     },
     "answer_explanation": {
-      "step_by_step": "verify_password는 False를 반환합니다. 앞의 `not`이 이를 True로 바꿔 if 본문이 실행되고 401 예외가 발생합니다.",
-      "why_correct": "if 조건의 최종 truth value가 True이기 때문입니다.",
+      "step_by_step": "1) `HTTPException` 클래스를 정의합니다. 이 예외를 만들면 `__init__`이 전달받은 값을 `self.status_code`에 저장합니다. `verify_password` 함수도 정의되며, 본문은 호출될 때 실행됩니다.\n2) `user[\"password_hash\"]`는 `\"hash::correct\"`이고, `password`는 `\"wrong\"`입니다.\n3) `try` 안의 조건에서 `verify_password(\"wrong\", \"hash::correct\")`를 호출합니다. `f\"hash::{password}\"`는 `\"hash::wrong\"`이므로 비교는 `\"hash::correct\" == \"hash::wrong\"`이고, 반환값은 `False`입니다.\n4) `not False`는 `True`이므로 if 본문을 실행합니다.\n5) `HTTPException(status_code=401)`은 `status_code` 속성이 401인 예외를 만들고, `raise`가 그 예외를 발생시킵니다.\n6) `except HTTPException as exc:`가 해당 예외를 받아 `exc`라는 이름으로 사용합니다. `status = exc.status_code`가 실행되어 `status`에 401이 대입됩니다.",
+      "why_correct": "정답은 `401`입니다. 참이 된 if 조건이 예외 발생으로 이어지고, 예외에 저장된 401을 `except` 블록에서 읽어 `status`에 대입하기 때문입니다.",
       "common_wrong_choice": {
         "choice": "200",
-        "why_wrong": "현재 비밀번호 검증이 실패하므로 정상 성공 흐름으로 가지 않습니다.",
-        "misread_step": "`not` 연산을 반영하지 않은 경우입니다."
+        "why_wrong": "이 코드에는 `status`에 200을 대입하는 줄이 없습니다. 실제로 실행되는 대입은 `status = exc.status_code`이며 그 값은 401입니다.",
+        "misread_step": "검증 함수가 `False`를 반환하므로 if 본문을 건너뛴다고 읽는 실수입니다. 함수의 반환값에 `not`을 적용하면 조건은 `True`가 됩니다."
       },
-      "takeaway": "인증 분기는 **검증 결과 → not 적용 → if 진입 여부**를 순서대로 계산합니다."
+      "takeaway": "함수 반환값 → `not` 적용 → if 본문 실행 여부 → 예외 처리 안의 대입 순서로 따라가세요. 여기서는 `False` → `True` → 예외 발생 → `status = 401`입니다."
     },
     "target_statement": "if not verify_password(password, user[\"password_hash\"]):",
     "focus_span": "if not verify_password(password, user[\"password_hash\"]):",
@@ -514,17 +514,17 @@
     },
     "teaching_example": {
       "code": "value = \"old\"\ndef renew():\n    return \"new\"\nvalue = renew()",
-      "walkthrough": "마지막 reassignment 뒤 value는 old가 아니라 new입니다."
+      "walkthrough": "1) `value = \"old\"`는 `value`를 문자열 `\"old\"`에 연결합니다.\n2) `def renew():`는 함수를 정의합니다. 이때 함수 안의 `return`은 아직 실행되지 않습니다.\n3) `return \"new\"`는 나중에 함수가 호출되면 돌려줄 값을 지정합니다.\n4) `value = renew()`에서는 오른쪽의 `renew()`를 먼저 실행합니다. 함수가 `\"new\"`를 반환하면 왼쪽 `value`를 그 값에 다시 연결합니다.\n흐름: `value`의 기존 값 `\"old\"` → 함수 호출 → `\"new\"` 반환 → `value`에 재대입.\n최종적으로 `value`는 `\"new\"`입니다. 화면에 출력하는 코드는 없습니다."
     },
     "answer_explanation": {
-      "step_by_step": "if 조건이 True이므로 refresh 함수가 호출되고 `new-access-token`을 반환합니다. 그 값이 기존 access_token을 대체합니다.",
-      "why_correct": "reassignment는 같은 변수 이름에 새 평가 결과를 저장하기 때문입니다.",
+      "step_by_step": "1) `def` 문은 `refresh_access_token` 함수를 정의합니다. 함수 본문은 아직 실행되지 않습니다.\n2) `access_token`은 처음에 `\"expired-access-token\"`, `refresh_token`은 `\"refresh-1\"`을 가리킵니다.\n3) `access_token_expired = True`이므로 `if` 본문이 실행됩니다.\n4) 대입문의 오른쪽 `refresh_access_token(refresh_token)`을 먼저 평가합니다. `refresh_token`의 값 `\"refresh-1\"`을 인자로 전달하여 함수를 호출합니다.\n5) 이 함수는 전달된 값과 관계없이 코드에 적힌 문자열 `\"new-access-token\"`을 반환합니다.\n6) 반환값을 왼쪽 `access_token`에 다시 대입합니다. 따라서 최종 값은 `\"new-access-token\"`입니다.",
+      "why_correct": "대입은 오른쪽 표현식을 먼저 평가한 뒤 그 결과를 왼쪽 이름에 연결합니다. 조건이 참이어서 이 대입문이 실행되고, 함수 반환값 `\"new-access-token\"`이 `access_token`의 기존 값을 대체하므로 정답은 `new-access-token`입니다.",
       "common_wrong_choice": {
         "choice": "expired-access-token",
-        "why_wrong": "그 값은 if 본문 실행 전 초기값입니다.",
-        "misread_step": "재대입 이후 상태를 반영하지 않은 경우입니다."
+        "why_wrong": "이 값은 초기값입니다. 참인 `if` 분기 안에서 재대입이 실행된 뒤에는 `access_token`이 더 이상 이 값을 가리키지 않습니다.",
+        "misread_step": "함수 호출의 반환값을 왼쪽 `access_token`에 다시 대입하는 마지막 단계를 놓친 경우입니다."
       },
-      "takeaway": "refresh 흐름은 **기존 값 → 만료 분기 → 새 값 반환 → reassignment**로 추적합니다."
+      "takeaway": "기존 값만 기억하지 말고 **조건 확인 → 오른쪽 함수 호출 → 반환값 확인 → 왼쪽 변수에 재대입** 순서로 최종 값을 추적하세요."
     },
     "target_statement": "access_token = refresh_access_token(refresh_token)",
     "focus_span": "refresh_access_token(refresh_token)",
@@ -567,24 +567,24 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "set_cookie 호출에서 HttpOnly security option이 이름 있는 argument로 설정되는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`httponly=True`는 set_cookie 호출에서 HttpOnly 옵션을 켜는 keyword argument입니다.",
-      "how_to_read": "secure, samesite 등 다른 cookie option과 이름을 구분합니다.",
-      "key_point": "HttpOnly는 browser JavaScript가 해당 cookie를 직접 읽는 것을 제한하는 데 사용됩니다.",
-      "common_mistake": "HttpOnly가 HTTPS만 허용하고 HTTP를 막는 옵션이라고 생각하기 쉽습니다. 그 역할은 Secure flag와 다릅니다."
+      "what_it_is": "쉽게 말하면: `httponly=True`는 호출할 때 'httponly라는 이름으로 참 값을 전달한다'는 뜻입니다.\n정확한 정의: 이는 키워드 인자(keyword argument)이며, 이 코드에서는 `**options` 매개변수가 이를 딕셔너리의 `'httponly': True` 항목으로 받습니다.",
+      "how_to_read": "이름표가 붙은 값을 전달한다고 생각하세요. `class Response`는 클래스를 정의하고, `set_cookie`는 받은 옵션을 반환하는 메서드를 정의합니다. `response = Response()`는 객체를 만들고, `session_id = \"opaque\"`는 문자열을 연결합니다. 마지막 호출에서 `self`에는 `response`가 자동으로 전달되고, `key`, `value`, `httponly`, `secure`, `samesite`라는 이름의 인자들은 `options`에 모입니다. 특히 `value=session_id`는 문자열 `\"opaque\"`를, `httponly=True`는 불리언 값 `True`를 전달합니다.",
+      "key_point": "호출 → 이름 있는 인자들을 `options`에 모음 → `return options` → 반환된 딕셔너리를 `cookie`에 연결.\n결과는 `{'key': 'session', 'value': 'opaque', 'httponly': True, 'secure': True, 'samesite': 'lax'}`입니다. 출력은 없습니다. HttpOnly라는 옵션은 브라우저 JavaScript의 직접적인 쿠키 읽기를 제한하는 의미이지만, 이 예제 메서드는 딕셔너리만 반환하며 실제 브라우저 쿠키를 설정하지 않습니다.",
+      "common_mistake": "`httponly=True`를 변수 대입문이나 'HTTP만 허용한다'는 뜻으로 읽지 마세요. 여기서 `=`는 호출에 전달할 인자의 이름과 값을 연결합니다. HttpOnly의 JavaScript 접근 제한 역할과 Secure의 HTTPS 전송 관련 역할은 서로 다릅니다."
     },
     "teaching_example": {
       "code": "def make_cookie(*, httponly, secure):\n    return {\"httponly\":httponly,\"secure\":secure}\ncookie=make_cookie(httponly=True,secure=True)",
       "walkthrough": "서로 다른 두 security option을 이름으로 전달합니다."
     },
     "answer_explanation": {
-      "step_by_step": "set_cookie에 httponly=True를 넘겨 cookie option을 활성화합니다.",
-      "why_correct": "HttpOnly의 핵심 목적이 client-side script의 직접 cookie access를 제한하는 것이기 때문입니다.",
+      "step_by_step": "1) `Response()`로 객체를 만들고 `session_id`에 `\"opaque\"`를 연결합니다.\n2) `response.set_cookie(...)`를 호출하면서 `httponly`라는 이름으로 `True`를 전달합니다.\n3) `**options`가 이 값을 `'httponly': True`로 다른 인자들과 함께 받습니다.\n4) 메서드가 그 딕셔너리를 반환하고 `cookie`가 이를 가리킵니다.\n5) 질문은 이 옵션의 의미를 묻습니다. HttpOnly는 브라우저 JavaScript가 쿠키를 직접 읽는 것을 제한하는 옵션을 뜻합니다.",
+      "why_correct": "따라서 가장 가까운 선택지는 '브라우저 JS에서 쿠키를 직접 읽기 어렵게 한다'입니다. 다만 이 코드 자체가 그런 보호를 실행하는 것은 아닙니다. 보여 준 메서드는 옵션 값을 반환할 뿐입니다.",
       "common_wrong_choice": {
         "choice": "HTTP만 허용하고 HTTPS를 막는다",
-        "why_wrong": "HTTPS 전용 전송과 관련된 옵션은 Secure입니다.",
-        "misread_step": "HttpOnly와 Secure flag의 역할을 뒤바꾼 경우입니다."
+        "why_wrong": "HttpOnly는 HTTP와 HTTPS 중 하나를 선택하는 옵션이 아닙니다. HTTPS 전송과 관련된 옵션은 별도로 전달된 `secure`입니다.",
+        "misread_step": "`httponly`라는 이름을 'HTTP만'으로 해석하면서 옵션의 의미와 이름 있는 값 전달을 구분하지 않은 경우입니다."
       },
-      "takeaway": "cookie security는 **HttpOnly, Secure, SameSite 역할을 서로 분리**해서 읽습니다."
+      "takeaway": "먼저 `이름=값`이 어떤 값을 전달하는지 추적하고, 그다음 옵션의 의미를 읽으세요. 여기서는 `True`를 전달하지만 실제 실행 결과는 옵션 딕셔너리입니다."
     },
     "target_statement": "response.set_cookie(key=\"session\", value=session_id, httponly=True, secure=True, samesite=\"lax\")",
     "focus_span": "httponly=True",
@@ -634,18 +634,18 @@
       "common_mistake": "callback code가 곧 access token이라고 생각하기 쉽습니다."
     },
     "teaching_example": {
-      "code": "def callback(code):\n    token=exchange(code)\n    profile=fetch(token)\n    return session(profile)",
-      "walkthrough": "각 호출의 반환값이 다음 호출의 input으로 이어집니다."
+      "code": "def add_one(number):\n    return number + 1\n\ndef double(number):\n    return number * 2\n\ndef calculate(start):\n    next_number = add_one(start)\n    result = double(next_number)\n    return result\n\nprint(calculate(3))",
+      "walkthrough": "1) `def add_one`은 받은 수에 1을 더해 반환하는 함수를 정의합니다.\n2) `def double`은 받은 수를 2배로 만들어 반환하는 함수를 정의합니다.\n3) `def calculate`는 두 호출을 연결하는 함수를 정의합니다. 정의할 때는 함수 본문을 실행하지 않습니다.\n4) 마지막 줄에서 `calculate(3)`을 호출하면 `start`는 3입니다.\n5) `add_one(start)`가 4를 반환하고, 그 값이 `next_number`에 연결됩니다.\n6) `double(next_number)`는 그 4를 받아 8을 반환하고, `result`에 8이 연결됩니다.\n7) `return result`가 8을 호출한 곳으로 돌려주고, `print`가 8을 출력합니다.\n흐름: 3 → `add_one(3)` → 4 → `double(4)` → 8 → 반환 → 출력. 앞 호출의 반환값이 다음 호출의 인자가 됩니다."
     },
     "answer_explanation": {
-      "step_by_step": "code→token, token→user, user→session으로 데이터가 연쇄적으로 전달됩니다.",
-      "why_correct": "각 assignment와 마지막 function call이 바로 이전 결과를 input으로 사용하기 때문입니다.",
+      "step_by_step": "1) `def callback(code: str)`는 함수를 정의합니다. 본문의 흐름은 `callback`이 호출될 때 실행됩니다.\n2) 먼저 `exchange_code_for_token(code)`를 호출합니다. 전달받은 `code`를 인자로 넘기고, 반환값을 `token`에 연결합니다.\n3) 다음으로 `fetch_user_profile(token)`을 호출합니다. 앞에서 얻은 `token`을 넘기고, 반환값을 `user`에 연결합니다.\n4) 마지막으로 `create_session(user)`를 호출합니다. 앞에서 얻은 `user`를 넘긴 뒤, 이 호출의 반환값을 `return`으로 호출한 곳에 돌려줍니다.\n흐름: `code` → 첫 호출 → `token` → 두 번째 호출 → `user` → 마지막 호출 → 반환. 도우미 함수의 내부 구현이나 구체적인 반환값은 제시되어 있지 않습니다.",
+      "why_correct": "호출 순서는 `exchange_code_for_token` → `fetch_user_profile` → `create_session`이며, 각 반환값이 다음 호출의 인자로 이어집니다. 따라서 정답은 “code 교환 → 사용자 프로필 조회 → 세션 생성”입니다.",
       "common_wrong_choice": {
         "choice": "세션 생성 → code 교환 → 사용자 삭제",
-        "why_wrong": "코드 실행 순서와 정반대이며 삭제 호출도 없습니다.",
-        "misread_step": "위에서 아래 실행 순서를 무시한 경우입니다."
+        "why_wrong": "`create_session(user)`는 첫 호출이 아니라 마지막 호출입니다. 사용자 삭제 호출도 이 코드에는 없습니다.",
+        "misread_step": "마지막 줄의 세션 생성 호출을 먼저 실행한다고 읽고, 그 인자인 `user`가 앞선 호출 결과에서 온다는 점을 놓친 경우입니다."
       },
-      "takeaway": "OAuth callback은 **temporary code → token → identity/profile → local session**으로 읽습니다."
+      "takeaway": "호출을 읽을 때는 “어떤 값을 넘기는가 → 반환값이 어떤 이름에 연결되는가 → 그 값을 어느 호출이 사용하는가”를 순서대로 추적하세요."
     },
     "target_statement": "return create_session(user)",
     "focus_span": "create_session(user)",
@@ -760,14 +760,14 @@
       "walkthrough": "v2와 v3가 달라 old는 True입니다."
     },
     "answer_explanation": {
-      "step_by_step": "v1 != v2이므로 old key branch가 실행되고 401 상태로 처리됩니다.",
-      "why_correct": "active version 외 key를 허용하지 않도록 guard가 작성돼 있기 때문입니다.",
+      "step_by_step": "1) `ACTIVE_KEY_VERSION`에 현재 활성 버전인 \"v2\"를 저장합니다.\n2) `request`에는 키 버전 \"v1\"이 들어 있습니다. `request[\"key_version\"]`으로 이 값을 읽습니다.\n3) `!=`는 두 값이 다른지 비교합니다. 따라서 조건은 `\"v1\" != \"v2\"` → `True`입니다.\n4) 조건이 참이므로 if 블록의 `status_code = 401`을 실행합니다.\n5) else 블록의 `status_code = 200`은 건너뜁니다. 최종 `status_code`는 401입니다. 이 코드는 상태 값을 저장할 뿐, 응답을 직접 보내지는 않습니다.",
+      "why_correct": "이 코드에서 활성 버전 \"v2\"와 다른 이전 버전 \"v1\"은 거부를 나타내는 401 경로로 갑니다. 따라서 `old key disabled`는 “이전 버전 키는 더 이상 허용하지 않는다”에 가장 가깝습니다.",
       "common_wrong_choice": {
         "choice": "모든 키를 허용한다",
-        "why_wrong": "not-equal 조건에서 old key를 명시적으로 거부합니다.",
-        "misread_step": "rotation의 revocation 목적을 놓친 경우입니다."
+        "why_wrong": "버전이 다르면 200이 아니라 401을 저장하므로 모든 키를 허용하는 흐름이 아닙니다.",
+        "misread_step": "else 아래에 `status_code = 200`이 있다는 이유로 항상 마지막에 실행된다고 읽은 경우입니다. 조건이 참이면 if 블록만 실행하고 else 블록은 건너뜁니다."
       },
-      "takeaway": "secret rotation은 **new active version 설정 → old credential 판별 → 폐기/거부**로 읽습니다."
+      "takeaway": "요청 버전 읽기 → 활성 버전과 `!=` 비교 → 참이면 401, 거짓이면 200. 이 요청의 이전 버전 \"v1\"은 401 경로를 택합니다."
     },
     "target_statement": "if request[\"key_version\"] != ACTIVE_KEY_VERSION:",
     "focus_span": "request[\"key_version\"] != ACTIVE_KEY_VERSION",
@@ -818,14 +818,14 @@
       "walkthrough": "index 0~2만 남아 short는 abc입니다."
     },
     "answer_explanation": {
-      "step_by_step": "slice가 문자열 앞부분 최대 2000자만 남겨 safe_query로 만듭니다.",
-      "why_correct": "Python slice stop은 exclusive이고 나머지 문자는 버려지기 때문입니다.",
+      "step_by_step": "함수가 문자열을 받아 호출되면 다음 순서로 실행됩니다.\n1) `user_query[:2000]`에서 시작 위치가 생략되었으므로 문자열 처음부터 읽습니다.\n2) 끝 위치 2000은 포함하지 않으므로, 존재하는 인덱스 0~1999의 문자만 선택합니다.\n3) 입력이 2000자를 넘으면 앞 2000자만, 그 이하이면 전체 문자열을 결과로 얻습니다. 원본 문자열은 바뀌지 않습니다.\n4) 이 결과를 `safe_query`에 대입합니다.\n5) `return`은 `\"user\"` 값이 `safe_query`인 딕셔너리를 반환합니다. 따라서 반환되는 사용자 입력은 최대 2000자입니다.",
+      "why_correct": "`[:2000]`은 앞에서 최대 2000자를 선택하는 슬라이스입니다. 그 결과가 반환 딕셔너리의 `\"user\"` 값으로 들어가므로 정답은 '사용자 입력 길이를 제한한다'입니다.",
       "common_wrong_choice": {
         "choice": "토큰을 발급한다",
-        "why_wrong": "문자열 slice는 인증 token 발급과 무관합니다.",
-        "misread_step": "LLM token과 auth token 개념을 혼동한 경우입니다."
+        "why_wrong": "이 표현식은 문자열의 일부를 선택할 뿐, 토큰을 만들거나 발급하지 않습니다.",
+        "misread_step": "`[:2000]`의 숫자를 토큰 처리 설정으로 읽은 경우입니다. 여기서 2000은 문자열 슬라이스의 끝 경계이며, 토큰 수가 아닌 문자 수를 제한합니다."
       },
-      "takeaway": "prompt guard는 **입력 제한·system instruction·retrieval policy 등 여러 층을 조합**해서 봅니다."
+      "takeaway": "`text[:N]`은 원본을 변경하지 않고 앞부분을 최대 N자 선택합니다. 짧은 입력은 그대로이며, N번째 인덱스의 문자는 포함하지 않습니다."
     },
     "target_statement": "safe_query = user_query[:2000]",
     "focus_span": "user_query[:2000]",
@@ -925,10 +925,10 @@
     "primary_concept": "parameter_definition",
     "reading_goal_internal": "FastAPI endpoint parameter의 default expression이 dependency injection metadata로 쓰이는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`user = Depends(get_current_user)`는 Python 문법상 default value expression을 가진 parameter definition입니다.",
-      "how_to_read": "일반 default 값처럼 보이지만 FastAPI가 Depends 객체를 dependency metadata로 해석한다는 framework 의미를 함께 봅니다.",
-      "key_point": "get_current_user dependency가 token을 검증하고 성공한 user를 endpoint에 제공하는 패턴으로 사용할 수 있습니다.",
-      "common_mistake": "Depends가 모든 user를 자동 admin으로 만든다고 생각하기 쉽습니다."
+      "what_it_is": "쉽게 말하면: `user`는 함수가 사용할 사용자를 받는 입력 칸이고, `Depends(get_current_user)`는 그 값을 준비할 함수를 지정하는 표시입니다.\n정확한 정의: `user = Depends(get_current_user)`는 기본값 표현식이 있는 매개변수 정의이며, FastAPI는 그 기본값인 Depends 객체를 의존성 선언으로 해석하여 `get_current_user`의 반환값을 `user`에 전달합니다.",
+      "how_to_read": "직관적 모델: `user` 입력 칸에 '이 함수가 준비한 값을 넣어 주세요'라는 쪽지를 붙였다고 생각하세요.\n코드 읽기: `Depends`를 가져오고, `get_current_user`의 `credentials` 입력에는 `bearer`의 결과를 연결합니다. 그 함수 본문은 `credentials.credentials`를 `verify_token`에 전달하고 결과를 반환합니다. 이어서 `private`의 `user` 입력에는 `get_current_user`의 결과를 연결하고, 본문은 `user.id`를 딕셔너리에 담아 반환합니다. 이 흐름은 `private`가 endpoint로 연결되어 FastAPI가 요청을 처리할 때 적용됩니다. 연결 코드는 이 조각에 없습니다.",
+      "key_point": "정의 시점: `Depends(get_current_user)`를 평가해 의존성 표시를 만듭니다. 이때 `get_current_user` 본문을 실행하는 것은 아닙니다.\n요청 처리 시점: `bearer`의 결과 → `credentials` → `verify_token(credentials.credentials)` → 반환된 값이 `user`로 전달됨 → `private` 본문 실행 → `{\"user_id\": user.id}` 반환.\n카드가 의도한 인증 흐름에서는 검증된 사용자 객체가 전달됩니다. 구체적인 ID와 검증 실패 동작은 제시되지 않았습니다. 검증은 요청이 도착하기 전이 아니라, 요청 처리 중 endpoint 본문 실행 전에 이루어집니다.",
+      "common_mistake": "`Depends(get_current_user)`를 `get_current_user()`처럼 즉시 사용자를 구하는 호출로 읽기 쉽습니다. 여기서는 함수 자체를 Depends에 전달하며, 토큰 검증 작업은 `verify_token` 호출에 있습니다. 또한 일반 Python 코드에서 `private()`만 직접 호출하면 FastAPI가 개입하지 않으므로 사용자 값이 자동으로 채워지지 않습니다."
     },
     "teaching_example": {
       "code": "def provide_user():\n    return \"u1\"\nclass Depends:\n    def __init__(self,fn): self.fn=fn\ndef endpoint(user=Depends(provide_user)):\n    return user",

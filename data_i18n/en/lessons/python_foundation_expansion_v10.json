@@ -552,10 +552,10 @@
     "primary_concept": "parameter_definition",
     "reading_goal_internal": "함수 정의 괄호의 `name='user'`가 호출에서 name용 argument가 없을 때 parameter에 연결할 기본값을 지정한다는 구조를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A default parameter is declared in a function definition as `parameter=default_value`, and if the caller omits that argument, the default value is used.",
-      "how_to_read": "First, check the default value of the definition, then verify whether there is a corresponding argument in the actual call parentheses.",
-      "key_point": "Since `greet()` has no arguments, `name` uses the string `user`.",
-      "common_mistake": "It is easy to think that if a default value exists, the parameter is always fixed to `user` even when the caller passes a different value."
+      "what_it_is": "Easy meaning: You prepare a value for a function to use when no value is supplied for that input.\nExact definition: In a function definition, `parameter=default_value` specifies a parameter's default value, which is bound to that parameter when the corresponding argument is omitted from a call.",
+      "how_to_read": "Mental model: Think of `name` as an input slot and `\"user\"` as the prepared value to use when that input is omitted.\nReading the code: `def greet(name=\"user\"):` sets the default for `name` to the string `\"user\"`; it does not execute the body yet. `return \"hello \" + name` is the code that will build and return a greeting during a call. In `message = greet()`, the call supplies no argument, so Python binds the default to `name`, executes the body, and stores the returned value in `message`. Finally, `print(message)` displays that value.",
+      "key_point": "`greet()` → no corresponding argument → bind `\"user\"` to `name` → `\"hello \" + name` becomes `\"hello user\"` → return → store in `message` → print `hello user`.\nThe value of `name` asked about is the string `\"user\"`, not the whole greeting.",
+      "common_mistake": "Omitting the argument does not automatically make `name` become `None`; here it uses the explicit default `\"user\"`. A default does not fix the value permanently either: supplying an argument, as in `greet(\"Mina\")`, makes `name` use `\"Mina\"` for that call."
     },
     "teaching_example": {
       "code": "def label(kind=\"unknown\"):\n    return \"type:\" + kind\nprint(label())",
@@ -854,14 +854,14 @@
     "primary_concept": "call",
     "reading_goal_internal": "`f.write('done')`에서 점 왼쪽 객체, 메서드 이름, 전달 문자열을 분리해 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A method call takes the form `object.method(arguments)` to execute an action associated with an object.",
-      "how_to_read": "`f.write('done')` Here, `f` is the target stream, `write` is the method, and the string `done` is the argument.",
-      "key_point": "The `write` call records the string contents in the current stream.",
-      "common_mistake": "It is easy to think of `write` as a function that prints a string to the screen."
+      "what_it_is": "Easy meaning: `f.write(\"done\")` asks `f` to “record this text.”\nExact definition: A method call is an expression of the form `object.method(arguments)` that retrieves a method from an object and executes it with the supplied arguments.",
+      "how_to_read": "Mental model: picture `f` as a notepad and its current position as a cursor.\nReading the code: `f` is the target stream, `.write` selects the writing action, `\"done\"` is the supplied string, and the parentheses make the call.",
+      "key_point": "Empty stream → `f.write(\"done\")` records text → position moves to the end → `f.seek(0)` moves to the beginning → `f.read()` returns `\"done\"` → `print` displays `done`.\n`write` returns the character count `4`, which this code does not use.",
+      "common_mistake": "Do not assume `write` displays text. Here it changes the stream's contents; the final `print` handles display. Also, `f.write` alone refers to the method; parentheses, as in `f.write(\"done\")`, call it."
     },
     "teaching_example": {
       "code": "import io\nwith io.StringIO() as f:\n    f.write(\"hello\")\n    f.seek(0)\n    print(f.read())",
-      "walkthrough": "If you write \"hello\" to the stream and then read it back, \"hello\" will be returned."
+      "walkthrough": "1) `import io`: makes the `io` module available.\n2) `with io.StringIO() as f:`: creates an empty in-memory text stream and uses it as `f`.\n3) `f.write(\"hello\")`: calls `f`'s `write` method to record the string. Its return value, `5`, is unused.\n4) `f.seek(0)`: moves the position to the beginning.\n5) `print(f.read())`: first `read()` returns `\"hello\"`, then `print` displays that value.\nLeaving the block closes the stream.\nResult: `hello`."
     },
     "answer_explanation": {
       "step_by_step": "1) Create a StringIO stream f. 2) `f.write('done')` writes the string \"done\" to the current stream. 3) `seek(0)` resets the read position to the beginning. 4) `f.read()` returns and outputs the written \"done\".",
@@ -2039,14 +2039,14 @@
       "walkthrough": "Read the existing 2 on the right, add 1 to make 3, then store 3 back under the same `ok` key."
     },
     "answer_explanation": {
-      "step_by_step": "After processing the first UAM, `count` is 1. For the second UAM, the right-hand side—``get()``—reads the value 1, adds 1 to make it 2, and then stores it back in the same key.",
-      "why_correct": "This is because a `dict subscription assignment` updates the specified key with the new computed value.",
+      "step_by_step": "1) When the function call begins, `counts = {}` creates an empty dict.\n2) For the first row, `row.get(\"domain\", \"unknown\")` returns `\"uam\"`, which is stored in `domain`. That key is not present yet, so `counts.get(domain, 0)` returns 0. Python evaluates `0 + 1` on the right, then stores 1 in `counts[\"uam\"]`.\n3) For the second row, `domain` is again `\"uam\"`. This time the key exists, so `counts.get(domain, 0)` returns the existing value 1.\n4) Python evaluates `1 + 1` on the right, then stores 2 in the same `counts[\"uam\"]` entry. The value at the point asked about is therefore 2.",
+      "why_correct": "The second `uam` row updates the same key as the first. The right side adds 1 to the existing value 1, and the result is stored on the left, so the answer is `2`.",
       "common_wrong_choice": {
         "choice": "1",
-        "why_wrong": "Second, in the UAM processing, 1 is added to the existing value of 1, updating it to 2.",
-        "misread_step": "This is a case where the state change—which is re-assigned after the calculation on the right—is tracked only once."
+        "why_wrong": "The 0 in `get(domain, 0)` is a default used only when the key is absent. When processing the second `uam`, the existing value 1 is read, so 2—not 1—is stored.",
+        "misread_step": "This treats the second iteration as using the default 0 again, skipping the lookup of the already stored value 1."
       },
-      "takeaway": "The \"count\" aggregation is interpreted as **retrieving the existing value → incrementing it → reassigning it to the same key**."
+      "takeaway": "Finish **looking up the existing value → adding 1** on the right, then **store the result under the same key** on the left. Here, the value for `uam` increases from 0 → 1 → 2."
     },
     "target_statement": "counts[domain] = counts.get(domain, 0) + 1",
     "focus_span": "counts[domain] = counts.get(domain, 0) + 1",
@@ -2152,10 +2152,10 @@
     "primary_concept": "except_clause",
     "reading_goal_internal": "첫 호출 실패 시 typed except가 선택되고 같은 함수가 한 번 더 호출되는 실제 실행 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`except Exception:` This is a typed `except` clause that executes when a ``Exception`` exception occurs within the `try` block.",
-      "how_to_read": "First, check whether the first `fn()` call succeeds; if an exception occurs, the `try` block’s return statement is not executed, and control flows to the `except` block.",
-      "key_point": "This function is designed to make **only one additional call after the first failure**, rather than retrying indefinitely.",
-      "common_mistake": "It’s easy to assume that the second `fn()` inside the `except` block will also be automatically caught by the same `except` clause. However, the current code does not contain an additional `try` block surrounding the second call."
+      "what_it_is": "Easy meaning: `except` marks what to do instead when an attempted task raises a specified kind of error.\nExact definition: `except Exception:` is an exception-handling clause selected when an exception raised in its associated `try` block is an instance of `Exception` or one of its subclasses.",
+      "how_to_read": "Mental model: `try` is the first route, and `except` is a detour entered only when a matching error occurs.\n`def retry_once(fn):` defines a function that uses the supplied function `fn`. When `retry_once` is called, `return fn()` in `try` first executes `fn()` and returns its result if it succeeds. If the first call raises an `Exception`-family exception as stated in the question, that return does not complete. `except Exception:` is selected, and its `return fn()` calls the same function one more time.",
+      "key_point": "First `fn()` call → raise an `Exception`-family exception → select `except Exception:` → second `fn()` call. If the second call succeeds, its return value becomes the return value of `retry_once`. Since the behavior of `fn` is not supplied, the specific return value is unknown, but the next action is definitely one additional call. If the first call succeeds, `except` is skipped.",
+      "common_mistake": "It is easy to think `except` automatically repeats until success. This handler contains only one additional call. If the second call raises an exception, the same `except` does not catch it again; that exception propagates to the caller of `retry_once`."
     },
     "teaching_example": {
       "code": "def retry_once(fn):\n    try:\n        return fn()\n    except Exception:\n        return fn()\n\nattempts = 0\ndef work():\n    global attempts\n    attempts += 1\n    if attempts == 1:\n        raise RuntimeError(\"first\")\n    return \"ok\"\n\nresult = retry_once(work)",
@@ -2273,10 +2273,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "호출 안 `limit=10`이 어떤 parameter에 값을 전달하고 기본값 100 대신 어떤 값이 사용되는지 추적한다.",
     "concept_explanation": {
-      "what_it_is": "The `parameter=value` syntax within a function call is a keyword argument that passes a value by specifying the parameter name.",
-      "how_to_read": "Compare the default values in the definition with the keyword arguments in the actual call to determine which values are passed to the parameter in this call.",
-      "key_point": "The default value is used only when the corresponding argument is omitted in a call; if specified explicitly (e.g., `limit=10`), that value takes precedence.",
-      "common_mistake": "When looking at `limit=100` in a function definition, it’s easy to assume that even if you pass 10 during a call, the value will remain 100."
+      "what_it_is": "Easy meaning: This is a way to pass a value to a function by naming the input that should receive it.\nExact definition: A keyword argument uses the form `name=value` in a function call to pass a value to the parameter with that name.",
+      "how_to_read": "Imagine input slots with name tags. `limit=10` finds the slot named `limit` and supplies 10 by name rather than by position.\nIn `def make_config(debug=False, limit=100)`, first identify the two inputs and their defaults. Then read `make_config(limit=10)`: `limit` receives 10, while the omitted `debug` uses its default, `False`. The function's `return` returns a dictionary containing these values.",
+      "key_point": "Call `make_config(limit=10)` → run the function with `debug=False` and `limit=10` → return `{\"debug\": False, \"limit\": 10}` → `[\"limit\"]` reads the value 10 under the key `\"limit\"` → `print` outputs `10`.\nA default is used only when the corresponding argument is omitted.",
+      "common_mistake": "Reading `limit=100` in the definition as a fixed value can lead you to expect 100. It is only the default for an omitted argument; this call uses 10 instead. This call does not change the default in the function definition. A later call such as `make_config()` still uses 100 for `limit`."
     },
     "teaching_example": {
       "code": "def make_job(retries=3):\n    return {\"retries\": retries}\n\njob = make_job(retries=1)",
@@ -2334,24 +2334,24 @@
     "primary_concept": "decorator",
     "reading_goal_internal": "class 정의 바로 위의 `@dataclass`가 아래 class에 적용되는 decorator라는 구조와 그 결과 필드 기반 초기화가 가능해지는 맥락을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "The ``@name`` statement immediately above the class definition is the syntax for applying a decorator to that class object.",
-      "how_to_read": "Do not treat a decorator line as an independent general call; instead, check which class definition it applies to immediately below it.",
-      "key_point": "`@dataclass` applies the dataclass behavior to the `Item` class below and generates functionality—such as an initialization method—based on the field definitions.",
-      "common_mistake": "`@dataclass` It is easy to assume that ``Item`` is the first field. However, a decorator is applied to the class definition itself, not to a field within the class body."
+      "what_it_is": "Easy meaning: `@dataclass` marks the class immediately below for automatically added functionality.\nExact definition: `@decorator` above a class definition passes the newly created class object to the decorator and binds its return value to the class name.",
+      "how_to_read": "Picture a class as a blueprint and `@dataclass` as an instruction to process that blueprint. Read `@dataclass` together with the `class Item:` immediately below. The indented `id: str` and `score: float` declare fields used in that processing; the decorator directly targets the `Item` class, not an individual field.",
+      "key_point": "Create the `Item` class → `dataclass` reads its field declarations and adds an initialization method, `__init__`, among other methods → bind the returned class to `Item` → create an object with `Item(id=\"a\", score=0.7)` → read `item.id` and print `a`.",
+      "common_mistake": "It is easy to read `@dataclass` as marking only the first field. However, it is outside the class body, immediately above the definition, so the target is the whole class. `\"a\"` and `0.7` are values passed later when creating an object, not direct targets of the decorator."
     },
     "teaching_example": {
       "code": "from dataclasses import dataclass\n\n@dataclass\nclass Point:\n    x: int\n    y: int\n\npoint = Point(x=2, y=3)",
       "walkthrough": "The `@dataclass` decorator is applied to the `Point` class definition, allowing it to use an initialization method that takes two fields as arguments."
     },
     "answer_explanation": {
-      "step_by_step": "The decorator syntax modifies the class definition that follows `@dataclass`. In this case, the `Item` class immediately below is the target.",
-      "why_correct": "`@dataclass` appears immediately before the class definition, so the decorator is applied to the `Item` class object.",
+      "step_by_step": "1. `from dataclasses import dataclass` imports the decorator.\n2. `class Item:` is immediately below `@dataclass`, so `Item` is the class definition being decorated.\n3. Inside the class body, `id: str` and `score: float` declare two fields. Once the class is created, `dataclass` receives that class object and adds methods including `__init__` to initialize these fields.\n4. The returned class is bound to the name `Item`. Then `Item(id=\"a\", score=0.7)` creates an object and stores the two values; that object is bound to `item`.\n5. `print(item.id)` reads the stored string and prints `a`. This attribute access happens after decoration.",
+      "why_correct": "Therefore, the answer is 'The `Item` class definition immediately below'. Syntactically, the decorated definition is `class Item:`; at execution time, the decorator receives the class object created by that definition.",
       "common_wrong_choice": {
         "choice": "The `item.id` attribute",
-        "why_wrong": "`item.id` is an attribute of an instance created later and is not the direct target of the decorator line.",
-        "misread_step": "This is an example of a case where the timing of applying a decorator and the timing of using an instance were confused."
+        "why_wrong": "`item.id` is an attribute read from an object created later. The decorator is applied to the `Item` class before that object is created.",
+        "misread_step": "This confuses adding functionality to a class with reading an attribute from an object made using that class."
       },
-      "takeaway": "It states that a class decorator is **applied to the class definition immediately below `@decorator`**."
+      "takeaway": "When you encounter `@decorator`, first identify the definition immediately below. Here, the `Item` class is processed before it is used to create an object and read an attribute."
     },
     "target_statement": "@dataclass",
     "focus_span": "@dataclass",
@@ -2575,10 +2575,10 @@
     "primary_concept": "f_string",
     "reading_goal_internal": "f-string의 두 중괄호가 각각 현재 parameter 값으로 치환되어 반환 문자열이 되는 과정을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "An f-string evaluates `{expression}` within the string and inserts the result into the string.",
-      "how_to_read": "Read the string from left to right; when you encounter curly braces, insert the current value inside them, and keep general characters such as `/` and ` done` as they are.",
-      "key_point": "It is not the name inside the curly braces that is printed, but rather the current value of that variable as a string.",
-      "common_mistake": "`done` It’s easy to assume that the names “`total`” are printed as-is. In reality, the values 3 and 10—received at the time of the call—are substituted."
+      "what_it_is": "Easy meaning: An f-string makes a string by filling places in text with current values.\nExact definition: An f-string is Python syntax for a string prefixed with f or F that evaluates expressions inside braces at runtime and inserts their results into the string.",
+      "how_to_read": "Think of braces as places to fill with values. Reading this card's `f\"{done}/{total} done\"` from left to right, the value of done goes in `{done}`, the value of total goes in `{total}`, and `/` and ` done` remain unchanged.",
+      "key_point": "Calling `format_status(3, 10)` gives done the value 3 and total the value 10. The f-string inserts those values to make the string `3/10 done`, `return` returns that string, and then `print` outputs `3/10 done`.",
+      "common_mistake": "You might expect the names inside braces to appear unchanged, producing `done/total done`. But `{done}` and `{total}` use the current values of those names. Only ` done` outside the braces remains fixed text."
     },
     "teaching_example": {
       "code": "def status(current, total):\n    return f\"{current} of {total}\"\n\ntext = status(2, 8)",
@@ -2643,17 +2643,17 @@
     },
     "teaching_example": {
       "code": "def choose(kind):\n    if kind == \"fast\":\n        return \"turbo\"\n    if kind == \"safe\":\n        return \"normal\"\n    return \"basic\"\n\nresult = choose(\"fast\")",
-      "walkthrough": "Since the first condition is True, it returns ``turbo``, and the function ends, so the second `if` statement is not evaluated."
+      "walkthrough": "1) `def choose(kind):` defines the function. Its body does not run yet.\n2) `result = choose(\"fast\")` calls the function, so `kind` is \"fast\".\n3) The first condition, `kind == \"fast\"`, becomes `\"fast\" == \"fast\"`, which is `True`.\n4) The indented `return \"turbo\"` runs, sends back \"turbo\", and immediately ends this function call.\n5) The second condition, `kind == \"safe\"`, is therefore not checked. Neither `return \"normal\"` below it nor the final `return \"basic\"` runs.\n6) The returned value \"turbo\" is stored in `result`. Nothing is printed.\n\nFlow: \"fast\" → first condition is True → return \"turbo\" → function ends → `result` is \"turbo\"."
     },
     "answer_explanation": {
-      "step_by_step": "`review == review` Since it is True, the program enters the first if block. The return statement within it returns ``daily_review``, which terminates the function.",
-      "why_correct": "This is because if the condition is true, the `return` statement in that block immediately terminates the function’s execution.",
+      "step_by_step": "1) `def select_mode(mode):` defines the function. Its body runs when it is called.\n2) Calling `select_mode(\"review\")` makes `mode` the string \"review\".\n3) The first condition, `mode == \"review\"`, becomes `\"review\" == \"review\"`, which is `True`.\n4) `return \"daily_review\"` in the first if block runs. It returns the string \"daily_review\" and ends this function call.\n5) Execution never reaches the second `if mode == \"all\":` or the final `return \"normal\"`.\n6) The call's return value, \"daily_review\", is stored in `result`.",
+      "why_correct": "Because the first condition is true, the return statement that actually runs is `return \"daily_review\"`. Thus `result` holds the string \"daily_review\", and the correct choice is `daily_review`.",
       "common_wrong_choice": {
         "choice": "normal+review",
-        "why_wrong": "That value is the return value reached when execution gets to the second `if` and `mode == \"all\"` is true.",
-        "misread_step": "This is an example where the learner interpreted the code as continuing to execute the next `if` statement even after the first `return`."
+        "why_wrong": "This value is returned only if execution reaches the second if and `mode == \"all\"` is true. Here, the function has already ended at the first return, so the second condition is not checked.",
+        "misread_step": "The mistake is assuming that execution checks the next if after running the first return. Even though the two if statements are separate, return immediately ends the function call."
       },
-      "takeaway": "**If the return statement in the selected if block is encountered within a function, the code that follows it will not be executed.**"
+      "takeaway": "A true condition makes its if block run. If that block reaches return, it sends a value back to the caller and skips the rest of the function."
     },
     "target_statement": "if mode == \"review\":",
     "focus_span": "if mode == \"review\":",
@@ -2755,10 +2755,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "호출 안 `name=value` 형태를 keyword argument로 읽고 `store_true` 설정이 boolean CLI flag에 연결되는 의미를 이해한다.",
     "concept_explanation": {
-      "what_it_is": "The `name=value` syntax within a function call is a keyword argument that specifies a particular parameter name to pass a value.",
-      "how_to_read": "Read the text by distinguishing the parameter name (`action`) on the left side of the equals sign from the value passed (`\"store_true\"`) on the right side.",
-      "key_point": "`store_true` is not a variable assignment; it is a configuration string passed to argparse’s `action` parameter.",
-      "common_mistake": "`action=\"store_true\"` It’s easy to assume that ``args.dry_run = True`` is executed immediately at that point. This call **configures** the parser’s behavior, and the actual value is determined later when the arguments are parsed."
+      "what_it_is": "Easy meaning: Naming an input when passing a value tells the call which setting that value is for.\nExact definition: `name=value` inside a call is a keyword argument that passes a value by name; here it passes the string `\"store_true\"` as `action`.",
+      "how_to_read": "Mental model: Think of `action=\"store_true\"` as an instruction label placed in a setting slot called ‘What should happen when this option is found?’\nReading the code: `import argparse` loads the module, and `ArgumentParser()` creates an object that interprets input options. `add_argument(...)` registers the `\"--dry-run\"` option, while `action=\"store_true\"` configures it to store true when found. Finally, `parse_args([\"--dry-run\"])` interprets the supplied list and binds the result to `args`.",
+      "key_point": "Pass the string `\"store_true\"` as `action` → register how to handle `--dry-run` → `parse_args` finds `--dry-run` in the list → store the boolean `True` in the result object's `dry_run` attribute → `args.dry_run` is `True`.\nThe leading `--` is removed and the internal hyphen becomes an underscore, so the attribute name is `dry_run`. With this configuration, omitting the option, as in `parse_args([])`, gives `False`.",
+      "common_mistake": "Do not read `action=\"store_true\"` as an assignment that immediately executes `args.dry_run = True`. Inside this call, it only passes a configuration value; the result attribute is determined later when `parse_args` interprets the input. Also, `\"store_true\"` is a string that selects a behavior, not the resulting value. The result is the boolean `True`, not a string."
     },
     "teaching_example": {
       "code": "import argparse\n\nparser = argparse.ArgumentParser()\nparser.add_argument(\"--verbose\", action=\"store_true\")\nargs = parser.parse_args([\"--verbose\"])",

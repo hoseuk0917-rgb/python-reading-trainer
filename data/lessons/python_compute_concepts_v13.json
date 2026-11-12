@@ -384,10 +384,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "메서드 호출의 반환값과 재대입 이후 다음 모델 호출에 쓰이는 값을 순서대로 추적한다.",
     "concept_explanation": {
-      "what_it_is": "`object.method(...)`는 객체의 메서드를 호출하고 반환값을 결과로 받을 수 있습니다.",
-      "how_to_read": "`batch.to(\"cuda\")`를 먼저 호출하고, 그 반환값을 왼쪽 `batch`에 다시 저장한다고 읽습니다.",
-      "key_point": "다음 줄의 `batch`는 **메서드 호출 전 변수값이 아니라 재대입된 반환값**을 가리킵니다.",
-      "common_mistake": "`.to()` 호출만 보고 왼쪽 재대입을 놓치기 쉽습니다. 이 코드에서는 호출 결과를 다시 `batch`라는 같은 이름에 저장합니다."
+      "what_it_is": "쉽게 말하면: `batch.to(\"cuda\")`는 `batch`에 어떤 일을 요청하고 그 결과를 받는 표현입니다.\n정확한 정의: `object.method(...)`는 객체의 메서드를 호출하는 표현식이며, 반환값이 그 표현식의 결과가 됩니다.",
+      "how_to_read": "이름표를 떠올려 보세요. `batch`는 값을 가리키는 이름표이고, 대입은 그 이름표를 오른쪽에서 얻은 결과에 붙이는 것입니다.\n1) `for batch in batches:`는 이번 반복의 항목을 `batch`에 연결합니다.\n2) `batch = batch.to(\"cuda\")`는 현재 `batch`의 `to` 메서드를 문자열 `\"cuda\"`를 인자로 호출한 뒤, 반환값을 `batch`에 다시 연결합니다.\n3) `output = model(batch)`는 재대입된 `batch`를 인자로 `model`을 호출하고, 그 반환값을 `output`에 저장합니다.",
+      "key_point": "각 반복의 값 흐름: 현재 `batch` → `batch.to(\"cuda\")` 호출 → 반환값 → `batch`에 재대입 → `model(batch)`에 전달.\n따라서 `model(batch)`이 사용하는 값은 `batch.to(\"cuda\")`의 반환값입니다.",
+      "common_mistake": "같은 이름이 쓰였으므로 `batch`가 계속 반복 시작 때의 값을 뜻한다고 생각하기 쉽습니다. 하지만 오른쪽 호출이 먼저 실행되고 그 결과가 왼쪽 `batch`에 다시 저장됩니다. `\"cuda\"`는 호출에 전달하는 인자이지, 그 자체가 `batch`에 대입되는 값은 아닙니다."
     },
     "teaching_example": {
       "code": "class Batch:\n    def __init__(self, device):\n        self.device = device\n    def to(self, device):\n        return Batch(device)\n\nbatch = Batch(\"cpu\")\nbatch = batch.to(\"cuda\")\nprint(batch.device)",
@@ -565,10 +565,10 @@
     "primary_concept": "arithmetic",
     "reading_goal_internal": "GPU 자원 맥락의 두 수치를 실제 값으로 치환해 multiplication 결과를 예측한다.",
     "concept_explanation": {
-      "what_it_is": "`a * b`는 두 값을 곱하는 arithmetic expression입니다.",
-      "how_to_read": "각 변수의 현재 숫자를 먼저 확인하고 곱셈을 수행합니다.",
-      "key_point": "실제 VRAM 사용량은 모델 구조와 dtype 등에도 영향을 받지만, 이 카드는 batch size와 sequence length가 함께 커지면 처리 규모가 커진다는 관계를 단순 수치로 읽습니다.",
-      "common_mistake": "8과 2048을 더해 2056이라고 계산하기 쉽습니다. 연산자는 `*`입니다."
+      "what_it_is": "쉽게 말하면: `*`는 두 수를 곱하는 기호입니다.\n정확한 정의: 정수 사이의 `*` 연산자는 두 피연산자(계산에 쓰는 값)의 곱을 정수로 계산하는 산술 연산자입니다.",
+      "how_to_read": "2048개씩 있는 묶음이 8개라면 전체가 몇 개인지 구한다고 생각하세요. 첫째 줄은 `batch_size`에 8을, 둘째 줄은 `max_length`에 2048을 연결합니다. 셋째 줄에서는 먼저 오른쪽의 `batch_size * max_length`를 읽고, 각 이름을 현재 값으로 바꾸어 `8 * 2048`을 계산합니다. 그런 다음 결과를 왼쪽 이름 `work_units`에 연결합니다.",
+      "key_point": "값의 흐름은 `batch_size`와 `max_length` → `8 * 2048` → `16384` → `work_units`입니다. 따라서 `work_units`의 값은 정수 `16384`입니다. 곱셈은 원래 두 변수의 값을 바꾸지 않습니다.",
+      "common_mistake": "`*`를 `+`처럼 읽으면 `8 + 2048 = 2056`이라고 잘못 계산할 수 있습니다. 이 코드는 덧셈이 아니라 곱셈이므로 결과는 `16384`이며, 8이나 2048을 그대로 대입하는 것도 아닙니다."
     },
     "teaching_example": {
       "code": "batch_size = 4\nsequence_length = 512\nunits = batch_size * sequence_length",
@@ -684,24 +684,24 @@
     "primary_concept": "call",
     "reading_goal_internal": "training 경로에서 backward 호출이 optimizer update보다 먼저 실행되는 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`obj.method()`는 객체의 method를 호출하는 표현식입니다.",
-      "how_to_read": "호출이 나타나는 순서를 위에서 아래로 따라가며 각 method의 상태 변화를 반영합니다.",
-      "key_point": "일반적인 training 흐름에는 gradient를 계산하는 backward와 parameter update step이 포함될 수 있습니다.",
-      "common_mistake": "inference와 training 코드가 같은 호출만 가진다고 생각하기 쉽습니다. 실제 코드 줄을 비교해야 합니다."
+      "what_it_is": "쉽게 말하면: `loss.backward()`는 `loss`에게 `backward`라는 작업을 지금 실행하라고 요청합니다.\n정확한 정의: `obj.method()`는 객체에서 메서드를 찾아 호출하는 표현식이며, 이 코드의 인스턴스 메서드에는 해당 객체가 `self`로 자동 전달됩니다.",
+      "how_to_read": "메서드 정의를 작업 설명서, 호출을 그 작업의 실행 지시라고 생각하세요. `loss.backward()`를 만나면 `Loss`의 `backward` 본문으로 들어가 `events.append(\"backward\")`를 실행한 뒤 돌아옵니다. 다음 줄 `optimizer.step()`도 같은 방식으로 `\"step\"`을 추가합니다.",
+      "key_point": "`events = []` → 객체 생성(리스트 변화 없음) → `loss.backward()` → `[\"backward\"]` → `optimizer.step()` → `[\"backward\", \"step\"]`.\n이 코드의 메서드는 실제 기울기 계산이나 매개변수 갱신이 아니라 문자열 추가만 수행합니다. 두 메서드의 반환값은 `None`이며, 여기서 추적할 것은 리스트의 변화입니다.",
+      "common_mistake": "`def backward(self):`를 읽는 순간 본문도 실행된다고 생각하기 쉽습니다. 정의는 작업을 준비하고, `loss.backward()`의 괄호가 실제 호출을 일으킵니다. `loss.backward`만 쓰면 메서드를 가져올 뿐 실행하지 않습니다."
     },
     "teaching_example": {
-      "code": "events = []\nclass Task:\n    def run(self): events.append(\"run\")\ntask = Task()\ntask.run()",
-      "walkthrough": "메서드 호출 시 events에 run이 추가됩니다."
+      "code": "events = []\nclass Task:\n    def run(self):\n        events.append(\"run\")\ntask = Task()\ntask.run()\ntask.run()",
+      "walkthrough": "1) `events = []`로 빈 리스트를 만듭니다.\n2) `class Task:`는 클래스를 정의합니다.\n3) `def run(self):`는 메서드를 정의합니다. 들여쓴 `events.append(\"run\")`은 호출될 때 실행할 내용이며, 아직 실행되지 않습니다.\n4) `task = Task()`로 객체를 만들어 `task`에 연결합니다. 리스트는 여전히 `[]`입니다.\n5) 첫 `task.run()`이 본문을 실행하여 리스트가 `[\"run\"]`이 됩니다.\n6) 두 번째 `task.run()`이 같은 본문을 다시 실행하여 `[\"run\", \"run\"]`이 됩니다.\n최종 `events`는 `[\"run\", \"run\"]`이며, 출력문은 없습니다."
     },
     "answer_explanation": {
-      "step_by_step": "첫 method call이 backward를 append하고, 그 다음 optimizer.step이 step을 append합니다.",
-      "why_correct": "Python 문장은 위에서 아래로 실행되므로 호출 순서가 events에 그대로 반영됩니다.",
+      "step_by_step": "1) `events = []`로 시작합니다.\n2) `Loss`와 `Optimizer`를 정의하지만, 메서드 본문의 `append`는 아직 실행하지 않습니다.\n3) `loss = Loss()`와 `optimizer = Optimizer()`가 객체를 만듭니다. `events`는 여전히 `[]`입니다.\n4) `loss.backward()`가 `backward` 본문을 실행합니다. `events.append(\"backward\")` 뒤 값은 `[\"backward\"]`입니다.\n5) 이 호출이 끝난 뒤 `optimizer.step()`이 실행됩니다. `events.append(\"step\")`은 리스트 끝에 항목을 추가하므로 최종 값은 `[\"backward\", \"step\"]`입니다.",
+      "why_correct": "두 호출은 작성된 순서대로 실행되고, `append`는 기존 항목 뒤에 새 항목을 붙입니다. 따라서 정답은 `[\"backward\", \"step\"]`입니다.",
       "common_wrong_choice": {
         "choice": "[\"step\", \"backward\"]",
-        "why_wrong": "소스 코드의 호출 순서를 반대로 읽은 값입니다.",
-        "misread_step": "실제 줄 순서를 확인하지 않은 경우입니다."
+        "why_wrong": "이 값은 `step()`이 먼저 실행되었을 때의 순서입니다. 실제로는 `loss.backward()`가 먼저 실행됩니다.",
+        "misread_step": "마지막 두 호출 줄의 실행 순서를 거꾸로 읽은 것입니다."
       },
-      "takeaway": "training 코드는 **backward와 optimizer update의 실제 호출 순서**를 읽습니다."
+      "takeaway": "메서드 이름만 보고 동작을 추측하지 말고, `()`가 있는 호출 순서대로 본문에 들어가 리스트 변화를 추적하세요."
     },
     "target_statement": "loss.backward()",
     "focus_span": "loss.backward()",
@@ -801,10 +801,10 @@
     "primary_concept": "membership_test",
     "reading_goal_internal": "runtime 설정의 framework 값이 지원 set에 포함되는지 membership test로 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`value in container`는 value가 container 안에 있는지 검사해 boolean을 만듭니다.",
-      "how_to_read": "왼쪽 실제 값과 오른쪽 container의 항목을 비교합니다.",
-      "key_point": "TPU 환경에서는 accelerator 이름만이 아니라 사용할 framework·runtime 조합이 지원되는지도 확인해야 한다는 맥락을 표현합니다.",
-      "common_mistake": "set 안에 비슷한 문자열이 있으면 True라고 생각하기 쉽습니다. membership은 같은 값이 실제로 있어야 합니다."
+      "what_it_is": "쉽게 말하면: `in`은 “이 값이 여기 안에 있나?”를 묻습니다.\n정확한 정의: `value in container`는 왼쪽 값이 오른쪽 컨테이너에 포함되는지 검사하여 불리언 값 `True` 또는 `False`를 만드는 멤버십 테스트입니다.",
+      "how_to_read": "집합을 이름표 모음처럼 생각하고, 찾는 이름표가 그 안에 있는지 확인하세요. 첫 줄은 설정 딕셔너리 `runtime`을 만들고, 둘째 줄은 `\"jax\"`와 `\"tensorflow\"`를 담은 집합 `supported_frameworks`를 만듭니다. 셋째 줄에서는 `runtime[\"framework\"]`로 `\"jax\"`를 꺼낸 뒤, 그 값이 오른쪽 집합의 원소인지 확인합니다.",
+      "key_point": "`runtime[\"framework\"]` → `\"jax\"` → `\"jax\" in {\"jax\", \"tensorflow\"}` → `True` → `framework_supported`에 대입됩니다. 이 코드는 주어진 집합에 값이 있는지만 검사하며, 실제 환경의 지원 여부를 별도로 조회하지 않습니다.",
+      "common_mistake": "`in`이 찾은 문자열 `\"jax\"`를 반환한다고 생각하지 마세요. 문자열을 꺼내는 것은 `runtime[\"framework\"]`이고, `in`은 포함 여부인 `True` 또는 `False`를 만듭니다. 여기서는 오른쪽이 집합이므로 집합의 원소를 검사합니다. 오른쪽이 딕셔너리라면 값이 아니라 키를 검사합니다."
     },
     "teaching_example": {
       "code": "supported = {\"tensorflow\", \"jax\"}\nframework = \"pytorch\"\nok = framework in supported",
@@ -869,14 +869,14 @@
       "walkthrough": "matrix workload에 GPU_or_TPU가 mapping돼 있습니다."
     },
     "answer_explanation": {
-      "step_by_step": "mapping에서 large matrix multiplication은 GPU_or_TPU와 연결됩니다.",
-      "why_correct": "이 장치들은 대규모 병렬 수치 연산에 특화된 실행 자원을 제공하기 때문입니다.",
+      "step_by_step": "1) 첫 대입문은 작업 이름을 키로, 장치 선택을 값으로 저장한 딕셔너리를 만들어 `accelerator_by_workload`에 연결합니다.\n2) 마지막 줄의 오른쪽에서 `[\"large_matrix_multiplication\"]`은 '대형 행렬곱'이라는 이름표에 연결된 값을 찾습니다. 위치 번호로 찾는 것이 아닙니다.\n3) 해당 항목은 `\"large_matrix_multiplication\": \"GPU_or_TPU\"`이므로 조회 결과는 문자열 `\"GPU_or_TPU\"`입니다.\n4) 이 값이 `accelerator`에 대입됩니다. 출력하거나 실제 장치를 실행하는 코드는 없습니다.",
+      "why_correct": "조회한 값 `\"GPU_or_TPU\"`에 해당하는 선택지는 'GPU 또는 TPU'입니다. 따라서 이 코드에 주어진 작업별 대응표를 따르면 정답은 'GPU 또는 TPU'입니다.",
       "common_wrong_choice": {
-        "choice": "CPU의 단일 코어만",
-        "why_wrong": "대형 행렬곱의 병렬성을 거의 활용하지 못하는 선택입니다.",
-        "misread_step": "workload의 병렬 연산 특성을 고려하지 않은 경우입니다."
+        "choice": "NPU만",
+        "why_wrong": "이 딕셔너리에서 `\"NPU\"`는 `\"on_device_low_power_inference\"`에 연결되어 있습니다. 마지막 줄에서 조회하는 키는 그 키가 아니라 `\"large_matrix_multiplication\"`입니다.",
+        "misread_step": "AI와 관련된 장치 이름만 보고 고르면, 대괄호 안의 정확한 키와 그 키에 연결된 값을 확인하는 단계를 놓치기 쉽습니다."
       },
-      "takeaway": "accelerator는 **AI라는 이름이 아니라 실제 workload 특성**으로 고릅니다."
+      "takeaway": "딕셔너리 조회는 '딕셔너리 확인 → 대괄호 안의 키 찾기 → 연결된 값 반환' 순서로 읽습니다. 여기서는 `\"GPU_or_TPU\"`를 얻어 `accelerator`에 대입합니다."
     },
     "target_statement": "accelerator = accelerator_by_workload[\"large_matrix_multiplication\"]",
     "focus_span": "accelerator_by_workload[\"large_matrix_multiplication\"]",

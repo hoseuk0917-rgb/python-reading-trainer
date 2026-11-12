@@ -322,10 +322,10 @@
         "primary_concept":  "call",
         "reading_goal_internal":  "generator가 만든 여러 membership 결과를 all()이 하나의 boolean으로 합치는 순서를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`all(iterable)` is a function call that returns `True` if every item in the iterable is truthy.",
-                                    "how_to_read":  "I interpret this as: The presence or absence of each field within the parentheses is first determined, and then `all()` checks whether all of those results are true.",
-                                    "key_point":  "The \"response schema\" refers to the domain context, and the focus on Python is on combining multiple validation results into a single call to `all()`.",
-                                    "common_mistake":  "It’s easy to assume that if just one of the required fields is present, the result is True. However, the `all()` function returns True only if all items are true."
+                                    "what_it_is":  "Easy meaning: `all()` gives one answer to whether several checks all pass.\nExact definition: `all(iterable)` is a Python built-in function call that tests whether every item in an iterable evaluates as true and returns a bool.",
+                                    "how_to_read":  "Mental model: picture `all()` as an inspector checking whether every box on a checklist passes.\nThe first line sets the three required field names, and the second creates the `data` dictionary. On the third line, the generator expression takes each field name and checks whether it is a key using `field in data`; `all()` consumes and checks these results in turn.",
+                                    "key_point":  "`\"answer\" in data` → `True`\n`\"used_concepts\" in data` → `True`\n`\"student_check\" in data` → `True`\nAll are true → `all()` returns `True` → `True` is stored in `valid`.",
+                                    "common_mistake":  "It is easy to think that one required field is enough for `True`, but every check must pass. Here, `field in data` checks for dictionary keys, not values."
                                 },
         "teaching_example":  {
                                  "code":  "required = [\"id\", \"title\"]\ndata = {\"id\": 1, \"title\": \"card\"}\nvalid = all(name in data for name in required)",
@@ -815,10 +815,10 @@
         "primary_concept":  "argument_passing",
         "reading_goal_internal":  "`**arguments`가 query를 keyword argument로 펼쳐 search_docs를 실제 호출하는 것은 확인하되, downstream_received=False와 성능 측정 부재 때문에 end-to-end/performance 주장은 아직 성립하지 않음을 판단한다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`**mapping` It unpacks the key-value pairs from the dict into keyword arguments and passes them to the actual function call. A successful local function call provides evidence only up to the boundaries of that function; it does not automatically prove subsequent passing, external processing, or performance.",
-                                    "how_to_read":  "Check the arguments and examine the result returned by the target call. Next, separately verify whether the downstream transmission status and performance metrics actually exist.",
-                                    "key_point":  "Since `search_docs` accepts a query and returns `hits=2`, the local tool is confirmed to be running. However, since `downstream_received=False` and there is no benchmark, end-to-end success and performance improvements remain unproven.",
-                                    "common_mistake":  "You should not state that simply because the `tool` function was called, everything—from network transmission and model re-reception to incorporating user responses and performance improvements—was successful."
+                                    "what_it_is":  "Easy meaning: `**arguments` unpacks labeled values and passes them into the function inputs with matching names.\nExact definition: In a function call, `**mapping` expands entries of a mapping with string keys into keyword arguments; here, the value under the key `\"query\"` is bound to the parameter `query`.",
+                                    "how_to_read":  "Picture the function's input slots as having name tags. `arguments = {\"query\": \"cosine similarity\"}` associates a value with the label `query`. `set(arguments) == {\"query\"}` checks whether the only key is exactly `query`. Then read `search_docs(**arguments)` as `search_docs(query=\"cosine similarity\")`. Inside the function, `query` is the supplied string, and the function returns a dictionary containing it.",
+                                    "key_point":  "Execution flow: compare key sets → `validated = True` → pass `query=\"cosine similarity\"` through `**arguments` → the function returns `{\"query\": \"cosine similarity\", \"hits\": 2}` → bind it to `result` → `downstream_received = False` → print `True 2 False`.\nThe key check does not validate the value's type or content. The local call and return are confirmed, but this code performs no downstream delivery or performance measurement. Thus, downstream receipt, end-to-end success, and performance improvement are not demonstrated.",
+                                    "common_mistake":  "It is easy to read `**arguments` as passing the dictionary itself as one argument. With `search_docs(arguments)`, `query` would receive the dictionary itself; with `search_docs(**arguments)`, `query` receives the string. Also, `hits` being `2` is a return value written directly in the function, not evidence of an actual external search or successful downstream delivery. Here, `downstream_received` is directly assigned `False`, not obtained by checking receipt."
                                 },
         "teaching_example":  {
                                  "code":  "def tool(query):\n    return {\"query\":query}\nargs={\"query\":\"python\"}\nresult=tool(**args)\nprint(result)",
@@ -958,10 +958,10 @@
         "primary_concept":  "class_definition",
         "reading_goal_internal":  "class 이름 뒤 괄호 안의 LLMAdapter가 새 클래스가 상속받는 base class라는 구조를 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "`class Child(Base):` This is the header that defines a new class called `Child` and specifies `Base` as its base class.",
-                                    "how_to_read":  "Note that the name following `class` is distinct from the `base` name in parentheses, and that the text following the colon constitutes the body of the new class.",
-                                    "key_point":  "With this structure, provider adapters can inherit or override the common interface and behavior.",
-                                    "common_mistake":  "It’s easy to mistake the LLMAdapter in parentheses for a regular function argument passed when creating a QwenAdapter."
+                                    "what_it_is":  "Easy meaning: `class Child(Base):` declares a new kind that inherits features from an existing kind.\nExact definition: This class definition header specifies `Child` as the new class name and `Base` as the base class it inherits from.",
+                                    "how_to_read":  "Picture making a new blueprint based on an existing blueprint. First, `class LLMAdapter:` defines the base class. Then `class QwenAdapter(LLMAdapter):` defines the new class `QwenAdapter`, which inherits from `LLMAdapter`. Each `def generate` in a class body defines a method; the child class's definition overrides the parent's method with the same name.",
+                                    "key_point":  "Define `LLMAdapter` → define `QwenAdapter` with it as the base class → `issubclass(QwenAdapter, LLMAdapter)` checks the inheritance relationship and returns `True` → `print` outputs `True`. Neither `generate` method is called, so no `NotImplementedError` is raised and no `\"qwen result\"` is returned.",
+                                    "common_mistake":  "The parentheses do not make `LLMAdapter` an ordinary argument passed when creating an instance. Here they specify a base class as part of a `class` definition. Defining a class and creating an instance are separate steps; this code contains no `QwenAdapter()` call."
                                 },
         "teaching_example":  {
                                  "code":  "class Animal:\n    pass\n\nclass Dog(Animal):\n    pass\n\nprint(issubclass(Dog, Animal))",
@@ -1019,10 +1019,10 @@
         "primary_concept":  "f_string",
         "reading_goal_internal":  "f-string 안 중괄호 표현식의 현재 값을 평가하고 해당 위치에 문자열 형태로 삽입해 전체 prompt를 만드는 흐름을 읽는다.",
         "concept_explanation":  {
-                                    "what_it_is":  "An f-string evaluates `f` within a string prefixed with `{expression}` and inserts the result into the string.",
-                                    "how_to_read":  "Separate the fixed parts of the string from the two expressions `{question}` and `{context}`, and insert their current values into the corresponding positions.",
-                                    "key_point":  "It is not the name of the curly brace itself that is printed, but rather **the value that name currently refers to**.",
-                                    "common_mistake":  "It’s easy to assume that the `{question}` text remains unchanged, just like a regular string."
+                                    "what_it_is":  "Easy meaning: An f-string fills places in a sentence with variable values.\nExact definition: An f-string is a string literal prefixed with `f` that evaluates expressions inside curly braces and inserts their results as text at those positions.",
+                                    "how_to_read":  "Picture a sentence with spaces to fill in. First, `question` is assigned `What is RAG?`, and `context` is assigned `RAG retrieves evidence before generation.`. Then their values fill the `{question}` and `{context}` positions in the f-string. The fixed text stays in place, and each `\\n` starts a new line, producing a three-line string.",
+                                    "key_point":  "The flow is: insert the values → assign the completed string to `prompt` → split it into lines with `splitlines()` → select the first line with `[0]`. Therefore, `print()` outputs `Question: What is RAG?`.",
+                                    "common_mistake":  "It is easy to read `{question}` as text that stays unchanged. But the `f` prefix means the value referred to by the name inside the braces is inserted. In this code, an ordinary string without `f` would keep the literal text `{question}`."
                                 },
         "teaching_example":  {
                                  "code":  "name = \"Mina\"\ntext = f\"Hello {name}\"\nprint(text)",

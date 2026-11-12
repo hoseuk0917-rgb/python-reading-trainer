@@ -384,10 +384,10 @@
     "primary_concept": "call",
     "reading_goal_internal": "메서드 호출의 반환값과 재대입 이후 다음 모델 호출에 쓰이는 값을 순서대로 추적한다.",
     "concept_explanation": {
-      "what_it_is": "`object.method(...)` calls a method on an object and can receive its return value as the result.",
-      "how_to_read": "It reads as: \"First, call `batch.to(\"cuda\")`, and then store the return value back into the `batch` on the left.\"",
-      "key_point": "The `batch` in the next line refers to **the reassigned return value, not the variable’s value before the method call**.",
-      "common_mistake": "`.to()` It’s easy to overlook the left-hand reassignment when looking only at the call. In this code, the result of the call is reassigned to a variable with the same name, ``batch``."
+      "what_it_is": "Easy meaning: `batch.to(\"cuda\")` asks `batch` to do a job and receives the result.\nExact definition: `object.method(...)` is an expression that calls an object's method, and its return value becomes the result of that expression.",
+      "how_to_read": "Picture a name tag. `batch` is a name tag pointing to a value; assignment attaches that tag to the result obtained on the right.\n1) `for batch in batches:` binds this iteration's item to `batch`.\n2) `batch = batch.to(\"cuda\")` calls the current `batch` object's `to` method with the string `\"cuda\"` as an argument, then binds its return value back to `batch`.\n3) `output = model(batch)` calls `model` with the reassigned `batch` as its argument and stores that call's return value in `output`.",
+      "key_point": "Value flow in each iteration: current `batch` → call `batch.to(\"cuda\")` → return value → reassign to `batch` → pass to `model(batch)`.\nThus, the value used by `model(batch)` is the return value of `batch.to(\"cuda\")`.",
+      "common_mistake": "It is easy to assume that the same name means `batch` still holds the value from the start of the iteration. But the right-hand call runs first, and its result is stored back into `batch` on the left. `\"cuda\"` is an argument passed to the call, not the value directly assigned to `batch`."
     },
     "teaching_example": {
       "code": "class Batch:\n    def __init__(self, device):\n        self.device = device\n    def to(self, device):\n        return Batch(device)\n\nbatch = Batch(\"cpu\")\nbatch = batch.to(\"cuda\")\nprint(batch.device)",
@@ -565,10 +565,10 @@
     "primary_concept": "arithmetic",
     "reading_goal_internal": "GPU 자원 맥락의 두 수치를 실제 값으로 치환해 multiplication 결과를 예측한다.",
     "concept_explanation": {
-      "what_it_is": "`a * b` is an arithmetic expression that multiplies two values.",
-      "how_to_read": "First, check the current value of each variable, then perform the multiplication.",
-      "key_point": "Although actual VRAM usage is influenced by factors such as model architecture and dtype, this card interprets the relationship—where processing scale increases as both batch size and sequence length grow—as a simple numerical relationship.",
-      "common_mistake": "It is easy to calculate that 8 plus 2048 equals 2056. The operator is `*`."
+      "what_it_is": "Easy meaning: `*` is the symbol for multiplying two numbers.\nExact definition: Between integers, `*` is an arithmetic operator that computes the product of its two operands (the values used in the calculation) as an integer.",
+      "how_to_read": "Picture 8 groups with 2048 items in each, and find the total. The first line binds `batch_size` to 8, and the second binds `max_length` to 2048. On the third line, first read `batch_size * max_length` on the right, replace each name with its current value, and calculate `8 * 2048`. Then bind the result to the name `work_units` on the left.",
+      "key_point": "The value flow is `batch_size` and `max_length` → `8 * 2048` → `16384` → `work_units`. Thus, `work_units` has the integer value `16384`. Multiplication does not change the values of the original two variables.",
+      "common_mistake": "Reading `*` as `+` can lead to incorrectly calculating `8 + 2048 = 2056`. This code multiplies rather than adds, so the result is `16384`; it does not simply assign 8 or 2048 either."
     },
     "teaching_example": {
       "code": "batch_size = 4\nsequence_length = 512\nunits = batch_size * sequence_length",
@@ -684,24 +684,24 @@
     "primary_concept": "call",
     "reading_goal_internal": "training 경로에서 backward 호출이 optimizer update보다 먼저 실행되는 순서를 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`obj.method()` is an expression that calls a method of an object.",
-      "how_to_read": "Follow the order in which calls appear from top to bottom, reflecting the state changes of each method.",
-      "key_point": "A typical training workflow may include a backward pass to compute gradients and a parameter update step.",
-      "common_mistake": "It is easy to assume that the inference and training code share the same calls. You must compare the actual lines of code."
+      "what_it_is": "Easy meaning: `loss.backward()` asks `loss` to perform its `backward` task now.\nExact definition: `obj.method()` is an expression that looks up and calls a method on an object; for the instance methods in this code, that object is automatically passed as `self`.",
+      "how_to_read": "Think of a method definition as task instructions and a call as the instruction to perform that task. At `loss.backward()`, enter the body of `Loss.backward`, execute `events.append(\"backward\")`, and then return. The next line, `optimizer.step()`, adds `\"step\"` in the same way.",
+      "key_point": "`events = []` → create objects (no list change) → `loss.backward()` → `[\"backward\"]` → `optimizer.step()` → `[\"backward\", \"step\"]`.\nThese methods only append strings; they do not actually calculate gradients or update parameters. Both methods return `None`; the effect to track here is the change to the list.",
+      "common_mistake": "It is easy to think the body runs as soon as Python reaches `def backward(self):`. A definition prepares the task; the parentheses in `loss.backward()` trigger the actual call. Writing only `loss.backward` retrieves the method without running it."
     },
     "teaching_example": {
-      "code": "events = []\nclass Task:\n    def run(self): events.append(\"run\")\ntask = Task()\ntask.run()",
-      "walkthrough": "When a method is called, `run` is added to `events`."
+      "code": "events = []\nclass Task:\n    def run(self):\n        events.append(\"run\")\ntask = Task()\ntask.run()\ntask.run()",
+      "walkthrough": "1) `events = []` creates an empty list.\n2) `class Task:` defines a class.\n3) `def run(self):` defines a method. The indented `events.append(\"run\")` is its instruction for when it is called; it does not run yet.\n4) `task = Task()` creates an object and binds it to `task`. The list is still `[]`.\n5) The first `task.run()` executes the body, making the list `[\"run\"]`.\n6) The second `task.run()` executes the same body again, making it `[\"run\", \"run\"]`.\nThe final value of `events` is `[\"run\", \"run\"]`; there is no print statement."
     },
     "answer_explanation": {
-      "step_by_step": "The first method call appends `backward`, then `optimizer.step` appends `step`.",
-      "why_correct": "Since Python statements are executed from top to bottom, the call order is directly reflected in `events`.",
+      "step_by_step": "1) Start with `events = []`.\n2) Define `Loss` and `Optimizer`, without executing the `append` calls inside their method bodies yet.\n3) `loss = Loss()` and `optimizer = Optimizer()` create the objects. `events` is still `[]`.\n4) `loss.backward()` runs the body of `backward`. After `events.append(\"backward\")`, the value is `[\"backward\"]`.\n5) After that call finishes, `optimizer.step()` runs. `events.append(\"step\")` adds an item at the end, producing the final value `[\"backward\", \"step\"]`.",
+      "why_correct": "The two calls execute in the written order, and `append` adds each new item after the existing items. Therefore, the answer is `[\"backward\", \"step\"]`.",
       "common_wrong_choice": {
         "choice": "[\"step\", \"backward\"]",
-        "why_wrong": "This is the value obtained by reading the call sequence of the source code in reverse.",
-        "misread_step": "This is a case where the actual line order was not verified."
+        "why_wrong": "This order would result if `step()` ran first. In the actual code, `loss.backward()` runs first.",
+        "misread_step": "This reverses the execution order of the final two call lines."
       },
-      "takeaway": "The training code reads the **actual call sequence of `backward` and `optimizer_update`**."
+      "takeaway": "Do not infer behavior from method names alone. Follow calls with `()` in order, enter their bodies, and track changes to the list."
     },
     "target_statement": "loss.backward()",
     "focus_span": "loss.backward()",
@@ -801,10 +801,10 @@
     "primary_concept": "membership_test",
     "reading_goal_internal": "runtime 설정의 framework 값이 지원 set에 포함되는지 membership test로 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`value in container` checks whether `value` is inside `container` and returns a boolean.",
-      "how_to_read": "Compare the actual value on the left with the item in the container on the right.",
-      "key_point": "This conveys the context that, in a TPU environment, you must verify not only the accelerator name but also whether the combination of framework and runtime you intend to use is supported.",
-      "common_mistake": "It’s easy to assume that if a set contains similar strings, it’s True. However, for membership, the exact same value must actually be present."
+      "what_it_is": "Easy meaning: `in` asks, “Is this value in here?”\nExact definition: `value in container` is a membership test that checks whether the left-hand value belongs to the right-hand container and produces the Boolean value `True` or `False`.",
+      "how_to_read": "Picture a set as a collection of name tags, and check whether the tag you want is present. The first line creates the settings dictionary `runtime`, and the second creates the set `supported_frameworks` containing `\"jax\"` and `\"tensorflow\"`. On the third line, `runtime[\"framework\"]` retrieves `\"jax\"`, then the membership test checks whether that value is an element of the set on the right.",
+      "key_point": "`runtime[\"framework\"]` → `\"jax\"` → `\"jax\" in {\"jax\", \"tensorflow\"}` → `True` → assigned to `framework_supported`. This code only checks whether the value is in the given set; it does not separately query support in an actual environment.",
+      "common_mistake": "Do not read `in` as returning the string `\"jax\"` it found. `runtime[\"framework\"]` retrieves the string, while `in` produces the membership result, `True` or `False`. Here, the right-hand container is a set, so the test checks its elements. If the right-hand container were a dictionary, it would check keys rather than values."
     },
     "teaching_example": {
       "code": "supported = {\"tensorflow\", \"jax\"}\nframework = \"pytorch\"\nok = framework in supported",
@@ -869,14 +869,14 @@
       "walkthrough": "GPU_or_TPU is mapped to the matrix workload."
     },
     "answer_explanation": {
-      "step_by_step": "In the \"mapping\" section, \"large matrix multiplication\" is associated with \"GPU_or_TPU.\"",
-      "why_correct": "This is because these devices provide computing resources specialized for large-scale parallel numerical computations.",
+      "step_by_step": "1) The first assignment creates a dictionary storing workload names as keys and device choices as values, and binds it to `accelerator_by_workload`.\n2) On the right side of the last line, `[\"large_matrix_multiplication\"]` looks up the value attached to the label for large matrix multiplication. It does not look up a numbered position.\n3) The matching entry is `\"large_matrix_multiplication\": \"GPU_or_TPU\"`, so the lookup returns the string `\"GPU_or_TPU\"`.\n4) This value is assigned to `accelerator`. There is no code that prints it or runs an actual device.",
+      "why_correct": "The retrieved value `\"GPU_or_TPU\"` corresponds to the choice 'GPU or TPU'. Thus, following the workload mapping given in this code, the correct answer is 'GPU or TPU'.",
       "common_wrong_choice": {
-        "choice": "Only a single core of the CPU",
-        "why_wrong": "This choice makes almost no use of the parallelism available for large matrix multiplication.",
-        "misread_step": "This is a case where the parallel processing characteristics of the workload were not taken into account."
+        "choice": "NPU only",
+        "why_wrong": "In this dictionary, `\"NPU\"` is associated with `\"on_device_low_power_inference\"`. The last line looks up `\"large_matrix_multiplication\"`, not that key.",
+        "misread_step": "Choosing only by an AI-related device name can skip the step of checking the exact key inside the brackets and the value associated with it."
       },
-      "takeaway": "The accelerator is selected based on **the actual characteristics of the workload**, not the name “AI.”"
+      "takeaway": "Read dictionary lookup as 'identify the dictionary → find the key inside the brackets → return its associated value'. Here it retrieves `\"GPU_or_TPU\"` and assigns it to `accelerator`."
     },
     "target_statement": "accelerator = accelerator_by_workload[\"large_matrix_multiplication\"]",
     "focus_span": "accelerator_by_workload[\"large_matrix_multiplication\"]",

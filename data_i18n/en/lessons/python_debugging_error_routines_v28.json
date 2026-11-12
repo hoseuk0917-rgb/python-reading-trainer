@@ -446,10 +446,10 @@
     "primary_concept": "attribute_access",
     "reading_goal_internal": "ModuleNotFoundError에서 현재 interpreter와 패키지 설치 환경이 다른지 진단하는 흐름을 읽는다.",
     "concept_explanation": {
-      "what_it_is": "`module.attribute` is an access method used to read the value of an attribute defined on a module object.",
-      "how_to_read": "Try to distinguish between the module name to the left of the dot and the attribute name to the right of the dot.",
-      "key_point": "`sys.executable` can be used to check the path of the Python interpreter that is currently running the process.",
-      "common_mistake": "It is easy to assume that it returns all installed Python paths. It refers to the path of the single interpreter currently running."
+      "what_it_is": "Easy meaning: `sys.executable` reads the value named `executable` from `sys`.\nExact definition: Attribute access `object.attribute` looks up the named attribute on the object to the left of the dot; here it reads the `executable` attribute of the `sys` module.",
+      "how_to_read": "Mental model: Picture `sys` as holding information fields with name labels; the dot specifies which field to read.\nThe first line, `import sys`, makes the `sys` module available. On the second line, Python first reads `sys.executable` on the right to obtain the path value for the Python executable running this code, then binds that value to the name `python_path` on the left. There are no parentheses, so this reads an attribute rather than calling a function.",
+      "key_point": "Execution flow: `import sys` → look up `sys.executable` → assign the retrieved value to `python_path`.\nResult: Usually, `python_path` refers to a string containing the absolute path of the current Python executable. The actual path depends on the running environment; if Python cannot determine it, the value can be an empty string or `None`. This code prints nothing.\nIn the question's situation, first compare the running Python identified by this path with the Python/virtual environment (venv) where the package was installed.",
+      "common_mistake": "It is easy to think `sys.executable` lists every installed Python or locates packages. This attribute provides a value for the executable path of the currently running Python. Reading it and assigning it to `python_path` neither switches environments nor installs a package. An environment mismatch is one cause to check, not a diagnosis established by this code alone."
     },
     "teaching_example": {
       "code": "import os\nseparator = os.sep",
@@ -515,14 +515,14 @@
       "walkthrough": "The value of the `missing.json` key is 404."
     },
     "answer_explanation": {
-      "step_by_step": "The value associated with the `missing.json` path is defined as 404.",
-      "why_correct": "This is because a `dict lookup` returns the `status` value associated with the specified `path` key.",
+      "step_by_step": "1) `responses` is assigned a dictionary containing two path–value pairs. `\"/data/lessons/missing.json\"` is paired with `404`, and `\"/src/pwa/app.js\"` with `200`.\n2) The expression on the right of the last line looks up the key inside the brackets, `\"/data/lessons/missing.json\"`, in `responses`.\n3) It retrieves the value paired with that key: `404`.\n4) This value is assigned to `missing_status`, so its final value is the integer `404`.",
+      "why_correct": "`responses[\"/data/lessons/missing.json\"]` evaluates to the value paired with the specified key, `404`. Therefore, `missing_status`, which receives that result, also has the value `404`.",
       "common_wrong_choice": {
         "choice": "200",
-        "why_wrong": "200 is another response associated with the app.js path.",
-        "misread_step": "This is a case where the statuses of two different requests were confused."
+        "why_wrong": "`200` is paired with the key `\"/src/pwa/app.js\"`. The key looked up by this code is `\"/data/lessons/missing.json\"`.",
+        "misread_step": "This selects the value paired with another path without checking the key inside the brackets."
       },
-      "takeaway": "HTTP logs are read by **pairing the request path with its status code**."
+      "takeaway": "Read dictionary lookup as `identify the dictionary → find the key inside the brackets → read its paired value`. Here, the retrieved value `404` is assigned to `missing_status`."
     },
     "target_statement": "missing_status = responses[\"/data/lessons/missing.json\"]",
     "focus_span": "responses[\"/data/lessons/missing.json\"]",
@@ -623,10 +623,10 @@
     "primary_concept": "membership_test",
     "reading_goal_internal": "서버 bind 실패 맥락을 고정 port 집합 membership으로 표현해 포트 사용 여부를 판단한다.",
     "concept_explanation": {
-      "what_it_is": "`value in set` It checks whether the set contains the same value.",
-      "how_to_read": "It compares the port numbers to be checked with the set of ports currently in use.",
-      "key_point": "`Address already in use` This refers to a situation where the address or port you are trying to bind to is already in use.",
-      "common_mistake": "It’s easy to assume this error means Python isn’t installed. The issue isn’t whether an interpreter exists, but rather a conflict with the target of the socket bind."
+      "what_it_is": "Easy meaning: `in` asks, “Is this value in this collection?”\nExact definition: A set membership test, `value in a_set`, evaluates whether the left-hand value is included as an element of the right-hand set and produces the Boolean value `True` or `False`.",
+      "how_to_read": "Think of the set as a roster of port numbers. The first line creates a set containing `8000`, `8790`, and `9000` and binds it to `active_ports`. On the second line, first identify the roster on the right, `active_ports`, then read `8790 in active_ports` as “Is 8790 on this roster?” The test result is stored in `port_in_use`.",
+      "key_point": "`8790` → test membership in `active_ports` → `True` → assign to `port_in_use`. There is no print statement, so nothing is displayed. In this card, the set represents ports in use, so the interpretation that another process may already be using 8790 connects this state to `Address already in use`.",
+      "common_mistake": "Do not assume that `in` investigates actual port usage on the computer. This code only checks whether a number is in a manually written set; it neither opens a port nor checks its actual occupancy. Here, `True` therefore means '8790 is in this set.'"
     },
     "teaching_example": {
       "code": "active_ports = {8000, 8080}\nport_busy = 8080 in active_ports",
@@ -855,10 +855,10 @@
     "primary_concept": "argument_passing",
     "reading_goal_internal": "함수 호출에서 `name=value` 형태의 keyword argument가 같은 이름의 매개변수에 어떤 값을 전달하는지 읽는다.",
     "concept_explanation": {
-      "what_it_is": "A keyword argument passes a value in the form `parameter=value`, explicitly naming the receiving parameter in a function call.",
-      "how_to_read": "Looking at `source='index'`, it immediately establishes a connection between the `source` parameter and the string `index`.",
-      "key_point": "The quoted `index` is not a parameter name; it is **the string value passed to `source`**.",
-      "common_mistake": "It is easier to read `source='index'` inside the call parentheses as an assignment statement within the function. Here, the syntax is used to specify the call argument by name."
+      "what_it_is": "Easy meaning: When calling a function, you can name an input slot to send a value to that slot.\nExact definition: A keyword argument uses `name=value` in a function call and binds the evaluated value of the right-hand expression to the parameter with that name.",
+      "how_to_read": "Think of parameters as labeled input slots. `def restore_plan(path, source)` defines slots named `path` and `source`. The first value in the call, `\"src/pwa/app.js\"`, binds to `path` by position. `source=\"index\"` selects a slot by its label and binds the string `\"index\"` to `source`. The function body fills `{path}` and `{source}` with these received values.",
+      "key_point": "Call `restore_plan(...)` → pass `\"src/pwa/app.js\"` to `path` and `\"index\"` to `source` → the function returns `\"src/pwa/app.js <- index\"` → store the returned value in `plan` → `print(plan)` displays `src/pwa/app.js <- index`.\nTherefore, the value passed to `source`, as asked in the question, is the string `\"index\"`.",
+      "common_mistake": "Do not read the left-hand `source` in `source=\"index\"` as the value being passed. The left side names the receiving parameter; the right side, `\"index\"`, is the actual value. Also, this `=` is syntax for naming an argument in a call, not an assignment statement in the function body."
     },
     "teaching_example": {
       "code": "def plan(path, source):\n    return f\"{path} <- {source}\"\n\ntext = plan(\"config.json\", source=\"backup\")\nprint(text)",
