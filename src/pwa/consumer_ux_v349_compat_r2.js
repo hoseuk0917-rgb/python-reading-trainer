@@ -82,7 +82,6 @@
       const learn = document.getElementById("learnView");
       if (learn && learn.classList.contains("v345-support-revealed") && !learn.classList.contains("v349-support-open")) {
         learn.classList.remove("v345-support-revealed");
-        learn.classList.add("v349-support-open");
       }
       scheduleSync();
       return;

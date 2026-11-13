@@ -224,7 +224,7 @@
       '<h1 class="home-v343-title">' + (nextCard ? t("이어서 배우기", "Continue learning") : t("순차 학습 완료", "Sequential learning complete")) + '</h1>' +
       '<p class="home-v343-sub">' + (nextCard
         ? t("새 문제는 원래 순서를 그대로 따르고, 틀렸던 개념만 별도의 변형 복습으로 돌아옵니다.", "New cards keep the original sequence; only missed concepts return as separate variant reviews.")
-        : t("1,785개 순차 학습을 모두 진행했습니다. 이제 변형 복습과 실전 체크포인트로 기억을 굳혀보세요.", "You have completed all 1,785 sequential cards. Continue with variant reviews and practice checkpoints.")) + '</p>';
+        : t(cards.length + "개 순차 학습을 모두 진행했습니다. 이제 변형 복습과 실전 체크포인트로 기억을 굳혀보세요.", "You have completed all " + cards.length + " sequential cards. Continue with variant reviews and practice checkpoints.")) + '</p>';
 
     const nextBox = document.createElement("div");
     nextBox.className = "home-v343-next";
