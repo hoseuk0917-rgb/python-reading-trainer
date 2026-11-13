@@ -151,7 +151,17 @@ async function capture(name) {
 async function commonMetrics() {
   return evaluate(`(() => {
     const root = document.documentElement;
+    const topbar = document.querySelector("body > .topbar");
     const nav = document.getElementById("consumerNavV349");
+    const topbarRect = topbar
+      ? topbar.getBoundingClientRect()
+      : null;
+    const topbarChildren = topbar
+      ? Array.from(topbar.children).filter((node) => getComputedStyle(node).display !== "none").map((node) => {
+          const rect = node.getBoundingClientRect();
+          return { id: node.id || node.className || node.tagName, top: Math.round(rect.top), bottom: Math.round(rect.bottom) };
+        })
+      : [];
     const navStyle = nav ? getComputedStyle(nav) : null;
     const navRect = nav ? nav.getBoundingClientRect() : null;
     const renderedControls = Array.from(document.querySelectorAll("button:not([hidden]), input:not([hidden]), select:not([hidden]), textarea:not([hidden])")).filter((node) => {
@@ -163,6 +173,17 @@ async function commonMetrics() {
       const rect = node.getBoundingClientRect();
       return rect.bottom > 0 && rect.top < innerHeight;
     });
+    const navButtonsHitTarget = nav
+      ? Array.from(nav.querySelectorAll(".consumer-nav-button-v349:not([hidden])")).filter((button) => {
+          const rect = button.getBoundingClientRect();
+          const style = getComputedStyle(button);
+          return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+        }).every((button) => {
+          const rect = button.getBoundingClientRect();
+          const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+          return Boolean(hit && (hit === button || button.contains(hit)));
+        })
+      : false;
     const overlappedControls = navStyle && navStyle.position === "fixed" && navRect
       ? visibleControls.filter((node) => {
           if (nav.contains(node)) return false;
@@ -183,12 +204,20 @@ async function commonMetrics() {
     return {
       width: innerWidth,
       height: innerHeight,
+      scrollY: Math.round(window.scrollY),
       horizontalOverflow: Math.max(document.body.scrollWidth, root.scrollWidth) - innerWidth,
+      topbarTop: topbarRect ? Math.round(topbarRect.top) : null,
+      topbarBottom: topbarRect ? Math.round(topbarRect.bottom) : null,
+      topbarVisible: Boolean(topbarRect && topbarRect.bottom > 0 && topbarRect.top < innerHeight),
+      topbarContentVisible: Boolean(topbarRect && topbarChildren.every((child) => child.top >= Math.floor(topbarRect.top) && child.bottom <= Math.ceil(topbarRect.bottom))),
+      topbarChildren,
       navPosition: navStyle ? navStyle.position : "missing",
+      navTop: navRect ? Math.round(navRect.top) : null,
       navHeight: navRect ? Math.round(navRect.height) : 0,
       bodyPaddingBottom: Number.parseFloat(getComputedStyle(document.body).paddingBottom) || 0,
       overlappedControls,
       bottomNavEndOverlaps,
+      navButtonsHitTarget,
       visibleControlHeightMin: controlHeights.length ? Math.min(...controlHeights) : null,
       stylesheetLoaded: Array.from(document.styleSheets).some((sheet) => String(sheet.href || "").includes("product_ui_r1_2_visual_tuning.css"))
     };
@@ -276,7 +305,9 @@ async function captureLearn(width, height) {
   await navigate(name);
   await evaluate("document.querySelector('#learningHomeV343 .home-v343-primary').click()");
   await waitFor("document.getElementById('learnView').classList.contains('v343-quiz-mode')", "quiz mode");
-  await delay(200);
+  await delay(150);
+  await evaluate("window.scrollTo(0, 0)");
+  await delay(100);
   const metrics = await viewMetrics("#learnView.v343-quiz-mode");
   metrics.screenshot = await capture(name);
   return metrics;
@@ -290,6 +321,7 @@ async function captureProgress() {
   await waitFor("document.getElementById('progressView').classList.contains('active-view') && document.getElementById('nextActionV346')", "progress view");
   await delay(200);
   await evaluate("window.scrollTo(0, 0)");
+  await delay(100);
   const metrics = await viewMetrics("#progressView.active-view");
   metrics.screenshot = await capture(name);
   return metrics;
@@ -338,6 +370,9 @@ async function main() {
       && homes.length === 6
       && homes.every(function (row) {
         return row.stylesheetLoaded
+          && row.topbarVisible === true
+          && row.topbarContentVisible
+          && row.navButtonsHitTarget
           && row.horizontalOverflow <= 0
           && row.bottomNavEndOverlaps.length === 0
           && (row.navPosition !== "fixed" || row.bodyPaddingBottom >= row.navHeight - 1)
@@ -350,9 +385,14 @@ async function main() {
       && bySize["390x844"].gridColumns === 1
       && bySize["390x844"].shellLeft >= 12
       && bySize["390x844"].shellRightGutter >= 12
-      && Object.values(views).every(function (row) {
+      && Object.entries(views).every(function (entry) {
+        const name = entry[0];
+        const row = entry[1];
         return row.stylesheetLoaded
           && row.rootVisible
+          && row.topbarVisible === true
+          && row.topbarContentVisible
+          && (name === "developerWorkbenchDesktop" || row.navButtonsHitTarget)
           && row.horizontalOverflow <= 0
           && row.bottomNavEndOverlaps.length === 0
           && (row.navPosition !== "fixed" || row.bodyPaddingBottom >= row.navHeight - 1);
