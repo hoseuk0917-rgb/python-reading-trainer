@@ -1,8 +1,8 @@
 const CACHE_PREFIX = "python-reading-trainer-v400";
 // Kept as an explicit compatibility marker for the sealed V400.7 release audit.
 const V400_7_RELEASE_CACHE_MARKER = "python-reading-trainer-v400-7-hardening1-20260821";
-const RELEASE = "20260827_v400_8_beginner_quality5";
-const CACHE_NAME = "python-reading-trainer-v400-8-beginner-quality5-20260827";
+const RELEASE = "20261113_prt_ui_r1_3_closeout";
+const CACHE_NAME = "python-reading-trainer-v400-prt-ui-r1-3-closeout-20261113";
 
 const SHELL_ASSETS = [
   "./",
@@ -13,12 +13,14 @@ const SHELL_ASSETS = [
   "./release_polish_v400_1.css",
   "./product_ui_r1_1.css",
   "./product_ui_r1_2_visual_tuning.css",
+  "./product_ui_r1_3_closeout.css",
   "./app.js",
   "./content_quality_semantics.js",
   "./learning_home_v343.js",
   "./consumer_ux_v349.js",
   "./release_polish_v400_1.js",
   "./product_ui_r1_1.js",
+  "./product_ui_r1_3_closeout.js",
   "./v400_release_polish.js",
   "./v400_pedagogy_runtime.js",
   "./developer_auth_v1_config.js",
@@ -43,8 +45,10 @@ const CRITICAL_UI_FILES = new Set([
   "release_polish_v400_1.css",
   "product_ui_r1_1.css",
   "product_ui_r1_2_visual_tuning.css",
+  "product_ui_r1_3_closeout.css",
   "release_polish_v400_1.js",
   "product_ui_r1_1.js",
+  "product_ui_r1_3_closeout.js",
   "v400_release_polish.js",
   "v400_pedagogy_runtime.js",
   "content_quality_semantics.js",
